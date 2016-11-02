@@ -1,0 +1,112 @@
+object fmxFIBDBLoginDlg: TfmxFIBDBLoginDlg
+  Left = 0
+  Top = 0
+  Caption = 'Form3'
+  ClientHeight = 191
+  ClientWidth = 417
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [dkDesktop, dkiPhone, dkiPad]
+  OnCreate = FormCreate
+  DesignerMobile = False
+  DesignerWidth = 0
+  DesignerHeight = 0
+  DesignerDeviceName = ''
+  DesignerOrientation = 0
+  object Panel1: TPanel
+    Height = 33.000000000000000000
+    Position.X = 32.000000000000000000
+    Position.Y = 16.000000000000000000
+    Width = 377.000000000000000000
+    TabOrder = 0
+    object Label1: TLabel
+      Font.Style = [fsBold]
+      StyledSettings = [ssFamily, ssSize, ssFontColor]
+      Height = 17.000000000000000000
+      Position.Y = -16.000000000000000000
+      Text = 'Database:'
+      Width = 120.000000000000000000
+    end
+    object lbDBName: TLabel
+      AutoSize = True
+      AutoTranslate = False
+      Font.Style = [fsBold]
+      StyledSettings = [ssFamily, ssSize, ssFontColor]
+      Height = 19.000000000000000000
+      Position.X = 5.000000000000000000
+      Text = 'lbDBName'
+      Width = 60.000000000000000000
+      WordWrap = False
+    end
+  end
+  object Panel2: TPanel
+    Height = 81.000000000000000000
+    Position.X = 32.000000000000000000
+    Position.Y = 56.000000000000000000
+    Width = 377.000000000000000000
+    TabOrder = 1
+    object Label2: TLabel
+      Height = 17.000000000000000000
+      Position.X = 8.000000000000000000
+      Position.Y = 9.000000000000000000
+      Text = 'User Name :'
+      Width = 72.000000000000000000
+    end
+    object Label3: TLabel
+      Height = 17.000000000000000000
+      Position.X = 8.000000000000000000
+      Position.Y = 33.000000000000000000
+      Text = 'Password:'
+      Width = 72.000000000000000000
+    end
+    object Label4: TLabel
+      Height = 17.000000000000000000
+      Position.X = 8.000000000000000000
+      Position.Y = 57.000000000000000000
+      Text = 'Role:'
+      Width = 72.000000000000000000
+    end
+    object EdUserName: TEdit
+      TabOrder = 3
+      Position.X = 88.000000000000000000
+      Position.Y = 8.000000000000000000
+      Width = 233.000000000000000000
+      Height = 22.000000000000000000
+      KillFocusByReturn = False
+    end
+    object EdPassword: TEdit
+      TabOrder = 5
+      Position.X = 88.000000000000000000
+      Position.Y = 32.000000000000000000
+      Width = 233.000000000000000000
+      Height = 22.000000000000000000
+      KillFocusByReturn = False
+    end
+    object EdRole: TEdit
+      TabOrder = 4
+      Position.X = 88.000000000000000000
+      Position.Y = 56.000000000000000000
+      Width = 233.000000000000000000
+      Height = 22.000000000000000000
+      KillFocusByReturn = False
+    end
+  end
+  object Button1: TButton
+    Height = 22.000000000000000000
+    ModalResult = 1
+    Position.X = 216.000000000000000000
+    Position.Y = 152.000000000000000000
+    TabOrder = 2
+    Text = 'OK'
+    Width = 80.000000000000000000
+  end
+  object Button2: TButton
+    Height = 22.000000000000000000
+    ModalResult = 2
+    Position.X = 304.000000000000000000
+    Position.Y = 152.000000000000000000
+    TabOrder = 3
+    Text = 'Cancel'
+    Width = 80.000000000000000000
+  end
+end
