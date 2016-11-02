@@ -1,0 +1,142 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.06.00"/>
+    <PROJECT value="FIBPlus_CB5.bpl"/>
+    <OBJFILES value="c5\RegFIBPlus.obj c5\VariantRtn.obj c5\DSContainer.obj c5\FIB.obj 
+      c5\FIBConsts.obj c5\FIBDataBase.obj c5\FIBDataSet.obj 
+      c5\FIBMiscellaneous.obj c5\FIBQuery.obj c5\FIBSQLMonitor.obj 
+      c5\ib_errorcodes.obj c5\ib_externals.obj c5\IB_Install.obj 
+      c5\IB_InstallHeader.obj c5\IB_Intf.obj c5\IB_Services.obj c5\ibase.obj 
+      c5\pFIBArray.obj c5\pFIBCacheQueries.obj c5\pFIBDatabase.obj 
+      c5\pFIBDataInfo.obj c5\pFIBDataSet.obj c5\pFIBErrorHandler.obj 
+      c5\pFIBEventLists.obj c5\pFIBFieldsDescr.obj c5\pFIBProps.obj 
+      c5\pFIBQuery.obj c5\pFIBStoredProc.obj c5\RegUtils.obj c5\SQLTxtRtns.obj 
+      c5\StdFuncs.obj c5\StrUtil.obj  c5\pFIBScripter.obj 
+      c5\pFIBExports.obj c5\pFIBDataRefresh.obj c5\pFIBMetaData.obj 
+      c5\SIBFIBEA.obj c5\pFIBSQLLog.obj c5\FIBSafeTimer.obj c5\FIBDBLoginDlg.obj 
+      c5\FIBMDTInterface.obj c5\pFIBInterfaces.obj c5\IBBlobFilter.obj 
+      c5\FIBCloneComponents.obj c5\pFIBLists.obj c5\DBParsers.obj 
+      c5\FIBCacheManage.obj c5\SIBGlobals.obj c5\SIBAPI.obj c5\SIBEABase.obj 
+      c5\pTestInfo.obj c5\pFIBClientDataSet.obj c5\FIBPlus_CB5.obj"/>
+    <RESFILES value="FIBPlus_CB5.res FIBPlus.dcr"/>
+    <IDLFILES value=""/>
+    <IDLGENFILES value=""/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES) FIBDBLoginDlg.dfm"/>
+    <LIBFILES value=""/>
+    <LIBRARIES value="vcl.lib"/>
+    <SPARELIBS value="vcl.lib Vcl50.lib Vcldb50.lib Vclmid50.lib"/>
+    <PACKAGES value="vcl50.bpi vcldb50.bpi Vclmid50.bpi"/>
+    <PATHCPP value=".;"/>
+    <PATHPAS value=".;"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="ilink32"/>
+    <USERDEFINES value=""/>
+    <SYSDEFINES value="NO_STRICT;_RTLDLL;USEPACKAGES"/>
+    <MAINSOURCE value="FIBPlus_CB5.cpp"/>
+    <INCLUDEPATH value="$(BCB)\include;$(BCB)\include\vcl;c5"/>
+    <LIBPATH value="$(BCB)\Lib\Debug;$(BCB)\lib\obj;$(BCB)\lib;cb5"/>
+    <WARNINGS value="-w-par"/>
+  </MACROS>
+  <OPTIONS>
+    <IDLCFLAGS value="-I$(BCB)\include -I$(BCB)\include\vcl -Ic5 -src_suffix cpp -boa"/>
+    <CFLAG1 value="-O2 -Vx -Ve -X- -a8 -b- -k- -vi -c -tWM"/>
+    <PFLAGS value="-N2c5 -N0c5 -$Y- -$L- -$D- -NHc5 -$A8 -LUdclstd50 -v -JPHNE -M"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /w2 /zn"/>
+    <LFLAGS value="-Ic5 -D&quot;FIBPlus&quot; -aa -Tpp -x -Gn -Gl -Gi"/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="c0pkg32.obj $(PACKAGES) Memmgr.Lib sysinit.obj $(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mti.lib"/>
+  </LINKER>
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=1
+AutoIncBuild=0
+MajorVer=1
+MinorVer=0
+Release=0
+Build=0
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+Locale=1049
+CodePage=1251
+
+[Version Info Keys]
+CompanyName=
+FileDescription=
+FileVersion=1.0.0.0
+InternalName=
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=1.0.0.0
+Comments=
+
+[Excluded Packages]
+$(BCB)\Bin\dclmid50.bpl=Borland MIDAS Components
+
+[HistoryLists\hlIncludePath]
+Count=4
+Item0=$(BCB)\include;$(BCB)\include\vcl;c5
+Item1=$(BCB)\include;$(BCB)\include\vcl;cb5
+Item2=$(BCB)\include;$(BCB)\include\vcl;$(BCB)\Projects\Lib\FreeIBComponents
+Item3=$(BCB)\include;$(BCB)\include\vcl
+
+[HistoryLists\hlLibraryPath]
+Count=4
+Item0=$(BCB)\Lib\Debug;$(BCB)\lib\obj;$(BCB)\lib;cb5
+Item1=$(BCB)\Lib\Debug;$(BCB)\lib\obj;$(BCB)\lib
+Item2=$(BCB)\Lib\Debug\;$(BCB)\lib\obj;$(BCB)\lib
+Item3=$(BCB)\Lib\Debug\;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\Projects\Lib\FreeIBComponents
+
+[HistoryLists\hlDebugSourcePath]
+Count=1
+Item0=$(BCB)\source\vcl
+
+[HistoryLists\hlConditionals]
+Count=1
+Item0=_DEBUG
+
+[HistoryLists\hlIntOutputDir]
+Count=2
+Item0=c5
+Item1=cb5
+
+[Debugging]
+DebugSourceDirs=$(BCB)\source\vcl
+
+[Parameters]
+RunParams=
+HostApplication=
+RemoteHost=
+RemotePath=
+RemoteDebug=0
+
+[Compiler]
+ShowInfoMsgs=0
+LinkDebugVcl=0
+LinkCGLIB=0
+
+[CORBA]
+AddServerUnit=1
+AddClientUnit=1
+PrecompiledHeaders=1
+
+[Language]
+ActiveLang=
+ProjectLang=
+RootDir=
+  </IDEOPTIONS>
+</PROJECT>

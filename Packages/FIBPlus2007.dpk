@@ -1,0 +1,89 @@
+package FIBPlus2007;
+
+{$R *.res}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO ON}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST ON}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DESCRIPTION 'FIBPlus'}
+{$IMPLICITBUILD OFF}
+
+requires
+  rtl,
+  vcl,
+  dbrtl,
+  dsnap,
+  vcldb;
+
+contains
+  RegFIBPlus in 'RegFIBPlus.pas',
+  DBParsers in 'DBParsers.pas',
+  DSContainer in 'DSContainer.pas',
+  fib in 'fib.pas',
+  FIBCacheManage in 'FIBCacheManage.pas',
+  FIBCloneComponents in 'FIBCloneComponents.pas',
+  FIBConsts in 'FIBConsts.pas',
+  FIBDatabase in 'FIBDatabase.pas',
+  FIBDataSet in 'FIBDataSet.pas',
+  FIBDBLoginDlg in 'FIBDBLoginDlg.pas',
+  FIBMiscellaneous in 'FIBMiscellaneous.pas',
+  FIBQuery in 'FIBQuery.pas',
+  FIBSQLMonitor in 'FIBSQLMonitor.pas',
+  IB_ErrorCodes in 'IB_ErrorCodes.pas',
+  IB_Externals in 'IB_Externals.pas',
+  IB_Install in 'IB_Install.pas',
+  IB_InstallHeader in 'IB_InstallHeader.pas',
+  IB_Intf in 'IB_Intf.pas',
+  IB_Services in 'IB_Services.pas',
+  ibase in 'ibase.pas',
+  IBBlobFilter in 'IBBlobFilter.pas',
+  pFIBArray in 'pFIBArray.pas',
+  pFIBCacheQueries in 'pFIBCacheQueries.pas',
+  pFIBDatabase in 'pFIBDatabase.pas',
+  pFIBDataInfo in 'pFIBDataInfo.pas',
+  pFIBDataSet in 'pFIBDataSet.pas',
+  pFIBErrorHandler in 'pFIBErrorHandler.pas',
+  pFIBEventLists in 'pFIBEventLists.pas',
+  pFIBFieldsDescr in 'pFIBFieldsDescr.pas',
+  pFIBInterfaces in 'pFIBInterfaces.pas',
+  pFIBLists in 'pFIBLists.pas',
+  pFIBProps in 'pFIBProps.pas',
+  pFIBQuery in 'pFIBQuery.pas',
+  pFIBSQLLog in 'pFIBSQLLog.pas',
+  pFIBStoredProc in 'pFIBStoredProc.pas',
+  pTestInfo in 'pTestInfo.pas',
+  RegUtils in 'RegUtils.pas',
+  SIBAPI in 'SIBAPI.pas',
+  SIBEABase in 'SIBEABase.pas',
+  SIBFIBEA in 'SIBFIBEA.PAS',
+  SIBGlobals in 'SIBGlobals.pas',
+  SqlTxtRtns in 'SqlTxtRtns.pas',
+  StdFuncs in 'StdFuncs.pas',
+  StrUtil in 'StrUtil.pas',
+  VariantRtn in 'VariantRtn.pas',
+  pFIBScripter in 'pFIBScripter.pas',
+  FIBSafeTimer in 'FIBSafeTimer.pas',
+  FIBMDTInterface in 'FIBMDTInterface.pas',
+  pFIBDataRefresh in 'pFIBDataRefresh.pas',
+  pFIBExports in 'pFIBExports.pas',
+  pFIBMetaData in 'pFIBMetaData.pas',
+  pFIBClientDataSet in 'pFIBClientDataSet.pas';
+
+end.

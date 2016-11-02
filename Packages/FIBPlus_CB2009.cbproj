@@ -1,0 +1,341 @@
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{9A7E5A9E-E985-4474-9E54-1B08E99C71BB}</ProjectGuid>
+			<MainSource>FIBPlus_CB2009.cpp</MainSource>
+			<ProjectVersion>12.0</ProjectVersion>
+			<Config Condition="'$(Config)'==''">Devrace</Config>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+			<Cfg_1>true</Cfg_1>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+			<Cfg_2>true</Cfg_2>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Devrace' or '$(Cfg_3)'!=''">
+			<Cfg_3>true</Cfg_3>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Base)'!=''">
+			<ProjectType>CppPackage</ProjectType>
+			<Multithreaded>true</Multithreaded>
+			<DesignOnlyPackage>false</DesignOnlyPackage>
+			<ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
+			<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
+			<ILINK_Description>FIBPlus C++</ILINK_Description>
+			<ILINK_MapFileType>None</ILINK_MapFileType>
+			<OutputExt>bpl</OutputExt>
+			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
+			<Defines>NO_STRICT</Defines>
+			<DynamicRTL>true</DynamicRTL>
+			<IncludePath>$(CG_BOOST_ROOT)\boost\tr1\tr1;$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;$(CG_BOOST_ROOT);$(IncludePath)</IncludePath>
+			<ILINK_LibraryPath>$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<BCC_wpar>false</BCC_wpar>
+			<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_1)'!=''">
+			<BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
+			<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
+			<DCC_Optimize>false</DCC_Optimize>
+			<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+			<Defines>_DEBUG;$(Defines)</Defines>
+			<BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
+			<IntermediateOutputDir>Debug</IntermediateOutputDir>
+			<ILINK_DisableIncrementalLinking>true</ILINK_DisableIncrementalLinking>
+			<BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
+			<DCC_Define>DEBUG</DCC_Define>
+			<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
+			<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
+			<BCC_StackFrames>true</BCC_StackFrames>
+			<ILINK_LibraryPath>$(BDS)\lib\debug;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
+			<TASM_Debugging>Full</TASM_Debugging>
+			<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_2)'!=''">
+			<Defines>NDEBUG;$(Defines)</Defines>
+			<IntermediateOutputDir>c2009\</IntermediateOutputDir>
+			<ILINK_LibraryPath>$(BDS)\lib\release;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<TASM_Debugging>None</TASM_Debugging>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_3)'!=''">
+			<DCC_AdditionalSwitches>-NHC2009</DCC_AdditionalSwitches>
+			<BCC_IncludePath>c2009\;$(BCC_IncludePath)</BCC_IncludePath>
+			<IntermediateOutputDir>c2009\</IntermediateOutputDir>
+			<BCC_OutputDir>c2009\</BCC_OutputDir>
+			<DCC_DcuOutput>c2009\</DCC_DcuOutput>
+			<DCC_ObjOutput>c2009\</DCC_ObjOutput>
+			<DCC_HppOutput>c2009\</DCC_HppOutput>
+			<BCC_PCHUsage>None</BCC_PCHUsage>
+			<ILINK_Description>FIBPlus C++</ILINK_Description>
+		</PropertyGroup>
+		<ItemGroup>
+			<DelphiCompile Include="FIBCacheManage.pas">
+				<BuildOrder>38</BuildOrder>
+			</DelphiCompile>
+			<PackageImport Include="dsnap.bpi">
+				<BuildOrder>41</BuildOrder>
+			</PackageImport>
+			<DelphiCompile Include="FIBSQLMonitor.pas">
+				<BuildOrder>14</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="VariantRtn.pas">
+				<BuildOrder>12</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pTestInfo.pas">
+				<BuildOrder>54</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pFIBScripter.pas">
+				<BuildOrder>42</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="StrUtil.pas">
+				<BuildOrder>40</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="FIBQuery.pas">
+				<BuildOrder>13</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="IB_Install.pas">
+				<BuildOrder>17</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="IB_ErrorCodes.pas">
+				<BuildOrder>15</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="RegUtils.pas">
+				<BuildOrder>41</BuildOrder>
+			</DelphiCompile>
+			<PackageImport Include="vcldb.bpi">
+				<BuildOrder>40</BuildOrder>
+			</PackageImport>
+			<DelphiCompile Include="IB_InstallHeader.pas">
+				<BuildOrder>18</BuildOrder>
+			</DelphiCompile>
+			<PackageImport Include="dbrtl.bpi">
+				<BuildOrder>10</BuildOrder>
+			</PackageImport>
+			<DelphiCompile Include="FIBDataSet.pas">
+				<BuildOrder>9</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="FIBMDTInterface.pas">
+				<BuildOrder>56</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="FIBCloneComponents.pas">
+				<BuildOrder>51</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="IBBlobFilter.pas">
+				<BuildOrder>50</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pFIBSQLLog.pas">
+				<BuildOrder>47</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pFIBClientDataSet.pas">
+				<BuildOrder>58</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="DBParsers.pas">
+				<BuildOrder>53</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pFIBLists.pas">
+				<BuildOrder>52</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pFIBInterfaces.pas">
+				<BuildOrder>49</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="SIBAPI.pas">
+				<BuildOrder>44</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="SIBGlobals.pas">
+				<BuildOrder>43</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="IB_Externals.pas">
+				<BuildOrder>16</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="FIBDBLoginDlg.pas">
+				<Form>frmFIBDBLoginDlg</Form>
+				<BuildOrder>48</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="SIBFIBEA.PAS">
+				<BuildOrder>46</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="SIBEABase.pas">
+				<BuildOrder>45</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pFIBDatabase.pas">
+				<BuildOrder>24</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pFIBDataInfo.pas">
+				<BuildOrder>25</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="ibase.pas">
+				<BuildOrder>21</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pFIBProps.pas">
+				<BuildOrder>30</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="RegFIBPlus.pas">
+				<BuildOrder>33</BuildOrder>
+			</DelphiCompile>
+			<PackageImport Include="vcl.bpi">
+				<BuildOrder>37</BuildOrder>
+			</PackageImport>
+			<DelphiCompile Include="pFIBArray.pas">
+				<BuildOrder>22</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pFIBDataSet.pas">
+				<BuildOrder>26</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pFIBErrorHandler.pas">
+				<BuildOrder>27</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pFIBCacheQueries.pas">
+				<BuildOrder>23</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pFIBEventLists.pas">
+				<BuildOrder>28</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="StdFuncs.pas">
+				<BuildOrder>35</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="SqlTxtRtns.pas">
+				<BuildOrder>34</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pFIBFieldsDescr.pas">
+				<BuildOrder>29</BuildOrder>
+			</DelphiCompile>
+			<PackageImport Include="rtl.bpi">
+				<BuildOrder>1</BuildOrder>
+			</PackageImport>
+			<DelphiCompile Include="FIBConsts.pas">
+				<BuildOrder>7</BuildOrder>
+			</DelphiCompile>
+			<ResFiles Include="FIBPlus_CB2009.res">
+				<BuildOrder>2</BuildOrder>
+			</ResFiles>
+			<DelphiCompile Include="FIBMiscellaneous.pas">
+				<BuildOrder>3</BuildOrder>
+			</DelphiCompile>
+			<CppCompile Include="FIBPlus_CB2009.cpp">
+				<BuildOrder>0</BuildOrder>
+			</CppCompile>
+			<DelphiCompile Include="IB_Services.pas">
+				<BuildOrder>20</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="fib.pas">
+				<BuildOrder>6</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pFIBQuery.pas">
+				<BuildOrder>31</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pFIBStoredProc.pas">
+				<BuildOrder>32</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="FIBDatabase.pas">
+				<BuildOrder>8</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="IB_Intf.pas">
+				<BuildOrder>19</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="DSContainer.pas">
+				<BuildOrder>5</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="FIBSafeTimer.pas">
+				<BuildOrder>55</BuildOrder>
+			</DelphiCompile>
+			<DelphiCompile Include="pFIBDataRefresh.pas">
+				<BuildOrder>57</BuildOrder>
+			</DelphiCompile>
+			<FormResources Include="FIBDBLoginDlg.dfm"/>
+			<BuildConfiguration Include="Base">
+				<Key>Base</Key>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Devrace">
+				<Key>Cfg_3</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Release">
+				<Key>Cfg_2</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Debug">
+				<Key>Cfg_1</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+		</ItemGroup>
+		<Import Project="$(BDS)\Bin\CodeGear.Cpp.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')"/>
+		<ProjectExtensions>
+			<Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
+			<Borland.ProjectType>CppPackage</Borland.ProjectType>
+			<BorlandProject>
+				<CPlusPlusBuilder.Personality>
+					<Source>
+						<Source Name="MainSource">FIBPlus_CB2009.cpp</Source>
+					</Source>
+					<VersionInfo>
+						<VersionInfo Name="IncludeVerInfo">True</VersionInfo>
+						<VersionInfo Name="AutoIncBuild">False</VersionInfo>
+						<VersionInfo Name="MajorVer">1</VersionInfo>
+						<VersionInfo Name="MinorVer">0</VersionInfo>
+						<VersionInfo Name="Release">0</VersionInfo>
+						<VersionInfo Name="Build">0</VersionInfo>
+						<VersionInfo Name="Debug">False</VersionInfo>
+						<VersionInfo Name="PreRelease">False</VersionInfo>
+						<VersionInfo Name="Special">False</VersionInfo>
+						<VersionInfo Name="Private">False</VersionInfo>
+						<VersionInfo Name="DLL">False</VersionInfo>
+						<VersionInfo Name="Locale">1049</VersionInfo>
+						<VersionInfo Name="CodePage">1251</VersionInfo>
+					</VersionInfo>
+					<VersionInfoKeys>
+						<VersionInfoKeys Name="CompanyName"/>
+						<VersionInfoKeys Name="FileDescription"/>
+						<VersionInfoKeys Name="FileVersion">1.0.0.0</VersionInfoKeys>
+						<VersionInfoKeys Name="InternalName"/>
+						<VersionInfoKeys Name="LegalCopyright"/>
+						<VersionInfoKeys Name="LegalTrademarks"/>
+						<VersionInfoKeys Name="OriginalFilename"/>
+						<VersionInfoKeys Name="ProductName"/>
+						<VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys>
+						<VersionInfoKeys Name="Comments"/>
+					</VersionInfoKeys>
+					<Debugging>
+						<Debugging Name="DebugSourceDirs"/>
+					</Debugging>
+					<Parameters>
+						<Parameters Name="RunParams"/>
+						<Parameters Name="Launcher"/>
+						<Parameters Name="UseLauncher">False</Parameters>
+						<Parameters Name="DebugCWD"/>
+						<Parameters Name="HostApplication"/>
+						<Parameters Name="RemoteHost"/>
+						<Parameters Name="RemotePath"/>
+						<Parameters Name="RemoteParams"/>
+						<Parameters Name="RemoteLauncher"/>
+						<Parameters Name="UseRemoteLauncher">False</Parameters>
+						<Parameters Name="RemoteCWD"/>
+						<Parameters Name="RemoteDebug">False</Parameters>
+						<Parameters Name="Debug Symbols Search Path"/>
+						<Parameters Name="LoadAllSymbols">True</Parameters>
+						<Parameters Name="LoadUnspecifiedSymbols">False</Parameters>
+					</Parameters>
+					<ProjectProperties>
+						<ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
+						<ProjectProperties Name="ManagePaths">True</ProjectProperties>
+						<ProjectProperties Name="VerifyPackages">True</ProjectProperties>
+					</ProjectProperties>
+					<Excluded_Packages>
+						<Excluded_Packages Name="C:\Documents and Settings\All Users\Документы\RAD Studio\6.0\BPL\cfFilter_CB2009.bpl">Devrace CleverFilter C++</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\bcboffice2k120.bpl">CodeGear C++Builder Office 2000 Servers Package</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\bcbofficexp120.bpl">CodeGear C++Builder Office XP Servers Package</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\dcloffice2k120.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\dclofficexp120.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+					</Excluded_Packages>
+				</CPlusPlusBuilder.Personality>
+			</BorlandProject>
+			<ProjectFileVersion>12</ProjectFileVersion>
+		</ProjectExtensions>
+	</Project>

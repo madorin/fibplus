@@ -1,0 +1,129 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectGuid>{0f436fc7-b823-4a6a-8159-0cddb23370e9}</ProjectGuid>
+    <MainSource>FIBPlus2006.dpk</MainSource>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
+    <DCC_DependencyCheckOutputName>G:\Documents and Settings\All Users\Документы\RAD Studio\5.0\Bpl\FIBPlus2006.bpl</DCC_DependencyCheckOutputName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <Version>7.0</Version>
+    <DCC_DebugInformation>False</DCC_DebugInformation>
+    <DCC_WriteableConstants>True</DCC_WriteableConstants>
+    <DCC_LocalDebugSymbols>False</DCC_LocalDebugSymbols>
+    <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
+    <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
+    <DCC_Define>RELEASE</DCC_Define>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <Version>7.0</Version>
+    <DCC_WriteableConstants>True</DCC_WriteableConstants>
+    <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
+    <DCC_Define>DEBUG</DCC_Define>
+  </PropertyGroup>
+  <ProjectExtensions>
+    <Borland.Personality>Delphi.Personality</Borland.Personality>
+    <Borland.ProjectType>Package</Borland.ProjectType>
+    <BorlandProject>
+<BorlandProject xmlns=""> <Delphi.Personality>   <Parameters>
+      <Parameters Name="UseLauncher">False</Parameters>
+      <Parameters Name="LoadAllSymbols">True</Parameters>
+      <Parameters Name="LoadUnspecifiedSymbols">False</Parameters>
+    </Parameters>
+    <Package_Options>
+      <Package_Options Name="PackageDescription">FIBPlus</Package_Options>
+      <Package_Options Name="ImplicitBuild">False</Package_Options>
+      <Package_Options Name="DesigntimeOnly">False</Package_Options>
+      <Package_Options Name="RuntimeOnly">False</Package_Options>
+    </Package_Options>
+    <VersionInfo>
+      <VersionInfo Name="IncludeVerInfo">True</VersionInfo>
+      <VersionInfo Name="AutoIncBuild">False</VersionInfo>
+      <VersionInfo Name="MajorVer">1</VersionInfo>
+      <VersionInfo Name="MinorVer">0</VersionInfo>
+      <VersionInfo Name="Release">0</VersionInfo>
+      <VersionInfo Name="Build">0</VersionInfo>
+      <VersionInfo Name="Debug">False</VersionInfo>
+      <VersionInfo Name="PreRelease">False</VersionInfo>
+      <VersionInfo Name="Special">False</VersionInfo>
+      <VersionInfo Name="Private">False</VersionInfo>
+      <VersionInfo Name="DLL">False</VersionInfo>
+      <VersionInfo Name="Locale">1049</VersionInfo>
+      <VersionInfo Name="CodePage">1251</VersionInfo>
+    </VersionInfo>
+    <VersionInfoKeys>
+      <VersionInfoKeys Name="CompanyName"></VersionInfoKeys>
+      <VersionInfoKeys Name="FileDescription"></VersionInfoKeys>
+      <VersionInfoKeys Name="FileVersion">1.0.0.0</VersionInfoKeys>
+      <VersionInfoKeys Name="InternalName"></VersionInfoKeys>
+      <VersionInfoKeys Name="LegalCopyright"></VersionInfoKeys>
+      <VersionInfoKeys Name="LegalTrademarks"></VersionInfoKeys>
+      <VersionInfoKeys Name="OriginalFilename"></VersionInfoKeys>
+      <VersionInfoKeys Name="ProductName"></VersionInfoKeys>
+      <VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys>
+      <VersionInfoKeys Name="Comments"></VersionInfoKeys>
+    </VersionInfoKeys>
+    <Source>
+      <Source Name="MainSource">FIBPlus2006.dpk</Source>
+    </Source>
+  </Delphi.Personality> </BorlandProject></BorlandProject>
+  </ProjectExtensions>
+  <ItemGroup />
+  <ItemGroup>
+    <DelphiCompile Include="FIBPlus2006.dpk">
+      <MainSource>MainSource</MainSource>
+    </DelphiCompile>
+    <DCCReference Include="DBParsers.pas" />
+    <DCCReference Include="dbrtl.dcp" />
+    <DCCReference Include="DSContainer.pas" />
+    <DCCReference Include="dsnap.dcp" />
+    <DCCReference Include="fib.pas" />
+    <DCCReference Include="FIBCacheManage.pas" />
+    <DCCReference Include="FIBCloneComponents.pas" />
+    <DCCReference Include="FIBConsts.pas" />
+    <DCCReference Include="FIBDatabase.pas" />
+    <DCCReference Include="FIBDataSet.pas" />
+    <DCCReference Include="FIBDBLoginDlg.pas" />
+    <DCCReference Include="FIBMiscellaneous.pas" />
+    <DCCReference Include="FIBQuery.pas" />
+    <DCCReference Include="FIBSQLMonitor.pas" />
+    <DCCReference Include="ibase.pas" />
+    <DCCReference Include="IBBlobFilter.pas" />
+    <DCCReference Include="IB_ErrorCodes.pas" />
+    <DCCReference Include="IB_Externals.pas" />
+    <DCCReference Include="IB_Install.pas" />
+    <DCCReference Include="IB_InstallHeader.pas" />
+    <DCCReference Include="IB_Intf.pas" />
+    <DCCReference Include="IB_Services.pas" />
+    <DCCReference Include="pFIBArray.pas" />
+    <DCCReference Include="pFIBCacheQueries.pas" />
+    <DCCReference Include="pFIBDatabase.pas" />
+    <DCCReference Include="pFIBDataInfo.pas" />
+    <DCCReference Include="pFIBDataSet.pas" />
+    <DCCReference Include="pFIBErrorHandler.pas" />
+    <DCCReference Include="pFIBEventLists.pas" />
+    <DCCReference Include="pFIBFieldsDescr.pas" />
+    <DCCReference Include="pFIBInterfaces.pas" />
+    <DCCReference Include="pFIBLists.pas" />
+    <DCCReference Include="pFIBProps.pas" />
+    <DCCReference Include="pFIBQuery.pas" />
+    <DCCReference Include="pFIBSQLLog.pas" />
+    <DCCReference Include="pFIBStoredProc.pas" />
+    <DCCReference Include="pTestInfo.pas" />
+    <DCCReference Include="RegFIBPlus.pas" />
+    <DCCReference Include="RegUtils.pas" />
+    <DCCReference Include="rtl.dcp" />
+    <DCCReference Include="SIBAPI.pas" />
+    <DCCReference Include="SIBEABase.pas" />
+    <DCCReference Include="SIBFIBEA.PAS" />
+    <DCCReference Include="SIBGlobals.pas" />
+    <DCCReference Include="SqlTxtRtns.pas" />
+    <DCCReference Include="StdFuncs.pas" />
+    <DCCReference Include="StrUtil.pas" />
+    <DCCReference Include="VariantRtn.pas" />
+    <DCCReference Include="vcl.dcp" />
+    <DCCReference Include="vcldb.dcp" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" />
+</Project>

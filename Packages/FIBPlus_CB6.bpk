@@ -1,0 +1,227 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.06.00"/>
+    <PROJECT value="FIBPlus_CB6.bpl"/>
+    <OBJFILES value="C6\FIBPlus_CB6.obj C6\RegFIBPlus.obj C6\VariantRtn.obj C6\DSContainer.obj 
+      C6\FIB.obj C6\FIBConsts.obj C6\FIBDataBase.obj C6\FIBDataSet.obj 
+      C6\FIBMiscellaneous.obj C6\FIBQuery.obj C6\FIBSQLMonitor.obj 
+      C6\ib_errorcodes.obj C6\ib_externals.obj C6\IB_Install.obj 
+      C6\IB_InstallHeader.obj C6\IB_Intf.obj C6\IB_Services.obj C6\ibase.obj 
+      C6\pFIBArray.obj C6\pFIBCacheQueries.obj C6\pFIBDatabase.obj 
+      C6\pFIBDataInfo.obj C6\pFIBDataSet.obj C6\pFIBErrorHandler.obj 
+      C6\pFIBEventLists.obj C6\pFIBFieldsDescr.obj C6\pFIBProps.obj 
+      C6\pFIBQuery.obj C6\pFIBStoredProc.obj C6\RegUtils.obj C6\SQLTxtRtns.obj 
+      C6\StdFuncs.obj C6\StrUtil.obj C6\pFIBScripter.obj 
+      C6\SIBFIBEA.obj C6\pFIBSQLLog.obj C6\FIBDBLoginDlg.obj 
+      C6\pFIBInterfaces.obj C6\IBBlobFilter.obj C6\FIBCloneComponents.obj 
+      C6\pFIBLists.obj C6\DBParsers.obj C6\FIBCacheManage.obj C6\SIBGlobals.obj 
+      C6\SIBAPI.obj C6\SIBEABase.obj C6\pTestInfo.obj C6\FIBSafeTimer.obj 
+      C6\pFIBDataRefresh.obj C6\pFIBMetaData.obj C6\FIBMDTInterface.obj 
+      C6\pFIBExports.obj C6\pFIBClientDataSet.obj"/>
+    <RESFILES value="FIBPlus_CB6.res FIBPlus.dcr"/>
+    <IDLFILES value=""/>
+    <IDLGENFILES value=""/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES) FIBDBLoginDlg.dfm"/>
+    <LIBFILES value=""/>
+    <LIBRARIES value="dsnapcon.lib dsnapcrba.lib visualdbclx.lib teeqr.lib dss.lib tee.lib 
+      teedb.lib teeui.lib qrpt.lib bdecds.lib cds.lib ibxpress.lib vcldbx.lib 
+      bdertl.lib adortl.lib"/>
+    <SPARELIBS value="rtl.lib vcldb.lib dbrtl.lib adortl.lib bdertl.lib vcldbx.lib ibxpress.lib 
+      cds.lib dsnap.lib bdecds.lib qrpt.lib teeui.lib teedb.lib tee.lib dss.lib 
+      teeqr.lib visualdbclx.lib dsnapcrba.lib dsnapcon.lib"/>
+    <PACKAGES value="rtl.bpi dbrtl.bpi vcl.bpi vcldb.bpi dsnap.bpi"/>
+    <PATHCPP value=".;"/>
+    <PATHPAS value=".;"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="ilink32"/>
+    <USERDEFINES value=""/>
+    <SYSDEFINES value="NO_STRICT;USEPACKAGES"/>
+    <MAINSOURCE value="FIBPlus_CB6.cpp"/>
+    <INCLUDEPATH value="$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="$(BCB)\projects\lib;$(BCB)\Lib\Debug;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <WARNINGS value="-w-par"/>
+    <OTHERFILES value=""/>
+  </MACROS>
+  <OPTIONS>
+    <IDLCFLAGS value="-I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -boa"/>
+    <CFLAG1 value="-O2 -Vx -Ve -X- -a8 -b- -k- -vi -c -tWM"/>
+    <PFLAGS value="-N2.\C6 -N0.\C6 -$Y- -$L- -$D- -$A8 -NH.\C6 -LUdclstd -v -JPHNE -M"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /w2 /zn"/>
+    <LFLAGS value="-I.\C6 -D&quot;FIBPlus C++&quot; -aa -Tpp -x -Gn -Gl -Gi"/>
+    <OTHERFILES value=""/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="c0pkg32.obj $(PACKAGES) sysinit.obj $(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mt.lib"/>
+    <OTHERFILES value=""/>
+  </LINKER>
+  <FILELIST>
+      <FILE FILENAME="FIBPlus_CB6.cpp" FORMNAME="" UNITNAME="FIBPlus_CB6" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBPlus_CB6.res" FORMNAME="" UNITNAME="FIBPlus_CB6" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="D:\Program Files\Borland\CBuilder6\Lib\rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="D:\Program Files\Borland\CBuilder6\Lib\dbrtl.bpi" FORMNAME="" UNITNAME="dbrtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="D:\Program Files\Borland\CBuilder6\Lib\vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="RegFIBPlus.pas" FORMNAME="" UNITNAME="RegFIBPlus" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="D:\Program Files\Borland\CBuilder6\Lib\vcldb.bpi" FORMNAME="" UNITNAME="vcldb" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBPlus.dcr" FORMNAME="" UNITNAME="FIBPlus" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="VariantRtn.pas" FORMNAME="" UNITNAME="VariantRtn" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="DSContainer.pas" FORMNAME="" UNITNAME="DSContainer" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIB.pas" FORMNAME="" UNITNAME="FIB" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBConsts.pas" FORMNAME="" UNITNAME="FIBConsts" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBDataBase.pas" FORMNAME="" UNITNAME="FIBDataBase" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBDataSet.pas" FORMNAME="" UNITNAME="FIBDataSet" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBMiscellaneous.pas" FORMNAME="" UNITNAME="FIBMiscellaneous" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBQuery.pas" FORMNAME="" UNITNAME="FIBQuery" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBSQLMonitor.pas" FORMNAME="" UNITNAME="FIBSQLMonitor" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="ib_errorcodes.pas" FORMNAME="" UNITNAME="ib_errorcodes" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="ib_externals.pas" FORMNAME="" UNITNAME="ib_externals" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="IB_Install.pas" FORMNAME="" UNITNAME="IB_Install" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="IB_InstallHeader.pas" FORMNAME="" UNITNAME="IB_InstallHeader" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="IB_Intf.pas" FORMNAME="" UNITNAME="IB_Intf" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="IB_Services.pas" FORMNAME="" UNITNAME="IB_Services" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="ibase.pas" FORMNAME="" UNITNAME="ibase" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBArray.pas" FORMNAME="" UNITNAME="pFIBArray" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBCacheQueries.pas" FORMNAME="" UNITNAME="pFIBCacheQueries" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBDatabase.pas" FORMNAME="" UNITNAME="pFIBDatabase" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBDataInfo.pas" FORMNAME="" UNITNAME="pFIBDataInfo" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBDataSet.pas" FORMNAME="" UNITNAME="pFIBDataSet" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBErrorHandler.pas" FORMNAME="" UNITNAME="pFIBErrorHandler" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBEventLists.pas" FORMNAME="" UNITNAME="pFIBEventLists" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBFieldsDescr.pas" FORMNAME="" UNITNAME="pFIBFieldsDescr" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBProps.pas" FORMNAME="" UNITNAME="pFIBProps" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBQuery.pas" FORMNAME="" UNITNAME="pFIBQuery" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBStoredProc.pas" FORMNAME="" UNITNAME="pFIBStoredProc" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="RegUtils.pas" FORMNAME="" UNITNAME="RegUtils" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="SQLTxtRtns.pas" FORMNAME="" UNITNAME="SQLTxtRtns" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="StdFuncs.pas" FORMNAME="" UNITNAME="StdFuncs" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="StrUtil.pas" FORMNAME="" UNITNAME="StrUtil" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBScripter.pas" FORMNAME="" UNITNAME="pFIBScripter" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="SIBFIBEA.PAS" FORMNAME="" UNITNAME="SIBFIBEA" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBSQLLog.pas" FORMNAME="" UNITNAME="pFIBSQLLog" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBDBLoginDlg.pas" FORMNAME="frmFIBDBLoginDlg" UNITNAME="FIBDBLoginDlg" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBInterfaces.pas" FORMNAME="" UNITNAME="pFIBInterfaces" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="IBBlobFilter.pas" FORMNAME="" UNITNAME="IBBlobFilter" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBCloneComponents.pas" FORMNAME="" UNITNAME="FIBCloneComponents" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBLists.pas" FORMNAME="" UNITNAME="pFIBLists" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="DBParsers.pas" FORMNAME="" UNITNAME="DBParsers" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBCacheManage.pas" FORMNAME="" UNITNAME="FIBCacheManage" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="SIBGlobals.pas" FORMNAME="" UNITNAME="SIBGlobals" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="SIBAPI.pas" FORMNAME="" UNITNAME="SIBAPI" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="SIBEABase.pas" FORMNAME="" UNITNAME="SIBEABase" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pTestInfo.pas" FORMNAME="" UNITNAME="pTestInfo" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBSafeTimer.pas" FORMNAME="" UNITNAME="FIBSafeTimer" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBDataRefresh.pas" FORMNAME="" UNITNAME="pFIBDataRefresh" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBMetaData.pas" FORMNAME="" UNITNAME="pFIBMetaData" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBMDTInterface.pas" FORMNAME="" UNITNAME="FIBMDTInterface" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBExports.pas" FORMNAME="" UNITNAME="pFIBExports" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBClientDataSet.pas" FORMNAME="" UNITNAME="pFIBClientDataSet" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dsnap.bpi" FORMNAME="" UNITNAME="dsnap" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+  </FILELIST>
+  <BUILDTOOLS>
+  </BUILDTOOLS>
+
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=1
+AutoIncBuild=0
+MajorVer=1
+MinorVer=0
+Release=0
+Build=0
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+Locale=1049
+CodePage=1251
+
+[Version Info Keys]
+CompanyName=
+FileDescription=
+FileVersion=1.0.0.0
+InternalName=
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=1.0.0.0
+Comments=
+
+[Excluded Packages]
+c:\program files\borland\cbuilder6\Bin\bcbie60.bpl=Borland C++Builder Internet Explorer 5 Components Package
+C:\Program Files\Borland\CBuilder6\Projects\Bpl\FibPlus_CB6.bpl=FIBPlus C++
+C:\Program Files\Borland\CBuilder6\Projects\Bpl\FibPlusEditors_CB6.bpl=FIBPlus Property Editors
+C:\Program Files\Borland\CBuilder6\Projects\Bpl\pFIBPlusTools_CB6.bpl=FIBPlus Projects Tools
+C:\Program Files\Borland\CBuilder6\Projects\Bpl\FibDBMidas_CB6.bpl=FIBPlus ClientDataSet
+
+[HistoryLists\hlIncludePath]
+Count=2
+Item0=$(BCB)\include;$(BCB)\include\vcl
+Item1=$(BCB)\include;$(BCB)\include\vcl;$(BCB)\Projects\Lib\FreeIBComponents
+
+[HistoryLists\hlLibraryPath]
+Count=5
+Item0=$(BCB)\projects\lib;$(BCB)\Lib\Debug;$(BCB)\lib\obj;$(BCB)\lib
+Item1=$(BCB)\Lib\Debug;$(BCB)\lib\obj;$(BCB)\lib
+Item2=$(BCB)\Lib\Debug;$(BCB)\lib\obj;$(BCB)\lib;..
+Item3=$(BCB)\Lib\Debug;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\Projects\Lib\FreeIBComponents
+Item4=$(BCB)\Lib\Debug\;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\Projects\Lib\FreeIBComponents
+
+[HistoryLists\hlDebugSourcePath]
+Count=1
+Item0=$(BCB)\source\vcl
+
+[HistoryLists\hlConditionals]
+Count=1
+Item0=_DEBUG
+
+[HistoryLists\hlIntOutputDir]
+Count=2
+Item0=.\C6
+Item1=C:\Documents and Settings\alexey\Мои документы\FibPlus\6.9.5\Sources\C6
+
+[Debugging]
+DebugSourceDirs=$(BCB)\source\vcl
+
+[Parameters]
+RunParams=
+Launcher=
+UseLauncher=0
+DebugCWD=
+HostApplication=D:\BORLAND\CBuilder6\Projects\Project1.exe
+RemoteHost=
+RemotePath=
+RemoteLauncher=
+RemoteCWD=
+RemoteDebug=0
+
+[Compiler]
+ShowInfoMsgs=0
+LinkDebugVcl=0
+LinkCGLIB=0
+
+[CORBA]
+AddServerUnit=1
+AddClientUnit=1
+PrecompiledHeaders=1
+
+[Language]
+ActiveLang=
+ProjectLang=
+RootDir=
+
+[Linker]
+LibPrefix=
+LibSuffix=
+LibVersion=
+  </IDEOPTIONS>
+</PROJECT>
