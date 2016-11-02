@@ -1,0 +1,254 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.06.00"/>
+    <PROJECT value=".\bpl\FIBPlusEditors_CB6.bpl"/>
+    <OBJFILES value="c6\FIBPlusEditors_CB6.obj c6\RegFIBPlusEditors.obj c6\pFIBDBEdit.obj 
+      c6\pFIBTrEdit.obj c6\fraSQLEdit.obj c6\fraAutoUpdEditor.obj 
+      c6\fraConditionsEdit.obj c6\fraDSSQLEdit.obj c6\FIBDataSQLEditor.obj 
+      c6\FIBSQLEditor.obj c6\pFIBDataSetOptions.obj c6\EdErrorInfo.obj 
+      c6\EdFieldInfo.obj c6\EdParamToFields.obj c6\pFIBAutoUpdEditor.obj 
+      c6\pFIBConditionsEdit.obj c6\EdDataSetInfo.obj c6\ToCodeEditor.obj 
+      c6\ToCodeEditorIntfs.obj c6\Fibmodule6.obj c6\FibBase2.obj 
+      c6\Fibbase64.obj c6\Fibconst.obj c6\FibHash2.obj c6\Fibhash3.obj 
+      c6\Fibmodule1.obj c6\Fibmodule5.obj c6\fibCheckSingleLicenseClass.obj 
+      c6\fibAthlInstanceCounter.obj c6\aspr_api.obj c6\pFIBComponentEditors.obj 
+      c6\pFIBEditorsConsts.obj c6\RTTIRoutines.obj c6\RegistryUtils.obj 
+      c6\uFIBScriptForm.obj c6\pFIBRepositoryOperations.obj 
+      c6\UnitSyntaxMemo.obj  c6\FIBToolsConsts.obj 
+      c6\FindCmp.obj c6\IBSQLSyn.obj c6\pfibdsgnviewsqls.obj 
+      c6\pFIBPreferences.obj c6\RegFIBPlusUtils.obj c6\RegSynEditAlt.obj 
+      c6\uFrmSearchResult.obj c6\FIBSplash.obj"/>
+    <RESFILES value="FIBPlusEditors_CB6.res UnitSyntaxMemo.dcr"/>
+    <IDLFILES value=""/>
+    <IDLGENFILES value=""/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES) pFIBDBEdit.dfm pFIBTrEdit.dfm fraSQLEdit.dfm 
+      fraAutoUpdEditor.dfm fraConditionsEdit.dfm fraDSSQLEdit.dfm 
+      FIBDataSQLEditor.dfm FIBSQLEditor.dfm pFIBDataSetOptions.dfm 
+      EdErrorInfo.dfm EdFieldInfo.dfm EdParamToFields.dfm pFIBAutoUpdEditor.dfm 
+      pFIBConditionsEdit.dfm EdDataSetInfo.dfm uFIBScriptForm.dfm 
+       pfibdsgnviewsqls.dfm pFIBPreferences.dfm 
+      uFrmSearchResult.dfm"/>
+    <LIBFILES value="aspr_ide_bcb.lib"/>
+    <LIBRARIES value="unidacvcl60.lib unidac60.lib ibdac60.lib ibdacvcl60.lib odacvcl60.lib 
+      odac60.lib dac60.lib dacvcl60.lib dsnap.lib 
+      bcb2kaxserver.lib indy.lib dbxcds.lib dclocx.lib soaprtl.lib nmfast.lib 
+      dbexpress.lib inetdbxpress.lib inetdbbde.lib dsnapcon.lib dsnapcrba.lib 
+      visualdbclx.lib teeqr.lib dss.lib tee.lib teedb.lib teeui.lib qrpt.lib 
+      bdecds.lib cds.lib ibxpress.lib adortl.lib vcldbx.lib"/>
+    <SPARELIBS value="rtl.lib vcldb.lib dbrtl.lib vcldbx.lib FIBPlus_CB6.lib adortl.lib 
+      bdertl.lib ibxpress.lib cds.lib bdecds.lib qrpt.lib teeui.lib teedb.lib 
+      tee.lib dss.lib teeqr.lib visualdbclx.lib dsnapcrba.lib dsnapcon.lib 
+      bcbsmp.lib inetdbbde.lib inetdbxpress.lib dbexpress.lib nmfast.lib 
+      soaprtl.lib dclocx.lib dbxcds.lib indy.lib bcb2kaxserver.lib 
+      dsnap.lib dacvcl60.lib dac60.lib odac60.lib 
+      odacvcl60.lib ibdacvcl60.lib ibdac60.lib unidac60.lib unidacvcl60.lib"/>
+    <PACKAGES value="FIBPlus_CB6.bpi rtl.bpi vcl.bpi dbrtl.bpi vcldb.bpi designide.bpi vclx.bpi 
+      visualclx.bpi bdertl.bpi bcbsmp.bpi"/>
+    <PATHCPP value=".;"/>
+    <PATHPAS value=".;crypto"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="ilink32"/>
+    <USERDEFINES value=""/>
+    <SYSDEFINES value="NO_STRICT;USEPACKAGES"/>
+    <MAINSOURCE value="FIBPlusEditors_CB6.cpp"/>
+    <INCLUDEPATH value="crypto;$(BCB)\include;$(BCB)\include\vcl;..\c6"/>
+    <LIBPATH value="crypto;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;..\c6"/>
+    <WARNINGS value="-w-par"/>
+    <OTHERFILES value=""/>
+  </MACROS>
+  <OPTIONS>
+    <IDLCFLAGS value="-Icrypto -I$(BCB)\include -I$(BCB)\include\vcl -I..\c6 -src_suffix cpp -boa"/>
+    <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi -c -tWM"/>
+    <PFLAGS value="-N2.\c6 -N0.\c6 -$Y- -$L- -$D- -$A8 -NH.\c6 -LUdclstd -v -JPHNE -M"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /w2 /zn"/>
+    <LFLAGS value="-l.\bpl -I.\c6 -D&quot;FIBPlus C++ Property Editors&quot; -aa -Tpp -Gpd -x -Gn -Gl -Gi"/>
+    <OTHERFILES value=""/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="c0pkg32.obj $(PACKAGES) sysinit.obj $(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mt.lib"/>
+    <OTHERFILES value=""/>
+  </LINKER>
+  <FILELIST>
+      <FILE FILENAME="FIBPlusEditors_CB6.cpp" FORMNAME="" UNITNAME="FIBPlusEditors_CB6" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBPlusEditors_CB6.res" FORMNAME="" UNITNAME="FIBPlusEditors_CB6.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="RegFIBPlusEditors.pas" FORMNAME="" UNITNAME="RegFIBPlusEditors" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBDBEdit.pas" FORMNAME="DBEditForm" UNITNAME="Pfibdbedit" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBTrEdit.pas" FORMNAME="frmTransEdit" UNITNAME="Pfibtredit" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Editors\Editors\crypto\Tools\Tools\Tools\Tools\FIBPlus_CB6.bpi" FORMNAME="" UNITNAME="FIBPlus_CB6" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Editors\Editors\crypto\Tools\Tools\Tools\Tools\rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Editors\Editors\crypto\Tools\Tools\Tools\Tools\vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Editors\Editors\crypto\Tools\Tools\Tools\Tools\dbrtl.bpi" FORMNAME="" UNITNAME="dbrtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Editors\Editors\crypto\Tools\Tools\Tools\Tools\vcldb.bpi" FORMNAME="" UNITNAME="vcldb" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Editors\Editors\crypto\Tools\Tools\Tools\Tools\designide.bpi" FORMNAME="" UNITNAME="designide" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="fraSQLEdit.pas" FORMNAME="fSQLEdit" UNITNAME="fraSQLEdit" CONTAINERID="PascalCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
+      <FILE FILENAME="fraAutoUpdEditor.pas" FORMNAME="fAutoUpdateOptionForm" UNITNAME="fraAutoUpdEditor" CONTAINERID="PascalCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
+      <FILE FILENAME="fraConditionsEdit.pas" FORMNAME="fraEdConditions" UNITNAME="fraConditionsEdit" CONTAINERID="PascalCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
+      <FILE FILENAME="fraDSSQLEdit.pas" FORMNAME="fDSSQLEdit" UNITNAME="fraDSSQLEdit" CONTAINERID="PascalCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBDataSQLEditor.pas" FORMNAME="frmDstSQLedit" UNITNAME="FIBDataSQLEditor" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBSQLEditor.pas" FORMNAME="frmSQLEdit" UNITNAME="FIBSQLEditor" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBDataSetOptions.pas" FORMNAME="FPDataSetOptionsForm" UNITNAME="pFIBDataSetOptions" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="EdErrorInfo.pas" FORMNAME="frmErrors" UNITNAME="EdErrorInfo" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="EdFieldInfo.pas" FORMNAME="frmFields" UNITNAME="EdFieldInfo" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="EdParamToFields.pas" FORMNAME="frmEdParamToFields" UNITNAME="EdParamToFields" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBAutoUpdEditor.pas" FORMNAME="pFIBAutoUpdateOptionForm" UNITNAME="pFIBAutoUpdEditor" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBConditionsEdit.pas" FORMNAME="frmEditCheckStrings" UNITNAME="pFIBConditionsEdit" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="EdDataSetInfo.pas" FORMNAME="frmEdDataSetInfo" UNITNAME="EdDataSetInfo" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="ToCodeEditor.pas" FORMNAME="" UNITNAME="ToCodeEditor" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="ToCodeEditorIntfs.pas" FORMNAME="" UNITNAME="ToCodeEditorIntfs" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="crypto\Fibmodule6.pas" FORMNAME="" UNITNAME="Fibmodule6" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="crypto\FibBase2.pas" FORMNAME="" UNITNAME="FibBase2" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="crypto\Fibbase64.pas" FORMNAME="" UNITNAME="Fibbase64" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="crypto\Fibconst.pas" FORMNAME="" UNITNAME="Fibconst" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="crypto\FibHash2.pas" FORMNAME="" UNITNAME="FibHash2" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="crypto\Fibhash3.pas" FORMNAME="" UNITNAME="Fibhash3" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="crypto\Fibmodule1.pas" FORMNAME="" UNITNAME="Fibmodule1" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="crypto\Fibmodule5.pas" FORMNAME="" UNITNAME="Fibmodule5" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="fibCheckSingleLicenseClass.pas" FORMNAME="" UNITNAME="fibCheckSingleLicenseClass" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="fibAthlInstanceCounter.pas" FORMNAME="" UNITNAME="fibAthlInstanceCounter" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="aspr_ide_bcb.lib" FORMNAME="" UNITNAME="aspr_ide_bcb" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="aspr_api.pas" FORMNAME="" UNITNAME="aspr_api" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBComponentEditors.pas" FORMNAME="" UNITNAME="pFIBComponentEditors" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBEditorsConsts.pas" FORMNAME="" UNITNAME="pFIBEditorsConsts" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="RTTIRoutines.pas" FORMNAME="" UNITNAME="RTTIRoutines" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="RegistryUtils.pas" FORMNAME="" UNITNAME="RegistryUtils" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="uFIBScriptForm.pas" FORMNAME="frmScript" UNITNAME="uFIBScriptForm" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBRepositoryOperations.pas" FORMNAME="" UNITNAME="pFIBRepositoryOperations" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="UnitSyntaxMemo.pas" FORMNAME="" UNITNAME="UnitSyntaxMemo" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="UnitSyntaxMemo.dcr" FORMNAME="" UNITNAME="" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBToolsConsts.pas" FORMNAME="" UNITNAME="FIBToolsConsts" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FindCmp.pas" FORMNAME="" UNITNAME="FindCmp" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="IBSQLSyn.pas" FORMNAME="" UNITNAME="IBSQLSyn" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pfibdsgnviewsqls.pas" FORMNAME="frmSaveSQLs" UNITNAME="pFIBDsgnViewSQLs" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBPreferences.pas" FORMNAME="frmFIBPreferences" UNITNAME="pFIBPreferences" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="RegFIBPlusUtils.pas" FORMNAME="" UNITNAME="regfibplusutils" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="RegSynEditAlt.pas" FORMNAME="" UNITNAME="RegSynEditAlt" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="uFrmSearchResult.pas" FORMNAME="frmCompSearchResult" UNITNAME="uFrmSearchResult" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="vclx.bpi" FORMNAME="" UNITNAME="vclx" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="visualclx.bpi" FORMNAME="" UNITNAME="visualclx" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="bdertl.bpi" FORMNAME="" UNITNAME="bdertl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="bcbsmp.bpi" FORMNAME="" UNITNAME="bcbsmp" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="FIBSplash.pas" FORMNAME="" UNITNAME="FIBSplash" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+  </FILELIST>
+  <BUILDTOOLS>
+  </BUILDTOOLS>
+
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=1
+AutoIncBuild=0
+MajorVer=1
+MinorVer=0
+Release=0
+Build=0
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+Locale=1049
+CodePage=1251
+
+[Version Info Keys]
+CompanyName=
+FileDescription=
+FileVersion=1.0.0.0
+InternalName=
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=1.0.0.0
+Comments=
+
+[Excluded Packages]
+c:\program files\borland\cbuilder6\Bin\bcbie60.bpl=Borland C++Builder Internet Explorer 5 Components Package
+
+[HistoryLists\hlIncludePath]
+Count=11
+Item0=crypto;$(BCB)\include;$(BCB)\include\vcl;..\c6
+Item1=crypto;$(BCB)\include;$(BCB)\include\vcl
+Item2=$(BCB)\include;$(BCB)\include\vcl
+Item3=crypto;..\;Editors\crypto;editors;$(BCB)\include;$(BCB)\include\vcl;..
+Item4=Editors\crypto;editors;$(BCB)\include;$(BCB)\include\vcl;..
+Item5=editors;$(BCB)\include;$(BCB)\include\vcl;..
+Item6=editors;\editors;$(BCB)\include;$(BCB)\include\vcl;..
+Item7=\editors;$(BCB)\include;$(BCB)\include\vcl;..
+Item8=editors;..\editors;$(BCB)\include;$(BCB)\include\vcl;..
+Item9=..\editors;$(BCB)\include;$(BCB)\include\vcl;..
+Item10=$(BCB)\include;$(BCB)\include\vcl;..
+
+[HistoryLists\hlLibraryPath]
+Count=11
+Item0=crypto;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;..\c6
+Item1=crypto;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib
+Item2=$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib
+Item3=crypto;..\;Editors\crypto;editors;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;..
+Item4=Editors\crypto;editors;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;..
+Item5=editors;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;..
+Item6=editors;\editors;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;..
+Item7=\editors;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;..
+Item8=editors;..\editors;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;..
+Item9=..\editors;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;..
+Item10=$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;..
+
+[HistoryLists\hlDebugSourcePath]
+Count=1
+Item0=$(BCB)\source\vcl
+
+[HistoryLists\hlIntOutputDir]
+Count=3
+Item0=.\c6
+Item1=.\editors\c6
+Item2=..\c6
+
+[HistoryLists\hlFinalOutputDir]
+Count=4
+Item0=.\bpl\
+Item1=.\bpl
+Item2=.\editors\c6\
+Item3=.\editors\c6
+
+[HistoryLists\hIBPIOutputDir]
+Count=1
+Item0=.\bpl
+
+[Debugging]
+DebugSourceDirs=$(BCB)\source\vcl
+
+[Parameters]
+RunParams=
+Launcher=
+UseLauncher=0
+DebugCWD=
+HostApplication=
+RemoteHost=
+RemotePath=
+RemoteLauncher=
+RemoteCWD=
+RemoteDebug=0
+
+[Compiler]
+ShowInfoMsgs=0
+LinkDebugVcl=0
+LinkCGLIB=0
+
+[CORBA]
+AddServerUnit=1
+AddClientUnit=1
+PrecompiledHeaders=1
+
+[Linker]
+LibPrefix=
+LibSuffix=
+LibVersion=
+  </IDEOPTIONS>
+</PROJECT>

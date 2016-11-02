@@ -1,0 +1,294 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectGuid>{8ea4eab2-77e2-4826-b095-f6204732ffe8}</ProjectGuid>
+    <MainSource>FIBPlusEditors_CB2007.cpp</MainSource>
+    <Config Condition="'$(Config)'==''">Devrace</Config>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+    <Base>true</Base>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+    <Base>true</Base>
+    <Cfg_1>true</Cfg_1>
+    <CfgParent>Base</CfgParent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+    <Base>true</Base>
+    <Cfg_2>true</Cfg_2>
+    <CfgParent>Base</CfgParent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Config)'=='Devrace' or '$(Cfg_3)'!=''">
+    <Base>true</Base>
+    <Cfg_3>true</Cfg_3>
+    <CfgParent>Base</CfgParent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Base)'!=''">
+    <OutputExt>bpl</OutputExt>
+    <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+    <Defines>NO_STRICT</Defines>
+    <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
+    <DynamicRTL>true</DynamicRTL>
+    <ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
+    <ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
+    <ILINK_ObjectSearchPath>C:\FibPlus\6.9.5\Sources;Editors;Editors\crypto;crypto</ILINK_ObjectSearchPath>
+    <UsePackages>true</UsePackages>
+    <ProjectType>CppPackage</ProjectType>
+    <ILINK_Description>FIBPlus Property Editors</ILINK_Description>
+    <BCC_wpar>false</BCC_wpar>
+    <IncludePath>$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;Editors;Editors\crypto;crypto</IncludePath>
+    <ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;Editors;Editors\crypto;crypto</ILINK_LibraryPath>
+    <Multithreaded>true</Multithreaded>
+    <ILINK_PackageType>Designtime</ILINK_PackageType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Cfg_1)'!=''">
+    <BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
+    <DCC_Optimize>false</DCC_Optimize>
+    <Defines>_DEBUG;$(Defines)</Defines>
+    <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+    <BCC_OutputDir>c2007\</BCC_OutputDir>
+    <ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
+    <BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
+    <ILINK_DisableIncrementalLinking>true</ILINK_DisableIncrementalLinking>
+    <BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
+    <DCC_Define>DEBUG</DCC_Define>
+    <BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
+    <DCC_HppOutput>c2007\</DCC_HppOutput>
+    <IntermediateOutputDir>Debug</IntermediateOutputDir>
+    <TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
+    <BCC_StackFrames>true</BCC_StackFrames>
+    <DCC_IncludePath>..\Sources;$(DCC_IncludePath)</DCC_IncludePath>
+    <BCC_IncludePath>..\Sources;$(BCC_IncludePath)</BCC_IncludePath>
+    <BCC_DisableOptimizations>true</BCC_DisableOptimizations>
+    <ILINK_LibraryPath>$(BDS)\lib\debug;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+    <DCC_ObjOutput>c2007\</DCC_ObjOutput>
+    <TASM_Debugging>Full</TASM_Debugging>
+    <BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Cfg_2)'!=''">
+    <Defines>NDEBUG;USEPACKAGES;$(Defines)</Defines>
+    <BCC_OutputDir>Editors\c2007\</BCC_OutputDir>
+    <DCC_AdditionalSwitches>-LUdclstd </DCC_AdditionalSwitches>
+    <DCC_HppOutput>Editors\c2007\</DCC_HppOutput>
+    <FinalOutputDir>Editors\c2007\</FinalOutputDir>
+    <IntermediateOutputDir>Editors\c2007\</IntermediateOutputDir>
+    <ILINK_Description>FIBPlus C++ Property Editors</ILINK_Description>
+    <BCC_PCHUsage>None</BCC_PCHUsage>
+    <ILINK_MapFileType>None</ILINK_MapFileType>
+    <BCC_IncludePath>Editors\c2007\;$(BCC_IncludePath)</BCC_IncludePath>
+    <DCC_IncludePath>Editors\c2007\;$(DCC_IncludePath)</DCC_IncludePath>
+    <ILINK_LibraryPath>$(BDS)\lib\release;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+    <DCC_ObjOutput>Editors\c2007\</DCC_ObjOutput>
+    <TASM_Debugging>None</TASM_Debugging>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Cfg_3)'!=''">
+    <BCC_OutputDir>c2007\</BCC_OutputDir>
+    <DCC_AdditionalSwitches>-LUdclstd </DCC_AdditionalSwitches>
+    <DCC_HppOutput>c2007\</DCC_HppOutput>
+    <FinalOutputDir>bpl\</FinalOutputDir>
+    <IntermediateOutputDir>c2007\</IntermediateOutputDir>
+    <ILINK_BpiLibOutputDir>bpl\</ILINK_BpiLibOutputDir>
+    <ILINK_MapFileType>None</ILINK_MapFileType>
+    <DCC_IncludePath>..\c2007;$(DCC_IncludePath)</DCC_IncludePath>
+    <DCC_ObjOutput>c2007\</DCC_ObjOutput>
+  </PropertyGroup>
+  <ProjectExtensions>
+    <Borland.Personality>CPlusPlusBuilder.Personality</Borland.Personality>
+    <Borland.ProjectType>CppPackage</Borland.ProjectType>
+    <BorlandProject>
+<BorlandProject><CPlusPlusBuilder.Personality><Source><Source Name="MainSource">FIBPlusEditors_CB2007.cpp</Source></Source><VersionInfo><VersionInfo Name="IncludeVerInfo">True</VersionInfo><VersionInfo Name="AutoIncBuild">False</VersionInfo><VersionInfo Name="MajorVer">1</VersionInfo><VersionInfo Name="MinorVer">0</VersionInfo><VersionInfo Name="Release">0</VersionInfo><VersionInfo Name="Build">0</VersionInfo><VersionInfo Name="Debug">False</VersionInfo><VersionInfo Name="PreRelease">False</VersionInfo><VersionInfo Name="Special">False</VersionInfo><VersionInfo Name="Private">False</VersionInfo><VersionInfo Name="DLL">False</VersionInfo><VersionInfo Name="Locale">1049</VersionInfo><VersionInfo Name="CodePage">1251</VersionInfo></VersionInfo><VersionInfoKeys><VersionInfoKeys Name="CompanyName"></VersionInfoKeys><VersionInfoKeys Name="FileDescription"></VersionInfoKeys><VersionInfoKeys Name="FileVersion">1.0.0.0</VersionInfoKeys><VersionInfoKeys Name="InternalName"></VersionInfoKeys><VersionInfoKeys Name="LegalCopyright"></VersionInfoKeys><VersionInfoKeys Name="LegalTrademarks"></VersionInfoKeys><VersionInfoKeys Name="OriginalFilename"></VersionInfoKeys><VersionInfoKeys Name="ProductName"></VersionInfoKeys><VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys><VersionInfoKeys Name="Comments"></VersionInfoKeys></VersionInfoKeys><Debugging><Debugging Name="DebugSourceDirs"></Debugging></Debugging><Parameters><Parameters Name="RunParams"></Parameters><Parameters Name="Launcher"></Parameters><Parameters Name="UseLauncher">False</Parameters><Parameters Name="DebugCWD"></Parameters><Parameters Name="HostApplication"></Parameters><Parameters Name="RemoteHost"></Parameters><Parameters Name="RemotePath"></Parameters><Parameters Name="RemoteParams"></Parameters><Parameters Name="RemoteLauncher"></Parameters><Parameters Name="UseRemoteLauncher">False</Parameters><Parameters Name="RemoteCWD"></Parameters><Parameters Name="RemoteDebug">False</Parameters><Parameters Name="Debug Symbols Search Path"></Parameters><Parameters Name="LoadAllSymbols">True</Parameters><Parameters Name="LoadUnspecifiedSymbols">False</Parameters></Parameters><Excluded_Packages>
+      <Excluded_Packages Name="C:\Documents and Settings\All Users\Документы\RAD Studio\5.0\Bpl\cfFilter_2007.bpl">Devrace CleverFilter</Excluded_Packages>
+      <Excluded_Packages Name="$(BDS)\RaveReports\Lib\dclRave.bpl">Rave Reports 7.5 BE Package</Excluded_Packages>
+      <Excluded_Packages Name="$(BDS)\bin\bcboffice2k100.bpl">CodeGear C++Builder Office 2000 Servers Package</Excluded_Packages>
+      <Excluded_Packages Name="$(BDS)\bin\bcbofficexp100.bpl">CodeGear C++Builder Office XP Servers Package</Excluded_Packages>
+      <Excluded_Packages Name="$(BDS)\bin\dcloffice2k100.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+    </Excluded_Packages><Linker><Linker Name="LibPrefix"></Linker><Linker Name="LibSuffix"></Linker><Linker Name="LibVersion"></Linker></Linker><ProjectProperties><ProjectProperties Name="AutoShowDeps">False</ProjectProperties><ProjectProperties Name="ManagePaths">True</ProjectProperties><ProjectProperties Name="VerifyPackages">True</ProjectProperties></ProjectProperties><HistoryLists_hlIncludePath><HistoryLists_hlIncludePath Name="Count">4</HistoryLists_hlIncludePath><HistoryLists_hlIncludePath Name="Item0">$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;Editors;Editors\crypto;crypto</HistoryLists_hlIncludePath><HistoryLists_hlIncludePath Name="Item1">$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;Editors;Editors\crypto</HistoryLists_hlIncludePath><HistoryLists_hlIncludePath Name="Item2">$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;Editors</HistoryLists_hlIncludePath><HistoryLists_hlIncludePath Name="Item3">$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;C:\Program Files\CoreLab\Odac for Delphi 2007\Include;C:\FibPlus\6.9.5\Sources;Editors</HistoryLists_hlIncludePath></HistoryLists_hlIncludePath><HistoryLists_hlILINK_LibraryPath><HistoryLists_hlILINK_LibraryPath Name="Count">1</HistoryLists_hlILINK_LibraryPath><HistoryLists_hlILINK_LibraryPath Name="Item0">$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;Editors;Editors\crypto;crypto</HistoryLists_hlILINK_LibraryPath><HistoryLists_hlILINK_LibraryPath Name="Item1">$(BDS)\lib\debug;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;C:\Program Files\CoreLab\Odac for Delphi 2007\Lib;C:\FibPlus\6.9.5\Sources;Editors</HistoryLists_hlILINK_LibraryPath></HistoryLists_hlILINK_LibraryPath><HistoryLists_hlDefines><HistoryLists_hlDefines Name="Count">1</HistoryLists_hlDefines><HistoryLists_hlDefines Name="Item0">NO_STRICT</HistoryLists_hlDefines><HistoryLists_hlDefines Name="Item1">NDEBUG;NO_STRICT;USEPACKAGES</HistoryLists_hlDefines><HistoryLists_hlDefines Name="Item2">_DEBUG;NO_STRICT</HistoryLists_hlDefines></HistoryLists_hlDefines><HistoryLists_hlIntermediateOutputDir><HistoryLists_hlIntermediateOutputDir Name="Count">1</HistoryLists_hlIntermediateOutputDir><HistoryLists_hlIntermediateOutputDir Name="Item0">c2007\</HistoryLists_hlIntermediateOutputDir><HistoryLists_hlIntermediateOutputDir Name="Item1">Debug</HistoryLists_hlIntermediateOutputDir></HistoryLists_hlIntermediateOutputDir><HistoryLists_hlBCC_OutputDir><HistoryLists_hlBCC_OutputDir Name="Count">1</HistoryLists_hlBCC_OutputDir><HistoryLists_hlBCC_OutputDir Name="Item0">c2007\</HistoryLists_hlBCC_OutputDir></HistoryLists_hlBCC_OutputDir><HistoryLists_hlILINK_MaxErrors><HistoryLists_hlILINK_MaxErrors Name="Count">1</HistoryLists_hlILINK_MaxErrors><HistoryLists_hlILINK_MaxErrors Name="Item0">0</HistoryLists_hlILINK_MaxErrors></HistoryLists_hlILINK_MaxErrors><HistoryLists_hlILINK_FileAlignment><HistoryLists_hlILINK_FileAlignment Name="Count">1</HistoryLists_hlILINK_FileAlignment><HistoryLists_hlILINK_FileAlignment Name="Item0">0x200</HistoryLists_hlILINK_FileAlignment></HistoryLists_hlILINK_FileAlignment><HistoryLists_hlILINK_ObjectAlignment><HistoryLists_hlILINK_ObjectAlignment Name="Count">1</HistoryLists_hlILINK_ObjectAlignment><HistoryLists_hlILINK_ObjectAlignment Name="Item0">4096</HistoryLists_hlILINK_ObjectAlignment></HistoryLists_hlILINK_ObjectAlignment><HistoryLists_hlILINK_BaseAddress><HistoryLists_hlILINK_BaseAddress Name="Count">1</HistoryLists_hlILINK_BaseAddress><HistoryLists_hlILINK_BaseAddress Name="Item0">0x00400000</HistoryLists_hlILINK_BaseAddress></HistoryLists_hlILINK_BaseAddress><HistoryLists_hlILINK_HeapCommitSize><HistoryLists_hlILINK_HeapCommitSize Name="Count">1</HistoryLists_hlILINK_HeapCommitSize><HistoryLists_hlILINK_HeapCommitSize Name="Item0">0x00001000</HistoryLists_hlILINK_HeapCommitSize></HistoryLists_hlILINK_HeapCommitSize><HistoryLists_hlILINK_HeapReserveSize><HistoryLists_hlILINK_HeapReserveSize Name="Count">1</HistoryLists_hlILINK_HeapReserveSize><HistoryLists_hlILINK_HeapReserveSize Name="Item0">0x00100000</HistoryLists_hlILINK_HeapReserveSize></HistoryLists_hlILINK_HeapReserveSize><HistoryLists_hlILINK_StackCommitSize><HistoryLists_hlILINK_StackCommitSize Name="Count">1</HistoryLists_hlILINK_StackCommitSize><HistoryLists_hlILINK_StackCommitSize Name="Item0">0x00002000</HistoryLists_hlILINK_StackCommitSize></HistoryLists_hlILINK_StackCommitSize><HistoryLists_hlILINK_StackReserveSize><HistoryLists_hlILINK_StackReserveSize Name="Count">1</HistoryLists_hlILINK_StackReserveSize><HistoryLists_hlILINK_StackReserveSize Name="Item0">0x00100000</HistoryLists_hlILINK_StackReserveSize></HistoryLists_hlILINK_StackReserveSize><HistoryLists_hlDCC_ObjOutput><HistoryLists_hlDCC_ObjOutput Name="Count">1</HistoryLists_hlDCC_ObjOutput><HistoryLists_hlDCC_ObjOutput Name="Item0">c2007\</HistoryLists_hlDCC_ObjOutput></HistoryLists_hlDCC_ObjOutput><HistoryLists_hlDCC_CodePage><HistoryLists_hlDCC_CodePage Name="Count">1</HistoryLists_hlDCC_CodePage><HistoryLists_hlDCC_CodePage Name="Item0">0</HistoryLists_hlDCC_CodePage></HistoryLists_hlDCC_CodePage><HistoryLists_hlDCC_HppOutput><HistoryLists_hlDCC_HppOutput Name="Count">1</HistoryLists_hlDCC_HppOutput><HistoryLists_hlDCC_HppOutput Name="Item0">c2007\</HistoryLists_hlDCC_HppOutput></HistoryLists_hlDCC_HppOutput><HistoryLists_hlBCC_MaxIdentifierLength><HistoryLists_hlBCC_MaxIdentifierLength Name="Count">1</HistoryLists_hlBCC_MaxIdentifierLength><HistoryLists_hlBCC_MaxIdentifierLength Name="Item0">250</HistoryLists_hlBCC_MaxIdentifierLength></HistoryLists_hlBCC_MaxIdentifierLength><HistoryLists_hlDCC_AdditionalSwitches><HistoryLists_hlDCC_AdditionalSwitches Name="Count">1</HistoryLists_hlDCC_AdditionalSwitches><HistoryLists_hlDCC_AdditionalSwitches Name="Item0">-LUdclstd </HistoryLists_hlDCC_AdditionalSwitches></HistoryLists_hlDCC_AdditionalSwitches><HistoryLists_hlFinalOutputDir><HistoryLists_hlFinalOutputDir Name="Count">2</HistoryLists_hlFinalOutputDir><HistoryLists_hlFinalOutputDir Name="Item0">bpl\</HistoryLists_hlFinalOutputDir><HistoryLists_hlFinalOutputDir Name="Item1">Editors\c2007\</HistoryLists_hlFinalOutputDir></HistoryLists_hlFinalOutputDir><HistoryLists_hlILINK_BpiLibOutputDir><HistoryLists_hlILINK_BpiLibOutputDir Name="Count">1</HistoryLists_hlILINK_BpiLibOutputDir><HistoryLists_hlILINK_BpiLibOutputDir Name="Item0">bpl\</HistoryLists_hlILINK_BpiLibOutputDir></HistoryLists_hlILINK_BpiLibOutputDir><HistoryLists_hlDCC_IncludePath><HistoryLists_hlDCC_IncludePath Name="Count">1</HistoryLists_hlDCC_IncludePath><HistoryLists_hlDCC_IncludePath Name="Item0">..\c2007</HistoryLists_hlDCC_IncludePath></HistoryLists_hlDCC_IncludePath></CPlusPlusBuilder.Personality></BorlandProject></BorlandProject>
+  </ProjectExtensions>
+  <Import Project="$(MSBuildBinPath)\Borland.Cpp.Targets" />
+  <ItemGroup>
+    <PackageImport Include="dbrtl.bpi">
+      <BuildOrder>0</BuildOrder>
+    </PackageImport>
+    <PackageImport Include="designide.bpi">
+      <BuildOrder>1</BuildOrder>
+    </PackageImport>
+    <PackageImport Include="fibplus_cb2007.bpi">
+      <BuildOrder>2</BuildOrder>
+    </PackageImport>
+    <PackageImport Include="rtl.bpi">
+      <BuildOrder>3</BuildOrder>
+    </PackageImport>
+    <PackageImport Include="vcl.bpi">
+      <BuildOrder>4</BuildOrder>
+    </PackageImport>
+    <PackageImport Include="vclactnband.bpi">
+      <BuildOrder>5</BuildOrder>
+    </PackageImport>
+    <PackageImport Include="vcldb.bpi">
+      <BuildOrder>6</BuildOrder>
+    </PackageImport>
+    <PackageImport Include="vclx.bpi">
+      <BuildOrder>7</BuildOrder>
+    </PackageImport>
+    <PackageImport Include="xmlrtl.bpi">
+      <BuildOrder>8</BuildOrder>
+    </PackageImport>
+    <DelphiCompile Include="aspr_api.pas">
+      <BuildOrder>9</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="crypto\FibBase2.pas">
+      <BuildOrder>12</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="crypto\Fibbase64.pas">
+      <BuildOrder>13</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="crypto\Fibconst.pas">
+      <BuildOrder>14</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="crypto\FibHash2.pas">
+      <BuildOrder>15</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="crypto\Fibhash3.pas">
+      <BuildOrder>16</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="crypto\Fibmodule1.pas">
+      <BuildOrder>17</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="crypto\Fibmodule5.pas">
+      <BuildOrder>18</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="crypto\Fibmodule6.pas">
+      <BuildOrder>11</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="EdDataSetInfo.pas">
+      <BuildOrder>19</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="EdErrorInfo.pas">
+      <BuildOrder>20</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="EdFieldInfo.pas">
+      <BuildOrder>21</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="EdParamToFields.pas">
+      <BuildOrder>22</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="fibAthlInstanceCounter.pas">
+      <BuildOrder>23</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="fibCheckSingleLicenseClass.pas">
+      <BuildOrder>24</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="FIBDataSQLEditor.pas">
+      <BuildOrder>25</BuildOrder>
+    </DelphiCompile>
+    </DelphiCompile>
+    <DelphiCompile Include="FIBSplash.pas">
+      <BuildOrder>29</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="FIBSQLEditor.pas">
+      <BuildOrder>30</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="FIBToolsConsts.pas">
+      <BuildOrder>31</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="FindCmp.pas">
+      <BuildOrder>32</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="fraAutoUpdEditor.pas">
+      <BuildOrder>33</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="fraConditionsEdit.pas">
+      <BuildOrder>34</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="fraDSSQLEdit.pas">
+      <BuildOrder>35</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="fraSQLEdit.pas">
+      <BuildOrder>36</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="IBSQLSyn.pas">
+      <BuildOrder>37</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="pFIBAutoUpdEditor.pas">
+      <BuildOrder>38</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="pFIBComponentEditors.pas">
+      <BuildOrder>39</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="pFIBConditionsEdit.pas">
+      <BuildOrder>40</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="pFIBDataSetOptions.pas">
+      <BuildOrder>41</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="pFIBDBEdit.pas">
+      <BuildOrder>42</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="pfibdsgnviewsqls.pas">
+      <BuildOrder>43</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="pFIBEditorsConsts.pas">
+      <BuildOrder>44</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="pFIBPreferences.pas">
+      <BuildOrder>45</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="pFIBRepositoryOperations.pas">
+      <BuildOrder>46</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="pFIBTrEdit.pas">
+      <BuildOrder>47</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="RegFIBPlusEditors.pas">
+      <BuildOrder>48</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="RegFIBPlusUtils.pas">
+      <BuildOrder>49</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="RegistryUtils.pas">
+      <BuildOrder>50</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="RegSynEditAlt.pas">
+      <BuildOrder>51</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="RTTIRoutines.pas">
+      <BuildOrder>52</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="ToCodeEditor.pas">
+      <BuildOrder>53</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="ToCodeEditorIntfs.pas">
+      <BuildOrder>54</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="uFIBScriptForm.pas">
+      <BuildOrder>55</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="uFrmSearchResult.pas">
+      <BuildOrder>56</BuildOrder>
+    </DelphiCompile>
+    <DelphiCompile Include="UnitSyntaxMemo.pas">
+      <BuildOrder>58</BuildOrder>
+    </DelphiCompile>
+    <LibFiles Include="aspr_ide_bcb.lib">
+      <BuildOrder>10</BuildOrder>
+    </LibFiles>
+    <CppCompile Include="FIBPlusEditors_CB2007.cpp">
+      <BuildOrder>26</BuildOrder>
+    </CppCompile>
+    <ResFiles Include="FIBPlusEditors_CB2007.res">
+      <BuildOrder>27</BuildOrder>
+    </ResFiles>
+    <None Include="UnitSyntaxMemo.dcr">
+      <BuildOrder>57</BuildOrder>
+    </None>
+    <BuildConfiguration Include="Debug">
+      <Key>Cfg_1</Key>
+    </BuildConfiguration>
+    <BuildConfiguration Include="Devrace">
+      <Key>Cfg_3</Key>
+    </BuildConfiguration>
+    <BuildConfiguration Include="Release">
+      <Key>Cfg_2</Key>
+    </BuildConfiguration>
+  </ItemGroup>
+</Project>

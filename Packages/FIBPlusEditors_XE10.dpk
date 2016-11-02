@@ -1,0 +1,83 @@
+package FIBPlusEditors_XE10;
+
+{$R *.res}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS OFF}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO OFF}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST ON}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE RELEASE}
+{$ENDIF IMPLICITBUILDING}
+{$DESCRIPTION 'FIBPlus Property Editors'}
+{$DESIGNONLY}
+{$IMPLICITBUILD ON}
+
+requires
+  vcl,
+  vcldb,
+  vclx,
+  designide,
+  rtl,
+  dbrtl,
+  vclactnband,
+  vclimg,
+  FIBPlus_XE10;
+
+contains
+  RegFIBPlusEditors in 'RegFIBPlusEditors.pas',
+  EdFieldInfo in 'EdFieldInfo.pas' {frmFields},
+  EdDataSetInfo in 'EdDataSetInfo.pas' {frmEdDataSetInfo},
+  pFIBDBEdit in 'pFIBDBEdit.pas' {DBEditForm},
+  pFIBTrEdit in 'pFIBTrEdit.pas' {frmTransEdit},
+  pFIBConditionsEdit in 'pFIBConditionsEdit.pas' {frmEditCheckStrings},
+  pFIBAutoUpdEditor in 'pFIBAutoUpdEditor.pas' {pFIBAutoUpdateOptionForm},
+  pFIBDataSetOptions in 'pFIBDataSetOptions.pas' {FPDataSetOptionsForm},
+  EdParamToFields in 'EdParamToFields.pas' {frmEdParamToFields},
+  fraSQLEdit in 'fraSQLEdit.pas' {fSQLEdit: TFrame},
+  fraDSSQLEdit in 'fraDSSQLEdit.pas' {fDSSQLEdit: TFrame},
+  fraAutoUpdEditor in 'fraAutoUpdEditor.pas' {fAutoUpdateOptionForm: TFrame},
+  fraConditionsEdit in 'fraConditionsEdit.pas' {fraEdConditions: TFrame},
+  FIBSQLEditor in 'FIBSQLEditor.pas' {frmSQLEdit},
+  FIBDataSQLEditor in 'FIBDataSQLEditor.pas' {frmDstSQLedit},
+  EdErrorInfo in 'EdErrorInfo.pas' {frmErrors},
+  ToCodeEditor in 'ToCodeEditor.pas',
+  ToCodeEditorIntfs in 'ToCodeEditorIntfs.pas',
+  RTTIRoutines in 'RTTIRoutines.pas',
+  pFIBComponentEditors in 'pFIBComponentEditors.pas',
+  pFIBEditorsConsts in 'pFIBEditorsConsts.pas',
+  pFIBRepositoryOperations in 'pFIBRepositoryOperations.pas',
+  RegistryUtils in 'RegistryUtils.pas',
+  fibAthlInstanceCounter in 'fibAthlInstanceCounter.pas',
+  fibCheckSingleLicenseClass in 'fibCheckSingleLicenseClass.pas',
+  RegSynEditAlt in 'RegSynEditAlt.pas',
+  uFIBScriptForm in 'uFIBScriptForm.pas' {frmScript},
+  IBSQLSyn in 'IBSQLSyn.pas',
+  FindCmp in 'FindCmp.pas',
+  pFIBPreferences in 'pFIBPreferences.pas' {frmFIBPreferences},
+  uFrmSearchResult in 'uFrmSearchResult.pas' {frmCompSearchResult},
+  FIBToolsConsts in 'FIBToolsConsts.pas',
+  pFIBSyntaxMemo in 'pFIBSyntaxMemo.pas',
+  FIBDBLoginDlg in '..\FIBDBLoginDlg.pas' {frmFIBDBLoginDlg},
+  uFIBEditorForm in 'uFIBEditorForm.pas',
+  uFontEditor in 'uFontEditor.pas' {frmFontEditor};
+
+end.
+
+

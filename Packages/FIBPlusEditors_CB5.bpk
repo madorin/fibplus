@@ -1,0 +1,174 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.05.03"/>
+    <PROJECT value="bpl\FIBPlusEditors_CB5.bpl"/>
+    <OBJFILES value="c5\EdErrorInfo.obj c5\EdFieldInfo.obj c5\RegFIBPlusEditors.obj 
+      c5\fraSQLEdit.obj c5\fraConditionsEdit.obj c5\fraAutoUpdEditor.obj 
+      c5\fraDSSQLEdit.obj c5\EdParamToFields.obj c5\FIBSQLEditor.obj 
+      c5\EdDataSetInfo.obj c5\pFIBAutoUpdEditor.obj c5\pFIBConditionsEdit.obj 
+      c5\pFIBDataSetOptions.obj c5\pFIBDBEdit.obj c5\pFIBTrEdit.obj 
+      c5\ToCodeEditor.obj c5\ToCodeEditorIntfs.obj c5\FIBDataSQLEditor.obj 
+      c5\IBSQLSyn.obj c5\RegistryUtils.obj c5\RegSynEditAlt.obj 
+      c5\RTTIRoutines.obj c5\UnitSyntaxMemo.obj c5\pFIBEditorsConsts.obj 
+      c5\pFIBComponentEditors.obj c5\pFIBRepositoryOperations.obj 
+      c5\fibCheckSingleLicenseClass.obj c5\aspr_api.obj 
+      c5\fibAthlInstanceCounter.obj c5\Fibmodule6.obj c5\FibBase2.obj 
+      c5\Fibbase64.obj c5\Fibconst.obj c5\FibHash2.obj c5\Fibhash3.obj 
+      c5\Fibmodule1.obj c5\Fibmodule5.obj c5\uFIBScriptForm.obj 
+      c5\FIBToolsConsts.obj c5\FindCmp.obj 
+      c5\pfibdsgnviewsqls.obj c5\pFIBPreferences.obj c5\RegFIBPlusUtils.obj 
+      c5\uFrmSearchResult.obj c5\FIBSplash.obj c5\FIBPlusEditors_CB5.obj"/>
+    <RESFILES value="FIBPlusEditors_CB5.res UnitSyntaxMemo.dcr"/>
+    <IDLFILES value=""/>
+    <IDLGENFILES value=""/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES) EdErrorInfo.dfm EdFieldInfo.dfm fraSQLEdit.dfm 
+      fraConditionsEdit.dfm fraAutoUpdEditor.dfm fraDSSQLEdit.dfm 
+      EdParamToFields.dfm FIBSQLEditor.dfm EdDataSetInfo.dfm 
+      pFIBAutoUpdEditor.dfm pFIBConditionsEdit.dfm pFIBDataSetOptions.dfm 
+      pFIBDBEdit.dfm pFIBTrEdit.dfm FIBDataSQLEditor.dfm uFIBScriptForm.dfm 
+       pFIBPreferences.dfm uFrmSearchResult.dfm"/>
+    <LIBFILES value="aspr_ide_bcb.lib"/>
+    <LIBRARIES value="VCLBDE50.lib"/>
+    <SPARELIBS value="VCL50.lib VCLDB50.lib FIBPlus_CB5.lib dsnide50.lib Vclx50.lib VCLBDE50.lib"/>
+    <PACKAGES value="vcl50.bpi Vcldb50.bpi FIBPlus_CB5.bpi dsnide50.bpi Vclx50.bpi"/>
+    <PATHCPP value=".;"/>
+    <PATHPAS value=".;crypto"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="tlink32"/>
+    <USERDEFINES value="_DEBUG"/>
+    <SYSDEFINES value="NO_STRICT;_RTLDLL;USEPACKAGES"/>
+    <MAINSOURCE value="FIBPlusEditors_CB5.cpp"/>
+    <INCLUDEPATH value="crypto;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="crypto;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;..\c5"/>
+    <WARNINGS value="-w-par"/>
+  </MACROS>
+  <OPTIONS>
+    <IDLCFLAGS value="-Icrypto -I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -D_DEBUG -boa"/>
+    <CFLAG1 value="-Od -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c -tWM"/>
+    <PFLAGS value="-N2c5 -N0c5 -$Y- -$W -$O- -$L- -$D- -$C- -NHc5 -LUdclstd50 -v -JPHNE -M"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /w2 /zi"/>
+    <LFLAGS value="-Ic5 -D&quot;FIBPlus Property Editors&quot; -aa -Tpp -Gpd -x -Gn -Gl -Gi -v"/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="c0pkg32.obj $(PACKAGES) Memmgr.Lib sysinit.obj $(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mti.lib"/>
+  </LINKER>
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=1
+AutoIncBuild=0
+MajorVer=1
+MinorVer=0
+Release=0
+Build=0
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+Locale=1049
+CodePage=1251
+
+[Version Info Keys]
+CompanyName=
+FileDescription=
+FileVersion=1.0.0.0
+InternalName=
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=1.0.0.0
+Comments=
+
+[Excluded Packages]
+$(BCB)\Bin\dclmid50.bpl=Borland MIDAS Components
+
+[HistoryLists\hlIncludePath]
+Count=9
+Item0=crypto;$(BCB)\include;$(BCB)\include\vcl
+Item1=crypto;$(BCB)\include;$(BCB)\include\vcl;..\c5
+Item2=Editors;$(BCB)\include;$(BCB)\include\vcl
+Item3=Editors;$(BCB)\include;$(BCB)\include\vcl;\Editors
+Item4=$(BCB)\include;$(BCB)\include\vcl;\Editors
+Item5=$(BCB)\include;$(BCB)\include\vcl;Editors
+Item6=$(BCB)\include;$(BCB)\include\vcl;.\Editors
+Item7=$(BCB)\include;$(BCB)\include\vcl;..
+Item8=$(BCB)\include;$(BCB)\include\vcl
+
+[HistoryLists\hlLibraryPath]
+Count=9
+Item0=crypto;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;..\c5
+Item1=crypto;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib
+Item2=Editors;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib
+Item3=Editors;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;\Editors
+Item4=$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;Editors
+Item5=$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;.\Editors
+Item6=$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;\Editors
+Item7=$(BCB)\lib\debug;$(BCB)\projects\lib;d:\Lib\Release\;$(BCB)\lib\obj;$(BCB)\lib;..
+Item8=$(BCB)\lib\debug;$(BCB)\projects\lib;d:\Lib\Release\;$(BCB)\lib\obj;$(BCB)\lib
+
+[HistoryLists\hlDebugSourcePath]
+Count=1
+Item0=$(BCB)\source\vcl
+
+[HistoryLists\hlConditionals]
+Count=1
+Item0=_DEBUG
+
+[HistoryLists\hlIntOutputDir]
+Count=4
+Item0=c5
+Item1=.\c5
+Item2=editors\c5
+Item3=cb5
+
+[HistoryLists\hlFinalOutputDir]
+Count=5
+Item0=bpl\
+Item1=bpl
+Item2=.\bpl\
+Item3=editors\c5\
+Item4=editors\c5
+
+[HistoryLists\hIBPIOutputDir]
+Count=4
+Item0=C:\product\Fibplus\7.3\full\Editors\c5\
+Item1=.\c5
+Item2=C:\product\Fibplus\7.3\full\Editors\bpl\
+Item3=bpl
+
+[Debugging]
+DebugSourceDirs=$(BCB)\source\vcl
+
+[Parameters]
+RunParams=
+HostApplication=G:\Program Files\Borland\CBuilder5\Bin\bcb.exe
+RemoteHost=
+RemotePath=
+RemoteDebug=0
+
+[Compiler]
+ShowInfoMsgs=0
+LinkDebugVcl=0
+LinkCGLIB=0
+
+[CORBA]
+AddServerUnit=1
+AddClientUnit=1
+PrecompiledHeaders=1
+
+[Language]
+ActiveLang=
+ProjectLang=
+RootDir=
+  </IDEOPTIONS>
+</PROJECT>
