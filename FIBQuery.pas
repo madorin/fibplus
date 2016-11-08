@@ -493,7 +493,7 @@ type
     function  ParamsNotExist(const SQLText:string):boolean;
     procedure PreprocessSQL(const sSQL:String;IsUserSQL:boolean);
     procedure DoBeforeExecute;
-    procedure DoAfterExecute(asMDT:boolean);
+    procedure DoAfterExecute(asMDT: boolean; const isFirst : Boolean = False);
     procedure DoAfterFirstFetch;
   public
     constructor Create(AOwner: TComponent); override;
@@ -719,6 +719,7 @@ const
 {$ENDIF}
 
 var DisableEncodingSQLText:boolean;
+
     TraceString:string;
 implementation
 
@@ -760,6 +761,7 @@ destructor TFIBXSQLVAR.Destroy; //override;
 begin
  {$IFDEF SUPPORT_ARRAY_FIELD}
  if Assigned(vFIBArray) then vFIBArray.Free;
+
  {$ENDIF}
  inherited Destroy;
  FreeAndNil(FStreamValue);
@@ -894,6 +896,7 @@ function TFIBXSQLVAR.GetAsInt64: Int64;
 begin
   Result := 0;
   if not IsNull then
+
     case FXSQLVAR^.sqltype and (not 1) of
       SQL_TEXT, SQL_VARYING:
       begin
@@ -991,6 +994,7 @@ const
 begin
   Result := 0;
   if not IsNull then
+
   case FXSQLVAR^.sqltype and (not 1) of
     SQL_TEXT, SQL_VARYING:
     try
@@ -1025,6 +1029,7 @@ function TFIBXSQLVAR.GetAsDouble: Double;
 begin
   Result := 0;
   if not IsNull then
+
     case FXSQLVAR^.sqltype and (not 1) of
       SQL_TEXT, SQL_VARYING:
       begin
@@ -1075,6 +1080,7 @@ function TFIBXSQLVAR.GetAsLong: Long;
 begin
   Result := 0;
   if not IsNull then
+
     case FXSQLVAR^.sqltype and (not 1) of
       SQL_TEXT, SQL_VARYING:
       begin
@@ -1154,6 +1160,7 @@ begin
   Result := '';
   (* Check null, if so return a default string *)
   if not IsNull then
+
     case FXSQLVar^.sqltype and (not 1) of
  //     0: Result:='';
       SQL_ARRAY:
@@ -1188,6 +1195,7 @@ begin
                if qoStartTransaction in Options then
                 if (Transaction<>nil) and not Transaction.InTransaction then
                    Transaction.StartTransaction;
+
               end;
               bs.BlobID := AsQuad;
               bs.blobSubType:=FXSQLVAR^.sqlsubtype;
@@ -1278,6 +1286,7 @@ function TFIBXSQLVAR.GetAsExtended: Extended;
 begin
   Result := 0;
   if not IsNull then
+
     case FXSQLVAR^.sqltype and (not 1) of
       SQL_TEXT, SQL_VARYING:
       try
@@ -1445,6 +1454,7 @@ begin
       if qoStartTransaction in Options then
        if (Transaction<>nil) and not Transaction.InTransaction then
           Transaction.StartTransaction;
+
     end;
     bs.BlobID := BlobId;
     bs.SaveToStream(Stream);
@@ -1723,6 +1733,7 @@ begin
       sqldata:=nil;
      end;
      if (not IsNullable) then  IsNullable := True;
+
      sqlind^ := -1;
 {     if xvar.IsParam then
       sqllen  :=0;}
@@ -1736,6 +1747,7 @@ end;
 procedure InternalSetNullable(xvar: TFIBXSQLVAR;const aValue:boolean);
 begin
  if (aValue <> xvar.IsNullable) then
+
  with xvar.FXSQLVAR^ do
  if aValue then
  begin
@@ -1823,6 +1835,7 @@ begin
 end;
 
 procedure TFIBXSQLVAR.SetValue(aSQLType,aSize:integer;ValueType:TTypeSetToParam;const aValue; ws:PWideString=nil);
+
 var
   i: Integer;
   xvar: TFIBXSQLVAR;
@@ -1832,6 +1845,7 @@ begin
   i:=NonAnsiIndexOf(FParent.FEquelNames,FName);
 //  if (FParent.FEquelNames.Count=0) or not FParent.FEquelNames.Find(FName,i) then
   if i<0 then
+
    case ValueType of
     tspNull      :InternalSetNull(Self,Boolean(aValue));
     tspIsNullable:InternalSetNullable(Self,Boolean(aValue));
@@ -1866,6 +1880,7 @@ begin
   if IsMacro  and not FQuery.FMacroChanged then
    if VarToStr(Value)<>VarToStr(OldValue) then
      FQuery.FMacroChanged:=True;
+
 end;
 
 
@@ -1944,6 +1959,7 @@ end;
 
 procedure TFIBXSQLVAR.SetAsExtended(aValue: Extended);
 var vScale:integer;
+
 begin
   if (FQuery.Database.SQLDialect < 3) then
    SetAsDouble(aValue)
@@ -1963,6 +1979,7 @@ end;
 
 procedure TFIBXSQLVAR.SetAsQuad(aValue: TISC_QUAD);
 var vSQLType:Integer;
+
 begin
   if sqltype and (not 1) <> SQL_ARRAY then
    vSQLType:=SQL_BLOB
@@ -2039,6 +2056,7 @@ begin
         begin
          vNeedUTFEncode:=not FParDataIsPrepared and
           ((FQuery.Database.IsUnicodeConnect and not (sSubType in [0,1])) or (Byte(sSubType) in FQuery.Database.UnicodeCharsets));
+
          FIsDefferedSetting:=False;
         end;
         SQL_BLOB:
@@ -2261,6 +2279,7 @@ begin
                if qoStartTransaction in Options then
                 if (Transaction<>nil) and not Transaction.InTransaction then
                    Transaction.StartTransaction;
+
               end;
               bs.BlobID := AsQuad;
               bs.blobSubType:=FXSQLVAR^.sqlsubtype;
@@ -2305,6 +2324,7 @@ begin
   end;
 
   if (sSQLType=SQL_TIMESTAMP) or (sSQLType=SQL_TYPE_DATE) then
+
    if vt in [varDouble,varCurrency,varInteger,varSingle,varSmallint
     {$IFDEF D6+}
      ,varWord,varShortInt ,  varLongWord,varInt64
@@ -2560,6 +2580,7 @@ end;
 
 procedure TFIBXSQLVAR.SetAsBcd(Value: TBcd);
 var e:extended;
+
     C:Int64;
     lScale  :byte;
 begin
@@ -2582,6 +2603,7 @@ end;
 function  TFIBXSQLVAR.GetAsGUID: TGUID;
 begin
   if not IsNull then
+
    case FXSQLVAR^.sqltype and (not 1) of
     SQL_VARYING: Result := PGUID(FXSQLVAR^.sqldata+2)^;
     SQL_TEXT   : Result := PGUID(FXSQLVAR^.sqldata)^  ;
@@ -2599,6 +2621,7 @@ function TFIBXSQLVAR.GetAsBoolean: boolean;
 begin
   Result := False;
   if not IsNull then
+
     case FXSQLVAR^.sqltype and (not 1) of
       FB3_SQL_BOOLEAN,SQL_BOOLEAN,SQL_SHORT:
         Result := PShort(FXSQLVAR^.sqldata)^=ISC_TRUE;
@@ -2696,6 +2719,7 @@ end;
 
 procedure  TFIBXSQLDA.AssignValues(SourceSQLDA:TFIBXSQLDA);
 var i:integer;
+
     pc:integer;
     uSType,sSType :integer; //parameterType
     UsrPar,Srvpar:TFIBXSQLVAR;
@@ -2880,6 +2904,7 @@ end;
 
 procedure TFIBXSQLDA.SetUnModifiedToVars;
 var i: Integer;
+
 begin
   for i:=0 to FCount - 1 do
    FXSQLVARs^[i].Modified:=False;
@@ -3132,6 +3157,7 @@ begin
     case XMDTVariable.StructureType of
       mdt_vstString:begin
         if XMDTVariable.MaxLength>=mdt_OneVariableMaxDinamicLength then begin
+
           XXSQLVAR^.sqltype:=SQL_BLOB;
           XXSQLVAR^.sqllen:=SizeOf(PISC_QUAD);
           end
@@ -3171,6 +3197,7 @@ begin
         end;
       mdt_vstExtended:begin
         if XMDTVariable.Precision=0 then begin 
+
           XXSQLVAR^.sqltype:=SQL_DOUBLE;
           XXSQLVAR^.sqllen:=SizeOf(Double);
           XXSQLVAR^.sqlscale:=0;
@@ -3201,6 +3228,7 @@ begin
       else FIBError(feMDTIncompatibleFIBXSQLDAAndMDTDataRecord, ['TFIBXSQLDA.MDTInitByVariables']);
       end;
     if not XMDTVariable.NotNull then begin
+
       XXSQLVAR^.sqltype:=XXSQLVAR^.sqltype or 1;
       FIBAlloc(XXSQLVAR^.sqlind, 0, SizeOf(Short));
       end;
@@ -3234,9 +3262,11 @@ begin
     XFIBXSQLVAR:=FXSQLVARs^[i];
     XXSQLVAR:=XFIBXSQLVAR.Data;
     if ADataRecord.IsNull[XVarIndex] then begin
+
       if XXSQLVAR^.sqlind<>nil
         then XXSQLVAR^.sqlind^:=-1;
       if XFIBXSQLVAR.FStreamValue<>nil then begin
+
         XFIBXSQLVAR.FStreamValue.Free;
         XFIBXSQLVAR.FStreamValue:=nil;
         end;
@@ -3246,6 +3276,7 @@ begin
         then XXSQLVAR^.sqlind^ := 0;
       XSQLData:=XXSQLVAR^.sqldata;
       if XSQLData=nil then XTypesError;
+
       ADataRecord.GetDataBuffer(XVarIndex,XDataBuffer,XSize);
       case XMDTVariable.StructureType of
         mdt_vstString:begin
@@ -3264,6 +3295,7 @@ begin
                 then XTypesError;
               Move(XDataBuffer^,XSQLData^,XSize);
               if XSize<XXSQLVAR^.sqllen then begin
+
               Inc(PByte(XSQLData),2);
               FillChar(XSQLData^,XXSQLVAR^.sqllen-XSize,Ord(' '));
                 end;
@@ -3365,9 +3397,11 @@ begin
     XFIBXSQLVAR:=FXSQLVARs^[i];
     XXSQLVAR:=XFIBXSQLVAR.Data;
     if XFIBXSQLVAR.IsNull then ADataRecord.ClearValue(XVarIndex)
+
     else begin
       XSQLData:=XXSQLVAR^.sqldata;
       if XSQLData=nil then XTypesError;
+
       case XMDTVariable.StructureType of
         mdt_vstString:begin
           case XFIBXSQLVAR.FSrvSQLType of
@@ -3543,6 +3577,8 @@ begin
   if (FOpen) then   Close;
   if (FHandle <> nil) then   FreeHandle;
 
+
+
   MDTUnPrepare;
 
 {$IFDEF CSMonitor}
@@ -3573,6 +3609,7 @@ end;
 
 function TFIBQuery.BatchInput(InputObject: TFIBBatchInputStream):boolean;
 var RecNum:integer;
+
     BatchAction :TBatchAction;
     ErrorAction :TBatchErrorAction;
 
@@ -3639,12 +3676,15 @@ end;
 
 function TFIBQuery.BatchOutput(OutputObject: TFIBBatchOutputStream):boolean;
 var RecNum:integer;
+
     BatchAction :TBatchAction;
 begin
   CheckClosed('batch output');
   if not Prepared then  Prepare;
+
   Result:= FSQLType = SQLSelect;
   if not Result then Exit;
+
    try
       ExecQuery;
       OutputObject.FColumns := Self.FSQLRecord;
@@ -3707,12 +3747,14 @@ end;
 
 procedure TFIBQuery.BatchToQuery(ToQuery:TFIBQuery;Mappings:TStrings);
 var Map     :TList;
+
     i,RecNum:Integer;
     BatchAction :TBatchAction;
     ErrorAction :TBatchErrorAction;
 
 function GetParam(const FieldName:string):TFIBXSQLVAR;
 var j,p: integer;
+
     s:string;
 begin
    s:='';
@@ -3729,14 +3771,18 @@ begin
     end;
    end;
    if s='' then s:=FieldName;
+
    Result := ToQuery.FindParam(s)
 end;
 
 begin
  if ToQuery=nil then Exit;
+
  Close;
  if not Prepared then Prepare;
  if not ToQuery.Prepared then ToQuery.Prepare;
+
+
  Map := TList.Create;
  try
   Map.Count := FieldCount;
@@ -3795,6 +3841,7 @@ begin
 end;
 
 procedure TFIBQuery.ReadXmlFile(Reader:TXMLDataSetFileReader; const CurRec:TRecordDesc; const RecordNo:integer; var Stop:boolean);
+
 var
  i,L:integer;
  cp:TFIBXSQLVAR;
@@ -3865,6 +3912,7 @@ begin
 
   ForceConnect:=not Database.Connected;
   if ForceConnect then Database.Connected:=True;
+
   ForceTransaction:=not Transaction.InTransaction;
   if ForceTransaction then
    Transaction.StartTransaction;
@@ -3897,6 +3945,7 @@ begin
     try
       Include(FQueryRunState,qrsInClose);
       if (FHandle <> nil)  and FOpen then
+
       case SQLType of
       SQLSelect,SQLSelectForUpdate:
         begin
@@ -3964,6 +4013,7 @@ end;
 procedure TFIBQuery.EndModifySQLText;
 begin
   if FCountLockSQL>0 then Dec (FCountLockSQL)
+
   else FCountLockSQL:=0;
   if FCountLockSQL=0 then
    SQLChange(nil);
@@ -3981,6 +4031,7 @@ end;
 
 function  TFIBQuery.GetMainWhereClause :string;
 var ind :integer;
+
 begin
  ind := GetMainWhereIndex;
  if ind=-1 then
@@ -4052,6 +4103,7 @@ end;
 
 procedure TFIBQuery.SaveRestoreValues(SQLDA:TFIBXSQLDA;IsSave:boolean);
 var j,pc:integer;
+
 begin
    pc  :=Pred(SQLDA.Count);
    if IsSave then
@@ -4079,6 +4131,8 @@ end;
 
 {$IFNDEF NO_MONITOR}
 type THackMonitorHook=class(TFIBSQLMonitorHook);
+
+
 {$ENDIF}
 
 
@@ -4088,6 +4142,7 @@ function  TFIBQuery.ReadySQLText(ForChangeExecSQL:boolean=True):string;
 type
  TCompareNull=(cNone,cIsNull,cIsNotNull);
 var i,j:integer;
+
     pv:string;
     vLenMacro:integer;
     vDelta   :integer;
@@ -4095,6 +4150,7 @@ var i,j:integer;
     c        :TCompareNull;
     CurParam :TFIBXSQLVAR;
 const  StrIsNull=' IS NULL ';
+
        StrIsNotNull=' IS NOT NULL ';
 
 begin
@@ -4220,6 +4276,7 @@ end;
 
 procedure TFIBQuery.EndStatisticExec(const stText:string);
 var lt,s,j:integer;
+
     ts:TStrings;
 begin
  if Assigned(Database.SQLStatisticsMaker) and  Database.SQLStatisticsMaker.ActiveStatistics then
@@ -4264,6 +4321,7 @@ begin
   if qoStartTransaction in Options then
    if (Transaction<>nil) and not Transaction.InTransaction then
     Transaction.StartTransaction;
+
   Transaction.DoOnSQLExec(Self,koBefore);
 end;
 
@@ -4274,9 +4332,10 @@ begin
   Transaction.DoOnSQLExec(Self,koAfterFirstFetch);
 end;
 
-procedure TFIBQuery.DoAfterExecute(asMDT:boolean);
+procedure TFIBQuery.DoAfterExecute(asMDT: boolean; const isFirst : Boolean = False);
 begin
   if Assigned(FAfterExecute) then FAfterExecute(Self);
+
   Transaction.DoOnSQLExec(Self,koAfter);
   FUserSQLParams.SetUnModifiedToVars;
   FMacroChanged:=False;
@@ -4290,21 +4349,21 @@ begin
       MonitorHook.SQLExecute(Self,'MDT execute')
      else
       MonitorHook.SQLExecute(Self,'');
-{$ENDIF}
 
-  if qoAutoCommit in Options then
-  with Transaction do
-  begin
-    if TimeoutAction=TACommitRetaining then
-     CommitRetaining
-    else
-     Commit;
+{$ENDIF}
+  if (qoAutoCommit in Options) and (not isFirst)
+  then
+    with Transaction do begin
+      if TimeoutAction = TACommitRetaining
+      then CommitRetaining
+      else Commit;
   end;
 end;
 
 procedure  TFIBQuery.ConvertSQLTextToCodePage;
 begin
   if not DisableEncodingSQLText and not FCodePageApplied then
+
   case SQLKind of
    skDDL: if Database.NeedUTFEncodeDDL  then
              FPreparedSQL:=UTF8Encode(FProcessedSQL);
@@ -4403,6 +4462,7 @@ begin
         if qoStartTransaction in Options then
          if (Transaction<>nil) and not Transaction.InTransaction then
             Transaction.StartTransaction;
+
 
       GetMem(Results, vBatchCount * Sizeof(ULong));
       Call(Database.ClientLibrary.isc_dsql_batch_execute_immed(StatusVector,
@@ -4530,6 +4590,7 @@ begin
       if qoStartTransaction in Options then
        if (Transaction<>nil) and not Transaction.InTransaction then
           Transaction.StartTransaction;
+
 
     GetMem(Results, vBatchCount * Sizeof(ULong));
     Call(Database.ClientLibrary.isc_dsql_batch_execute_immed(StatusVector,
@@ -4683,7 +4744,7 @@ begin
          DoLog;
         if FGoToFirstRecordOnExecute then
         begin
-          DoAfterExecute(Assigned(FMDTMainDataOrder))  ;
+          DoAfterExecute(Assigned(FMDTMainDataOrder), vAfterExecEvent);
           vAfterExecEvent :=False;
           Next;
         end;
@@ -4749,6 +4810,7 @@ begin
       if MonitoringEnabled  then
       if MonitorHook<>nil then
         DoMonitoring(E);
+
   {    with THackMonitorHook(MonitorHook) do    //Added Source
         begin
          SQLExecute( Self );
@@ -4948,6 +5010,7 @@ begin
   Result := nil;
   // MDT
   if Assigned(FMDTMonitorObject) then begin
+
     if FMDTFetchActionID<0
       then FMDTFetchActionID:=Database.MDTDatabase.IOperationMonitor.StartAction(
         FMDTMonitorObject.ID,mdt_momFetch)
@@ -4964,6 +5027,7 @@ begin
       StopFetching:=False;
       FOnSQLFetch(FRecordCount,StopFetching);
       if StopFetching and not (csLoading in ComponentState) then
+
   //     Abort;
        Exit;
      end;
@@ -4975,6 +5039,7 @@ begin
        FMDTMainDataorder.Next;
        FEOF:=FMDTMainDataorder.CursorState=csAfterLast;
        if FEOF then FSQLRecord.ClearValues
+
        else begin
          Inc(FRecordCount);
          FSQLRecord.MDTCopyValuesFromDataRecord(FMDTResultDataRecord);
@@ -5017,6 +5082,7 @@ begin
       if MonitoringEnabled  then
       if MonitorHook<>nil then
        MonitorHook.SQLFetch(Self);
+
   {$ENDIF}
 
       if Assigned(FBase.Database.SQLLogger) and (lfQFetch in FBase.Database.SQLLogger.LogFlags) then
@@ -5211,6 +5277,7 @@ begin
   if not Prepared then
    Prepare;
   if Assigned(FMDTMainDataOrder) then begin
+
     if Assigned(FMDTFindTableByField) 
     then Result:=FMDTFindTableByField.GetTableAliasByField(
         FMDTResultDataRecord.IVariables.VariableByOrderNumToIndex(FieldIndex))
@@ -5369,6 +5436,7 @@ begin
      Result:='';
 
     if Database.IsUnicodeConnect then
+
      {$IFDEF D2009+}
         Result:=UTF8ToString(Result);
      {$ELSE}
@@ -5658,6 +5726,7 @@ begin
          if InWhereClause and IsUserSQL then
          begin
            Inc(i,5);BracketOpenedInWhere:=0;
+
            Continue;
          end
         end
@@ -5910,6 +5979,7 @@ begin
         FMacroChanged:=OldMacroChanged
       end;
       if Assigned(ParVar)  and  (ParVar.FParent<>vParams) then ParVar:=nil
+
      end
      else
       ParVar:=nil;
@@ -5993,6 +6063,7 @@ end;
 
 procedure TFIBQuery.PrepareArrayFields;
 var i:integer;
+
     v:TFIBXSQLVAR;
     da:TFIBXSQLDA;
 begin
@@ -6010,6 +6081,7 @@ end;
 
 procedure TFIBQuery.PrepareUserParamsTypes;
 var i       :integer;
+
     vSqlType :integer;
     SQLPar  :TFIBXSQLVAR;
 begin
@@ -6023,6 +6095,7 @@ begin
    Continue;
   vSqlType :=SQLPar.FXSQLVAR^.sqltype and (not 1);
   if (vSqlType = SQL_TIMESTAMP) or (vSqlType = SQL_TYPE_DATE)  then
+
   with FUserSQLParams[i] do
   case SQLType of
    SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT,SQL_INT64:  asDateTime:=asFloat
@@ -6048,6 +6121,7 @@ var
 
   function NeedTransformUserSQL:boolean;
   var j,pc:integer;
+
       p:TFIBXSQLVAR;
   begin
    Result:=not FPrepared or FMacroChanged or FNeedForceIsNull;
@@ -6100,6 +6174,7 @@ var
           XSelect,XMDTSQLBuildDataOrderAddData);
         XParams:=XMDTSQLProcessor.IParamEvalutions;
         if XParams.Count>0 then begin
+
           FMDTParamsVariables:=GetMDTDatabase.CreateVariables;
           XParams.FillVariables(FMDTParamsVariables);
           FMDTParamsDataRecord:=GetMDTDatabase.CreateDataRecord(FMDTParamsVariables);
@@ -6157,6 +6232,7 @@ begin
  Include(FQueryRunState,qrsInPrepare);
  try
   if Open then Close;
+
   FBase.CheckDatabase;
 {$IFDEF CSMonitor}
   if Pos('/* CSMON$', FParser.SQLText) <= 0 then
@@ -6313,6 +6389,7 @@ begin
 
             FSQLParams.Initialize;
             if vDiffParams and FHaveMacros then //!!!
+
             begin
              FPrepared:=True;
              SaveRestoreValues(FSQLParams,False);
@@ -6342,6 +6419,7 @@ begin
        if MonitoringEnabled  then
         if MonitorHook<>nil then
          MonitorHook.SQLPrepare(Self);
+
       {$ENDIF}
 
       DoStatisticPrepare(FProcessedSQL);
@@ -6359,9 +6437,13 @@ begin
 {$IFNDEF NO_MONITOR}
     if MonitoringEnabled  then
      if MonitorHook<>nil then
+
+
       with THackMonitorHook(MonitorHook) do    //Added Source
       begin
        if Assigned(Owner) then   st:=Owner.Name+'.'+Name else st:=Name;
+
+
        WriteSQLData(st + ': [Prepare] ' + E.Message,tfQPrepare);
       end;
 {$ENDIF}
@@ -6440,6 +6522,7 @@ begin
        if qoStartTransaction in Options then
         if (Transaction<>nil) and not Transaction.InTransaction then
            Transaction.StartTransaction;
+
       end;
       bs.Finalize;
       AsQuad := bs.BlobID;
@@ -6543,6 +6626,8 @@ begin
    end;
   if Assigned(OnSQLChanging) then OnSQLChanging(Self);
   if FHandle <> nil then FreeHandle;
+
+
   MDTUnPrepare;
   FMacroChanged :=False;
 end;
@@ -6553,6 +6638,9 @@ begin
   if Transaction.State in [tsDoRollback,tsDoCommit] then
   if FAutoCloseOnTransactionEnd then
    if (FOpen) then Close;
+
+
+
 end;
 
 //// Routine work
@@ -6697,6 +6785,7 @@ end;
 
 function  TFIBQuery.ParamExist(const ParamName:string; var ParamIndex:integer):boolean;
 var Par:TFIBXSQLVAR;
+
 begin
   Par:=FindParam(ParamName);
   Result:= Assigned(Par);
@@ -6850,12 +6939,15 @@ begin
   bIncludeDSDesc := FCSMonitorSupport.IncludeDatasetDescription;
   bEnabled := FCSMonitorSupport.Enabled = csmeEnabled;
   if FCSMonitorSupport.Enabled = csmeDisabled then exit;
+
   DB_pl := GetDatabase;
   if (not Assigned(DB_pl)) then Exit;
+
   Tr_pl := GetTransaction;
   if (not Assigned(Tr_pl)) then Exit;
   if not bEnabled then
     bEnabled := (FCSMonitorSupport.Enabled = csmeTransactionDriven) and
+
       (Tr_pl.CSMonitorSupport.Enabled = csmeEnabled);
   if not bEnabled then
     bEnabled := (FCSMonitorSupport.Enabled = csmeDatabaseDriven) and
@@ -6873,6 +6965,7 @@ begin
     if IsEmptyStr(sDB_pl_name) then sDB_pl_name := 'DB_0x' + IntToHex(integer(DB_pl), 8);
     if Assigned(DB_pl.Owner) then sDB_pl_name :=
       DB_pl.Owner.Name + '.' + sDB_pl_name;
+
   end;
   if sDB_pl_name <> '' then
   begin
@@ -6887,10 +6980,12 @@ begin
     if IsEmptyStr(sTr_pl_name) then sTr_pl_name := 'Trans_0x' + IntToHex(integer(Tr_pl), 8);
     if Assigned(Tr_pl.Owner) then sTr_pl_name :=
       Tr_pl.Owner.Name + '.' + sTr_pl_name;
+
   end;
   if sTr_pl_name <> '' then
   begin
     if not bWasComment then Result := Result + '/* ';
+
     Result := Result + 'CSMON$TR_NAME=' + sTr_pl_name + '; ';
     bWasComment := True;
   end;
@@ -6912,10 +7007,15 @@ begin
   if sDs_pl_name <> '' then
   begin
     if not bWasComment then Result := Result + '/* ';
+
+
+
+
     Result := Result + 'CSMON$ST_NAME=' + sDs_pl_name + '; ';
     bWasComment := True;
   end;
   if bWasComment then Result := Result + ' */';
+
   Result := ' ' + Result;
 end;
 {$ENDIF}
@@ -6947,21 +7047,26 @@ var
 begin
   XDatabase:=GetMDTDatabase;
   if XDatabase=nil  then exit;
+
   XGarbageObjects:=XDatabase.GetGarbageObjects;
   if XGarbageObjects=nil then exit;
+
   XGarbageObjects.StartBlock;
   try
     if Assigned(FMDTMainDataOrder) then begin
+
       XGarbageObjects.AddObject(FMDTMainDataOrder.GetOwnerObject);
       //FMDTMainDataOrder.FreeWithSourceOrders;
       FMDTMainDataOrder:=nil;
       end;
     if Assigned(FMDTParamsDataRecord) then begin
+
       XGarbageObjects.AddObject(FMDTParamsDataRecord.GetOwnerObject);
       //FMDTParamsDataRecord.GetOwnerObject.Free;
       FMDTParamsDataRecord:=nil;
       end;
     if Assigned(FMDTParamsVariables) then begin
+
       XGarbageObjects.AddObject(FMDTParamsVariables.GetOwnerObject);
       //FMDTParamsVariables.GetOwnerObject.Free;
       FMDTParamsVariables:=nil;
@@ -6969,6 +7074,7 @@ begin
     FMDTResultDataRecord:=nil;
     FMDTFindTableByField:=nil;
     if Assigned(FMDTMonitorObject) then begin
+
       XGarbageObjects.AddObject(FMDTMonitorObject.GetOwnerObject);
       FMDTMonitorObject:=nil;
       end;
@@ -6985,6 +7091,7 @@ begin
      not FMDTMonitorProcExist
   then begin
     if FMDTMonitorObject=nil then begin
+
       FMDTMonitorObject:=Database.MDTDatabase.IOperationMonitor.CreateSelectObject;
       FMDTMonitorObject.SQLText:=FSQL.Text;
       FMDTMonitorObject.ServerExecute:=not Assigned(FMDTMainDataOrder);
