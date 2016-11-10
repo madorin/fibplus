@@ -4292,7 +4292,7 @@ begin
       MonitorHook.SQLExecute(Self,'');
 {$ENDIF}
 
-  if qoAutoCommit in Options then
+  if (qoAutoCommit in Options) and not FOpen then
   with Transaction do
   begin
     if TimeoutAction=TACommitRetaining then
@@ -4559,7 +4559,6 @@ var
   xSQLDA:PXSQLDA;
   vParams:TFIBXSQLDA;
   XMonitorAction: integer;
-  vAfterExecEvent:boolean;
 
 
 procedure DoLog(E:Exception=nil);
@@ -4609,7 +4608,6 @@ end;
 
 begin
  Include(FQueryRunState,qrsInExecute);
- vAfterExecEvent:=True;
  vFetched:=False;
  try
   if GetSQLKind=skDDL then
@@ -4681,12 +4679,6 @@ begin
         FSQLRecord.ClearValues;
         if Assigned(Database.SQLLogger)  and (lfQExecute in Database.SQLLogger.LogFlags) then
          DoLog;
-        if FGoToFirstRecordOnExecute then
-        begin
-          DoAfterExecute(Assigned(FMDTMainDataOrder))  ;
-          vAfterExecEvent :=False;
-          Next;
-        end;
       end;
       SQLExecProcedure:
       begin
@@ -4739,8 +4731,9 @@ begin
 
      if FDoParamCheck and (pc>0) and FHaveMacros then
       SaveRestoreValues(FUserSQLParams,True);
-     if vAfterExecEvent then
-      DoAfterExecute(Assigned(FMDTMainDataOrder));
+     DoAfterExecute(Assigned(FMDTMainDataOrder));
+     if FGoToFirstRecordOnExecute and FOpen then
+       Next;
     except
      On E:Exception do
      begin
