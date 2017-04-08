@@ -74,7 +74,7 @@ contains
   uFrmSearchResult in '..\Editors\uFrmSearchResult.pas' {frmCompSearchResult},
   FIBToolsConsts in '..\Editors\FIBToolsConsts.pas',
   pFIBSyntaxMemo in '..\Editors\pFIBSyntaxMemo.pas',
-  FIBDBLoginDlg in '..\Editors\..\FIBDBLoginDlg.pas' {frmFIBDBLoginDlg},
+  FIBDBLoginDlg in '..\FIBDBLoginDlg.pas' {frmFIBDBLoginDlg},
   uFIBEditorForm in '..\Editors\uFIBEditorForm.pas',
   uFontEditor in '..\Editors\uFontEditor.pas' {frmFontEditor};
 
