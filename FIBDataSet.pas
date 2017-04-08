@@ -392,8 +392,13 @@ type
    protected
     class procedure CheckTypeSize(Value: Integer); override;
     procedure SetAsString(const Value: string); override;
+    {$IFDEF D_25}
+    function GetAsGuid: TGUID; override;
+    procedure SetAsGuid(const Value: TGUID); override;
+    {$ELSE}
     function GetAsGuid: TGUID;
     procedure SetAsGuid(const Value: TGUID);
+    {$ENDIF}
     function  GetAsVariant: variant; override;
     procedure SetAsVariant(const Value: Variant); override;
 
@@ -941,7 +946,6 @@ type
     procedure CloseCursor; override;
     procedure InternalDelete; override; (* abstract *)
     procedure InternalFirst; override; (* abstract *)
-    procedure InternalGotoBookmark(Bookmark: Pointer); override; (* abstract *)
     procedure InternalHandleException; override; (* abstract *)
     procedure InternalInitFieldDefs; override; (* abstract *)
     procedure InternalInitRecord(Buffer: TRecordBuffer); override; (* abstract *)
@@ -954,11 +958,14 @@ type
     function  IsCursorOpen: Boolean; override; (* abstract *)
 
     procedure SetBookmarkFlag(Buffer: TRecordBuffer; Value: TBookmarkFlag); override;
-    {$IFDEF D_DX10}
+    {$IFDEF D_23}
+    procedure InternalGotoBookmark(Bookmark: TBookmark); override;
     procedure SetBookmarkData(Buffer: TRecBuf; Data: TBookmark); override;
     {$ELSE}
+    procedure InternalGotoBookmark(Bookmark: Pointer); override;
     procedure SetBookmarkData(Buffer: TRecordBuffer; Data: Pointer);
     {$ENDIF}
+
     procedure SetCachedUpdates(Value: Boolean);
     procedure SetDataSource(Value: TDataSource);
     procedure SetOptions(Value:TpFIBDsOptions);
@@ -2471,7 +2478,11 @@ end;
 {$IFDEF D_XE3}
 procedure TFIBMemoField.SetAsAnsiString(const Value: AnsiString);
 begin
+   {$IFDEF D_25}
+   SetData(TValueBuffer(Value), Length(Value));
+   {$ELSE}
    SetData(Pointer(Value), Length(Value));
+   {$ENDIF}
 end;
 {$ENDIF}
 
@@ -10256,7 +10267,11 @@ begin
  end;
 end;
 
+{$IFDEF D_23}
+procedure TFIBCustomDataSet.InternalGotoBookmark(Bookmark: TBookmark);
+{$ELSE}
 procedure TFIBCustomDataSet.InternalGotoBookmark(Bookmark: Pointer);
+{$ENDIF}
 var
    Rno:integer;
    i  :integer;
@@ -10264,16 +10279,19 @@ var
    AddrValue:Pointer;
    KeyValues:array of variant;
    {$IFDEF D6+}
-    vBCD:TBCD;
+   vBCD:TBCD;
    {$ENDIF}
-
 
   procedure StdGotoBookMark;
   begin
     if Rno>-1 then
     begin
-     MoveBy(TFIBBookmark(Bookmark^).bActiveRecord-ActiveRecord);
-     FCurrentRecord := Rno;
+      {$IFDEF D_23}
+      MoveBy(TFIBBookmark(Pointer(Bookmark)^).bActiveRecord-ActiveRecord);
+      {$ELSE}
+      MoveBy(TFIBBookmark(Bookmark^).bActiveRecord-ActiveRecord);
+      {$ENDIF}
+      FCurrentRecord := Rno;
     end;
   end;
 
@@ -10285,11 +10303,15 @@ var
 
 begin
   if State<>dsBrowse then
-   raise Exception.Create('Can''t use bookmark. DataSet not in browse mode');
+    raise Exception.Create('Can''t use bookmark. DataSet not in browse mode');
   Include(FRunState,drsInGotoBookMark);
+  {$IFDEF D_23}
   if not BookmarkValid(BookMark) then
+  {$ELSE}
+  if not BookmarkValid(TBookmark(BookMark)) then
+  {$ENDIF}
   begin
-//    vLockResync:=True;
+    // vLockResync:=True;
     Inc(vLockResync);
     Exit;
   end;
@@ -10297,7 +10319,11 @@ begin
   DisableControls;
   DisableScrollEvents;
   try
-   Rno:=FRecordsCache.RecordByBookMark(TFIBBookmark(Bookmark^).bRecordNumber);
+  {$IFDEF D_23}
+   Rno:=FRecordsCache.RecordByBookMark(TFIBBookmark(Pointer(Bookmark)^).bRecordNumber);
+  {$ELSE}
+  Rno:=FRecordsCache.RecordByBookMark(TFIBBookmark(Bookmark^).bRecordNumber);
+  {$ENDIF}
    case FCacheModelOptions.CacheModelKind of
     cmkStandard:
       if (FKeyFieldsForBookMark.Count=0) or  (vSimpleBookMark>0)  then
@@ -10373,7 +10399,11 @@ begin
              if not ControlsDisabled then
               DisableControls; // Restore after Resync
              Include(FRunState,drsInGotoBookMark); // Restore after Resync
+             {$IFDEF D_23}
+             MoveBy(TFIBBookmark(Pointer(Bookmark)^).bActiveRecord-ActiveRecord);
+             {$ELSE}
              MoveBy(TFIBBookmark(Bookmark^).bActiveRecord-ActiveRecord);
+             {$ENDIF}
              FCurrentRecord:=Rno
            end
       end;
@@ -10390,7 +10420,11 @@ begin
          begin
            if CompareBookMarkAndRecno(BookMark,i,True) then
            begin
+             {$IFDEF D_23}
+             MoveBy(TFIBBookmark(Pointer(Bookmark)^).bActiveRecord-ActiveRecord);
+             {$ELSE}
              MoveBy(TFIBBookmark(Bookmark^).bActiveRecord-ActiveRecord);
+             {$ENDIF}
              FCurrentRecord:=FRecordsCache.BookMarkByRecord(i-1);
              Exit;
            end;
@@ -10430,14 +10464,21 @@ begin
             end;
            end; // for
 
-          if RefreshAround(FQBookMark, TFIBBookmark(Bookmark^).bRecordNumber) then
-          begin
+         {$IFDEF D_23}
+         if RefreshAround(FQBookMark, TFIBBookmark(Pointer(Bookmark)^).bRecordNumber) then
+         begin
+           MoveBy(TFIBBookmark(Pointer(Bookmark)^).bActiveRecord-ActiveRecord);
+           FCurrentRecord:=TFIBBookmark(Pointer(Bookmark)^).bRecordNumber;
+         end
+         {$ELSE}
+         if RefreshAround(FQBookMark, TFIBBookmark(Bookmark^).bRecordNumber) then
+         begin
            MoveBy(TFIBBookmark(Bookmark^).bActiveRecord-ActiveRecord);
            FCurrentRecord:=TFIBBookmark(Bookmark^).bRecordNumber;
-          end
+         end
+         {$ENDIF}
           else
            Inc(vLockResync);
-
          end;
        end;
 
@@ -11453,8 +11494,11 @@ begin
 
 end;
 
-{$IFDEF D_DX10}
+{$IFDEF D_23}
 procedure TFIBCustomDataSet.SetBookmarkData(Buffer: TRecBuf; Data: TBookmark);
+{$ELSE}
+procedure TFIBCustomDataSet.SetBookmarkData(Buffer: TRecordBuffer; Data: Pointer);
+{$ENDIF}
 var
   Rno:integer;
 begin
@@ -11464,18 +11508,6 @@ begin
     PRecordData(Buffer)^.rdRecordNumber := Rno
   end;
 end;
-{$ELSE}
-procedure TFIBCustomDataSet.SetBookmarkData(Buffer: TRecordBuffer; Data: Pointer);
-var
-   Rno:integer;
-begin
-  if Data<>nil then
-  begin
-   Rno:=FRecordsCache.RecordByBookMark(TFIBBookmark(Data^).bRecordNumber);
-   PRecordData(Buffer)^.rdRecordNumber := Rno
-  end;
-end;
-{$ENDIF}
 
 procedure TFIBCustomDataSet.SetBookmarkFlag(Buffer: TRecordBuffer; Value: TBookmarkFlag);
 begin

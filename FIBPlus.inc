@@ -136,20 +136,30 @@
 
 // DX10
 {$IFDEF VER300}
-  {$DEFINE D_DX10}
+  {$DEFINE D_23}
 {$ENDIF}
 
+// DX10.1
 {$IFDEF VER310}
-  {$DEFINE D_DX10_1}
+  {$DEFINE D_24}
+{$ENDIF}
+
+// DX10.2
+{$IFDEF VER320}
+  {$DEFINE D_25}
 {$ENDIF}
 
 //---------------------------------
 
-{$IFDEF D_DX10_1}
-  {$DEFINE D_DX10}
+{$IFDEF D_25}
+  {$DEFINE D_24}
 {$ENDIF}
 
-{$IFDEF D_DX10}
+{$IFDEF D_24}
+  {$DEFINE D_23}
+{$ENDIF}
+
+{$IFDEF D_23}
   {$DEFINE D_XE5}
 {$ENDIF}
 
