@@ -134,6 +134,21 @@
   {$DEFINE D_XE5}
 {$ENDIF}
 
+// Delphi XE6
+{$IFDEF VER270}
+  {$DEFINE D_20}
+{$ENDIF}
+
+// Delphi XE7
+{$IFDEF VER280}
+  {$DEFINE D_21}
+{$ENDIF}
+
+// Delphi XE8
+{$IFDEF VER290}
+  {$DEFINE D_22}
+{$ENDIF}
+
 // DX10
 {$IFDEF VER300}
   {$DEFINE D_23}
@@ -160,6 +175,18 @@
 {$ENDIF}
 
 {$IFDEF D_23}
+  {$DEFINE D_22}
+{$ENDIF}
+
+{$IFDEF D_22}
+  {$DEFINE D_21}
+{$ENDIF}
+
+{$IFDEF D_21}
+  {$DEFINE D_20}
+{$ENDIF}
+
+{$IFDEF D_20}
   {$DEFINE D_XE5}
 {$ENDIF}
 
