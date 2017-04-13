@@ -3005,6 +3005,36 @@ var
     end;
   end;
 
+  function IsFieldTrueBoolean(AField: TField): Boolean;
+  var
+    q:TFIBQuery;
+    tmpFieldTableName, tmpRealFieldName: string;
+  const
+    SGetFieldType = 'select f.rdb$field_type from RDB$RELATION_FIELDS RF '+CLRF+
+      'inner join rdb$fields f on f.rdb$field_name = rf.rdb$field_source'+CLRF+
+      'where RF.rdb$relation_name = :rel_name and rf.rdb$field_name = :field_name';
+  begin
+    Result := False;
+
+    tmpFieldTableName := EasyFormatIdentifier(Database.SQLDialect, GetRelationTableName(AField), False);
+    tmpRealFieldName  := EasyFormatIdentifier(Database.SQLDialect, GetRelationFieldName(AField), False);
+
+    q :=  GetQueryForUse(Transaction, SGetFieldType);
+    try
+      q.Options := [qoStartTransaction];
+      q.ParamByName('rel_name').AsString  := tmpFieldTableName;
+      q.ParamByName('field_name').AsString:= tmpRealFieldName;
+      q.ExecQuery;
+
+      if not q.Eof then
+      begin
+        Result := q.Fields[0].Value = 23;
+      end;
+    finally
+      FreeQueryForUse(q);
+    end;
+  end;
+
   function FieldValueToStr(Field:TField;Old:boolean):string;
   var
      v:variant;
@@ -3014,7 +3044,6 @@ var
     v:=Field.OldValue
    else
     v:=Field.Value;
-
 
    if VarIsNull(v) or VarIsEmpty(v) then
      Result:='NULL'
@@ -3040,7 +3069,24 @@ var
          Result:=''''+UTF8Encode(v)+''''
         else
          Result:=''''+VarToStr(v)+'''';
-      end
+      end;
+
+      // NB! SC fix.
+      // FIB may create integer field as boolean if field domain name contains substring "boolean"
+      // and incorrect value is generated for this field. Firebird 2.5 don't support True and False constants. 
+      // Convertion error occurs if integer value is used for true boolean fields. 
+      ftBoolean:
+        begin
+          if not IsFieldTrueBoolean(Field) then
+          begin
+            if v = True then
+              Result := '1'
+            else
+              Result := '0';
+          end
+          else
+            Result := VarToStr(v);
+        end;
      else
       Result:=VarToStr(v)
      end
