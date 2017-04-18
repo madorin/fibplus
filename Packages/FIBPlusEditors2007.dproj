@@ -65,7 +65,6 @@
     <DelphiCompile Include="FIBPlusEditors2007.dpk">
       <MainSource>MainSource</MainSource>
     </DelphiCompile>
-    <DCCReference Include="aspr_api.pas" />
     <DCCReference Include="C:\Documents and Settings\alexey\dbrtl.dcp" />
     <DCCReference Include="C:\Documents and Settings\alexey\designide.dcp" />
     <DCCReference Include="C:\Documents and Settings\alexey\dsnap.dcp" />
@@ -76,14 +75,6 @@
     <DCCReference Include="C:\Documents and Settings\alexey\vcldb.dcp" />
     <DCCReference Include="C:\Documents and Settings\alexey\vclx.dcp" />
     <DCCReference Include="C:\Documents and Settings\alexey\xmlrtl.dcp" />
-    <DCCReference Include="crypto\FibBase2.pas" />
-    <DCCReference Include="crypto\Fibbase64.pas" />
-    <DCCReference Include="crypto\Fibconst.pas" />
-    <DCCReference Include="crypto\FibHash2.pas" />
-    <DCCReference Include="crypto\Fibhash3.pas" />
-    <DCCReference Include="crypto\Fibmodule1.pas" />
-    <DCCReference Include="crypto\Fibmodule5.pas" />
-    <DCCReference Include="crypto\Fibmodule6.pas" />
     <DCCReference Include="EdDataSetInfo.pas">
       <Form>frmEdDataSetInfo</Form>
     </DCCReference>

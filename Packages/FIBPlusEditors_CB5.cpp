@@ -35,17 +35,7 @@ USEUNIT("pFIBEditorsConsts.pas");
 USEUNIT("pFIBComponentEditors.pas");
 USEUNIT("pFIBRepositoryOperations.pas");
 USEUNIT("fibCheckSingleLicenseClass.pas");
-USEUNIT("aspr_api.pas");
 USEUNIT("fibAthlInstanceCounter.pas");
-USELIB("aspr_ide_bcb.lib");
-USEUNIT("crypto\Fibmodule6.pas");
-USEUNIT("crypto\FibBase2.pas");
-USEUNIT("crypto\Fibbase64.pas");
-USEUNIT("crypto\Fibconst.pas");
-USEUNIT("crypto\FibHash2.pas");
-USEUNIT("crypto\Fibhash3.pas");
-USEUNIT("crypto\Fibmodule1.pas");
-USEUNIT("crypto\Fibmodule5.pas");
 USEFORMNS("uFIBScriptForm.pas", Ufibscriptform, frmScript);
 USEUNIT("FIBToolsConsts.pas");
 USEUNIT("FindCmp.pas");
@@ -54,7 +44,6 @@ USEFORMNS("pFIBPreferences.pas", Pfibpreferences, frmFIBPreferences);
 USEUNIT("RegFIBPlusUtils.pas");
 USEFORMNS("uFrmSearchResult.pas", Ufrmsearchresult, frmCompSearchResult);
 USEPACKAGE("Vclx50.bpi");
-USEUNIT("FIBSplash.pas");
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

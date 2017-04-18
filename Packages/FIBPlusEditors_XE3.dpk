@@ -58,14 +58,6 @@ contains
   EdErrorInfo in '..\Editors\EdErrorInfo.pas' {frmErrors},
   ToCodeEditor in '..\Editors\ToCodeEditor.pas',
   ToCodeEditorIntfs in '..\Editors\ToCodeEditorIntfs.pas',
-  Fibmodule5 in '..\Editors\crypto\Fibmodule5.pas',
-  Fibmodule6 in '..\Editors\crypto\Fibmodule6.pas',
-  FibHash2 in '..\Editors\crypto\FibHash2.pas',
-  Fibhash3 in '..\Editors\crypto\Fibhash3.pas',
-  FibBase2 in '..\Editors\crypto\FibBase2.pas',
-  Fibconst in '..\Editors\crypto\Fibconst.pas',
-  Fibbase64 in '..\Editors\crypto\Fibbase64.pas',
-  Fibmodule1 in '..\Editors\crypto\Fibmodule1.pas',
   RTTIRoutines in '..\Editors\RTTIRoutines.pas',
   pFIBComponentEditors in '..\Editors\pFIBComponentEditors.pas',
   pFIBEditorsConsts in '..\Editors\pFIBEditorsConsts.pas',
@@ -76,13 +68,11 @@ contains
   RegSynEditAlt in '..\Editors\RegSynEditAlt.pas',
   uFIBScriptForm in '..\Editors\uFIBScriptForm.pas' {frmScript},
   IBSQLSyn in '..\Editors\IBSQLSyn.pas',
-  fib_aspr_api in '..\Editors\fib_aspr_api.pas',
   FindCmp in '..\Editors\FindCmp.pas',
   pFIBPreferences in '..\Editors\pFIBPreferences.pas' {frmFIBPreferences},
   uFrmSearchResult in '..\Editors\uFrmSearchResult.pas' {frmCompSearchResult},
   FIBToolsConsts in '..\Editors\FIBToolsConsts.pas',
   RegFIBPlusUtils in '..\Editors\RegFIBPlusUtils.pas',
-  FIBSplash in '..\Editors\FIBSplash.pas',
   FIBDBLoginDlg in '..\FIBDBLoginDlg.pas' {frmFIBDBLoginDlg};
 
 end.

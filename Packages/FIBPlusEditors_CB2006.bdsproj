@@ -209,7 +209,6 @@
           <property category="win32.*.win32b.bcc32" name="option.H=.arg.merge" value="0"/>
           <property category="win32.*.win32b.bcc32" name="option.H=.enabled" value="1"/>
           <property category="win32.*.win32b.bcc32" name="option.Hc.enabled" value="1"/>
-          <property category="win32.*.win32b.bcc32" name="option.I.arg.1" value="crypto"/>
           <property category="win32.*.win32b.bcc32" name="option.I.arg.2" value="$(BDS)\include"/>
           <property category="win32.*.win32b.bcc32" name="option.I.arg.3" value="$(BDS)\include\vcl"/>
           <property category="win32.*.win32b.bcc32" name="option.I.arg.4" value="$(BDS)\include\dinkumware"/>
@@ -249,7 +248,6 @@
           <property category="win32.*.win32b.dcc32" name="option.D.arg.merge" value="1"/>
           <property category="win32.*.win32b.dcc32" name="option.D.enabled" value="0"/>
           <property category="win32.*.win32b.dcc32" name="option.I.arg.1" value="c2006"/>
-          <property category="win32.*.win32b.dcc32" name="option.I.arg.2" value="crypto"/>
           <property category="win32.*.win32b.dcc32" name="option.I.arg.merge" value="1"/>
           <property category="win32.*.win32b.dcc32" name="option.I.enabled" value="0"/>
           <property category="win32.*.win32b.dcc32" name="option.J.enabled" value="0"/>
@@ -267,15 +265,12 @@
           <property category="win32.*.win32b.dcc32" name="option.NO.arg.merge" value="0"/>
           <property category="win32.*.win32b.dcc32" name="option.NO.enabled" value="0"/>
           <property category="win32.*.win32b.dcc32" name="option.O.arg.1" value="c2006"/>
-          <property category="win32.*.win32b.dcc32" name="option.O.arg.2" value="crypto"/>
           <property category="win32.*.win32b.dcc32" name="option.O.arg.merge" value="1"/>
           <property category="win32.*.win32b.dcc32" name="option.O.enabled" value="0"/>
           <property category="win32.*.win32b.dcc32" name="option.R.arg.1" value="c2006"/>
-          <property category="win32.*.win32b.dcc32" name="option.R.arg.2" value="crypto"/>
           <property category="win32.*.win32b.dcc32" name="option.R.arg.merge" value="1"/>
           <property category="win32.*.win32b.dcc32" name="option.R.enabled" value="0"/>
           <property category="win32.*.win32b.dcc32" name="option.U.arg.1" value="c2006"/>
-          <property category="win32.*.win32b.dcc32" name="option.U.arg.2" value="crypto"/>
           <property category="win32.*.win32b.dcc32" name="option.U.arg.3" value="$(BDS)\lib"/>
           <property category="win32.*.win32b.dcc32" name="option.U.arg.4" value="$(BDS)\lib\obj"/>
           <property category="win32.*.win32b.dcc32" name="option.U.arg.merge" value="1"/>
@@ -284,10 +279,8 @@
           <property category="win32.*.win32b.idl2cpp" name="option.I.arg.1" value="editors\c2006"/>
           <property category="win32.*.win32b.idl2cpp" name="option.I.arg.10" value="c:\program"/>
           <property category="win32.*.win32b.idl2cpp" name="option.I.arg.11" value="files\borland\bds\4.0\include\vcl"/>
-          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.2" value="crypto"/>
           <property category="win32.*.win32b.idl2cpp" name="option.I.arg.3" value="Editors\editors\c2006"/>
           <property category="win32.*.win32b.idl2cpp" name="option.I.arg.4" value="c2006"/>
-          <property category="win32.*.win32b.idl2cpp" name="option.I.arg.5" value="Editors\crypto"/>
           <property category="win32.*.win32b.idl2cpp" name="option.I.arg.6" value="c2006"/>
           <property category="win32.*.win32b.idl2cpp" name="option.I.arg.7" value="editors"/>
           <property category="win32.*.win32b.idl2cpp" name="option.I.arg.8" value="c:\program"/>
@@ -311,7 +304,6 @@
           <property category="win32.*.win32b.ilink32" name="option.I.arg.merge" value="0"/>
           <property category="win32.*.win32b.ilink32" name="option.I.enabled" value="0"/>
           <property category="win32.*.win32b.ilink32" name="option.L.arg.1" value="c2006"/>
-          <property category="win32.*.win32b.ilink32" name="option.L.arg.2" value="crypto"/>
           <property category="win32.*.win32b.ilink32" name="option.L.arg.3" value="$(BDS)\lib\debug"/>
           <property category="win32.*.win32b.ilink32" name="option.L.arg.4" value="$(BDS)\lib\obj"/>
           <property category="win32.*.win32b.ilink32" name="option.L.arg.5" value="$(BDS)\lib"/>
@@ -321,7 +313,6 @@
           <property category="win32.*.win32b.ilink32" name="option.aa.enabled" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.dynamicrtl.enabled" value="0"/>
           <property category="win32.*.win32b.ilink32" name="option.j.arg.1" value="c2006"/>
-          <property category="win32.*.win32b.ilink32" name="option.j.arg.2" value="crypto"/>
           <property category="win32.*.win32b.ilink32" name="option.j.arg.merge" value="1"/>
           <property category="win32.*.win32b.ilink32" name="option.j.enabled" value="0"/>
           <property category="win32.*.win32b.ilink32" name="option.m.enabled" value="0"/>
@@ -379,18 +370,8 @@
         <FILE FILENAME="EdDataSetInfo.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="EdDataSetInfo" FORMNAME="frmEdDataSetInfo" DESIGNCLASS=""/>
         <FILE FILENAME="ToCodeEditor.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="ToCodeEditor" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="ToCodeEditorIntfs.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="ToCodeEditorIntfs" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="crypto\Fibmodule6.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="Fibmodule6" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="crypto\FibBase2.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="FibBase2" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="crypto\Fibbase64.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="Fibbase64" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="crypto\Fibconst.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="Fibconst" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="crypto\FibHash2.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="FibHash2" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="crypto\Fibhash3.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="Fibhash3" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="crypto\Fibmodule1.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="Fibmodule1" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="crypto\Fibmodule5.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="Fibmodule5" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="aspr_ide_bcb.lib" CONTAINERID="LibTool" LOCALCOMMAND="" UNITNAME="aspr_ide_bcb" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="UnitSyntaxMemo.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="UnitSyntaxMemo" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="UnitSyntaxMemo.dcr" CONTAINERID="DcrTool" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="aspr_api.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="aspr_api" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="fibAthlInstanceCounter.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="fibAthlInstanceCounter" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="fibCheckSingleLicenseClass.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="fibCheckSingleLicenseClass" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="FIBToolsConsts.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="FIBToolsConsts" FORMNAME="" DESIGNCLASS=""/>
@@ -410,7 +391,6 @@
         <FILE FILENAME="xmlrtl.bpi" CONTAINERID="BPITool" LOCALCOMMAND="" UNITNAME="xmlrtl" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="vclactnband.bpi" CONTAINERID="BPITool" LOCALCOMMAND="" UNITNAME="vclactnband" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="vclx.bpi" CONTAINERID="BPITool" LOCALCOMMAND="" UNITNAME="vclx" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="FIBSplash.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="FIBSplash" FORMNAME="" DESIGNCLASS=""/>
       </FILELIST>
       <IDEOPTIONS>
         <VersionInfo>

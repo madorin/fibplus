@@ -37,8 +37,8 @@
 			<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 			<Defines>NO_STRICT;USEPACKAGES</Defines>
 			<DynamicRTL>true</DynamicRTL>
-			<IncludePath>crypto\;$(CG_BOOST_ROOT)\boost\tr1\tr1;$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;$(CG_BOOST_ROOT);$(IncludePath)</IncludePath>
-			<ILINK_LibraryPath>crypto\;$(BDS)\lib\obj;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+			<IncludePath>$(CG_BOOST_ROOT)\boost\tr1\tr1;$(BDS)\include;$(BDS)\include\dinkumware;$(BDS)\include\vcl;$(CG_BOOST_ROOT);$(IncludePath)</IncludePath>
+			<ILINK_LibraryPath>$(BDS)\lib\obj;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 			<BCC_wpar>false</BCC_wpar>
 			<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
 		</PropertyGroup>
@@ -118,40 +118,12 @@
 			<DelphiCompile Include="ToCodeEditor.pas">
 				<BuildOrder>8</BuildOrder>
 			</DelphiCompile>
-			<DelphiCompile Include="crypto\FibHash2.pas">
-				<BuildOrder>41</BuildOrder>
-			</DelphiCompile>
-			<DelphiCompile Include="crypto\Fibconst.pas">
-				<BuildOrder>40</BuildOrder>
-			</DelphiCompile>
-			<DelphiCompile Include="crypto\Fibhash3.pas">
-				<BuildOrder>42</BuildOrder>
-			</DelphiCompile>
-			<DelphiCompile Include="crypto\Fibmodule5.pas">
-				<BuildOrder>44</BuildOrder>
-			</DelphiCompile>
-			<DelphiCompile Include="crypto\Fibmodule1.pas">
-				<BuildOrder>43</BuildOrder>
-			</DelphiCompile>
-			<DelphiCompile Include="crypto\Fibbase64.pas">
-				<BuildOrder>39</BuildOrder>
-			</DelphiCompile>
 			<DelphiCompile Include="uFIBScriptForm.pas">
 				<Form>frmScript</Form>
 				<BuildOrder>35</BuildOrder>
 			</DelphiCompile>
 			<DelphiCompile Include="RegistryUtils.pas">
 				<BuildOrder>34</BuildOrder>
-			</DelphiCompile>
-			<LibFiles Include="aspr_ide_bcb.lib">
-				<IgnorePath>true</IgnorePath>
-				<BuildOrder>36</BuildOrder>
-			</LibFiles>
-			<DelphiCompile Include="crypto\FibBase2.pas">
-				<BuildOrder>38</BuildOrder>
-			</DelphiCompile>
-			<DelphiCompile Include="crypto\Fibmodule6.pas">
-				<BuildOrder>37</BuildOrder>
 			</DelphiCompile>
 			<DelphiCompile Include="EdParamToFields.pas">
 				<Form>frmEdParamToFields</Form>
@@ -235,9 +207,6 @@
 			<DelphiCompile Include="FIBSQLEditor.pas">
 				<Form>frmSQLEdit</Form>
 				<BuildOrder>14</BuildOrder>
-			</DelphiCompile>
-			<DelphiCompile Include="FIBSplash.pas">
-				<BuildOrder>45</BuildOrder>
 			</DelphiCompile>
 			<FormResources Include="pFIBConditionsEdit.dfm"/>
 			<FormResources Include="EdErrorInfo.dfm"/>

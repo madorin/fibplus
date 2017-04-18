@@ -13,13 +13,13 @@
       c5\IBSQLSyn.obj c5\RegistryUtils.obj c5\RegSynEditAlt.obj 
       c5\RTTIRoutines.obj c5\UnitSyntaxMemo.obj c5\pFIBEditorsConsts.obj 
       c5\pFIBComponentEditors.obj c5\pFIBRepositoryOperations.obj 
-      c5\fibCheckSingleLicenseClass.obj c5\aspr_api.obj 
+      c5\fibCheckSingleLicenseClass.obj 
       c5\fibAthlInstanceCounter.obj c5\Fibmodule6.obj c5\FibBase2.obj 
       c5\Fibbase64.obj c5\Fibconst.obj c5\FibHash2.obj c5\Fibhash3.obj 
       c5\Fibmodule1.obj c5\Fibmodule5.obj c5\uFIBScriptForm.obj 
       c5\FIBToolsConsts.obj c5\FindCmp.obj 
       c5\pfibdsgnviewsqls.obj c5\pFIBPreferences.obj c5\RegFIBPlusUtils.obj 
-      c5\uFrmSearchResult.obj c5\FIBSplash.obj c5\FIBPlusEditors_CB5.obj"/>
+      c5\uFrmSearchResult.obj c5\FIBPlusEditors_CB5.obj"/>
     <RESFILES value="FIBPlusEditors_CB5.res UnitSyntaxMemo.dcr"/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -30,12 +30,10 @@
       pFIBAutoUpdEditor.dfm pFIBConditionsEdit.dfm pFIBDataSetOptions.dfm 
       pFIBDBEdit.dfm pFIBTrEdit.dfm FIBDataSQLEditor.dfm uFIBScriptForm.dfm 
        pFIBPreferences.dfm uFrmSearchResult.dfm"/>
-    <LIBFILES value="aspr_ide_bcb.lib"/>
     <LIBRARIES value="VCLBDE50.lib"/>
     <SPARELIBS value="VCL50.lib VCLDB50.lib FIBPlus_CB5.lib dsnide50.lib Vclx50.lib VCLBDE50.lib"/>
     <PACKAGES value="vcl50.bpi Vcldb50.bpi FIBPlus_CB5.bpi dsnide50.bpi Vclx50.bpi"/>
     <PATHCPP value=".;"/>
-    <PATHPAS value=".;crypto"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
@@ -44,12 +42,12 @@
     <USERDEFINES value="_DEBUG"/>
     <SYSDEFINES value="NO_STRICT;_RTLDLL;USEPACKAGES"/>
     <MAINSOURCE value="FIBPlusEditors_CB5.cpp"/>
-    <INCLUDEPATH value="crypto;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="crypto;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;..\c5"/>
+    <INCLUDEPATH value="$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;..\c5"/>
     <WARNINGS value="-w-par"/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-Icrypto -I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -D_DEBUG -boa"/>
+    <IDLCFLAGS value="-I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -D_DEBUG -boa"/>
     <CFLAG1 value="-Od -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c -tWM"/>
     <PFLAGS value="-N2c5 -N0c5 -$Y- -$W -$O- -$L- -$D- -$C- -NHc5 -LUdclstd50 -v -JPHNE -M"/>
     <RFLAGS value=""/>
@@ -94,8 +92,8 @@ $(BCB)\Bin\dclmid50.bpl=Borland MIDAS Components
 
 [HistoryLists\hlIncludePath]
 Count=9
-Item0=crypto;$(BCB)\include;$(BCB)\include\vcl
-Item1=crypto;$(BCB)\include;$(BCB)\include\vcl;..\c5
+Item0=$(BCB)\include;$(BCB)\include\vcl
+Item1=$(BCB)\include;$(BCB)\include\vcl;..\c5
 Item2=Editors;$(BCB)\include;$(BCB)\include\vcl
 Item3=Editors;$(BCB)\include;$(BCB)\include\vcl;\Editors
 Item4=$(BCB)\include;$(BCB)\include\vcl;\Editors
@@ -106,8 +104,8 @@ Item8=$(BCB)\include;$(BCB)\include\vcl
 
 [HistoryLists\hlLibraryPath]
 Count=9
-Item0=crypto;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;..\c5
-Item1=crypto;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib
+Item0=$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;..\c5
+Item1=$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib
 Item2=Editors;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib
 Item3=Editors;$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;\Editors
 Item4=$(BCB)\lib\debug;$(BCB)\projects\lib;$(BCB)\lib\obj;$(BCB)\lib;Editors

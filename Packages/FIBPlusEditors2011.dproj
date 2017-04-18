@@ -137,14 +137,6 @@
 			</DCCReference>
 			<DCCReference Include="ToCodeEditor.pas"/>
 			<DCCReference Include="ToCodeEditorIntfs.pas"/>
-			<DCCReference Include="crypto\Fibmodule5.pas"/>
-			<DCCReference Include="crypto\Fibmodule6.pas"/>
-			<DCCReference Include="crypto\FibHash2.pas"/>
-			<DCCReference Include="crypto\Fibhash3.pas"/>
-			<DCCReference Include="crypto\FibBase2.pas"/>
-			<DCCReference Include="crypto\Fibconst.pas"/>
-			<DCCReference Include="crypto\Fibbase64.pas"/>
-			<DCCReference Include="crypto\Fibmodule1.pas"/>
 			<DCCReference Include="RTTIRoutines.pas"/>
 			<DCCReference Include="pFIBComponentEditors.pas"/>
 			<DCCReference Include="pFIBEditorsConsts.pas"/>
@@ -157,7 +149,6 @@
 				<Form>frmScript</Form>
 			</DCCReference>
 			<DCCReference Include="IBSQLSyn.pas"/>
-			<DCCReference Include="fib_aspr_api.pas"/>
 			<DCCReference Include="FindCmp.pas"/>
 			<DCCReference Include="pFIBPreferences.pas">
 				<Form>frmFIBPreferences</Form>
@@ -167,7 +158,6 @@
 			</DCCReference>
 			<DCCReference Include="FIBToolsConsts.pas"/>
 			<DCCReference Include="RegFIBPlusUtils.pas"/>
-			<DCCReference Include="FIBSplash.pas"/>
 			<DCCReference Include="uFontEditor.pas">
 				<Form>frmFontEditor</Form>
 			</DCCReference>

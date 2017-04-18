@@ -67,16 +67,7 @@ contains
   RTTIRoutines in '..\Editors\RTTIRoutines.pas',
   pFIBComponentEditors in '..\Editors\pFIBComponentEditors.pas',
   pFIBRepositoryOperations in '..\Editors\pFIBRepositoryOperations.pas',
-  Fibmodule6 in '..\Editors\crypto\Fibmodule6.pas',
-  FibBase2 in '..\Editors\crypto\FibBase2.pas',
-  Fibbase64 in '..\Editors\crypto\Fibbase64.pas',
-  Fibconst in '..\Editors\crypto\Fibconst.pas',
-  FibHash2 in '..\Editors\crypto\FibHash2.pas',
-  Fibhash3 in '..\Editors\crypto\Fibhash3.pas',
-  Fibmodule1 in '..\Editors\crypto\Fibmodule1.pas',
-  Fibmodule5 in '..\Editors\crypto\Fibmodule5.pas',
   uFIBScriptForm in '..\Editors\uFIBScriptForm.pas',
-  fib_aspr_api in '..\Editors\fib_aspr_api.pas',
   fibAthlInstanceCounter in '..\Editors\fibAthlInstanceCounter.pas',
   fibCheckSingleLicenseClass in '..\Editors\fibCheckSingleLicenseClass.pas',  
   FIBToolsConsts in '..\Editors\FIBToolsConsts.pas',
@@ -84,7 +75,6 @@ contains
   pfibdsgnviewsqls in '..\Editors\pfibdsgnviewsqls.pas',
   pFIBPreferences in '..\Editors\pFIBPreferences.pas',
   RegFIBPlusUtils in '..\Editors\RegFIBPlusUtils.pas',
-  uFrmSearchResult in '..\Editors\uFrmSearchResult.pas',
-  FIBSplash in '..\Editors\FIBSplash.pas';
+  uFrmSearchResult in '..\Editors\uFrmSearchResult.pas';
 
 end.

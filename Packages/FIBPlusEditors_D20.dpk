@@ -72,7 +72,6 @@ contains
   pFIBPreferences in '..\Editors\pFIBPreferences.pas' {frmFIBPreferences},
   uFrmSearchResult in '..\Editors\uFrmSearchResult.pas' {frmCompSearchResult},
   FIBToolsConsts in '..\Editors\FIBToolsConsts.pas',
-  FIBSplash in '..\Editors\FIBSplash.pas',
   pFIBSyntaxMemo in '..\Editors\pFIBSyntaxMemo.pas',
   FIBDBLoginDlg in '..\Editors\..\FIBDBLoginDlg.pas' {frmFIBDBLoginDlg},
   uFIBEditorForm in '..\Editors\uFIBEditorForm.pas',
