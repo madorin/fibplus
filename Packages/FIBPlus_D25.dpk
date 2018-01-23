@@ -25,6 +25,7 @@ package FIBPlus_D25;
 {$IMAGEBASE $400000}
 {$DEFINE RELEASE}
 {$ENDIF IMPLICITBUILDING}
+{$DESCRIPTION 'FibPlus Access Components'}
 {$IMPLICITBUILD OFF}
 
 requires
@@ -35,7 +36,7 @@ requires
 contains
   StdFuncs in '..\StdFuncs.pas',
   IB_Services in '..\IB_Services.pas',
-  Ibase in '..\ibase.pas',
+  ibase in '..\ibase.pas',
   FIBDatabase in '..\FIBDatabase.pas',
   IB_Install in '..\IB_Install.pas',
   pFIBDatabase in '..\pFIBDatabase.pas',

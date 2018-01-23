@@ -74,7 +74,6 @@ contains
   FindCmp in '..\Editors\FindCmp.pas',
   pfibdsgnviewsqls in '..\Editors\pfibdsgnviewsqls.pas',
   pFIBPreferences in '..\Editors\pFIBPreferences.pas',
-  RegFIBPlusUtils in '..\Editors\RegFIBPlusUtils.pas',
   uFrmSearchResult in '..\Editors\uFrmSearchResult.pas';
 
 end.

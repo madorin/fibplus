@@ -41,7 +41,6 @@ USEUNIT("FIBToolsConsts.pas");
 USEUNIT("FindCmp.pas");
 USEUNIT("pfibdsgnviewsqls.pas");
 USEFORMNS("pFIBPreferences.pas", Pfibpreferences, frmFIBPreferences);
-USEUNIT("RegFIBPlusUtils.pas");
 USEFORMNS("uFrmSearchResult.pas", Ufrmsearchresult, frmCompSearchResult);
 USEPACKAGE("Vclx50.bpi");
 //---------------------------------------------------------------------------

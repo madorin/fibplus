@@ -382,7 +382,6 @@
         <FILE FILENAME="pFIBEditorsConsts.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="pFIBEditorsConsts" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="pFIBPreferences.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="pFIBPreferences" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="pFIBRepositoryOperations.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="pFIBRepositoryOperations" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="RegFIBPlusUtils.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="RegFIBPlusUtils" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="RegistryUtils.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="RegistryUtils" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="RegSynEditAlt.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="RegSynEditAlt" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="RTTIRoutines.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="RTTIRoutines" FORMNAME="" DESIGNCLASS=""/>

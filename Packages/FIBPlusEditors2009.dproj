@@ -156,7 +156,6 @@
 				<Form>frmCompSearchResult</Form>
 			</DCCReference>
 			<DCCReference Include="FIBToolsConsts.pas"/>
-			<DCCReference Include="RegFIBPlusUtils.pas"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>

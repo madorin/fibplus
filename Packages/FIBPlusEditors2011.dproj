@@ -157,7 +157,6 @@
 				<Form>frmCompSearchResult</Form>
 			</DCCReference>
 			<DCCReference Include="FIBToolsConsts.pas"/>
-			<DCCReference Include="RegFIBPlusUtils.pas"/>
 			<DCCReference Include="uFontEditor.pas">
 				<Form>frmFontEditor</Form>
 			</DCCReference>

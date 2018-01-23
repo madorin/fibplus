@@ -136,7 +136,6 @@
       <Form>frmTransEdit</Form>
     </DCCReference>
     <DCCReference Include="RegFIBPlusEditors.pas" />
-    <DCCReference Include="RegFIBPlusUtils.pas" />
     <DCCReference Include="RegistryUtils.pas" />
     <DCCReference Include="RegSynEditAlt.pas" />
     <DCCReference Include="RTTIRoutines.pas" />

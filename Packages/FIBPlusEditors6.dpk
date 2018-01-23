@@ -68,7 +68,6 @@ contains
   FindCmp in '..\Editors\FindCmp.pas',
   pFIBDsgnViewSQLs in '..\Editors\pfibdsgnviewsqls.pas' {frmSaveSQLs},
   pFIBPreferences in '..\Editors\pFIBPreferences.pas' {frmFIBPreferences},
-  regfibplusutils in '..\Editors\RegFIBPlusUtils.pas',
   uFIBScriptForm in '..\Editors\uFIBScriptForm.pas' {frmScript},
   uFrmSearchResult in '..\Editors\uFrmSearchResult.pas' {frmCompSearchResult};
 

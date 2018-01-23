@@ -18,7 +18,7 @@
       c5\Fibbase64.obj c5\Fibconst.obj c5\FibHash2.obj c5\Fibhash3.obj 
       c5\Fibmodule1.obj c5\Fibmodule5.obj c5\uFIBScriptForm.obj 
       c5\FIBToolsConsts.obj c5\FindCmp.obj 
-      c5\pfibdsgnviewsqls.obj c5\pFIBPreferences.obj c5\RegFIBPlusUtils.obj 
+      c5\pfibdsgnviewsqls.obj c5\pFIBPreferences.obj 
       c5\uFrmSearchResult.obj c5\FIBPlusEditors_CB5.obj"/>
     <RESFILES value="FIBPlusEditors_CB5.res UnitSyntaxMemo.dcr"/>
     <IDLFILES value=""/>

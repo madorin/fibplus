@@ -68,8 +68,7 @@ contains
   FindCmp in '..\Editors\FindCmp.pas',
   pFIBPreferences in '..\Editors\pFIBPreferences.pas' {frmFIBPreferences},
   uFrmSearchResult in '..\Editors\uFrmSearchResult.pas' {frmCompSearchResult},
-  FIBToolsConsts in '..\Editors\FIBToolsConsts.pas',
-  RegFIBPlusUtils in '..\Editors\RegFIBPlusUtils.pas';
+  FIBToolsConsts in '..\Editors\FIBToolsConsts.pas';
 
 end.
 

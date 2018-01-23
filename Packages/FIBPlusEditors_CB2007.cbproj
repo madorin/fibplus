@@ -212,9 +212,6 @@
     <DelphiCompile Include="RegFIBPlusEditors.pas">
       <BuildOrder>48</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="RegFIBPlusUtils.pas">
-      <BuildOrder>49</BuildOrder>
-    </DelphiCompile>
     <DelphiCompile Include="RegistryUtils.pas">
       <BuildOrder>50</BuildOrder>
     </DelphiCompile>

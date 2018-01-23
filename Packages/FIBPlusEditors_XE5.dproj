@@ -205,7 +205,6 @@
             <Form>frmCompSearchResult</Form>
         </DCCReference>
         <DCCReference Include="FIBToolsConsts.pas"/>
-        <DCCReference Include="RegFIBPlusUtils.pas"/>
         <DCCReference Include="pFIBSyntaxMemo.pas"/>
         <DCCReference Include="..\FIBDBLoginDlg.pas">
             <Form>frmFIBDBLoginDlg</Form>

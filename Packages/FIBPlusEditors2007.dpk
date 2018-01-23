@@ -69,7 +69,6 @@ contains
   pFIBEditorsConsts in '..\Editors\pFIBEditorsConsts.pas',
   pFIBPreferences in '..\Editors\pFIBPreferences.pas',
   pFIBRepositoryOperations in '..\Editors\pFIBRepositoryOperations.pas',
-  RegFIBPlusUtils in '..\Editors\RegFIBPlusUtils.pas',
   RegistryUtils in '..\Editors\RegistryUtils.pas',
   RegSynEditAlt in '..\Editors\RegSynEditAlt.pas',
   RTTIRoutines in '..\Editors\RTTIRoutines.pas',
