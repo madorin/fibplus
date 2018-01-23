@@ -963,7 +963,7 @@ type
     procedure SetBookmarkData(Buffer: TRecBuf; Data: TBookmark); override;
     {$ELSE}
     procedure InternalGotoBookmark(Bookmark: Pointer); override;
-    procedure SetBookmarkData(Buffer: TRecordBuffer; Data: Pointer);
+    procedure SetBookmarkData(Buffer: TRecordBuffer; Data: Pointer); override;
     {$ENDIF}
 
     procedure SetCachedUpdates(Value: Boolean);
