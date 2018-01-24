@@ -101,9 +101,9 @@ type
     FOnIdleConnect:TOnIdleConnect;
     FAutoReconnect:boolean;
     FGenerators :TGeneratorsCache;
-    FLibraryName64        :string;
     FMemoSubtypes : TMemoSubtypes;
    {$IFDEF D_XE2}
+    FLibraryName64        :string;
     FDoChangeScreenCursor: TDoChangeScreenCursor  ;
    {$ENDIF}
 
