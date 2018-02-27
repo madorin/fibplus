@@ -499,14 +499,14 @@ const
 // FormatFields Defaults
   FF_UseRuntimeDefaults:boolean = False;
    RDefDateFormat      :string ='dd.mm.yyyy';
-   RDefTimeFormat      :string ='HH:mm';
+   RDefTimeFormat      :string ='hh:nn';
    RDefDisplayFormatNum:string ='#,##0.';
    RDefEditFormatNum   :string ='0.';
 
 
    dDefDateFormat      :string ='dd.mm.yyyy';
-   dDefTimeFormat      :string ='HH:mm';
-   dDefDateTimeFormat  :string ='dd.mm.yyyy HH:mm';
+   dDefTimeFormat      :string ='hh:nn';
+   dDefDateTimeFormat  :string ='dd.mm.yyyy hh:nn';
    dDefDisplayFormatNum:string ='#,##0.';
    dDefEditFormatNum   :string ='0.';
 
@@ -659,7 +659,7 @@ end;
 
 const
   DefDateFormat='dd.mm.yyyy';
-  DefTimeFormat='HH:mm';
+  DefTimeFormat='hh:nn';
 
 // TFormatFields
 constructor TFormatFields.Create(aOwner  :TComponent);
