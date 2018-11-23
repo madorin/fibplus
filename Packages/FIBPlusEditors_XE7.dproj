@@ -1,0 +1,276 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{ff48eab1-ce8d-45ff-9b6b-3d949b000444}</ProjectGuid>
+        <MainSource>FIBPlusEditors_XE7.dpk</MainSource>
+        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+        <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
+        <DCC_DependencyCheckOutputName/>
+        <ProjectVersion>16.1</ProjectVersion>
+        <Config Condition="'$(Config)'==''">Devrace</Config>
+        <Base>True</Base>
+        <AppType>Package</AppType>
+        <FrameworkType>VCL</FrameworkType>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <TargetedPlatforms>3</TargetedPlatforms>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+        <Base_Win32>true</Base_Win32>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
+        <Base_Win64>true</Base_Win64>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_1)'!=''">
+        <Cfg_1>true</Cfg_1>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_2)'!=''">
+        <Cfg_2>true</Cfg_2>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Devrace' or '$(Cfg_3)'!=''">
+        <Cfg_3>true</Cfg_3>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_3)'=='true') or '$(Cfg_3_Win32)'!=''">
+        <Cfg_3_Win32>true</Cfg_3_Win32>
+        <CfgParent>Cfg_3</CfgParent>
+        <Cfg_3>true</Cfg_3>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base)'!=''">
+        <SanitizedProjectName>FIBPlusEditors_XE7</SanitizedProjectName>
+        <DCC_UsePackage>rtl;dbrtl;$(DCC_UsePackage)</DCC_UsePackage>
+        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;$(DCC_Namespace)</DCC_Namespace>
+        <VerInfo_Locale>1049</VerInfo_Locale>
+        <DCC_ImageBase>00400000</DCC_ImageBase>
+        <DesignOnlyPackage>true</DesignOnlyPackage>
+        <DCC_Description>FIBPlus Property Editors</DCC_Description>
+        <DCC_DependencyCheckOutputName>C:\Users\Public\Documents\RAD Studio\7.0\Bpl\FIBPlusEditors2010.bpl</DCC_DependencyCheckOutputName>
+        <GenDll>true</GenDll>
+        <DCC_WriteableConstants>true</DCC_WriteableConstants>
+        <GenPackage>true</GenPackage>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win32)'!=''">
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <DCC_Namespace>System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+        <Debugger_HostApplication>H:\Program Files\Borland\BDS\3.0\Bin\bds.exe</Debugger_HostApplication>
+        <DCC_UsePackage>vclx;vcl;vclactnband;vcldb;FIBPlus_xe7;vclimg;FIBPlus_XE3;FIBPlus_XE4;FIBPlus_xe7;$(DCC_UsePackage)</DCC_UsePackage>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win64)'!=''">
+        <DCC_Namespace>System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+        <DCC_UsePackage>vclx;vcl;vclactnband;vcldb;FIBPlus_XE2;vclimg;FIBPlus_XE3;FIBPlus_XE4;FIBPlus_xe7;$(DCC_UsePackage)</DCC_UsePackage>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1)'!=''">
+        <Version>7.0</Version>
+        <DCC_DebugInformation>0</DCC_DebugInformation>
+        <DCC_WriteableConstants>True</DCC_WriteableConstants>
+        <DCC_LocalDebugSymbols>False</DCC_LocalDebugSymbols>
+        <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
+        <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
+        <DCC_UnitSearchPath>..</DCC_UnitSearchPath>
+        <DCC_ResourcePath>..</DCC_ResourcePath>
+        <DCC_ObjPath>..</DCC_ObjPath>
+        <DCC_IncludePath>..</DCC_IncludePath>
+        <DCC_Define>RELEASE</DCC_Define>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2)'!=''">
+        <DCC_DcuOutput>d2010\</DCC_DcuOutput>
+        <Version>7.0</Version>
+        <DCC_WriteableConstants>True</DCC_WriteableConstants>
+        <DCC_UnitSearchPath>editors\</DCC_UnitSearchPath>
+        <DCC_ResourcePath>editors\</DCC_ResourcePath>
+        <DCC_ObjPath>editors\</DCC_ObjPath>
+        <DCC_IncludePath>editors\</DCC_IncludePath>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_3)'!=''">
+        <DCC_DependencyCheckOutputName>bpl\FIBPlusEditors2010.bpl</DCC_DependencyCheckOutputName>
+        <DCC_DebugInformation>0</DCC_DebugInformation>
+        <DCC_BplOutput>bpl</DCC_BplOutput>
+        <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
+        <DCC_DcuOutput>d2011\</DCC_DcuOutput>
+        <DCC_AssertionsAtRuntime>false</DCC_AssertionsAtRuntime>
+        <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
+        <DCC_ImportedDataReferences>false</DCC_ImportedDataReferences>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_3_Win32)'!=''">
+        <DCC_DcuOutput>dxe7\</DCC_DcuOutput>
+        <DCC_UnitSearchPath>..\DXE7;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+    </PropertyGroup>
+    <ItemGroup>
+        <DelphiCompile Include="$(MainSource)">
+            <MainSource>MainSource</MainSource>
+        </DelphiCompile>
+        <DCCReference Include="vcl.dcp"/>
+        <DCCReference Include="vcldb.dcp"/>
+        <DCCReference Include="vclx.dcp"/>
+        <DCCReference Include="designide.dcp"/>
+        <DCCReference Include="rtl.dcp"/>
+        <DCCReference Include="dbrtl.dcp"/>
+        <DCCReference Include="vclactnband.dcp"/>
+        <DCCReference Include="vclimg.dcp"/>
+        <DCCReference Include="FIBPlus_XE7.dcp"/>
+        <DCCReference Include="..\Editors\RegFIBPlusEditors.pas"/>
+        <DCCReference Include="..\Editors\EdFieldInfo.pas">
+            <Form>frmFields</Form>
+        </DCCReference>
+        <DCCReference Include="..\Editors\EdDataSetInfo.pas">
+            <Form>frmEdDataSetInfo</Form>
+        </DCCReference>
+        <DCCReference Include="..\Editors\pFIBDBEdit.pas">
+            <Form>DBEditForm</Form>
+        </DCCReference>
+        <DCCReference Include="..\Editors\pFIBTrEdit.pas">
+            <Form>frmTransEdit</Form>
+        </DCCReference>
+        <DCCReference Include="..\Editors\pFIBConditionsEdit.pas">
+            <Form>frmEditCheckStrings</Form>
+        </DCCReference>
+        <DCCReference Include="..\Editors\pFIBAutoUpdEditor.pas">
+            <Form>pFIBAutoUpdateOptionForm</Form>
+        </DCCReference>
+        <DCCReference Include="..\Editors\pFIBDataSetOptions.pas">
+            <Form>FPDataSetOptionsForm</Form>
+        </DCCReference>
+        <DCCReference Include="..\Editors\EdParamToFields.pas">
+            <Form>frmEdParamToFields</Form>
+        </DCCReference>
+        <DCCReference Include="..\Editors\fraSQLEdit.pas">
+            <Form>fSQLEdit</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Editors\fraDSSQLEdit.pas">
+            <Form>fDSSQLEdit</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Editors\fraAutoUpdEditor.pas">
+            <Form>fAutoUpdateOptionForm</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Editors\fraConditionsEdit.pas">
+            <Form>fraEdConditions</Form>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="..\Editors\FIBSQLEditor.pas">
+            <Form>frmSQLEdit</Form>
+        </DCCReference>
+        <DCCReference Include="..\Editors\FIBDataSQLEditor.pas">
+            <Form>frmDstSQLedit</Form>
+        </DCCReference>
+        <DCCReference Include="..\Editors\EdErrorInfo.pas">
+            <Form>frmErrors</Form>
+        </DCCReference>
+        <DCCReference Include="..\Editors\ToCodeEditor.pas"/>
+        <DCCReference Include="..\Editors\ToCodeEditorIntfs.pas"/>
+        <DCCReference Include="..\Editors\RTTIRoutines.pas"/>
+        <DCCReference Include="..\Editors\pFIBComponentEditors.pas"/>
+        <DCCReference Include="..\Editors\pFIBEditorsConsts.pas"/>
+        <DCCReference Include="..\Editors\pFIBRepositoryOperations.pas"/>
+        <DCCReference Include="..\Editors\RegistryUtils.pas"/>
+        <DCCReference Include="..\Editors\fibAthlInstanceCounter.pas"/>
+        <DCCReference Include="..\Editors\fibCheckSingleLicenseClass.pas"/>
+        <DCCReference Include="..\Editors\RegSynEditAlt.pas"/>
+        <DCCReference Include="..\Editors\uFIBScriptForm.pas">
+            <Form>frmScript</Form>
+        </DCCReference>
+        <DCCReference Include="..\Editors\IBSQLSyn.pas"/>
+        <DCCReference Include="..\Editors\FindCmp.pas"/>
+        <DCCReference Include="..\Editors\pFIBPreferences.pas">
+            <Form>frmFIBPreferences</Form>
+        </DCCReference>
+        <DCCReference Include="..\Editors\uFrmSearchResult.pas">
+            <Form>frmCompSearchResult</Form>
+        </DCCReference>
+        <DCCReference Include="..\Editors\FIBToolsConsts.pas"/>
+        <DCCReference Include="..\Editors\pFIBSyntaxMemo.pas"/>
+        <DCCReference Include="..\FIBDBLoginDlg.pas">
+            <Form>frmFIBDBLoginDlg</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="..\Editors\uFIBEditorForm.pas"/>
+        <DCCReference Include="..\Editors\uFontEditor.pas">
+            <Form>frmFontEditor</Form>
+        </DCCReference>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_2</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Devrace">
+            <Key>Cfg_3</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Base">
+            <Key>Base</Key>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Release">
+            <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+    </ItemGroup>
+    <Import Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')" Project="$(BDS)\Bin\CodeGear.Delphi.Targets"/>
+    <ProjectExtensions>
+        <Borland.Personality>Delphi.Personality.12</Borland.Personality>
+        <Borland.ProjectType>Package</Borland.ProjectType>
+        <BorlandProject>
+            <Delphi.Personality>
+                <Parameters>
+                    <Parameters Name="HostApplication">H:\Program Files\Borland\BDS\3.0\Bin\bds.exe</Parameters>
+                </Parameters>
+                <VersionInfo>
+                    <VersionInfo Name="IncludeVerInfo">True</VersionInfo>
+                    <VersionInfo Name="AutoIncBuild">False</VersionInfo>
+                    <VersionInfo Name="MajorVer">1</VersionInfo>
+                    <VersionInfo Name="MinorVer">0</VersionInfo>
+                    <VersionInfo Name="Release">0</VersionInfo>
+                    <VersionInfo Name="Build">0</VersionInfo>
+                    <VersionInfo Name="Debug">False</VersionInfo>
+                    <VersionInfo Name="PreRelease">False</VersionInfo>
+                    <VersionInfo Name="Special">False</VersionInfo>
+                    <VersionInfo Name="Private">False</VersionInfo>
+                    <VersionInfo Name="DLL">False</VersionInfo>
+                    <VersionInfo Name="Locale">1049</VersionInfo>
+                    <VersionInfo Name="CodePage">1251</VersionInfo>
+                </VersionInfo>
+                <VersionInfoKeys>
+                    <VersionInfoKeys Name="CompanyName"/>
+                    <VersionInfoKeys Name="FileDescription"/>
+                    <VersionInfoKeys Name="FileVersion">1.0.0.0</VersionInfoKeys>
+                    <VersionInfoKeys Name="InternalName"/>
+                    <VersionInfoKeys Name="LegalCopyright"/>
+                    <VersionInfoKeys Name="LegalTrademarks"/>
+                    <VersionInfoKeys Name="OriginalFilename"/>
+                    <VersionInfoKeys Name="ProductName"/>
+                    <VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys>
+                    <VersionInfoKeys Name="Comments"/>
+                </VersionInfoKeys>
+                <Source>
+                    <Source Name="MainSource">FIBPlusEditors_XE7.dpk</Source>
+                </Source>
+                <Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k210.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp210.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+                </Excluded_Packages>
+            </Delphi.Personality>
+            <Platforms>
+                <Platform value="Win32">True</Platform>
+                <Platform value="Win64">True</Platform>
+            </Platforms>
+        </BorlandProject>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+    <Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
+</Project>
