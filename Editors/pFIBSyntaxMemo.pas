@@ -190,6 +190,14 @@ interface
   {$DEFINE D25}
 {$ENDIF}
 
+{$IFDEF VER330}
+  {$DEFINE D26}
+{$ENDIF}
+
+{$IFDEF D26}
+  {$DEFINE D25}
+{$ENDIF}
+
 {$IFDEF D25}
   {$DEFINE D24}
 {$ENDIF}
