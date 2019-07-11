@@ -62,10 +62,10 @@ implementation
 
 {$R *.dfm}
  uses  TypInfo, RegistryUtils, RTTIRoutines, pFIBInterfaces;
-
+{
 var
    LastTop, LastLeft,   LastWidth,LastHeight:integer;
-
+}
 const
    RegFIBSQLEdOptions='SQLEditor';
 
@@ -272,5 +272,5 @@ begin
 end;
 
 initialization
-  LastTop:=-1;
+  // LastTop:=-1;
 end.

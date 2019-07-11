@@ -608,12 +608,12 @@ end;
 
 procedure TfDSSQLEdit.SetProposal;
 var
-   i:integer;
-   ts,ts1:TStrings;
-   DDLExtractor1:IFIBMetaDataExtractor;
-   Stringer:IFIBStringer;
-   b:variant;
-   b1:boolean;
+//   i:integer;
+//   ts,ts1:TStrings;
+//   DDLExtractor1:IFIBMetaDataExtractor;
+//   Stringer:IFIBStringer;
+   b: Variant;
+   b1: Boolean;
 begin
  if (SelectSQLEdit.FDatabase=nil) then
  begin

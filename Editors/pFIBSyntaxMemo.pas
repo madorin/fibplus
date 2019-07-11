@@ -7717,7 +7717,7 @@ begin
        (XPos<= CurParser[i].stStart+CurParser[i].stLength) then
    begin
      Success:=True;
-     xPos:=CurParser[i].stStart;
+     //~ xPos:=CurParser[i].stStart;
      s:=Lines[Range.PosY];
 
      if not (CurParser[i].stToken in

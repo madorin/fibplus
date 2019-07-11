@@ -81,9 +81,8 @@ uses pFIBComponentEditors, {$ifndef internal} fib_aspr_api, Fibmodule5, Fibmodul
 
 
 var    vSQLTextEditorClass:TClass;
-var
-  LicensedTo: string;
-  k: AnsiString;
+  // LicensedTo: string;
+  // k: AnsiString;
 
 type   TFIBSQLMemo=class(TMemo,IFIBSQLTextEditor)
        private

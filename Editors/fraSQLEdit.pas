@@ -111,7 +111,7 @@ type
     qrySPFields:TDataSet  ;
     qryTabFields1:TDataSet;
     qryAllTables1:TDataSet;
-    qryAllGenerators:TDataSet;
+    //~ qryAllGenerators:TDataSet;
 
   private
     OutPutTxt:TStrings;
@@ -1895,7 +1895,7 @@ end;
 
 procedure TfSQLEdit.CallBackProposal(const ProposalName: string);
 var
-   AliasName,TableName:string;
+   AliasName:string;
    Parser:ISQLParser;
 
 

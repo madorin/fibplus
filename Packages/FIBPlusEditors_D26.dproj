@@ -5,7 +5,7 @@
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
         <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
         <DCC_DependencyCheckOutputName>C:\Documents and Settings\vvs.HOME\Мои документы\RAD Studio\5.0\Bpl\FIBPlusEditors2007.bpl</DCC_DependencyCheckOutputName>
-        <ProjectVersion>18.5</ProjectVersion>
+        <ProjectVersion>18.6</ProjectVersion>
         <Config Condition="'$(Config)'==''">Release</Config>
         <Base>True</Base>
         <AppType>Package</AppType>
@@ -74,6 +74,7 @@
         <GenDll>true</GenDll>
         <DCC_WriteableConstants>true</DCC_WriteableConstants>
         <GenPackage>true</GenPackage>
+        <DCC_DcuOutput>.\$(Platform)\$(Config)</DCC_DcuOutput>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <DCC_Namespace>System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>

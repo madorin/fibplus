@@ -389,8 +389,6 @@ const
  procedure ProposalInternalFunctionsItems(ts1,ts2:TStrings);
  var
   i:Integer;
-  s:string;
-  p:integer;
  begin
    ts1.Clear;
    ts2.Clear;

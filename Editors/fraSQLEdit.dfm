@@ -521,7 +521,6 @@ object fSQLEdit: TfSQLEdit
         Font.Height = -11
         Font.Name = 'MS Sans Serif'
         Font.Style = []
-        ItemHeight = 13
         ParentFont = False
         TabOrder = 0
         Items.Strings = (
@@ -537,7 +536,6 @@ object fSQLEdit: TfSQLEdit
         Width = 36
         Height = 21
         Style = csDropDownList
-        ItemHeight = 13
         TabOrder = 1
         OnChange = cmbParamSymbolChange
         Items.Strings = (
@@ -764,7 +762,6 @@ object fSQLEdit: TfSQLEdit
           Font.Height = -11
           Font.Name = 'MS Sans Serif'
           Font.Style = [fsBold]
-          ItemHeight = 13
           ParentFont = False
           TabOrder = 1
           OnChange = cmbTabsNameViewsChange

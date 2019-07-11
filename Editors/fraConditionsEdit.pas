@@ -230,7 +230,6 @@ end;
 }
 type THackCondition=class
      private
-       FOwner:TObject;
        FEnabled:boolean;
     end;
 

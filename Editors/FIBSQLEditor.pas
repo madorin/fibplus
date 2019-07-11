@@ -66,10 +66,10 @@ uses
 {$IFDEF CODEEDITOR} ToCodeEditor,{$ENDIF} TypInfo, RTTIRoutines, IBSQLSyn,pFIBInterfaces,
   RegFIBPlusEditors;
 
+{
 var
-   LastTop, LastLeft,   LastWidth,LastHeight:integer;
-
-
+  LastTop, LastLeft, LastWidth,LastHeight:integer;
+}
 
 function ShowSQLEdit(aQuery:TComponent):boolean;
 var
@@ -120,7 +120,7 @@ end;
 
 procedure TfrmSQLEdit.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
- LastTop   :=Top;
+//~ LastTop   :=Top;
  LastLeft  :=Left;
  LastWidth :=Width;
  LastHeight:=Height;
@@ -134,12 +134,14 @@ begin
 end;
 
 procedure TfrmSQLEdit.SetProposal;
+{
 var
    i:integer;
    ts,ts1:TStrings;
    DDLExtractor1:IFIBMetaDataExtractor;
    Stringer:IFIBStringer;
    v:Variant;
+}
 begin
 { if (fSQLEdit1.FDatabase=nil) then
  begin
@@ -204,6 +206,6 @@ begin
 end;
 
 initialization
-  LastTop:=-1;
+//~  LastTop:=-1;
 
 end.
