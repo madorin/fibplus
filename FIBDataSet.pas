@@ -3101,41 +3101,38 @@ begin
  end;
 end;
 
-
 function TFIBBCDField.GetAsVariant: Variant;
 begin
-  if FieldKind=fkCalculated then
-   Result:=inherited GetAsVariant
+  if FieldKind = fkCalculated then
+    Result := inherited GetAsVariant
   else
-  if IsNull then
-    Result := Null
-  else
-  begin
-  {$IFDEF D6+}
-    if Size=0 then
-     Result:=AsInt64
-    else
-    if Size=4 then
-       Result :=AsCurrency
+    if IsNull then
+      Result := Null
     else
     begin
-     VarFMTBcdCreate(Result,AsBcd);
-     {$IFDEF D_XE}
-      {$IFNDEF D_XE2}
-       Result:=Result+0; //Avoid bug BCD in  XE
+      {$IFDEF D6+}
+      if Size = 0 then
+        Result := AsInt64
+      else
+        if Size <= 4 then
+          Result := AsCurrency
+        else
+        begin
+          VarFMTBcdCreate(Result,AsBcd);
+          {$IFDEF D_XE}
+          {$IFNDEF D_XE2}
+          Result := Result + 0; // Avoid bug BCD in XE
+          {$ENDIF}
+          {$ENDIF}
+        end;
+      {$ELSE}
+      if Size <= 4 then
+        Result := AsCurrency
+      else
+        Result := AsExtended;
       {$ENDIF}
-     {$ENDIF}
     end;
-  {$ELSE}
-    if Size=4 then
-       Result :=AsCurrency
-    else
-       Result :=AsExtended;
-  {$ENDIF}
-  end;
-  
 end;
-
 
 function TFIBBCDField.GetDataSize: Integer;
 var
