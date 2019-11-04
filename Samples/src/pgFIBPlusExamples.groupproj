@@ -1,0 +1,348 @@
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{DC05BD08-8766-402C-801F-7A02AAE84365}</ProjectGuid>
+		</PropertyGroup>
+		<ItemGroup>
+			<Projects Include="DataSetBasic\DataSetBasic.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="AutoUpdateOptions\AutoUpdateOptions.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="DataSetOptions\DataSetOptions.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="SQLMonitor\SQLMonitor.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="BackgroundQueries\BackgroundQuery.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="MasterDetail\MasterDetail.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="LocalSorting\LocalSorting.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="LocalFiltering\LocalFiltering.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="ServerFilteringContitions\ServerFilteringConditions.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="ServerFilteringMacroses\ServerFilteringMacroses.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="PotectedEditing\ProtectedEditing.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="FieldsRepository\FieldsRepository.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="ErrorMessagesRepository\ErrorMessagesRepository.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="Events\Events.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="ConnectionLost\ConnectionLost.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="BlobFilters\BlobFilters.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="StoredProcedure\StoredProcedure.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="LimitedBuffersSize\LimitedBuffersSize.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="SQLLogger\SQLLogger.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="DLL\DLLMain\DLLMain.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="DLL\TestDLL\TestDLL.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="ArrayFields1\ArrayFields1.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="ArrayFields2\ArrayFields2.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="Scripter\Scripter.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="OfflineWork\OfflineWork.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="RefreshDataSet\RefreshDataSet.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="UnicodeFSS_2009\UnicodeFSS_2009.dproj">
+				<Dependencies/>
+			</Projects>
+		</ItemGroup>
+		<ProjectExtensions>
+			<Borland.Personality>Default.Personality.12</Borland.Personality>
+			<Borland.ProjectType/>
+			<BorlandProject>
+				<Default.Personality/>
+			</BorlandProject>
+		</ProjectExtensions>
+		<Target Name="DataSetBasic">
+			<MSBuild Projects="DataSetBasic\DataSetBasic.dproj"/>
+		</Target>
+		<Target Name="DataSetBasic:Clean">
+			<MSBuild Targets="Clean" Projects="DataSetBasic\DataSetBasic.dproj"/>
+		</Target>
+		<Target Name="DataSetBasic:Make">
+			<MSBuild Targets="Make" Projects="DataSetBasic\DataSetBasic.dproj"/>
+		</Target>
+		<Target Name="AutoUpdateOptions">
+			<MSBuild Projects="AutoUpdateOptions\AutoUpdateOptions.dproj"/>
+		</Target>
+		<Target Name="AutoUpdateOptions:Clean">
+			<MSBuild Targets="Clean" Projects="AutoUpdateOptions\AutoUpdateOptions.dproj"/>
+		</Target>
+		<Target Name="AutoUpdateOptions:Make">
+			<MSBuild Targets="Make" Projects="AutoUpdateOptions\AutoUpdateOptions.dproj"/>
+		</Target>
+		<Target Name="DataSetOptions">
+			<MSBuild Projects="DataSetOptions\DataSetOptions.dproj"/>
+		</Target>
+		<Target Name="DataSetOptions:Clean">
+			<MSBuild Targets="Clean" Projects="DataSetOptions\DataSetOptions.dproj"/>
+		</Target>
+		<Target Name="DataSetOptions:Make">
+			<MSBuild Targets="Make" Projects="DataSetOptions\DataSetOptions.dproj"/>
+		</Target>
+		<Target Name="SQLMonitor">
+			<MSBuild Projects="SQLMonitor\SQLMonitor.dproj"/>
+		</Target>
+		<Target Name="SQLMonitor:Clean">
+			<MSBuild Targets="Clean" Projects="SQLMonitor\SQLMonitor.dproj"/>
+		</Target>
+		<Target Name="SQLMonitor:Make">
+			<MSBuild Targets="Make" Projects="SQLMonitor\SQLMonitor.dproj"/>
+		</Target>
+		<Target Name="BackgroundQuery">
+			<MSBuild Projects="BackgroundQueries\BackgroundQuery.dproj"/>
+		</Target>
+		<Target Name="BackgroundQuery:Clean">
+			<MSBuild Targets="Clean" Projects="BackgroundQueries\BackgroundQuery.dproj"/>
+		</Target>
+		<Target Name="BackgroundQuery:Make">
+			<MSBuild Targets="Make" Projects="BackgroundQueries\BackgroundQuery.dproj"/>
+		</Target>
+		<Target Name="MasterDetail">
+			<MSBuild Projects="MasterDetail\MasterDetail.dproj"/>
+		</Target>
+		<Target Name="MasterDetail:Clean">
+			<MSBuild Targets="Clean" Projects="MasterDetail\MasterDetail.dproj"/>
+		</Target>
+		<Target Name="MasterDetail:Make">
+			<MSBuild Targets="Make" Projects="MasterDetail\MasterDetail.dproj"/>
+		</Target>
+		<Target Name="LocalSorting">
+			<MSBuild Projects="LocalSorting\LocalSorting.dproj"/>
+		</Target>
+		<Target Name="LocalSorting:Clean">
+			<MSBuild Targets="Clean" Projects="LocalSorting\LocalSorting.dproj"/>
+		</Target>
+		<Target Name="LocalSorting:Make">
+			<MSBuild Targets="Make" Projects="LocalSorting\LocalSorting.dproj"/>
+		</Target>
+		<Target Name="LocalFiltering">
+			<MSBuild Projects="LocalFiltering\LocalFiltering.dproj"/>
+		</Target>
+		<Target Name="LocalFiltering:Clean">
+			<MSBuild Targets="Clean" Projects="LocalFiltering\LocalFiltering.dproj"/>
+		</Target>
+		<Target Name="LocalFiltering:Make">
+			<MSBuild Targets="Make" Projects="LocalFiltering\LocalFiltering.dproj"/>
+		</Target>
+		<Target Name="ServerFilteringConditions">
+			<MSBuild Projects="ServerFilteringContitions\ServerFilteringConditions.dproj"/>
+		</Target>
+		<Target Name="ServerFilteringConditions:Clean">
+			<MSBuild Targets="Clean" Projects="ServerFilteringContitions\ServerFilteringConditions.dproj"/>
+		</Target>
+		<Target Name="ServerFilteringConditions:Make">
+			<MSBuild Targets="Make" Projects="ServerFilteringContitions\ServerFilteringConditions.dproj"/>
+		</Target>
+		<Target Name="ServerFilteringMacroses">
+			<MSBuild Projects="ServerFilteringMacroses\ServerFilteringMacroses.dproj"/>
+		</Target>
+		<Target Name="ServerFilteringMacroses:Clean">
+			<MSBuild Targets="Clean" Projects="ServerFilteringMacroses\ServerFilteringMacroses.dproj"/>
+		</Target>
+		<Target Name="ServerFilteringMacroses:Make">
+			<MSBuild Targets="Make" Projects="ServerFilteringMacroses\ServerFilteringMacroses.dproj"/>
+		</Target>
+		<Target Name="ProtectedEditing">
+			<MSBuild Projects="PotectedEditing\ProtectedEditing.dproj"/>
+		</Target>
+		<Target Name="ProtectedEditing:Clean">
+			<MSBuild Targets="Clean" Projects="PotectedEditing\ProtectedEditing.dproj"/>
+		</Target>
+		<Target Name="ProtectedEditing:Make">
+			<MSBuild Targets="Make" Projects="PotectedEditing\ProtectedEditing.dproj"/>
+		</Target>
+		<Target Name="FieldsRepository">
+			<MSBuild Projects="FieldsRepository\FieldsRepository.dproj"/>
+		</Target>
+		<Target Name="FieldsRepository:Clean">
+			<MSBuild Targets="Clean" Projects="FieldsRepository\FieldsRepository.dproj"/>
+		</Target>
+		<Target Name="FieldsRepository:Make">
+			<MSBuild Targets="Make" Projects="FieldsRepository\FieldsRepository.dproj"/>
+		</Target>
+		<Target Name="ErrorMessagesRepository">
+			<MSBuild Projects="ErrorMessagesRepository\ErrorMessagesRepository.dproj"/>
+		</Target>
+		<Target Name="ErrorMessagesRepository:Clean">
+			<MSBuild Targets="Clean" Projects="ErrorMessagesRepository\ErrorMessagesRepository.dproj"/>
+		</Target>
+		<Target Name="ErrorMessagesRepository:Make">
+			<MSBuild Targets="Make" Projects="ErrorMessagesRepository\ErrorMessagesRepository.dproj"/>
+		</Target>
+		<Target Name="Events">
+			<MSBuild Projects="Events\Events.dproj"/>
+		</Target>
+		<Target Name="Events:Clean">
+			<MSBuild Targets="Clean" Projects="Events\Events.dproj"/>
+		</Target>
+		<Target Name="Events:Make">
+			<MSBuild Targets="Make" Projects="Events\Events.dproj"/>
+		</Target>
+		<Target Name="ConnectionLost">
+			<MSBuild Projects="ConnectionLost\ConnectionLost.dproj"/>
+		</Target>
+		<Target Name="ConnectionLost:Clean">
+			<MSBuild Targets="Clean" Projects="ConnectionLost\ConnectionLost.dproj"/>
+		</Target>
+		<Target Name="ConnectionLost:Make">
+			<MSBuild Targets="Make" Projects="ConnectionLost\ConnectionLost.dproj"/>
+		</Target>
+		<Target Name="BlobFilters">
+			<MSBuild Projects="BlobFilters\BlobFilters.dproj"/>
+		</Target>
+		<Target Name="BlobFilters:Clean">
+			<MSBuild Targets="Clean" Projects="BlobFilters\BlobFilters.dproj"/>
+		</Target>
+		<Target Name="BlobFilters:Make">
+			<MSBuild Targets="Make" Projects="BlobFilters\BlobFilters.dproj"/>
+		</Target>
+		<Target Name="StoredProcedure">
+			<MSBuild Projects="StoredProcedure\StoredProcedure.dproj"/>
+		</Target>
+		<Target Name="StoredProcedure:Clean">
+			<MSBuild Targets="Clean" Projects="StoredProcedure\StoredProcedure.dproj"/>
+		</Target>
+		<Target Name="StoredProcedure:Make">
+			<MSBuild Targets="Make" Projects="StoredProcedure\StoredProcedure.dproj"/>
+		</Target>
+		<Target Name="LimitedBuffersSize">
+			<MSBuild Projects="LimitedBuffersSize\LimitedBuffersSize.dproj"/>
+		</Target>
+		<Target Name="LimitedBuffersSize:Clean">
+			<MSBuild Targets="Clean" Projects="LimitedBuffersSize\LimitedBuffersSize.dproj"/>
+		</Target>
+		<Target Name="LimitedBuffersSize:Make">
+			<MSBuild Targets="Make" Projects="LimitedBuffersSize\LimitedBuffersSize.dproj"/>
+		</Target>
+		<Target Name="SQLLogger">
+			<MSBuild Projects="SQLLogger\SQLLogger.dproj"/>
+		</Target>
+		<Target Name="SQLLogger:Clean">
+			<MSBuild Targets="Clean" Projects="SQLLogger\SQLLogger.dproj"/>
+		</Target>
+		<Target Name="SQLLogger:Make">
+			<MSBuild Targets="Make" Projects="SQLLogger\SQLLogger.dproj"/>
+		</Target>
+		<Target Name="DLLMain">
+			<MSBuild Projects="DLL\DLLMain\DLLMain.dproj"/>
+		</Target>
+		<Target Name="DLLMain:Clean">
+			<MSBuild Targets="Clean" Projects="DLL\DLLMain\DLLMain.dproj"/>
+		</Target>
+		<Target Name="DLLMain:Make">
+			<MSBuild Targets="Make" Projects="DLL\DLLMain\DLLMain.dproj"/>
+		</Target>
+		<Target Name="TestDLL">
+			<MSBuild Projects="DLL\TestDLL\TestDLL.dproj"/>
+		</Target>
+		<Target Name="TestDLL:Clean">
+			<MSBuild Targets="Clean" Projects="DLL\TestDLL\TestDLL.dproj"/>
+		</Target>
+		<Target Name="TestDLL:Make">
+			<MSBuild Targets="Make" Projects="DLL\TestDLL\TestDLL.dproj"/>
+		</Target>
+		<Target Name="ArrayFields1">
+			<MSBuild Projects="ArrayFields1\ArrayFields1.dproj"/>
+		</Target>
+		<Target Name="ArrayFields1:Clean">
+			<MSBuild Targets="Clean" Projects="ArrayFields1\ArrayFields1.dproj"/>
+		</Target>
+		<Target Name="ArrayFields1:Make">
+			<MSBuild Targets="Make" Projects="ArrayFields1\ArrayFields1.dproj"/>
+		</Target>
+		<Target Name="ArrayFields2">
+			<MSBuild Projects="ArrayFields2\ArrayFields2.dproj"/>
+		</Target>
+		<Target Name="ArrayFields2:Clean">
+			<MSBuild Targets="Clean" Projects="ArrayFields2\ArrayFields2.dproj"/>
+		</Target>
+		<Target Name="ArrayFields2:Make">
+			<MSBuild Targets="Make" Projects="ArrayFields2\ArrayFields2.dproj"/>
+		</Target>
+		<Target Name="Scripter">
+			<MSBuild Projects="Scripter\Scripter.dproj"/>
+		</Target>
+		<Target Name="Scripter:Clean">
+			<MSBuild Targets="Clean" Projects="Scripter\Scripter.dproj"/>
+		</Target>
+		<Target Name="Scripter:Make">
+			<MSBuild Targets="Make" Projects="Scripter\Scripter.dproj"/>
+		</Target>
+		<Target Name="OfflineWork">
+			<MSBuild Projects="OfflineWork\OfflineWork.dproj"/>
+		</Target>
+		<Target Name="OfflineWork:Clean">
+			<MSBuild Targets="Clean" Projects="OfflineWork\OfflineWork.dproj"/>
+		</Target>
+		<Target Name="OfflineWork:Make">
+			<MSBuild Targets="Make" Projects="OfflineWork\OfflineWork.dproj"/>
+		</Target>
+		<Target Name="RefreshDataSet">
+			<MSBuild Projects="RefreshDataSet\RefreshDataSet.dproj"/>
+		</Target>
+		<Target Name="RefreshDataSet:Clean">
+			<MSBuild Targets="Clean" Projects="RefreshDataSet\RefreshDataSet.dproj"/>
+		</Target>
+		<Target Name="RefreshDataSet:Make">
+			<MSBuild Targets="Make" Projects="RefreshDataSet\RefreshDataSet.dproj"/>
+		</Target>
+		<Target Name="UnicodeFSS_2009">
+			<MSBuild Projects="UnicodeFSS_2009\UnicodeFSS_2009.dproj"/>
+		</Target>
+		<Target Name="UnicodeFSS_2009:Clean">
+			<MSBuild Targets="Clean" Projects="UnicodeFSS_2009\UnicodeFSS_2009.dproj"/>
+		</Target>
+		<Target Name="UnicodeFSS_2009:Make">
+			<MSBuild Targets="Make" Projects="UnicodeFSS_2009\UnicodeFSS_2009.dproj"/>
+		</Target>
+		<Target Name="Build">
+			<CallTarget Targets="DataSetBasic;AutoUpdateOptions;DataSetOptions;SQLMonitor;BackgroundQuery;MasterDetail;LocalSorting;LocalFiltering;ServerFilteringConditions;ServerFilteringMacroses;ProtectedEditing;FieldsRepository;ErrorMessagesRepository;Events;ConnectionLost;BlobFilters;StoredProcedure;LimitedBuffersSize;SQLLogger;DLLMain;TestDLL;ArrayFields1;ArrayFields2;Scripter;OfflineWork;RefreshDataSet;UnicodeFSS_2009"/>
+		</Target>
+		<Target Name="Clean">
+			<CallTarget Targets="DataSetBasic:Clean;AutoUpdateOptions:Clean;DataSetOptions:Clean;SQLMonitor:Clean;BackgroundQuery:Clean;MasterDetail:Clean;LocalSorting:Clean;LocalFiltering:Clean;ServerFilteringConditions:Clean;ServerFilteringMacroses:Clean;ProtectedEditing:Clean;FieldsRepository:Clean;ErrorMessagesRepository:Clean;Events:Clean;ConnectionLost:Clean;BlobFilters:Clean;StoredProcedure:Clean;LimitedBuffersSize:Clean;SQLLogger:Clean;DLLMain:Clean;TestDLL:Clean;ArrayFields1:Clean;ArrayFields2:Clean;Scripter:Clean;OfflineWork:Clean;RefreshDataSet:Clean;UnicodeFSS_2009:Clean"/>
+		</Target>
+		<Target Name="Make">
+			<CallTarget Targets="DataSetBasic:Make;AutoUpdateOptions:Make;DataSetOptions:Make;SQLMonitor:Make;BackgroundQuery:Make;MasterDetail:Make;LocalSorting:Make;LocalFiltering:Make;ServerFilteringConditions:Make;ServerFilteringMacroses:Make;ProtectedEditing:Make;FieldsRepository:Make;ErrorMessagesRepository:Make;Events:Make;ConnectionLost:Make;BlobFilters:Make;StoredProcedure:Make;LimitedBuffersSize:Make;SQLLogger:Make;DLLMain:Make;TestDLL:Make;ArrayFields1:Make;ArrayFields2:Make;Scripter:Make;OfflineWork:Make;RefreshDataSet:Make;UnicodeFSS_2009:Make"/>
+		</Target>
+		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+	</Project>
