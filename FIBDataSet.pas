@@ -12315,6 +12315,12 @@ var
  vSortedFields:array of TField;
 
 begin
+  if Length(aFields) = 0 then
+  begin
+    DataSet.FSortFields := null;
+    Exit;
+  end;
+
   DataSet.CheckDatasetOpen(' do local sorting ') ;
   TFIBCustomDataSet(DataSet).ChangeScreenCursor(iCurScreenState);
   Inc(DataSet.vSimpleBookMark);
