@@ -181,8 +181,6 @@
         <DCCReference Include="..\Editors\pFIBEditorsConsts.pas"/>
         <DCCReference Include="..\Editors\pFIBRepositoryOperations.pas"/>
         <DCCReference Include="..\Editors\RegistryUtils.pas"/>
-        <DCCReference Include="..\Editors\fibAthlInstanceCounter.pas"/>
-        <DCCReference Include="..\Editors\fibCheckSingleLicenseClass.pas"/>
         <DCCReference Include="..\Editors\RegSynEditAlt.pas"/>
         <DCCReference Include="..\Editors\uFIBScriptForm.pas">
             <Form>frmScript</Form>

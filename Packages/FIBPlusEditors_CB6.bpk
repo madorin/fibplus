@@ -12,8 +12,8 @@
       c6\pFIBConditionsEdit.obj c6\EdDataSetInfo.obj c6\ToCodeEditor.obj 
       c6\ToCodeEditorIntfs.obj c6\Fibmodule6.obj c6\FibBase2.obj 
       c6\Fibbase64.obj c6\Fibconst.obj c6\FibHash2.obj c6\Fibhash3.obj 
-      c6\Fibmodule1.obj c6\Fibmodule5.obj c6\fibCheckSingleLicenseClass.obj 
-      c6\fibAthlInstanceCounter.obj c6\pFIBComponentEditors.obj 
+      c6\Fibmodule1.obj c6\Fibmodule5.obj  
+      c6\pFIBComponentEditors.obj 
       c6\pFIBEditorsConsts.obj c6\RTTIRoutines.obj c6\RegistryUtils.obj 
       c6\uFIBScriptForm.obj c6\pFIBRepositoryOperations.obj 
       c6\UnitSyntaxMemo.obj  c6\FIBToolsConsts.obj 
@@ -97,8 +97,6 @@
       <FILE FILENAME="EdDataSetInfo.pas" FORMNAME="frmEdDataSetInfo" UNITNAME="EdDataSetInfo" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="ToCodeEditor.pas" FORMNAME="" UNITNAME="ToCodeEditor" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="ToCodeEditorIntfs.pas" FORMNAME="" UNITNAME="ToCodeEditorIntfs" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="fibCheckSingleLicenseClass.pas" FORMNAME="" UNITNAME="fibCheckSingleLicenseClass" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="fibAthlInstanceCounter.pas" FORMNAME="" UNITNAME="fibAthlInstanceCounter" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="pFIBComponentEditors.pas" FORMNAME="" UNITNAME="pFIBComponentEditors" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="pFIBEditorsConsts.pas" FORMNAME="" UNITNAME="pFIBEditorsConsts" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="RTTIRoutines.pas" FORMNAME="" UNITNAME="RTTIRoutines" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

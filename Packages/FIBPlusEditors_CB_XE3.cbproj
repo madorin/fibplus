@@ -124,12 +124,6 @@
             <Form>frmEdParamToFields</Form>
             <BuildOrder>12</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="fibAthlInstanceCounter.pas">
-            <BuildOrder>30</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="fibCheckSingleLicenseClass.pas">
-            <BuildOrder>29</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="FIBDataSQLEditor.pas">
             <BuildOrder>13</BuildOrder>
         </DelphiCompile>

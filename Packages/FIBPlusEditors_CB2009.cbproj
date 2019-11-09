@@ -186,12 +186,6 @@
 				<Form>frmEdDataSetInfo</Form>
 				<BuildOrder>9</BuildOrder>
 			</DelphiCompile>
-			<DelphiCompile Include="fibCheckSingleLicenseClass.pas">
-				<BuildOrder>29</BuildOrder>
-			</DelphiCompile>
-			<DelphiCompile Include="fibAthlInstanceCounter.pas">
-				<BuildOrder>30</BuildOrder>
-			</DelphiCompile>
 			<DelphiCompile Include="pFIBConditionsEdit.pas">
 				<Form>frmEditCheckStrings</Form>
 				<BuildOrder>30</BuildOrder>

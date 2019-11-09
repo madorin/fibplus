@@ -75,7 +75,7 @@ procedure Register;
 implementation
 
 uses pFIBComponentEditors, {$ifndef internal} fib_aspr_api, Fibmodule5, Fibmodule6, FibHash2, Fibhash3,
-  fibAthlInstanceCounter, fibCheckSingleLicenseClass, fib_hard,
+  fib_hard,
  {$endif}
   ToolsAPI, RegSynEditAlt {, FIBSplash};
 

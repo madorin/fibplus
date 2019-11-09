@@ -68,8 +68,6 @@ contains
   pFIBComponentEditors in '..\Editors\pFIBComponentEditors.pas',
   pFIBRepositoryOperations in '..\Editors\pFIBRepositoryOperations.pas',
   uFIBScriptForm in '..\Editors\uFIBScriptForm.pas',
-  fibAthlInstanceCounter in '..\Editors\fibAthlInstanceCounter.pas',
-  fibCheckSingleLicenseClass in '..\Editors\fibCheckSingleLicenseClass.pas',  
   FIBToolsConsts in '..\Editors\FIBToolsConsts.pas',
   FindCmp in '..\Editors\FindCmp.pas',
   pfibdsgnviewsqls in '..\Editors\pfibdsgnviewsqls.pas',

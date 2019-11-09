@@ -60,8 +60,6 @@ contains
   pFIBEditorsConsts in '..\Editors\pFIBEditorsConsts.pas',
   pFIBRepositoryOperations in '..\Editors\pFIBRepositoryOperations.pas',
   RegistryUtils in '..\Editors\RegistryUtils.pas',
-  fibAthlInstanceCounter in '..\Editors\fibAthlInstanceCounter.pas',
-  fibCheckSingleLicenseClass in '..\Editors\fibCheckSingleLicenseClass.pas',
   RegSynEditAlt in '..\Editors\RegSynEditAlt.pas',
   uFIBScriptForm in '..\Editors\uFIBScriptForm.pas' {frmScript},
   IBSQLSyn in '..\Editors\IBSQLSyn.pas',

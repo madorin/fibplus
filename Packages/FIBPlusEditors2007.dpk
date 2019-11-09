@@ -59,8 +59,6 @@ contains
   ToCodeEditor in '..\Editors\ToCodeEditor.pas',
   ToCodeEditorIntfs in '..\Editors\ToCodeEditorIntfs.pas',
   UnitSyntaxMemo in '..\Editors\UnitSyntaxMemo.pas',
-  fibAthlInstanceCounter in '..\Editors\fibAthlInstanceCounter.pas',
-  fibCheckSingleLicenseClass in '..\Editors\fibCheckSingleLicenseClass.pas',  
   FIBToolsConsts in '..\Editors\FIBToolsConsts.pas',
   FindCmp in '..\Editors\FindCmp.pas',
   IBSQLSyn in '..\Editors\IBSQLSyn.pas',

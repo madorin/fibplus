@@ -372,8 +372,6 @@
         <FILE FILENAME="ToCodeEditorIntfs.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="ToCodeEditorIntfs" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="UnitSyntaxMemo.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="UnitSyntaxMemo" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="UnitSyntaxMemo.dcr" CONTAINERID="DcrTool" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="fibAthlInstanceCounter.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="fibAthlInstanceCounter" FORMNAME="" DESIGNCLASS=""/>
-        <FILE FILENAME="fibCheckSingleLicenseClass.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="fibCheckSingleLicenseClass" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="FIBToolsConsts.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="FIBToolsConsts" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="FindCmp.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="FindCmp" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="IBSQLSyn.pas" CONTAINERID="PascalCompiler" LOCALCOMMAND="" UNITNAME="IBSQLSyn" FORMNAME="" DESIGNCLASS=""/>

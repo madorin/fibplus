@@ -13,8 +13,7 @@
       c5\IBSQLSyn.obj c5\RegistryUtils.obj c5\RegSynEditAlt.obj 
       c5\RTTIRoutines.obj c5\UnitSyntaxMemo.obj c5\pFIBEditorsConsts.obj 
       c5\pFIBComponentEditors.obj c5\pFIBRepositoryOperations.obj 
-      c5\fibCheckSingleLicenseClass.obj 
-      c5\fibAthlInstanceCounter.obj c5\Fibmodule6.obj c5\FibBase2.obj 
+      c5\Fibmodule6.obj c5\FibBase2.obj 
       c5\Fibbase64.obj c5\Fibconst.obj c5\FibHash2.obj c5\Fibhash3.obj 
       c5\Fibmodule1.obj c5\Fibmodule5.obj c5\uFIBScriptForm.obj 
       c5\FIBToolsConsts.obj c5\FindCmp.obj 

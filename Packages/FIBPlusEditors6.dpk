@@ -62,8 +62,6 @@ contains
   IBSQLSyn in '..\Editors\IBSQLSyn.pas',
   UnitSyntaxMemo in '..\Editors\UnitSyntaxMemo.pas',
   RegSynEditAlt in '..\Editors\RegSynEditAlt.pas',
-  fibAthlInstanceCounter in '..\Editors\fibAthlInstanceCounter.pas',
-  fibCheckSingleLicenseClass in '..\Editors\fibCheckSingleLicenseClass.pas',  
   FIBToolsConsts in '..\Editors\FIBToolsConsts.pas',
   FindCmp in '..\Editors\FindCmp.pas',
   pFIBDsgnViewSQLs in '..\Editors\pfibdsgnviewsqls.pas' {frmSaveSQLs},

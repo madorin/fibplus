@@ -34,8 +34,6 @@ USERES("UnitSyntaxMemo.dcr");
 USEUNIT("pFIBEditorsConsts.pas");
 USEUNIT("pFIBComponentEditors.pas");
 USEUNIT("pFIBRepositoryOperations.pas");
-USEUNIT("fibCheckSingleLicenseClass.pas");
-USEUNIT("fibAthlInstanceCounter.pas");
 USEFORMNS("uFIBScriptForm.pas", Ufibscriptform, frmScript);
 USEUNIT("FIBToolsConsts.pas");
 USEUNIT("FindCmp.pas");

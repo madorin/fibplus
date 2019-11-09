@@ -145,12 +145,6 @@
     <DelphiCompile Include="EdParamToFields.pas">
       <BuildOrder>22</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="fibAthlInstanceCounter.pas">
-      <BuildOrder>23</BuildOrder>
-    </DelphiCompile>
-    <DelphiCompile Include="fibCheckSingleLicenseClass.pas">
-      <BuildOrder>24</BuildOrder>
-    </DelphiCompile>
     <DelphiCompile Include="FIBDataSQLEditor.pas">
       <BuildOrder>25</BuildOrder>
     </DelphiCompile>

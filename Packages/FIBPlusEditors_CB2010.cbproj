@@ -86,9 +86,6 @@
 				<Form>frmEditCheckStrings</Form>
 				<BuildOrder>30</BuildOrder>
 			</DelphiCompile>
-			<DelphiCompile Include="fibAthlInstanceCounter.pas">
-				<BuildOrder>30</BuildOrder>
-			</DelphiCompile>
 			<DelphiCompile Include="pFIBEditorsConsts.pas">
 				<BuildOrder>31</BuildOrder>
 			</DelphiCompile>
@@ -97,9 +94,6 @@
 			</DelphiCompile>
 			<DelphiCompile Include="pFIBRepositoryOperations.pas">
 				<BuildOrder>32</BuildOrder>
-			</DelphiCompile>
-			<DelphiCompile Include="fibCheckSingleLicenseClass.pas">
-				<BuildOrder>29</BuildOrder>
 			</DelphiCompile>
 			<DelphiCompile Include="EdErrorInfo.pas">
 				<Form>frmErrors</Form>
