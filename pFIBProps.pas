@@ -445,7 +445,6 @@ type
     property    State :TConditionsState read FState;
   end;
 
-
   TMemoSubtypes = class
   private
     FActive:boolean;
@@ -458,10 +457,11 @@ type
   published
     property Subtypes:string read FSubTypesStr write SetSubTypes ;
   end;
+
 //DataSet defaults
 const
   StatDefPrepareOptions=[pfImportDefaultValues,psGetOrderInfo,psUseBooleanField,psSetEmptyStrToNull];
-  
+
   DefaultPrepareOptions:TpPrepareOptions =StatDefPrepareOptions;
 
   StatDefDataSetOptions=[poTrimCharFields,poStartTransaction,poAutoFormatFields,  poRefreshAfterPost];

@@ -145,9 +145,6 @@
 				<Form>frmFIBDBLoginDlg</Form>
 				<BuildOrder>48</BuildOrder>
 			</DelphiCompile>
-			<DelphiCompile Include="FIBMDTInterface.pas">
-				<BuildOrder>56</BuildOrder>
-			</DelphiCompile>
 			<DelphiCompile Include="FIBMiscellaneous.pas">
 				<BuildOrder>3</BuildOrder>
 			</DelphiCompile>

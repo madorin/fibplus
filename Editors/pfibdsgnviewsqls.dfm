@@ -360,7 +360,6 @@ object frmSaveSQLs: TfrmSaveSQLs
   object pFIBTransaction1: TpFIBTransaction
     DefaultDatabase = pFIBDatabase1
     TimeoutAction = TARollback
-    MDTTransactionRole = mtrAutoDefine
     Left = 160
     Top = 88
   end

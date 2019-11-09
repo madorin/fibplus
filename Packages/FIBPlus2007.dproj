@@ -58,7 +58,6 @@
     <DCCReference Include="..\FIBDatabase.pas" />
     <DCCReference Include="..\FIBDataSet.pas" />
     <DCCReference Include="..\FIBDBLoginDlg.pas" />
-    <DCCReference Include="..\FIBMDTInterface.pas" />
     <DCCReference Include="..\FIBMiscellaneous.pas" />
     <DCCReference Include="..\FIBQuery.pas" />
     <DCCReference Include="..\FIBSafeTimer.pas" />

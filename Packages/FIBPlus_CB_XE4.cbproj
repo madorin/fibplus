@@ -157,9 +157,6 @@
         <DelphiCompile Include="FIBDataSet.pas">
             <BuildOrder>9</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="FIBMDTInterface.pas">
-            <BuildOrder>56</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="FIBMiscellaneous.pas">
             <BuildOrder>3</BuildOrder>
         </DelphiCompile>

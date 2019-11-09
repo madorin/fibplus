@@ -155,8 +155,6 @@ type
     property TableName:Ansistring read FTableName write FTableName;
     property RecordKeyValues:TDynArray read FKeyValues write FKeyValues;
     property IsClientField:boolean read FIsClientField write FIsClientField;
-  public
-    procedure SetMDTValue(AValue:pointer; ASize:integer);
   end;
 // Blob routine functions
   TBlobInfo= record
@@ -1644,14 +1642,6 @@ begin
    Result:=FBlobID
   end;
 end;
-
-procedure TFIBBlobStream.SetMDTValue(AValue:pointer; ASize:integer);
-begin
-  SetSize(ASize);
-  Move(AValue^,FBuffer[0],ASize);
-  FBlobInitialized := True;
- end;
-
 
 (*
  * TFIBOutputDelimitedFile

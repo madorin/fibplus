@@ -18,7 +18,7 @@
       C6\pFIBInterfaces.obj C6\IBBlobFilter.obj C6\FIBCloneComponents.obj 
       C6\pFIBLists.obj C6\DBParsers.obj C6\FIBCacheManage.obj C6\SIBGlobals.obj 
       C6\SIBAPI.obj C6\SIBEABase.obj C6\pTestInfo.obj C6\FIBSafeTimer.obj 
-      C6\pFIBDataRefresh.obj C6\pFIBMetaData.obj C6\FIBMDTInterface.obj 
+      C6\pFIBDataRefresh.obj C6\pFIBMetaData.obj 
       C6\pFIBExports.obj C6\pFIBClientDataSet.obj"/>
     <RESFILES value="FIBPlus_CB6.res FIBPlus.dcr"/>
     <IDLFILES value=""/>
@@ -120,7 +120,6 @@
       <FILE FILENAME="FIBSafeTimer.pas" FORMNAME="" UNITNAME="FIBSafeTimer" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="pFIBDataRefresh.pas" FORMNAME="" UNITNAME="pFIBDataRefresh" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="pFIBMetaData.pas" FORMNAME="" UNITNAME="pFIBMetaData" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="FIBMDTInterface.pas" FORMNAME="" UNITNAME="FIBMDTInterface" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="pFIBExports.pas" FORMNAME="" UNITNAME="pFIBExports" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="pFIBClientDataSet.pas" FORMNAME="" UNITNAME="pFIBClientDataSet" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="dsnap.bpi" FORMNAME="" UNITNAME="dsnap" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>

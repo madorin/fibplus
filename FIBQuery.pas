@@ -27,7 +27,7 @@ interface
 uses
   SysUtils, Classes, ibase,IB_Intf, IB_Externals,FIBPlatforms,
   DB, fib, FIBDatabase, StdFuncs,IB_ErrorCodes,SqlTxtRtns,pFIBProps,
-  pFIBInterfaces, FIBMDTInterface {, FIBXMLDataSetReader}
+  pFIBInterfaces {, FIBXMLDataSetReader}
   {$IFDEF SUPPORT_ARRAY_FIELD},   pFIBArray  {$ENDIF}
   {$IFDEF D6+},FMTBcd,  Variants{$ENDIF} ;
 
@@ -44,8 +44,6 @@ type
   record
    sql_relation_alias: array[0..LENGTH_METANAMES-1] of AnsiChar;
   end;
-
-
 
   TTypeSetToParam =(tspNull,tspIsNullable,tspScale, tspValue,tspSqlVar);
 
@@ -308,11 +306,6 @@ type
     property Names: string read GetNames;
     property RecordSize: Integer read GetRecordSize;
     property Vars[Idx: Integer]: TFIBXSQLVAR read GetXSQLVAR; default;
-
-    procedure MDTInitByVariables(
-      AVariables: IMDTVariables; AFindTableByField:IMDTFindTableByField);
-    procedure MDTCopyValuesFromDataRecord(ADataRecord: IMDTDataRecord);
-    procedure MDTCopyValuesToDataRecord(ADataRecord: IMDTDataRecord);
   end;
 
   (* TFIBBatch - basis for batch input and batch output objects. *)
@@ -493,7 +486,7 @@ type
     function  ParamsNotExist(const SQLText:string):boolean;
     procedure PreprocessSQL(const sSQL:String;IsUserSQL:boolean);
     procedure DoBeforeExecute;
-    procedure DoAfterExecute(asMDT:boolean);
+    procedure DoAfterExecute;
     procedure DoAfterFirstFetch;
   public
     constructor Create(AOwner: TComponent); override;
@@ -648,7 +641,7 @@ type
 
   published
     property Transaction: TFIBTransaction read GetTransaction write SetTransaction;
-    property Database: TFIBDatabase read GetDatabase write SetDatabase    ;
+    property Database: TFIBDatabase read GetDatabase write SetDatabase;
 
     property GoToFirstRecordOnExecute: Boolean read FGoToFirstRecordOnExecute
                                                write FGoToFirstRecordOnExecute
@@ -669,30 +662,7 @@ type
 {$IFDEF CSMonitor}
     property CSMonitorSupport: TCSMonitorSupport read FCSMonitorSupport write SetMonitorSupport;
 {$ENDIF}
-  protected
-    FMDTSQLExecutor:TMDTSQLExecutor;
-
-    FMDTMainDataOrder:IMDTDataOrder;
-    FMDTResultDataRecord:IMDTDataRecord;
-    FMDTParamsVariables:IMDTVariables;
-    FMDTParamsDataRecord:IMDTDataRecord;
-    FMDTFindTableByField:IMDTFindTableByField;
-    FMDTMonitorProcExist:boolean;
-    FMDTMonitorObject: IMDTMonitorSelectObject;
-    FMDTFetchActionID: integer;
-
-    procedure SetMDTSQLExecutor(AValue:TMDTSQLExecutor);
-    function GetMDTDatabase:IMDTDatabase;
-    procedure MDTUnPrepare;
-    procedure MDTInitMonitorObject;
-  public
-    property MDTResultDataRecord:IMDTDataRecord read FMDTResultDataRecord;
-    property MDTMainDataOrder: IMDTDataOrder read FMDTMainDataOrder;
-  published
-    property MDTSQLExecutor:TMDTSQLExecutor
-      read FMDTSQLExecutor write SetMDTSQLExecutor default se_ServerAfterLocal;
   end;
-
 
 procedure BlobToStream (ModelVar:TFIBXSQLVAR; BlobID:TISC_QUAD;Stream: TStream);
 
@@ -3096,369 +3066,6 @@ begin
   end;
 end;
 
-procedure TFIBXSQLDA.MDTInitByVariables(
-  AVariables:IMDTVariables; AFindTableByField:IMDTFindTableByField);
-var
-  I:integer;
-  XMDTVariable:IMDTVariable;
-  XFIBXSQLVAR:TFIBXSQLVAR;
-  XXSQLVAR:PXSQLVAR;
-  XStr:string;
-  XVarIndex:integer;
-begin
-  Count:=AVariables.VariableCount;
-  for I:=0 to FCount-1 do begin
-    XVarIndex:=AVariables.VariableByOrderNumToIndex(I);
-    XMDTVariable:=AVariables.IVariable[XVarIndex];
-    XFIBXSQLVAR:=FXSQLVARs^[i];
-    XXSQLVAR:=XFIBXSQLVAR.Data;
-
-    XStr:=AnsiUpperCase(AFindTableByField.GetTableNameByField(XVarIndex));
-    XXSQLVAR^.relname_length:=Length(XStr);
-    if XXSQLVAR^.relname_length>LENGTH_METANAMES
-      then XXSQLVAR^.relname_length:=LENGTH_METANAMES;
-    Move(XStr[1],XXSQLVAR^.relname[0],XXSQLVAR^.relname_length);
-
-    XXSQLVAR^.sqlname_length:=Length(XMDTVariable.Name);
-    if XXSQLVAR^.sqlname_length>LENGTH_METANAMES
-      then XXSQLVAR^.sqlname_length:=LENGTH_METANAMES;
-    Move(XMDTVariable.Name[1],XXSQLVAR^.sqlname[0],XXSQLVAR^.sqlname_length);
-
-    XXSQLVAR^.aliasname_length:=Length(XMDTVariable.name);
-    if XXSQLVAR^.aliasname_length>LENGTH_METANAMES
-      then XXSQLVAR^.aliasname_length:=LENGTH_METANAMES;
-    Move(XMDTVariable.Name[1],XXSQLVAR^.aliasname[0],XXSQLVAR^.aliasname_length);
-
-    case XMDTVariable.StructureType of
-      mdt_vstString:begin
-        if XMDTVariable.MaxLength>=mdt_OneVariableMaxDinamicLength then begin
-          XXSQLVAR^.sqltype:=SQL_BLOB;
-          XXSQLVAR^.sqllen:=SizeOf(PISC_QUAD);
-          end
-          else
-        if XMDTVariable.AlwaysMaxLength then begin
-          XXSQLVAR^.sqltype:=SQL_TEXT;
-          if XMDTVariable.MaxLength<=High(short)
-           then XXSQLVAR^.sqllen:=XMDTVariable.MaxLength
-           else XXSQLVAR^.sqllen:=High(short);
-          end
-        else begin
-          XXSQLVAR^.sqltype:=SQL_VARYING;
-          if XMDTVariable.MaxLength<=(High(short)-2)
-           then XXSQLVAR^.sqllen:=XMDTVariable.MaxLength+2
-           else XXSQLVAR^.sqllen:=High(short);
-          end;
-        end;
-      mdt_vstInteger:begin
-        XXSQLVAR^.sqltype:=SQL_LONG;
-        XXSQLVAR^.sqllen:=SizeOf(Long);
-        XXSQLVAR^.sqlscale:=0;
-        end;
-      mdt_vstSmallInt:begin
-        XXSQLVAR^.sqltype:=SQL_SHORT;
-        XXSQLVAR^.sqllen:=SizeOf(Short);
-        XXSQLVAR^.sqlscale:=0;
-        end;
-      mdt_vstInt64:begin
-        XXSQLVAR^.sqltype:=SQL_INT64;
-        XXSQLVAR^.sqllen:=SizeOf(Int64);
-        XXSQLVAR^.sqlscale:=0;
-        end;
-      mdt_vstDouble:begin
-        XXSQLVAR^.sqltype:=SQL_DOUBLE;
-        XXSQLVAR^.sqllen:=SizeOf(Double);
-        XXSQLVAR^.sqlscale:=0;
-        end;
-      mdt_vstExtended:begin
-        if XMDTVariable.Precision=0 then begin 
-          XXSQLVAR^.sqltype:=SQL_DOUBLE;
-          XXSQLVAR^.sqllen:=SizeOf(Double);
-          XXSQLVAR^.sqlscale:=0;
-          end
-        else begin
-          XXSQLVAR^.sqltype:=SQL_Int64;
-          XXSQLVAR^.sqllen:=SizeOf(Int64);
-          XXSQLVAR^.sqlscale:=-XMDTVariable.Precision;
-          end;
-        end;
-      mdt_vstTimeStamp:begin
-        case XMDTVariable.TimeStampMode of
-          tsmFull:begin
-            XXSQLVAR^.sqltype:=SQL_TIMESTAMP;
-            XXSQLVAR^.sqllen:=SizeOf(TISC_QUAD);
-            end;
-          tsmOnlyDate:begin
-            XXSQLVAR^.sqltype:=SQL_TYPE_DATE;
-            XXSQLVAR^.sqllen:=SizeOf(ISC_DATE);
-            end;
-          tsmOnlyTime:begin
-            XXSQLVAR^.sqltype:=SQL_TYPE_TIME;
-            XXSQLVAR^.sqllen:=SizeOf(ISC_TIME);
-            end;
-          else FIBError(feMDTIncompatibleFIBXSQLDAAndMDTDataRecord, ['TFIBXSQLDA.MDTInitByVariables']);
-          end;
-        end;
-      else FIBError(feMDTIncompatibleFIBXSQLDAAndMDTDataRecord, ['TFIBXSQLDA.MDTInitByVariables']);
-      end;
-    if not XMDTVariable.NotNull then begin
-      XXSQLVAR^.sqltype:=XXSQLVAR^.sqltype or 1;
-      FIBAlloc(XXSQLVAR^.sqlind, 0, SizeOf(Short));
-      end;
-    FIBAlloc(XXSQLVAR^.sqldata, 0, XXSQLVAR^.sqllen);
-    end;
-  Initialize;
-  end;
-
-procedure TFIBXSQLDA.MDTCopyValuesFromDataRecord(ADataRecord:IMDTDataRecord);
-var
-  XFIBXSQLVAR:TFIBXSQLVAR;
-  XXSQLVAR:PXSQLVAR;
-  XMDTVariable:IMDTVariable;
-
-  procedure XTypesError; 
-  begin
-    FIBError(feMDTIncompatibleFIBXSQLDAAndMDTDataRecord, []);
-    end;
-
-var
-  I,XVarIndex:integer;
-  XDataBuffer:pointer;
-  XSize:integer;
-  XSQLData:pointer;
-  XExtended:extended;
-  XTimeStamp:TTimeStamp;
-begin
-  for I:=0 to FCount-1 do begin
-    XVarIndex:=ADataRecord.IVariables.VariableByOrderNumToIndex(I);
-    XMDTVariable:=ADataRecord.IVariables.IVariable[XVarIndex];
-    XFIBXSQLVAR:=FXSQLVARs^[i];
-    XXSQLVAR:=XFIBXSQLVAR.Data;
-    if ADataRecord.IsNull[XVarIndex] then begin
-      if XXSQLVAR^.sqlind<>nil
-        then XXSQLVAR^.sqlind^:=-1;
-      if XFIBXSQLVAR.FStreamValue<>nil then begin
-        XFIBXSQLVAR.FStreamValue.Free;
-        XFIBXSQLVAR.FStreamValue:=nil;
-        end;
-      end
-    else begin
-      if XFIBXSQLVAR.IsNullable
-        then XXSQLVAR^.sqlind^ := 0;
-      XSQLData:=XXSQLVAR^.sqldata;
-      if XSQLData=nil then XTypesError;
-      ADataRecord.GetDataBuffer(XVarIndex,XDataBuffer,XSize);
-      case XMDTVariable.StructureType of
-        mdt_vstString:begin
-          case XFIBXSQLVAR.FSrvSQLType of
-            SQL_VARYING:begin
-              if XXSQLVAR^.sqllen<XSize
-                then XTypesError;
-              PWord(XSQLData)^:=XSize;
-
-              Inc(PByte(XSQLData),2);
-
-              Move(XDataBuffer^,XSQLData^,XSize);
-              end;
-            SQL_TEXT:begin
-              if XXSQLVAR^.sqllen<XSize
-                then XTypesError;
-              Move(XDataBuffer^,XSQLData^,XSize);
-              if XSize<XXSQLVAR^.sqllen then begin
-              Inc(PByte(XSQLData),2);
-              FillChar(XSQLData^,XXSQLVAR^.sqllen-XSize,Ord(' '));
-                end;
-              end;
-            SQL_BLOB:begin
-              PISC_QUAD(XSQLData)^.gds_quad_high:=0;
-              PISC_QUAD(XSQLData)^.gds_quad_low:=0;
-              if XFIBXSQLVAR.FStreamValue=nil
-                then XFIBXSQLVAR.FStreamValue:=TMemoryStream.Create
-                else XFIBXSQLVAR.FStreamValue.Position:=0;
-              XFIBXSQLVAR.FStreamValue.SetSize(XSize);
-              XFIBXSQLVAR.FStreamValue.Write(XDataBuffer^,XSize);
-              end;
-            else XTypesError;
-            end;
-          end;
-        mdt_vstInteger:begin
-          if (XFIBXSQLVAR.FSrvSQLType<>SQL_LONG) and
-             (XFIBXSQLVAR.Scale<>0) then XTypesError;
-          PLong(XSQLData)^:=PInteger(XDataBuffer)^;
-          end;
-        mdt_vstSmallInt:begin
-          if (XFIBXSQLVAR.FSrvSQLType<>SQL_SHORT) and
-             (XFIBXSQLVAR.Scale<>0) then XTypesError;
-          PShort(XSQLData)^:=PSmallint(XDataBuffer)^;
-          end;
-        mdt_vstInt64:begin
-          if (XFIBXSQLVAR.FSrvSQLType<>SQL_INT64) and
-             (XFIBXSQLVAR.Scale<>0) then XTypesError;
-          PInt64(XSQLData)^:=PInt64(XDataBuffer)^;
-          end;
-        mdt_vstDouble,mdt_vstExtended:begin
-          if XMDTVariable.StructureType=mdt_vstDouble
-            then XExtended:=PDouble(XDataBuffer)^
-            else XExtended:=PExtended(XDataBuffer)^;
-          case XFIBXSQLVAR.FSrvSQLType of
-            SQL_DOUBLE,SQL_D_FLOAT:PDouble(XSQLData)^:=XExtended;
-            SQL_FLOAT:PFloat(XSQLData)^:=XExtended;
-            SQL_LONG,SQL_SHORT,SQL_INT64:begin
-              XExtended:=XExtended/E10[XXSQLVAR^.sqlscale];
-              case XFIBXSQLVAR.FSrvSQLType of
-                SQL_LONG:PLong(XSQLData)^:=Round(XExtended);
-                SQL_SHORT:PShort(XSQLData)^:=Round(XExtended);
-                SQL_INT64:PInt64(XSQLData)^:=Round(XExtended);
-                end
-              end;
-            else XTypesError;
-            end;
-          end;
-        mdt_vstTimeStamp:begin
-          XTimeStamp:=PTimeStamp(XDataBuffer)^;
-          case XFIBXSQLVAR.FSrvSQLType of
-            SQL_TIMESTAMP:begin
-              PISC_QUAD(XSQLData)^.gds_quad_high:=
-                XTimeStamp.Date-IBBuffDateDelta;
-              PISC_QUAD(XSQLData)^.gds_quad_low:=XTimeStamp.Time*10;
-              end;
-            SQL_TYPE_TIME:
-              PISC_Time(XSQLData)^:=XTimeStamp.Time*10;
-            SQL_TYPE_DATE:
-              PISC_DATE(XSQLData)^:=XTimeStamp.Date-IBBuffDateDelta;
-            else XTypesError;
-            end;
-          end;
-        else XTypesError;
-  {
-
-       SQL_ARRAY
-       SQL_QUAD
-       }
-        end;
-      end;
-    end;
-
-  end;
-
-procedure TFIBXSQLDA.MDTCopyValuesToDataRecord(ADataRecord:IMDTDataRecord);
-var
-  XFIBXSQLVAR:TFIBXSQLVAR;
-  XXSQLVAR:PXSQLVAR;
-  XMDTVariable:IMDTVariable;
-
-  procedure XTypesError; 
-  begin
-    FIBError(feMDTIncompatibleFIBXSQLDAAndMDTDataRecord, []);
-    end;
-
-var
-  I,XVarIndex:integer;
-  XSQLData:pointer;
-  XSize:integer;
-  XExtended:Extended;
-  XTimeStamp:TTimeStamp;
-
-begin
-  for I:=0 to FCount-1 do begin
-    XVarIndex:=ADataRecord.IVariables.VariableByOrderNumToIndex(I);
-    XMDTVariable:=ADataRecord.IVariables.IVariable[XVarIndex];
-    XFIBXSQLVAR:=FXSQLVARs^[i];
-    XXSQLVAR:=XFIBXSQLVAR.Data;
-    if XFIBXSQLVAR.IsNull then ADataRecord.ClearValue(XVarIndex)
-    else begin
-      XSQLData:=XXSQLVAR^.sqldata;
-      if XSQLData=nil then XTypesError;
-      case XMDTVariable.StructureType of
-        mdt_vstString:begin
-          case XFIBXSQLVAR.FSrvSQLType of
-            SQL_VARYING:begin
-              XSize:=PWord(XSQLData)^;
-              Inc(PByte(XSQLData),2);
-              ADataRecord.WriteDataToBuffer(XVarIndex,XSQLData,XSize);
-              end;
-            SQL_TEXT:begin
-              XSize:=XXSQLVAR^.sqllen;
-              while (XSize>0) and (PChar(XSQLData)[XSize-1]=' ')
-                do Dec(XSize);
-              ADataRecord.WriteDataToBuffer(XVarIndex,XSQLData,XSize);
-              end;
-            SQL_BLOB:begin
-              if XFIBXSQLVAR.FStreamValue=nil
-                then XTypesError;
-              ADataRecord.WriteDataToBuffer(XVarIndex,XFIBXSQLVAR.FStreamValue);
-              end;
-            else ADataRecord.StringValue[XVarIndex]:=XFIBXSQLVAR.AsString;
-            end;
-          end;
-        mdt_vstInteger:begin
-          if (XFIBXSQLVAR.FSrvSQLType<>SQL_LONG) and
-             (XFIBXSQLVAR.Scale<>0)
-            then ADataRecord.IntegerValue[XVarIndex]:=XFIBXSQLVAR.AsInteger
-            else ADataRecord.IntegerValue[XVarIndex]:=PLong(XSQLData)^;
-          end;
-        mdt_vstSmallInt:begin
-          if (XFIBXSQLVAR.FSrvSQLType<>SQL_SHORT) and
-             (XFIBXSQLVAR.Scale<>0)
-            then ADataRecord.SmallIntValue[XVarIndex]:=XFIBXSQLVAR.AsShort
-            else ADataRecord.SmallIntValue[XVarIndex]:=PShort(XSQLData)^;
-          end;
-        mdt_vstInt64:begin
-          if (XFIBXSQLVAR.FSrvSQLType<>SQL_INT64) and
-             (XFIBXSQLVAR.Scale<>0)
-            then ADataRecord.Int64Value[XVarIndex]:=XFIBXSQLVAR.AsInt64
-            else ADataRecord.Int64Value[XVarIndex]:=PInt64(XSQLData)^
-          end;
-        mdt_vstDouble,mdt_vstExtended:begin
-          XExtended:=0;
-          case XFIBXSQLVAR.FSrvSQLType of
-            SQL_DOUBLE,SQL_D_FLOAT:XExtended:=PDouble(XSQLData)^;
-            SQL_FLOAT:XExtended:=PFloat(XSQLData)^;
-            SQL_LONG,SQL_SHORT,SQL_INT64:begin
-              case XFIBXSQLVAR.FSrvSQLType of
-                SQL_LONG:XExtended:=PLong(XSQLData)^;
-                SQL_SHORT:XExtended:=PShort(XSQLData)^;
-                SQL_INT64:XExtended:=PInt64(XSQLData)^;
-                end;
-              XExtended:=XExtended*E10[XXSQLVAR^.sqlscale];
-              end;
-            else XExtended:=XFIBXSQLVAR.AsExtended
-            end;
-          if XMDTVariable.StructureType=mdt_vstDouble
-            then ADataRecord.DoubleValue[XVarIndex]:=XExtended
-            else ADataRecord.ExtendedValue[XVarIndex]:=XExtended;
-          end;
-        mdt_vstTimeStamp:begin
-          case XFIBXSQLVAR.FSrvSQLType of
-            SQL_TIMESTAMP:begin
-              XTimeStamp.Date:=
-                PISC_QUAD(XSQLData)^.gds_quad_high+IBBuffDateDelta;
-              XTimeStamp.Time:=Round(PISC_QUAD(XSQLData)^.gds_quad_low/10);
-              end;
-            SQL_TYPE_TIME:begin
-              XTimeStamp.Date:=0;
-              XTimeStamp.Time:=Round(PISC_DATE(XSQLData)^/10);
-              end;
-            SQL_TYPE_DATE:begin
-              XTimeStamp.Date:=PISC_DATE(XSQLData)^+IBBuffDateDelta;
-              XTimeStamp.Time:=0;
-              end;
-            else XTimeStamp:=XFIBXSQLVAR.AsTimeStamp;
-//            XTypesError;
-            end;
-          ADataRecord.TimeStampValue[XVarIndex]:=XTimeStamp;
-          end;
-        else XTypesError;
-  {
-
-       SQL_ARRAY
-       SQL_QUAD
-       }
-        end;
-      end;
-    end;
-
-  end;
-
 (* TFIBQuery *)
 constructor TFIBQuery.Create(AOwner: TComponent);
 begin
@@ -3528,14 +3135,6 @@ begin
   FCallTime :=0;
   vUserParamsCreated:=False;
   FMacroChanged     :=False;
-
-  FMDTSQLExecutor:=se_ServerAfterLocal;
-  FMDTMainDataOrder:=nil;
-  FMDTParamsVariables:=nil;
-  FMDTParamsDataRecord:=nil;
-  FMDTResultDataRecord:=nil;
-  FMDTFindTableByField:=nil;
-  FMDTMonitorProcExist:=false;
 end;
 
 destructor TFIBQuery.Destroy;
@@ -3543,11 +3142,9 @@ begin
   if (FOpen) then   Close;
   if (FHandle <> nil) then   FreeHandle;
 
-  MDTUnPrepare;
-
-{$IFDEF CSMonitor}
+  {$IFDEF CSMonitor}
   FCSMonitorSupport.Free;
-{$ENDIF}
+  {$ENDIF}
 
   FBase.Free;
   FSQLParams.Free;
@@ -3885,15 +3482,7 @@ end;
 procedure TFIBQuery.Close;
 var
   isc_res: ISC_STATUS;
-  XMonitorAction: integer;
 begin
-  // MDT
-  if Assigned(FMDTMonitorObject)
-    then XMonitorAction:=Database.MDTDatabase.IOperationMonitor.StartAction(
-      FMDTMonitorObject.ID,mdt_momClose)
-    else XMonitorAction:=-1;
-  try
-  // MDT_End
     try
       Include(FQueryRunState,qrsInClose);
       if (FHandle <> nil)  and FOpen then
@@ -3912,8 +3501,6 @@ begin
             IBError(Database.ClientLibrary,Self);
         end;
       end;
-      if Assigned(FMDTMainDataOrder) and FMDTMainDataOrder.Opened
-        then FMDTMainDataOrder.Close;
     finally
       Exclude(FQueryRunState,qrsInClose);
       FEOF := False;
@@ -3922,11 +3509,6 @@ begin
       FProcExecuted:=False;
       if  (qoFreeHandleAfterExecute in Options) then
        FreeHandle
-    end;
-  finally
-    if XMonitorAction>=0 then
-      Database.MDTDatabase.IOperationMonitor.StopAction(
-        FMDTMonitorObject.ID,XMonitorAction);
     end;
 end;
 
@@ -3947,7 +3529,7 @@ end;
 
 procedure TFIBQuery.DatabaseDisconnecting(Sender: TObject);
 begin
-  if (FHandle <> nil) or Assigned(MDTResultDataRecord) then
+  if (FHandle <> nil) then
   begin
     Close;
     FreeHandle;
@@ -4274,7 +3856,7 @@ begin
   Transaction.DoOnSQLExec(Self,koAfterFirstFetch);
 end;
 
-procedure TFIBQuery.DoAfterExecute(asMDT:boolean);
+procedure TFIBQuery.DoAfterExecute;
 begin
   if Assigned(FAfterExecute) then FAfterExecute(Self);
   Transaction.DoOnSQLExec(Self,koAfter);
@@ -4286,9 +3868,6 @@ begin
 {$IFNDEF NO_MONITOR}
    if MonitoringEnabled  then
     if MonitorHook<>nil then
-     if asMDT then
-      MonitorHook.SQLExecute(Self,'MDT execute')
-     else
       MonitorHook.SQLExecute(Self,'');
 {$ENDIF}
 
@@ -4367,7 +3946,7 @@ begin
     ),
    True
   );
-  DoAfterExecute(False)
+  DoAfterExecute;
 
 end;
 
@@ -4558,8 +4137,6 @@ var
   SV:PISC_STATUS;
   xSQLDA:PXSQLDA;
   vParams:TFIBXSQLDA;
-  XMonitorAction: integer;
-
 
 procedure DoLog(E:Exception=nil);
 var
@@ -4624,14 +4201,6 @@ begin
   else
   if not Prepared then
    Prepare;
-  // MDT
-  if Assigned(FMDTMonitorObject)
-    then XMonitorAction:=Database.MDTDatabase.IOperationMonitor.StartAction(
-      FMDTMonitorObject.ID,mdt_momOpen)
-    else XMonitorAction:=-1;
-  FMDTFetchActionID:=-1;
-  try
-  // MDT_End
     SaveStreamedParams(FUserSQLParams);
     if (vDiffParams and  FDoParamCheck and (pc>0)) then
     begin
@@ -4657,20 +4226,10 @@ begin
       begin
         if Open then Close;
         StartStatisticExec(FProcessedSQL);
-        if Assigned(FMDTMainDataOrder) then
-        begin
-          FMDTMainDataorder.ActualTablesLocalStorage;
-          if FMDTParamsDataRecord<>nil
-            then Params.MDTCopyValuesToDataRecord(FMDTParamsDataRecord);
-          FMDTMainDataorder.Open;
-        end
-        else begin
-          Call(
-           Database.ClientLibrary.isc_dsql_execute(SV,TRHandle,@FHandle,DataBase.SQLDialect,xSQLDA),
-           True
-          );
-          Transaction.MDTDataChange;
-        end;
+        Call(
+         Database.ClientLibrary.isc_dsql_execute(SV,TRHandle,@FHandle,DataBase.SQLDialect,xSQLDA),
+         True
+        );
         EndStatisticExec(FProcessedSQL);
         FOpen := True;
         FBOF := True;
@@ -4688,7 +4247,6 @@ begin
           Database.ClientLibrary.isc_dsql_execute2(SV, TRHandle,
           @FHandle,DataBase.SQLDialect,xSQLDA,FSQLRecord.FXSQLDA), False
          );
-        Transaction.MDTDataChange;
         EndStatisticExec(FProcessedSQL);
         if Assigned(Database.SQLLogger)  and (lfQExecute in Database.SQLLogger.LogFlags) then
          DoLog;
@@ -4720,7 +4278,6 @@ begin
                              @FHandle,
                              DataBase.SQLDialect,
                              xSQLDA), True);
-        Transaction.MDTDataChange;
         EndStatisticExec(FProcessedSQL);
         if Assigned(Database.SQLLogger)  and (lfQExecute in Database.SQLLogger.LogFlags) then
          DoLog;
@@ -4731,7 +4288,7 @@ begin
 
      if FDoParamCheck and (pc>0) and FHaveMacros then
       SaveRestoreValues(FUserSQLParams,True);
-     DoAfterExecute(Assigned(FMDTMainDataOrder));
+     DoAfterExecute;
      if FGoToFirstRecordOnExecute and FOpen then
        Next;
     except
@@ -4755,13 +4312,6 @@ begin
     end;
     if not Open and (qoFreeHandleAfterExecute in Options) then
      FreeHandle;
-  // MDT
-  finally
-    if XMonitorAction>=0 then
-      Database.MDTDatabase.IOperationMonitor.StopAction(
-        FMDTMonitorObject.ID,XMonitorAction);
-    end;
-  // MDT_End
  finally
   Exclude(FQueryRunState,qrsInExecute);
  end
@@ -4939,16 +4489,6 @@ var
 
 begin
   Result := nil;
-  // MDT
-  if Assigned(FMDTMonitorObject) then begin
-    if FMDTFetchActionID<0
-      then FMDTFetchActionID:=Database.MDTDatabase.IOperationMonitor.StartAction(
-        FMDTMonitorObject.ID,mdt_momFetch)
-      else FMDTFetchActionID:=Database.MDTDatabase.IOperationMonitor.ContinueAction(
-        FMDTMonitorObject.ID,FMDTFetchActionID,mdt_momFetch);
-    end;
-  try
-  // MDT_End
     if not FEOF then
     begin
      CheckOpen('fetch next record');
@@ -4963,19 +4503,6 @@ begin
       // Go to the next record...
      Set8087CW(Default8087CW);
   //   vLib:=FBase.Database.ClientLibrary;
-     if Assigned(FMDTMainDataorder) then
-     begin
-       FMDTMainDataorder.Next;
-       FEOF:=FMDTMainDataorder.CursorState=csAfterLast;
-       if FEOF then FSQLRecord.ClearValues
-       else begin
-         Inc(FRecordCount);
-         FSQLRecord.MDTCopyValuesFromDataRecord(FMDTResultDataRecord);
-         Result := FSQLRecord;
-         end;
-       FBOF:=False;
-     end
-     else begin
        fetch_res :=
          Call(
           FBase.Database.ClientLibrary.isc_dsql_fetch(StatusVector,
@@ -5005,7 +4532,6 @@ begin
             FBOF := False;
             Result := FSQLRecord;
         end;
-      end;
   {$IFNDEF NO_MONITOR}
       if MonitoringEnabled  then
       if MonitorHook<>nil then
@@ -5020,13 +4546,6 @@ begin
        vFetched:=True;
        DoAfterFirstFetch;
     end;
-  // MDT
-  finally
-    if FMDTFetchActionID>=0 then
-      Database.MDTDatabase.IOperationMonitor.StopAction(
-        FMDTMonitorObject.ID,FMDTFetchActionID);
-    end;
-  // MDT_End
 end;
 
 procedure TFIBQuery.FreeHandle;
@@ -5050,7 +4569,6 @@ begin
     FPrepared := False;
     FHandle := nil;
   end;
-  MDTUnPrepare;
 end;
 
 function TFIBQuery.GetDatabase: TFIBDatabase;
@@ -5110,10 +4628,7 @@ var
   vSQL :Ansistring;
   RN:Ansistring;
 begin
-  if (not Prepared) then
-   Exit
-  else
-  begin
+  if (not Prepared) then Exit;
    if not Database.IsFirebirdConnect or (Database.ServerMajorVersion<2) or (FHandle=nil {for MDT } ) then
    begin
      if Length(FExtSQLDA)<FSQLRecord.Count then
@@ -5196,21 +4711,12 @@ begin
           item:=PResult;
         end;
       end;
-  end;
 end;
 
 function TFIBQuery.TableAliasForField(FieldIndex:integer):string;
 begin
   if not Prepared then
    Prepare;
-  if Assigned(FMDTMainDataOrder) then begin
-    if Assigned(FMDTFindTableByField) 
-    then Result:=FMDTFindTableByField.GetTableAliasByField(
-        FMDTResultDataRecord.IVariables.VariableByOrderNumToIndex(FieldIndex))
-    else Result:='';
-  end
-  else
-  begin
     if Length(FExtSQLDA)=0 then
      FillExtDescribeSQLVars;
 
@@ -5220,7 +4726,6 @@ begin
      begin
       Result:=   FormatIdentifier(3,FExtSQLDA[FieldIndex].sql_relation_alias);
      end;
-  end;
 end;
 
 function TFIBQuery.TableAliasForFieldByName(const aFieldName:string):string;
@@ -5336,9 +4841,6 @@ begin
     Result := ''
   else
   begin
-    if Assigned(FMDTMainDataOrder)
-      then Result:='MDT '
-    else begin
       info_request := AnsiChar(isc_info_sql_get_plan);
       Call(Database.ClientLibrary.isc_dsql_sql_info(
          StatusVector,@FHandle, 1, @info_request,
@@ -5372,7 +4874,6 @@ begin
       Result:=ConvertFromCodePage(Result,CodePageKOI8R);
 {$ENDIF}
 
-  end;
  end;
 end;
 
@@ -6066,86 +5567,6 @@ var
    end;
   end;
 
-  procedure XMDTPrepare;
-  var
-    XLexicalAnaizer:IMDTLexicalAnalizer;
-    XSelectParser:IMDTSQLSelectParser;
-    XSelect:IMDTSQLSelect;
-    XParams:IMDTSQLParamEvalutions;
-    XMDTSQLProcessor:IMDTSQLProcessor;
-    XMDTSQLBuildDataOrderAddData:IMDTSQLBuildDataOrderAddData;
-    XGarbageObjects:IMDTGarbageObjects;
-  begin
-    MDTUnPrepare;
-    XMDTSQLProcessor:=GetMDTDatabase.ISQLProcessor;
-    XLexicalAnaizer:=GetMDTDatabase.ISQLLexicalAnalizer;
-    XLexicalAnaizer.SetSourceText(TStringList(FSQL));
-    XSelect:=nil;
-    XSelectParser:=GetMDTDatabase.CreateISQLClientSelectParser;
-    XMDTSQLBuildDataOrderAddData:=XMDTSQLProcessor.CreateBuildDataOrderAddData;
-    try
-      try
-        XSelect:=XSelectParser.ITranslate(true);
-        XSelectParser.CheckEndOfText;
-        FSQLType := SQLSelect;
-        XMDTSQLProcessor.ClientPrepareSelectData(XSelect);
-        FMDTMainDataOrder:=XMDTSQLProcessor.BuildSelectDataOrder(
-          XSelect,XMDTSQLBuildDataOrderAddData);
-        XParams:=XMDTSQLProcessor.IParamEvalutions;
-        if XParams.Count>0 then begin
-          FMDTParamsVariables:=GetMDTDatabase.CreateVariables;
-          XParams.FillVariables(FMDTParamsVariables);
-          FMDTParamsDataRecord:=GetMDTDatabase.CreateDataRecord(FMDTParamsVariables);
-          FMDTMainDataOrder.SetParamsDataRecord(FMDTParamsDataRecord);
-          end;
-        FMDTResultDataRecord:=FMDTMainDataorder.IZeroLeavingRecord;
-        FMDTFindTableByField:=XMDTSQLBuildDataOrderAddData.FindTableByField;
-        FSQLRecord.MDTInitByVariables(
-          FMDTResultDataRecord.IVariables,FMDTFindTableByField);
-        FMDTMonitorProcExist:=XMDTSQLBuildDataOrderAddData.MonitorProcExist;
-      except
-        MDTUnPrepare;
-        FSQLRecord.Count:=0;
-        raise;
-        end;
-    finally
-      XGarbageObjects:=GetMDTDatabase.GetGarbageObjects;
-      XGarbageObjects.StartBlock;
-      try
-        XGarbageObjects.AddObject(XSelectParser.GetOwnerObject);
-        XGarbageObjects.AddObject(XMDTSQLBuildDataOrderAddData.GetOwnerObject);
-        if Assigned(XSelect)  then
-          XGarbageObjects.AddObject(XSelect.GetOwnerObject);
-      finally
-        XGarbageObjects.StopBlock;
-        end;
-      end;
-    end;
-
-  function XDoForMDT:boolean;
-  begin
-    if (not Transaction.IsUsingMDT) or  (FMDTSQLExecutor=se_Server) then
-    begin
-      Result:=false;
-      Exit;
-    end
-    else
-     Result:=true;
-
-    try
-      XMDTPrepare;
-    except
-      on E: Exception do begin
-        if FMDTSQLExecutor=se_Local
-          then raise
-        else begin
-          GetMDTDatabase.RegisterTranslatorError(E,SQL.Text);
-          Result:=false;
-          end;
-        end;
-      end;
-    end;
-
 begin
  Include(FQueryRunState,qrsInPrepare);
  try
@@ -6159,8 +5580,7 @@ begin
   if qoStartTransaction in Options then
    if (Transaction<>nil) and not Transaction.InTransaction then
     Transaction.StartTransaction;
-  if ((not Transaction.IsUsingMDT) or (not Transaction.MDTDeferredStart)) then
-    FBase.CheckTransaction;
+  FBase.CheckTransaction;
   if (FDoParamCheck) and (Params.Count>0) then
   begin
    if not vUserParamsCreated then
@@ -6193,10 +5613,7 @@ begin
     SV:=StatusVector;
     with Database.ClientLibrary do
     begin
-      if not XDoForMDT then
-      begin
-        if (not Transaction.InTransaction) and
-           (Transaction.MDTdeferredStart)  then
+        if (not Transaction.InTransaction) then
           Transaction.StartTransaction;
         Call(isc_dsql_alloc_statement2(SV, DBHandle,
                                         @FHandle), True);
@@ -6329,7 +5746,6 @@ begin
            {$ENDIF}
           end;
         end;
-      end;
       FPrepared := True;
       {$IFNDEF NO_MONITOR}
        if MonitoringEnabled  then
@@ -6373,9 +5789,6 @@ begin
  finally
   Exclude(FQueryRunState,qrsInPrepare);
  end;
- // KVE
- MDTInitMonitorObject;
- // KVE_End
 end;
 
 procedure TFIBQuery.SetSQL(Value: TStrings);
@@ -6536,7 +5949,6 @@ begin
    end;
   if Assigned(OnSQLChanging) then OnSQLChanging(Self);
   if FHandle <> nil then FreeHandle;
-  MDTUnPrepare;
   FMacroChanged :=False;
 end;
 
@@ -6913,78 +6325,6 @@ begin
 end;
 {$ENDIF}
 
-function TFIBQuery.GetMDTDatabase:IMDTDatabase;
-begin
-  if Assigned(Database)  then
-   Result:=Database.MDTDatabase
-  else
-   Result:=nil;
-end;
-
-procedure TFIBQuery.SetMDTSQLExecutor(AValue:TMDTSQLExecutor);
-begin
-  if not (csDesigning in ComponentState) then
-   CheckClosed('change MDT sql executor')
-  else
-   Close;
-  if FHandle <> nil then FreeHandle;
-  MDTUnPrepare;
-  //MDT??? FMacroChanged :=False;
-  FMDTSQLExecutor:=AValue;
-  end;
-
-procedure TFIBQuery.MDTUnPrepare;
-var
-  XGarbageObjects:IMDTGarbageObjects;
-  XDatabase:IMDTDatabase;
-begin
-  XDatabase:=GetMDTDatabase;
-  if XDatabase=nil  then exit;
-  XGarbageObjects:=XDatabase.GetGarbageObjects;
-  if XGarbageObjects=nil then exit;
-  XGarbageObjects.StartBlock;
-  try
-    if Assigned(FMDTMainDataOrder) then begin
-      XGarbageObjects.AddObject(FMDTMainDataOrder.GetOwnerObject);
-      //FMDTMainDataOrder.FreeWithSourceOrders;
-      FMDTMainDataOrder:=nil;
-      end;
-    if Assigned(FMDTParamsDataRecord) then begin
-      XGarbageObjects.AddObject(FMDTParamsDataRecord.GetOwnerObject);
-      //FMDTParamsDataRecord.GetOwnerObject.Free;
-      FMDTParamsDataRecord:=nil;
-      end;
-    if Assigned(FMDTParamsVariables) then begin
-      XGarbageObjects.AddObject(FMDTParamsVariables.GetOwnerObject);
-      //FMDTParamsVariables.GetOwnerObject.Free;
-      FMDTParamsVariables:=nil;
-      end;
-    FMDTResultDataRecord:=nil;
-    FMDTFindTableByField:=nil;
-    if Assigned(FMDTMonitorObject) then begin
-      XGarbageObjects.AddObject(FMDTMonitorObject.GetOwnerObject);
-      FMDTMonitorObject:=nil;
-      end;
-    FMDTMonitorProcExist:=false;
-  finally
-    XGarbageObjects.StopBlock;
-    end;
-  end;
-
-procedure TFIBQuery.MDTInitMonitorObject;
-begin
-  if (Database.MDTDatabase<>nil) and
-     (Database.MDTDatabase.IOperationMonitor<>nil) and
-     not FMDTMonitorProcExist
-  then begin
-    if FMDTMonitorObject=nil then begin
-      FMDTMonitorObject:=Database.MDTDatabase.IOperationMonitor.CreateSelectObject;
-      FMDTMonitorObject.SQLText:=FSQL.Text;
-      FMDTMonitorObject.ServerExecute:=not Assigned(FMDTMainDataOrder);
-      Database.MDTDatabase.IOperationMonitor.RegisterObject(FMDTMonitorObject);
-      end;
-    end;
-  end;
 { TFIBBatch }
 
 constructor TFIBBatch.Create;
@@ -6992,10 +6332,6 @@ begin
   inherited Create;
   FState  :=bsNotPrepared;
 end;
-
-
-
-
 
 initialization
  DisableEncodingSQLText:=False;

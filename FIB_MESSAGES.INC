@@ -114,13 +114,6 @@
 
     'Error in %s. FieldList is empty.',
     '%s can''t use field "%s"',
-    '%s is an Firebird 2 function. Please upgrade to Firebird 2 to use this functonality',
-//MDT
-    'MDT. Socket of database "%s" not found',
-    'MDT. MDT transaction already opened',
-    'MDT. FIBXSQLDA and MDTDataRecord are incompatible',
-    'MDT. Unexpected error in "%s"',
-    'MDT. MDT savepoint "%s" already set',
-    'MDT. Savepoint "%s" not found'
+    '%s is an Firebird 2 function. Please upgrade to Firebird 2 to use this functonality'
     
   );

@@ -25,8 +25,7 @@ interface
 
 {$I FIBPlus.inc}
 
-uses {$IFDEF D6+} Types,{$ELSE} Windows, {$ENDIF}
-FIBMDTInterface, Classes,DB,StrUtil;
+uses {$IFDEF D6+} Types, {$ELSE} Windows, {$ENDIF} Classes, DB, StrUtil;
 
 type
 
@@ -176,13 +175,11 @@ type
     function GetDatabaseName: string;
     procedure SetDatabaseName(const Value: string);
     procedure SaveAlias;
-    function QueryValueAsStr(const aSQL: string;FieldNo:integer;
-        ParamValues:array of variant;
-        AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal):string;
-    function Execute(const SQL: string;
-      AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal): boolean;
+    function QueryValueAsStr(const aSQL: string; FieldNo: Integer;
+        ParamValues:array of variant): string;
+    function Execute(const SQL: string): boolean;
     procedure Commit;
-    function  IsFirebirdConnect :boolean;
+    function IsFirebirdConnect: Boolean;
     property DBName: string read GetDatabaseName write SetDatabaseName;
   end;
 

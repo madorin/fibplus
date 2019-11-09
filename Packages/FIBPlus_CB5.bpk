@@ -16,7 +16,7 @@
       c5\StdFuncs.obj c5\StrUtil.obj  c5\pFIBScripter.obj 
       c5\pFIBExports.obj c5\pFIBDataRefresh.obj c5\pFIBMetaData.obj 
       c5\SIBFIBEA.obj c5\pFIBSQLLog.obj c5\FIBSafeTimer.obj c5\FIBDBLoginDlg.obj 
-      c5\FIBMDTInterface.obj c5\pFIBInterfaces.obj c5\IBBlobFilter.obj 
+      c5\pFIBInterfaces.obj c5\IBBlobFilter.obj 
       c5\FIBCloneComponents.obj c5\pFIBLists.obj c5\DBParsers.obj 
       c5\FIBCacheManage.obj c5\SIBGlobals.obj c5\SIBAPI.obj c5\SIBEABase.obj 
       c5\pTestInfo.obj c5\pFIBClientDataSet.obj c5\FIBPlus_CB5.obj"/>

@@ -168,14 +168,7 @@ type
                                 feCantUseLimitedCache,
                                 feFieldListEmpty,
                                 feCantUseField,
-                                feFB2feature,
-
-                                feMDTRealDBSocketNotFound,
-                                feMDTTransactionAlreadyOpened,
-                                feMDTIncompatibleFIBXSQLDAAndMDTDataRecord,
-                                feMDTUnexpectedError,
-                                feMDTSavePointAlreadySet,
-                                feMDTSavePointNotFound
+                                feFB2feature
 
                                 );
 

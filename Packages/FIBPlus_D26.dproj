@@ -177,7 +177,6 @@
         <DCCReference Include="..\pFIBStoredProc.pas"/>
         <DCCReference Include="..\IB_ErrorCodes.pas"/>
         <DCCReference Include="..\FIBCloneComponents.pas"/>
-        <DCCReference Include="..\FIBMDTInterface.pas"/>
         <DCCReference Include="..\pFIBFieldsDescr.pas"/>
         <DCCReference Include="..\SIBAPI.pas"/>
         <DCCReference Include="..\SIBFIBEA.PAS"/>

@@ -46,7 +46,6 @@ USEUNIT("SIBFIBEA.PAS");
 USEUNIT("pFIBSQLLog.pas");
 USEUNIT("FIBSafeTimer.pas");
 USEFORMNS("FIBDBLoginDlg.pas", Fibdblogindlg, frmFIBDBLoginDlg);
-USEUNIT("FIBMDTInterface.pas");
 USEUNIT("pFIBInterfaces.pas");
 USEUNIT("IBBlobFilter.pas");
 USEUNIT("FIBCloneComponents.pas");

@@ -27,11 +27,8 @@ uses
    FIBPlatforms,SysUtils, Classes,
    DB,ibase,IB_Intf, ib_externals,FIBQuery,fib,FIBDataSet;
 
-
-
-
 type
-  TpFIBQuery =class;
+  TpFIBQuery = class;
 
   TFIBQueryErrorEvent =
    procedure(pFIBQuery:TpFIBQuery; E: EFIBError; var Action: TDataAction) of object;
@@ -46,12 +43,9 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     procedure ExecProc;
-    procedure ExecQuery;         override;       
-
-    procedure ExecProcedure(const ProcName:string;const InputParams:array of variant);
-     overload;
+    procedure ExecQuery; override;
+    procedure ExecProcedure(const ProcName:string;const InputParams:array of variant); overload;
     procedure ExecProcedure(const ProcName:string);overload;
-
     function  BlobToStrings(const BlobFieldName:string;Destination:Tstrings):boolean;
     function  BlobAsString(const BlobFieldName:string):string;
     function  FieldIsNull(Field:TFIBXSQLVAR):boolean;
@@ -64,8 +58,7 @@ type
     property AfterExecute ;
   end;
 
-
-  TFIBOrderExecUO   =(oeBeforeDefault,oeAfterDefault);
+  TFIBOrderExecUO = (oeBeforeDefault,oeAfterDefault);
 
   TpFIBUpdateObject = class(TpFIBQuery)
   private

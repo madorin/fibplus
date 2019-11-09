@@ -29,7 +29,7 @@ uses
    Windows, // For inline functions
   {$ENDIF}
   SyncObjs,SysUtils,Classes,DB,FIBPlatforms,FIBDataSet,FIBDataBase,FIBQuery,
-  pFIBQuery,pFIBDataBase,pFIBProps, FIBMDTInterface
+  pFIBQuery,pFIBDataBase,pFIBProps
   ;
 
 
@@ -1478,7 +1478,6 @@ begin
      'order by R.RDB$FIELD_POSITION'
     );
 
-    q.MDTSQLExecutor:=se_Server;
     with q do
     try
      Options:=[qoStartTransaction,qoTrimCharFields];

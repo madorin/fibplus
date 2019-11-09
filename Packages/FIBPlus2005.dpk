@@ -79,7 +79,6 @@ contains
   pFIBSQLLog in '..\pFIBSQLLog.pas',
   pFIBInterfaces in '..\pFIBInterfaces.pas',
   FIBCloneComponents in '..\FIBCloneComponents.pas',
-  FIBMDTInterface in '..\FIBMDTInterface.pas',
   FIBSafeTimer in '..\FIBSafeTimer.pas',
   pFIBDataRefresh in '..\pFIBDataRefresh.pas',
   pFIBExports in '..\pFIBExports.pas',

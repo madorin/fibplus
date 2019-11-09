@@ -134,9 +134,6 @@
     <DelphiCompile Include="FIBDBLoginDlg.pas">
       <BuildOrder>13</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="FIBMDTInterface.pas">
-      <BuildOrder>14</BuildOrder>
-    </DelphiCompile>
     <DelphiCompile Include="FIBMiscellaneous.pas">
       <BuildOrder>15</BuildOrder>
     </DelphiCompile>

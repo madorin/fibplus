@@ -266,7 +266,6 @@ procedure TpFIBDatabaseEditor.ExecuteVerb(Index: Integer);
 var
    db:IFIBConnect;
    Script:TStrings;
-   Stringer:IFIBStringer;
    Connected:Boolean;
 begin
   if  ObjSupports(Component,IFIBConnect,db) then
@@ -1099,7 +1098,6 @@ const
 
 type THackCondition=class
      private
-      FOwner:TObject;
       FEnabled:boolean;
      end;
 
@@ -1376,7 +1374,6 @@ var
   Qry:TComponent;
   Trans :TObject;
   iQry:IFIBQuery;
-  iTrans:IFIBTransaction;
   trActive:boolean;
   ErrMessage:string;
   Script:TStrings;

@@ -120,7 +120,6 @@
 			<DCCReference Include="..\StrUtil.pas"/>
 			<DCCReference Include="..\FIBSafeTimer.pas"/>
 			<DCCReference Include="..\pFIBMetaData.pas"/>
-			<DCCReference Include="..\FIBMDTInterface.pas"/>
 			<DCCReference Include="..\pFIBDataRefresh.pas"/>
 			<DCCReference Include="..\pFIBExports.pas"/>
 			<DCCReference Include="..\pFIBClientDataSet.pas"/>

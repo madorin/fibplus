@@ -234,9 +234,6 @@
 			<DelphiCompile Include="FIBCloneComponents.pas">
 				<BuildOrder>51</BuildOrder>
 			</DelphiCompile>
-			<DelphiCompile Include="FIBMDTInterface.pas">
-				<BuildOrder>56</BuildOrder>
-			</DelphiCompile>
 			<DelphiCompile Include="pFIBSQLLog.pas">
 				<BuildOrder>47</BuildOrder>
 			</DelphiCompile>

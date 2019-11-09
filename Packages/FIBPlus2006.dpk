@@ -82,7 +82,6 @@ contains
   FIBSafeTimer in '..\FIBSafeTimer.pas',
   pFIBMetaData in '..\pFIBMetaData.pas',
   pFIBExports in '..\pFIBExports.pas',  
-  FIBMDTInterface in '..\FIBMDTInterface.pas',
   pFIBDataRefresh in '..\pFIBDataRefresh.pas',
   pFIBClientDataSet in '..\pFIBClientDataSet.pas';
 

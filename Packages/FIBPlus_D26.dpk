@@ -81,7 +81,6 @@ contains
   pFIBStoredProc in '..\pFIBStoredProc.pas',
   IB_ErrorCodes in '..\IB_ErrorCodes.pas',
   FIBCloneComponents in '..\FIBCloneComponents.pas',
-  FIBMDTInterface in '..\FIBMDTInterface.pas',
   pFIBFieldsDescr in '..\pFIBFieldsDescr.pas',
   SIBAPI in '..\SIBAPI.pas',
   SIBFIBEA in '..\SIBFIBEA.PAS',

@@ -80,7 +80,6 @@ contains
   VariantRtn in '..\VariantRtn.pas',
   pFIBScripter in '..\pFIBScripter.pas',
   FIBSafeTimer in '..\FIBSafeTimer.pas',
-  FIBMDTInterface in '..\FIBMDTInterface.pas',
   pFIBDataRefresh in '..\pFIBDataRefresh.pas',
   pFIBExports in '..\pFIBExports.pas',
   pFIBMetaData in '..\pFIBMetaData.pas',

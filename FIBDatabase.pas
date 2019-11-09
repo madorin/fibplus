@@ -28,8 +28,8 @@ interface
 {$ENDIF}
 uses
  SysUtils, SyncObjs,Classes,ibase, IB_Intf, IB_Externals,
- pFIBProps,IBBlobFilter, fib, pFIBEventLists,StdFuncs,
- pFIBInterfaces, FIBMDTInterface,FIBPlatforms
+ pFIBProps,IBBlobFilter, Fib, pFIBEventLists,StdFuncs,
+ pFIBInterfaces, FIBPlatforms
   {$IFDEF D6+} ,Variants{$ENDIF}
    {$IFDEF D_XE2}
     ,System.UITypes
@@ -85,7 +85,7 @@ type
   TDoChangeScreenCursor = procedure(NewCursor:Integer; var OldCursor:Integer) of object  ;
  {$ENDIF}
 
-  TFIBDatabase = class(TComponent,IIbClientLibrary,IFIBConnect,IMDTMasterObject)
+  TFIBDatabase = class(TComponent,IIbClientLibrary,IFIBConnect)
   private
     FSQLLogger:ISQLLogger;
     FSQLStatMaker:ISQLStatMaker;
@@ -501,34 +501,25 @@ type
     procedure RollbackRetaining;
 
     function Gen_Id(const GeneratorName: string; Step: Int64;aTransaction:TFIBTransaction =nil): Int64;
-    function Execute(const SQL: string; AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal): boolean;
+    function Execute(const SQL: string): boolean;
 
     procedure CreateGUIDDomain;
     function InternalQueryValue(const aSQL: string;FieldNo:integer;
-     ParamValues:array of variant; aTransaction:TFIBTransaction; aCacheQuery:boolean;
-     AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal
-    ):Variant;
-    function QueryValue(const aSQL: string;FieldNo:integer;aTransaction:TFIBTransaction=nil;
-     aCacheQuery:boolean=True; AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal
-    ):Variant; overload;
+     ParamValues:array of variant; aTransaction:TFIBTransaction; aCacheQuery:boolean): Variant;
+    function QueryValue(const aSQL: string;FieldNo: Integer; ATransaction: TFIBTransaction=nil;
+     aCacheQuery:Boolean = True): Variant; overload;
     function QueryValue(const aSQL: string;FieldNo:integer;
-     ParamValues:array of variant;aTransaction:TFIBTransaction=nil;aCacheQuery:boolean=True;
-     AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal
-    ):Variant; overload;
+     ParamValues:array of variant;aTransaction:TFIBTransaction=nil;aCacheQuery:boolean=True):Variant; overload;
 
     function QueryValues(const aSQL: string;aTransaction:TFIBTransaction=nil
-     ;aCacheQuery:boolean=True; AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal
-    ):Variant; overload;
-    function QueryValues(const aSQL: string; ParamValues:array of variant;aTransaction:TFIBTransaction=nil ;
-     aCacheQuery:boolean=True; AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal):Variant; overload;
+     ;aCacheQuery:boolean=True):Variant; overload;
+    function QueryValues(const aSQL: string; ParamValues:array of variant;aTransaction:TFIBTransaction=nil;
+     aCacheQuery:boolean=True):Variant; overload;
 
 
-
+    function QueryValueAsStr(const aSQL: string;FieldNo:integer):string;overload;
     function QueryValueAsStr(const aSQL: string;FieldNo:integer;
-      AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal):string;overload;
-    function QueryValueAsStr(const aSQL: string;FieldNo:integer;
-      ParamValues:array of variant;
-      AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal):string; overload;
+      ParamValues:array of variant):string; overload;
 
     procedure  ClearQueryCacheList;
 
@@ -583,35 +574,14 @@ type
     property SQLLogger:ISQLLogger read FSQLLogger write SetSQLLogger;
     property UseBlrToTextFilter :boolean read FUseBlrToTextFilter write FUseBlrToTextFilter default False;
     property GeneratorsCache :TGeneratorsCache read FGenerators write SetGenerators;
-{$IFDEF CSMonitor}
+    {$IFDEF CSMonitor}
     property CSMonitorSupport: TCSMonitorSupport read FCSMonitorSupport write SetCSMonitorSupport;
-{$ENDIF}
-
-   {$IFDEF D_XE2}
+    {$ENDIF}
+    {$IFDEF D_XE2}
     property DoChangeScreenCursor: TDoChangeScreenCursor read FDoChangeScreenCursor  write FDoChangeScreenCursor;
-   {$ENDIF}
-
-//MDT
-  protected
-    FIMDTDatabase:IMDTDatabase;
-    FIMDTIBRealDBCanal:IMDTIBRealDBCanal;
-    FMDTConnectMode: integer;
-    procedure SetMDTDatabase(AIDatabase :IMDTDatabase);
-    function GetIsUsingMDT:boolean;
-
-   //IMDTMasterObject
-    procedure LinkedChieldDestroy(AIChield:IUnknown); virtual; stdcall;
-    procedure LinkedChieldBeforeConnect(AIChield:IUnknown); virtual; stdcall;
-    procedure LinkedChieldAfterConnect(AIChield:IUnknown); virtual; stdcall;
-    procedure LinkedChieldBeforeDisconnect(AIChield:IUnknown); virtual; stdcall;
-    procedure LinkedChieldAfterDisconnect(AIChield:IUnknown); virtual; stdcall;
-  public
-    property IsUsingMDT:boolean read GetIsUsingMDT;
+    {$ENDIF}
   published
-    property  MemoSubtypes : string read GetMemoSubtypes write SetMemoSubtypes;
-    property MDTDatabase: IMDTDatabase read FIMDTDatabase write SetMDTDatabase;
-//MDT_End;
-
+    property MemoSubtypes: string read GetMemoSubtypes write SetMemoSubtypes;
   end;
 
   (* TFIBTransaction *)
@@ -629,11 +599,6 @@ type
 
   TEndTrEvent=procedure(EndingTR:TFIBTransaction;
    Action: TTransactionAction; Force: Boolean)of object;
-
-  TFIBMDTTransactionRole=(
-    mtrNone,
-    mtrSeparateTransaction,
-    mtrAutoDefine);
 
   TFIBTransaction = class(TComponent,IFIBTransaction)
   protected
@@ -732,7 +697,6 @@ type
     procedure RollbackRetaining;virtual;
     procedure ExecSQLImmediate(const SQLText:Widestring);
     procedure SetSavePoint(const SavePointName:string);
-    procedure MDTEndSavePoint(AName:string; ACommit:boolean);
     procedure RollBackToSavePoint(const SavePointName:string);
     procedure ReleaseSavePoint(const SavePointName:string);
     procedure CloseAllQueryHandles;
@@ -769,26 +733,6 @@ type
 {$IFDEF CSMonitor}
     property CSMonitorSupport: TCSMonitorSupport read FCSMonitorSupport  write SetCSMonitorSupport;
 {$ENDIF}
-  protected
-    FMDTTransactionRole: TFIBMDTTransactionRole;
-    FMDTDeferredStart: boolean;
-    FMDTIBRealDBTransaction: IMDTIBRealDBTransaction;
-
-    procedure SetMDTTransactionRole(AValue: TFIBMDTTransactionRole);
-    function GetIMDTDatabase: IMDTDatabase;
-    function GetIMDTIBRealDBCanal: IMDTIBRealDBCanal;
-  public
-    procedure MDTDataChange;
-    function GetIsUsingMDT: boolean;
-
-    property MDTDatabase: IMDTDatabase read GetIMDTDatabase;
-    property MDTIBRealDBCanal: IMDTIBRealDBCanal read GetIMDTIBRealDBCanal;
-    property IsUsingMDT:boolean read GetIsUsingMDT;
-    property MDTDeferredStart: boolean
-      read FMDTDeferredStart;// write FMDTDeferredStart;
-  published
-    property MDTTransactionRole: TFIBMDTTransactionRole
-      read FMDTTransactionRole write SetMDTTransactionRole default mtrAutoDefine;
   end;
 
   (* TFIBBase *)
@@ -1000,11 +944,6 @@ begin
   ListErrorMessages.LoadFromFile(ChangeFileExt(FileName,'.err'));
 end;
 
-procedure MDTNotSupport(AMethodName: string);
-begin
-  raise Exception.Create(AMethodName+ ' don''t work for MDT');
-end;
-
 (* TFIBDatabase *)
 
 constructor TFIBDatabase.Create(AOwner: TComponent);
@@ -1054,8 +993,6 @@ begin
   vInternalTransaction.DefaultDataBase:=Self;
   vInternalTransaction.TimeoutAction:=taCommit;
   vInternalTransaction.Timeout      :=1000;
-  vInternalTransaction.MDTTransactionRole:=mtrSeparateTransaction;
-  vInternalTransaction.FMDTDeferredStart:=true;
 
   with vInternalTransaction.TRParams do
   begin
@@ -1080,9 +1017,6 @@ begin
 
   FGenerators:=TGeneratorsCache.Create(Self);
   FMemoSubtypes:=TMemoSubtypes.Create;
-  FIMDTDatabase:=nil;
-  FIMDTIBRealDBCanal:=nil;
-  FMDTConnectMode:=0;
 end;
 
 destructor TFIBDatabase.Destroy;
@@ -1090,7 +1024,6 @@ var
   i: Integer;
 begin
   Connected:=false;
-  MDTDatabase:=nil;
 
 {$IFDEF CSMonitor}
   FCSMonitorSupport.Free;
@@ -1638,8 +1571,6 @@ begin
    end;
 end;
 
-
-
 function TFIBDatabase.IndexOfDBConst(const st: string): Integer;
 var
   i, pos_of_str: Integer;
@@ -1665,7 +1596,6 @@ end;
 procedure TFIBDatabase.InternalClose(Force: Boolean;DBinShutDown:boolean);
 var
   i: Integer;
-  XDoKey: boolean;
 begin
   (*
    * Check that the database connection is active.
@@ -1704,21 +1634,6 @@ begin
    * the handle is reset to nil.
    *)
 
-  if IsUsingMDT then
-  begin
-    try
-      if FMDTConnectMode=0 then exit;
-      XDoKey:=FMDTConnectMode=2;
-      FMDTConnectMode:=0;
-      if XDoKey and FIMDTDatabase.Connected then
-        FIMDTDatabase.Connected:=false;
-    finally
-      FHandle:=nil;
-      FIMDTIBRealDBCanal:=nil;
-    end;
-  end
-  else
-  begin
     try
       if (not HandleIsShared) and
          (Call(FClientLibrary.isc_detach_database(StatusVector, @FHandle), not Force) > 0) and
@@ -1734,7 +1649,7 @@ begin
         FHandle := nil;
         FHandleIsShared := False;
     end;
-  end;
+
 {$IFNDEF NO_MONITOR}
   if MonitoringEnabled  then
    if MonitorHook<>nil then
@@ -1807,16 +1722,7 @@ begin
     else
      raise Exception.Create(SFIBErrorNoDBLoginDialog + SFIBErrorIncludeDBLoginDialog);
   end;
-  IndexOfUser := -1; IndexOfPassword := -1; IndexOfRole:= -1;
-  if IsUsingMDT then
-  begin
-    Username := FIMDTIBRealDBCanal.IDatabaseConnectParams.UserName;
-    Password := FIMDTIBRealDBCanal.IDatabaseConnectParams.Password;
-    RoleName := FIMDTIBRealDBCanal.IDatabaseConnectParams.RoleName;
-    XDBName := FIMDTIBRealDBCanal.IMDTIBRealDataBase.FileName;
-  end
-  else
-  begin
+
   IndexOfUser := IndexOfDBConst(DPBConstantNames[isc_dpb_user_name]);
   if IndexOfUser <> -1 then
     Username := FastCopy(DBParams[IndexOfUser],
@@ -1833,20 +1739,10 @@ begin
                                        PosCh('=', DBParams[IndexOfRole]) + 1,
                                        Length(DBParams[IndexOfRole]));
     XDBName := DBName;
-  end;
-
 
   Result := pFIBLoginDialog(XDBName, Username, Password,RoleName);
   if Result then
   begin
-    if IsUsingMDT then
-    begin
-      FIMDTIBRealDBCanal.IDatabaseConnectParams.UserName:=Username;
-      FIMDTIBRealDBCanal.IDatabaseConnectParams.Password:=Password;
-      FIMDTIBRealDBCanal.IDatabaseConnectParams.RoleName:=RoleName;
-    end
-    else
-    begin
       if IndexOfUser = -1 then
         DBParams.Add(DPBConstantNames[isc_dpb_user_name] + '=' + Username)
       else
@@ -1862,7 +1758,6 @@ begin
       else
         DBParams[IndexOfRole] := DPBConstantNames[isc_dpb_sql_role_name] +
                                      '=' + RoleName;
-    end;
   end;
 end;
 
@@ -1953,7 +1848,6 @@ var
   isc_res:ISC_STATUS;
   i: Integer;
   SV: PISC_STATUS;
-  XMDTRealDBCanal:IMDTRealDBCanal;
 begin
   // isc_res:=0;
   (*
@@ -1967,20 +1861,6 @@ begin
 //  EnterCriticalSection(vConnectCS);
   try
    CheckInactive;
-   if IsUsingMDT then
-   begin
-     FIMDTIBRealDBCanal := nil;
-     for i := 0 to FIMDTDatabase.RealDBCanalCount-1 do
-     begin
-       XMDTRealDBCanal:=FIMDTDatabase.IRealDBCanals[I];
-       if XMDTRealDBCanal.QueryInterface(
-          iid_MDTIBRealDBCanal,FIMDTIBRealDBCanal)=S_Ok
-         then break;
-     end;
-     if not Assigned(FIMDTIBRealDBCanal) then
-      FIBError(feMDTRealDBSocketNotFound, [FDBName]);
-   end
-   else
    CheckDatabaseName;
    LoadLibrary;
   (*
@@ -1994,24 +1874,6 @@ begin
 
   if FUseLoginPrompt and not Login then
     FIBError(feOperationCancelled, [nil]);
-   if IsUsingMDT then
-   begin
-     if not FIMDTDatabase.Connected then
-     begin
-       try
-         FMDTConnectMode:=2;
-         FIMDTDatabase.Connected:=true;
-       except
-         FMDTConnectMode:=0;
-         FHandle:=nil;
-         if RaiseExcept then raise; //MDT? IbError(Self,Self)
-       end;
-     end
-     else FMDTConnectMode:=1;
-     FHandle:=FIMDTIBRealDBCanal.IMDTIBRealDataBase.Handle;
-     isc_res:=0;
-   end
-   else begin
      (*
       * Generate a new DPB if necessary
       *)
@@ -2030,7 +1892,6 @@ begin
      isc_res:=Call(FClientLibrary.isc_attach_database(SV, Length(FDBName),
                             PAnsiChar(FDBName), @FHandle,
                             FDPBLength, FDPB), False);
-     end;
   finally
    vConnectCS.Release
 //   LeaveCriticalSection(vConnectCS);
@@ -2160,10 +2021,7 @@ begin
    {$ENDIF}
    if not FClientLibLoaded then
    begin
-    if IsUsingMDT then
-     XLibraryName:=FIMDTIBRealDBCanal.IMDTIBDatabaseConnectParams.LibraryName
-    else
-     XLibraryName:=FLibraryName;
+    XLibraryName:=FLibraryName;
     FClientLibrary:=IB_Intf.GetClientLibrary(XLibraryName);
     FClientLibLoaded:=Assigned(FClientLibrary);
    end;
@@ -2291,8 +2149,6 @@ end;
 
 procedure TFIBDatabase.SetHandle(Value: TISC_DB_HANDLE);
 begin
-  if Assigned(Value) and IsUsingMDT
-    then MDTNotSupport('TFIBDatabase.SetHandle Value<>nil');
   if HandleIsShared then
     Close
   else
@@ -3270,12 +3126,11 @@ begin
  Result := (SQLDialect<3) or UpperOldNames;
 end;
 
-function TFIBDatabase.QueryValueAsStr(const aSQL: string;FieldNo:integer;
-  AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal):string;
+function TFIBDatabase.QueryValueAsStr(const aSQL: string;FieldNo:integer): string;
 var
    v:Variant;
 begin
- v:=QueryValue(aSQL,FieldNo,nil,true,AMDTSQLExecutor);
+ v:=QueryValue(aSQL,FieldNo,nil,true);
  if VarIsNull(v) then
   Result:=''
  else
@@ -3283,12 +3138,11 @@ begin
 end;
 
 function TFIBDatabase.QueryValueAsStr(const aSQL: string;FieldNo:integer;
-        ParamValues:array of variant;
-        AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal):string;
+        ParamValues:array of variant):string;
 var
     v:Variant;
 begin
- v:=QueryValue(aSQL,FieldNo,ParamValues,nil,true,AMDTSQLExecutor);
+ v:=QueryValue(aSQL,FieldNo,ParamValues,nil,true);
  if VarIsNull(v) then
   Result:=''
  else
@@ -3296,8 +3150,7 @@ begin
 end;
 
 function TFIBDatabase.InternalQueryValue(const aSQL: string;FieldNo:integer;
-  ParamValues:array of variant; aTransaction:TFIBTransaction;aCacheQuery:boolean;
-  AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal):Variant;
+  ParamValues:array of variant; aTransaction:TFIBTransaction;aCacheQuery:boolean):Variant;
 var Query: TFIBQuery;
     i    :integer;
     c    :integer;
@@ -3314,11 +3167,9 @@ begin
    else
     c:=Count-1;
 
-  Query.MDTSQLExecutor:=AMDTSQLExecutor;
   with Query do
   try
-    if not Transaction.Active and
-       ((not IsUsingMDT) or (not Transaction.MDTDeferredStart)) then
+    if not Transaction.Active then
       Transaction.StartTransaction;
     try
      for i:=0 to c do
@@ -3362,40 +3213,33 @@ begin
 end;
 
 function TFIBDatabase.QueryValue(const aSQL: string;FieldNo:integer;aTransaction:TFIBTransaction=nil;
- aCacheQuery:boolean=True; AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal):Variant;
+ aCacheQuery:boolean=True):Variant;
 begin
- Result := InternalQueryValue(aSQL,FieldNo, [varEmpty],aTransaction,aCacheQuery,
-   AMDTSQLExecutor);
+ Result := InternalQueryValue(aSQL,FieldNo, [varEmpty],aTransaction,aCacheQuery);
 end;
 
 
 function TFIBDatabase.QueryValue(const aSQL: string;FieldNo:integer;
           ParamValues:array of variant;aTransaction:TFIBTransaction=nil;
-aCacheQuery:boolean=True; AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal
-):Variant;
+aCacheQuery:boolean=True):Variant;
 begin
-  Result := InternalQueryValue(aSQL,FieldNo, ParamValues,aTransaction,aCacheQuery,
-    AMDTSQLExecutor);
+  Result := InternalQueryValue(aSQL,FieldNo, ParamValues,aTransaction,aCacheQuery);
 end;
 
-function TFIBDatabase.QueryValues(const aSQL: string;aTransaction:TFIBTransaction=nil;aCacheQuery:boolean=True;
-  AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal):Variant;
+function TFIBDatabase.QueryValues(const aSQL: string;aTransaction:TFIBTransaction=nil;aCacheQuery:boolean=True):Variant;
 begin
-  Result:= InternalQueryValue(aSQL,-1,[varEmpty],aTransaction,aCacheQuery,
-    AMDTSQLExecutor);
+  Result:= InternalQueryValue(aSQL,-1,[varEmpty],aTransaction,aCacheQuery);
 end;
 
-function TFIBDatabase.QueryValues(const aSQL: string;  ParamValues:array of variant;aTransaction:TFIBTransaction=nil;aCacheQuery:boolean=True;
-  AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal):Variant;
+function TFIBDatabase.QueryValues(const aSQL: string;  ParamValues:array of variant;aTransaction:TFIBTransaction=nil;aCacheQuery:boolean=True):Variant;
 begin
   Result:= InternalQueryValue(aSQL,-1, ParamValues,aTransaction,aCacheQuery);
 end;
 
-function TFIBDatabase.Execute(const SQL: string;
-  AMDTSQLExecutor: TMDTSQLExecutor = se_ServerAfterLocal): boolean;
+function TFIBDatabase.Execute(const SQL: string): boolean;
 begin
  try
-  QueryValue(SQL,-1,nil,true,AMDTSQLExecutor);
+  QueryValue(SQL,-1,nil,true);
   Result:= True
  except
   Result := False;
@@ -3506,63 +3350,6 @@ begin
   Result:=False
 end;
 
-//MDT
-
-function TFIBDatabase.GetIsUsingMDT:boolean;
-begin
-  Result:=FIMDTDatabase<>nil;
-  end;
-
-procedure TFIBDatabase.SetMDTDatabase(AIDatabase :IMDTDatabase);
-begin
-  if FIMDTDatabase<>AIDatabase then begin
-    if csDesigning in ComponentState
-      then Close
-      else CheckInactive;
-    if Assigned(FIMDTDatabase)
-      then FIMDTDatabase.ChieldObject.DeleteMasterLink(self);
-    FIMDTDatabase:=AIDatabase;
-    if Assigned(FIMDTDatabase)
-      then FIMDTDatabase.ChieldObject.AddMasterLink(self);
-    end;
-  end;
-
-procedure TFIBDatabase.LinkedChieldDestroy(AIChield:IUnknown);
-begin
-  if Assigned(AIChield) and Assigned(FIMDTDatabase) and
-     ((AIChield as IMDTChieldObject)=FIMDTDatabase.ChieldObject)  then begin
-    Close;
-    FIMDTDataBase:=nil;
-    end;
-  end;
-//MDT_End;
-
-procedure TFIBDatabase.LinkedChieldBeforeConnect(AIChield:IUnknown);
-begin
-  end;
-
-procedure TFIBDatabase.LinkedChieldAfterConnect(AIChield:IUnknown);
-begin
-  if Assigned(AIChield) and Assigned(FIMDTDatabase) and
-     ((AIChield as IMDTChieldObject)=FIMDTDatabase.ChieldObject)  then begin
-    if not Connected and (FMDTConnectMode=0)
-      then Connected:=true;
-    end;
-  end;
-
-procedure TFIBDatabase.LinkedChieldBeforeDisconnect(AIChield:IUnknown);
-begin
-  if Assigned(AIChield) and Assigned(FIMDTDatabase) and
-     ((AIChield as IMDTChieldObject)=FIMDTDatabase.ChieldObject)  then begin
-    if Connected and (FMDTConnectMode>0)
-      then Connected:=false;
-    end;
-  end;
-
-procedure TFIBDatabase.LinkedChieldAfterDisconnect(AIChield:IUnknown);
-begin
-  end;
-  
 (* TFIBTransaction *)
 
 constructor TFIBTransaction.Create(AOwner: TComponent);
@@ -3602,10 +3389,6 @@ begin
 
   vBeforeEndTransaction := TCallBackList.Create(Self);;
   vAfterEndTransaction  := TCallBackList.Create(Self);;
-
-  FMDTTransactionRole:=mtrAutoDefine;
-  FMDTDeferredStart:=false;
-  FMDTIBRealDBTransaction:=nil;
 end;
 
 destructor TFIBTransaction.Destroy;
@@ -3878,69 +3661,6 @@ begin
        );
   end;
 
-  if Assigned(FMDTIBRealDBTransaction) then
-  begin
-    case Action of
-      TACommit:FState:=tsDoCommit;
-      TARollback:FState:=tsDoRollback;
-      TACommitRetaining:FState:=tsDoCommitRetaining;
-      TARollbackRetaining:FState:=tsDoRollbackRetaining;
-      end;
-    DoBefore;
-    try
-      if FMDTTransactionRole=mtrSeparateTransaction then begin
-        if FMDTIBRealDBTransaction.Active then begin
-          case Action of
-            TACommit:begin
-              MDTDatabase.CommitSepareteTransaction(FMDTIBRealDBTransaction,false);
-              MDTDatabase.GetGarbageObjects.AddObject(
-                FMDTIBRealDBTransaction.GetOwnerObject);
-              FMDTIBRealDBTransaction:=nil;
-              end;
-            TARollback:begin
-              FMDTIBRealDBTransaction.Rollback;
-              MDTDatabase.GetGarbageObjects.AddObject(
-                FMDTIBRealDBTransaction.GetOwnerObject);
-              FMDTIBRealDBTransaction:=nil;
-              end;
-            TACommitRetaining:
-              MDTDatabase.CommitSepareteTransaction(
-                FMDTIBRealDBTransaction,true);
-            TARollbackRetaining:
-              FMDTIBRealDBTransaction.RollbackRetaining;
-            end;
-          end;
-        end
-      else begin
-        if Assigned(MDTIBRealDBCanal) and
-           (FMDTIBRealDBTransaction<>MDTIBRealDBCanal.IMDTIBRealLongTransaction)  then begin
-          case Action of
-            TACommit,TARollback:begin
-              while MDTDatabase.ProtectedBlocks.BlockCount>0
-                do if Action=TACommit
-                  then MDTDatabase.CommitProtectedBlock
-                  else MDTDatabase.RollbackProtectedBlock;
-              FMDTIBRealDBTransaction:=nil;
-              end;
-            TACommitRetaining,TARollbackRetaining:
-              MDTDatabase.CloseAllBlocksAndRetainTransaction(
-                Action=TACommitRetaining);
-            end;
-          end;
-        end;
-    except
-      if Force then FHandle:=nil;
-      raise;
-      end;
-    if not Assigned(MDTIBRealDBCanal)
-      then FMDTIBRealDBTransaction:=nil;
-    if Assigned(FMDTIBRealDBTransaction)
-      then FHandle:=FMDTIBRealDBTransaction.Handle
-      else FHandle:=nil;
-    DoAfter;
-  end
-  else
-  begin
   case Action of
     TARollback, TACommit:
     begin
@@ -3988,7 +3708,6 @@ begin
         Call(IIbClientLibrary(MainDatabase).isc_rollback_retaining(StatusVector, @FHandle), True);
         DoAfter;
       end;
-    end;
   end;
  {$IFNDEF NO_MONITOR}
    if MonitoringEnabled  then
@@ -4283,10 +4002,7 @@ var
   vTRParams1:TStrings;
   vTPBLength:Short;
   vIsFB21orMore:boolean;
-  XIBTransactionParams: IMDTIBTransactionParams;
-
 begin
-  try
     (*
      * Check that we're not already in a transaction.
      * Check that there is at least one database in the list.
@@ -4304,48 +4020,6 @@ begin
     (*
      * Make sure that a current TPB is generated.
      *)
-    if Assigned(MDTDatabase) and (FMDTTransactionRole<>mtrNone) then
-    begin
-      for i := 0 to FFIBBases.Count - 1 do
-        FIBBases[i].FOnTransactionStarted;
-      for i := Pred(vBeforeStartTransaction.Count) downto 0 do
-        vBeforeStartTransaction.Event[i](Self);
-      if FMDTTransactionRole=mtrSeparateTransaction then begin
-        XIBTransactionParams:=MDTIBRealDBCanal.CreateIMDTTransactionParams as
-          IMDTIBTransactionParams;
-        XIBTransactionParams.ApplyByFullStrings(FTRParams);
-        FMDTIBRealDBTransaction:=MDTIBRealDBCanal.CreateIMDTRealDBTransaction as
-          IMDTIBRealDBTransaction;
-        FMDTIBRealDBTransaction.StartWithNativeParams(XIBTransactionParams);
-        XIBTransactionParams:=nil;
-        end
-      else begin
-        XIBTransactionParams:=MDTIBRealDBCanal.CreateIMDTTransactionParams as
-          IMDTIBTransactionParams;
-        XIBTransactionParams.ApplyByFullStrings(FTRParams);
-        if not ((XIBTransactionParams.IsolationLevel=ilReadCommited) and
-            (XIBTransactionParams.EnableOper=eoRead)) then begin
-          if MDTDatabase.ProtectedBlocks.BlockCount>0
-            then FIBError(feMDTTransactionAlreadyOpened, []);
-          MDTDatabase.NewProtectedBlock(IMDTTransactionParams(XIBTransactionParams));
-          MDTDatabase.PrepareRealDBCanalForDirrectSQL(MDTIBRealDBCanal);
-          FMDTIBRealDBTransaction:=MDTIBRealDBCanal.IMDTIBRealCurrentTransaction;
-          end
-        else FMDTIBRealDBTransaction:=MDTIBRealDBCanal.IMDTIBRealLongTransaction;
-        end;
-      FHandle:=FMDTIBRealDBTransaction.Handle;
-      for i := Pred(vAfterStartTransaction.Count) downto 0 do
-       vAfterStartTransaction.Event[i](Self);
-      for i := 0 to FFIBBases.Count - 1 do
-       FIBBases[i].FOnTransactionStarted;
-     {$IFNDEF NO_MONITOR}
-       if MonitoringEnabled  then
-        if MonitorHook<>nil then
-         MonitorHook.TRStart(Self);
-     {$ENDIF}
-    end
-    else
-    begin
       if FTRParamsChanged then
       begin
         FTRParamsChanged := False;
@@ -4419,7 +4093,7 @@ begin
         vTRParams1.Free;
         FIBAlloc(pteb, 0, 0);
       end;
-    end;
+
     FState:=tsActive;
 
     if Assigned(MainDatabase.FSQLLogger) then
@@ -4428,15 +4102,8 @@ begin
       'TransactionParams:'#13#10+TRParams.Text,lfTransact
      );
 
-
     if (FTimer<>nil) and  (FTimer.Interval>0) then
      FTimer.Enabled:=True
-  finally
-    if Assigned(XIBTransactionParams) then begin
-      MDTDatabase.GetGarbageObjects.AddObject(
-        XIBTransactionParams.GetOwnerObject);
-      end;
-    end;
 end;
 
 procedure TFIBTransaction.ExecSQLImmediate(const SQLText:Widestring);
@@ -4460,17 +4127,7 @@ end;
 
 procedure TFIBTransaction.SetSavePoint(const SavePointName:string);
 begin
-  if IsUsingMDT then
-  begin
-    CheckInTransaction;
-    if FMDTIBRealDBTransaction.ITransactionParams.EnableOper<>eoReadWrite
-      then exit;
-    if Assigned(MDTDatabase.ProtectedBlocks.FindByName(SavePointName))
-      then FIBError(feMDTSavePointAlreadySet,[SavePointName]);
-    MDTDatabase.NewProtectedBlock(false,SavePointName);
-    MDTDatabase.PrepareRealDBCanalForDirrectSQL(MDTIBRealDBCanal);
-  end
-  else ExecSQLImmediate('savepoint '+SavePointName);
+  ExecSQLImmediate('savepoint '+SavePointName);
   {$IFNDEF NO_MONITOR}
   if MonitoringEnabled  then
     if MonitorHook<>nil then
@@ -4478,30 +4135,9 @@ begin
   {$ENDIF}
 end;
 
-procedure TFIBTransaction.MDTEndSavePoint(AName:string; ACommit:boolean);
-var
-  XStop: boolean;
-  XProtectedBlock: IMDTProtectedBlock;
-begin
-  CheckInTransaction;
-  if FMDTIBRealDBTransaction.ITransactionParams.EnableOper<>eoReadWrite
-    then exit;
-  XProtectedBlock:=MDTDatabase.ProtectedBlocks.FindByName(AName);
-  if not Assigned(XProtectedBlock)
-    then FIBError(feMDTSavePointNotFound,[AName]);
-  repeat
-    XStop:=XProtectedBlock=MDTDatabase.ProtectedBlocks.ILast;
-    if ACommit
-      then MDTDatabase.CommitProtectedBlock
-      else MDTDatabase.RollbackProtectedBlock;
-    until XStop;
-  end;
-
 procedure TFIBTransaction.RollBackToSavePoint(const SavePointName:string);
 begin
-  if IsUsingMDT
-    then MDTEndSavePoint(SavePointName,false)
-    else ExecSQLImmediate('rollback to savepoint '+SavePointName);
+  ExecSQLImmediate('rollback to savepoint '+SavePointName);
  {$IFNDEF NO_MONITOR}
    if MonitoringEnabled  then
     if MonitorHook<>nil then
@@ -4511,9 +4147,7 @@ end;
 
 procedure TFIBTransaction.ReleaseSavePoint(const SavePointName:string);
 begin
-  if IsUsingMDT
-    then MDTEndSavePoint(SavePointName,true)
-    else ExecSQLImmediate('release savepoint '+SavePointName);
+  ExecSQLImmediate('release savepoint '+SavePointName);
  {$IFNDEF NO_MONITOR}
    if MonitoringEnabled  then 
     if MonitorHook<>nil then
@@ -4620,42 +4254,6 @@ begin
    end;
   end;
  end;
-
-
-procedure TFIBTransaction.SetMDTTransactionRole(AValue: TFIBMDTTransactionRole);
-begin
-  CheckNotInTransaction;
-  FMDTTransactionRole:=AValue;
-  end;
-
-function TFIBTransaction.GetIMDTDatabase: IMDTDatabase;
-begin
-  if (FDatabases.Count=1) and Databases[0].IsUsingMDT
-    then Result:=Databases[0].FIMDTDatabase
-    else Result:=nil;
-  end;
-
-function TFIBTransaction.GetIMDTIBRealDBCanal: IMDTIBRealDBCanal;
-begin
-  if (FDatabases.Count=1) and Databases[0].IsUsingMDT
-    then Result:=Databases[0].FIMDTIBRealDBCanal
-    else Result:=nil;
-  end;
-
-procedure TFIBTransaction.MDTDataChange;
-begin
-  if (FMDTIBRealDBTransaction<>nil) and
-     (FMDTIBRealDBTransaction.ITransactionParams.EnableOper=eoReadWrite)
-    then FMDTIBRealDBTransaction.DataChange:=true;
-  end;
-
-function TFIBTransaction.GetIsUsingMDT:boolean;
-begin
-  Result:=Assigned(MDTDatabase) and
-     ((FMDTTransactionRole=mtrAutoDefine) or
-      ((FMDTTransactionRole=mtrSeparateTransaction) and
-       FMDTDeferredStart and (not Active)))
-  end;
 
 (* TFIBBase *)
 constructor TFIBBase.Create(AOwner: TObject);

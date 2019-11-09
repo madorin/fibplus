@@ -83,7 +83,6 @@ contains
   RegUtils in '..\RegUtils.pas',
   pFIBExports in '..\pFIBExports.pas',
   pFIBDataRefresh in '..\pFIBDataRefresh.pas',
-  FIBMDTInterface in '..\FIBMDTInterface.pas',
   pFIBClientDataSet in '..\pFIBClientDataSet.pas',
   FIBPlatforms in '..\FIBPlatforms.pas';
 

@@ -31,7 +31,7 @@ uses
  pFIBProps,pFIBFieldsDescr, DB,FIBCacheManage,
  DBCommon,DbConsts,DBParsers,
  FIBDatabase, FIBQuery, FIBMiscellaneous,SqlTxtRtns,pFIBLists,FIBCloneComponents ,
- pFIBInterfaces,pFIBEventLists, FIBMDTInterface,
+ pFIBInterfaces,pFIBEventLists,
   Classes,StdFuncs
   {$IFNDEF NO_GUI}
    {$IFDEF D_XE2}
@@ -1382,12 +1382,6 @@ type
 {$IFDEF CSMonitor}
     property CSMonitorSupport: TCSMonitorSupport read FCSMonitorSupport  write SetCSMonitorSupport;
 {$ENDIF}
-  protected
-    FMDTSQLExecutor: TMDTSQLExecutor;
-    procedure SetMDTSQLExecutor(AValue: TMDTSQLExecutor);
-  published
-    property MDTSQLExecutor: TMDTSQLExecutor
-      read FMDTSQLExecutor write SetMDTSQLExecutor default se_ServerAfterLocal;
   end;
 
   TFIBDataSet = class(TFIBCustomDataSet)
@@ -3761,7 +3755,6 @@ begin
   vBeforeCloseEvents := TNotifyEventList.Create(Self);
   vAfterOpenEvents   := TNotifyEventList.Create(Self);
   vBeforeOpenEvents  := TNotifyEventList.Create(Self);
-  FMDTSQLExecutor:=se_ServerAfterLocal;
 end;
 
 destructor TFIBCustomDataSet.Destroy;
@@ -4896,15 +4889,6 @@ var
   fi:PFIBFieldDescr;
   Buffer:TRecordBuffer;
   curVar:TFIBXSQLVAR;
-
-  XMDTDataRecord: IMDTDataRecord;
-  XBlobIndex: integer;
-  XBlobDataBufer: pointer;
-  XBlobDataSize: integer;
-  fs: TFIBBlobStream;
-  XField: TField;
-  XStr: string;
-  XVarIndex:integer;
 begin
   StopFetching:=False;
   if FUniDirectional  or (FCacheModelOptions.CacheModelKind=cmkLimitedBufferSize)  then
@@ -5081,36 +5065,6 @@ begin
     end;
   end;
 
-  XMDTDataRecord:=Qry.MDTResultDataRecord;
-  if XMDTDataRecord<>nil then begin
-     XBlobIndex:=0;
-     for i := 0 to c do begin
-       curVar:=qda[i];
-       if curVar.IsBlob then begin
-         XField:=Fields[I];
-         XVarIndex:=XMDTDataRecord.IVariables.VariableByOrderNumToIndex(I);
-         XMDTDataRecord.GetDataBuffer(XVarIndex,XBlobDataBufer,XBlobDataSize);
-         XStr:=XMDTDataRecord.StringValue[XVarIndex];
-         if Assigned(XBlobDataBufer) then begin
-           if pbd^[XBlobIndex]=nil then begin
-              fs:=TFIBBlobStream.CreateNew(XField.FieldNo, FBlobStreamList);
-              pbd^[XBlobIndex]:=fs;
-              if XField is TFIBBlobField //???MDT
-                then fs.blobSubType := TFIBBlobField(XField).FSubType
-                else fs.blobSubType := curVar.sqlsubtype;
-              fs.Mode := bmReadWrite;
-              fs.Database := Database;
-              fs.Transaction := Transaction;
-              fs.UpdateTransaction := UpdateTransaction;
-              fs.BlobID:=curVar.AsQuad;
-              //fs.BlobID := BlobID;
-              end;
-           pbd^[XBlobIndex].SetMDTValue(XBlobDataBufer,XBlobDataSize);
-           Inc(XBlobIndex);
-           end;
-         end;
-       end;
-    end;
   if Assigned(FAfterFetchRecord) then
    FAfterFetchRecord(Qry,RecordNumber,StopFetching);
   if StopFetching then
@@ -5119,7 +5073,6 @@ begin
    Abort;
   end;
 end;
-
 
 procedure TFIBCustomDataSet.InitDataSetSchema;
 var
@@ -5225,7 +5178,7 @@ begin
      fi^.fdRelationTable:=qda[i].RelationName;
      fi^.fdRelationField:=qda[i].SqlName;
      fi^.fdTableAlias   :=QSelect.TableAliasForField(i);
-//MDT confict
+
      if fi^.fdIsSeparateString then
         fi^.fdStrIndex:=StrIndex
      else
@@ -12050,28 +12003,10 @@ begin
 end;
 {$ENDIF}
 
-procedure TFIBCustomDataSet.SetMDTSQLExecutor(AValue:TMDTSQLExecutor);
-begin
-  Close;
-  FMDTSQLExecutor:=AValue;
-  FQSelect.MDTSQLExecutor:=AValue;
-  FQRefresh.MDTSQLExecutor:=AValue;
-  if AValue=se_Local then begin
-    FQUpdate.MDTSQLExecutor:=se_ServerAfterLocal;
-    FQInsert.MDTSQLExecutor:=se_ServerAfterLocal;
-    FQDelete.MDTSQLExecutor:=se_ServerAfterLocal;
-    end
-  else begin
-    FQUpdate.MDTSQLExecutor:=AValue;
-    FQInsert.MDTSQLExecutor:=AValue;
-    FQDelete.MDTSQLExecutor:=AValue;
-    end;
-  end;
 function TFIBDataSet.DoStoreActive:boolean;
 begin
  Result:=Active and (Database.StoreConnected or not (csDesigning in ComponentState))
 end;
-
 
 (*
  * Support routines
