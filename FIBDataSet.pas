@@ -1591,43 +1591,17 @@ const
    );
 
 
-
 const
   SNoAction = 'No Action';
 
 
-
-
-procedure Register;
-
 implementation
- uses StrUtil,FIBConsts,pFIBDataInfo,VariantRtn,IB_ErrorCodes,pFIBCacheQueries,DSContainer;
+
+uses StrUtil,FIBConsts,pFIBDataInfo,VariantRtn,IB_ErrorCodes,pFIBCacheQueries,DSContainer;
 
 const
       DiffSizesRecData=SizeOf(TRecordData)-SizeOf(TSavedRecordData);
       LocateParamPrefix='LOCATE_';
-
-procedure Register;
-begin
-  RegisterClass(TFIBStringField);
-  RegisterClass(TFIBIntegerField);
-  RegisterClass(TFIBSmallIntField);
-  RegisterClass(TFIBFloatField);
-  RegisterClass(TFIBBCDField);
-  RegisterClass(TFIBBooleanField);
-
-  {$IFDEF SUPPORT_ARRAY_FIELD}
-   RegisterClass(TFIBArrayField);
-  {$ENDIF}
-   RegisterClass(TFIBLargeIntField);
-   RegisterClass(TFIBGuidField);
-   RegisterClass(TFIBDateField);
-   RegisterClass(TFIBTimeField);
-   RegisterClass(TFIBDateTimeField);
-   RegisterClass(TFIBBlobField);
-   RegisterClass(TFIBWideStringField);
-   RegisterClass(TFIBMemoField);
-end;
 
 function IsSysField(const FieldName:string):boolean;
 begin
