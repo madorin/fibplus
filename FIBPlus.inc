@@ -169,7 +169,16 @@
   {$DEFINE D_26}
 {$ENDIF}
 
+// DX10.4
+{$IFDEF VER340}
+  {$DEFINE D_27}
+{$ENDIF}
+
 //---------------------------------
+
+{$IFDEF D_27}
+  {$DEFINE D_26}
+{$ENDIF}
 
 {$IFDEF D_26}
   {$DEFINE D_25}

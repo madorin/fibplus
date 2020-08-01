@@ -389,73 +389,6 @@ begin
   inherited ReadOnly:=Value
 end;
 
-
-{$ifndef internal}
-procedure RegisterModule;
-const
-  RegKey = 'Devrace\FibPlus\7.2';
-var
-  Crypt: TDev_class8;   //Tea
-  Crypt2: TDev_class10;  //Ice
-  tempkey: HKey;
-  keyClass: array[0..256] of AnsiChar;
-  KeySize: DWord;
-  work, Hardware: AnsiString;
-  I: Integer;
-  info, username, key: Ansistring;
-  t: AnsiChar;
-begin
-  DemoTimer := nil;
-  CheckLicense := nil;
-  NotifierIndex := -MAXWORD;
-
-  LicensedTo := 'Craked version';
-  Crypt := TDev_class8.Create(nil);
-  Crypt2 := TDev_class10.Create(nil);
-  try
-    if RegOpenKeyEx(HKEY_CURRENT_USER, 'Software\' + RegKey, 0, KEY_QUERY_VALUE, tempkey) = ERROR_SUCCESS then
-    begin
-      KeySize := 256;
-      RegQueryInfoKeyA(tempkey, keyClass, @KeySize, nil, nil, nil, nil, nil, nil, nil, nil, nil);
-      RegCloseKey(TempKey);
-      Hardware := GetHardID;
-      Hardware := Hardware + StringOfChar('\', Length(RegKey) - Length(Hardware));
-      work := '';
-      for I := 1 to Length(RegKey) do
-        work := work + AnsiChar(Byte(Ord(Hardware[i]) + Ord(RegKey[i])));
-
-      crypt.InitStr(work, TDev_hash2); //MD5
-      info := crypt.WorkDSt(keyclass);
-      username := Copy(info, 1, Pos(#1, Info) - 1);
-      LicensedTo := username;
-      key := copy(info, Pos(#1, Info) + 1, Length(info));
-      k := key;
-      crypt2.InitStr(username, TDev_hash3);  //RipeMD-128
-      key := key + '==';
-      key := Crypt2.WorkDSt(key);
-
-      t := key[1]; key[1] := key[30]; key[30] := t;
-      t := key[3]; key[3] := key[32]; key[32] := t;
-      t := key[6]; key[6] := key[35]; key[35] := t;
-      t := key[8]; key[8] := key[37]; key[37] := t;
-      t := key[10]; key[10] := key[39]; key[39] := t;
-      t := key[12]; key[12] := key[41]; key[41] := t;
-      t := key[14]; key[14] := key[43]; key[43] := t;
-
-//      MessageBoxa(0, PAnsiChar(key), PAnsiChar(username), mb_ok) ;
-      CheckKeyAndDecrypt(PAnsiChar(key), PAnsiChar(username), False);
-;
-//      k := key;
-    end;
-  finally
-    Crypt.Burn;
-    Crypt.Free;
-    Crypt2.Burn;
-    Crypt2.Free;
-  end;
-end;
-{$endif}
-
 {$ifndef internal}
 { TMenuIOTACleverFilter }
 
@@ -587,7 +520,7 @@ end;
 
 function TFIBSQLMemo.GetPosInText: Integer;
 begin
-
+  Result := SelStart;
 end;
 
 initialization

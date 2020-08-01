@@ -547,7 +547,7 @@ var
 var
   pfdStart, pfd: PAnsiChar;
 begin
-  pfdStart := @FilterData[0];
+  pfdStart := Addr(FilterData[0]);
   pfd := pfdStart;
   iLiteralStart := PWord(@pfd[8])^;
   Inc(pfd, 10);

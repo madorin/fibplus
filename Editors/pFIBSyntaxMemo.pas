@@ -13,6 +13,8 @@ unit pFIBSyntaxMemo;
 
 interface
 
+{$I ..\FIBPlus.inc}
+
 {$IFDEF VER130}
   {$IFDEF BCB}			// C++Buider 5.0
   {$ObjExportAll on}
@@ -178,35 +180,7 @@ interface
   {$WARNINGS  OFF}
 {$ENDIF}
 
-{$IFDEF VER300}
-  {$DEFINE D23}
-{$ENDIF}
-
-{$IFDEF VER310}
-  {$DEFINE D24}
-{$ENDIF}
-
-{$IFDEF VER320}
-  {$DEFINE D25}
-{$ENDIF}
-
-{$IFDEF VER330}
-  {$DEFINE D26}
-{$ENDIF}
-
-{$IFDEF D26}
-  {$DEFINE D25}
-{$ENDIF}
-
-{$IFDEF D25}
-  {$DEFINE D24}
-{$ENDIF}
-
-{$IFDEF D24}
-  {$DEFINE D23}
-{$ENDIF}
-
-{$IFDEF D23}
+{$IFDEF D_23}
   {$DEFINE D4+}
   {$DEFINE D5+}
   {$DEFINE D6+}
@@ -226,7 +200,6 @@ interface
   {$WARNINGS  OFF}
 {$ENDIF}
 
-{$I ..\FIBPlus.inc}
 {$UNDEF UNICODE}
 
 uses

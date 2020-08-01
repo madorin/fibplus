@@ -266,7 +266,7 @@ procedure TpFIBDatabaseEditor.ExecuteVerb(Index: Integer);
 var
    db:IFIBConnect;
    Script:TStrings;
-   Connected:Boolean;
+   // Connected:Boolean;
 begin
   if  ObjSupports(Component,IFIBConnect,db) then
   case Index of
@@ -329,7 +329,7 @@ begin
       begin
         Script:=TStringList.Create;
         try
-         Connected:=GetPropValue(Component,'Connected',False);
+         // Connected:=GetPropValue(Component,'Connected',False);
          
          Script.Add('/***************************************');
          Script.Add('        FIBPlus repository tables ');
@@ -1371,14 +1371,15 @@ var
   TableName:string;
   DelTableName,TriggerName:string;
   DB:TObject;
-  Qry:TComponent;
+//  Qry:TComponent;
   Trans :TObject;
   iQry:IFIBQuery;
-  trActive:boolean;
-  ErrMessage:string;
+//  trActive:boolean;
+//  ErrMessage:string;
   Script:TStrings;
   Stringer:IFIBStringer;
-  clExp:IFIBClassesExporter;  
+  clExp:IFIBClassesExporter;
+{
 procedure ExecStatement(const SQL:string);
 begin
    AssignStringsToProp(Qry,'SQL',SQL);
@@ -1389,6 +1390,7 @@ begin
      ErrMessage:=ErrMessage+#13#10+E.Message
    end;
 end;
+}
 
 begin
   Trans:=GetObjectProp(Component,'Transaction');
@@ -1545,10 +1547,10 @@ begin
     end;
   finally
    Script.Free;
-   if not trActive then
-    SetPropValue(Trans,'Active',False);
+   // if not trActive then
+   // SetPropValue(Trans,'Active',False);
    iQry:=nil;
-   Qry.Free;
+  // Qry.Free;
   end
 end;
 
