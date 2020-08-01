@@ -55,6 +55,11 @@ begin
     {$IFDEF SUPPORT_ARRAY_FIELD}, TFIBArrayField{$ENDIF}
     ]);
 
+  RegisterFields([TFIBStringField, TFIBIntegerField, TFIBSmallIntField,
+    TFIBFloatField, TFIBBCDField, TFIBBooleanField, TFIBDateField,
+    TFIBTimeField, TFIBDateTimeField, TFIBWideStringField
+    ]);
+
   RegisterComponents(pnFIBPlus, [TpFIBDatabase, TpFIBDataSet, TpFIBTransaction,
     TpFIBQuery, TpFIBStoredProc, TpFIBUpdateObject, TDataSetsContainer,
     TpFibErrorHandler, TpFIBScripter, TpFIBDBSchemaExtract,
