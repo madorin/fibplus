@@ -3734,11 +3734,9 @@ end;
 destructor TFIBCustomDataSet.Destroy;
 begin
   inherited Destroy;
-
-{$IFDEF CSMonitor}
+  {$IFDEF CSMonitor}
   FCSMonitorSupport.Free;
-{$ENDIF}
-
+  {$ENDIF}
   FSourceLink.Free;
   FBase.Free;
   ClearBlobStreamList;
@@ -3747,23 +3745,15 @@ begin
   FRelationTables.Free;
   vFieldDescrList.Free;
   FSQLs.Free;
-  FFilterParser.Free;
-  FFilterParser:=nil;
-  FRecordsCache.Free;
-  FRecordsCache:=nil;
+  FreeAndNil(FFilterParser);
+  FreeAndNil(FRecordsCache);
   FAutoUpdateOptions.Free;
-  FFNFields.Free;
-  FFNFields:=nil;
-  if Assigned(FKeyFieldsForBookMark) then
-   FKeyFieldsForBookMark.Free;
-
- FCacheModelOptions.Free;
- FreeMem(vPartition);
- FFilteredCacheInfo.NonVisibleRecords.Free;
+  FreeAndNil(FFNFields);
+  FKeyFieldsForBookMark.Free;
+  FCacheModelOptions.Free;
+  FreeMem(vPartition);
+  FFilteredCacheInfo.NonVisibleRecords.Free;
 end;
-
-
-
 
 procedure   TFIBCustomDataSet.Loaded;
 begin
