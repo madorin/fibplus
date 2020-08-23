@@ -193,7 +193,7 @@ type
    property OldValue:Int64 read GetOldAsInt64;
   end;
 
-  TFIBIntegerField = class(TIntegerField)
+    TFIBIntegerField = class(TIntegerField)
    protected
      function  GetAsBoolean: Boolean; override;
      procedure SetAsBoolean(Value: Boolean); override;
@@ -11818,7 +11818,7 @@ begin
     end;
   end;
   if not (State in [dsCalcFields, dsFilter, dsNewValue]) then
-    DataEvent(deFieldChange, Longint(Field));
+    DataEvent(deFieldChange, EventInfo(Field));
 end;
 
 procedure TFIBCustomDataSet.SetRealRecNo(Value: Integer;ToCenter:boolean =False);
@@ -12339,7 +12339,7 @@ begin
     FModified := False;
     if not TBlobField(FField).Modified then
       TBlobField(FField).Modified := True;
-    TFIBCustomDataSet(FField.DataSet).DataEvent(deFieldChange, Longint(FField));
+    TFIBCustomDataSet(FField.DataSet).DataEvent(deFieldChange, EventInfo(FField));
   end;
   inherited Destroy;
 end;
