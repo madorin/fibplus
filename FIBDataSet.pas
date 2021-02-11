@@ -8429,6 +8429,7 @@ begin
    end;   //case
  end
  else
+ if CacheModelOptions.CacheModelKind = cmkLimitedBufferSize then
  begin
     Pos := 1;
     while Pos <= Length(FAutoUpdateOptions.KeyFields) do
