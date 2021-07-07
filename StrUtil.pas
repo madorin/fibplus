@@ -2355,7 +2355,7 @@ end;
 {$ENDIF}
 
 const
-  InternalFunctionCount = 10;
+  InternalFunctionCount = 32;
   DefKeywordsCount = 280;
   DefTypesCount = 17;
 
@@ -2363,7 +2363,11 @@ const
    ('AVG',    'CAST',    'COUNT',    'GEN_ID',
     'MAX',    'MIN',     'SUM',      'UPPER',
 //Additional FB and YA
-    'IIF',    'SUBSTRING'
+    'IIF',    'SUBSTRING',
+//FB3 (https://firebirdsql.org/file/documentation/release_notes/html/en/3_0/bk02ch09s05.html)
+    'ACOSH', 'ASINH', 'ATANH', 'COSH', 'SINH', 'TANH',
+    'VAR_SAMP', 'VAR_POP', 'STDDEV_SAMP', 'STDDEV_POP', 'COVAR_SAMP', 'COVAR_POP', 'CORR',
+    'REGR_AVGX', 'REGR_AVGY', 'REGR_COUNT', 'REGR_INTERCEPT', 'REGR_R2', 'REGR_SLOPE', 'REGR_SXX', 'REGR_SXY','REGR_SYY'
    );
   DefKeywords: array [0..DefKeywordsCount-1] of AnsiString = ('ACTIVE','ADD','AFTER','ALL','ALTER','AND','ANY',
     'AS','ASC','ASCENDING','AT','AUTO','AUTODDL','BASED','BASENAME','BASE_NAME','BEFORE',
