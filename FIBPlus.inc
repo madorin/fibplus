@@ -174,7 +174,16 @@
   {$DEFINE D_27}
 {$ENDIF}
 
+// DX11
+{$IFDEF VER350}
+  {$DEFINE D_28}
+{$ENDIF}
+
 //---------------------------------
+
+{$IFDEF D_28}
+  {$DEFINE D_27}
+{$ENDIF}
 
 {$IFDEF D_27}
   {$DEFINE D_26}
