@@ -1246,7 +1246,7 @@ type
     function Translate(Src, Dest: PAnsiChar; ToOem: Boolean): Integer; override;
     function UpdateStatus: TUpdateStatus; override;
     function IsSequenced: Boolean; override;        // Scroll bar
-    property {$IF CompilerVersion >= 27}q{$IFEND}DefaultFields:boolean read GetDefaultFields ; //deprecated since Delphi XE6+
+    property {$IF CompilerVersion >= 27}qDefaultFields{$ELSE}DefaultFields{$IFEND}:boolean read GetDefaultFields ; //deprecated since Delphi XE6+
   public
 {$IFDEF CSMonitor}
     procedure SetCSMonitorSupportToQ;
