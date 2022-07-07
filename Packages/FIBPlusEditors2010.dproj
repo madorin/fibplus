@@ -140,7 +140,6 @@
 			<DCCReference Include="..\Editors\uFIBScriptForm.pas">
 				<Form>frmScript</Form>
 			</DCCReference>
-			<DCCReference Include="..\Editors\UnitSyntaxMemo.pas"/>
 			<DCCReference Include="..\Editors\IBSQLSyn.pas"/>
 			<DCCReference Include="..\Editors\FindCmp.pas"/>
 			<DCCReference Include="..\Editors\pFIBPreferences.pas">

@@ -1,7 +1,6 @@
 package FIBPlusEditors2006;
 
 {$R *.res}
-{$R 'UnitSyntaxMemo.dcr'}
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
@@ -59,7 +58,6 @@ contains
   EdErrorInfo in '..\Editors\EdErrorInfo.pas' {frmErrors},
   ToCodeEditor in '..\Editors\ToCodeEditor.pas',
   ToCodeEditorIntfs in '..\Editors\ToCodeEditorIntfs.pas',
-  UnitSyntaxMemo in '..\Editors\UnitSyntaxMemo.pas',
   IBSQLSyn in '..\Editors\IBSQLSyn.pas',
   pFIBEditorsConsts in '..\Editors\pFIBEditorsConsts.pas',
   RegistryUtils in '..\Editors\RegistryUtils.pas',

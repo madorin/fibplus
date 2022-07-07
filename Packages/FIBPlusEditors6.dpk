@@ -1,7 +1,6 @@
 package FIBPlusEditors6;
 
 {$R *.res}
-{$R 'UnitSyntaxMemo.dcr'}
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
@@ -60,7 +59,6 @@ contains
   RTTIRoutines in '..\Editors\RTTIRoutines.pas',
   pFIBEditorsConsts in '..\Editors\pFIBEditorsConsts.pas',
   IBSQLSyn in '..\Editors\IBSQLSyn.pas',
-  UnitSyntaxMemo in '..\Editors\UnitSyntaxMemo.pas',
   RegSynEditAlt in '..\Editors\RegSynEditAlt.pas',
   FIBToolsConsts in '..\Editors\FIBToolsConsts.pas',
   FindCmp in '..\Editors\FindCmp.pas',
