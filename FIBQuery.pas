@@ -2570,7 +2570,9 @@ begin
   Result := False;
   if not IsNull then
     case FXSQLVAR^.sqltype and (not 1) of
-      FB3_SQL_BOOLEAN,SQL_BOOLEAN,SQL_SHORT:
+      FB3_SQL_BOOLEAN:
+        Result := PByte(FXSQLVAR^.sqldata)^=ISC_TRUE;
+      SQL_BOOLEAN,SQL_SHORT:
         Result := PShort(FXSQLVAR^.sqldata)^=ISC_TRUE;
       SQL_LONG:
        Result  := PLong(FXSQLVAR^.sqldata)^=ISC_TRUE;
