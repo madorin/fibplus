@@ -6,6 +6,9 @@
         <Projects Include="FIBPlus_D25.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="FIBPlus_D25D.dproj">
+            <Dependencies/>
+        </Projects>
         <Projects Include="FIBPlusEditors_D25.dproj">
             <Dependencies/>
         </Projects>
@@ -26,6 +29,15 @@
     <Target Name="FIBPlus_D25:Make">
         <MSBuild Projects="FIBPlus_D25.dproj" Targets="Make"/>
     </Target>
+    <Target Name="FIBPlus_D25D">
+        <MSBuild Projects="FIBPlus_D25D.dproj"/>
+    </Target>
+    <Target Name="FIBPlus_D25D:Clean">
+        <MSBuild Projects="FIBPlus_D25D.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="FIBPlus_D25D:Make">
+        <MSBuild Projects="FIBPlus_D25D.dproj" Targets="Make"/>
+    </Target>
     <Target Name="FIBPlusEditors_D25">
         <MSBuild Projects="FIBPlusEditors_D25.dproj"/>
     </Target>
@@ -36,13 +48,13 @@
         <MSBuild Projects="FIBPlusEditors_D25.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="FIBPlus_D25;FIBPlusEditors_D25"/>
+        <CallTarget Targets="FIBPlus_D25;FIBPlus_D25D;FIBPlusEditors_D25"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="FIBPlus_D25:Clean;FIBPlusEditors_D25:Clean"/>
+        <CallTarget Targets="FIBPlus_D25:Clean;FIBPlus_D25D:Clean;FIBPlusEditors_D25:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="FIBPlus_D25:Make;FIBPlusEditors_D25:Make"/>
+        <CallTarget Targets="FIBPlus_D25:Make;FIBPlus_D25D:Make;FIBPlusEditors_D25:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>
