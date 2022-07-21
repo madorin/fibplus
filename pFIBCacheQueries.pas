@@ -332,7 +332,7 @@ end;
 procedure ClearQueryCacheList(DB:TFIBDataBase);
 var
  cq:TCacheQueries;
- i:integer;
+// i:integer;
 begin
  cq:=CacheList.GetCacheForDB(DB);
  if cq<>nil then
