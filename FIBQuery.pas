@@ -524,7 +524,7 @@ type
     procedure CheckClosed(const OpName:Ansistring);// raise error if query is not closed.
     procedure CheckOpen(const OpName:Ansistring); // raise error if query is not open.
     procedure CheckValidStatement;   // raise error if statement is invalid.
-    procedure Close;               // close the query.
+    procedure Close; virtual;        // close the query.
     function  Current: TFIBXSQLDA;
     procedure ExecQuery; virtual;               // ExecQuery the query.
     procedure ExecuteImmediate;
@@ -535,7 +535,7 @@ type
 {$ENDIF}
     procedure FreeHandle;
     function  Next: TFIBXSQLDA;
-    procedure Prepare;                  // Prepare the query.
+    procedure Prepare; virtual;         // Prepare the query.
 
     function FieldByName(const FieldName: string): TFIBXSQLVAR;
     function FindField(const FieldName: string): TFIBXSQLVAR;
