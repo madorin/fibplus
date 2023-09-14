@@ -11636,12 +11636,12 @@ begin
     FValidatingFieldBuffer:=Buffer;
     FValidatedField:=Field;
     FValidatedRec:= ActiveRecord;
-    Field.OnValidate(Field);
+    Field.Validate(Buffer);
    finally
      Exclude(FRunState,drsInFieldValidate);
-     FValidatingFieldBuffer:=nil;     
+     FValidatingFieldBuffer:=nil;
    end;
-  end; 
+  end;
 end;
 
 {$IFDEF D_XE3}
