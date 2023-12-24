@@ -266,8 +266,9 @@ begin
      case glArrayType  of //
       ftString   :
        begin
-        s:=AnsiString(glBufArField+(array_desc_length+glErrInt )*(glCount));
-        if glErrInt>0 then NewValue:=FastCopy(s,1,Length(s)-1)
+         S := PAnsiChar(glBufArField + (array_desc_length + glErrInt) * glCount);
+         if glErrInt > 0 then S := FastCopy(S, 1, Length(S) - 1);
+         NewValue := S;
        end;
       ftSmallint :   NewValue:=PSmall(p)^;
       ftInteger  :   NewValue:=PInteger(p)^;
