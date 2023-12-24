@@ -1968,8 +1968,6 @@ begin
  end;
 end;
 
-
-
 function  TFIBWideStringField.GetBytesValue(var Value: FIBByteString): Boolean;
 begin
     if not Assigned(FReservedBuffer) then
@@ -2011,17 +2009,18 @@ begin
    Result:=False
 end;
 
-
 function TFIBWideStringField.GetAsString: string;
 begin
-   if GetDataToReserveBuffer then
-     Result:=PWideChar(FReservedBuffer)
-   else
-     Result:=''
+  if FieldKind <> fkData then
+  begin
+    Result := inherited;
+    Exit;
+  end;
+  if GetDataToReserveBuffer then
+    Result := PWideChar(FReservedBuffer)
+  else
+    Result := '';
 end;
-
-
-
 
 function TFIBWideStringField.GetAsNativeData: FIBByteString ;
 begin
