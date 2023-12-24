@@ -179,7 +179,16 @@
   {$DEFINE D_28}
 {$ENDIF}
 
+// DX12
+{$IFDEF VER360}
+  {$DEFINE D_29}
+{$ENDIF}
+
 //---------------------------------
+
+{$IFDEF D_29}
+  {$DEFINE D_28}
+{$ENDIF}
 
 {$IFDEF D_28}
   {$DEFINE D_27}
