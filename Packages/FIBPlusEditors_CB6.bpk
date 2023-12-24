@@ -16,11 +16,11 @@
       c6\pFIBComponentEditors.obj 
       c6\pFIBEditorsConsts.obj c6\RTTIRoutines.obj c6\RegistryUtils.obj 
       c6\uFIBScriptForm.obj c6\pFIBRepositoryOperations.obj 
-      c6\UnitSyntaxMemo.obj  c6\FIBToolsConsts.obj 
+      c6\pFIBSyntaxMemo.obj  c6\FIBToolsConsts.obj 
       c6\FindCmp.obj c6\IBSQLSyn.obj c6\pfibdsgnviewsqls.obj 
       c6\pFIBPreferences.obj c6\RegSynEditAlt.obj 
       c6\uFrmSearchResult.obj"/>
-    <RESFILES value="FIBPlusEditors_CB6.res UnitSyntaxMemo.dcr"/>
+    <RESFILES value="FIBPlusEditors_CB6.res"/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
     <DEFFILE value=""/>
@@ -103,8 +103,7 @@
       <FILE FILENAME="RegistryUtils.pas" FORMNAME="" UNITNAME="RegistryUtils" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="uFIBScriptForm.pas" FORMNAME="frmScript" UNITNAME="uFIBScriptForm" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="pFIBRepositoryOperations.pas" FORMNAME="" UNITNAME="pFIBRepositoryOperations" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="UnitSyntaxMemo.pas" FORMNAME="" UNITNAME="UnitSyntaxMemo" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="UnitSyntaxMemo.dcr" FORMNAME="" UNITNAME="" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="pFIBSyntaxMemo.pas" FORMNAME="" UNITNAME="pFIBSyntaxMemo" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="FIBToolsConsts.pas" FORMNAME="" UNITNAME="FIBToolsConsts" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="FindCmp.pas" FORMNAME="" UNITNAME="FindCmp" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="IBSQLSyn.pas" FORMNAME="" UNITNAME="IBSQLSyn" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

@@ -61,7 +61,7 @@ contains
   RegistryUtils in '..\Editors\RegistryUtils.pas',
   RegSynEditAlt in '..\Editors\RegSynEditAlt.pas',
   uFIBScriptForm in '..\Editors\uFIBScriptForm.pas' {frmScript},
-  UnitSyntaxMemo in '..\Editors\UnitSyntaxMemo.pas',
+  pFIBSyntaxMemo in '..\Editors\pFIBSyntaxMemo.pas',
   IBSQLSyn in '..\Editors\IBSQLSyn.pas',
   FindCmp in '..\Editors\FindCmp.pas',
   pFIBPreferences in '..\Editors\pFIBPreferences.pas' {frmFIBPreferences},

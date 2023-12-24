@@ -227,7 +227,7 @@
     <DelphiCompile Include="uFrmSearchResult.pas">
       <BuildOrder>56</BuildOrder>
     </DelphiCompile>
-    <DelphiCompile Include="UnitSyntaxMemo.pas">
+    <DelphiCompile Include="pFIBSyntaxMemo.pas">
       <BuildOrder>58</BuildOrder>
     </DelphiCompile>
     <CppCompile Include="FIBPlusEditors_CB2007.cpp">
@@ -236,9 +236,6 @@
     <ResFiles Include="FIBPlusEditors_CB2007.res">
       <BuildOrder>27</BuildOrder>
     </ResFiles>
-    <None Include="UnitSyntaxMemo.dcr">
-      <BuildOrder>57</BuildOrder>
-    </None>
     <BuildConfiguration Include="Debug">
       <Key>Cfg_1</Key>
     </BuildConfiguration>

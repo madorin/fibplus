@@ -1092,11 +1092,12 @@ const
 implementation
 
 {$R pFIBSyntaxMemo.res}
-//{$R UnitSyntaxMemo.dcr}
 
-uses Math {$IFDEF D6+},StrUtils, Variants{$ENDIF};
+uses
+  Math {$IFDEF D6+},StrUtils, Variants{$ENDIF};
 
-var CF_SYNTAX: THandle;
+var
+  CF_SYNTAX: THandle;
 
 // Results of RangeRowToScreenRow()
 const

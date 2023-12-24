@@ -11,7 +11,7 @@
       c5\pFIBDataSetOptions.obj c5\pFIBDBEdit.obj c5\pFIBTrEdit.obj 
       c5\ToCodeEditor.obj c5\ToCodeEditorIntfs.obj c5\FIBDataSQLEditor.obj 
       c5\IBSQLSyn.obj c5\RegistryUtils.obj c5\RegSynEditAlt.obj 
-      c5\RTTIRoutines.obj c5\UnitSyntaxMemo.obj c5\pFIBEditorsConsts.obj 
+      c5\RTTIRoutines.obj c5\pFIBSyntaxMemo.obj c5\pFIBEditorsConsts.obj 
       c5\pFIBComponentEditors.obj c5\pFIBRepositoryOperations.obj 
       c5\Fibmodule6.obj c5\FibBase2.obj 
       c5\Fibbase64.obj c5\Fibconst.obj c5\FibHash2.obj c5\Fibhash3.obj 
@@ -19,7 +19,7 @@
       c5\FIBToolsConsts.obj c5\FindCmp.obj 
       c5\pfibdsgnviewsqls.obj c5\pFIBPreferences.obj 
       c5\uFrmSearchResult.obj c5\FIBPlusEditors_CB5.obj"/>
-    <RESFILES value="FIBPlusEditors_CB5.res UnitSyntaxMemo.dcr"/>
+    <RESFILES value="FIBPlusEditors_CB5.res"/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
     <DEFFILE value=""/>
