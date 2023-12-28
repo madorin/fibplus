@@ -715,12 +715,12 @@ type
     procedure ShiftCurRec;    
 //End GB
 
-
     function  StoreUpdTransaction: Boolean;
     procedure SetOnEndScroll(Event:TDataSetNotifyEvent);
-    function  GetDefaultFields:boolean;
+    {$IF CompilerVersion < 27}
+    function GetDefaultFields: Boolean;
+    {$IFEND}
     procedure ClearBlobStreamList;
-
     function  CreateInternalQuery(const QName:string):TFIBQuery;
     function GetGroupByString: string;
     function GetMainWhereClause: string;
@@ -1246,7 +1246,9 @@ type
     function Translate(Src, Dest: PAnsiChar; ToOem: Boolean): Integer; override;
     function UpdateStatus: TUpdateStatus; override;
     function IsSequenced: Boolean; override;        // Scroll bar
-    property qDefaultFields:boolean read GetDefaultFields ;
+    {$IF CompilerVersion < 27}
+    property DefaultFields: Boolean read GetDefaultFields;
+    {$IFEND}
   public
 {$IFDEF CSMonitor}
     procedure SetCSMonitorSupportToQ;
@@ -11522,12 +11524,13 @@ begin
 
 end;
 
+{$IF CompilerVersion < 27}
 function TFIBCustomDataSet.GetDefaultFields: Boolean;
 begin
   Result:= not Active and (FieldCount=0);
   if not Result then Result := inherited DefaultFields;
 end;
-
+{$IFEND}
 
 // Filter works
 
