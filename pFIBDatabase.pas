@@ -569,6 +569,7 @@ end;
 procedure TpFIBDatabase.DoOnLostConnect
      (Database: TFIBDatabase; E:EFIBError;var Actions:TOnLostConnectActions; var DoRaise:boolean);
 begin
+  vAttachmentID := -1;
   if Assigned(FOnLostConnect) then
    FOnLostConnect(Self,E,Actions,DoRaise);
   if Actions=laTerminateApp then
