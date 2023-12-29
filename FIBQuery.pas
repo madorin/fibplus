@@ -2317,10 +2317,15 @@ begin
     varCurrency:
       AsCurrency := Value;
     varBoolean:
-      if Value then
-        AsVariant := VariantTrue
-      else
-        AsVariant := VariantFalse;
+      case sSQLType of
+        FB3_SQL_BOOLEAN:
+          AsBoolean := Value;
+        else
+          if Value then
+            AsVariant := VariantTrue
+          else
+            AsVariant := VariantFalse;
+      end;
     varDate:
      case sSQLType of
       SQL_TYPE_TIME: AsTime:=Value;
