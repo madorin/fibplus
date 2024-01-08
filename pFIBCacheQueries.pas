@@ -332,7 +332,7 @@ end;
 procedure ClearQueryCacheList(DB:TFIBDataBase);
 var
  cq:TCacheQueries;
- i:integer;
+// i:integer;
 begin
  cq:=CacheList.GetCacheForDB(DB);
  if cq<>nil then
@@ -340,8 +340,9 @@ begin
  begin
    CacheList.FLock.Acquire;
    try
-     for i:=FListUnused.Count-1 downto 0 do
-      TFIBQuery(FListUnused.Objects[i]).Free;
+     FListUnused.FullClear;
+//     for i:=FListUnused.Count-1 downto 0 do
+//      TFIBQuery(FListUnused.Objects[i]).Free;
    finally
      CacheList.FLock.Release
    end;

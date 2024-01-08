@@ -302,7 +302,7 @@ var i:integer;
 begin
   with  FList do
   begin
-   for i:=0 to Pred(Count)  do
+   for i:=Pred(Count) downto 0 do
    begin
     if (Objects[i] is TComponent) and  (csDestroying in TComponent(Objects[i]).ComponentState) then
       Continue;
