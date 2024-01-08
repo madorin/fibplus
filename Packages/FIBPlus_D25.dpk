@@ -25,8 +25,8 @@ package FIBPlus_D25;
 {$IMAGEBASE $400000}
 {$DEFINE RELEASE}
 {$ENDIF IMPLICITBUILDING}
-{$DESCRIPTION 'FibPlus Access Components'}
 {$IMPLICITBUILD OFF}
+{$RUNONLY}
 
 requires
   rtl,
@@ -79,7 +79,6 @@ contains
   pFIBLists in '..\pFIBLists.pas',
   pFIBStoredProc in '..\pFIBStoredProc.pas',
   IB_ErrorCodes in '..\IB_ErrorCodes.pas',
-  RegFIBPlus in '..\RegFIBPlus.pas',
   FIBCloneComponents in '..\FIBCloneComponents.pas',
   pFIBFieldsDescr in '..\pFIBFieldsDescr.pas',
   SIBAPI in '..\SIBAPI.pas',
