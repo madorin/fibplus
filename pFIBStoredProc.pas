@@ -42,6 +42,8 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
+    procedure Prepare; override;
+    procedure ExecQuery; override;
     function   GetParamDefValue(ParamNo:integer):string; overload;
     function   GetParamDefValue(const ParamName:string):string; overload;
 
@@ -62,28 +64,13 @@ const
   'ORDER BY PP.RDB$PARAMETER_NUMBER';
 
 procedure TpFIBStoredProc.SetStoredProc(const Value: string);
-var ProcName:string;
 begin
   if (Value <> FStoredProc) then
   begin
    FStoredProc := Value;
    if not (csReading in ComponentState) then
    begin
-//     FBase.CheckDatabase;
-     if Assigned(Database) then
-     if  IsBlank(Value) then
-      SQL.Clear
-     else
-     begin
-      ProcName:=EasyFormatIdentifier(Database.SQLDialect, FStoredProc,
-       Database.EasyFormatsStr
-      );
-      SQL.Text :=
-       ListSPInfo.GetExecProcTxt(Database,
-        ProcName
-        ,csDesigning in ComponentState
-       );
-     end;
+     SQL.Clear;
    end;
   end;
 end;
@@ -205,5 +192,28 @@ begin
   end;
 end;
 
-end.
+procedure TpFIBStoredProc.ExecQuery;
+begin
+  if not Prepared then
+    Prepare;
+  inherited;
+end;
 
+procedure TpFIBStoredProc.Prepare;
+var ProcName:string;
+begin
+  if (SQL.Count = 0) and not IsBlank(FStoredProc) then
+  begin
+    ProcName:=EasyFormatIdentifier(Database.SQLDialect, FStoredProc,
+     Database.EasyFormatsStr
+    );
+    SQL.Text :=
+     ListSPInfo.GetExecProcTxt(Database,
+      ProcName
+      ,csDesigning in ComponentState
+     );
+  end;
+  inherited;
+end;
+
+end.
