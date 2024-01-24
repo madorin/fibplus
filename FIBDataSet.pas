@@ -11635,7 +11635,10 @@ begin
     FValidatingFieldBuffer:=Buffer;
     FValidatedField:=Field;
     FValidatedRec:= ActiveRecord;
-    Field.Validate(Buffer);
+    if Field is TIntegerField then
+     Field.Validate(Buffer)
+    else
+     Field.OnValidate(Field);
    finally
      Exclude(FRunState,drsInFieldValidate);
      FValidatingFieldBuffer:=nil;
