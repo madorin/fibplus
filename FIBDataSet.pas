@@ -4986,7 +4986,7 @@ end;
 
 procedure TFIBCustomDataSet.InitDataSetSchema;
 var
-  i, j,c: Integer;
+  i, c: Integer;
   rdl: Integer;
   qda:TFIBXSQLDA;
 
@@ -5012,94 +5012,90 @@ begin
 
   for i := 0 to c do
   begin
-    j := i + 1;
-    if j > 0 then
+    with qda[i].Data^ do
     begin
-      with qda[i].Data^ do
-      begin
-        vvSqlType:=sqltype and (not 1);
-        vvSqlSubType:=sqlsubtype;
-        vvSeparateString:=False;
-        StrIndex:=-1;
-        case vvSqltype of
-         SQL_FLOAT:
-          vvFieldBufSize:= SizeOf(Single);
-         SQL_DOUBLE, SQL_D_FLOAT:
-          vvFieldBufSize:= SizeOf(Double);
-         SQL_SHORT:
-         begin
-           vvFieldBufSize:=SizeOf(Short)
-         end;
-         SQL_LONG:
-         begin
-           vvFieldBufSize:=SizeOf(Integer)
-         end;
-         SQL_DATE:
-           vvFieldBufSize:=SizeOf(TTimeStamp);
-         SQL_TYPE_DATE,SQL_TYPE_TIME:
-           vvFieldBufSize:=SizeOf(Integer);
-        SQL_INT64:
-         begin
-          if (sqlscale = 0) then
-           vvFieldBufSize:= SizeOf(Int64)
-          else
-          if (sqlscale >=-4) or (psSQLINT64ToBCD in PrepareOptions)  then
-           vvFieldBufSize:= SizeOf(Int64)
-          else
-           vvFieldBufSize:=  SizeOf(Int64);
-         end;
-         SQL_VARYING,SQL_TEXT:
-         begin
-          vvFieldBufSize :=sqllen;
-          if not Database.NeedUnicodeFieldTranslation(Byte(vvSqlSubType)) and
-             (Byte(vvSqlSubType) in Database.UnicodeCharSets)
-          then
-          if not IsSysField(sqlName) or  not Database.ReturnDeclaredFieldSize then
-           vvFieldBufSize :=vvFieldBufSize div  Database.BytesInUnicodeChar(vvSqlSubType);
+      vvSqlType:=sqltype and (not 1);
+      vvSqlSubType:=sqlsubtype;
+      vvSeparateString:=False;
+      StrIndex:=-1;
+      case vvSqltype of
+       SQL_FLOAT:
+        vvFieldBufSize:= SizeOf(Single);
+       SQL_DOUBLE, SQL_D_FLOAT:
+        vvFieldBufSize:= SizeOf(Double);
+       SQL_SHORT:
+       begin
+         vvFieldBufSize:=SizeOf(Short)
+       end;
+       SQL_LONG:
+       begin
+         vvFieldBufSize:=SizeOf(Integer)
+       end;
+       SQL_TIMESTAMP:
+         vvFieldBufSize:=SizeOf(TTimeStamp);
+       SQL_TYPE_DATE,SQL_TYPE_TIME:
+         vvFieldBufSize:=SizeOf(Integer);
+      SQL_INT64:
+       begin
+        if (sqlscale = 0) then
+         vvFieldBufSize:= SizeOf(Int64)
+        else
+        if (sqlscale >=-4) or (psSQLINT64ToBCD in PrepareOptions)  then
+         vvFieldBufSize:= SizeOf(Int64)
+        else
+         vvFieldBufSize:=  SizeOf(Int64);
+       end;
+       SQL_VARYING,SQL_TEXT:
+       begin
+        vvFieldBufSize :=sqllen;
+        if not Database.NeedUnicodeFieldTranslation(Byte(vvSqlSubType)) and
+           (Byte(vvSqlSubType) in Database.UnicodeCharSets)
+        then
+        if not IsSysField(sqlName) or  not Database.ReturnDeclaredFieldSize then
+         vvFieldBufSize :=vvFieldBufSize div  Database.BytesInUnicodeChar(vvSqlSubType);
 
-          if (FieldDefs[i].DataType in [ftGuid]) or  StringInArray(sqlname,['DB_KEY','RDB$DB_KEY']) then
-           vvSeparateString:=False
-          else
-           vvSeparateString:=(vvFieldBufSize>20)   or (Byte(vvSqlSubType)=OCTETS_CHARSET_ID) ;
+        if (FieldDefs[i].DataType in [ftGuid]) or  StringInArray(sqlname,['DB_KEY','RDB$DB_KEY']) then
+         vvSeparateString:=False
+        else
+         vvSeparateString:=(vvFieldBufSize>20)   or (Byte(vvSqlSubType)=OCTETS_CHARSET_ID) ;
 //^^^ Nod separate
 
-          if vvSeparateString then
-          begin
-           StrIndex:=FStringFieldCount;
-           Inc(FStringFieldCount);
-          end;
-         end;
-        else
-          vvFieldBufSize:=  sqllen;
+        if vvSeparateString then
+        begin
+         StrIndex:=FStringFieldCount;
+         Inc(FStringFieldCount);
         end;
-        case FieldDefs[i].DataType of
-          ftGuid      :  atf:=atfGuidField;
-          ftWideString:  atf:=atfWideStringField;
-        else
-          atf:=atfStandard
-        end;
-        vFieldDescrList.Add(vvSqltype and (not 1),sqlscale,vvFieldBufSize,
-         sqltype and 1 = 1, StringInArray(sqlname,['DB_KEY','RDB$DB_KEY']),
-         vvSeparateString,atf
-        ) ;
+       end;
+      else
+        vvFieldBufSize:=  sqllen;
       end;
-     fi:=vFieldDescrList[j-1];
-     fi^.fdSubType:=vvSqlSubType;
-     fi^.fdRelationTable:=qda[i].RelationName;
-     fi^.fdRelationField:=qda[i].SqlName;
-     fi^.fdTableAlias   :=QSelect.TableAliasForField(i);
+      case FieldDefs[i].DataType of
+        ftGuid      :  atf:=atfGuidField;
+        ftWideString:  atf:=atfWideStringField;
+      else
+        atf:=atfStandard
+      end;
+      vFieldDescrList.Add(vvSqltype and (not 1),sqlscale,vvFieldBufSize,
+       sqltype and 1 = 1, StringInArray(sqlname,['DB_KEY','RDB$DB_KEY']),
+       vvSeparateString,atf
+      ) ;
+    end;
+    fi:=vFieldDescrList[i];
+    fi^.fdSubType:=vvSqlSubType;
+    fi^.fdRelationTable:=qda[i].RelationName;
+    fi^.fdRelationField:=qda[i].SqlName;
+    fi^.fdTableAlias   :=QSelect.TableAliasForField(i);
 
-     if fi^.fdIsSeparateString then
-        fi^.fdStrIndex:=StrIndex
-     else
-     begin
+    if fi^.fdIsSeparateString then
+      fi^.fdStrIndex:=StrIndex
+    else
+    begin
       fi^.fdStrIndex:=-1;
       fi^.fdDataOfs := FRecordSize;
       Inc(FRecordSize,vvFieldBufSize);
       Inc(FBlockReadSize,vvFieldBufSize);
-     end;
     end;
-  end  ;
+  end;
 
   FBlobCacheOffset:=FBlockReadSize;
    for i := 0 to c do
@@ -6095,7 +6091,7 @@ begin
             begin
               cur_param.AsTimeStamp:=StdFuncs.TimeStamp(0,PInt(data)^);
             end;
-            SQL_DATE:
+            SQL_TIMESTAMP:
               cur_param.AsTimeStamp:=MSecsToTimeStamp(PDouble(data)^);
             SQL_BOOLEAN,FB3_SQL_BOOLEAN:
               cur_param.AsBoolean  :=(PByte(data)^ = ISC_TRUE)

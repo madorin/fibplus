@@ -1212,7 +1212,7 @@ begin
       end;
       SQL_TYPE_DATE:
         Result :=DateToStr(AsDateTime);
-      SQL_DATE:
+      SQL_TIMESTAMP:
         Result :=DateTimeToStr(AsDateTime);
       SQL_TYPE_TIME:
         Result := TimeToStr(AsTime);
@@ -1291,7 +1291,7 @@ begin
          Result := GetAsWideString
         else
          Result := AsAnsiString;
-      SQL_TYPE_DATE, SQL_TYPE_TIME,SQL_DATE:
+      SQL_TYPE_DATE, SQL_TYPE_TIME, SQL_TIMESTAMP:
         Result := AsDateTime;
       SQL_SHORT, SQL_LONG:
         if FXSQLVAR^.sqlscale <> 0 then
@@ -1873,7 +1873,7 @@ begin
       gds_quad_high :=aValue.Date-IBBuffDateDelta;
       gds_quad_low  :=aValue.Time*10;
     end;
-    SetValue(SQL_DATE,SizeOf(TISC_QUAD),tspValue,tq);
+    SetValue(SQL_TIMESTAMP,SizeOf(TISC_QUAD),tspValue,tq);
 end;
 
 
@@ -2922,92 +2922,90 @@ var
   st,st1: string;
   ast:AnsiString;
 begin
+  if FXSQLDA = nil then Exit;
   NamesWereEmpty := (FNames.Count = 0);
-  if FXSQLDA <> nil then
+  j:=0;
+  for i := 0 to FCount - 1 do
   begin
-    j:=0;
-    for i := 0 to FCount - 1 do
+    with FXSQLVARs^[i].Data^ do
     begin
-      with FXSQLVARs^[i].Data^ do
+      FXSQLVARs^[i].FSrvSQlType :=sqltype and (not 1);
+      FXSQLVARs^[i].FSrvSQlLen :=sqllen;
+      FXSQLVARs^[i].FSrvSQLScale:=sqlscale;
+      FXSQLVARs^[i].FSrvSQLSubType:=sqlsubtype;
+      FXSQLVARs^[i].FInitialized:=True;
+      if NamesWereEmpty then
       begin
-        FXSQLVARs^[i].FSrvSQlType :=sqltype and (not 1);
-        FXSQLVARs^[i].FSrvSQlLen :=sqllen;
-        FXSQLVARs^[i].FSrvSQLScale:=sqlscale;
-        FXSQLVARs^[i].FSrvSQLSubType:=sqlsubtype;
-        FXSQLVARs^[i].FInitialized:=True;
-        if NamesWereEmpty then
-        begin
-          SetLength(ast,aliasname_length);
-          if aliasname_length>0 then
-           Move(aliasname[0],ast[1],aliasname_length);
+        SetLength(ast,aliasname_length);
+        if aliasname_length>0 then
+         Move(aliasname[0],ast[1],aliasname_length);
 
-          if FQuery.Database.IsUnicodeConnect then
-           st := UTF8Decode(ast)
-          else
+        if FQuery.Database.IsUnicodeConnect then
+         st := UTF8Decode(ast)
+        else
 {$IFDEF SUPPORT_KOI8_CHARSET}
-          if FQuery.Database.IsKOI8Connect then
-           st := ConvertFromCodePage(ast,CodePageKOI8R)
-          else
+        if FQuery.Database.IsKOI8Connect then
+         st := ConvertFromCodePage(ast,CodePageKOI8R)
+        else
 {$ENDIF}
-           st := ast;
-          if st = '' then
-          begin
-            Inc(j);
-            st := 'F_'+IntToStr(j);
-            StrPCopy(aliasname, st);
-            aliasname_length:=Length(st)
-          end
-          else
-//          if GetXSQLVARByName(st)<>nil then
-          if NonAnsiIndexOf(FNames,st)>-1 then
-          begin
-//              Reapeated FieldNames
-            c:=0;
-            repeat
-             Inc(c);
-             st1:=st+IntToStr(c);
-             if Length(st1)>=LENGTH_METANAMES-1 then
-              st1:=
-                FastCopy(st,1,Length(st)-(Length(st1)-LENGTH_METANAMES))+IntToStr(c);
-            until GetXSQLVARByName(st1)=nil;
+         st := ast;
+        if st = '' then
+        begin
+          Inc(j);
+          st := 'F_'+IntToStr(j);
+          StrPCopy(aliasname, st);
+          aliasname_length:=Length(st)
+        end
+        else
+//        if GetXSQLVARByName(st)<>nil then
+        if NonAnsiIndexOf(FNames,st)>-1 then
+        begin
+//            Reapeated FieldNames
+          c:=0;
+          repeat
+           Inc(c);
+           st1:=st+IntToStr(c);
+           if Length(st1)>=LENGTH_METANAMES-1 then
+            st1:=
+              FastCopy(st,1,Length(st)-(Length(st1)-LENGTH_METANAMES))+IntToStr(c);
+          until GetXSQLVARByName(st1)=nil;
 
-            StrPCopy(aliasname, st1);
-            st:=st1;
-            aliasname_length:=Length(st)
-          end;
-          AddName(st,i,True);
+          StrPCopy(aliasname, st1);
+          st:=st1;
+          aliasname_length:=Length(st)
         end;
-        case sqltype and (not 1) of
-          0:
-           if Self<>FQuery.FUserSQLParams then
-           begin
-            FIBError(feUnknownSQLDataType, [sqltype and (not 1)])
-           end;
-          SQL_TEXT:
-            if (sqllen = 0) then
-             FIBAlloc(sqldata, 0, 1)
-            else
-             FIBAlloc(sqldata, 0, sqllen);
-          SQL_TYPE_DATE, SQL_TYPE_TIME, SQL_TIMESTAMP,
-          SQL_BLOB, SQL_ARRAY, SQL_QUAD, SQL_SHORT,
-          SQL_LONG, SQL_INT64, SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT,SQL_BOOLEAN,FB3_SQL_BOOLEAN:
-          begin
-            FIBAlloc(sqldata, 0, sqllen);
-          end;
-          SQL_VARYING:
-          begin
-             FIBAlloc(sqldata, 0, sqllen + 2);
-          end;
-          SQL_NULL:;
-        else
-            FIBError(feUnknownSQLDataType, [sqltype and (not 1)])
-        end;
-        if (sqltype and 1 = 1) then
-          FIBAlloc(sqlind, 0, SizeOf(Short))
-        else
-        if (sqlind <> nil) then
-          FIBAlloc(sqlind, 0, 0);
+        AddName(st,i,True);
       end;
+      case sqltype and (not 1) of
+        0:
+         if Self<>FQuery.FUserSQLParams then
+         begin
+          FIBError(feUnknownSQLDataType, [sqltype and (not 1)])
+         end;
+        SQL_TEXT:
+          if (sqllen = 0) then
+           FIBAlloc(sqldata, 0, 1)
+          else
+           FIBAlloc(sqldata, 0, sqllen);
+        SQL_TYPE_DATE, SQL_TYPE_TIME, SQL_TIMESTAMP,
+        SQL_BLOB, SQL_ARRAY, SQL_QUAD, SQL_SHORT,
+        SQL_LONG, SQL_INT64, SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT,SQL_BOOLEAN,FB3_SQL_BOOLEAN:
+        begin
+          FIBAlloc(sqldata, 0, sqllen);
+        end;
+        SQL_VARYING:
+        begin
+           FIBAlloc(sqldata, 0, sqllen + 2);
+        end;
+        SQL_NULL:;
+      else
+          FIBError(feUnknownSQLDataType, [sqltype and (not 1)])
+      end;
+      if (sqltype and 1 = 1) then
+        FIBAlloc(sqlind, 0, SizeOf(Short))
+      else
+      if (sqlind <> nil) then
+        FIBAlloc(sqlind, 0, 0);
     end;
   end;
 end;

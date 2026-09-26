@@ -2985,7 +2985,7 @@ const
   SQL_TYPE_TIME                  =        560;
   SQL_TYPE_DATE                  =        570;
   SQL_INT64                      =        580;
-  SQL_DATE                       =        SQL_TIMESTAMP;
+  SQL_DATE                       =        SQL_TIMESTAMP deprecated; // use SQL_TIMESTAMP
   SQL_BOOLEAN                    =        590;
   FB3_SQL_BOOLEAN                =        32764;
 
