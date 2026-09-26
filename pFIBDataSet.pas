@@ -1307,7 +1307,8 @@ begin
              if de <> 'NULL' then
               if Fields[i] is TDateTimeField then
               begin
-                if StringInArray(de, ['NOW','CURRENT_TIME','CURRENT_TIMESTAMP']) then
+                if StringInArray(de, ['NOW', 'CURRENT_TIME', 'CURRENT_TIMESTAMP',
+                  'LOCALTIME', 'LOCALTIMESTAMP']) then
                   asDateTime := Now - vDifferenceTime
                 else
                 if StringInArray(de, ['TODAY', 'CURRENT_DATE']) then
