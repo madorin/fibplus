@@ -60,6 +60,7 @@ contains
   RegUtils in '..\RegUtils.pas',
   SqlTxtRtns in '..\SqlTxtRtns.pas',
   StdFuncs in '..\StdFuncs.pas',
+  FIBTypes in '..\FIBTypes.pas',
   StrUtil in '..\StrUtil.pas',
   VariantRtn in '..\VariantRtn.pas',
   pFIBStoredProc in '..\pFIBStoredProc.pas',

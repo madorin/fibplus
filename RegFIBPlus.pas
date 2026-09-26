@@ -49,14 +49,14 @@ procedure Register;
 begin
 
   RegisterClasses([TFIBIntegerField, TFIBSmallIntField, TFIBLargeIntField,
-    TFIBBCDField, TFIBFloatField, TFIBBooleanField, TFIBDateTimeField,
+    TFIBBCDField, TFIBFMTBCDField, TFIBFloatField, TFIBBooleanField, TFIBDateTimeField,
     TFIBDateField, TFIBTimeField, TFIBGuidField, TFIBStringField,
     TFIBWideStringField, TFIBBlobField, TFIBMemoField
     {$IFDEF SUPPORT_ARRAY_FIELD}, TFIBArrayField{$ENDIF}
     ]);
 
   RegisterFields([TFIBStringField, TFIBIntegerField, TFIBSmallIntField,
-    TFIBFloatField, TFIBBCDField, TFIBBooleanField, TFIBDateField,
+    TFIBFloatField, TFIBBCDField, TFIBFMTBCDField, TFIBBooleanField, TFIBDateField,
     TFIBTimeField, TFIBDateTimeField, TFIBWideStringField
     ]);
 

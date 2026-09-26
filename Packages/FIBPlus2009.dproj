@@ -110,6 +110,7 @@
 			<DCCReference Include="..\SIBGlobals.pas"/>
 			<DCCReference Include="..\SqlTxtRtns.pas"/>
 			<DCCReference Include="..\StdFuncs.pas"/>
+			<DCCReference Include="..\FIBTypes.pas"/>
 			<DCCReference Include="..\VariantRtn.pas"/>
 			<DCCReference Include="..\pFIBScripter.pas"/>
 			<DCCReference Include="..\StrUtil.pas"/>

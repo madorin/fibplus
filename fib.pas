@@ -807,6 +807,12 @@ begin
         ApplyStrParam;
        end
       end;
+      isc_dpb_session_time_zone, isc_dpb_set_bind,
+      isc_dpb_decfloat_round, isc_dpb_decfloat_traps: // FB4
+      begin
+        if IsFirebird then
+          ApplyStrParam;
+      end;
       isc_dpb_set_db_charset:
       begin
        // or isc_dpb_gbak_ods_version
@@ -1042,6 +1048,10 @@ begin
    AddObject('no_db_triggers',TObject(isc_dpb_no_db_triggers));
    AddObject('set_db_charset',TObject(isc_dpb_set_db_charset));
    AddObject('utf8_filename',TObject(isc_dpb_utf8_filename));
+   AddObject('session_time_zone', TObject(isc_dpb_session_time_zone));
+   AddObject('set_bind', TObject(isc_dpb_set_bind));
+   AddObject('decfloat_round', TObject(isc_dpb_decfloat_round));
+   AddObject('decfloat_traps', TObject(isc_dpb_decfloat_traps));
 
 
   // Sorted:=true;

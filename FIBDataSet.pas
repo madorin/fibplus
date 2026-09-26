@@ -193,6 +193,25 @@ type
    property OldValue:Int64 read GetOldAsInt64;
   end;
 
+  // INT128, NUMERIC(19..38) and DECFLOAT fields. DECFLOAT values which TBcd can not
+  // hold (NaN, Infinity, more than 64 digits) are read as text by AsString and
+  // DisplayText and as Double by AsFloat and Value; AsBCD, AsCurrency, AsInteger
+  // and AsLargeInt raise a conversion error for them.
+  // DECFLOAT has a floating scale, which TFieldDef can not express: its field defs have
+  // Precision 16/34 and Size (scale) 8/17. FIBPlus itself does not normalize values to
+  // Size and AsFloat is not rounded to it, but consumers of fixed point values
+  // (TClientDataSet: at most 32 digits and a fixed scale) lose the digits out of this
+  // range. Set Size of a persistent field for another range, or cast to VARCHAR
+  // for exact values.
+  TFIBFMTBCDField = class(TFMTBCDField)
+  protected
+   function  GetAsFloat: Double; override;
+   function  GetAsString: string; override;
+   function  GetAsVariant: Variant; override;
+   procedure GetText(var Text: string; DisplayText: Boolean); override;
+   procedure SetAsFloat(Value: Double); override;
+  end;
+
     TFIBIntegerField = class(TIntegerField)
    protected
      function  GetAsBoolean: Boolean; override;
@@ -650,6 +669,11 @@ type
     FDetailConditions:TDetailConditions;
     vInspectRecno:integer;
     vTypeDispositionField:TDispositionFieldType;
+    // A DECFLOAT value of this field which TBcd can not hold is copied to
+    // vRawDecimalData and GetFieldData returns False, see TFIBFMTBCDField
+    vRawDecimalField:TField;
+    vRawDecimalReturned:boolean;
+    vRawDecimalData:TFB_DEC34;
     vTimerForDetail:TFIBTimer;
     vScrollTimer   :TFIBTimer;
     FDisableCOCount:integer;
@@ -1595,11 +1619,127 @@ const
 
 implementation
 
-uses StrUtil,FIBConsts,pFIBDataInfo,VariantRtn,IB_ErrorCodes,pFIBCacheQueries,DSContainer;
+uses StrUtil, FIBConsts, pFIBDataInfo, VariantRtn, IB_ErrorCodes, pFIBCacheQueries, DSContainer, FIBTypes;
 
 const
       DiffSizesRecData=SizeOf(TRecordData)-SizeOf(TSavedRecordData);
       LocateParamPrefix='LOCATE_';
+
+// INT128, DECFLOAT(16) and DECFLOAT(34) values are cached in the server format
+function CacheToDecimal(fi: PFIBFieldDescr; Data: Pointer): TFBDecimal;
+begin
+  Result := FBDecimalFromRaw(fi^.fdDataType, fi^.fdDataScale, Data);
+end;
+
+function CacheToBcd(fi: PFIBFieldDescr; Data: Pointer; out Value: TBcd): Boolean;
+begin
+  Result := FBRawToBcd(fi^.fdDataType, fi^.fdDataScale, Data, Value);
+end;
+
+function IsTimeZoneField(fi: PFIBFieldDescr): Boolean;
+begin
+  Result := (fi^.fdDataType = SQL_TIME_TZ_EX) or (fi^.fdDataType = SQL_TIMESTAMP_TZ_EX);
+end;
+
+// Descriptor of a data field of the dataset, nil for calculated, lookup and unknown fields
+function DataFieldDescr(DS: TFIBCustomDataSet; Field: TField): PFIBFieldDescr;
+begin
+  if (Field <> nil) and (Field.FieldKind = fkData) and (Field.FieldNo > 0) and
+    (Field.FieldNo <= DS.vrdFieldCount)
+  then
+    Result := DS.vFieldDescrList[Field.FieldNo - 1]
+  else
+    Result := nil;
+end;
+
+// Descriptor of a TIME/TIMESTAMP WITH TIME ZONE field, nil for other fields
+function TimeZoneFieldDescr(DS: TFIBCustomDataSet; Field: TField): PFIBFieldDescr;
+begin
+  Result := DataFieldDescr(DS, Field);
+  if (Result <> nil) and not IsTimeZoneField(Result) then
+    Result := nil;
+end;
+
+// Local time of a TIME/TIMESTAMP WITH TIME ZONE cache value
+function TimeZoneCacheToDateTime(fi: PFIBFieldDescr; Data: Pointer): TDateTime;
+begin
+  if fi^.fdDataType = SQL_TIME_TZ_EX then
+    Result := TimeStampToDateTime(TimeStamp(DateDelta, FBTimeTZToMSecs(PISC_TIME_TZ_EX(Data)^)))
+  else
+    Result := TimeStampToDateTime(MSecsToTimeStamp(FBTimeStampTZToMSecs(PISC_TIMESTAMP_TZ_EX(Data)^)));
+end;
+
+// TIME/TIMESTAMP WITH TIME ZONE from the record cache to a parameter
+procedure CacheToTimeZoneParam(Param: TFIBXSQLVAR; fi: PFIBFieldDescr; Data: Pointer);
+var
+  vTimeTZ: TISC_TIME_TZ;
+  vTimeStampTZ: TISC_TIMESTAMP_TZ;
+begin
+  if fi^.fdDataType = SQL_TIME_TZ_EX then
+    with PISC_TIME_TZ_EX(Data)^ do
+      // assigned local time, the server resolves it in the time zone
+      if ext_offset = FBUnresolvedOffset then
+        Param.SetAsDateTimeTZ(FBTimeTZToMSecs(PISC_TIME_TZ_EX(Data)^) / MSecsPerDay, time_zone)
+      else
+      begin
+        vTimeTZ.utc_time  := utc_time;
+        vTimeTZ.time_zone := time_zone;
+        Param.SetAsTimeTZ(vTimeTZ);
+      end
+  else
+    with PISC_TIMESTAMP_TZ_EX(Data)^ do
+      if ext_offset = FBUnresolvedOffset then
+        Param.SetAsDateTimeTZ(TimeStampToDateTime(MSecsToTimeStamp(
+          FBTimeStampTZToMSecs(PISC_TIMESTAMP_TZ_EX(Data)^))), time_zone)
+      else
+      begin
+        vTimeStampTZ.utc_timestamp := utc_timestamp;
+        vTimeStampTZ.time_zone     := time_zone;
+        Param.SetAsTimeStampTZ(vTimeStampTZ);
+      end;
+end;
+
+// Cache data of a TIME/TIMESTAMP WITH TIME ZONE field in the active record
+function ActiveTimeZoneData(Field: TField; out fi: PFIBFieldDescr; out Data: Pointer): Boolean;
+var
+  DS: TFIBCustomDataSet;
+  Buff: TRecordBuffer;
+begin
+  Result := False;
+  if (Field = nil) or not (Field.DataSet is TFIBCustomDataSet) then
+    Exit;
+  DS := TFIBCustomDataSet(Field.DataSet);
+  fi := TimeZoneFieldDescr(DS, Field);
+  if fi = nil then
+    Exit;
+  Buff := DS.GetActiveBuf;
+  if Buff = nil then
+    Exit;
+  Data := Buff + fi^.fdDataOfs;
+  Result := True;
+end;
+
+// True if Param does not hold the time zone value of the cache,
+// a value not resolved by the server yet is always reported as changed
+function TimeZoneParamChanged(Param: TFIBXSQLVAR; fi: PFIBFieldDescr; Data: Pointer): Boolean;
+begin
+  Result := True;
+  if fi^.fdDataType = SQL_TIME_TZ_EX then
+  begin
+    if (Param.SQLType = SQL_TIME_TZ) and (PISC_TIME_TZ_EX(Data)^.ext_offset <> FBUnresolvedOffset) then
+      with PISC_TIME_TZ(Param.Data^.sqldata)^ do
+        Result := (utc_time <> PISC_TIME_TZ_EX(Data)^.utc_time) or
+          (time_zone <> PISC_TIME_TZ_EX(Data)^.time_zone);
+  end
+  else
+  if (Param.SQLType = SQL_TIMESTAMP_TZ) and
+    (PISC_TIMESTAMP_TZ_EX(Data)^.ext_offset <> FBUnresolvedOffset)
+  then
+    with PISC_TIMESTAMP_TZ(Param.Data^.sqldata)^ do
+      Result := (utc_timestamp.timestamp_date <> PISC_TIMESTAMP_TZ_EX(Data)^.utc_timestamp.timestamp_date) or
+        (utc_timestamp.timestamp_time <> PISC_TIMESTAMP_TZ_EX(Data)^.utc_timestamp.timestamp_time) or
+        (time_zone <> PISC_TIMESTAMP_TZ_EX(Data)^.time_zone);
+end;
 
 function IsSysField(const FieldName:string):boolean;
 begin
@@ -2227,6 +2367,170 @@ begin
     else
      SetAsLargeInt(Value);
 end;
+
+(*
+ * TFIBFMTBCDField - implementation
+ *)
+
+// The field descriptor of a DECFLOAT data field of a FIBPlus dataset, nil for other fields
+function DecFloatFieldDescr(Field: TField): PFIBFieldDescr;
+begin
+  Result := nil;
+  if not (Field.DataSet is TFIBCustomDataSet) then
+    Exit;
+  Result := DataFieldDescr(TFIBCustomDataSet(Field.DataSet), Field);
+  if (Result <> nil) and (Result^.fdDataType <> SQL_DEC16) and
+    (Result^.fdDataType <> SQL_DEC34)
+  then
+    Result := nil;
+end;
+
+type
+  // State of the dataset while a DECFLOAT field reads its value, see BeginDecFloatRead
+  TDecFloatRead = record
+    DS: TFIBCustomDataSet;
+    fi: PFIBFieldDescr;
+    SaveField: TField;
+    SaveReturned: Boolean;
+  end;
+
+  TDecFloatReadResult = (drNotDecFloat, drNull, drBcd, drSpecial);
+
+// Until EndDecFloatRead GetFieldData does not raise a conversion error for a DECFLOAT
+// value of Field which TBcd can not hold (NaN, Infinity, more than 64 digits):
+// it keeps the value in the server format and reports no data.
+// Returns False for fields which are not DECFLOAT fields of a FIBPlus dataset
+// (INT128 always fits TBcd).
+function BeginDecFloatRead(Field: TField; out R: TDecFloatRead): Boolean;
+begin
+  R.fi := DecFloatFieldDescr(Field);
+  Result := R.fi <> nil;
+  if not Result then
+    Exit;
+  R.DS := TFIBCustomDataSet(Field.DataSet);
+  R.SaveField := R.DS.vRawDecimalField;
+  R.SaveReturned := R.DS.vRawDecimalReturned;
+  R.DS.vRawDecimalField := Field;
+  R.DS.vRawDecimalReturned := False;
+end;
+
+// True if GetFieldData met a value which TBcd can not hold, returned in Value
+function EndDecFloatRead(var R: TDecFloatRead; out Value: TFBDecimal): Boolean;
+begin
+  Result := R.DS.vRawDecimalReturned;
+  R.DS.vRawDecimalField := R.SaveField;
+  R.DS.vRawDecimalReturned := R.SaveReturned;
+  if Result then
+    Value := CacheToDecimal(R.fi, @R.DS.vRawDecimalData);
+end;
+
+// Reads the value of a DECFLOAT field once, as TBcd or as a special value
+function ReadDecFloat(Field: TField; out Bcd: TBcd; out Special: TFBDecimal): TDecFloatReadResult;
+var
+  R: TDecFloatRead;
+  HasData: Boolean;
+begin
+  Result := drNotDecFloat;
+  if not BeginDecFloatRead(Field, R) then
+    Exit;
+  try
+    // a value being validated is returned as TBcd
+    HasData := R.DS.GetFieldData(Field, Pointer(@Bcd));
+  finally
+    if EndDecFloatRead(R, Special) then
+      Result := drSpecial;
+  end;
+  if Result <> drSpecial then
+    if HasData then
+      Result := drBcd
+    else
+      Result := drNull;
+end;
+
+// The results of the inherited methods, without a second read of the value
+
+function TFIBFMTBCDField.GetAsFloat: Double;
+var
+  vBcd: TBcd;
+  vDecimal: TFBDecimal;
+begin
+  case ReadDecFloat(Self, vBcd, vDecimal) of
+    drBcd:     Result := BcdToDouble(vBcd);
+    drSpecial: Result := FBDecimalToDouble(vDecimal);
+    drNull:    Result := 0;
+  else
+    Result := inherited GetAsFloat;
+  end;
+end;
+
+function TFIBFMTBCDField.GetAsString: string;
+var
+  vBcd: TBcd;
+  vDecimal: TFBDecimal;
+begin
+  case ReadDecFloat(Self, vBcd, vDecimal) of
+    drBcd:     Result := BcdToStr(vBcd);
+    drSpecial: Result := FBDecimalToStr(vDecimal, LocalDecimalSeparator);
+    drNull:    Result := '';
+  else
+    Result := inherited GetAsString;
+  end;
+end;
+
+function TFIBFMTBCDField.GetAsVariant: Variant;
+var
+  vBcd: TBcd;
+  vDecimal: TFBDecimal;
+begin
+  // like TFIBXSQLVAR.AsVariant and TFIBCustomDataSet.RecordFieldValue
+  case ReadDecFloat(Self, vBcd, vDecimal) of
+    drBcd:     VarFMTBcdCreate(Result, vBcd);
+    drSpecial: Result := FBDecimalToDouble(vDecimal);
+    drNull:    Result := Null;
+  else
+    Result := inherited GetAsVariant;
+  end;
+end;
+
+procedure TFIBFMTBCDField.GetText(var Text: string; DisplayText: Boolean);
+var
+  R: TDecFloatRead;
+  vDecimal: TFBDecimal;
+  Special: Boolean;
+begin
+  if not BeginDecFloatRead(Self, R) then
+  begin
+    inherited GetText(Text, DisplayText);
+    Exit;
+  end;
+  // the formatting of the inherited method, a special value is read as no data
+  try
+    inherited GetText(Text, DisplayText);
+  finally
+    Special := EndDecFloatRead(R, vDecimal);
+  end;
+  if Special then
+    Text := FBDecimalToStr(vDecimal, LocalDecimalSeparator);
+end;
+
+procedure TFIBFMTBCDField.SetAsFloat(Value: Double);
+var
+  vBcd: TBcd;
+begin
+  // DECFLOAT has a floating scale, so the value is not rounded to Size.
+  // Like TFIBXSQLVAR.AsDouble, the shortest decimal representation keeps
+  // all digits of the Double (DoubleToBcd keeps 15 digits only).
+  if DecFloatFieldDescr(Self) <> nil then
+  begin
+    // NaN, Infinity and values out of TBcd range
+    if not FBDecimalToBcd(DoubleToFBDecimal(Value), vBcd) then
+      FIBError(feInvalidDataConversion, [nil]);
+    SetAsBCD(vBcd);
+  end
+  else
+    inherited SetAsFloat(Value);
+end;
+
 (*
  * TFIBIntegerField - implementation
  *)
@@ -3940,7 +4244,7 @@ begin
 
 
          end;
-         ftSmallint,ftLargeint, ftInteger, ftBoolean, ftFloat, ftCurrency, ftBCD:
+         ftSmallint,ftLargeint, ftInteger, ftBoolean, ftFloat, ftCurrency, ftBCD, ftFMTBcd:
          begin
           ParName1:='COALESCE('+ParName+','+IntToStr(Low(Int64))+')';
           fn1:='COALESCE('+fn+','+IntToStr(Low(Int64))+')';
@@ -3962,7 +4266,10 @@ begin
          end;
 
         else // case
+        begin
          ParName1:=ParName;
+         fn1:=fn;
+        end;
         end;
       end
       else
@@ -6093,8 +6400,16 @@ begin
             end;
             SQL_TIMESTAMP:
               cur_param.AsTimeStamp:=MSecsToTimeStamp(PDouble(data)^);
-            SQL_BOOLEAN,FB3_SQL_BOOLEAN:
-              cur_param.AsBoolean  :=(PByte(data)^ = ISC_TRUE)
+            IB_SQL_BOOLEAN, SQL_BOOLEAN:
+              cur_param.AsBoolean  := (PByte(data)^ <> ISC_FALSE);
+            SQL_INT128:
+              cur_param.SetAsInt128(PFB_I128(data)^, fi^.fdDataScale);
+            SQL_DEC16:
+              cur_param.SetAsDec16(PFB_DEC16(data)^);
+            SQL_DEC34:
+              cur_param.SetAsDec34(PFB_DEC34(data)^);
+            SQL_TIME_TZ_EX, SQL_TIMESTAMP_TZ_EX:
+              CacheToTimeZoneParam(cur_param, fi, data);
           end;
         end;
     end;
@@ -8324,6 +8639,18 @@ var
    tf:TField;
    Pos: Integer;
 
+  // TIME/TIMESTAMP WITH TIME ZONE keys keep the cache value with its time zone
+  function KeySize(tf: TField; DefSize: Integer): Integer;
+  var
+    fi: PFIBFieldDescr;
+  begin
+    fi := TimeZoneFieldDescr(Self, tf);
+    if fi <> nil then
+      Result := fi^.fdDataSize
+    else
+      Result := DefSize;
+  end;
+
 begin
  if not Assigned(FKeyFieldsForBookMark) then
     FKeyFieldsForBookMark:=TStringList.Create
@@ -8352,7 +8679,7 @@ begin
            if tf is TFIBStringField then
             BookMarkSize:=BookMarkSize+SizeOf(Boolean)+tf.DataSize-1
            else
-            BookMarkSize:=BookMarkSize+SizeOf(Boolean)+tf.DataSize;
+            BookMarkSize:=BookMarkSize+SizeOf(Boolean)+KeySize(tf, tf.DataSize);
          end;
        end;
      end;
@@ -8368,7 +8695,7 @@ begin
       if Assigned(tf)  then
       begin
         FKeyFieldsForBookMark.AddObject(tf.FieldName,TObject(BookMarkSize));
-        BookMarkSize:=BookMarkSize+SizeOf(Boolean)+tf.DataSize
+        BookMarkSize:=BookMarkSize+SizeOf(Boolean)+KeySize(tf, tf.DataSize)
       end;
     end;
  end;
@@ -8447,10 +8774,23 @@ begin
               end
              end
              else
-             Move(
-               PAnsiChar(Buffer + fi^.fdDataOfs)^, PAnsiChar(PIsNull+SizeOf(Boolean))^,
-               FieldSize
-             );
+             case fi^.fdDataType of
+               // Firebird 4 types are stored in the format of the field buffer
+               SQL_INT128, SQL_DEC16, SQL_DEC34:
+                 if not CacheToBcd(fi, Buffer + fi^.fdDataOfs,
+                   PBcd(PIsNull + SizeOf(Boolean))^)
+                 then
+                   PBoolean(PIsNull)^ := True;
+               // the value with its time zone, see PrepareBookMarkSize
+               SQL_TIME_TZ_EX, SQL_TIMESTAMP_TZ_EX:
+                 Move(PAnsiChar(Buffer + fi^.fdDataOfs)^, PAnsiChar(PIsNull + SizeOf(Boolean))^,
+                   fi^.fdDataSize);
+             else
+               Move(
+                 PAnsiChar(Buffer + fi^.fdDataOfs)^, PAnsiChar(PIsNull+SizeOf(Boolean))^,
+                 FieldSize
+               );
+             end;
             end;
           end;
         end;
@@ -8501,6 +8841,7 @@ begin
    ftGuid:      Result :=  TFIBGuidField;
    ftWideString:Result :=  TFIBWideStringField;
    ftLargeint  :Result :=  TFIBLargeIntField;
+   ftFMTBcd    : Result := TFIBFMTBCDField;
   {$IFDEF SUPPORT_ARRAY_FIELD}
    ftBytes : Result :=  TFIBArrayField;
   {$ENDIF}
@@ -8679,7 +9020,14 @@ begin
               Result:=PInt64(P)^
            ;
           end;
-       SQL_BOOLEAN,FB3_SQL_BOOLEAN:
+       SQL_INT128, SQL_DEC16, SQL_DEC34:
+        if CacheToBcd(fi, P, vBCD) then
+         VarFMTBcdCreate(Result, vBCD)
+        else
+         Result := FBRawToDouble(fi^.fdDataType, fi^.fdDataScale, P);
+       SQL_TIME_TZ_EX, SQL_TIMESTAMP_TZ_EX:
+        Result := TimeZoneCacheToDateTime(fi, P);
+       IB_SQL_BOOLEAN, SQL_BOOLEAN:
         Result:=PBoolean(P)^;
       end;
      end
@@ -9181,6 +9529,20 @@ begin
               PDouble(Buffer)^:=PDouble(Data)^;
           SQL_TYPE_TIME,SQL_TYPE_DATE:
            PLong(Buffer)^:=PLong(Data)^;
+          SQL_INT128, SQL_DEC16, SQL_DEC34:
+           if not CacheToBcd(fi, Data, TBcd(Buffer^)) then
+            if Field = vRawDecimalField then
+            begin
+             Move(Data^, vRawDecimalData, fi^.fdDataSize);
+             vRawDecimalReturned := True;
+             Result := False;
+            end
+            else
+             FIBError(feInvalidDataConversion, [nil]);
+          SQL_TIME_TZ_EX:
+           PInteger(Buffer)^ := FBTimeTZToMSecs(PISC_TIME_TZ_EX(Data)^);
+          SQL_TIMESTAMP_TZ_EX:
+           PDouble(Buffer)^ := FBTimeStampTZToMSecs(PISC_TIMESTAMP_TZ_EX(Data)^);
         else
          begin
           // Avoid BCD Overflow
@@ -10106,6 +10468,7 @@ var
    AddrValue:Pointer;
    KeyValues:array of variant;
    vBCD:TBCD;
+   fi:PFIBFieldDescr;
 
   procedure StdGotoBookMark;
   begin
@@ -10165,6 +10528,10 @@ begin
 
               tf :=Self.FN(FKeyFieldsForBookMark[i]);
               AddrValue:=@PAnsiChar(BookMark)[Integer(FKeyFieldsForBookMark.Objects[i])+SizeOf(Boolean)];
+              fi:=TimeZoneFieldDescr(Self, tf);
+              if fi<>nil then
+                KeyValues[i]:=VarFromDateTime(TimeZoneCacheToDateTime(fi, AddrValue))
+              else
               if Assigned(tf) then
               case tf.DataType of
                ftSmallint:
@@ -10196,14 +10563,17 @@ begin
                  KeyValues[i]:=UTF8Decode(PAnsiChar(AddrValue));
                ftDate:
                  KeyValues[i]:=IntDateToDateTime(PInteger(AddrValue)^);
+               // the bookmark keeps the field buffer format (msecs)
                ftTime:
-                 KeyValues[i]:=PInteger(AddrValue)^;
+                 KeyValues[i]:=VarFromDateTime(PInteger(AddrValue)^/MSecsPerDay);
                ftDateTime:
-                 KeyValues[i]:=PDateTime(AddrValue)^;
+                 KeyValues[i]:=VarFromDateTime(TimeStampToDateTime(MSecsToTimeStamp(PDouble(AddrValue)^)));
                ftGuid:
                  KeyValues[i]:=GUIDAsString(PGuid(AddrValue)^);
                ftLargeint:
                  KeyValues[i]:=PInt64(AddrValue)^;
+               ftFMTBcd:
+                 VarFMTBcdCreate(KeyValues[i], PBcd(AddrValue)^);
               end;
             end;
            end; // for
@@ -10254,6 +10624,11 @@ begin
             begin
               tf :=Self.FN(FKeyFieldsForBookMark[i]);
               AddrValue:=@PAnsiChar(BookMark)[Integer(FKeyFieldsForBookMark.Objects[i])+SizeOf(Boolean)];
+              fi:=TimeZoneFieldDescr(Self, tf);
+              if fi<>nil then
+                // exact value with its time zone
+                CacheToTimeZoneParam(ParamByName(LocateParamPrefix+FKeyFieldsForBookMark[i]), fi, AddrValue)
+              else
               if Assigned(tf) then
               with ParamByName(LocateParamPrefix+FKeyFieldsForBookMark[i]) do
               case tf.DataType of
@@ -10267,12 +10642,15 @@ begin
                  asString:=PAnsiChar(AddrValue);
                ftDate:
                  asDateTime:=IntDateToDateTime(PInteger(AddrValue)^);
+               // the bookmark keeps the field buffer format (msecs)
                ftTime:
-                 asDateTime:=PInteger(AddrValue)^;
+                 AsTime:=PInteger(AddrValue)^/MSecsPerDay;
                ftDateTime:
-                 asDateTime:=PDateTime(AddrValue)^;
+                 asDateTime:=TimeStampToDateTime(MSecsToTimeStamp(PDouble(AddrValue)^));
                ftLargeint:
                  asInt64:=PInt64(AddrValue)^;
+               ftFMTBcd:
+                 AsBcd := PBcd(AddrValue)^;
               end;
             end;
            end; // for
@@ -10360,6 +10738,7 @@ var
   i, FieldNo: Integer;
   Name   : string;
   isSmallInt:boolean;
+  vPrecision: Integer;
 
   RelFieldName,RelTabName:string;
   Fi:TpFIBFieldInfo;
@@ -10393,6 +10772,7 @@ begin
         Name:=ConvertFromCodePage(Name,CodePageKOI8R);
 {$ENDIF}
       Size   := 0;
+      vPrecision := 0;
       case sqltype and not 1 of
         // All VARCHAR's must be converted to strings before recording
         // their values
@@ -10524,7 +10904,32 @@ begin
           Size := SizeOf(TISC_QUAD);
           DataType := ftBytes;
         end;
-        SQL_BOOLEAN,FB3_SQL_BOOLEAN:
+        SQL_INT128:
+        begin
+          DataType   := ftFMTBcd;
+          Size       := -sqlscale;
+          // NUMERIC/DECIMAL(38) or INT128 (sub type 0), which has up to 39 digits
+          if sqlsubtype = 0 then
+            vPrecision := 39
+          else
+            vPrecision := 38;
+        end;
+        // DECFLOAT has a floating scale; half of the digits are fractional, see TFIBFMTBCDField
+        SQL_DEC16:
+        begin
+          DataType   := ftFMTBcd;
+          Size       := 8;
+          vPrecision := 16;
+        end;
+        SQL_DEC34:
+        begin
+          DataType   := ftFMTBcd;
+          Size       := 17;
+          vPrecision := 34;
+        end;
+        SQL_TIME_TZ, SQL_TIME_TZ_EX: DataType := ftTime;
+        SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX: DataType := ftDateTime;
+        IB_SQL_BOOLEAN, SQL_BOOLEAN:
           DataType := ftBoolean;
       else
           DataType := ftUnknown;
@@ -10541,7 +10946,11 @@ begin
         else
          with TFieldDef.Create(FieldDefs,Name,
                    DataType, Size, False, FieldNo) do
+         begin
           InternalCalcField := False;
+          if vPrecision > 0 then
+           Precision := vPrecision;
+         end;
       end;
     end;
   finally
@@ -10676,6 +11085,8 @@ function  TFIBCustomDataSet.MasterFieldsChanged :boolean;
 var pc,i :integer;
     cur_param: TFIBXSQLVAR;
     cur_field: TField;
+    vfi: PFIBFieldDescr;
+    vData: Pointer;
 
 function MasParamChanged:boolean;
 begin
@@ -10684,6 +11095,9 @@ begin
   begin
    Result:=cur_field.IsNull xor cur_param.IsNull;
    if not Result then
+   if ActiveTimeZoneData(cur_field, vfi, vData) then
+     Result := TimeZoneParamChanged(cur_param, vfi, vData)
+   else
    case cur_field.DataType of
      ftString,ftWideString:
        Result:=(cur_param.AsString<>cur_field.AsString);
@@ -10707,6 +11121,8 @@ begin
        Result:= not IsEqualGUIDs(cur_param.AsGuid,TFIBGuidField(cur_field).AsGuid);
      ftLargeint:
        Result:=cur_param.AsInt64<>TFIBLargeIntField(cur_field).AsLargeInt;
+     ftFMTBcd:
+       Result := BcdCompare(cur_param.AsBcd, cur_field.AsBCD) <> 0;
    end;
   end;
 end;
@@ -10753,6 +11169,8 @@ var pc,i :integer;
     cur_param: TFIBXSQLVAR;
     cur_field: TField;
     s: TStream;
+    vfi: PFIBFieldDescr;
+    vData: Pointer;
 
 procedure SetFieldValue;
 begin
@@ -10760,6 +11178,9 @@ begin
  begin
    if (cur_field.IsNull) then
      cur_param.IsNull := True
+   else
+   if ActiveTimeZoneData(cur_field, vfi, vData) then
+     CacheToTimeZoneParam(cur_param, vfi, vData)
    else
    case cur_field.DataType of
      ftWideString:
@@ -10786,6 +11207,8 @@ begin
        cur_param.AsGuid     := TFIBGuidField(cur_field).AsGuid;
      ftLargeint:
        cur_param.AsInt64    := TFIBLargeIntField(cur_field).AsLargeInt;
+     ftFMTBcd:
+       cur_param.AsBcd      := cur_field.AsBCD;
      ftBlob:
      begin
        s := nil;
@@ -11674,6 +12097,24 @@ begin
               PDouble(@Buff[fi^.fdDataOfs])^:=PDouble(Buffer)^
              else
               PInt64(@Buff[fi^.fdDataOfs])^:=PInt64(Buffer)^;
+            SQL_INT128, SQL_DEC16, SQL_DEC34:
+             if not FBBcdToRaw(TBcd(Buffer^), fi^.fdDataType, fi^.fdDataScale,
+               @Buff[fi^.fdDataOfs])
+             then
+              FIBError(feInvalidDataConversion, [nil]);
+            SQL_TIME_TZ_EX:
+            begin
+             // a value without time zone is stored in the session time zone
+             if rdFields[Field.FieldNo].fdIsNull then
+              PISC_TIME_TZ_EX(@Buff[fi^.fdDataOfs])^.time_zone := FBSessionZoneID;
+             FBMSecsToTimeTZ(PInteger(Buffer)^, PISC_TIME_TZ_EX(@Buff[fi^.fdDataOfs])^);
+            end;
+            SQL_TIMESTAMP_TZ_EX:
+            begin
+             if rdFields[Field.FieldNo].fdIsNull then
+              PISC_TIMESTAMP_TZ_EX(@Buff[fi^.fdDataOfs])^.time_zone := FBSessionZoneID;
+             FBMSecsToTimeStampTZ(PDouble(Buffer)^, PISC_TIMESTAMP_TZ_EX(@Buff[fi^.fdDataOfs])^);
+            end;
           else
             Move(Buffer^, Buff[fi^.fdDataOfs],fi.fdDataSize);
           end;

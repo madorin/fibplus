@@ -117,6 +117,49 @@ type
   end;
   PISC_TIMESTAMP = ^TISC_TIMESTAMP;
 
+  // Firebird 4 time zone support
+  TISC_TIME_TZ = record
+    utc_time: ISC_TIME;
+    time_zone: Word;
+  end;
+  PISC_TIME_TZ = ^TISC_TIME_TZ;
+
+  TISC_TIME_TZ_EX = record
+    utc_time: ISC_TIME;
+    time_zone: Word;
+    ext_offset: Smallint;
+  end;
+  PISC_TIME_TZ_EX = ^TISC_TIME_TZ_EX;
+
+  TISC_TIMESTAMP_TZ = record
+    utc_timestamp: TISC_TIMESTAMP;
+    time_zone: Word;
+  end;
+  PISC_TIMESTAMP_TZ = ^TISC_TIMESTAMP_TZ;
+
+  TISC_TIMESTAMP_TZ_EX = record
+    utc_timestamp: TISC_TIMESTAMP;
+    time_zone: Word;
+    ext_offset: Smallint;
+  end;
+  PISC_TIMESTAMP_TZ_EX = ^TISC_TIMESTAMP_TZ_EX;
+
+  // Firebird 4 DECFLOAT and INT128 (little-endian 32-bit words, fb_data[0] is least significant)
+  TFB_DEC16 = record
+    fb_data: array[0..1] of Cardinal;
+  end;
+  PFB_DEC16 = ^TFB_DEC16;
+
+  TFB_DEC34 = record
+    fb_data: array[0..3] of Cardinal;
+  end;
+  PFB_DEC34 = ^TFB_DEC34;
+
+  TFB_I128 = record
+    fb_data: array[0..3] of Cardinal;
+  end;
+  PFB_I128 = ^TFB_I128;
+
   (*********************************************************************)
   (** Blob id structure                                               **)
   (*********************************************************************)
@@ -1538,7 +1581,15 @@ const
   blr_sql_time                   =         13;
   blr_int64                      =         16;
   blr_boolean_dtype              =         17;// IB7
-  blr_fb3_bool                   =         23;
+  blr_bool                       =         23;
+  blr_dec64                      =         24;
+  blr_dec128                     =         25;
+  blr_int128                     =         26;
+  blr_sql_time_tz                =         28;
+  blr_timestamp_tz               =         29;
+  blr_ex_time_tz                 =         30;
+  blr_ex_timestamp_tz            =         31;
+  blr_fb3_bool                   =         blr_bool deprecated; // use blr_bool
 
   blr_date                       =         blr_timestamp;
 
@@ -1840,6 +1891,36 @@ const
  isc_dpb_org_filename		     =         76;
  isc_dpb_utf8_filename	      	 =         77;
  isc_dpb_ext_call_depth		     =         78;
+
+//FB3
+ isc_dpb_auth_block              =         79;
+ isc_dpb_client_version          =         80;
+ isc_dpb_remote_protocol         =         81;
+ isc_dpb_host_name               =         82;
+ isc_dpb_os_user                 =         83;
+ isc_dpb_specific_auth_data      =         84;
+ isc_dpb_auth_plugin_list        =         85;
+ isc_dpb_auth_plugin_name        =         86;
+ isc_dpb_config                  =         87;
+ isc_dpb_nolinger                =         88;
+ isc_dpb_reset_icu               =         89;
+ isc_dpb_map_attach              =         90;
+
+//FB4
+ isc_dpb_session_time_zone       =         91;
+ isc_dpb_set_db_replica          =         92;
+ isc_dpb_set_bind                =         93;
+ isc_dpb_decfloat_round          =         94;
+ isc_dpb_decfloat_traps          =         95;
+ isc_dpb_clear_map               =         96;
+
+//FB5
+ isc_dpb_upgrade_db              =         97;
+ isc_dpb_parallel_workers        =        100;
+ isc_dpb_worker_attach           =        101;
+ isc_dpb_owner                   =        102;
+ isc_dpb_max_blob_cache_size     =        103;
+ isc_dpb_max_inline_blob_size    =        104;
 
 //IB 2007
   isc_dpb_gbak_ods_version       =         68;
@@ -2996,12 +3077,19 @@ const
   SQL_TYPE_TIME                  =        560;
   SQL_TYPE_DATE                  =        570;
   SQL_INT64                      =        580;
+  SQL_TIMESTAMP_TZ_EX            =      32748;
+  SQL_TIME_TZ_EX                 =      32750;
+  SQL_INT128                     =      32752;
+  SQL_TIMESTAMP_TZ               =      32754;
+  SQL_TIME_TZ                    =      32756;
+  SQL_DEC16                      =      32760;
+  SQL_DEC34                      =      32762;
+  SQL_BOOLEAN                    =      32764;
+  SQL_NULL                       =      32766;
   SQL_DATE                       =        SQL_TIMESTAMP deprecated; // use SQL_TIMESTAMP
-  SQL_BOOLEAN                    =        590;
-  FB3_SQL_BOOLEAN                =        32764;
 
-
-  SQL_NULL                       =        32766;
+  IB_SQL_BOOLEAN                 =        590; // InterBase 7+
+  FB3_SQL_BOOLEAN                =        SQL_BOOLEAN deprecated; // use SQL_BOOLEAN
   
 (*******************)
 (** Blob Subtypes **)

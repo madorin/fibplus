@@ -83,7 +83,8 @@ contains
   pFIBFieldsDescr in '..\pFIBFieldsDescr.pas',
   SIBAPI in '..\SIBAPI.pas',
   SIBFIBEA in '..\SIBFIBEA.PAS',
-  SIBGlobals in '..\SIBGlobals.pas';
+  SIBGlobals in '..\SIBGlobals.pas',
+  FIBTypes in '..\FIBTypes.pas';
 
 end.
 
