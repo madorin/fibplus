@@ -335,6 +335,7 @@ type
     Fisc_dsql_batch_execute       : Tisc_dsql_batch_execute;
 //FB2.5
     Ffb_cancel_operation: Tfb_cancel_operation;
+    Ffb_shutdown        : Tfb_shutdown;
   private
     FBusy:boolean;
 
@@ -1946,7 +1947,8 @@ end;
 
 destructor TIBClientLibrary.Destroy;
 begin
- FreeIBLibrary
+ FreeIBLibrary;
+ inherited Destroy
 end;
 
 procedure TIBClientLibrary.LoadIBLibrary;
@@ -2045,6 +2047,7 @@ begin
     end;
 
     Ffb_sqlstate:=TryGetProcAddr('fb_sqlstate');
+    Ffb_shutdown:=TryGetProcAddr('fb_shutdown');
   end
   else
   begin
@@ -2083,6 +2086,10 @@ end;
 
 procedure   TIBClientLibrary.FreeIBLibrary;
 begin
+  // Firebird client must stop its own threads before being unloaded
+  if Assigned(Ffb_shutdown) and LibraryLoaded then
+    Ffb_shutdown(0, fb_shutrsn_app_stopped);
+  Ffb_shutdown:=nil;
  {$IFDEF WINDOWS}
   if (FLibraryHandle > HINSTANCE_ERROR) then
   begin

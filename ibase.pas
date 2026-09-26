@@ -537,6 +537,10 @@ Tfb_cancel_operation = function (status_vector    : PISC_STATUS;
                                  db_handle        : PISC_DB_HANDLE;
 				 option           : UShort): ISC_STATUS;
              {$I pFIBMacroComp.inc}
+
+Tfb_shutdown = function (timeout : Cardinal;
+                         reason  : Integer): Integer;
+             {$I pFIBMacroComp.inc}
 //end FB 2.5
 Tisc_dsql_execute_immediate = function (status_vector     : PISC_STATUS;
 				 db_handle                : PISC_DB_HANDLE;
@@ -2324,6 +2328,13 @@ const
   fb_cancel_disable=     1;
   fb_cancel_enable =     2;
   fb_cancel_raise  =     3;
+
+  fb_shutrsn_svc_stopped    = -1;
+  fb_shutrsn_no_connection  = -2;
+  fb_shutrsn_app_stopped    = -3;
+  fb_shutrsn_signal         = -5;
+  fb_shutrsn_services       = -6;
+  fb_shutrsn_exit_called    = -7;
 (*****************************************)
 (* Parameters for isc_action_{add|delete|modify)_user *)
 (*****************************************)
