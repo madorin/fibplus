@@ -121,9 +121,6 @@
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <Version>7.0</Version>
         <DCC_WriteableConstants>True</DCC_WriteableConstants>
-        <DCC_ResourcePath>editors\</DCC_ResourcePath>
-        <DCC_ObjPath>editors\</DCC_ObjPath>
-        <DCC_IncludePath>editors\</DCC_IncludePath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
         <VerInfo_Locale>1033</VerInfo_Locale>

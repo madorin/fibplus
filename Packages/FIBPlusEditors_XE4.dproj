@@ -90,10 +90,6 @@
         <DCC_DcuOutput>d2010\</DCC_DcuOutput>
         <Version>7.0</Version>
         <DCC_WriteableConstants>True</DCC_WriteableConstants>
-        <DCC_UnitSearchPath>editors\</DCC_UnitSearchPath>
-        <DCC_ResourcePath>editors\</DCC_ResourcePath>
-        <DCC_ObjPath>editors\</DCC_ObjPath>
-        <DCC_IncludePath>editors\</DCC_IncludePath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_3)'!=''">
         <DCC_DependencyCheckOutputName>bpl\FIBPlusEditors2010.bpl</DCC_DependencyCheckOutputName>

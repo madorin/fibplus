@@ -446,14 +446,10 @@ var
                       begin
                        S:=VarToStr(Result[1]);
                        p:=PosCh(',',S);
-                       p1:=0;
-                       if p>0 then
-                       begin
-                         p1:=StrToInt(FastCopy(S,p+1,1000));
-                         p :=StrToInt(FastCopy(S,1,p-1));
-                       end
-                       else
+                       if p=0 then
                         DatabaseErrorFmt(SExprExpected, [S]);
+                       p1:=StrToInt(FastCopy(S,p+1,1000));
+                       p :=StrToInt(FastCopy(S,1,p-1));
                       end;
                       Result := FastCopy(VarToStr(Result[0]), p, p1);
                      end

@@ -24,10 +24,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <Version>7.0</Version>
     <DCC_WriteableConstants>True</DCC_WriteableConstants>
-    <DCC_UnitSearchPath>editors\</DCC_UnitSearchPath>
-    <DCC_ResourcePath>editors\</DCC_ResourcePath>
-    <DCC_ObjPath>editors\</DCC_ObjPath>
-    <DCC_IncludePath>editors\</DCC_IncludePath>
     <DCC_DcuOutput>Editors\d2007</DCC_DcuOutput>
     <DCC_ObjOutput>Editors\d2007</DCC_ObjOutput>
     <DCC_HppOutput>Editors\d2007</DCC_HppOutput>

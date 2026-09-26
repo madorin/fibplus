@@ -3,7 +3,6 @@ unit fraSQLEdit;
 interface
 
 {$I ..\FIBPlus.inc}
-{$I pFIBPropEd.inc}
 uses
 
   Windows, Messages, SysUtils, Classes,
@@ -70,7 +69,6 @@ type
     btnColorBack: TSpeedButton;
     ColorDialog1: TColorDialog;
     btnShowDDL: TSpeedButton;
-    btnSQLHelp: TSpeedButton;
     btnSQLScript: TSpeedButton;
     lbNotNull: TLabel;
     procedure Panel7Resize(Sender: TObject);
@@ -98,7 +96,6 @@ type
     procedure qrySPFieldsAfterOpen(DataSet: TDataSet);
     procedure btnColorBackClick(Sender: TObject);
     procedure btnShowDDLClick(Sender: TObject);
-    procedure btnSQLHelpClick(Sender: TObject);
     procedure btnSQLScriptClick(Sender: TObject);
   private
 //FIBPlus Components
@@ -179,7 +176,7 @@ implementation
 
 uses
  TypInfo,RegistryUtils,ToCodeEditorIntfs,  pFIBEditorsConsts
-  , RTTIRoutines, uFIBScriptForm{$IFDEF HTML_DOCS}, uFIBSQLHelper{$ENDIF},
+  , RTTIRoutines, uFIBScriptForm,
   IBSQLSyn, pFIBSyntaxMemo, uFontEditor;
 
 const
@@ -239,9 +236,6 @@ begin
    end;
    vParamSymb:=':';
 
-   {$IFNDEF HTML_DOCS}
-    btnSQLHelp.Visible:=False;
-   {$ENDIF}
    FStringer:=FIBClassesExporter.iGetStringer;
    FMetaExtractor:=FIBClassesExporter.iGetMetaExtractor;
    FDataSetClass :=expDatasetClass;
@@ -1331,10 +1325,6 @@ begin
    SetPropValue(FDatabase,'Connected','False');
   if frmScript<>nil then
     frmScript.Free;
-{$IFDEF HTML_DOCS}
-  if frmSQLHelper<>nil then
-   frmSQLHelper.Free;
-{$ENDIF}   
   inherited;
 end;
 
@@ -1795,13 +1785,6 @@ begin
  finally
   ts.Free
  end
-end;
-
-procedure TfSQLEdit.btnSQLHelpClick(Sender: TObject);
-begin
-{$IFDEF HTML_DOCS}
- ShowSQLHelp
-{$ENDIF}
 end;
 
 procedure TfSQLEdit.PrepareProposals;
