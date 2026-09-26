@@ -375,6 +375,9 @@ begin
       end;
       ftGuid:
         KeyValues[i]:=VarAsType(KeyValues[i],varString);
+      // converted once, VarToBcd of a FMTBcd variant in the compare is a copy
+      ftFMTBcd:
+        KeyValues[i]:=VarFMTBcdCreate(VarToBcd(KeyValues[i]));
      end;
   end;
   if CalcSize>0 then
@@ -429,6 +432,7 @@ var
   fi:PFIBFieldDescr;
   dv:Double;
   fn:Integer;
+  vConv: TBcd; // Firebird 4 values converted for comparison
   function UDFCompStr(const s:Ansistring):integer;
   begin
    Result:=CompareFieldValues(TField(fl.List^[i]),KeyValues[i],s )
@@ -481,6 +485,32 @@ var
 
   function NonStrFieldCompare:boolean;
   begin
+          // Firebird 4 types are cached in the server format,
+          // convert them to the format of the field buffer
+          if fi <> nil then
+            case fi^.fdDataType of
+              SQL_INT128, SQL_DEC16, SQL_DEC34:
+              begin
+                if not CacheToBcd(fi, p, vConv) then
+                begin
+                  // NaN, Infinity and values out of TBcd range are never equal
+                  cResult := 1;
+                  Result := False;
+                  Exit;
+                end;
+                p := @vConv;
+              end;
+              SQL_TIME_TZ_EX:
+              begin
+                PInteger(@vConv)^ := FBTimeTZToMSecs(PISC_TIME_TZ_EX(p)^);
+                p := @vConv;
+              end;
+              SQL_TIMESTAMP_TZ_EX:
+              begin
+                PDouble(@vConv)^ := FBTimeStampTZToMSecs(PISC_TIMESTAMP_TZ_EX(p)^);
+                p := @vConv;
+              end;
+            end;
           // Non string fields compare
               case TField(fl.List^[i]).DataType of
                ftSmallInt:
@@ -495,7 +525,7 @@ var
                 end;
                ftInteger,ftDate,ftTime:
                begin
-                 if (fi=nil) or (fi.fdDataSize=4) then
+                 if (fi=nil) or (fi.fdDataSize=4) or (fi^.fdDataType = SQL_TIME_TZ_EX) then
                  begin
                    if PInteger(P)^=TVarData(KeyValues[i]).VInteger then
                     cResult:=0
@@ -600,6 +630,8 @@ var
                begin
                 cResult :=CompareStrAndGuid(PGuid(P),AnsiString(TVarData(KeyValues[i]).VString));
                end;
+               ftFMTBcd:
+                 cResult := BcdCompare(TBcd(p^), VarToBcd(KeyValues[i]));
               end;
               Result:=cResult=0
       end;

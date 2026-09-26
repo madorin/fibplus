@@ -225,6 +225,8 @@ var
                   end;
                 ftLargeInt:
                   Result := PInt64(pArg1)^;
+                ftFMTBcd:
+                  VarFMTBcdCreate(Result, PBcd(pArg1)^);
               else
                   DatabaseError(SExprIncorrect);
               end;

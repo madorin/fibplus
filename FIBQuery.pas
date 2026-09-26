@@ -29,7 +29,7 @@ uses
   DB, fib, FIBDatabase, StdFuncs,IB_ErrorCodes,SqlTxtRtns,pFIBProps,
   pFIBInterfaces {, FIBXMLDataSetReader}
   {$IFDEF SUPPORT_ARRAY_FIELD},   pFIBArray  {$ENDIF}
-  ,FMTBcd, Variants;
+  ,FMTBcd, Variants, FIBTypes;
 
 
 type
@@ -84,6 +84,16 @@ type
  {$ENDIF}
 
     function GetAsInt64: Int64;
+    // Firebird 4 data types
+    function IsDecimalType: Boolean;
+    function IsTimeZoneType: Boolean;
+    function GetDecimalValue: TFBDecimal;
+    procedure GetTimeZoneValue(out LocalValue: TTimeStamp; out ZoneID: Word;
+      out OffsetMinutes: Integer);
+    function GetAsTimeZoneID: Word;
+    function GetAsTimeZoneOffset: Integer;
+    function GetAsTimeZoneName: string;
+    function GetAsUTCDateTime: TDateTime;
 
     function GetAsCurrency: Currency;
  {$IFNDEF NO_USE_COMP}
@@ -227,6 +237,20 @@ type
     property AsVariant: Variant read GetAsVariant write SetAsVariant;
     property AsXSQLVAR: PXSQLVAR read GetAsXSQLVAR write SetAsXSQLVAR;
     property AsBoolean: boolean  read GetAsBoolean write SetAsBoolean;
+    // TIME/TIMESTAMP WITH TIME ZONE.
+    // AsDateTime returns the local time in the value's own time zone.
+    procedure SetAsDateTimeTZ(const aValue: TDateTime; aZoneID: Word); overload;
+    procedure SetAsDateTimeTZ(const aValue: TDateTime; const aTimeZone: string); overload;
+    // Raw Firebird 4 values
+    procedure SetAsTimeTZ(const aValue: TISC_TIME_TZ);
+    procedure SetAsTimeStampTZ(const aValue: TISC_TIMESTAMP_TZ);
+    procedure SetAsInt128(const aValue: TFB_I128; aScale: Integer = 0);
+    procedure SetAsDec16(const aValue: TFB_DEC16);
+    procedure SetAsDec34(const aValue: TFB_DEC34);
+    property AsTimeZoneID: Word read GetAsTimeZoneID;
+    property AsTimeZoneOffset: Integer read GetAsTimeZoneOffset;
+    property AsTimeZoneName: string read GetAsTimeZoneName;
+    property AsUTCDateTime: TDateTime read GetAsUTCDateTime;
     property Data: PXSQLVAR read FXSQLVAR write FXSQLVAR;
     property IsNull: Boolean read GetIsNull write SetIsNull;
     property IsNullable: Boolean read GetIsNullable write SetIsNullable;
@@ -879,21 +903,66 @@ begin
       	Result := PLong(FXSQLVAR^.sqldata)^ div Trunc(E10[-FXSQLVAR^.sqlscale]);
       SQL_INT64:
       	Result := PInt64(FXSQLVAR^.sqldata)^ div Trunc(E10[-FXSQLVAR^.sqlscale]);
+      SQL_INT128, SQL_DEC16, SQL_DEC34:
+        if not FBRawToInt64(FXSQLVAR^.sqltype and (not 1), FXSQLVAR^.sqlscale,
+          FXSQLVAR^.sqldata, Result)
+        then
+          FIBError(feInvalidDataConversion, [nil]);
 
       SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT:
         Result := Trunc(AsDouble);
+      IB_SQL_BOOLEAN:
+        Result := PShort(FXSQLVAR^.sqldata)^;
+      SQL_BOOLEAN:
+        Result := PByte(FXSQLVAR^.sqldata)^;
       SQL_NULL: Result:=0;
     else
         FIBError(feInvalidDataConversion, [nil]);
     end;
 end;
 
+function TFIBXSQLVAR.IsDecimalType: Boolean;
+begin
+  case FXSQLVAR^.sqltype and (not 1) of
+    SQL_INT128, SQL_DEC16, SQL_DEC34: Result := True;
+  else
+    Result := False;
+  end;
+end;
 
+function TFIBXSQLVAR.IsTimeZoneType: Boolean;
+begin
+  case FXSQLVAR^.sqltype and (not 1) of
+    SQL_TIME_TZ, SQL_TIME_TZ_EX, SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX: Result := True;
+  else
+    Result := False;
+  end;
+end;
+
+function TFIBXSQLVAR.GetDecimalValue: TFBDecimal;
+begin
+  if not IsDecimalType then
+    FIBError(feInvalidDataConversion, [nil]);
+  Result := FBDecimalFromRaw(FXSQLVAR^.sqltype and (not 1), FXSQLVAR^.sqlscale,
+    FXSQLVAR^.sqldata);
+end;
 
 function TFIBXSQLVAR.GetAsCurrency: Currency;
+var
+  C: Int64;
 begin
   if IsNull then
    Result:=0
+  else
+  if IsDecimalType then
+  begin
+    // Currency is Int64 scaled by 10000
+    if not FBRawToScaledInt64(FXSQLVAR^.sqltype and (not 1), FXSQLVAR^.sqlscale,
+      FXSQLVAR^.sqldata, -4, C)
+    then
+      FIBError(feInvalidDataConversion, [nil]);
+    Result := PCurrency(@C)^;
+  end
   else
   if (FQuery.Database.SQLDialect < 3)
    or (FXSQLVAR^.sqltype and (not 1)<>SQL_INT64)
@@ -919,6 +988,9 @@ const
   IBBuffDateDelta=678576;
 
 function TFIBXSQLVAR.GetAsTimeStamp: TTimeStamp;
+var
+  ZoneID: Word;
+  Offset: Integer;
 begin
   if IsNull then
   begin
@@ -949,9 +1021,175 @@ begin
        Result.Date := gds_quad_high + IBBuffDateDelta;
        Result.Time := gds_quad_low div 10
    end;
+   SQL_TIME_TZ, SQL_TIME_TZ_EX, SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX:
+   begin
+     GetTimeZoneValue(Result, ZoneID, Offset);
+   end;
   else
    FIBError(feInvalidDataConversion, [nil]);
   end;
+end;
+
+(*
+ * Returns the local time of the value in its own time zone.
+ * For TIME WITH TIME ZONE LocalValue.Date is 0.
+ *)
+procedure TFIBXSQLVAR.GetTimeZoneValue(out LocalValue: TTimeStamp;
+  out ZoneID: Word; out OffsetMinutes: Integer);
+var
+  vSQLType: Integer;
+  vTime: TISC_TIME_TZ_EX;
+  vTimeStamp: TISC_TIMESTAMP_TZ_EX;
+begin
+  vSQLType := FXSQLVAR^.sqltype and (not 1);
+  // The extended forms only append ext_offset to the basic ones
+  case vSQLType of
+    SQL_TIME_TZ, SQL_TIME_TZ_EX:
+    begin
+      if vSQLType = SQL_TIME_TZ_EX then
+        vTime := PISC_TIME_TZ_EX(FXSQLVAR^.sqldata)^
+      else
+      begin
+        vTime.utc_time := PISC_TIME_TZ(FXSQLVAR^.sqldata)^.utc_time;
+        vTime.time_zone := PISC_TIME_TZ(FXSQLVAR^.sqldata)^.time_zone;
+        vTime.ext_offset := FBKnownZoneOffset(vTime.time_zone);
+      end;
+      ZoneID := vTime.time_zone;
+      OffsetMinutes := vTime.ext_offset;
+      LocalValue.Date := 0;
+      LocalValue.Time := FBTimeTZToMSecs(vTime);
+    end;
+    SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX:
+    begin
+      if vSQLType = SQL_TIMESTAMP_TZ_EX then
+        vTimeStamp := PISC_TIMESTAMP_TZ_EX(FXSQLVAR^.sqldata)^
+      else
+      begin
+        vTimeStamp.utc_timestamp := PISC_TIMESTAMP_TZ(FXSQLVAR^.sqldata)^.utc_timestamp;
+        vTimeStamp.time_zone := PISC_TIMESTAMP_TZ(FXSQLVAR^.sqldata)^.time_zone;
+        vTimeStamp.ext_offset := FBKnownZoneOffset(vTimeStamp.time_zone);
+      end;
+      ZoneID := vTimeStamp.time_zone;
+      OffsetMinutes := vTimeStamp.ext_offset;
+      LocalValue := MSecsToTimeStamp(FBTimeStampTZToMSecs(vTimeStamp));
+    end;
+  else
+    FIBError(feInvalidDataConversion, [nil]);
+  end;
+end;
+
+function TFIBXSQLVAR.GetAsTimeZoneID: Word;
+var
+  ts: TTimeStamp;
+  Offset: Integer;
+begin
+  if IsNull or not IsTimeZoneType then
+    Result := FBGmtZoneID
+  else
+    GetTimeZoneValue(ts, Result, Offset);
+end;
+
+function TFIBXSQLVAR.GetAsTimeZoneOffset: Integer;
+var
+  ts: TTimeStamp;
+  ZoneID: Word;
+begin
+  if IsNull or not IsTimeZoneType then
+    Result := 0
+  else
+    GetTimeZoneValue(ts, ZoneID, Result);
+end;
+
+function TFIBXSQLVAR.GetAsTimeZoneName: string;
+begin
+  if IsNull or not IsTimeZoneType then
+    Result := ''
+  else
+    Result := FBTimeZoneName(AsTimeZoneID);
+end;
+
+function TFIBXSQLVAR.GetAsUTCDateTime: TDateTime;
+var
+  ts: TTimeStamp;
+begin
+  Result := 0;
+  if not IsNull then
+  case FXSQLVAR^.sqltype and (not 1) of
+    SQL_TIME_TZ, SQL_TIME_TZ_EX:
+      Result := (PISC_TIME(FXSQLVAR^.sqldata)^ div 10) / MSecsPerDay;
+    SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX:
+      with PISC_TIMESTAMP(FXSQLVAR^.sqldata)^ do
+      begin
+        ts.Date := timestamp_date + IBBuffDateDelta;
+        ts.Time := timestamp_time div 10;
+        Result := HookTimeStampToDateTime(ts);
+      end;
+  else
+    Result := AsDateTime;
+  end;
+end;
+
+procedure TFIBXSQLVAR.SetAsDateTimeTZ(const aValue: TDateTime; const aTimeZone: string);
+var
+  sSQLType: Integer;
+  S: string;
+begin
+  sSQLType := ServerSQLType;
+  if (sSQLType = SQL_TIME_TZ) or (sSQLType = SQL_TIME_TZ_EX) or
+    ((sSQLType = 0) and (Trunc(aValue) = 0))
+  then
+    S := FormatDateTime('hh":"nn":"ss"."zzz', aValue)
+  else
+    S := FormatDateTime('yyyy"-"mm"-"dd" "hh":"nn":"ss"."zzz', aValue);
+  // The server resolves the local time in the given time zone
+  AsString := S + ' ' + aTimeZone;
+end;
+
+procedure TFIBXSQLVAR.SetAsTimeTZ(const aValue: TISC_TIME_TZ);
+begin
+  SetValue(SQL_TIME_TZ, SizeOf(TISC_TIME_TZ), tspValue, aValue);
+end;
+
+procedure TFIBXSQLVAR.SetAsTimeStampTZ(const aValue: TISC_TIMESTAMP_TZ);
+begin
+  SetValue(SQL_TIMESTAMP_TZ, SizeOf(TISC_TIMESTAMP_TZ), tspValue, aValue);
+end;
+
+procedure TFIBXSQLVAR.SetAsInt128(const aValue: TFB_I128; aScale: Integer = 0);
+begin
+  SetValue(SQL_INT128, SizeOf(TFB_I128), tspValue, aValue);
+  if aScale <> 0 then
+    Scale := aScale;
+end;
+
+procedure TFIBXSQLVAR.SetAsDec16(const aValue: TFB_DEC16);
+begin
+  SetValue(SQL_DEC16, SizeOf(TFB_DEC16), tspValue, aValue);
+end;
+
+procedure TFIBXSQLVAR.SetAsDec34(const aValue: TFB_DEC34);
+begin
+  SetValue(SQL_DEC34, SizeOf(TFB_DEC34), tspValue, aValue);
+end;
+
+procedure TFIBXSQLVAR.SetAsDateTimeTZ(const aValue: TDateTime; aZoneID: Word);
+var
+  sSQLType: Integer;
+  ZoneName: string;
+begin
+  if aZoneID = FBSessionZoneID then
+  begin
+    sSQLType := ServerSQLType;
+    if (sSQLType = SQL_TIME_TZ) or (sSQLType = SQL_TIME_TZ_EX) then
+      AsTime := aValue
+    else
+      AsDateTime := aValue;
+    Exit;
+  end;
+  ZoneName := FBTimeZoneName(aZoneID);
+  if ZoneName = '' then
+    FIBError(feInvalidDataConversion, [nil]);
+  SetAsDateTimeTZ(aValue, ZoneName);
 end;
 
 
@@ -985,6 +1223,10 @@ begin
      Result:=
       HookTimeStampToDateTime(AsTimeStamp);
     end;
+    SQL_TIME_TZ, SQL_TIME_TZ_EX:
+      Result := AsTimeStamp.Time / MSecsPerDay;
+    SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX:
+      Result := HookTimeStampToDateTime(AsTimeStamp);
   else
      FIBError(feInvalidDataConversion, [nil]);
   end;
@@ -1014,11 +1256,14 @@ begin
         Result := PInt64(FXSQLVAR^.sqldata)^*E10[FXSQLVAR^.sqlscale];
       SQL_DOUBLE, SQL_D_FLOAT:
         Result := PDouble(FXSQLVAR^.sqldata)^;
-      SQL_BOOLEAN,FB3_SQL_BOOLEAN :
-        case PShort(FXSQLVAR^.sqldata)^ of
-          ISC_TRUE  : Result := 1;
-          ISC_FALSE : Result := 0;
-        end;
+      SQL_INT128, SQL_DEC16, SQL_DEC34:
+        Result := FBRawToDouble(FXSQLVAR^.sqltype and (not 1), FXSQLVAR^.sqlscale,
+          FXSQLVAR^.sqldata);
+      IB_SQL_BOOLEAN, SQL_BOOLEAN:
+        if AsBoolean then
+          Result := 1
+        else
+          Result := 0;
       SQL_NULL: Result:=0;
     else
         FIBError(feInvalidDataConversion, [nil]);
@@ -1042,6 +1287,8 @@ begin
 end;
 
 function TFIBXSQLVAR.GetAsLong: Long;
+var
+  vInt64: Int64;
 begin
   Result := 0;
   if not IsNull then
@@ -1062,11 +1309,18 @@ begin
       end;
       SQL_INT64:
         Result := Trunc(PInt64(FXSQLVAR^.sqldata)^*E10[FXSQLVAR^.sqlscale]);
+      SQL_INT128, SQL_DEC16, SQL_DEC34:
+      begin
+        vInt64 := AsInt64;
+        if (vInt64 > MaxInt) or (vInt64 < -MaxInt - 1) then
+          FIBError(feInvalidDataConversion, [nil]);
+        Result := vInt64;
+      end;
 
       SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT:
         Result := Trunc(AsDouble);
-      SQL_BOOLEAN,FB3_SQL_BOOLEAN :
-        Result:=PShort(FXSQLVAR^.sqldata)^;
+      IB_SQL_BOOLEAN, SQL_BOOLEAN:
+        Result := Ord(AsBoolean);
       SQL_NULL: Result:=0;
 
     else
@@ -1232,7 +1486,15 @@ begin
         end;
       SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT:
         Result := FloatToStr(AsDouble);
-      SQL_BOOLEAN,FB3_SQL_BOOLEAN:
+      SQL_INT128:
+        Result := AnsiString(FBDecimalToPlainStr(GetDecimalValue, LocalDecimalSeparator));
+      SQL_DEC16, SQL_DEC34:
+        Result := AnsiString(FBDecimalToStr(GetDecimalValue, LocalDecimalSeparator));
+      SQL_TIME_TZ, SQL_TIME_TZ_EX:
+        Result := AnsiString(TimeToStr(AsDateTime) + ' ' + AsTimeZoneName);
+      SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX:
+        Result := AnsiString(DateTimeToStr(AsDateTime) + ' ' + AsTimeZoneName);
+      IB_SQL_BOOLEAN, SQL_BOOLEAN:
         if AsBoolean then
           Result := TrueStr
         else
@@ -1265,6 +1527,11 @@ begin
         Result := PInt64(FXSQLVAR^.sqldata)^*E10[FXSQLVAR^.sqlscale];
       SQL_DOUBLE, SQL_D_FLOAT:
         Result := PDouble(FXSQLVAR^.sqldata)^;
+      SQL_INT128, SQL_DEC16, SQL_DEC34:
+        Result := FBRawToDouble(FXSQLVAR^.sqltype and (not 1), FXSQLVAR^.sqlscale,
+          FXSQLVAR^.sqldata);
+      IB_SQL_BOOLEAN, SQL_BOOLEAN:
+        Result := Ord(AsBoolean);
       SQL_NULL: Result:=0;
       else
         FIBError(feInvalidDataConversion, [nil]);
@@ -1272,6 +1539,8 @@ begin
 end;
 
 function TFIBXSQLVAR.GetAsVariant: Variant;
+var
+  vBcd: TBcd;
 begin
   if IsMacro then
    Result:=AsWideString
@@ -1308,7 +1577,18 @@ begin
           Result := AsDouble;
       SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT:
         Result := AsDouble;
-      SQL_BOOLEAN,FB3_SQL_BOOLEAN:
+      SQL_INT128, SQL_DEC16, SQL_DEC34:
+        // NaN, Infinity and values out of TBcd range are returned as Double
+        if FBRawToBcd(FXSQLVAR^.sqltype and (not 1), FXSQLVAR^.sqlscale,
+          FXSQLVAR^.sqldata, vBcd)
+        then
+          VarFMTBcdCreate(Result, vBcd)
+        else
+          Result := FBRawToDouble(FXSQLVAR^.sqltype and (not 1), FXSQLVAR^.sqlscale,
+            FXSQLVAR^.sqldata);
+      SQL_TIME_TZ, SQL_TIME_TZ_EX, SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX:
+        Result := AsDateTime;
+      IB_SQL_BOOLEAN, SQL_BOOLEAN:
         Result := AsBoolean;
       SQL_NULL: Result:=null;
   else
@@ -1533,8 +1813,9 @@ function TFIBXSQLVAR.IsRealType(SQLType:Integer):boolean;
 begin
   Result:=
     (((SQLType=SQL_INT64)  or (SQLType=SQL_LONG) or
-    (SQLType=SQL_SHORT)) and (Scale<>0) ) or (SQLType=SQL_DOUBLE) or
-    (SQLType=SQL_FLOAT) or (SQLType=SQL_D_FLOAT)
+    (SQLType = SQL_SHORT) or (SQLType = SQL_INT128)) and (Scale <> 0) ) or
+    (SQLType = SQL_DOUBLE) or (SQLType = SQL_FLOAT) or (SQLType = SQL_D_FLOAT) or
+    (SQLType = SQL_DEC16) or (SQLType = SQL_DEC34)
 end;
 
 function TFIBXSQLVAR.IsNumericType(SQLType:Integer):boolean;
@@ -1542,13 +1823,16 @@ begin
   Result:=
     (SQLType=SQL_INT64) or (SQLType=SQL_LONG) or
     (SQLType=SQL_SHORT) or (SQLType=SQL_DOUBLE) or
-    (SQLType=SQL_FLOAT) or (SQLType=SQL_D_FLOAT)
+    (SQLType = SQL_FLOAT) or (SQLType = SQL_D_FLOAT) or
+    (SQLType = SQL_INT128) or (SQLType = SQL_DEC16) or (SQLType = SQL_DEC34)
 end;
 
 function TFIBXSQLVAR.IsDateTimeType(SQLType:Integer):boolean;
 begin
   Result:=
-   (SQLType =SQL_TIMESTAMP) or(SQLType = SQL_TYPE_DATE) or (SQLType = SQL_TYPE_TIME)
+   (SQLType = SQL_TIMESTAMP) or(SQLType = SQL_TYPE_DATE) or (SQLType = SQL_TYPE_TIME) or
+   (SQLType = SQL_TIMESTAMP_TZ) or (SQLType = SQL_TIME_TZ) or
+   (SQLType = SQL_TIMESTAMP_TZ_EX) or (SQLType = SQL_TIME_TZ_EX)
 end;
 
 function TFIBXSQLVAR.GetServerSQLType:Integer;
@@ -1878,8 +2162,25 @@ end;
 
 
 procedure TFIBXSQLVAR.SetAsTime(aValue: TDateTime);
+var
+  sSQLType: Integer;
+  vTime: ISC_TIME;
 begin
-  AsTimeStamp:=DateTimeToTimeStamp(aValue);
+  sSQLType := ServerSQLType;
+  if sSQLType = 0 then
+  begin
+    // the server type is not known yet, AdjustDefferedSettings completes it
+    FIsDefferedSetting := True;
+    FParent.FHasDefferedSettings := True;
+  end;
+  if (sSQLType = SQL_TIME_TZ) or (sSQLType = SQL_TIME_TZ_EX) then
+  begin
+    // TIME in the session time zone, a TIMESTAMP would be resolved at 1899-12-30
+    vTime := DateTimeToTimeStamp(aValue).Time * 10;
+    SetValue(SQL_TYPE_TIME, SizeOf(ISC_TIME), tspValue, vTime);
+  end
+  else
+    AsTimeStamp := DateTimeToTimeStamp(aValue);
 end;
 
 procedure TFIBXSQLVAR.SetAsDate(aValue: TDateTime);
@@ -1894,8 +2195,24 @@ begin
 end;
 
 procedure TFIBXSQLVAR.SetAsDouble(aValue: Double);
+var
+  sSQLType: Integer;
+  vDec: TFB_DEC34;
 begin
-  SetValue(SQL_DOUBLE,SizeOf(Double),tspValue,aValue)
+  sSQLType := ServerSQLType;
+  if sSQLType = 0 then
+  begin
+    // the server type is not known yet, AdjustDefferedSettings completes it
+    FIsDefferedSetting := True;
+    FParent.FHasDefferedSettings := True;
+  end;
+  // DECFLOAT gets the shortest decimal representation (0.1 and not 0.1000000000000000055...)
+  if ((sSQLType = SQL_DEC16) or (sSQLType = SQL_DEC34)) and
+    FBDecimalToDec34(DoubleToFBDecimal(aValue), vDec)
+  then
+    SetValue(SQL_DEC34, SizeOf(TFB_DEC34), tspValue, vDec)
+  else
+    SetValue(SQL_DOUBLE, SizeOf(Double), tspValue, aValue)
 end;
 
 procedure TFIBXSQLVAR.SetAsSingle(aValue: Float);
@@ -2301,7 +2618,7 @@ begin
       AsCurrency := Value;
     varBoolean:
       case sSQLType of
-        FB3_SQL_BOOLEAN:
+        SQL_BOOLEAN:
           AsBoolean := Value;
         else
           if Value then
@@ -2311,7 +2628,7 @@ begin
       end;
     varDate:
      case sSQLType of
-      SQL_TYPE_TIME: AsTime:=Value;
+      SQL_TYPE_TIME, SQL_TIME_TZ, SQL_TIME_TZ_EX: AsTime := Value;
       SQL_TYPE_DATE: AsDate:=Value;
      else
       AsDateTime := Value;
@@ -2374,7 +2691,7 @@ begin
           varCurrency: AsCurrency := PCurrency(V.VPointer)^;
           varDate:
                case sSQLType of
-                SQL_TYPE_TIME: AsTime:=PDate(V.VPointer)^;
+                SQL_TYPE_TIME, SQL_TIME_TZ, SQL_TIME_TZ_EX: AsTime := PDate(V.VPointer)^;
                 SQL_TYPE_DATE: AsDate:=PDate(V.VPointer)^;
                else
                 AsDateTime := PDate(V.VPointer)^;
@@ -2495,6 +2812,14 @@ end;
 
 function  TFIBXSQLVAR.GetAsBcd: TBcd;
 begin
+  if IsDecimalType and not IsNull then
+  begin
+   if not FBRawToBcd(FXSQLVAR^.sqltype and (not 1), FXSQLVAR^.sqlscale,
+     FXSQLVAR^.sqldata, Result)
+   then
+     FIBError(feInvalidDataConversion, [nil])
+  end
+  else
   if (FQuery.Database.SQLDialect < 3) or (FXSQLVAR^.sqltype and (not 1)<>SQL_INT64)
   then
   begin
@@ -2511,7 +2836,8 @@ end;
 procedure TFIBXSQLVAR.SetAsBcd(Value: TBcd);
 var e:extended;
     C:Int64;
-    lScale  :byte;
+    vScale: Integer;
+    vInt128: TFB_I128;
 begin
   if (FQuery.Database.SQLDialect < 3) then
   begin
@@ -2521,10 +2847,16 @@ begin
   end
   else
   begin
-   if not BCDToInt64WithScale(Value,c,lScale) then
-    FIBError(feInvalidDataConversion, [nil]);
-   SetValue(SQL_INT64,SizeOf(Comp),tspValue,C);
-   Scale :=-lScale;
+   if BcdToInt64Scaled(Value, C, vScale) then
+    SetValue(SQL_INT64, SizeOf(Int64), tspValue, C)
+   else
+   begin
+    // Does not fit BIGINT, send as INT128 (Firebird 4+)
+    if not FBBcdToRaw(Value, SQL_INT128, vScale, @vInt128) then
+     FIBError(feInvalidDataConversion, [nil]);
+    SetValue(SQL_INT128, SizeOf(TFB_I128), tspValue, vInt128);
+   end;
+   Scale := vScale;
   end;
 end;
 
@@ -2550,14 +2882,19 @@ begin
   Result := False;
   if not IsNull then
     case FXSQLVAR^.sqltype and (not 1) of
-      FB3_SQL_BOOLEAN:
+      SQL_BOOLEAN:
         Result := PByte(FXSQLVAR^.sqldata)^=ISC_TRUE;
-      SQL_BOOLEAN,SQL_SHORT:
-        Result := PShort(FXSQLVAR^.sqldata)^=ISC_TRUE;
+      // numbers: any value other than zero is True, whatever the scale
+      IB_SQL_BOOLEAN, SQL_SHORT:
+        Result := PShort(FXSQLVAR^.sqldata)^ <> 0;
       SQL_LONG:
-       Result  := PLong(FXSQLVAR^.sqldata)^=ISC_TRUE;
+       Result  := PLong(FXSQLVAR^.sqldata)^ <> 0;
       SQL_INT64:
-       Result  := PInt64(FXSQLVAR^.sqldata)^=ISC_TRUE;
+       Result  := PInt64(FXSQLVAR^.sqldata)^ <> 0;
+      SQL_FLOAT:
+       Result  := PSingle(FXSQLVAR^.sqldata)^ <> 0;
+      SQL_DOUBLE, SQL_D_FLOAT:
+       Result  := PDouble(FXSQLVAR^.sqldata)^ <> 0;
     else
         FIBError(feInvalidDataConversion, [nil])
     end;
@@ -2572,8 +2909,8 @@ begin
      FParent.FHasDefferedSettings:=True;
      SetAsShort(Ord(Value));
    end;
-   FB3_SQL_BOOLEAN:
-    SetValue(FB3_SQL_BOOLEAN,SizeOf(Boolean),tspValue,Value);
+   SQL_BOOLEAN:
+    SetValue(SQL_BOOLEAN, SizeOf(Boolean), tspValue, Value);
   else
    SetAsShort(Ord(Value));
   end;
@@ -2679,7 +3016,7 @@ begin
     end
     else
     begin
-     if uSType = SQL_INT64 then
+     if (uSType = SQL_INT64) or (uSType = SQL_INT128) then
      begin
       if (sSType = SQL_BLOB) or (sSType = SQL_ARRAY) then
        AsInt64:=0;
@@ -2782,11 +3119,17 @@ begin
 //    sSQLLen:=FXSQLVARs^[i].ServerSize;
 
     case sSQLType of
-       FB3_SQL_BOOLEAN:
+       SQL_BOOLEAN:
        begin
          b:=FXSQLVARs^[i].AsBoolean;
-         FXSQLVARs^[i].SetValue(FB3_SQL_BOOLEAN,SizeOf(Boolean),tspValue,b);
+         FXSQLVARs^[i].SetValue(SQL_BOOLEAN, SizeOf(Boolean), tspValue, b);
        end;
+       SQL_DEC16, SQL_DEC34:
+         if (uSQLType = SQL_DOUBLE) and not FXSQLVARs^[i].IsNull then
+           FXSQLVARs^[i].SetAsDouble(PDouble(FXSQLVARs^[i].FXSQLVAR^.sqldata)^);
+       SQL_TIME_TZ, SQL_TIME_TZ_EX:
+         if (uSQLType = SQL_TIMESTAMP) and not FXSQLVARs^[i].IsNull then
+           FXSQLVARs^[i].SetAsTime(FXSQLVARs^[i].AsDateTime);
     else
         case uSQLType of
           SQL_TEXT,SQL_VARYING:
@@ -2989,8 +3332,27 @@ begin
            FIBAlloc(sqldata, 0, sqllen);
         SQL_TYPE_DATE, SQL_TYPE_TIME, SQL_TIMESTAMP,
         SQL_BLOB, SQL_ARRAY, SQL_QUAD, SQL_SHORT,
-        SQL_LONG, SQL_INT64, SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT,SQL_BOOLEAN,FB3_SQL_BOOLEAN:
+        SQL_LONG, SQL_INT64, SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT, IB_SQL_BOOLEAN, SQL_BOOLEAN,
+        SQL_INT128, SQL_DEC16, SQL_DEC34, SQL_TIME_TZ_EX, SQL_TIMESTAMP_TZ_EX:
         begin
+          FIBAlloc(sqldata, 0, sqllen);
+        end;
+        SQL_TIME_TZ, SQL_TIMESTAMP_TZ:
+        begin
+          if not FIsParams then
+          begin
+            // Fetch the extended form, the server fills the time zone offset
+            if sqltype and (not 1) = SQL_TIME_TZ then
+            begin
+              sqltype := SQL_TIME_TZ_EX or (sqltype and 1);
+              sqllen  := SizeOf(TISC_TIME_TZ_EX);
+            end
+            else
+            begin
+              sqltype := SQL_TIMESTAMP_TZ_EX or (sqltype and 1);
+              sqllen  := SizeOf(TISC_TIMESTAMP_TZ_EX);
+            end;
+          end;
           FIBAlloc(sqldata, 0, sqllen);
         end;
         SQL_VARYING:

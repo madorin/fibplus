@@ -1307,7 +1307,8 @@ begin
              if de <> 'NULL' then
               if Fields[i] is TDateTimeField then
               begin
-                if StringInArray(de, ['NOW','CURRENT_TIME','CURRENT_TIMESTAMP']) then
+                if StringInArray(de, ['NOW', 'CURRENT_TIME', 'CURRENT_TIMESTAMP',
+                  'LOCALTIME', 'LOCALTIMESTAMP']) then
                   asDateTime := Now - vDifferenceTime
                 else
                 if StringInArray(de, ['TODAY', 'CURRENT_DATE']) then
@@ -3021,7 +3022,7 @@ var
    else
    begin
      case Field.DataType of
-      ftBCD,ftFloat:
+      ftBCD,ftFloat,ftFMTBcd:
        Result:=ChangeToSQLDecimalSeparator(VarToStr(v));
       ftDate,ftDateTime,ftTime:
          Result:=''''+VarToStr(v)+'''';
@@ -4571,9 +4572,11 @@ begin
                     FldType := ftBCD
                    else
                     FldType := ftFloat; 
-        SQL_TIMESTAMP: FldType := ftDateTime;
-        SQL_TYPE_TIME: FldType := ftTime;
+        SQL_TIMESTAMP, SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX: FldType := ftDateTime;
+        SQL_TYPE_TIME, SQL_TIME_TZ, SQL_TIME_TZ_EX: FldType := ftTime;
         SQL_TYPE_DATE: FldType := ftDate;
+        SQL_INT128, SQL_DEC16, SQL_DEC34: FldType := ftFMTBcd;
+        SQL_BOOLEAN, IB_SQL_BOOLEAN: FldType := ftBoolean;
         SQL_BLOB, SQL_ARRAY: FldType := ftBlob;
       else
         FldType := ftString;

@@ -261,8 +261,9 @@ begin
   if Length(s) > 0 then
   case s[1] of
     'C': Result:=(s='CURRENT_TIME') or (s='CURRENT_TIMESTAMP') or (s='CURRENT_DATE');
+    'L': Result:=(s='LOCALTIME') or (s='LOCALTIMESTAMP');
     'N': Result:=(s='NULL') or (s='NOW');
-    'T': Result:=(s='TODAY') or (s='TOMORROW'); 
+    'T': Result:=(s='TODAY') or (s='TOMORROW');
     'Y': Result:=(s='YESTERDAY');
   end;
 end;

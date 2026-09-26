@@ -73,7 +73,8 @@ type
 
   TFIBFieldType = (fftUnKnown, fftNumeric, fftChar, fftVarchar, fftCstring, fftSmallint,
     fftInteger, fftQuad, fftFloat, fftDoublePrecision, fftTimestamp, fftBlob, fftBlobId,
-    fftDate, fftTime, fftInt64 , fftBoolean);
+    fftDate, fftTime, fftInt64, fftBoolean,
+    fftInt128, fftDecFloat, fftTimeTZ, fftTimestampTZ);
 
   TPrivilege=(goSelect,goInsert,goUpdate,goDelete,goReferences,goExecuteProc,goRole);
   TPrivileges=set of TPrivilege;
@@ -153,22 +154,22 @@ TO {<object> | <userlist> | GROUP UNIX_group}
 SELECT
 | DELETE
 | INSERT
-| UPDATE [(col [, col …])]
-| REFERENCES [(col [, col …])]
-[, <privilege_list> …]}}
+| UPDATE [(col [, col ...])]
+| REFERENCES [(col [, col ...])]
+[, <privilege_list> ...]}}
 <object> = {
 PROCEDURE procname
 | TRIGGER trigname
 | VIEW viewname
 | PUBLIC
-[, <object> …]}
+[, <object> ...]}
 <userlist> = {
 [USER] username
 | rolename
 | Unix_user}
-[, <userlist> …]
+[, <userlist> ...]
 [WITH GRANT OPTION]
-<role_granted> = rolename [, rolename …]
+<role_granted> = rolename [, rolename ...]
 *)
   TCustomMetaGrant =class(TCustomMetaObject)
   private
@@ -920,7 +921,8 @@ const
   FieldTypes: array [TFIBFieldType] of string =
    ('', 'NUMERIC', 'CHAR', 'VARCHAR', 'CSTRING', 'SMALLINT', 'INTEGER', 'QUAD',
     'FLOAT', 'DOUBLE PRECISION', 'TIMESTAMP', 'BLOB', 'BLOBID', 'DATE', 'TIME',
-    'BIGINT' , 'BOOLEAN' );
+    'BIGINT', 'BOOLEAN',
+    'INT128', 'DECFLOAT', 'TIME WITH TIME ZONE', 'TIMESTAMP WITH TIME ZONE' );
 
   QRYDB_INFO=
     'SELECT RDB$CHARACTER_SET_NAME FROM RDB$DATABASE DBP ';
@@ -1849,7 +1851,10 @@ begin
   FScale := Abs(QField.Fields[1].AsInteger);
   FLength := QField.Fields[2].AsInteger;
   FPrecision := QField.Fields[3].AsInteger;
-  if FScale > 0 then
+  if (FScale > 0) or
+    // NUMERIC(19..38, 0) is stored as INT128 with sub type 1 or 2
+    ((QField.Fields[0].AsInteger = blr_int128) and (QField.Fields[5].AsInteger in [1, 2]))
+  then
   begin
     FFieldType := fftNumeric;
     if FPrecision = 0 then
@@ -1860,6 +1865,8 @@ begin
           FPrecision := 7;
         blr_int64, blr_quad, blr_double:
           FPrecision := 15;
+        blr_int128:
+          FPrecision := 38;
       else
         raise Exception.Create('Unknown error');
       end;
@@ -1895,8 +1902,16 @@ begin
       blr_int64:
         FFieldType := fftInt64;
 
-      blr_boolean_dtype,blr_fb3_bool:
+      blr_boolean_dtype, blr_bool:
         FFieldType := fftBoolean;
+      blr_int128:
+        FFieldType := fftInt128;
+      blr_dec64, blr_dec128:
+        FFieldType := fftDecFloat;
+      blr_sql_time_tz, blr_ex_time_tz:
+        FFieldType := fftTimeTZ;
+      blr_timestamp_tz, blr_ex_timestamp_tz:
+        FFieldType := fftTimestampTZ;
     end;
   if (FFieldType in [fftChar, fftVarchar, fftCstring]) and
     not QField.Fields[4].IsNull then
@@ -1957,6 +1972,12 @@ begin
     fftBlob:
       Stream.WriteString(Format('%s SUB_TYPE %d SEGMENT SIZE %d',
         [FieldTypes[FFieldType], FSubType, FSegmentLength]));
+    fftDecFloat:
+    begin
+      Stream.WriteString(GetShortFieldType);
+      if FIsArray then
+        Stream.WriteString(' '+ GetDimensionStr);
+    end;
   else
     Stream.WriteString(Format('%s', [FieldTypes[FFieldType]]));
     if FIsArray then
@@ -1976,6 +1997,11 @@ begin
     fftNumeric:
       Result := Format('%s(%d,%d)',
         [FieldTypes[FFieldType], FPrecision, FScale]);
+    fftDecFloat:
+      if FLength = 8 then
+        Result := FieldTypes[FFieldType] + '(16)'
+      else
+        Result := FieldTypes[FFieldType] + '(34)';
   else
     Result := Format('%s', [FieldTypes[FFieldType]]);
   end;

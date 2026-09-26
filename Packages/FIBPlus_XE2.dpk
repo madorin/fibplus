@@ -42,6 +42,7 @@ requires
 
 contains
   StdFuncs in '..\StdFuncs.pas',
+  FIBTypes in '..\FIBTypes.pas',
   IB_Services in '..\IB_Services.pas',
   ibase in '..\ibase.pas',
   FIBDatabase in '..\FIBDatabase.pas',
