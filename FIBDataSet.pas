@@ -2237,11 +2237,19 @@ end;
 procedure TFIBWideStringField.CopyData(Source, Dest: Pointer);
 var
   s :string;
+  L :Integer;
 begin
-{ TODO : Check for xe3 }
 //Call when Field Validate
     s:=UTF8Decode(PAnsiChar(Source)) ;
-    StrCopy(PChar(Dest), PChar(s));
+    // Dest has DataSize bytes, the UTF8 source can hold more characters
+    L:=Length(s);
+    if L>DataSize div SizeOf(Char)-1 then
+     L:=DataSize div SizeOf(Char)-1;
+    if L>0 then
+     Move(PChar(s)^, Dest^, L*SizeOf(Char))
+    else
+     L:=0;
+    PChar(Dest)[L]:=#0;
 end;
 {$ENDIF}
 
@@ -9352,7 +9360,12 @@ begin
   begin
    Result:=FValidatingFieldBuffer<>nil;
    if Result and (Buffer<>nil) then
-       THackField(Field).CopyData(FValidatingFieldBuffer, Buffer);
+    // TField.CopyData moves GetIOSize bytes, for string fields at least
+    // dsMaxStringSize, while field buffers have DataSize bytes
+    if Field is TFIBWideStringField then
+     THackField(Field).CopyData(FValidatingFieldBuffer, Buffer)
+    else
+     Move(FValidatingFieldBuffer^, Buffer^, Field.DataSize);
    Exit;
   end;
 
@@ -11926,19 +11939,49 @@ begin
   SetFilterData(Value, FilterOptions);
 end;
 
+// While OnValidate runs, GetFieldData returns the new value from Buffer.
+// TField.Validate is not used: its Pointer overload keeps Buffer after the call
+// and the next validation of the field reads that stale pointer.
 procedure TFIBCustomDataSet.DoFieldValidate(Field:TField;Buffer:Pointer);
+var
+  OldBuffer:TDataBuffer;
+  OldField:TField;
+  OldRec,OldLength:Integer;
+  WasValidating:boolean;
 begin
   if Assigned(Field.OnValidate) then
   begin
+   // save the state of an outer validation: OnValidate may set other fields
+   WasValidating:=drsInFieldValidate in FRunState;
+   OldBuffer:=FValidatingFieldBuffer;
+   OldField:=FValidatedField;
+   OldRec:=FValidatedRec;
+   // SetFieldData uses the value length after OnValidate, reading the field
+   // from the record (OldValue for instance) changes it
+   if Field is TFIBStringField then
+    OldLength:=TFIBStringField(Field).FValueLength
+   else
+   if Field is TFIBWideStringField then
+    OldLength:=TFIBWideStringField(Field).FValueLength
+   else
+    OldLength:=0;
    Include(FRunState,drsInFieldValidate);
    try
     FValidatingFieldBuffer:=Buffer;
     FValidatedField:=Field;
     FValidatedRec:= ActiveRecord;
-    Field.Validate(Buffer);
+    Field.OnValidate(Field);
    finally
-     Exclude(FRunState,drsInFieldValidate);
-     FValidatingFieldBuffer:=nil;
+     if not WasValidating then
+      Exclude(FRunState,drsInFieldValidate);
+     FValidatingFieldBuffer:=OldBuffer;
+     FValidatedField:=OldField;
+     FValidatedRec:=OldRec;
+     if Field is TFIBStringField then
+      TFIBStringField(Field).FValueLength:=OldLength
+     else
+     if Field is TFIBWideStringField then
+      TFIBWideStringField(Field).FValueLength:=OldLength;
    end;
   end;
 end;
@@ -11956,6 +11999,64 @@ var
   BoolValue,L:integer;
   vFi: TpFIBFieldInfo; sp: boolean;
   fi:PFIBFieldDescr;
+  ValueCopy:TDataBuffer;
+  ValueStack:array[0..255] of Byte;
+
+// OnValidate gets a private copy of the new value, which is then stored:
+// Buffer can be the I/O buffer shared by all the fields of the dataset and
+// OnValidate overwrites it when it reads or sets another field
+function CopyValue:TDataBuffer;
+var
+  Size,L:Integer;
+  fi:PFIBFieldDescr;
+begin
+  fi:=vFieldDescrList[Field.FieldNo-1];
+  // the copy is read as field data (DataSize) and as record data (fdDataSize)
+  Size:=Field.DataSize;
+  if Size<fi^.fdDataSize then
+   Size:=fi^.fdDataSize;
+  // L is the number of bytes of Buffer which SetFieldData uses
+  if Field is TFIBBooleanField then
+   L:=Field.DataSize
+  else
+  if (fi^.fdDataType=SQL_VARYING) or (fi^.fdDataType=SQL_TEXT) then
+  begin
+   if (Field.DataType=ftGuid) or fi^.fdIsDBKey then
+    L:=fi^.fdDataSize
+   else
+   if (drsInFieldAsData in FRunState) and (Field is TFIBWideStringField) then
+    L:=TFIBWideStringField(Field).FValueLength
+   else
+   if (Field is TFIBStringField) and
+    ((drsInFieldAsData in FRunState) or TFIBStringField(Field).vInSetAsString)
+   then
+    L:=TFIBStringField(Field).FValueLength
+   else
+   begin
+    L:=0;
+    while (L<Size) and (PAnsiChar(Buffer)[L]<>#0) do
+     Inc(L);
+   end;
+  end
+  else
+  case fi^.fdDataType of
+   // converted from the field data type
+   SQL_FLOAT, SQL_LONG, SQL_SHORT, SQL_INT64, SQL_INT128, SQL_DEC16, SQL_DEC34,
+   SQL_TIME_TZ_EX, SQL_TIMESTAMP_TZ_EX:
+    L:=Field.DataSize;
+  else
+   L:=fi^.fdDataSize;
+  end;
+  if L>Size then
+   L:=Size;
+  if Size<SizeOf(ValueStack) then
+   Result:=TDataBuffer(@ValueStack)
+  else
+   GetMem(Result,Size+1);
+  Move(Buffer^,Result^,L);
+  FillChar(PAnsiChar(Result)[L],Size+1-L,0);
+end;
+
 begin
   CheckActive;
   Buff := GetActiveBuf;
@@ -11986,11 +12087,27 @@ begin
   else
   begin
     CheckEditState;
+    ValueCopy:=nil;
+    try
+    if Assigned(Field.OnValidate) and
+     (Field.FieldNo > 0) and (Field.FieldNo <= vrdFieldCount)
+    then
+    begin
+      if Buffer<>nil then
+      begin
+        ValueCopy:=CopyValue;
+        Buffer:=ValueCopy;
+      end;
+      DoFieldValidate(Field,Buffer);
+      // OnValidate could change the record buffers
+      Buff := GetActiveBuf;
+      if Buff=nil then
+       Buff:=Pointer(ActiveBuffer);
+    end;
     with PRecordData(Buff)^ do
     begin
       if (Field.FieldNo > 0) and (Field.FieldNo <= vrdFieldCount) then
       begin
-        DoFieldValidate(Field,Buffer);
         sp := False;
 
          if (Buffer<>nil) and (PAnsiChar(Buffer)[0] = #0) and not (drsInCacheRefresh in FRunState) and
@@ -12036,7 +12153,9 @@ begin
              if Field is TFIBStringField then
                L:= TFIBStringField(Field).FValueLength
              else
-               L:= TFIBWideStringField(Field).FValueLength
+               L:= TFIBWideStringField(Field).FValueLength;
+             if L>fi.fdDataSize then
+              L:=fi.fdDataSize;
             end
             else
             begin
@@ -12133,6 +12252,10 @@ begin
           SetModified(True);
         end;
       end;
+    end;
+    finally
+      if Pointer(ValueCopy)<>@ValueStack then
+       FreeMem(ValueCopy);
     end;
   end;
   if not (State in [dsCalcFields, dsFilter, dsNewValue]) then
