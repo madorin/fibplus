@@ -368,6 +368,9 @@ end;
 
 function TpFIBClientBCDField.GetAsVariant: Variant;
 begin
+ if IsNull then
+  Result:= Null
+ else
  case Size of
  0:
    Result:= asInt64;
