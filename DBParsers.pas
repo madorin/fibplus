@@ -71,6 +71,9 @@ constructor TExpressionParser.Create(DataSet: TDataSet; const Text: string;
 begin
  try
   inherited Create(DataSet,Text,  Options,ParserOptions,  FieldName,DepFields,FieldMap);
+  // 16-bit offsets: nodes or literals over 64K would be truncated
+  if DataSize - PWord(@FilterData[8])^ > High(Word) then
+    DatabaseError('Filter expression is too long');
  except
   on e: Exception do
   begin
@@ -116,15 +119,43 @@ end;
 function  TExpressionParser.VarResult :Boolean;
 var
   iLiteralStart: Word;
-  
+
+  // List node operands: value offset, next node offset (0 for the last)
+  function NextListElem(pfdStart, pfd: PAnsiChar): PAnsiChar;
+  begin
+    Result := nil;
+    if PWord(@pfd[2])^ <> 0 then
+    begin
+      Result := pfdStart + CANEXPRSIZE + PWord(@pfd[2])^;
+      if NODEClass(PInteger(Result)^) <> nodeLISTELEM then
+        DatabaseError(SExprIncorrect);
+      Inc(Result, CANHDRSIZE);
+    end;
+  end;
+
+  function HasNull(const V: Variant): Boolean;
+  var
+    I: Integer;
+  begin
+    Result := VarIsNull(V);
+    if VarIsArray(V) then
+      for I := VarArrayLowBound(V, 1) to VarArrayHighBound(V, 1) do
+        if VarIsNull(V[I]) then
+        begin
+          Result := True;
+          Exit;
+        end;
+  end;
+
   function ParseNode(pfdStart, pfd: PAnsiChar): Variant;
   var
-    I, Z,AD: Integer;
+    I, Count, AD: Integer;
     Year, Mon, Day, Hour, Min, Sec, MSec: Word;
     iClass: NODEClass;
     iOperator: TCANOperator;
     pArg1,pArg2: PAnsiChar;
-    Arg1,Arg2: Variant;
+    Arg1,Arg2,Args: Variant;
+    DT: TDateTime;
     FieldName: String;
     DataType: TFieldType;
     DataOfs: integer;
@@ -373,115 +404,99 @@ var
               pArg1 := pfdStart;
               Inc(pArg1, iLiteralStart + PWord(@pfd[0])^);
               S :=AnsiUpperCase(pArg1);
-              if Length(S) = 0 then
+              if S = 'GETDATE' then
+              begin
+                Result := Now;
+                Exit;
+              end;
+              // TExprParser accepts TIME and aggregates too, not supported here
+              if Pos(';' + S + ';', ';DAY;DATE;HOUR;MONTH;MINUTE;UPPER;LOWER;YEAR;' +
+                'SUBSTRING;SECOND;TRIM;TRIMLEFT;TRIMRIGHT;') = 0
+              then
                 DatabaseErrorFmt(SExprExpected, [S]);
 
               pArg2 := pfdStart;
               Inc(pArg2, CANEXPRSIZE + PWord(@pfd[2])^);
-             case S[1] of    //
-                'D':if S = 'DAY' then
-                    begin
-                      DecodeDate(VarToDateTime(ParseNode(pfdStart, pArg2)), Year, Mon, Day);
-                      Result := Day;
-                    end
-                    else
-                    if S = 'DATE' then
-                    begin
-                      Result := ParseNode(pfdStart, pArg2);
-                      if VarIsArray(Result) then
-                       if Assigned(FStrToDateFmt) then
-                        Result := FStrToDateFmt(VarToStr(Result[1]), VarToStr(Result[0]))
-                       else
-                        DatabaseError(SExprIncorrect)
-                      else
-                        Result := Integer(Trunc(VarToDateTime(Result)));
-                    end
-                    else
-                      DatabaseErrorFmt(SExprExpected, [S]);
-                'G': if S = 'GETDATE' then  Result := Now
-                     else
-                      DatabaseErrorFmt(SExprExpected, [S]);
-                'H':if S = 'HOUR' then
-                    begin
-                     DecodeTime(VarToDateTime(ParseNode(pfdStart, pArg2)), Hour, Min, Sec, MSec);
-                     Result := Hour;
-                    end
-                    else
-                     DatabaseErrorFmt(SExprExpected, [S]);
-                'M':if S = 'MONTH' then
-                    begin
-                      DecodeDate(VarToDateTime(ParseNode(pfdStart, pArg2)), Year, Mon, Day);
-                      Result := Mon;
-                    end
-                    else
-                    if S = 'MINUTE' then
-                    begin
-                      DecodeTime(VarToDateTime(ParseNode(pfdStart, pArg2)), Hour, Min, Sec, MSec);
-                      Result := Min;
-                    end
-                    else
-                     DatabaseErrorFmt(SExprExpected, [S]);
-                'U': if S = 'UPPER' then
-                      Result := AnsiUpperCase(VarToStr(ParseNode(pfdStart, pArg2)))
-                     else
-                      DatabaseErrorFmt(SExprExpected, [S]);
-                'L': if S = 'LOWER' then
-                      Result := AnsiLowerCase(VarToStr(ParseNode(pfdStart, pArg2)))
-                     else
-                      DatabaseErrorFmt(SExprExpected, [S]);
-                'Y': if S = 'YEAR' then
-                     begin
-                      DecodeDate(VarToDateTime(ParseNode(pfdStart, pArg2)), Year, Mon, Day);
-                      Result := Year;
-                     end
-                     else
-                      DatabaseErrorFmt(SExprExpected, [S]);
-                'S': if S = 'SUBSTRING' then
-                     begin
-                      Result := ParseNode(pfdStart, pArg2);
-                      if VarType(Result[1]) in [varSmallint,varInteger,varDouble,varSingle] then
-                      begin
-                       p :=Integer(Result[1]);
-                       p1:=Integer(Result[2]);
-                      end
-                      else
-                      begin
-                       S:=VarToStr(Result[1]);
-                       p:=PosCh(',',S);
-                       if p=0 then
-                        DatabaseErrorFmt(SExprExpected, [S]);
-                       p1:=StrToInt(FastCopy(S,p+1,1000));
-                       p :=StrToInt(FastCopy(S,1,p-1));
-                      end;
-                      Result := FastCopy(VarToStr(Result[0]), p, p1);
-                     end
-                     else
-                     if S = 'SECOND' then
-                     begin
-                        DecodeTime(VarToDateTime(ParseNode(pfdStart, pArg2)), Hour, Min, Sec, MSec);
-                        Result := Sec;
-                     end
-                     else
-                      DatabaseErrorFmt(SExprExpected, [S]);
-                'T':
-                     case Length(S) of
-                      4: if S = 'TRIM' then
-                          Result := FastTrim(VarToStr(ParseNode(pfdStart, pArg2)))
-                         else
-                         DatabaseErrorFmt(SExprExpected, [S]);
-                      8: if S = 'TRIMLEFT' then
-                          Result := TrimLeft(VarToStr(ParseNode(pfdStart, pArg2)))
-                         else
-                          DatabaseErrorFmt(SExprExpected, [S]);
-                      9: if S = 'TRIMRIGHT' then
-                          Result := TrimRight(VarToStr(ParseNode(pfdStart, pArg2)))
-                         else
-                          DatabaseErrorFmt(SExprExpected, [S]);
-                     end;
-
-             else
-                DatabaseErrorFmt(SExprExpected, [S]);
-             end
+              Args := ParseNode(pfdStart, pArg2);
+              if VarIsArray(Args) then
+                Arg1 := Args[0]
+              else
+                Arg1 := Args;
+              // as in SQL, a function of NULL is NULL
+              if HasNull(Args) then
+                Result := Null
+              else
+              if S = 'UPPER' then
+                Result := AnsiUpperCase(VarToStr(Arg1))
+              else
+              if S = 'LOWER' then
+                Result := AnsiLowerCase(VarToStr(Arg1))
+              else
+              if S = 'TRIM' then
+                Result := FastTrim(VarToStr(Arg1))
+              else
+              if S = 'TRIMLEFT' then
+                Result := TrimLeft(VarToStr(Arg1))
+              else
+              if S = 'TRIMRIGHT' then
+                Result := TrimRight(VarToStr(Arg1))
+              else
+              if S = 'SUBSTRING' then
+              begin
+                // SUBSTRING(Str, From[, Count]) or SUBSTRING(Str, 'From,Count')
+                if VarIsNumeric(Args[1]) then
+                begin
+                  p := Args[1];
+                  if VarIsEmpty(Args[2]) then
+                    p1 := MaxInt
+                  else
+                    p1 := Args[2];
+                end
+                else
+                begin
+                  S := VarToStr(Args[1]);
+                  p := PosCh(',', S);
+                  if p = 0 then
+                    DatabaseErrorFmt(SExprExpected, [S]);
+                  p1 := StrToInt(FastCopy(S, p + 1, 1000));
+                  p := StrToInt(FastCopy(S, 1, p - 1));
+                end;
+                // Copy is safe for From < 1, FastCopy is not
+                Result := Copy(VarToStr(Arg1), p, p1);
+              end
+              else
+              if S = 'DATE' then
+              begin
+                if VarIsArray(Args) then
+                  if Assigned(FStrToDateFmt) then
+                    Result := FStrToDateFmt(VarToStr(Args[1]), VarToStr(Args[0]))
+                  else
+                    DatabaseError(SExprIncorrect)
+                else
+                  Result := Integer(Trunc(VarToDateTime(Arg1)));
+              end
+              else
+              begin
+                DT := VarToDateTime(Arg1);
+                DecodeDate(DT, Year, Mon, Day);
+                DecodeTime(DT, Hour, Min, Sec, MSec);
+                if S = 'YEAR' then
+                  Result := Year
+                else
+                if S = 'MONTH' then
+                  Result := Mon
+                else
+                if S = 'DAY' then
+                  Result := Day
+                else
+                if S = 'HOUR' then
+                  Result := Hour
+                else
+                if S = 'MINUTE' then
+                  Result := Min
+                else
+                  Result := Sec;
+              end;
             end
         else
             DatabaseError(SExprIncorrect);
@@ -490,34 +505,30 @@ var
         case iOperator of
           coLISTELEM2:
             begin
-              Result := VarArrayCreate ([0, 50], VarVariant); // Create VarArray for ListElements Values
-              pArg1 := pfdStart;
-              Inc(pArg1, CANEXPRSIZE + PWord(@pfd[0])^);
-
+              Count := 0;
+              pArg2 := pfd;
+              while pArg2 <> nil do
+              begin
+                Inc(Count);
+                pArg2 := NextListElem(pfdStart, pArg2);
+              end;
+              // trailing Unassigned element marks the end of the list
+              Result := VarArrayCreate([0, Count], varVariant);
               I := 0;
-              repeat
-                Arg1 := ParseNode(PfdStart, pArg1);
-                if VarIsArray(Arg1) then
-                begin
-                  Z:=0;
-                  while not VarIsEmpty(Arg1[Z]) do
-                  begin
-                    Result[I] := Arg1[Z];
-                    Inc(I); Inc(Z);
-                  end;
-                end
+              pArg2 := pfd;
+              while pArg2 <> nil do
+              begin
+                Result[I] := ParseNode(pfdStart, pfdStart + CANEXPRSIZE + PWord(@pArg2[0])^);
+                Inc(I);
+                pArg2 := NextListElem(pfdStart, pArg2);
+              end;
+
+              // a single value is returned as a string scalar, NULL as is
+              if Count = 1 then
+                if VarIsNull(Result[0]) then
+                  Result := Null
                 else
-                begin
-                  Result[I] := Arg1;
-                  Inc(I);
-                end;
-
-                pArg1 := pfdStart;
-                Inc(pArg1, CANEXPRSIZE + PWord(@pfd[I*2])^);
-              until NODEClass(PInteger(@pArg1[0])^) <> NodeListElem;
-
-              if I<2 then
-                Result := VarAsType(Result[0], varString);
+                  Result := VarAsType(Result[0], varString);
             end;
         else
             DatabaseError(SExprIncorrect);
