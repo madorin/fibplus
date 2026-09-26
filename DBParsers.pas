@@ -528,7 +528,7 @@ var
                 if VarIsNull(Result[0]) then
                   Result := Null
                 else
-                  Result := VarAsType(Result[0], varString);
+                  Result := VarAsType(Result[0], {$IFDEF D2009+}varUString{$ELSE}varString{$ENDIF});
             end;
         else
             DatabaseError(SExprIncorrect);
