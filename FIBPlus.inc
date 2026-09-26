@@ -22,7 +22,7 @@
 // {$DEFINE NO_GUI}
 // {$DEFINE FIBPLUS_TRIAL}
 // {$DEFINE SUPPORT_IB2007}
-{$DEFINE NO_USE_COMP }
+{$DEFINE NO_USE_COMP}
 
 //{$DEFINE CSMonitor}
 //{$DEFINE IBINSTALL_SUPPORT}
@@ -58,233 +58,55 @@
 (* This define for include  service components  *)
 
 
-
-{$IFDEF VER130}
-  {$IFDEF BCB}			// C++Buider 5.0
-  {$ObjExportAll on}
-  {$ENDIF}
-{$ENDIF}
-
 {$IFDEF VER140}
-  {$DEFINE D6+}
   {$IFDEF BCB}			// C++Buider 6.0
   {$ObjExportAll on}
   {$ENDIF}
 {$ENDIF}
 
-{$IFDEF VER150}
-  {$DEFINE D7+}
-{$ENDIF}
+// Version defines are cumulative: each one stays active on all newer compilers.
+{$IF CompilerVersion >= 14}   {$DEFINE D6+}    {$IFEND} // Delphi 6
+{$IF CompilerVersion >= 15}   {$DEFINE D7+}    {$IFEND} // Delphi 7
+{$IF CompilerVersion >= 17}   {$DEFINE D2005+} {$IFEND} // Delphi 2005
+{$IF CompilerVersion >= 18}   {$DEFINE D2006+} {$IFEND} // Delphi 2006
+{$IF CompilerVersion >= 18.5} {$DEFINE D2007+} {$IFEND} // Delphi 2007
+{$IF CompilerVersion >= 20}   {$DEFINE D2009+} {$IFEND} // Delphi 2009
+{$IF CompilerVersion >= 21}   {$DEFINE D2010+} {$IFEND} // Delphi 2010
+{$IF CompilerVersion >= 22}   {$DEFINE D_XE}   {$IFEND} // Delphi XE
+{$IF CompilerVersion >= 23}   {$DEFINE D_XE2}  {$IFEND} // Delphi XE2
+{$IF CompilerVersion >= 24}   {$DEFINE D_XE3}  {$IFEND} // Delphi XE3
+{$IF CompilerVersion >= 25}   {$DEFINE D_XE4}  {$IFEND} // Delphi XE4
+{$IF CompilerVersion >= 26}   {$DEFINE D_XE5}  {$IFEND} // Delphi XE5
+{$IF CompilerVersion >= 27}   {$DEFINE D_20}   {$IFEND} // Delphi XE6
+{$IF CompilerVersion >= 28}   {$DEFINE D_21}   {$IFEND} // Delphi XE7
+{$IF CompilerVersion >= 29}   {$DEFINE D_22}   {$IFEND} // Delphi XE8
+{$IF CompilerVersion >= 30}   {$DEFINE D_23}   {$IFEND} // Delphi 10 Seattle
+{$IF CompilerVersion >= 31}   {$DEFINE D_24}   {$IFEND} // Delphi 10.1 Berlin
+{$IF CompilerVersion >= 32}   {$DEFINE D_25}   {$IFEND} // Delphi 10.2 Tokyo
+{$IF CompilerVersion >= 33}   {$DEFINE D_26}   {$IFEND} // Delphi 10.3 Rio
+{$IF CompilerVersion >= 34}   {$DEFINE D_27}   {$IFEND} // Delphi 10.4 Sydney
+{$IF CompilerVersion >= 35}   {$DEFINE D_28}   {$IFEND} // Delphi 11 Alexandria
+{$IF CompilerVersion >= 36}   {$DEFINE D_29}   {$IFEND} // Delphi 12 Athens
+{$IF CompilerVersion >= 37}   {$DEFINE D_30}   {$IFEND} // Delphi 13 Florence
 
-// Delphi 2005 defines
-{$IFDEF VER170}
-  {$DEFINE D2005+}
-  {$INLINE OFF}
-{$ENDIF}
-
-// Delphi 2006
-{$IFDEF VER180}
-  {$DEFINE D2006+}
+{$IF CompilerVersion = 17} {$INLINE OFF} {$IFEND} // Delphi 2005 only
+{$IF (CompilerVersion >= 18) and (CompilerVersion < 24)} // Delphi 2006 .. XE2
   {$DEFINE TWideDataSet}
-{$ENDIF}
+{$IFEND}
 
-// Delphi 2007
-{$IFDEF VER185}
-  {$DEFINE D2007+}
-  {$DEFINE TWideDataSet}
-{$ENDIF}
-
-// Delphi 2009
-{$IFDEF VER200}
-  {$DEFINE D2009+}
-  {$DEFINE TWideDataSet}
-{$ENDIF}
-
-// Delphi 2010
-{$IFDEF VER210}
-  {$DEFINE D2010+}
-  {$DEFINE TWideDataSet}
-//  {$WARNINGS  OFF}
-{$ENDIF}
-
-// Delphi 2011
-{$IFDEF VER220}
-  {$DEFINE D_XE}
-  {$DEFINE TWideDataSet}
-{$ENDIF}
-
-// Delphi XE2
-{$IFDEF VER230}
-  {$DEFINE D_XE2}
-  {$DEFINE TWideDataSet}
-{$ENDIF}
-
-// Delphi XE3
-{$IFDEF VER240}
-  {$DEFINE D_XE3}
-{$ENDIF}
-
-// Delphi XE4
-{$IFDEF VER250}
-  {$DEFINE D_XE4}
-{$ENDIF}
-
-// Delphi XE5
-{$IFDEF VER260}
-  {$DEFINE D_XE5}
-{$ENDIF}
-
-// Delphi XE6
-{$IFDEF VER270}
-  {$DEFINE D_20}
-{$ENDIF}
-
-// Delphi XE7
-{$IFDEF VER280}
-  {$DEFINE D_21}
-{$ENDIF}
-
-// Delphi XE8
-{$IFDEF VER290}
-  {$DEFINE D_22}
-{$ENDIF}
-
-// DX10
-{$IFDEF VER300}
-  {$DEFINE D_23}
-{$ENDIF}
-
-// DX10.1
-{$IFDEF VER310}
-  {$DEFINE D_24}
-{$ENDIF}
-
-// DX10.2
-{$IFDEF VER320}
-  {$DEFINE D_25}
-{$ENDIF}
-
-// DX10.3
-{$IFDEF VER330}
-  {$DEFINE D_26}
-{$ENDIF}
-
-// DX10.4
-{$IFDEF VER340}
-  {$DEFINE D_27}
-{$ENDIF}
-
-// DX11
-{$IFDEF VER350}
-  {$DEFINE D_28}
-{$ENDIF}
-
-// DX12
-{$IFDEF VER360}
-  {$DEFINE D_29}
-{$ENDIF}
-
-//---------------------------------
-
-{$IFDEF D_29}
-  {$DEFINE D_28}
-{$ENDIF}
-
-{$IFDEF D_28}
-  {$DEFINE D_27}
-{$ENDIF}
-
-{$IFDEF D_27}
-  {$DEFINE D_26}
-{$ENDIF}
-
-{$IFDEF D_26}
-  {$DEFINE D_25}
-{$ENDIF}
-
-{$IFDEF D_25}
-  {$DEFINE D_24}
-{$ENDIF}
-
-{$IFDEF D_24}
-  {$DEFINE D_23}
-{$ENDIF}
-
-{$IFDEF D_23}
-  {$DEFINE D_22}
-{$ENDIF}
-
-{$IFDEF D_22}
-  {$DEFINE D_21}
-{$ENDIF}
-
-{$IFDEF D_21}
-  {$DEFINE D_20}
-{$ENDIF}
-
-{$IFDEF D_20}
-  {$DEFINE D_XE5}
-{$ENDIF}
-
-{$IFDEF D_XE5}
-  {$DEFINE D_XE4}
-{$ENDIF}
-
-{$IFDEF D_XE4}
-  {$DEFINE D_XE3}
-{$ENDIF}
-
-{$IFDEF D_XE3}
-  {$DEFINE D_XE2}
-{$ENDIF}
-
-{$IFDEF D_XE2}
-  {$DEFINE D_XE}
-{$ENDIF}
-
-{$IFDEF D_XE}
-  {$DEFINE D2010+}
-{$ENDIF}
-
-{$IFDEF D2010+}
-  {$DEFINE D2009+}
-{$ENDIF}
-
-{$IFDEF D2009+}
-  {$DEFINE D2007+}
-{$ENDIF}
-
-{$IFDEF D2007+}
-  {$DEFINE D2006+}
-{$ENDIF}
-
-{$IFDEF D2006+}
-  {$DEFINE D2005+}
-{$ENDIF}
-
-{$IFDEF D2005+}
-  {$DEFINE D7+}
-{$ENDIF}
+{$WARN SYMBOL_DEPRECATED OFF}
+{$WARN SYMBOL_PLATFORM OFF}
 
 {$IFDEF D7+}
-  {$DEFINE D6+}
   {$WARN UNSAFE_TYPE OFF}
   {$WARN UNSAFE_CODE OFF}
   {$WARN UNSAFE_CAST OFF}
-  {$WARN SYMBOL_PLATFORM OFF}
-//  {$WARNINGS  OFF}
-// {$WARN IMPLICIT_STRING_CAST_LOSS OFF}
 {$ENDIF}
 
 {$IFDEF D2009+}
- {$WARN WIDECHAR_REDUCED OFF}
- {$WARN IMPLICIT_STRING_CAST OFF}
- {$WARN IMPLICIT_STRING_CAST_LOSS OFF}
-{$ENDIF}
-
-{$IFDEF D6+}
-  {$WARN SYMBOL_DEPRECATED OFF}
-  {$WARN SYMBOL_PLATFORM OFF}
+  {$WARN WIDECHAR_REDUCED OFF}
+  {$WARN IMPLICIT_STRING_CAST OFF}
+  {$WARN IMPLICIT_STRING_CAST_LOSS OFF}
 {$ENDIF}
 
 
@@ -326,8 +148,8 @@
   {$ENDIF}
  {$ENDIF}
 
- {$IFNDEF D2009}
- {$UNDEF UNICODE_TO_STRING_FIELDS}
+ {$IFNDEF D2009+}
+   {$UNDEF UNICODE_TO_STRING_FIELDS}
  {$ENDIF}
 
  

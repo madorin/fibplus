@@ -4,11 +4,7 @@ unit RTTIRoutines;
 interface
 uses
   TypInfo,Classes,SysUtils,
-  {$IFDEF D6+}
      DesignEditors,DesignIntf, Variants
-  {$else}
-     DsgnIntf
-  {$ENDIF}
 ;
 
 type
@@ -171,16 +167,6 @@ end;
      Result:= (Str[P-1] in ['[',',']) and (Str[P+Length(ValueName)] in [']',','])
  end;
 
-{$IFNDEF D6+}
-function Supports(const Instance: TObject; const IID: TGUID; out Intf): Boolean;
-var
-  LUnknown: IUnknown;
-begin
-  Result := (Instance <> nil) and
-            ((Instance.GetInterface(IUnknown, LUnknown) and SysUtils.Supports(LUnknown, IID, Intf)) or
-             Instance.GetInterface(IID, Intf));
-end;
-{$ENDIF}
 initialization
 
 ObjSupports:=Supports

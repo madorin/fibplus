@@ -3,7 +3,7 @@ unit Unit2;
 interface
 {$I FIBPlus.Inc}
 uses
-  Windows, Messages, SysUtils, {$IFDEF D6+} Variants, {$ENDIF} Classes, Graphics, Controls, Forms,
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, FIBSQLMonitor, ExtCtrls, StdCtrls;
 
 type

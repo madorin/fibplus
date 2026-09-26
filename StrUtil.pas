@@ -94,10 +94,10 @@ function AnsiCompareTextAA(const S1, S2: AnsiString): Integer;
 
 function WildStringCompare(FirstString, SecondString: string): Boolean;
 function MaskCompare(const AString, Mask: String): Boolean;
-function SQLMaskCompare(const AString, Mask: String): Boolean; {$IFDEF D6+} overload; {$ENDIF}
+function SQLMaskCompare(const AString, Mask: String): Boolean; overload;
 function SQLMaskCompareAW(const AString: AnsiString; const Mask: string): Boolean;
-function SQLMaskCompareAA(const AString, Mask: AnsiString): Boolean; {$IFDEF D6+}
-function SQLMaskCompare(const AString, Mask: Widestring): Boolean; overload; {$ENDIF}
+function SQLMaskCompareAA(const AString, Mask: AnsiString): Boolean;
+function SQLMaskCompare(const AString, Mask: Widestring): Boolean; overload;
 // function WldIndexOf(ts:TStrings;const Value:AnsiString;CaseSensitive:Boolean):Integer;
 
 // from Me
@@ -172,15 +172,12 @@ function CutQuote(const S: String): string;
 
 function StringInArray(const S: string; const a: array of string): Boolean;
 function IsBlank(const Str: string): Boolean;
-function IsBeginPartStr(const PartStr, TargetStr: AnsiString): Boolean;
-{$IFDEF D6+} overload; {$ENDIF}
+function IsBeginPartStr(const PartStr, TargetStr: AnsiString): Boolean; overload;
 {$IFDEF D2009+}
 function IsBeginPartStrWA(const PartStr: string; const TargetStr: AnsiString): Boolean;
 {$ENDIF}
 function IsBeginPartStrVarA(const PartStr: variant; const TargetStr: AnsiString): Boolean;
-{$IFDEF D6+}
 function IsBeginPartStr(const PartStr, TargetStr: Widestring): Boolean; overload;
-{$ENDIF}
 // Ansistring procedures
 procedure DoLowerCase(var Str: string); overload;
 {$IFDEF D2009+}
@@ -222,9 +219,6 @@ function StrToDateFmt(const ADate, Fmt: string): TDateTime;
 function DateToSQLStr(const ADate: TDateTime): string;
 function ValueFromStr(const Str: string): string;
 
-{$IFNDEF D6+}
-function WideUpperCase(const S: Widestring): Widestring;
-{$ENDIF}
 function Q_StrLen(P: PAnsiChar): Cardinal;
 
 function IsOldParamName(const ParamName: string): Boolean;
@@ -251,11 +245,7 @@ function CharInSet(C: AnsiChar; const CharSet: TSysCharSet): Boolean;
 implementation
 
 uses SysConst
-  {$IFNDEF D6+}
-    , StdFuncs
-  {$ELSE}
     , Variants
-  {$ENDIF}
     ;
 
 {$IFNDEF D2009+}
@@ -265,12 +255,6 @@ begin
   Result := C in CharSet;
 end;
 {$ENDIF}
-{$IFNDEF D6+}
-
-type
-  IntegerArray = array [0 .. $EFFFFFF] of Integer;
-  PIntegerArray = ^IntegerArray;
-  {$ENDIF}
 
 function IsNumericStr(const Str: string): Boolean;
 var
@@ -398,11 +382,6 @@ type
   end;
 
   {$R+}
-  {$IFNDEF D6+}
-
-resourcestring
-  SInvalidGUID = '''%s'' is not a valid GUID value';
-  {$ENDIF}
 
 const
 
@@ -573,7 +552,6 @@ begin
     Result := Copy(Str, P + 1, MaxInt)
 end;
 
-{$IFDEF D6+}
 
 function IsBeginPartStr(const PartStr, TargetStr: Widestring): Boolean;
 var
@@ -595,7 +573,6 @@ begin
     Result := True;
   end;
 end;
-{$ENDIF}
 {$IFDEF D2009+}
 
 function IsBeginPartStrWA(const PartStr: string; const TargetStr: AnsiString): Boolean;
@@ -1956,13 +1933,11 @@ begin
   Result := DoMaskCompare(string(AString), Mask, ['%', '_']);
 end;
 {$WARNINGS ON}
-{$IFDEF D6+}
 
 function SQLMaskCompare(const AString, Mask: Widestring): Boolean;
 begin
   Result := DoMaskCompare(AString, Mask, ['%', '_']);
 end;
-{$ENDIF}
 
 function MaskCompare(const AString, Mask: string): Boolean;
 begin
@@ -2091,11 +2066,9 @@ end;
 
 function NonAnsiSortCompareStrings(SL: TStringList; Index1, Index2: Integer): Integer;
 begin
-  {$IFDEF D6+}
   if SL.CaseSensitive then
     Result := CompareStr(SL[Index1], SL[Index2])
   else
-    {$ENDIF}
     Result := CompareText(SL[Index1], SL[Index2]);
 end;
 
@@ -2133,20 +2106,16 @@ var
   begin
     if AnsiCompare then
     begin
-      {$IFDEF D6+}
       if SL.CaseSensitive then
         Result := AnsiCompareStr(S1, S2)
       else
-        {$ENDIF}
         Result := AnsiCompareText(S1, S2);
     end
     else
     begin
-      {$IFDEF D6+}
       if SL.CaseSensitive then
         Result := CompareStr(S1, S2)
       else
-        {$ENDIF}
         Result := CompareText(S1, S2);
     end;
   end;
@@ -2287,18 +2256,6 @@ function EasyNeedQuote(const Name: string): Boolean;
 begin
   Result := InternalNeedQuote(Name, True);
 end;
-{$IFNDEF D6+}
-
-function WideUpperCase(const S: Widestring): Widestring;
-var
-  Len: Integer;
-begin
-  Len := Length(S);
-  SetString(Result, PWideChar(S), Len);
-  if Len > 0 then
-    CharUpperBuffW(Pointer(Result), Len);
-end;
-{$ENDIF}
 {$IFDEF CPUX86}
 
 function Q_StrLen(P: PAnsiChar): Cardinal; assembler;

@@ -33,7 +33,7 @@ uses
 
  Classes, SysUtils,DB,FIBSafeTimer
  {$IFDEF WINDOWS},Windows {$ENDIF}
- {$IFDEF D6+},FMTBcd, Variants{$ENDIF};
+ ,FMTBcd, Variants;
 
 
 type
@@ -88,15 +88,10 @@ function  Int64ToBCD(Value: Int64;Scale:integer; var BCD: TBcd ): Boolean; // {$
 function  BCDToExtended(BCD: TBcd; var Value: Extended): Boolean;
 function  BCDToCompWithScale(BCD: TBcd; var Value: Int64;var Scale:byte): Boolean;
 function  BCDToInt64WithScale(BCD: TBcd; var Value: Int64;var Scale:byte): Boolean;
-{$IFNDEF D6+}
-function  BCDToStr(BCD: TBcd): String;
-{$ENDIF}
 function  BCDToSQLStr(BCD: TBcd): String;
 function  CompareBCD(const BCD1,BCD2: TBcd): integer;{$IFDEF D2005+} inline;{$ENDIF}
-{$IFDEF D6+}
 function  fFormatBcd(const Format: string; Bcd: TBcd): string;
 function  FormatNumericString(const Format,Source: string; OneSectionFormat:boolean=False ): string;
-{$ENDIF}
 
 
 
@@ -126,17 +121,6 @@ function SetBit(InByte:Byte; Index:byte; value :Boolean):Byte;
 function HexStr2Int(const S: String): Integer;
 function HexStr2IntStr(const S: String): string;
 
-{$IFNDEF D6+}
-type
-  PBoolean      = ^Boolean;
-function CreateGUID(out Guid: TGUID): HResult;
-//function IsEqualGUID(const guid1, guid2: TGUID): Boolean;  stdcall;  {$EXTERNALSYM IsEqualGUID}
-function Utf8ToUnicode(Dest: PWideChar; MaxDestChars: Cardinal; Source: PChar; SourceBytes: Cardinal): Cardinal;
-
-function DirectoryExists(const Name: string): Boolean;
-function ForceDirectories(Dir: string): Boolean;
-
-{$ENDIF}
 procedure InitFPU;
 
 
@@ -146,11 +130,6 @@ function  VariantToStream(Value : Variant;Stream:TStream): integer; {Length of B
 
 function  StringIsDateTimeDefValue(const s:string):boolean; {$IFDEF D2005+} inline;{$ENDIF}
 
-{$IFNDEF D6+}
-// Cut from system.pas Delphi 6
- function Utf8Encode(const WS: WideString): String;
- function Utf8Decode(const S: String): WideString;
-{$ENDIF}
 
 {$IFDEF WINDOWS}
 function ConvertFromCodePage( const Source : string; FromCodePage:LongWord) : WideString;
@@ -225,171 +204,6 @@ end;
 {$ENDIF}
 
 
-{$IFNDEF D6+}
-// Cut from system.pas Delphi 6
-function UnicodeToUtf8(Dest: PChar; MaxDestBytes: Cardinal; Source: PWideChar; SourceChars: Cardinal): Cardinal;
-var
-  i, count: Cardinal;
-  c: Cardinal;
-begin
-  Result := 0;
-  if Source = nil then Exit;
-  count := 0;
-  i := 0;
-  if Dest <> nil then
-  begin
-    while (i < SourceChars) and (count < MaxDestBytes) do
-    begin
-      c := Cardinal(Source[i]);
-      Inc(i);
-      if c <= $7F then
-      begin
-        Dest[count] := Char(c);
-        Inc(count);
-      end
-      else if c > $7FF then
-      begin
-        if count + 3 > MaxDestBytes then
-          break;
-        Dest[count] := Char($E0 or (c shr 12));
-        Dest[count+1] := Char($80 or ((c shr 6) and $3F));
-        Dest[count+2] := Char($80 or (c and $3F));
-        Inc(count,3);
-      end
-      else //  $7F < Source[i] <= $7FF
-      begin
-        if count + 2 > MaxDestBytes then
-          break;
-        Dest[count] := Char($C0 or (c shr 6));
-        Dest[count+1] := Char($80 or (c and $3F));
-        Inc(count,2);
-      end;
-    end;
-    if count >= MaxDestBytes then count := MaxDestBytes-1;
-    Dest[count] := #0;
-  end
-  else
-  begin
-    while i < SourceChars do
-    begin
-      c := Integer(Source[i]);
-      Inc(i);
-      if c > $7F then
-      begin
-        if c > $7FF then
-          Inc(count);
-        Inc(count);
-      end;
-      Inc(count);
-    end;
-  end;
-  Result := count+1;  // convert zero based index to byte count
-end;
-
-function Utf8Encode(const WS: WideString): String;
-var
-  L: Integer;
-  Temp: String;
-begin
-  Result := '';
-  if WS = '' then Exit;
-  SetLength(Temp, Length(WS) * 3); // SetLength includes space for null terminator
-
-  L := UnicodeToUtf8(PChar(Temp), Length(Temp)+1, PWideChar(WS), Length(WS));
-  if L > 0 then
-    SetLength(Temp, L-1)
-  else
-    Temp := '';
-  Result := Temp;
-end;
-
-function Utf8ToUnicode(Dest: PWideChar; MaxDestChars: Cardinal; Source: PChar; SourceBytes: Cardinal): Cardinal;
-var
-  i, count: Cardinal;
-  c: Byte;
-  wc: Cardinal;
-begin
-  if Source = nil then
-  begin
-    Result := 0;
-    Exit;
-  end;
-  Result := Cardinal(-1);
-  count := 0;
-  i := 0;
-  if Dest <> nil then
-  begin
-    while (i < SourceBytes) and (count < MaxDestChars) do
-    begin
-      wc := Cardinal(Source[i]);
-      Inc(i);
-      if (wc and $80) <> 0 then
-      begin
-        wc := wc and $3F;
-        if i > SourceBytes then Exit;           // incomplete multibyte char
-        if (wc and $20) <> 0 then
-        begin
-          c := Byte(Source[i]);
-          Inc(i);
-          if (c and $C0) <> $80 then  Exit;     // malformed trail byte or out of range char
-          if i > SourceBytes then Exit;         // incomplete multibyte char
-          wc := (wc shl 6) or (c and $3F);
-        end;
-        c := Byte(Source[i]);
-        Inc(i);
-        if (c and $C0) <> $80 then Exit;       // malformed trail byte
-
-        Dest[count] := WideChar((wc shl 6) or (c and $3F));
-      end
-      else
-        Dest[count] := WideChar(wc);
-      Inc(count);
-    end;
-	if count >= MaxDestChars then count := MaxDestChars-1;
-	Dest[count] := #0;
-  end
-  else
-  begin
-	while (i <= SourceBytes) do
-	begin
-	  c := Byte(Source[i]);
-	  Inc(i);
-	  if (c and $80) <> 0 then
-	  begin
-		if (c and $F0) = $F0 then Exit;  // too many bytes for UCS2
-		if (c and $40) = 0 then Exit;    // malformed lead byte
-		if i > SourceBytes then Exit;         // incomplete multibyte char
-
-		if (Byte(Source[i]) and $C0) <> $80 then Exit;  // malformed trail byte
-		Inc(i);
-		if i > SourceBytes then Exit;         // incomplete multibyte char
-		if ((c and $20) <> 0) and ((Byte(Source[i]) and $C0) <> $80) then Exit; // malformed trail byte
-		Inc(i);
-	  end;
-	  Inc(count);
-	end;
-  end;
-  Result := count+1;
-end;
-
-function Utf8Decode(const S: String): WideString;
-var
-  L: Integer;
-  Temp: WideString;
-begin
-  Result := '';
-  if S = '' then Exit;
-  SetLength(Temp, Length(S));
-
-  L := Utf8ToUnicode(PWideChar(Temp), Length(Temp)+1, PChar(S), Length(S));
-  if L > 0 then
-    SetLength(Temp, L-1)
-  else
-    Temp := '';
-  Result := Temp;
-end;
-
-{$ENDIF}
 
 
 procedure StreamToVariantArray(Stream:TMemoryStream; var Value : Variant);
@@ -403,11 +217,7 @@ end;
 procedure StreamToVariant(Stream:TMemoryStream; var Value : Variant);
 var
   i : integer;
-  {$IFDEF D6+}
    vt  :TVarType;
-  {$ELSE}
-   vt  :Integer;
-  {$ENDIF}
 begin
  VarClear(Value);
  if Stream.Size > 0 then
@@ -457,19 +267,6 @@ begin
   end;
 end;
 
-{$IFNDEF D6+}
-
-resourcestring
-  SCannotCreateDir = 'Unable to create directory';
-
-{$EXTERNALSYM CoCreateGuid}
-function CoCreateGuid(out guid: TGUID): HResult; stdcall; external 'ole32.dll' name 'CoCreateGuid';
-
-function CreateGUID(out Guid: TGUID): HResult;
-begin
-  Result := CoCreateGuid(Guid);
-end;
-{$ENDIF}
 
 type THackDS=class(TDataSet);
 
@@ -909,7 +706,6 @@ end;
 const
     ZeroStr='000000000000000000';
 
-{$IFDEF D6+}
 
 {$IFNDEF D2005+}
 function RoundAt(const Value: string; Position: SmallInt): string;
@@ -1236,7 +1032,6 @@ function  fFormatBcd(const Format: string; Bcd: TBcd): string;
 begin
  Result:=FormatNumericString(Format,BCDToStr(Bcd));
 end;
-{$ENDIF}
 
 function  BCDToExtended(BCD: TBcd; var Value: Extended): Boolean;
 var c:Int64;
@@ -1312,18 +1107,6 @@ begin
 end;
 
 
-{$IFNDEF D6+}
-function  BCDToStr(BCD: TBcd): String;
-
-var  c:Int64;
-     Scale:byte;
-begin
- if BCDToInt64WithScale(BCD,c,Scale) then
-  Result:=Int64WithScaleToStr(c,Scale,DecimalSeparator)
- else
-  Result:=''
-end;
-{$ENDIF}
 
 
 //
@@ -1651,26 +1434,6 @@ end;
 
 
 
-{$IFNDEF D6+}
-function DirectoryExists(const Name: string): Boolean;
-var
-  Code: Integer;
-begin
-  Code := GetFileAttributes(PChar(Name));
-  Result := (Code <> -1) and (FILE_ATTRIBUTE_DIRECTORY and Code <> 0);
-end;
-
-function ForceDirectories(Dir: string): Boolean;
-begin
-  Result := True;
-  if Length(Dir) = 0 then
-    raise Exception.CreateRes(Integer(@SCannotCreateDir));
-  Dir := ExcludeTrailingBackslash(Dir);
-  if (Length(Dir) < 3) or DirectoryExists(Dir)
-    or (ExtractFilePath(Dir) = Dir) then Exit; // avoid 'xyz:\' problem.
-  Result := ForceDirectories(ExtractFilePath(Dir)) and CreateDir(Dir);
-end;
-{$ENDIF}
 
 initialization
   Randomize;

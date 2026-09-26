@@ -284,9 +284,7 @@ uses
   {$IFDEF MACOS}
    ,Posix.Unistd
   {$ENDIF}
-  {$IFDEF D6+}
     ,Variants, pFIBProps
-  {$ENDIF}
   ;
 
  function EquelQUADs(const Value1,Value2:TISC_QUAD):boolean;

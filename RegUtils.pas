@@ -27,7 +27,7 @@ interface
 uses
 
   Windows, SysUtils, Classes, registry
-  {$IFDEF D6+}, Variants{$ENDIF};
+  , Variants;
 
  procedure DefWriteToRegistry( const OtherKeys , ParamNames: array of string;
   const Values: array of Variant
@@ -89,7 +89,7 @@ uses IniFiles{,StrUtil};
     if minPar>High(Values) then minPar:=High(Values);
     for i:=0 to minPar do
      case VarType(Values[i]) of
-      varSmallint,varInteger {$IFDEF D6+},varWord, varLongWord,varInt64  {$ENDIF}:WriteInteger(ParamNames[i],Values[i]);
+      varSmallint,varInteger,varWord,varLongWord,varInt64:WriteInteger(ParamNames[i],Values[i]);
       varSingle,  varDouble :WriteFloat(ParamNames[i],Values[i]);
       varCurrency           :WriteCurrency(ParamNames[i],Values[i]);
       varBoolean            :WriteBool(ParamNames[i],Values[i]);

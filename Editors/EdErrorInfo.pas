@@ -36,7 +36,7 @@ uses
 
    Db,  uFIBEditorForm
 
-   {$IFDEF D6+}, Variants {$ENDIF}
+   , Variants
     ,RegistryUtils
 
 ;

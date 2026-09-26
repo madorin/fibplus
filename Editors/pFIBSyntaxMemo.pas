@@ -15,19 +15,8 @@ interface
 
 {$I ..\FIBPlus.inc}
 
-{$IFDEF VER130}
-  {$IFDEF BCB}			// C++Buider 5.0
-  {$ObjExportAll on}
-  {$ENDIF}
-
-  {$DEFINE D4+}
-  {$DEFINE D5+}
-{$ENDIF}
 
 {$IFDEF VER140}
-  {$DEFINE D4+}
-  {$DEFINE D5+}
-  {$DEFINE D6+}
   {$IFDEF BCB}			// C++Buider 6.0
   {$ObjExportAll on}
   {$ENDIF}
@@ -35,9 +24,6 @@ interface
 {$ENDIF}
 
 {$IFDEF VER150}
-  {$DEFINE D4+}
-  {$DEFINE D5+}
-  {$DEFINE D6+}
   {$DEFINE D7+}
 
   {$WARN UNSAFE_TYPE OFF}
@@ -48,9 +34,6 @@ interface
 
 // Probably Delphi 2005 defines
 {$IFDEF VER170}
-  {$DEFINE D4+}
-  {$DEFINE D5+}
-  {$DEFINE D6+}
   {$DEFINE D7+}
   {$DEFINE D9+}
 
@@ -63,9 +46,6 @@ interface
 
 
 {$IFDEF VER180}
-  {$DEFINE D4+}
-  {$DEFINE D5+}
-  {$DEFINE D6+}
   {$DEFINE D7+}
   {$DEFINE D9+}
   {$DEFINE D10+}
@@ -76,9 +56,6 @@ interface
 {$ENDIF}
 
 {$IFDEF VER200}
-  {$DEFINE D4+}
-  {$DEFINE D5+}
-  {$DEFINE D6+}
   {$DEFINE D7+}
   {$DEFINE D9+}
   {$DEFINE D10+}
@@ -91,9 +68,6 @@ interface
 {$ENDIF}
 
 {$IFDEF VER210} // Delphi 2010
-  {$DEFINE D4+}
-  {$DEFINE D5+}
-  {$DEFINE D6+}
   {$DEFINE D7+}
   {$DEFINE D9+}
   {$DEFINE D10+}
@@ -112,9 +86,6 @@ interface
   {$WARN UNSAFE_CAST OFF}
   {$WARN SYMBOL_PLATFORM OFF}
   {$WARNINGS OFF}
-  {$DEFINE D4+}
-  {$DEFINE D5+}
-  {$DEFINE D6+}
   {$DEFINE D7+}
   {$DEFINE D9+}
   {$DEFINE D10+}
@@ -380,9 +351,7 @@ const
         property        VirtualFileName: Boolean read fVirtualFileName;
         property        Modified: Boolean read fModified write SetModified;
         property        DirectAccess: Boolean read fDirectAccess write fDirectAccess;
-       {$IFDEF D6+}
         property        UpdateCount;
-       {$ENDIF}
     end;
 
 
@@ -1020,7 +989,7 @@ implementation
 {$R pFIBSyntaxMemo.res}
 
 uses
-  Math {$IFDEF D6+},StrUtils, Variants{$ENDIF};
+  Math, StrUtils, Variants;
 
 var
   CF_SYNTAX: THandle;
@@ -6759,12 +6728,6 @@ end;
 
 
 type
-{$IFNDEF D6+}
-    THackStrings=class(TPersistent)
-    private
-     UpdateCount: Integer;
-    end;
-{$ELSE}
  {$IFNDEF D9+}
     THackStrings=class(TPersistent)
     private
@@ -6777,7 +6740,6 @@ type
  {$ELSE}
     THackStrings=class(TStrings);
  {$ENDIF}    
-{$ENDIF}
 
 
 // Показывает курсор

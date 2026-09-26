@@ -26,7 +26,7 @@ interface
 uses
 
   SysUtils, Classes,
-  ibase, IB_Intf, IB_Externals {$IFDEF D6+}, Variants {$ELSE} ,StdFuncs {$ENDIF};
+  ibase, IB_Intf, IB_Externals, Variants;
 
 
 const

@@ -105,7 +105,7 @@ type
 
 implementation
 
-uses {$IFDEF D6+} Variants,{$ENDIF}pFIBProps;
+uses Variants, pFIBProps;
 { TpFIBRefresher }
 
 (* DBSchema
@@ -372,7 +372,7 @@ end;
 
 procedure TpFIBTableChangesReader.SetCurTransactionID;
 var
-  v:  Variant;{$IFNDEF D6+}   I:integer;{$ENDIF}
+  v:  Variant;
 
 begin
 // Set Flags
@@ -386,12 +386,7 @@ begin
      v:=QueryValue('Select TRANS_ID From FIB$GET_TRANSACTION_ID(0)',0,Transaction);
      if not VarIsNull(v)  then
      begin
-      {$IFNDEF D6+}
-         i:=v;
-         FCurTransaction:=i
-      {$ELSE}
         FCurTransaction:=v;
-      {$ENDIF}
 
      end
     end;
@@ -478,11 +473,7 @@ end;
 
 function TpFIBTableChangesReader.GetActualCommitNo: Int64;
 var
-//{$IFDEF D6+}  v:  Variant;{$ELSE} v:integer;{$ENDIF}
   v:Variant;
-{$IFNDEF D6+}
-  j:integer;
-{$ENDIF}
 begin
  CheckTransaction;
  with Transaction.DefaultDatabase do
@@ -492,12 +483,7 @@ begin
      Result:=0
     else
     begin
-    {$IFDEF D6+}
        Result:=v;
-    {$ELSE}
-       j:=v;
-       Result:=j
-    {$ENDIF}
 
     end
   end

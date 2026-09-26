@@ -2,7 +2,7 @@ unit uFIBEditorForm;
 
 interface
 {$i ..\FIBPlus.inc}
-  uses Classes,{$IFDEF D6+}Variants, {$ENDIF}{$IFDEF D_XE2}Vcl.Forms{$ELSE}Forms{$ENDIF};
+  uses Classes,Variants, {$IFDEF D_XE2}Vcl.Forms{$ELSE}Forms{$ENDIF};
 
   type
         TFIBEditorCustomForm= class(TForm)

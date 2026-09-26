@@ -16,7 +16,7 @@ uses
   Buttons, ExtCtrls, StdCtrls, Grids, DBGrids, DB, DBCtrls, Mask, ComCtrls,
   {$ENDIF}
   pFIBInterfaces  ,  RegFIBPlusEditors,uFIBEditorForm
-  {$IFDEF D6+},Variants{$ENDIF}
+  ,Variants
 
   ;
 

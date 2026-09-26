@@ -35,7 +35,7 @@ uses
   {$ENDIF}
 
   uFIBEditorForm,  fraConditionsEdit
-    {$IFDEF D6+}, Variants {$ENDIF}
+    , Variants
    ;
 
 

@@ -97,7 +97,7 @@ implementation
 
 uses
  RegistryUtils,TypInfo
-{$IFDEF D6+ }, Variants {$ENDIF}
+, Variants
  , RegFIBPlusEditors, pFIBEditorsConsts, RTTIRoutines, IBSQLSyn;
 
 {$R *.dfm}

@@ -25,7 +25,7 @@ interface
 uses
   Classes, SysUtils,ibase,DB,FIBPlatforms,
   FIBDatabase,FIBQuery,FIBDataSet,pFIBProps,StrUtil,
-   pFIBInterfaces,fib{$IFDEF D6+},  Variants{$ENDIF}
+   pFIBInterfaces,fib, Variants
   ;
 
 const

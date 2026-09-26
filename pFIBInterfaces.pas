@@ -25,7 +25,7 @@ interface
 
 {$I FIBPlus.inc}
 
-uses {$IFDEF D6+} Types, {$ELSE} Windows, {$ENDIF} Classes, DB, StrUtil;
+uses Types, Classes, DB, StrUtil;
 
 type
 

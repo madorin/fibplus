@@ -301,9 +301,6 @@ begin
   end else
   begin
     Result := '';
-    {$IFNDEF D6+}
-    if Assigned(FindGlobalComponent) then
-    {$ENDIF}
     begin
       Result := Name;
       while FindGlobalComponent(Result) <> nil do

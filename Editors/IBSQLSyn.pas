@@ -30,9 +30,6 @@ const
     
 implementation
           {$IFDEF VER230}
-  {$DEFINE D4+}
-  {$DEFINE D5+}
-  {$DEFINE D6+}
   {$DEFINE D7+}
   {$DEFINE D9+} //2006
   {$DEFINE D10+} //2007

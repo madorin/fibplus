@@ -10,11 +10,7 @@ Vcl.StdCtrls,Vcl.Forms,Vcl.ExtCtrls,Vcl.Dialogs,
 StdCtrls,Forms,ExtCtrls,Dialogs,
 {$ENDIF}
 SysUtils,pFIBInterfaces,  TypInfo, FIBDatabase,
-     {$IFDEF D6+}
        DesignEditors,DesignIntf, Variants//,Types
-     {$else}
-       DsgnIntf
-     {$ENDIF}
 
 ;
 
@@ -297,9 +293,7 @@ procedure Register;
 
     RegisterComponentEditor(TComponentClass(DeltaReceiver), TpFIBDeltaReceiverEditor);
 
-    {$IFDEF D6+}
      RegisterPropertiesInCategory('Transactions',['*Transaction*'] );
-    {$ENDIF}
    except
    end;
   end;

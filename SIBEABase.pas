@@ -368,12 +368,8 @@ end;
 // release the various event buffers
 procedure TSIBEventThread.UnRegisterEvents;
 begin
-  {$IFNDEF D6+}
-    Synchronize(SIBCancelEvents);
-  {$ELSE}
 //    Synchronize(SIBCancelEvents);
     SIBCancelEvents;
-  {$ENDIF}
 
 {  if (ResultStatus <> 0) then
     raise ESIBError.Create(GetIBErrorString);}

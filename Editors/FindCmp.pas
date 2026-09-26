@@ -2,9 +2,7 @@ unit FindCmp;
 
 interface
 {$I ..\FIBPlus.inc}
-{$IFDEF D6+}
  {$WARN UNIT_DEPRECATED OFF}
-{$ENDIF}
 uses
   SysUtils, Windows,    EditIntf, ExptIntf,
   ToolsAPI,  Classes,
@@ -212,16 +210,7 @@ begin
     Exit;
   end;
 
-  {$IFDEF D6+}
    curEditor:=curModule.CurrentEditor;
-  {$ELSE}
-   for iWSep1:=curModule.GetModuleFileCount-1 downto 0 do
-   begin
-    curEditor:=curModule.GetModuleFileEditor(iWSep1);
-    if Supports(curEditor,IOTASourceEditor,II) then
-     Break;
-   end;
-  {$ENDIF}
   if not Supports(curEditor,IOTASourceEditor,II) then
    Exit;
   if (curEditor as IOTASourceEditor).GetEditViewCount=0 then
@@ -410,19 +399,11 @@ begin
     ModuleIntf:=GetIOTAModule(UnitName);
     if not InCurrentFormOnly  then
     begin
-      {$IFDEF D6+}
        c:=Pred(ModuleIntf.OwnerModuleCount);
-      {$ELSE}
-       c:=Pred(ModuleIntf.OwnerCount);
-      {$ENDIF}
 
       for i:=0 to c do
       begin
-       {$IFDEF D6+}
         if Supports(ModuleIntf.OwnerModules[i],IOTAProject,Pr) then
-       {$ELSE}
-        if Supports(ModuleIntf.Owners[i],IOTAProject,Pr) then
-       {$ENDIF}
          for j:=0 to Pr.GetModuleCount-1 do
          begin
           MI:=Pr.GetModule(j);

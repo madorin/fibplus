@@ -27,7 +27,7 @@ uses
  SysUtils, Classes, DB, ibase, IB_Intf, ib_externals,fib,FIBDatabase,FIBDataSet,
  FIBQuery,pFIBProps,StdFuncs,FIBPlatforms
 
-    {$IFDEF D6+}, Variants{$ENDIF}
+    , Variants
 ;
 type
 

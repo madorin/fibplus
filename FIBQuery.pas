@@ -29,7 +29,7 @@ uses
   DB, fib, FIBDatabase, StdFuncs,IB_ErrorCodes,SqlTxtRtns,pFIBProps,
   pFIBInterfaces {, FIBXMLDataSetReader}
   {$IFDEF SUPPORT_ARRAY_FIELD},   pFIBArray  {$ENDIF}
-  {$IFDEF D6+},FMTBcd,  Variants{$ENDIF} ;
+  ,FMTBcd, Variants;
 
 
 type
@@ -1300,11 +1300,7 @@ begin
           Result := AsLong;
       SQL_INT64:
         if FXSQLVAR^.sqlscale = 0 then
-        {$IFDEF D6+}
           Result := AsInt64
-        {$ELSE}
-          Result := AsExtended
-        {$ENDIF}
         else
         if FXSQLVAR^.sqlscale >= (-4) then
           Result := AsExtended
@@ -2251,11 +2247,6 @@ begin
     Result:=GetAsAnsiString;
 end;
 
-{$IFNDEF D6+}
-type
- PDate=PDateTime;
- PWordBool=^WordBool;
-{$ENDIF}
 
 procedure TFIBXSQLVAR.SetAsVariant(Value: Variant);
 var
@@ -2276,9 +2267,7 @@ begin
 
   if (sSQLType=SQL_TIMESTAMP) or (sSQLType=SQL_TYPE_DATE) then
    if vt in [varDouble,varCurrency,varInteger,varSingle,varSmallint
-    {$IFDEF D6+}
      ,varWord,varShortInt ,  varLongWord,varInt64
-    {$ENDIF}
 
    ] then
    begin
@@ -2294,24 +2283,18 @@ begin
   if VarIsNull(Value) then
     IsNull := True
   else
-  {$IFDEF D6+}
   if VarIsFMTBcd(Value) then
     AsBCD:=VarToBcd(Value)
   else
-  {$ENDIF}
   case vt of
     varEmpty, varNull:
       IsNull := True;
     varSmallint, varInteger, varByte
-    {$IFDEF D6+}
     ,varWord,varShortInt ,  varLongWord
-    {$ENDIF}
     :
       AsLong := Value;
-   {$IFDEF D6+}
     varInt64	:
       AsInt64  :=Value;
-   {$ENDIF}
     varSingle, varDouble:
       AsDouble := Value;
     varCurrency:
@@ -2397,24 +2380,16 @@ begin
                 AsDateTime := PDate(V.VPointer)^;
                end ;
           varOleStr:   begin
-    {$IFNDEF D6+}
-                        ws:=Value;
-    {$ELSE}
                         ws:=VarToWideStr(Value);
-    {$ENDIF}
                         AsVariant:=ws;
                        end;
 
           varBoolean:  AsBoolean := PWordBool(V.VPointer)^;
-    {$IFDEF D6+}
           varShortInt: AsLong :=PShortInt(V.VPointer)^;
-    {$ENDIF}
           varByte:     AsLong := PByte(V.VPointer)^;
-    {$IFDEF D6+}
           varWord:     AsLong := PWord(V.VPointer)^;
           varLongWord: AsLong := PLongWord(V.VPointer)^;
           varInt64:    AsInt64:= PInt64(V.VPointer)^;
-    {$ENDIF}
           varVariant:  AsVariant:= Variant(PVarData(V.VPointer)^);
         else
            FIBError(feNotPermitted, [nil]);

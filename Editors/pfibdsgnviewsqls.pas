@@ -186,28 +186,13 @@ implementation
 
 {$R *.DFM}
 uses StrUtil,SQLTxtRtns,
-  {$IFNDEF  D6+}
-   DsgnIntf,
-  {$ELSE}
    DesignIntf,
-  {$ENDIF}
  EditIntf, FIBToolsConsts,
  FIBDataSQLEditor,FIBSQLEditor
 , FindCmp;
 
 
-{$IFDEF VER130}
- type TFormDesigner=IFormDesigner;
-      TComponentList=TDesignerSelectionList;
-{$ELSE}
- {$IFDEF D6+}
   type TFormDesigner=IDesigner;
- {$ELSE}
- {$IFDEF VER120}
-  type TFormDesigner=IFormDesigner;
- {$ENDIF}
- {$ENDIF}
-{$ENDIF}
 
 
 
@@ -453,39 +438,6 @@ procedure TfrmSaveSQLs.GetForms;
 var i,j,k:integer;
     UnName:string;
     Found :boolean;
-{$IFDEF D6+}
-    tmpCmp:TComponent;
-{$ENDIF}
-
-function IsValidFrame(Frame:TFrame) :boolean;
-var k:integer;
-begin
-  Result := False;
-  with Frame do
-   for k:=0 to Pred(ComponentCount) do
-   begin
-      if (Components[k] is TFIBQuery) or
-        (Components[k] is TFIBCustomDataSet)
-{$IFDEF SQL_NAVIGATOR_SUPPORT_BDE}
-     or (Components[k] is TQuery)
-     or (Components[k] is TUpdateSQL)
-{$ENDIF}
-
-      then
-      begin
-        Result := True;
-        Break;
-      end
-      else
-      if Components[k] is TFrame then
-      begin
-        Result:=IsValidFrame(TFrame(Components[k]));
-        if Result then
-          Break
-      end;
-   end;
-end;
-
 begin
  ClearForms;
  with Screen do
@@ -500,13 +452,6 @@ begin
     Found :=false;
     if UnitInProject(UnName) then
     for j:=0 to Pred(ComponentCount) do
-{$IFNDEF D6+}
-     if Pos('TDataModule',Components[j].ClassName)=1 then
-     begin
-       Found :=True; Break;
-     end
-     else
-{$ENDIF}
      if (Components[j] is TFIBQuery) or
       (Components[j] is TFIBCustomDataSet)
 {$IFDEF SQL_NAVIGATOR_SUPPORT_BDE}
@@ -518,58 +463,7 @@ begin
        RegisterModule(CustomForms[i],UnName);
        Found :=True;
        Break;
-     end
-{$IFDEF D5+}
-     else
-     if Components[j] is TFrame then
-     begin
-      if IsValidFrame(TFrame(Components[j])) then
-      begin
-        RegisterModule(Components[j],UnName);
-        Found :=True;
-      end;
-(*      tmpCmp:=Components[j];
-      with tmpCmp do
-      for k:=0 to Pred(ComponentCount) do
-      if (Components[k] is TFIBQuery) or
-        (Components[k] is TFIBCustomDataSet)
-{$IFDEF SQL_NAVIGATOR_SUPPORT_BDE}
-     or (Components[k] is TQuery)
-     or (Components[k] is TUpdateSQL)
-{$ENDIF}
-
-      then
-      begin
-        RegisterModule(tmpCmp,UnName);
-        Found :=True;
-        Break;
-      end *)
-     end
-{$IFDEF D6+}
-     else
-      if (ClassName='TDataModuleForm')  then
-      begin
-       tmpCmp:=Components[1];
-       if (Components[j] is TDataModule) then
-       with Components[j] do
-        for k:=0 to Pred(ComponentCount) do
-        if (Components[k] is TFIBQuery) or
-        (Components[k] is TFIBCustomDataSet)
-{$IFDEF SQL_NAVIGATOR_SUPPORT_BDE}
-        or (Components[k] is TQuery)
-        or (Components[k] is TUpdateSQL)
-{$ENDIF}
-        then
-        begin
-          RegisterModule(tmpCmp,UnName);
-          Found :=True;
-          Break;
-        end
-      end;
-{$ENDIF}
-
-{$ENDIF}
-;
+     end;
      if not Found then
      begin
       if FListOfOpenedForms.Find(UnName,k) then
@@ -671,11 +565,7 @@ begin
 end;
 
 function GetFormDesigner(cmp:TComponent):
-{$IFNDEF D6+}
-TFormDesigner;
-{$ELSE}
  IDesignerHook;
-{$ENDIF}
 var     DsgnForm   :TForm;
 begin
 
@@ -692,11 +582,7 @@ begin
     DsgnForm:=TForm(cmp.Owner.Owner.Owner)
    else
     raise Exception.Create('Can''t... Sorry');
-  {$IFNDEF D6+}
-    Result:=TFormDesigner(DsgnForm.Designer)
-  {$ELSE}
     Result:=DsgnForm.Designer
-  {$ENDIF}
 
 end;
 

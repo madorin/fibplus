@@ -30,7 +30,7 @@ uses
  SysUtils, SyncObjs,Classes,ibase, IB_Intf, IB_Externals,
  pFIBProps,IBBlobFilter, Fib, pFIBEventLists,StdFuncs,
  pFIBInterfaces, FIBPlatforms
-  {$IFDEF D6+} ,Variants{$ENDIF}
+   ,Variants
    {$IFDEF D_XE2}
     ,System.UITypes
    {$ENDIF}

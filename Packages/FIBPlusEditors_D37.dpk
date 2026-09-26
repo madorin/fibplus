@@ -1,20 +1,21 @@
-package FIBPlusEditors5;
+package FIBPlusEditors_D37;
 
-{$R *.RES}
-{$ALIGN ON}
+{$R *.res}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
-{$DEBUGINFO ON}
+{$DEBUGINFO OFF}
 {$EXTENDEDSYNTAX ON}
 {$IMPORTEDDATA ON}
 {$IOCHECKS ON}
-{$LOCALSYMBOLS ON}
+{$LOCALSYMBOLS OFF}
 {$LONGSTRINGS ON}
 {$OPENSTRINGS ON}
 {$OPTIMIZATION ON}
 {$OVERFLOWCHECKS OFF}
 {$RANGECHECKS OFF}
-{$REFERENCEINFO ON}
+{$REFERENCEINFO OFF}
 {$SAFEDIVIDE OFF}
 {$STACKFRAMES OFF}
 {$TYPEDADDRESS OFF}
@@ -22,16 +23,18 @@ package FIBPlusEditors5;
 {$WRITEABLECONST ON}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
+{$DEFINE RELEASE}
+{$ENDIF IMPLICITBUILDING}
 {$DESCRIPTION 'FIBPlus Property Editors'}
 {$DESIGNONLY}
-{$IMPLICITBUILD OFF}
+{$IMPLICITBUILD ON}
 
 requires
-  vcl50,
-  VCLDB50,
-  Vclx50,
-  dsnide50,
-  FIBPlus5;
+  vcldb,
+  vclx,
+  designide,
+  vclimg,
+  FIBPlus_D37;
 
 contains
   RegFIBPlusEditors in '..\Editors\RegFIBPlusEditors.pas',
@@ -52,20 +55,23 @@ contains
   EdErrorInfo in '..\Editors\EdErrorInfo.pas' {frmErrors},
   ToCodeEditor in '..\Editors\ToCodeEditor.pas',
   ToCodeEditorIntfs in '..\Editors\ToCodeEditorIntfs.pas',
-  RegistryUtils in '..\Editors\RegistryUtils.pas',
+  RTTIRoutines in '..\Editors\RTTIRoutines.pas',
   pFIBComponentEditors in '..\Editors\pFIBComponentEditors.pas',
   pFIBEditorsConsts in '..\Editors\pFIBEditorsConsts.pas',
   pFIBRepositoryOperations in '..\Editors\pFIBRepositoryOperations.pas',
-  RTTIRoutines in '..\Editors\RTTIRoutines.pas',
+  RegistryUtils in '..\Editors\RegistryUtils.pas',
   RegSynEditAlt in '..\Editors\RegSynEditAlt.pas',
-  IBSQLSyn in '..\Editors\IBSQLSyn.pas',
   uFIBScriptForm in '..\Editors\uFIBScriptForm.pas' {frmScript},
-  FIBToolsConsts in '..\Editors\FIBToolsConsts.pas',
+  IBSQLSyn in '..\Editors\IBSQLSyn.pas',
   FindCmp in '..\Editors\FindCmp.pas',
-  pFIBDsgnViewSQLs in '..\Editors\pfibdsgnviewsqls.pas' {frmSaveSQLs},
   pFIBPreferences in '..\Editors\pFIBPreferences.pas' {frmFIBPreferences},
   uFrmSearchResult in '..\Editors\uFrmSearchResult.pas' {frmCompSearchResult},
-  uFontEditor in '..\Editors\uFontEditor.pas' {frmFontEditor},
-  pFIBSyntaxMemo in '..\Editors\pFIBSyntaxMemo.pas';
+  FIBToolsConsts in '..\Editors\FIBToolsConsts.pas',
+  pFIBSyntaxMemo in '..\Editors\pFIBSyntaxMemo.pas',
+  FIBDBLoginDlg in '..\FIBDBLoginDlg.pas' {frmFIBDBLoginDlg},
+  uFIBEditorForm in '..\Editors\uFIBEditorForm.pas',
+  uFontEditor in '..\Editors\uFontEditor.pas' {frmFontEditor};
 
 end.
+
+

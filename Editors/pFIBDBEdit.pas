@@ -114,7 +114,7 @@ implementation
 
 {$R *.dfm}
 uses
-{$IFDEF D6+}  Variants,{$ENDIF}
+  Variants,
 //{$IFDEF LINUX}  Variants, {$ENDIF}
  RegistryUtils, RTTIRoutines, pFIBEditorsConsts;
 

@@ -24,7 +24,7 @@ unit SqlTxtRtns;
 
 interface
 uses
- SysUtils,Classes,FIBPlatforms,StrUtil,DB{$IFDEF D6+}, Variants{$ENDIF}  ;
+ SysUtils,Classes,FIBPlatforms,StrUtil,DB, Variants;
 
 
 

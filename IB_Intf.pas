@@ -776,11 +776,7 @@ procedure LoadIBInstallLibrary;
   begin
     Result := GetProcAddress(IBInstallLibrary, ProcName);
     if not Assigned(Result) then
-     {$IFNDEF D6+}
-      RaiseLastWin32Error;
-     {$ELSE}
       RaiseLastOSError
-     {$ENDIF}
   end;
 {$ENDIF}
 {$IFDEF LINUX}
@@ -794,11 +790,7 @@ procedure LoadIBInstallLibrary;
   begin
     Result := GetProcAddress(IBInstallLibrary, ProcName);
     if not Assigned(Result) then
-     {$IFNDEF D6+}
-      RaiseLastWin32Error;
-     {$ELSE}
       RaiseLastOSError
-     {$ENDIF}
   end;
 {$ENDIF}
 
@@ -1969,11 +1961,7 @@ procedure TIBClientLibrary.LoadIBLibrary;
   begin
     Result := GetProcAddress(FLibraryHandle, PChar(ProcName));
     if not Assigned(Result) then
-     {$IFNDEF D6+}
-      RaiseLastWin32Error;
-     {$ELSE}
       RaiseLastOSError
-     {$ENDIF}
 
   end;
 

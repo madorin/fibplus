@@ -40,7 +40,7 @@ uses
     ,Forms,Controls // IS GUI units
    {$ENDIF}
   {$ENDIF}
-  {$IFDEF D6+},FMTBcd, Variants{$ENDIF}
+  ,FMTBcd, Variants
 
 
  ;
@@ -352,15 +352,14 @@ type
     procedure SetAsExtended(Value: Extended); {$IFDEF D2009+} override; {$ENDIF}
     function  GetAsInt64: Int64;
     procedure SetAsInt64(const Value: Int64);
-    function  GetAsBCD: TBcd;{$IFDEF D6+} override;{$ENDIF}
-    procedure SetAsBCD(const Value: TBcd);{$IFDEF D6+} override;{$ENDIF}
+    function  GetAsBCD: TBcd; override;
+    procedure SetAsBCD(const Value: TBcd); override;
     procedure SetVarValue(const Value: Variant); override;
     function  GetInternalData(var ValueIsNull:boolean):Int64;
     function  GetInternalOldData(var OldIsNull:boolean):Int64;
     function  GetData(Buffer: Pointer): Boolean;
   public
     constructor Create(AOwner: TComponent); override;
-{$IFDEF D6+}
     procedure AddExtended(const Value:Extended);
     procedure SubtractExtended(const Value:Extended);
     procedure MultiplyExtended(const Value:Extended);
@@ -370,7 +369,6 @@ type
     procedure SubtractBCD(const Value:TBCD);
     procedure MultiplyBCD(const Value:TBCD);
     procedure DivideBCD(const Value:TBCD);
-{$ENDIF}
     property  AsInt64:Int64 read GetAsInt64 write SetAsInt64;
     procedure Assign(Source: TPersistent); override;
     function  FieldModified:boolean;
@@ -2224,14 +2222,10 @@ end;
 
 procedure TFIBLargeIntField.SetVarValue(const Value: Variant);
 begin
- {$IFNDEF D6+}
-    inherited  SetVarValue(Value)
- {$ELSE}
     if VarIsNull(Value) or VarIsEmpty(Value) then
      Clear
     else
      SetAsLargeInt(Value);
- {$ENDIF}
 end;
 (*
  * TFIBIntegerField - implementation
@@ -2937,7 +2931,6 @@ begin
   FDataAsComp  :=False;
 end;
 
-{$IFDEF D6+}
 procedure   TFIBBCDField.AddExtended(const Value:Extended);
 var
     oBCD:TBCD;
@@ -3008,7 +3001,6 @@ begin
     AsBcd:=oBCD
 end;
 
-{$ENDIF}
 
 procedure TFIBBCDField.LoadRoundByScale(Reader: TReader);
 begin
@@ -3058,11 +3050,7 @@ begin
      if Size=0 then
       Result  := IntToStr(C)
      else
-     {$IFNDEF D6+}
-      Result  := Int64WithScaleToStr(C,Size,DecimalSeparator)
-     {$ELSE}
       Result  := BCDToStr(GetAsBCD)       
-     {$ENDIF}
     else
       Result := '';
  end;
@@ -3077,7 +3065,6 @@ begin
       Result := Null
     else
     begin
-      {$IFDEF D6+}
       if Size = 0 then
         Result := AsInt64
       else
@@ -3092,12 +3079,6 @@ begin
           {$ENDIF}
           {$ENDIF}
         end;
-      {$ELSE}
-      if Size <= 4 then
-        Result := AsCurrency
-      else
-        Result := AsExtended;
-      {$ENDIF}
     end;
 end;
 
@@ -3154,9 +3135,7 @@ var
   Digits: Integer;
   TC: Int64;
   Format: TFloatFormat;
-  {$IFDEF D6+}
   bcdValue:TBCD;
-  {$ENDIF}
 begin
   if FieldKind in [fkCalculated] then
    inherited GetText(Text,DisplayText)
@@ -3178,12 +3157,8 @@ begin
        end
        else
        begin
-        {$IFNDEF D6+}
-         Text := FormatFloat(FmtStr, TC);
-        {$ELSE}
           Int64ToBCD(TC,Size,bcdValue);
           Text :=FormatBcd(FmtStr,bcdValue)
-        {$ENDIF}
        end;
       end
       else
@@ -3208,11 +3183,7 @@ begin
            Text := FormatCurr(FmtStr, TC*E10[-Size])
           else
           begin
-            {$IFNDEF D6+}
-              Text := FormatFloat(FmtStr, RoundExtend(TC*E10[-Size],Size));
-            {$ELSE}
               Text := FormatNumericString(FmtStr,Int64WithScaleToStr(TC,Size,DecimalSeparator));
-            {$ENDIF}
           end;
       end;
     end;
@@ -3267,11 +3238,7 @@ begin
     if (Size=0) then
      SetAsInt64(StrToInt64(Value))
     else
-    {$IFNDEF D6+}
-     SetAsExtended(StrToFloat(Value)) ;
-    {$ELSE}
      SetAsBCD(StrToBCD(Trim(Value)));
-    {$ENDIF}
    end
    else
     inherited SetAsString(Value)
@@ -3363,9 +3330,7 @@ var
  C: Int64;
 begin
  if FieldKind=fkCalculated then
-{$IFDEF D6+}
   Result:=inherited GetAsBCD
-{$ENDIF}
  else
  begin
   if not GetData(@C) then
@@ -3380,9 +3345,7 @@ var
  lScale  :byte;
 begin
  if FieldKind=fkCalculated then
-{$IFDEF D6+}
   inherited SetAsBcd(Value)
-{$ENDIF}
  else
  begin
   BCDToInt64WithScale(Value,c,lScale);
@@ -3407,7 +3370,6 @@ begin
  if FieldKind=fkCalculated then
    inherited SetVarValue(Value)
 
- {$IFDEF D6+}
   else
   case VarType(Value) of
    varInt64   :   SetAsInt64(Value);
@@ -3424,10 +3386,6 @@ begin
     {$ENDIF}
     end
   end;
-{$ELSE}
-   ; C:=Value*E10[Size];
-    SetData(@C);
-{$ENDIF}
  except
      on EVariantError do DatabaseErrorFmt(SFieldValueError, [DisplayName]);
  end
@@ -3478,19 +3436,11 @@ begin
     Result := Result div IE10[Size];
 end;
 
-{$IFNDEF D6+}
- type
-  PComp=^Comp;
-{$ENDIF}
 
 procedure TFIBBCDField.SetAsInt64(const Value: Int64);
 begin
   if FieldKind=fkCalculated then
-  {$IFDEF D6+}
    inherited SetVarValue(Value)
-  {$ELSE}
-    inherited SetVarValue(PComp(@Value)^)
-  {$ENDIF}
   else
   if Size = 0 then
     SetData(@Value)
@@ -4252,9 +4202,6 @@ begin
   finally
    EnableControls;
    EnableScrollEvents;
-   {$IFNDEF D6+}
-    DataEvent(deDataSetChange,0);
-   {$ENDIF}
   end;
 end;
 
@@ -6023,19 +5970,7 @@ begin
         tf:=DataSource.DataSet.FindField(fn);
         if tf<>nil then
         begin
-          {$IFDEF D6+}
             cur_param.Value:=tf.Value;
-          {$ELSE}
-          if (tf is TFIBBCDField) then
-          begin
-           if(TFIBBCDField(tf).Size=0) then
-            cur_param.AsInt64     := TFIBBCDField(tf).AsInt64
-           else
-            cur_param.AsBcd      := TFIBBCDField(tf).AsBcd;
-          end
-          else
-             cur_param.Value:=tf.Value;
-          {$ENDIF}
         end;  
         Continue;
       end
@@ -6812,7 +6747,7 @@ begin
  Field:=nil;
  t    :=VarType(Fld);
  case t of
-  varInteger{$IFDEF D6+},varWord, varLongWord,varInt64  {$ENDIF}: Field:=Fields[Fld];
+  varInteger,varWord,varLongWord,varInt64: Field:=Fields[Fld];
   varOleStr,varString{$IFDEF D2009+},varUString{$ENDIF} :
   begin
    Field:=FN(Fld);
@@ -6841,7 +6776,7 @@ begin
  Field:=nil;
  t    :=VarType(Fld);
  case t of
-  varInteger{$IFDEF D6+},varWord, varLongWord,varInt64  {$ENDIF}: Field:=Fields[Fld];
+  varInteger,varWord,varLongWord,varInt64: Field:=Fields[Fld];
   varOleStr,varString {$IFDEF D2009+},varUString{$ENDIF} :
   begin
    Field:=FN(Fld);
@@ -8587,9 +8522,7 @@ var
    NeedRecalcField:boolean;
    tmpCurrency:Currency;
    tmpDateTime:TDateTime;
-   {$IFDEF D6+}
     vBCD:TBCD;
-   {$ENDIF}
 
 begin
   CheckActive;
@@ -8733,21 +8666,13 @@ begin
            ftBCD:
             begin
              if fi^.fdDataScale=0 then
-             {$IFDEF D6+}
               Result:=PInt64(P)^
-             {$ELSE}
-              Result:=PComp(P)^
-             {$ENDIF}
              else
              begin
-              {$IFDEF D6+}
 //                Result:=PInt64(P)^*E10[fi^.fdDataScale];
                 Int64ToBCD(PInt64(P)^,-fi^.fdDataScale,vBCD);
                 VarFMTBcdCreate(Result,vBCD);
 
-              {$ELSE}
-                Result:=PComp(P)^*E10[fi^.fdDataScale]
-              {$ENDIF}
               ;
               if Field.Size=4 then
                Result :=VarAsType(Result,varCurrency);
@@ -8755,11 +8680,7 @@ begin
 
             end;
            ftLargeInt:
-            {$IFDEF D6+}
               Result:=PInt64(P)^
-            {$ELSE}
-              Result:=PComp(P)^
-            {$ENDIF}
            ;
           end;
        SQL_BOOLEAN,FB3_SQL_BOOLEAN:
@@ -8824,11 +8745,7 @@ begin
          ftGUID:
               Result:=GUIDAsString(PGuid(P)^);
          ftLargeint:
-         {$IFDEF D6+}
           Result:=PInt64(P)^;
-         {$ELSE}
-          Result:=PComp(P)^;
-         {$ENDIF}
         end;
       end;
    end;
@@ -10192,9 +10109,7 @@ var
    tf :TField;
    AddrValue:Pointer;
    KeyValues:array of variant;
-   {$IFDEF D6+}
    vBCD:TBCD;
-   {$ENDIF}
 
   procedure StdGotoBookMark;
   begin
@@ -10266,20 +10181,12 @@ begin
                begin
                  if (tf.Size=0)  then
                  begin
-                  {$IFDEF D6+}
                     KeyValues[i]:=PInt64(AddrValue)^
-                  {$ELSE}
-                    KeyValues[i]:=PComp(AddrValue)^
-                  {$ENDIF}
                  end
                  else
                  begin
-                  {$IFDEF D6+}
                     Int64ToBCD(PInt64(AddrValue)^,-tf.Size,vBCD);
                     VarFMTBcdCreate(KeyValues[i],vBCD);
-                  {$ELSE}
-                    KeyValues[i]:=PComp(AddrValue)^*E10[-tf.Size]
-                  {$ENDIF}
                    ;
                    if tf.Size=4 then
                     KeyValues[i] :=VarAsType(KeyValues[i],varCurrency);
@@ -10300,11 +10207,7 @@ begin
                ftGuid:
                  KeyValues[i]:=GUIDAsString(PGuid(AddrValue)^);
                ftLargeint:
-                {$IFNDEF D6+}
-                 KeyValues[i]:=PComp(AddrValue)^;
-                {$ELSE}
                  KeyValues[i]:=PInt64(AddrValue)^;
-                {$ENDIF}
               end;
             end;
            end; // for
@@ -10408,10 +10311,8 @@ end;
 
 procedure TFIBCustomDataSet.InternalHandleException;
 begin
- {$IFDEF D6+}
    if Assigned(Classes.ApplicationHandleException) then
     Classes.ApplicationHandleException(Self);
- {$ENDIF}
 end;
 
 
@@ -10635,36 +10536,14 @@ begin
       FieldNo := i + 1;
       if DataType <> ftUnknown then
       begin
-        (*
-         * C++-Builder has a different constructor for TFieldDef than
-         * Delphi does. This is kinda annoying...
-         * Anyways, I believe the currently discussed C++-Builder uses
-         * the compiler define VER110, soo...
-         *)
-{$IFDEF VER110}
-        if DataType <> ftUnknown then
-        begin
-          FieldDef := TFieldDef.Create( FieldDefs );
-          FieldDef.Name := Ansistring( Name );
-          FieldDef.DataType := DataType;
-          FieldDef.Size := Size;
-          FieldDef.Required := False;
-          FieldDef.FieldNo := FieldNo;
-          FieldDef.InternalCalcField := False;
-        end;
-{$ELSE}
-       if DataType=ftGUID then
-        begin
-         with TFieldDef.Create(FieldDefs,Name,
-                   DataType, 38, False, FieldNo) do
-          InternalCalcField := False
-        end
-        else
-         with TFieldDef.Create(FieldDefs,Name,
-                   DataType, Size, False, FieldNo) do
-          InternalCalcField := False;
-{$ENDIF}
-      end;
+       with TFieldDef.Create(FieldDefs,Name,
+                 DataType, 38, False, FieldNo) do
+        InternalCalcField := False
+      end
+      else
+       with TFieldDef.Create(FieldDefs,Name,
+                 DataType, Size, False, FieldNo) do
+        InternalCalcField := False;
     end;
   finally
     FieldDefs.EndUpdate;
@@ -11113,10 +10992,8 @@ var
 begin
   CheckEditState;
 
-  {$IFDEF D6+}
    if not (drsInCacheRefresh in FRunState) then
     inherited InternalPost;
-  {$ENDIF}
    ChangeScreenCursor(iCurScreenState);
 
   if (State = dsInsert) then
@@ -11550,9 +11427,7 @@ const
     ord(ftBlob), ord(ftBlob), ord(ftUnknown), ord(ftString), ord(ftWideString), ord(ftLargeInt), ord(ftADT),
     ord(ftArray), ord(ftUnknown), ord(ftUnknown), ord(ftUnknown), ord(ftUnknown), ord(ftUnknown),
     ord(ftUnknown),    ord(ftUnknown), ord(ftGuid)
-    {$IFDEF D6+}
      ,    ord(ftUnknown), ord(ftUnknown)
-    {$ENDIF}
     {$IFDEF D2006+}
       ,    ord(ftUnknown), ord(ftUnknown) ,    ord(ftUnknown), ord(ftUnknown)
     {$ENDIF}
@@ -11562,6 +11437,9 @@ const
     {$ENDIF}
    {$IFDEF D2010+}
       , ord(ftUnknown) ,    ord(ftUnknown), ord(ftUnknown)
+    {$ENDIF}
+    {$IFDEF D_30}
+      , ord(ftUnknown)
     {$ENDIF}
     );
 
@@ -12182,7 +12060,7 @@ var
         end;
         vtVariant:
          case VarType(aFields[IndexF].VVariant^) of
-          varInteger {$IFDEF D6+},varWord, varLongWord,varInt64  {$ENDIF}        :  Result:=Fields[aFields[IndexF].VVariant^];
+          varInteger,varWord,varLongWord,varInt64:  Result:=Fields[aFields[IndexF].VVariant^];
           varString,varOleStr{$IFDEF D2009+},varUString{$ENDIF} :
           begin
             Result:=DataSet.FindField(aFields[IndexF].VVariant^);

@@ -11,11 +11,7 @@ uses
    Forms,Controls,DB,Dialogs,
    {$ENDIF}
    ToCodeEditor,TypInfo,   ColnEdit,
-  {$IFDEF D6+}
      DesignEditors,DesignIntf, Variants
-  {$else}
-     DsgnIntf
-  {$ENDIF}
 ;
 
 
@@ -144,21 +140,9 @@ type
 
   
   TFIBGenSQlEd = class(TComponentEditor)
-  {$IFDEF D6+}
     DefaultEditor: IComponentEditor;
-  {$ELSE}
-    DefaultEditor: TComponentEditor;
-  {$ENDIF}
   public
-{$IFDEF VER100}
-    constructor Create(AComponent: TComponent; ADesigner: TFormDesigner); override;
-{$ELSE}
-  {$IFNDEF D6+}
-    constructor Create(AComponent: TComponent; ADesigner: IFormDesigner); override;
-  {$ELSE}
     constructor Create(AComponent: TComponent; ADesigner: IDesigner); override;
-  {$ENDIF}
-{$ENDIF}
     destructor Destroy; override;
     procedure ExecuteVerb(Index: Integer); override;
     function  GetVerb(Index: Integer): string; override;
@@ -922,17 +906,8 @@ end;
 type
   PClass = ^TClass;
 
-{$IFDEF VER100}
 
-constructor TFIBGenSQlEd.Create(AComponent: TComponent; ADesigner: TFormDesigner);
-{$ELSE}
-
-{$IFNDEF D6+}
-constructor TFIBGenSQlEd.Create(AComponent: TComponent; ADesigner: IFormDesigner);
-{$ELSE}
  constructor TFIBGenSQlEd.Create(AComponent: TComponent; ADesigner: IDesigner);
-{$ENDIF}
-{$ENDIF}
 var CompClass: TClass;
 begin
   inherited Create(AComponent, ADesigner);
@@ -947,12 +922,8 @@ end;
 
 destructor TFIBGenSQlEd.Destroy;
 begin
-{$IFDEF D6+}
 //  DefaultEditor._Release;
 // DefaultEditor.;
-{$ELSE}
-  DefaultEditor.Free;
-{$ENDIF}
   inherited Destroy
 end;
 

@@ -342,11 +342,9 @@ begin
 
 //  Ident := Component.Owner.Name + DotSep + Component.Name + DotSep + PropName;
   SaveCloseModule(Ident);
-  {$IFDEF D6+}
       // this used to be done in LibMain's TLibrary.Create but now its done here
       //  the unregister is done over in ComponentDesigner's finalization
     StFilSys.Register;
-  {$ENDIF}
   Stream := TStringStream.Create('');
 
   if not Assigned(PropValue) then

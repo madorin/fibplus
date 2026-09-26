@@ -26,7 +26,7 @@ interface
 uses
  {$IFDEF WINDOWS}
   Windows, SysUtils, Classes, registry
-  {$IFDEF D6+}, Variants{$ENDIF};
+  , Variants;
  {$ENDIF}
  {$IFDEF LINUX}
   Types, SysUtils, Classes, Variants;

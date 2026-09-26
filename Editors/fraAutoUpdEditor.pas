@@ -67,9 +67,7 @@ implementation
 
 uses TypInfo,pFIBEditorsConsts, RTTIRoutines, RegFIBPlusEditors,
   pFIBInterfaces
-     {$IFDEF D6+}
      ,Variants
-     {$ENDIF}
   ;
 
 

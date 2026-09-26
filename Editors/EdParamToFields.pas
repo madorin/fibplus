@@ -12,9 +12,7 @@ uses
   Graphics, Controls, Forms,  Dialogs, ComCtrls, ExtCtrls, StdCtrls,
   {$ENDIF}
   DB,  uFIBEditorForm
-  {$IFDEF D6+}
   ,Variants
-  {$ENDIF}
 
   ;
 

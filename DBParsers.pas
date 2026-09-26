@@ -23,7 +23,7 @@ interface
 {$I FIBPlus.inc}
  uses SysUtils,Classes,DB,DBCommon,DbConsts,FIBPlatforms
 
-  {$IFDEF D6+}  ,Variants,FMTBcd{$ENDIF}
+  ,Variants,FMTBcd
  ;
 
  type
@@ -59,7 +59,7 @@ interface
 implementation
 
 { TExpressionParser}
- uses StrUtil {$IFDEF D6+} ,StdFuncs {$ENDIF};
+ uses StrUtil, StdFuncs;
 
 
 constructor TExpressionParser.Create(DataSet: TDataSet; const Text: string;
@@ -156,9 +156,6 @@ var
               Inc(pArg1, DataOfs);
               FieldName := string(pArg1);
               with FieldByName(FieldName) do
-               {$IFNDEF D6+}
-                   Result := FieldByName(FieldName).Value               
-               {$ELSE}
                  case DataType of
                   ftBCD:
                    if IsNull then
@@ -168,7 +165,6 @@ var
                  else
                    Result := FieldByName(FieldName).Value
                  end
-               {$ENDIF}
             end;
         else
             DatabaseError(SExprIncorrect);
@@ -207,30 +203,18 @@ var
                   begin
                     ts.Date := PInteger(pArg1)^;
                     ts.Time := 0;
-                   {$IFDEF D6+}
                     Result := HookTimeStampToDateTime(ts);
-                   {$ELSE}
-                    Result := TimeStampToDateTime(ts);
-                   {$ENDIF}
                   end;
                 ftTime:
                   begin
                     ts.Date := 0;
                     ts.Time := PInteger(pArg1)^;;
-                   {$IFDEF D6+}
                     Result := HookTimeStampToDateTime(ts);
-                   {$ELSE}
-                    Result := TimeStampToDateTime(ts);
-                   {$ENDIF}
                   end;
                 ftDateTime:
                 begin
                   ts  :=MSecsToTimeStamp(PDouble(pArg1)^);
-                 {$IFDEF D6+}
                     Result := HookTimeStampToDateTime(ts);
-                 {$ELSE}
-                    Result := TimeStampToDateTime(ts);
-                 {$ENDIF}
                 end;
                 ftBoolean:
                   Result := PWordBool(pArg1)^;
@@ -239,10 +223,8 @@ var
                     BCDToCurr(PBCD(pArg1)^, Cur);
                     Result := Cur;
                   end;
-                {$IFDEF D6+}
                 ftLargeInt:
                   Result := PInt64(pArg1)^;
-                {$ENDIF}  
               else
                   DatabaseError(SExprIncorrect);
               end;

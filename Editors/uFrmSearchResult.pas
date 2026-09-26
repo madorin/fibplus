@@ -3,7 +3,7 @@ unit uFrmSearchResult;
 interface
 {$I ..\FIBPlus.inc}
 uses
-  Windows, Messages, SysUtils, {$IFDEF D6+}Variants, {$ENDIF}Classes,
+  Windows, Messages, SysUtils, Variants, Classes,
    {$IFDEF D_XE2}
   Vcl.Graphics, Vcl.Controls, Vcl.Forms,  Vcl.Dialogs, Vcl.ComCtrls, Vcl.ExtCtrls,
   Vcl.StdCtrls,Vcl.Menus,

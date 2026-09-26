@@ -58,16 +58,6 @@ type
   {$EXTERNALSYM DWORD}
 
    LONG64 = Int64;
-{$IFNDEF D6+}
-   PInteger=^Integer;
-   PWORD   = ^Word;
-   PDouble =^Double;
-   PByte   =^Byte;
-   PSmallInt=^SmallInt;
-   PShortInt=^ShortInt;
-   PSingle=^Single;
-   HRESULT = type Longint;
-{$ENDIF}
 
  function FIBGetTickCount: Cardinal;
  procedure TerminateApplication;

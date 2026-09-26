@@ -74,7 +74,7 @@ implementation
 {$R *.dfm}
 
 uses
- {$IFDEF D6+}Variants, {$endif}
+ Variants,
   TypInfo,RegistryUtils, pFIBEditorsConsts, RTTIRoutines;
 
   function  EditFIBTrParams(Transaction:TComponent):boolean;

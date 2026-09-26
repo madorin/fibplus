@@ -33,9 +33,7 @@ uses
   {$ENDIF}
 
   DB,fraSQLEdit, uFIBEditorForm
-  {$IFDEF D6+}
    ,Variants
-  {$ENDIF}
   ;
 
 type

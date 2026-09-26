@@ -22,10 +22,8 @@ unit pFIBScripter;
 
 interface
 {$I FIBPlus.inc}
-{$IFDEF D6+}
 {$A2}
-{$ENDIF}
- uses SysUtils,Classes{$IFDEF D6+},Types{$ENDIF}
+ uses SysUtils,Classes,Types
   ,FIBPlatforms,pFIBDatabase,pFIBQuery,FIBQuery,fib,pFIBInterfaces
  ;
 
@@ -501,18 +499,6 @@ begin
   end;
 end;
 
-{$IFNDEF D6+}
-// Copy from SysUtils (D6+)
-function AnsiDequotedStr(const S: string; AQuote: Char): string;
-var
-  LText: PChar;
-begin
-  LText := PChar(S);
-  Result := AnsiExtractQuotedStr(LText, AQuote);
-  if Result = '' then
-    Result := S;
-end;
-{$ENDIF}
 
 
 
@@ -2998,7 +2984,7 @@ begin
      else
      begin
       if not Assigned(FBlobFileStream) then
-       FBlobFileStream:=TFileStream.Create(FBlobFile,fmOpenRead{$IFDEF D6+},fmShareDenyWrite{$ENDIF});
+       FBlobFileStream:=TFileStream.Create(FBlobFile,fmOpenRead,fmShareDenyWrite);
       m := TMemoryStream.Create;
       try
        m.Size := Len;

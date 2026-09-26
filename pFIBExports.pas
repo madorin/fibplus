@@ -4,7 +4,7 @@ interface
 
 {$I FIBPlus.inc}
 
- uses SysUtils,{$IFNDEF D6+}Windows,{$ELSE}FIBPlatforms,{$ENDIF}Classes,
+ uses SysUtils,FIBPlatforms,Classes,
       pFIBInterfaces,FIBDatabase,FIBQuery,FIBDataSet,pFIBDataSet,pFIBQuery,
       StrUtil,pFIBDatabase,SqlTxtRtns, pFIBMetaData;
 

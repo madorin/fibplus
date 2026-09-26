@@ -67,14 +67,10 @@ begin
        ftBCD:
        begin
         BCDToCurr(TBcd(OutRes^), c);
-       {$IFDEF D6+}
         if TBCDField(Field).Size<=4 then
           PInt64(OutRes)^:=(PInt64(@c)^ div IE10[4-TBCDField(Field).Size])
         else
           PInt64(OutRes)^:=PInt64(@c)^ *IE10[TBCDField(Field).Size-4];
-       {$ELSE} // D5
-        PCurrency(OutRes)^:=c
-       {$ENDIF}  
        end;
       end;
      finally
@@ -123,14 +119,10 @@ begin
          ftBCD:
          begin
           BCDToCurr(TBcd(OutRes1^), c);
-         {$IFDEF D6+}
           if TBCDField(Field).Size<=4 then
             PInt64(OutRes)^:=(PInt64(@c)^ div IE10[4-TBCDField(Field).Size])
           else
             PInt64(OutRes)^:=PInt64(@c)^ *IE10[TBCDField(Field).Size-4];
-         {$ELSE} // D5
-          PCurrency(OutRes)^:=c
-         {$ENDIF}
          end;
         else
          OutRes:=OutRes1
@@ -357,20 +349,12 @@ begin
           KeyValues[i]:=VarAsType(KeyValues[i],varString);
        end
       end;
-      {$IFDEF D6+}
       ftLargeint   : KeyValues[i]:=VarAsType(KeyValues[i],varInt64);
-      {$ELSE}
-      ftLargeint   : KeyValues[i]:=VarAsType(KeyValues[i],varInteger);
-      {$ENDIF}
       ftBCD        :
-       {$IFDEF D6+}
         if TField(fl.List^[i]).Size=0 then
          KeyValues[i]:=VarAsType(KeyValues[i],varInt64)
         else
          KeyValues[i]:=VarAsType(KeyValues[i]*E10[TField(fl.List^[i]).Size],varInt64);
-       {$ELSE}
-        ;
-       {$ENDIF}
       ftTime:
       begin
        KeyValues[i]:= VarAsType(KeyValues[i],varDate);
@@ -445,9 +429,6 @@ var
   fi:PFIBFieldDescr;
   dv:Double;
   fn:Integer;
- {$IFNDEF D6+}
-  tempCurrency:Currency;
- {$ENDIF}
   function UDFCompStr(const s:Ansistring):integer;
   begin
    Result:=CompareFieldValues(TField(fl.List^[i]),KeyValues[i],s )
@@ -572,10 +553,6 @@ var
 
                ftBCD    :
                begin
-               {$IFNDEF D6+}
-               // Keys don't adjust
-                cResult :=ComparePCurrencyAndVariant(p,KeyValues[i]);
-               {$ELSE}
                 if Int64(P^)=TVarData(KeyValues[i]).VInt64 then
                  cResult:=0
                 else
@@ -583,7 +560,6 @@ var
                  cResult:=1
                 else
                  cResult:=-1;
-               {$ENDIF}
                end;
                ftBoolean:
                begin
@@ -613,7 +589,6 @@ var
                  cResult:=-1
                end   ;
                ftLargeint:
-               {$IFDEF D6+}
                 if Int64(P^)=TVarData(KeyValues[i]).VInt64 then
                  cResult:=0
                 else
@@ -621,15 +596,6 @@ var
                  cResult:=1
                 else
                  cResult:=-1;
-               {$ELSE}
-                if Int64(P^)=TVarData(KeyValues[i]).VInteger then
-                 cResult:=0
-                else
-                if Int64(P^)>TVarData(KeyValues[i]).VInteger then
-                 cResult:=1
-                else
-                 cResult:=-1;
-               {$ENDIF}
                ftGuid:
                begin
                 cResult :=CompareStrAndGuid(PGuid(P),AnsiString(TVarData(KeyValues[i]).VString));
@@ -656,14 +622,6 @@ begin
          fi:=vFieldDescrList[fn-1]
         else
          fi:=nil;
-       {$IFNDEF D6+}
-         if (TField(fl.List^[i]).DataType=ftBCD) and (fn>=1) then
-         if p<>nil then
-         begin
-          tempCurrency:=PComp(p)^*E10[-TBCDField(fl.List^[i]).Size];
-          p:=@tempCurrency;
-         end;
-       {$ENDIF}
 
 
         if TVarData(KeyValues[i]).VType = varNull then // After cast. varByRef or varVariant can't be
@@ -876,14 +834,7 @@ begin
                end
                else
                 if (eloCaseInsensitive in Options) then
-                {$IFDEF D6+}
                  Result:=WideCompareText(WideValue,WideKey)=0 //eloCaseInsensitive in Options
-                {$ELSE}
-                begin
-                 DoWideUpperCase(WideValue);
-                 Result:=WideValue=WideKey
-                end 
-                {$ENDIF}
                 else
                  Result:=WideKey=WideValue
 

@@ -136,10 +136,6 @@ implementation
 uses StdFuncs,StrUtil;
 { TRecordsCache }
 
-{$IFNDEF D6+}
-type
- PInteger=^Integer;
-{$ENDIF}
 constructor TRecordsCache.Create(aBlockRecCount,aRecordSize,aBlockReadSize,aStrCount:integer);
 var
     aBlockSize:integer;

@@ -22,7 +22,7 @@
 unit pTestInfo;
 
 interface
-uses {$IFNDEF D6+}Windows,{$ELSE}FIBPlatforms,{$ENDIF}SysUtils,Classes,pFIBInterfaces,pFIBLists,StrUtil
+uses FIBPlatforms,SysUtils,Classes,pFIBInterfaces,pFIBLists,StrUtil
 ;
 
   type

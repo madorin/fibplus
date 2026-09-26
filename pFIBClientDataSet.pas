@@ -27,7 +27,7 @@ interface
 uses
   pFIBInterfaces, SysUtils, Classes,
   Db, DbConsts, DBClient, Provider, DSIntf, MidConst
-  {$IFDEF D6+},FMTBcd, Variants{$ENDIF};
+  ,FMTBcd, Variants;
 
 {$T-,H+,X+}
 
@@ -370,16 +370,7 @@ function TpFIBClientBCDField.GetAsVariant: Variant;
 begin
  case Size of
  0:
-  {$IFDEF D6+}
    Result:= asInt64;
-  {$ELSE}
-   {$IFDEF NO_USE_COMP}
-    Result:= asInteger ;
-   {$ELSE}
-    Result:= asComp ;
-   {$ENDIF}
-
-  {$ENDIF}
  4:
   Result:= asCurrency
  else
@@ -421,11 +412,7 @@ begin
        Text := FormatCurr(FmtStr, C*E10[-Size])
       else
       begin
-        {$IFNDEF D6+}
-          Text := FormatFloat(FmtStr, RoundExtend(C*E10[-Size],Size));
-        {$ELSE}
           Text := FormatNumericString(FmtStr,Int64WithScaleToStr(C,Size,DecimalSeparator));
-        {$ENDIF}
       end;
     end
     else
@@ -478,10 +465,8 @@ begin
  case VarType(Value) of
   varEmpty,varNull      : Clear;
   varString,varOleStr{$IFDEF D2009+},varUString{$ENDIF}    : AsString :=Value;
-  varSmallint,varInteger{$IFDEF D6+},varWord, varLongWord{$ENDIF}: AsInteger:=Value;
-  {$IFDEF D6+}
-    varInt64            : AsInt64  :=Value
-  {$ENDIF}
+  varSmallint,varInteger,varWord, varLongWord: AsInteger:=Value;
+  varInt64             : AsInt64  :=Value
  else
   AsExtended :=Value;
  end

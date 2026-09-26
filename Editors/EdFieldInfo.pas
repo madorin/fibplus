@@ -37,7 +37,7 @@ uses
 
    Db, pFIBInterfaces,uFIBEditorForm,
   RegistryUtils
-   {$IFDEF D6+}, Variants{$ENDIF}
+   , Variants
 ;
  {$ENDIF}
 

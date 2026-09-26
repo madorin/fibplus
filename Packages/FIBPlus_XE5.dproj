@@ -86,12 +86,9 @@
         <DCC_RemoteDebug>true</DCC_RemoteDebug>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-        <DCC_ObjOutput>D_XE4</DCC_ObjOutput>
-        <DCC_BpiOutput>D_XE4</DCC_BpiOutput>
         <DCC_Description>FIBPlus</DCC_Description>
         <DCC_UnitSearchPath>D_XE5;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_DcuOutput>D_XE5</DCC_DcuOutput>
-        <DCC_HppOutput>D_XE4</DCC_HppOutput>
         <DCC_Optimize>true</DCC_Optimize>
         <VerInfo_Debug>true</VerInfo_Debug>
         <VerInfo_Locale>1033</VerInfo_Locale>

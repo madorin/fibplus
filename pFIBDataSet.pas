@@ -27,7 +27,7 @@ uses
   SysUtils, Classes, StdFuncs, DB, Ibase, IB_Intf, IB_Externals,
   FIBPlatforms, Fib, FIBMiscellaneous, pFIBDatabase,  FIBDataBase, FIBDataSet, FIBQuery,
   pFIBLists,  pFIBQuery, DSContainer, pFIBProps, IB_ErrorCodes, pFIBInterfaces,
-  pFIBDataInfo {, FIBSaveDataSetToXml }{$IFDEF D6+},FMTBcd, Variants {$ENDIF}  ;
+  pFIBDataInfo {, FIBSaveDataSetToXml },FMTBcd, Variants;
 
 
 
@@ -4328,18 +4328,10 @@ var
         then
         begin
             OldVal := unAssigned;
-            {$IFDEF D6+}
              NewVal :=
               DataBase.Gen_Id(FAutoUpdateOptions.GeneratorName,
                FAutoUpdateOptions.GeneratorStep, Transaction
              )
-            {$ELSE}
-             NewVal :=
-              Int(DataBase.Gen_Id(FAutoUpdateOptions.GeneratorName,
-               FAutoUpdateOptions.GeneratorStep, Transaction
-             ))
-
-            {$ENDIF}
         end
         else
         if (DataType <> ftBcd) then

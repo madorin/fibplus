@@ -102,7 +102,6 @@ begin
      Result:=-1
    end;
 {$ENDIF} 
-{$IFDEF D6+}
    varShortInt:
    begin
     if P^=TVarData(v).VShortInt then
@@ -153,7 +152,6 @@ begin
     else
      Result:=-1
    end;
-{$ENDIF}
     varString  :
 {$IFDEF C_INT64}
    begin

@@ -27,7 +27,7 @@ interface
 uses
 
 
-   SysUtils,FIBPlatforms   {$IFDEF D6+}, Variants{$ENDIF};
+   SysUtils,FIBPlatforms, Variants;
 
 {$IFDEF SUPPORT_ARRAY_FIELD}
 type
@@ -52,10 +52,6 @@ function CompareVarArray1(vArray1,vArray2:Variant):boolean;
 function EasyCompareVarArray1(vArray1,vArray2:Variant;HighBound:integer):boolean;
 function NeedCastForCompare(const v,v1:Variant):boolean;
 
-{$IFNDEF D6+}
-function VarTypeIsNumeric(const AVarType: word): Boolean;
-function VarIsNumeric(const V: Variant): Boolean;
-{$ENDIF}
 
 function CompareVariantsEQ(const v,v1:Variant):boolean;
 function CompareVariants(const v,v1:Variant):Integer;
@@ -74,9 +70,6 @@ implementation
 uses FIBConsts;
 
 
-{$IFNDEF D6+}
-{$I SysVariantD5.inc}
-{$ENDIF}
 
 // CompareRnts
 function GetVariantData(const v: Variant):Pointer;
@@ -88,7 +81,6 @@ begin
       result:=@TVarData(v).VInteger;
     varSingle :
       result:=@TVarData(v).VSingle;
-{$IFDEF D6+}
     varInt64:
      result:=@TVarData(v).VInt64;
 
@@ -98,7 +90,6 @@ begin
       result:=@TVarData(v).VWord;
     varLongWord:
       result:=@TVarData(v).VLongWord;
-{$ENDIF}
     varByte:
       result:=@TVarData(v).VByte;
     varDouble  : result:=@TVarData(v).VDouble;
@@ -153,13 +144,11 @@ function ComparePByteAndVariant(P:PByte;const v:Variant):Integer;
 
 function ComparePShortAndVariant(P:PShortInt;const v:Variant):Integer;
 {$I VarFnc.inc}
-{$IFDEF D6+}
 function ComparePWordAndVariant(P:PWord;const v:Variant):Integer;
 {$I VarFnc.inc}
 
 function ComparePLongWordAndVariant(P:PLongWord;const v:Variant):Integer;
 {$I VarFnc.inc}
-{$ENDIF}
 
 {$WARNINGS ON}
 {$UNDEF BODY_NUMERIC_COMPARE_EQ}
@@ -317,7 +306,6 @@ begin
    result:=ComparePDateAndVariant(GetVariantData(v),v1);
   varOleStr:
     result:=CompareWideStringAndVariant(GetVariantData(v),v1);
-{$IFDEF D6+}
   varShortInt:
    result:=ComparePShortAndVariant(GetVariantData(v),v1);
   varByte    :
@@ -328,7 +316,6 @@ begin
    result:=ComparePLongWordAndVariant(GetVariantData(v),v1);
   varInt64   :
    result:=ComparePInt64AndVariant(GetVariantData(v),v1);
-{$ENDIF}
 //{$IFNDEF D_XE}
   varString  :
    result:=CompareStringAndVariant(GetVariantData(v),v1);
@@ -361,7 +348,6 @@ begin
    result:=ComparePDateAndVariant(GetVariantData(v),v1)=0;
   varOleStr:
     result:=CompareWideStringAndVariantEQ(GetVariantData(v),v1);
-{$IFDEF D6+}
   varShortInt:
    result:=ComparePShortAndVariant(GetVariantData(v),v1)=0;
   varByte    :
@@ -372,7 +358,6 @@ begin
    result:=ComparePLongWordAndVariant(GetVariantData(v),v1)=0;
   varInt64   :
    result:=ComparePInt64AndVariant(GetVariantData(v),v1)=0;
-{$ENDIF}
   varString  :
    result:=CompareStringAndVariantEQ(GetVariantData(v),v1);
  else

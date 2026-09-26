@@ -132,9 +132,6 @@ implementation
 
 {$IFNDEF NO_MONITOR}
 uses
-  {$IFNDEF D6+}
-   Forms,
-  {$ENDIF}
 
 
 {$IFDEF D_XE3}
@@ -241,9 +238,7 @@ var
 { TFIBCustomSQLMonitor }
 
 
-{$IFDEF D6+}
 {$WARN SYMBOL_DEPRECATED OFF}
-{$ENDIF}
 constructor TFIBCustomSQLMonitor.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
@@ -279,9 +274,7 @@ begin
   end;
   inherited Destroy;
 end;
-{$IFDEF D6+}
  {$WARN SYMBOL_DEPRECATED ON}
-{$ENDIF}
 
 
 
@@ -404,10 +397,6 @@ var
   Sd : TSecurityDescriptor;
   MapError: Integer;
 
-{$IFDEF VER100}
-const
-  SECURITY_DESCRIPTOR_REVISION = 1;
-{$ENDIF}
 
   function OpenLocalEvent(Idx: Integer): THandle;
   begin
@@ -921,18 +910,11 @@ begin
   inherited Create(False);
 {  if FMonitorCount^ <> 0 then
    Resume;}
-  {$IFNDEF D6+}
-  if FMonitorCount^ = 0 then
-   Suspend;
-  {$ENDIF}
 end;
 
 destructor TMonitorWriterThread.Destroy;
 var Msg:TObject;
 begin
-  {$IFNDEF D6+}
-   Resume;
-  {$ENDIF}
   inherited Destroy;  
   if FMonitorMsgs.Count>0 then
   begin
@@ -959,11 +941,7 @@ begin
 //       FMonitorMsgs.Remove(FMonitorMsgs[0]);
      end;
 
-     {$IFNDEF D6+}
-      Suspend;
-     {$ELSE}
        Sleep(50)
-     {$ENDIF}
     end
     else
       if FMonitorMsgs.Count <> 0 then
@@ -988,11 +966,7 @@ begin
         end;
       end
       else
-     {$IFNDEF D6+}
-        Suspend
-     {$ELSE}
        Sleep(50)
-     {$ENDIF}
   end;
 end;
 
@@ -1011,9 +985,6 @@ begin
   if (FMonitorCount^ <> 0)   then
   begin
     FMonitorMsgs.Add(TFIBTraceObject.Create(Msg, DataType));
-   {$IFNDEF D6+}
-    Resume;
-   {$ENDIF}
   end
   else
   begin
@@ -1276,17 +1247,12 @@ finalization
   try
      bDone := True;
      FreeAndNil(FFIBReaderThread);
-     {$IFDEF D6+}
      if Assigned(FFIBWriterThread) then
      begin
       FFIBWriterThread.StopExec:=True;
       FFIBWriterThread.Terminate;
       FFIBWriterThread.WaitFor;
      end;
-     {$ELSE}
-      if Assigned(FFIBWriterThread) and not FFIBWriterThread.Suspended then
-       FFIBWriterThread.Suspend;
-     {$ENDIF}
      FreeAndNil(FFIBWriterThread);
      if Assigned(_MonitorHook) then   _MonitorHook.Free;
   finally

@@ -28,7 +28,7 @@ interface
 uses
   SysUtils, Classes, ibase,IB_Intf, ib_externals,
   DB, fib, FIBDatabase, StdFuncs,FIBPlatforms
-  {$IFDEF D6+}, Variants{$ENDIF}
+  , Variants
   ;
 
  {$IFDEF SUPPORT_ARRAY_FIELD}
@@ -121,10 +121,6 @@ var
  TraceArr:TTraceArr;
 }
 
-{$IFNDEF D6+}
- type
-  PComp=^Comp;
-{$ENDIF}
 
 const MaxDimCount=64;
 
@@ -512,11 +508,7 @@ begin
          FillChar(glBufArField^,SizeOf(bufInt64),0)
         else
         begin
-          {$IFDEF D6+}
            bufInt64:=Value*E10[glScale];
-          {$ELSE}
-           PComp(@bufInt64)^:=Value*E10[glScale];
-          {$ENDIF}
            Move(bufInt64,glBufArField^,SizeOf(bufInt64));
 
         end;
