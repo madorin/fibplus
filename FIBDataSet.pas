@@ -10536,14 +10536,17 @@ begin
       FieldNo := i + 1;
       if DataType <> ftUnknown then
       begin
-       with TFieldDef.Create(FieldDefs,Name,
-                 DataType, 38, False, FieldNo) do
-        InternalCalcField := False
-      end
-      else
-       with TFieldDef.Create(FieldDefs,Name,
-                 DataType, Size, False, FieldNo) do
-        InternalCalcField := False;
+        if DataType=ftGUID then
+        begin
+         with TFieldDef.Create(FieldDefs,Name,
+                   DataType, 38, False, FieldNo) do
+          InternalCalcField := False
+        end
+        else
+         with TFieldDef.Create(FieldDefs,Name,
+                   DataType, Size, False, FieldNo) do
+          InternalCalcField := False;
+      end;
     end;
   finally
     FieldDefs.EndUpdate;
