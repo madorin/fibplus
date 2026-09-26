@@ -2,11 +2,11 @@
 		<PropertyGroup>
 			<ProjectGuid>{ff48eab1-ce8d-45ff-9b6b-3d949b000333}</ProjectGuid>
 			<MainSource>FIBPlusEditors2011.dpk</MainSource>
-			<Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+			<Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
 			<DCC_DependencyCheckOutputName>C:\Documents and Settings\vvs.HOME\Мои документы\RAD Studio\5.0\Bpl\FIBPlusEditors2007.bpl</DCC_DependencyCheckOutputName>
 			<ProjectVersion>12.2</ProjectVersion>
-			<Config Condition="'$(Config)'==''">Devrace</Config>
+			<Config Condition="'$(Config)'==''">Release</Config>
 			<Base>True</Base>
 			<Platform>Win32</Platform>
 			<AppType>Package</AppType>
@@ -15,22 +15,22 @@
 		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
 			<Base>true</Base>
 		</PropertyGroup>
-		<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_1)'!=''">
+		<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
 			<Cfg_1>true</Cfg_1>
 			<CfgParent>Base</CfgParent>
 			<Base>true</Base>
 		</PropertyGroup>
-		<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_2)'!=''">
+		<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
 			<Cfg_2>true</Cfg_2>
 			<CfgParent>Base</CfgParent>
 			<Base>true</Base>
 		</PropertyGroup>
-		<PropertyGroup Condition="'$(Config)'=='Devrace' or '$(Cfg_3)'!=''">
-			<Cfg_3>true</Cfg_3>
-			<CfgParent>Base</CfgParent>
-			<Base>true</Base>
-		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_DcuOutput>.\$(Platform)\$(Config)</DCC_DcuOutput>
+			<DCC_UnitSearchPath>..</DCC_UnitSearchPath>
+			<DCC_ResourcePath>..</DCC_ResourcePath>
+			<DCC_ObjPath>..</DCC_ObjPath>
+			<DCC_IncludePath>..</DCC_IncludePath>
 			<DCC_UnitAlias>WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;$(DCC_UnitAlias)</DCC_UnitAlias>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
 			<DesignOnlyPackage>true</DesignOnlyPackage>
@@ -43,31 +43,16 @@
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<Version>7.0</Version>
+			<DCC_WriteableConstants>True</DCC_WriteableConstants>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_2)'!=''">
+			<Version>7.0</Version>
 			<DCC_DebugInformation>False</DCC_DebugInformation>
 			<DCC_WriteableConstants>True</DCC_WriteableConstants>
 			<DCC_LocalDebugSymbols>False</DCC_LocalDebugSymbols>
 			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
 			<DCC_CBuilderOutput>All</DCC_CBuilderOutput>
-			<DCC_UnitSearchPath>..</DCC_UnitSearchPath>
-			<DCC_ResourcePath>..</DCC_ResourcePath>
-			<DCC_ObjPath>..</DCC_ObjPath>
-			<DCC_IncludePath>..</DCC_IncludePath>
 			<DCC_Define>RELEASE</DCC_Define>
-		</PropertyGroup>
-		<PropertyGroup Condition="'$(Cfg_2)'!=''">
-			<DCC_DcuOutput>d2010\</DCC_DcuOutput>
-			<Version>7.0</Version>
-			<DCC_WriteableConstants>True</DCC_WriteableConstants>
-		</PropertyGroup>
-		<PropertyGroup Condition="'$(Cfg_3)'!=''">
-			<DCC_DependencyCheckOutputName>bpl\FIBPlusEditors2010.bpl</DCC_DependencyCheckOutputName>
-			<DCC_DebugInformation>false</DCC_DebugInformation>
-			<DCC_BplOutput>bpl</DCC_BplOutput>
-			<DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
-			<DCC_DcuOutput>d2011\</DCC_DcuOutput>
-			<DCC_AssertionsAtRuntime>false</DCC_AssertionsAtRuntime>
-			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
-			<DCC_ImportedDataReferences>false</DCC_ImportedDataReferences>
 		</PropertyGroup>
 		<ItemGroup>
 			<DelphiCompile Include="FIBPlusEditors2011.dpk">
@@ -154,19 +139,15 @@
 			<DCCReference Include="..\Editors\uFontEditor.pas">
 				<Form>frmFontEditor</Form>
 			</DCCReference>
-			<BuildConfiguration Include="Debug">
-				<Key>Cfg_2</Key>
-				<CfgParent>Base</CfgParent>
-			</BuildConfiguration>
-			<BuildConfiguration Include="Devrace">
-				<Key>Cfg_3</Key>
-				<CfgParent>Base</CfgParent>
-			</BuildConfiguration>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>
-			<BuildConfiguration Include="Release">
+			<BuildConfiguration Include="Debug">
 				<Key>Cfg_1</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Release">
+				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>
 			</BuildConfiguration>
 		</ItemGroup>

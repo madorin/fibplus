@@ -2,12 +2,13 @@
   <PropertyGroup>
     <ProjectGuid>{0f436fc7-b823-4a6a-8159-0cddb23370e9}</ProjectGuid>
     <MainSource>FIBPlus2006.dpk</MainSource>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
     <DCC_DependencyCheckOutputName>G:\Documents and Settings\All Users\Документы\RAD Studio\5.0\Bpl\FIBPlus2006.bpl</DCC_DependencyCheckOutputName>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DCC_DcuOutput>.\Win32\Release</DCC_DcuOutput>
     <Version>7.0</Version>
     <DCC_DebugInformation>False</DCC_DebugInformation>
     <DCC_WriteableConstants>True</DCC_WriteableConstants>
@@ -17,6 +18,7 @@
     <DCC_Define>RELEASE</DCC_Define>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DCC_DcuOutput>.\Win32\Debug</DCC_DcuOutput>
     <Version>7.0</Version>
     <DCC_WriteableConstants>True</DCC_WriteableConstants>
     <DCC_CBuilderOutput>All</DCC_CBuilderOutput>

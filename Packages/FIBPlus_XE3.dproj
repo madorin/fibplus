@@ -5,7 +5,7 @@
         <ProjectVersion>14.6</ProjectVersion>
         <FrameworkType>None</FrameworkType>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Config Condition="'$(Config)'==''">Release</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>7</TargetedPlatforms>
         <AppType>Package</AppType>
@@ -87,9 +87,6 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <DCC_Description>FIBPlus</DCC_Description>
-        <DCC_UnitSearchPath>D_XE3;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-        <DCC_DcuOutput>D_XE3</DCC_DcuOutput>
-        <DCC_HppOutput>DXE3</DCC_HppOutput>
         <DCC_Optimize>true</DCC_Optimize>
         <VerInfo_Debug>true</VerInfo_Debug>
         <VerInfo_Locale>1033</VerInfo_Locale>
@@ -163,15 +160,15 @@
         <DCCReference Include="SIBGlobals.pas"/>
         <DCCReference Include="FIBXMLDataSetReader.pas"/>
         <DCCReference Include="FIBSaveDataSetToXml.pas"/>
-        <BuildConfiguration Include="Release">
-            <Key>Cfg_2</Key>
-            <CfgParent>Base</CfgParent>
-        </BuildConfiguration>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
         <BuildConfiguration Include="Debug">
             <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Release">
+            <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
         </BuildConfiguration>
     </ItemGroup>

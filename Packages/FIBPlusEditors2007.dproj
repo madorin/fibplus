@@ -3,43 +3,29 @@
   <PropertyGroup>
     <ProjectGuid>{ff48eab1-ce8d-45ff-9b6b-3d949b000333}</ProjectGuid>
     <MainSource>FIBPlusEditors2007.dpk</MainSource>
-    <Configuration Condition=" '$(Configuration)' == '' ">Devrace</Configuration>
+    <DCC_UnitSearchPath>..</DCC_UnitSearchPath>
+    <DCC_ResourcePath>..</DCC_ResourcePath>
+    <DCC_ObjPath>..</DCC_ObjPath>
+    <DCC_IncludePath>..</DCC_IncludePath>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
     <DCC_DependencyCheckOutputName>bpl\FIBPlusEditors2007.bpl</DCC_DependencyCheckOutputName>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DCC_DcuOutput>.\Win32\Release</DCC_DcuOutput>
     <Version>7.0</Version>
     <DCC_DebugInformation>False</DCC_DebugInformation>
     <DCC_WriteableConstants>True</DCC_WriteableConstants>
     <DCC_LocalDebugSymbols>False</DCC_LocalDebugSymbols>
     <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
     <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
-    <DCC_UnitSearchPath>..</DCC_UnitSearchPath>
-    <DCC_ResourcePath>..</DCC_ResourcePath>
-    <DCC_ObjPath>..</DCC_ObjPath>
-    <DCC_IncludePath>..</DCC_IncludePath>
     <DCC_Define>RELEASE</DCC_Define>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DCC_DcuOutput>.\Win32\Debug</DCC_DcuOutput>
     <Version>7.0</Version>
     <DCC_WriteableConstants>True</DCC_WriteableConstants>
-    <DCC_DcuOutput>Editors\d2007</DCC_DcuOutput>
-    <DCC_ObjOutput>Editors\d2007</DCC_ObjOutput>
-    <DCC_HppOutput>Editors\d2007</DCC_HppOutput>
-    <DCC_BplOutput>Editors\d2007</DCC_BplOutput>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Devrace|AnyCPU' ">
-    <Version>7.0</Version>
-    <DCC_AssertionsAtRuntime>False</DCC_AssertionsAtRuntime>
-    <DCC_DebugInformation>False</DCC_DebugInformation>
-    <DCC_WriteableConstants>True</DCC_WriteableConstants>
-    <DCC_LocalDebugSymbols>False</DCC_LocalDebugSymbols>
-    <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
-    <DCC_DcuOutput>d2007</DCC_DcuOutput>
-    <DCC_ObjOutput>d2007</DCC_ObjOutput>
-    <DCC_HppOutput>d2007</DCC_HppOutput>
-    <DCC_BplOutput>bpl</DCC_BplOutput>
   </PropertyGroup>
   <ProjectExtensions>
     <Borland.Personality>Delphi.Personality</Borland.Personality>
