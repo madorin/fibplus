@@ -10506,20 +10506,20 @@ begin
   if State<>dsBrowse then
     raise Exception.Create('Can''t use bookmark. DataSet not in browse mode');
   Include(FRunState,drsInGotoBookMark);
-  {$IFDEF D_23}
-  if not BookmarkValid(BookMark) then
-  {$ELSE}
-  if not BookmarkValid(TBookmark(BookMark)) then
-  {$ENDIF}
-  begin
-    // vLockResync:=True;
-    Inc(vLockResync);
-    Exit;
-  end;
-
+  // Resync enables them again, also for an invalid bookmark
   DisableControls;
   DisableScrollEvents;
   try
+  {$IFDEF D_23}
+   if not BookmarkValid(BookMark) then
+  {$ELSE}
+   if not BookmarkValid(TBookmark(BookMark)) then
+  {$ENDIF}
+   begin
+     Inc(vLockResync);
+     Exit;
+   end;
+
   {$IFDEF D_23}
    Rno:=FRecordsCache.RecordByBookMark(TFIBBookmark(Pointer(Bookmark)^).bRecordNumber);
   {$ELSE}
