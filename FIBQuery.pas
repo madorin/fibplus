@@ -704,7 +704,6 @@ const
 
 
    fibGUID_NULL: TGUID = '{00000000-0000-0000-0000-000000000000}';
-   chUnicodeFSS=3;
 
 {$IFDEF SUPPORT_KOI8_CHARSET}
    chFBKOI8R=63;
@@ -2377,7 +2376,7 @@ begin
      vValue:=PAnsiString(aValue)^;
    end;
    if vNeedUTFEncode then
-     FXSQLVAR^.sqlsubtype:=chUnicodeFSS;
+     FXSQLVAR^.sqlsubtype := FQuery.Database.UTF8CharSetID;
    if Length(vValue)>32767 then
     sSQLType:=SQL_BLOB;
     if (sSQLType = SQL_BLOB) then

@@ -396,6 +396,7 @@ type
    procedure DisableCancelOperations;
 //
    function UnicodeCharSets:TIBCharSets;
+   function UTF8CharSetID: Integer;
    function BytesInUnicodeChar(CharSetId:integer):Byte;
    function ReturnDeclaredFieldSize:boolean;
    function MemoSubTypesActive:boolean;
@@ -811,6 +812,9 @@ procedure AssignSQLObjectParams(Dest: ISQLObject; ParamSources : array of ISQLOb
 
 const
     OCTETS_CHARSET_ID=1;
+    UNICODE_FSS_CHARSET_ID = 3;
+    FB_UTF8_CHARSET_ID = 4;   // Firebird 2.0 and later
+    IB_UTF8_CHARSET_ID = 59;  // InterBase 2007 and later
 
 var DefDataBase        :TFIBDatabase;
     DatabaseList       :TThreadList;
@@ -2406,6 +2410,17 @@ begin
   else
   if FIsIB2007Connect then
    Result:=Result+[59,8,64]    // UTF8,UNICODE_BE,UNICODE_LE
+end;
+
+function TFIBDatabase.UTF8CharSetID: Integer;
+// Character set of the strings encoded by UTF8Encode
+begin
+  if FIsFirebirdConnect and (ServerMajorVersion >= 2) then
+    Result := FB_UTF8_CHARSET_ID
+  else if FIsIB2007Connect then
+    Result := IB_UTF8_CHARSET_ID
+  else
+    Result := UNICODE_FSS_CHARSET_ID;
 end;
 
 function TFIBDatabase.BytesInUnicodeChar(CharSetId:integer):Byte;
