@@ -84,6 +84,7 @@ type
  {$ENDIF}
 
     function GetAsInt64: Int64;
+    function IsDefferedLongString: Boolean;
     // Firebird 4 data types
     function IsDecimalType: Boolean;
     function IsTimeZoneType: Boolean;
@@ -1650,6 +1651,7 @@ begin
   if FStreamValue=nil then
    FStreamValue:=TMemoryStream.Create;
   FStreamValue.LoadFromStream(Stream);
+  FWideTempValue:='';
   FQuery.FHaveStreamParams:=True;
   FXSQLVar^.sqltype:=SQL_BLOB
 end;
@@ -1825,6 +1827,13 @@ begin
     (SQLType=SQL_SHORT) or (SQLType=SQL_DOUBLE) or
     (SQLType = SQL_FLOAT) or (SQLType = SQL_D_FLOAT) or
     (SQLType = SQL_INT128) or (SQLType = SQL_DEC16) or (SQLType = SQL_DEC34)
+end;
+
+// A string over 32767 bytes set before Prepare: already a blob, but encoded
+// only when the server parameter is known
+function TFIBXSQLVAR.IsDefferedLongString: Boolean;
+begin
+  Result := FIsDefferedSetting and (FStreamValue <> nil) and (Length(FWideTempValue) > 0);
 end;
 
 function TFIBXSQLVAR.IsDateTimeType(SQLType:Integer):boolean;
@@ -2374,16 +2383,11 @@ begin
     if (sSQLType = SQL_BLOB) then
     begin
       if FStreamValue=nil then
-       FStreamValue:=TMemoryStream.Create;
-
-     if Length(vValue)=0 then
-      FStreamValue.Clear
-     else
-     begin
-      FStreamValue.Position:=0;
+       FStreamValue:=TMemoryStream.Create
+      else
+       FStreamValue.Clear;
+     if Length(vValue)>0 then
       FStreamValue.Write(vValue[1],Length(vValue));
-
-     end;
      FQuery.FHaveStreamParams:=True;
      FXSQLVAR^.sqltype:=sSQLType;
      FXSQLVAR^.sqlsubtype:= sSubType;
@@ -2402,6 +2406,7 @@ begin
      vSQLType:=SQL_TEXT;
      vSize   :=Length(vValue);
     end;
+    FreeAndNil(FStreamValue); // a previous long value
 
      {$IFDEF D_XE3}with FormatSettings do{$ENDIF}
      if vSize>0 then
@@ -3009,6 +3014,7 @@ begin
 
     if  ((uSType = SQL_BLOB) or (uSType = SQL_ARRAY))
      and ((sSType = SQL_BLOB) or (sSType = SQL_ARRAY))
+     and not UsrPar.IsDefferedLongString
     then
     begin
       FreeAndNil(FStreamValue);
@@ -6035,11 +6041,11 @@ begin
                   IsNull:=True
                 end
                 else
-            if tmpVar.IsBlob and not IsBlob then
+            if tmpVar.IsBlob and (not IsBlob or IsDefferedLongString) then
                 begin
                   FPrepared := True;
 
-                  if (SQLType=SQL_TEXT) then
+                  if (SQLType=SQL_TEXT) or IsBlob then
                   begin
                    if Length(FWideTempValue)>0 then
                    begin
