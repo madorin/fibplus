@@ -630,19 +630,19 @@ end;
 {$ENDIF}
 
 
-function  Int64ToBCD(Value: Int64;Scale:integer; var BCD: TBcd ): Boolean;
+function Int64ToBCD(Value: Int64; Scale: Integer; var BCD: TBcd): Boolean;
 var
- c:Currency;
+  C: Currency;
 begin
-  c:=Value/1E4;
-  Result:= CurrToBCD(c,BCD);
+  PInt64(@C)^ := Value;
+  Result := CurrToBCD(C, BCD);
   with BCD do
   begin
-   if Value<0 then
-    SignSpecialPlaces:=128
-   else
-    SignSpecialPlaces:=0;
-   SignSpecialPlaces :=Scale+SignSpecialPlaces;
+    if Value < 0 then
+      SignSpecialPlaces := 128
+    else
+      SignSpecialPlaces := 0;
+    SignSpecialPlaces := Scale + SignSpecialPlaces;
   end;
 end;
 
