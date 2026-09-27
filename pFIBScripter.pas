@@ -45,20 +45,15 @@ type
     );
 
 
-  TStmtCoord=record
-   X: Word;
-   Y: Integer;
+  TStmtCoord = record
+    X: Integer;
+    Y: Integer;
   end;
   PStmtCoord=^TStmtCoord;
 
-  TValidationInfo=record
-    smdEnd    :TStmtCoord;
-    Active    :boolean;
-    BeginExist:boolean;
-    BegCount:integer;
-  end;
-  PValidationInfo=^TValidationInfo;
-
+  // smdEnd is the last character of the statement text, without the terminator,
+  // blanks and comments after it. smdEnd.X=0 means the statement has no terminator
+  // (only when ParseScript is called with IgnoreLastTerm=False)
   TStatementDesc = record
     smdBegin:TStmtCoord;
     smdEnd  :TStmtCoord;
@@ -88,34 +83,93 @@ type
     dState: TDirectiveState;
     OwnerDirectiveNum:integer;
     OwnerDirectiveElse:boolean;
+    dCondition: string; // text from dBegin to dConditionClose
   end;
   PDirectiveDesc=^TDirectiveDesc;
   TDirectivesMap= array of TDirectiveDesc;
   PDirectivesMap= array of PDirectiveDesc;
 
+  TParseDisposition = (pdBetweenStatements, pdInStatement, pdInDirective);
+  TParserState = (psNormal, psInComment, psInQuote, psInDoubleQuote, psInQString,
+    psInConditional);
+  // Words that decide where a statement ends
+  TScriptKeyword = (kwOther, kwAlter, kwAs, kwBegin, kwBlock, kwCase, kwCreate, kwEnd,
+    kwExecute, kwExternal, kwFunction, kwOr, kwPackage, kwProcedure, kwRecreate, kwSet,
+    kwTerm, kwTrigger);
 
+  // Splits a script into statements in one pass. Lines are scanned as they are
+  // added, so a script is parsed either as a whole or while it is read from a file.
+  // Coordinates are script lines, the parser holds lines from FFirstLine on.
   TpFIBScriptParser = class
   private
-    FScript:TStrings;
-    FTemp  :TStrings;
-    FCurDBName:string;
-    FMakeConnectInScript:boolean;
-    FHaveDMLStatements   :boolean;
-    FHaveUnknownStatements:boolean;
-    FValidationInfo:TValidationInfo;
-    function  NextTokenPos(TokenPos:TStmtCoord; EndCoord:TStmtCoord ):TStmtCoord;
-    function  GetToken(TokenPos:TStmtCoord;IgnoreQuote:boolean=True):string;
-    procedure SearchObjectType(var stmtDesc:TStatementDesc;var BegSearch:TStmtCoord;ForGrant:boolean=False);
-    function  ValidateStatement(var stmtDesc:TStatementDesc;const NeedCheckCanEnd:boolean ):boolean;
-    function  StmtTypeNameToType(const TestString:string; Position:integer):TStmtType;
-    function  TypeNameToObjectType(const TestString:string; Position:integer):TObjectType;
+    FScript: TStrings;
+    FFirstLine: Integer;
+    FNextLine: Integer;
+    FTerminator: string;
+    FTermFirst, FTermFirstLower: Char; // first char of FTerminator in both cases
+    FStatements: TScriptMap;
+    FStatementCount: Integer; // started statements, the last one may be incomplete
+    FCompleteCount: Integer;
+    FTakenCount: Integer; // complete statements returned by NextStatement
+    FDirectives: TDirectivesMap;
+    FDirectiveCount: Integer;
+    FDirectiveStack: array of Integer;
+    FCurDirective: Integer;
+    FDisposition: TParseDisposition;
+    FState: TParserState;
+    FQuoteClose: Char;
+    FLastSignificant: TStmtCoord; // last character out of blanks and comments
+    // Structure of the current statement
+    FWordCount: Integer;
+    FHeader: array[0..3] of TScriptKeyword; // first words
+    FParenDepth: Integer;
+    FMayHaveBody: Boolean; // CREATE, ALTER, RECREATE or EXECUTE with the ";" terminator
+    FExternal: Boolean; // EXTERNAL module, without a PSQL body
+    FInBody: Boolean; // in the body of a PSQL module, after AS
+    FBlockDepth: Integer; // BEGIN and CASE blocks open in the body
+    FLastWordIsEnd: Boolean;
+    FInSetTerm: Boolean;
+    FNewTerminator: string;
+    FNewTerminatorDone: Boolean;
+    // Details of the script
+    FCurDBName: string;
+    FMakeConnectInScript: Boolean;
+    FHaveDMLStatements: Boolean;
+    FHaveUnknownStatements: Boolean;
+    function Line(Y: Integer): string;
+    procedure ScanLine(Y: Integer);
+    function IsTerminatorAt(const S: string; X: Integer): Boolean;
+    function IsModuleHeader: Boolean;
+    procedure SetTerminator(const Value: string);
+    procedure ProcessWord(const S: string; X, Len: Integer);
+    procedure BeginStatement(X, Y: Integer; StmtType: TStmtType);
+    procedure EndStatement;
+    procedure EndSetTerm;
+    procedure BeginDirective(X, Y: Integer);
+    procedure CloseDirectiveCondition(X, Y: Integer);
+    procedure ElseDirective(X, Y: Integer);
+    procedure EndIfDirective(X, Y: Integer);
+    function NextTokenPos(TokenPos: TStmtCoord; EndCoord: TStmtCoord): TStmtCoord;
+    function GetToken(TokenPos: TStmtCoord; IgnoreQuote: Boolean = True): string;
+    procedure SearchObjectType(var stmtDesc: TStatementDesc; var BegSearch: TStmtCoord;
+      ForGrant: Boolean = False);
+    procedure ValidateStatement(var stmtDesc: TStatementDesc);
+    function StmtTypeNameToType(const TestString: string; Position: Integer): TStmtType;
+    function TypeNameToObjectType(const TestString: string; Position: Integer): TObjectType;
   public
-   constructor Create;
-   destructor  Destroy; override;
-   procedure ParseScript(AScript:TStrings;var Terminator:string;
-     var FScriptMap:TScriptMap; var  FCDMap: TDirectivesMap;IgnoreLastTerm:boolean=True
-   );
-
+    procedure ParseScript(AScript: TStrings; var Terminator: string;
+      var ScriptMap: TScriptMap; var DirectivesMap: TDirectivesMap;
+      IgnoreLastTerm: Boolean = True);
+    // Incremental parsing: BeginParse, then Scan after lines are added to AScript,
+    // NextStatement to take the complete statements and DiscardParsed to drop
+    // them with their lines. EndParse completes the last statement.
+    procedure BeginParse(AScript: TStrings; const Terminator: string);
+    procedure Scan;
+    procedure EndParse(IgnoreLastTerm: Boolean);
+    function NextStatement(var Stmt: PStatementDesc): Boolean;
+    procedure DiscardParsed;
+    procedure CopyFragment(BegPos, EndPos: TStmtCoord; Dest: TStrings);
+    property Terminator: string read FTerminator;
   end;
 
 
@@ -135,8 +189,8 @@ type
      FParser:TpFIBScriptParser;
      FScript:TStrings;
      FScriptMap:TScriptMap;
-     FDirectivesMap:TDirectivesMap;
      FLineCountInFile:integer;
+     FRunDepth: Integer; // nesting of ExecuteScript and ExecuteFromFile (INPUT)
      procedure DoOnChangeScript(Sender: TObject);
   private
      FDatabase   :TpFIBDatabase;
@@ -178,6 +232,11 @@ type
      procedure SetConnectParams(StartToken:TStmtCoord;EndCoord:TStmtCoord);
      procedure TryFillBlobParams;
      function  PrepareReinsert(const InsTxt,ReInsTxt:string):string;
+     procedure BeginRun;
+     procedure EndRun;
+     procedure RunStatement(Stmt: PStatementDesc; StmtNo: Integer; StmtTxt: TStrings);
+     function ExecuteParsed(var StmtNo: Integer; StmtTxt: TStrings): Boolean;
+     procedure FlushExecBlock;
   private
   //IB2007
       FInBatchCollect:boolean;
@@ -269,10 +328,6 @@ type
 implementation
 uses  StrUtil,SqlTxtRtns,StdFuncs;
 { TpFIBScripter }
-type
-   TParseDisposition= (pdBetweenStatements,pdInStatement,pdInDirective);
-   TParserState =(psNormal,psInComment,psInFBComment,psInQuote,psInDoubleQuote,psInConditional);
-
 
 procedure RaiseParserDirectiveError(const DirName:string;Line:integer);
 begin
@@ -315,7 +370,7 @@ end;
 
   end;
 
-function StmtCoord(X:Word;Y:Integer):TStmtCoord;
+function StmtCoord(X, Y: Integer): TStmtCoord; {$IFDEF D2009+}inline;{$ENDIF}
 begin
   Result.X := X;
   Result.Y := Y;
@@ -384,54 +439,13 @@ end;
 procedure TpFIBScripter.ClearPrepared;
 begin
  SetLength(FScriptMap,0);
- SetLength(FDirectivesMap,0);
  FPrepared:=False;
 end;
 
 procedure TpFIBScripter.CopyFragment(BegPos, EndPos: TStmtCoord;
   Dest: TStrings);
-var
- y1:Integer;
- L:Word;
- CurStr:String;
 begin
-  if Assigned(Dest) then
-  begin
-    Dest.Clear;
-    if (EndPos.X=0) and (FScript.Count>0) then
-    begin
-    // End term don't exist
-     EndPos.Y:=FScript.Count-1;
-     EndPos.X:=Length(FScript[FScript.Count-1])
-    end;
-
-    for y1:=BegPos.Y to EndPos.Y do
-    begin
-      CurStr:=FScript[y1];
-      if y1=BegPos.Y then   // First line
-      begin
-        if BegPos.Y=EndPos.Y then
-         L:=EndPos.X-BegPos.X+1
-        else
-         L:=Length(CurStr)-BegPos.X+1;
-        if L<>Length(CurStr) then
-         Dest.Add(Copy(CurStr,BegPos.X,L))
-        else
-         Dest.Add(CurStr)
-      end
-      else
-      if y1=EndPos.Y then   // Last line
-      begin
-         L:=EndPos.X;
-        if L<>Length(CurStr) then
-         Dest.Add(Copy(CurStr,1,L))
-        else
-         Dest.Add(CurStr)
-      end
-      else
-         Dest.Add(CurStr)
-    end;
-  end;
+  FParser.CopyFragment(BegPos, EndPos, Dest);
 end;
 
 constructor TpFIBScripter.Create(AOwner:TComponent);
@@ -469,7 +483,6 @@ begin
   FDefines.Free;
   FDirectiveConsts.Free;
   SetLength(FScriptMap,0);
-  SetLength(FDirectivesMap,0);
   if Assigned(FExecBlockStatement) then
     FExecBlockStatement.Free;
   if Assigned(FBlobFileStream) then
@@ -619,7 +632,7 @@ begin
         if ValueF<cValueF then
          Result:=dsFalse
         else
-        if cValueF>cValueF  then
+        if ValueF>cValueF then
          Result:=dsTrue
         else
         if cOper='>=' then
@@ -850,7 +863,7 @@ begin
  Result:=dsUnknown;
  TmpSQL:=TStringList.Create;
  try
-  CopyFragment(Directive.dBegin,Directive.dConditionClose,TmpSQL);
+  TmpSQL.Text:=Directive.dCondition;
   if TmpSQL.Count>0 then
     if IsClause(dIfDef, TmpSQL[0],1) then
     begin
@@ -897,14 +910,15 @@ end;
 
 function  TpFIBScripter.DirectiveForbid(DirNum:integer; InElse:boolean):boolean;
 var
-
+ Directives: TDirectivesMap; // of the script being executed
  NeedCalc:PDirectivesMap;
  i,j:Integer;
  vInElse:boolean;
 begin
- if (DirNum>=0) and (DirNum<Length(FDirectivesMap)) then
+ Directives := FParser.FDirectives;
+ if (DirNum>=0) and (DirNum<FParser.FDirectiveCount) then
  begin
-    case FDirectivesMap[DirNum].dState of
+    case Directives[DirNum].dState of
     dsTrue: Result:= not InElse;
     dsFalse: Result:= InElse;
     else
@@ -914,10 +928,10 @@ begin
         SetLength(NeedCalc,1000);
         i:=0;
         j:=DirNum;
-        while (j>-1) and (FDirectivesMap[j].dState=dsUnknown) do
+        while (j>-1) and (Directives[j].dState=dsUnknown) do
         begin
-         NeedCalc[i]:=@FDirectivesMap[j];
-         j:=FDirectivesMap[j].OwnerDirectiveNum;
+         NeedCalc[i]:=@Directives[j];
+         j:=Directives[j].OwnerDirectiveNum;
          Inc(i)
         end;
         SetLength(NeedCalc,I);
@@ -925,7 +939,7 @@ begin
 //
        if j>-1 then
        begin
-          Result:=(FDirectivesMap[j].dState=dsTrue) xor (NeedCalc[I].OwnerDirectiveElse);
+          Result:=(Directives[j].dState=dsTrue) xor (NeedCalc[I].OwnerDirectiveElse);
        end;
 
 //
@@ -942,9 +956,9 @@ begin
         end;
         if not Result then
          if  InElse then
-          FDirectivesMap[DirNum].dState:=dsTrue
+          Directives[DirNum].dState:=dsTrue
          else
-          FDirectivesMap[DirNum].dState:=dsFalse;
+          Directives[DirNum].dState:=dsFalse;
       end;
     end;
  end
@@ -1458,105 +1472,128 @@ begin
 end;
 end;
 
-procedure TpFIBScripter.ExecuteScript(FromStmt:integer=1);
-var
-   i:integer;
-   sc:Integer;
-   stmt:PStatementDesc;
-   TmpSQL:TStrings;
+// Called in a try block with EndRun in finally, so FRunDepth stays balanced
+procedure TpFIBScripter.BeginRun;
 begin
-  vLastInsertStmt:='';
-  vReinsPrepared:=False;
+  FPaused := False;
+  Inc(FRunDepth);
+  if FRunDepth = 1 then
+  begin
+    vLastInsertStmt := '';
+    vReinsPrepared := False;
+    FSQLDialect := 3;
+    FCharSet := '';
+    PreparePreDefines;
+  end;
+end;
 
-  FPaused:=False;
-  if not FPrepared then
-   Parse;
+procedure TpFIBScripter.EndRun;
+begin
+  Dec(FRunDepth);
+  if FRunDepth > 0 then // a script run by INPUT goes on with the calling script
+    Exit;
 
-  FSQLDialect:=3;
-  FCharSet   :='';
-  TmpSQL:=TStringList.Create;
-  try
-    sc:=StatementsCount-1;
-    for i:=FromStmt-1 to sc do
-    begin
-     if FPaused  then
-     begin
-      FStopStatementNo:=i+1;
-      Exit;
-     end;
-
-     stmt:=GetStatement(i+1,TmpSQL);
-     case stmt.smtType of
-      sBatchStart:
-      begin
-       FInBatchCollect:=True;
-       SetLength(FBatchSQLs,0)
-      end;
-      sBatchExecute:
-      begin
-       FInBatchCollect:=False;
-       if not GetTransaction.InTransaction then
-          GetTransaction.StartTransaction;
-
-       if Assigned(FBeforeStatementExecute) then
-        FBeforeStatementExecute(Self,stmt.smdBegin.Y+1,i+1,stmt^,nil);
- {$IFDEF SUPPORT_IB2007}
-       FQuery.ExecuteAsBatch(FBatchSQLs);
- {$ELSE}
-       raise
-        Exception.Create('Batch execute support for IB2007 only');
- {$ENDIF}
-       SetLength(FBatchSQLs,0)
-      end
-     else
-      if not FInBatchCollect then
-       ExecuteStatement(TmpSQL,stmt,i,TmpSQL)
-      else
-      begin
-       SetLength(FBatchSQLs,Length(FBatchSQLs)+1);
-       FBatchSQLs[Length(FBatchSQLs)-1]:=TmpSQL.Text;
-      end
-     end
-    end;
-
-   if FUseExecBlockForDML then
-      if Assigned(FExecBlockStatement) and (vBlockSize>0) then
-      begin
-         CloseBlock;
-         FQuery.SQL:=FExecBlockStatement;     // Force execute block
-         RestartBlock;
-         if not GetTransaction.InTransaction then
-          GetTransaction.StartTransaction;
-         FQuery.ExecQuery;
-      end;
-
-  finally
-   if Assigned(Database) and FNeedRestoreForceWrite and Database.Connected then
-   begin
+  if FNeedRestoreForceWrite and Assigned(FDatabase) and FDatabase.Connected then
+  begin
     if GetTransaction.InTransaction then
       GetTransaction.Commit;
+    FDatabase.Connected := False;
+    FDatabase.DBParams.Values['force_write'] := '1';
+    FDatabase.Connected := True;
+  end;
+  FNeedRestoreForceWrite := False;
 
-    Database.Connected:=False;
-    Database.DBParams.Values['force_write']:='1';
-    Database.Connected:=True;
-   end;
-
-
-   if vInternalDatabase then
-   begin
-     if GetTransaction.InTransaction then
+  if vInternalDatabase then
+  begin
+    if GetTransaction.InTransaction then
       GetTransaction.Commit;
-     Database:=nil;
-   end   ;
+    Database := nil;
+  end;
 
-
-
-   TmpSQL.Free;
-   if Assigned(FBlobFileStream) then
-   begin
+  if Assigned(FBlobFileStream) then
+  begin
     FBlobFileStream.Free;
-    FBlobFileStream:=nil;
-   end;
+    FBlobFileStream := nil;
+  end;
+end;
+
+procedure TpFIBScripter.RunStatement(Stmt: PStatementDesc; StmtNo: Integer; StmtTxt: TStrings);
+begin
+  case Stmt.smtType of
+    sBatchStart:
+      begin
+        FInBatchCollect := True;
+        SetLength(FBatchSQLs, 0);
+      end;
+    sBatchExecute:
+      begin
+        FInBatchCollect := False;
+        if not GetTransaction.InTransaction then
+          GetTransaction.StartTransaction;
+        if Assigned(FBeforeStatementExecute) then
+          FBeforeStatementExecute(Self, Stmt.smdBegin.Y + 1, StmtNo + 1, Stmt^, nil);
+{$IFDEF SUPPORT_IB2007}
+        FQuery.ExecuteAsBatch(FBatchSQLs);
+{$ELSE}
+        raise Exception.Create('Batch execute support for IB2007 only');
+{$ENDIF}
+        SetLength(FBatchSQLs, 0);
+      end;
+  else
+    if not FInBatchCollect then
+      ExecuteStatement(StmtTxt, Stmt, StmtNo, StmtTxt)
+    else
+    begin
+      SetLength(FBatchSQLs, Length(FBatchSQLs) + 1);
+      FBatchSQLs[Length(FBatchSQLs) - 1] := StmtTxt.Text;
+    end;
+  end;
+end;
+
+procedure TpFIBScripter.FlushExecBlock;
+begin
+  if FUseExecBlockForDML and Assigned(FExecBlockStatement) and (vBlockSize > 0) then
+  begin
+    CloseBlock;
+    FQuery.SQL := FExecBlockStatement; // Force execute block
+    RestartBlock;
+    if not GetTransaction.InTransaction then
+      GetTransaction.StartTransaction;
+    FQuery.ExecQuery;
+  end;
+end;
+
+procedure TpFIBScripter.ExecuteScript(FromStmt: Integer = 1);
+var
+  I: Integer;
+  TmpSQL: TStrings;
+begin
+  if not FPrepared then
+    Parse
+  else if FromStmt <= 1 then // conditions are evaluated again, a resumed run keeps them
+    for I := 0 to FParser.FDirectiveCount - 1 do
+      FParser.FDirectives[I].dState := dsUnknown;
+
+  TmpSQL := TStringList.Create;
+  try
+    BeginRun;
+    for I := FromStmt - 1 to StatementsCount - 1 do
+    begin
+      if FPaused then
+      begin
+        FStopStatementNo := I + 1;
+        Exit;
+      end;
+      RunStatement(GetStatement(I + 1, TmpSQL), I, TmpSQL);
+    end;
+    if FRunDepth = 1 then
+      FlushExecBlock;
+  finally
+    try
+      EndRun;
+    finally
+      TmpSQL.Free;
+    end;
   end;
 end;
 
@@ -1565,7 +1602,7 @@ function TpFIBScripter.GetStatement(StmtNo: integer;
 begin
   if StmtNo>Length(FScriptMap) then
    raise
-     Exception.Create('Statement ¹'+IntToStr(StmtNo)+' don''t exist');
+     Exception.Create('Statement #'+IntToStr(StmtNo)+' don''t exist');
   Result:=@FScriptMap[StmtNo-1];
   CopyFragment(Result.smdBegin,Result.smdEnd,Text);
 end;
@@ -1585,12 +1622,14 @@ begin
 end;
 
 procedure TpFIBScripter.Parse(Terminator:string=';');
+var
+ Directives: TDirectivesMap; // the parser keeps them for DirectiveForbid
 begin
  FMakeConnectInScript:=False;
  FHaveDMLStatements    :=False;
  FHaveUnknownStatements:=False;
  FLibraryName   := 'gds32.dll';
- FParser.ParseScript(FScript,Terminator,FScriptMap,FDirectivesMap );
+ FParser.ParseScript(FScript, Terminator, FScriptMap, Directives);
  FPrepared:=True;
 
  FMakeConnectInScript:=FParser.FMakeConnectInScript;
@@ -1766,136 +1805,69 @@ begin
   end;
 end;
 
-procedure TpFIBScripter.ExecuteFromFile(const FileName: string;Terminator:string=';');
+// Executes the complete statements of the current parser, False when paused
+function TpFIBScripter.ExecuteParsed(var StmtNo: Integer; StmtTxt: TStrings): Boolean;
+var
+  Stmt: PStatementDesc;
+begin
+  Result := True;
+  while FParser.NextStatement(Stmt) do
+  begin
+    if FPaused then
+    begin
+      FStopStatementNo := StmtNo + 1;
+      Result := False;
+      Exit;
+    end;
+    FParser.CopyFragment(Stmt.smdBegin, Stmt.smdEnd, StmtTxt);
+    RunStatement(Stmt, StmtNo, StmtTxt);
+    Inc(StmtNo);
+  end;
+end;
+
+// The file is parsed while it is read and every statement is executed as soon
+// as it is complete, so only the lines of the current statement are kept.
+procedure TpFIBScripter.ExecuteFromFile(const FileName: string; Terminator: string = ';');
 var
   F: TextFile;
   S: string;
-  vStatement: TStrings;
-  FullScript:TStrings;
-  Map:TScriptMap;
-  CDMap:TDirectivesMap;
-  i,j:integer;
-  PredTerm:string;
-  vRunStatement:TStrings;
-  MapIndex:integer;
+  Lines, TmpSQL: TStrings;
+  SavedParser: TpFIBScriptParser;
+  StmtNo: Integer;
 begin
-  vLastInsertStmt:='';
-  vReinsPrepared:=False;
-  FLineCountInFile:=GetLineCountInFile(FileName);
-  FPaused:=False;
+  FLineCountInFile := GetLineCountInFile(FileName);
   AssignFile(F, FileName);
   Reset(F);
-  vStatement:=TStringList.Create;
-  vRunStatement:=TStringList.Create;
-  FullScript:=FScript;
-  i:=0; j:=0; S:='';
+  Lines := TStringList.Create;
+  TmpSQL := TStringList.Create;
+  SavedParser := FParser;
+  FParser := TpFIBScriptParser.Create;
   try
-    PreparePreDefines;
-    FParser.FScript:=vStatement;
-    FScript:=vStatement;
-    repeat
-      if FPaused then
-      begin
-       FStopStatementNo:=i+1;
-       Exit;
-      end;
-      if Length(S)>0 then
-       vStatement.Add(S);
+    BeginRun;
+    FParser.BeginParse(Lines, Terminator);
+    StmtNo := 0;
+    while not Eof(F) do
+    begin
       ReadLn(F, S);
-      vStatement.Add(S);
-      Inc(j);
-      PredTerm:=Terminator;
-      if  Pos(Terminator,S)>0 then
-       FParser.ParseScript(vStatement,Terminator,Map,CDMap,False);
-      S:='';
-      if (Length(Map)>=1) and (Map[0].smdEnd.X>0) then
-      begin
-       case Map[0].smtType of
-        sBatchStart:
-        begin
-         vStatement.Clear;
-         FInBatchCollect:=True;
-         SetLength(FBatchSQLs,0)
-        end;
-        sBatchExecute:
-        begin
-         vStatement.Clear;
-         FInBatchCollect:=False;
-         if not GetTransaction.InTransaction then
-            GetTransaction.StartTransaction;
-         if Assigned(FBeforeStatementExecute) then
-          FBeforeStatementExecute(Self,j,i+1,Map[0],nil);
- {$IFDEF SUPPORT_IB2007}
-       FQuery.ExecuteAsBatch(FBatchSQLs);
-       SetLength(Map,0);
- {$ELSE}
-       raise
-        Exception.Create('Batch execute support for IB2007 only');
- {$ENDIF}
-         SetLength(FBatchSQLs,0)
-        end
-       else
-          if not FInBatchCollect then
-          begin
-           MapIndex:=0;
-           while MapIndex<Length(Map) do
-           begin
-            if (Map[MapIndex].smdEnd.X>0) then
-            begin
-             CopyFragment(Map[MapIndex].smdBegin,Map[MapIndex].smdEnd,vRunStatement);
-             ExecuteStatement(vRunStatement,@Map[MapIndex],i,vRunStatement,j);
-            end
-            else
-              S:=Copy(vStatement[vStatement.Count-1],Map[MapIndex].smdBegin.X,MaxInt);
-            Inc(MapIndex)
-           end;
-           SetLength(Map,0)
-          end
-          else
-          begin
-           SetLength(FBatchSQLs,Length(FBatchSQLs)+1);
-           FBatchSQLs[Length(FBatchSQLs)-1]:=vStatement.Text;
-          end;
-          vStatement.Clear;
-       end;
-       Inc(i)
-      end
-      else
-      if Terminator<>PredTerm then // change terminator
-      begin
-       vStatement.Clear;
-       Inc(i)
-      end;
-    until EOF(F);
+      Lines.Add(S);
+      FParser.Scan;
+      if not ExecuteParsed(StmtNo, TmpSQL) then
+        Exit;
+      FParser.DiscardParsed;
+    end;
+    FParser.EndParse(True);
+    if ExecuteParsed(StmtNo, TmpSQL) and (FRunDepth = 1) then
+      FlushExecBlock;
   finally
-   CloseFile(F);
-
-   FParser.FScript:=FullScript;
-   FScript:=FullScript;
-
-   vStatement.Free;
-   vRunStatement.Free;
-
-   if FNeedRestoreForceWrite then
-   begin
-    Database.Connected:=False;
-    Database.DBParams.Values['force_write']:='1';
-    Database.DBParams.Values['no_reserve']:='0';
-    Database.Connected:=True;
-   end;
-
-   if vInternalDatabase then
-   begin
-     if GetTransaction.InTransaction then
-      GetTransaction.Commit;
-     Database:=nil;
-   end   ;
-
-   if Assigned(FBlobFileStream) then
-   begin
-    FBlobFileStream.Free;
-    FBlobFileStream:=nil;
-   end;
+    try
+      EndRun;
+    finally
+      FParser.Free;
+      FParser := SavedParser;
+      TmpSQL.Free;
+      Lines.Free;
+      CloseFile(F);
+    end;
   end;
 end;
 
@@ -1932,363 +1904,613 @@ end;
 
 { TpFIBScriptParser }
 
-
-
-procedure TpFIBScriptParser.ParseScript(AScript: TStrings;var Terminator:string;
-    var FScriptMap:TScriptMap;var  FCDMap: TDirectivesMap;IgnoreLastTerm:boolean);
-type TTermState=(ttNorma,ttMayBeChange,ttWaitChange);
-
-var
-   x,y:integer;
-   pd:TParseDisposition;
-   CurStr:String;
-   lCurStr:integer;
-   State:TParserState;
-   TermState:TTermState;
-   NewTerminator:string;
-   CurStmt:Integer;
-   vCanEndStmt:boolean;
-   CurDirective,LastDirective  :integer;
-   DirectivesStack: array of integer;
-
-procedure FixBeginStatement;
-var
- L:Integer;
+function IsBlank(C: Char): Boolean; {$IFDEF D2009+}inline;{$ENDIF}
 begin
-  Inc(CurStmt);
-  pd:=pdInStatement;
-  L:=Length(FScriptMap);
-  if L<CurStmt then
-  begin
-   if L>64 then
-    Inc(L,L div 4)
-   else
-   if L>8 then
-    Inc(L,16)
-   else
-    Inc(L,4);
-   SetLength(FScriptMap,L);
-  end;
-  FScriptMap[CurStmt-1].smdBegin:=StmtCoord(X,Y);
-  FScriptMap[CurStmt-1].DirectiveNum:=CurDirective;
-  if CurDirective>=0 then
-  FScriptMap[CurStmt-1].DirectiveElse:=
-   (FCDMap[CurDirective].dElse.X>0) or (FCDMap[CurDirective].dElse.Y>0)
+  Result := CharInSet(C, [' ', #9, #10, #13]);
 end;
 
-procedure FixBeginDirective;
-var
- L:Integer;
- newDir:PDirectiveDesc;
+function IsWordChar(C: Char): Boolean; {$IFDEF D2009+}inline;{$ENDIF}
 begin
-  Inc(LastDirective);
-  L:=Length(FCDMap);
-  if L<LastDirective then
-  begin
-   if L>64 then
-    Inc(L,L div 4)
-   else
-   if L>8 then
-    Inc(L,16)
-   else
-    Inc(L,4);
-   SetLength(FCDMap,L);
-  end;
+  Result := CharInSet(C, ['A'..'Z', 'a'..'z', '0'..'9', '_', '$']);
+end;
 
-  newDir:=@FCDMap[LastDirective-1];
-  newDir.dBegin:=StmtCoord(X,Y);
-  if Length(DirectivesStack)=0 then
-   newDir.OwnerDirectiveNum:=-1
+// Compares the word of Len chars at X in S with UpperWord, case insensitive
+function SameWord(const S: string; X, Len: Integer; const UpperWord: string): Boolean;
+var
+  I: Integer;
+begin
+  Result := Len = Length(UpperWord);
+  if Result then
+    for I := 1 to Len do
+      if UpCase(S[X + I - 1]) <> UpperWord[I] then
+      begin
+        Result := False;
+        Exit;
+      end;
+end;
+
+function KeywordOf(const S: string; X, Len: Integer): TScriptKeyword;
+begin
+  Result := kwOther;
+  case Len of
+    2:
+      if SameWord(S, X, Len, 'AS') then
+        Result := kwAs
+      else if SameWord(S, X, Len, 'OR') then
+        Result := kwOr;
+    3:
+      if SameWord(S, X, Len, 'END') then
+        Result := kwEnd
+      else if SameWord(S, X, Len, 'SET') then
+        Result := kwSet;
+    4:
+      if SameWord(S, X, Len, 'CASE') then
+        Result := kwCase
+      else if SameWord(S, X, Len, 'TERM') then
+        Result := kwTerm;
+    5:
+      if SameWord(S, X, Len, 'BEGIN') then
+        Result := kwBegin
+      else if SameWord(S, X, Len, 'ALTER') then
+        Result := kwAlter
+      else if SameWord(S, X, Len, 'BLOCK') then
+        Result := kwBlock;
+    6:
+      if SameWord(S, X, Len, 'CREATE') then
+        Result := kwCreate;
+    7:
+      if SameWord(S, X, Len, 'EXECUTE') then
+        Result := kwExecute
+      else if SameWord(S, X, Len, 'TRIGGER') then
+        Result := kwTrigger
+      else if SameWord(S, X, Len, 'PACKAGE') then
+        Result := kwPackage;
+    8:
+      if SameWord(S, X, Len, 'RECREATE') then
+        Result := kwRecreate
+      else if SameWord(S, X, Len, 'FUNCTION') then
+        Result := kwFunction
+      else if SameWord(S, X, Len, 'EXTERNAL') then
+        Result := kwExternal;
+    9:
+      if SameWord(S, X, Len, 'PROCEDURE') then
+        Result := kwProcedure;
+  end;
+end;
+
+function TpFIBScriptParser.Line(Y: Integer): string;
+begin
+  Result := FScript[Y - FFirstLine];
+end;
+
+procedure TpFIBScriptParser.SetTerminator(const Value: string);
+begin
+  if Value = '' then
+    FTerminator := ';'
   else
-  begin
-   newDir.OwnerDirectiveNum:=DirectivesStack[Length(DirectivesStack)-1];
-   newDir.OwnerDirectiveElse:=     (FCDMap[newDir.OwnerDirectiveNum].dElse.X>0)
-    or (FCDMap[newDir.OwnerDirectiveNum].dElse.Y>0)
-  end;
-   // Push
-  SetLength(DirectivesStack,Length(DirectivesStack)+1);
-  CurDirective:=LastDirective-1;
-  DirectivesStack[Length(DirectivesStack)-1]:=CurDirective;
-
+    FTerminator := Value;
+  FTermFirst := UpCase(FTerminator[1]);
+  FTermFirstLower := LowerCase(FTermFirst)[1];
 end;
 
-procedure FixConditionCloseDirective;
-begin
-//
- if Length(DirectivesStack)>0 then
- begin
-  FCDMap[DirectivesStack[Length(DirectivesStack)-1]].dConditionClose:=StmtCoord(X,Y)
- end
- else
-  RaiseParserDirectiveError('}',Y);
-end;
-
-
-
-procedure FixElseDirective;
-begin
-//
- if Length(DirectivesStack)>0 then
-  FCDMap[DirectivesStack[Length(DirectivesStack)-1]].dElse:=StmtCoord(X,Y)
- else
-  RaiseParserDirectiveError(dElse,Y);
-end;
-
-procedure FixEndIfDirective;
-begin
-//
- if Length(DirectivesStack)>0 then
- begin
-  FCDMap[DirectivesStack[Length(DirectivesStack)-1]].dEnd:=StmtCoord(X,Y);
-  if Length(DirectivesStack)>0 then
-   CurDirective:=DirectivesStack[Length(DirectivesStack)-1]-1
-  else
-   CurDirective:=-1;
-  SetLength(DirectivesStack,Length(DirectivesStack)-1); // Pop
- end
- else
-  RaiseParserDirectiveError(dEndIf,Y);
-end;
-
+function TpFIBScriptParser.IsTerminatorAt(const S: string; X: Integer): Boolean;
 var
- L:integer;
-
+  L, I: Integer;
 begin
-  FCurDBName:='';
-//Term str
-//  NewTerminator:=Terminator;
-  NewTerminator:='';
-  FScript:=AScript;
-  TermState:=ttNorma;
-  pd:=pdBetweenStatements;
-  State:=psNormal;
-  L:=FScript.Count div 16;
-  if L<3 then
-   L:=3;
-  SetLength(FScriptMap,L);
+  L := Length(FTerminator);
+  Result := (UpCase(S[X]) = FTermFirst) and (X + L - 1 <= Length(S));
+  if not Result then
+    Exit;
+  for I := 2 to L do
+    if UpCase(S[X + I - 1]) <> UpCase(FTerminator[I]) then
+    begin
+      Result := False;
+      Exit;
+    end;
+  // A terminator made of letters is not a part of a word
+  if IsWordChar(FTerminator[1]) and (X > 1) and IsWordChar(S[X - 1]) then
+    Result := False
+  else if IsWordChar(FTerminator[L]) and (X + L <= Length(S)) and IsWordChar(S[X + L]) then
+    Result := False;
+end;
 
-
-  CurStmt:=0;
-  LastDirective:=0;
-  CurDirective:=-1;
-  vCanEndStmt:=True;
- try
-  for y:=0 to Pred(FScript.Count) do
-  begin
-   CurStr:=FScript.Strings[y];
-   lCurStr:=Length(CurStr);
-//    for x:=1 to lCurStr do
-   x:=0;
-   if lCurStr>0 then
-//   while x <= lCurStr do
-   while x < lCurStr do
-   begin
-    Inc(x);
-    case pd of
-     pdBetweenStatements :
-     case State of
-      psNormal:
-       case  CurStr[x] of
-        '-': if (x<lCurStr) and (CurStr[x+1]='-') then
-              Break // FBComment
-             else
-             begin
-              FixBeginStatement;
-              FScriptMap[CurStmt-1].smtType:=sInvalid;
-             end;
-        '/': if (x<lCurStr) and (CurStr[x+1]='*') then
-              State:=psInComment
-             else
-             begin
-              FixBeginStatement;
-              FScriptMap[CurStmt-1].smtType:=sInvalid;
-             end;
-        ' ',#13,#10,#9: ;
-        'S','s':// May be set
-        if IsClause('SET',CurStr,x) then
-        begin
-          FixBeginStatement;
-          TermState:=ttMayBeChange;
-          FScriptMap[CurStmt-1].smtType:=sSet;
-        end
+function TpFIBScriptParser.IsModuleHeader: Boolean;
+var
+  ObjWord: Integer;
+begin
+  case FHeader[0] of
+    kwExecute:
+      Result := FHeader[1] = kwBlock;
+    kwCreate, kwAlter, kwRecreate:
+      begin
+        if (FHeader[0] = kwCreate) and (FHeader[1] = kwOr) and (FHeader[2] = kwAlter) then
+          ObjWord := 3
         else
-        begin
-          FixBeginStatement;
-          FScriptMap[CurStmt-1].smtType:=sUnknown;
-        end;
-        '{':
-          if  IsClause(dElse,CurStr,x) then
-          begin
-           FixElseDirective;
-           Inc(x,6)
-          end
-          else
-          if  IsClause(dEndIf,CurStr,x) then
-          begin
-           FixEndIfDirective;
-           Inc(x,7)
-          end
-          else
-{          if (x<lCurStr+4) and (CurStr[x+1]='$') and
-             (CurStr[x+2] in ['I','i']) and
-             (CurStr[x+3] in ['F','f'])}
-           if  StrIsIfDirective(CurStr,x) then
-           begin
-              State:=psInConditional;
-              FixBeginDirective
-           end
-           else
-           begin
-            FixBeginStatement;
-            pd:=pdInDirective;
-            if (x<lCurStr+1) and (CurStr[x+1]='$')  then
-             FScriptMap[CurStmt-1].smtType:=sDirective
-            else
-             FScriptMap[CurStmt-1].smtType:=sInvalid;
-           end;
-       else
-//Term str
-//        if CurStr[x]<>NewTerminator then
-        if not IsClause(NewTerminator,CurStr,x) then
-        begin
-          FixBeginStatement;
-          FScriptMap[CurStmt-1].smtType:=sUnknown;
-        end
-       end; // case CurStr[x]
-      psInComment:
-         case  CurStr[x] of
-          '/': if (x>1) and (CurStr[x-1]='*') then
-                 State:=psNormal;
-         end;
-      psInConditional:
-         case  CurStr[x] of
-          '}': begin
-                FixConditionCloseDirective;
-                State:=psNormal;
-               end;
-         end;
-
-     end; // end case state
-    pdInDirective:
-     case CurStr[x] of
-     '}':
-         begin
-          FScriptMap[CurStmt-1].smdEnd:=StmtCoord(X,Y);
-          pd:=pdBetweenStatements
-         end
-     end;
-    pdInStatement:  //  case pd
-     case State of
-      psNormal:
-         case CurStr[x] of
-          '''':  State:=psInQuote;
-          '"' :  State:=psInDoubleQuote;
-          '-' : if (x<lCurStr) and (CurStr[x+1]='-') then
-                 Break; // FBComment
-          '/': if (x<lCurStr) and (CurStr[x+1]='*') then
-              State:=psInComment;
-          'T','t': if (TermState=ttMayBeChange) and IsClause('TERM',CurStr,x) then
-                   begin
-                    TermState:=ttWaitChange;
-                    Inc(x,4)
-                   end;
-          '{':
-          begin
-            raise Exception.Create('Parse script error.'+CLRF+' Unexpected symbol "{"'+CLRF+
-             'Line :'+IntToStr(y+1)+' Pos:'+IntToStr(x)
-            );
-          end;
-         else // else case
-          if (TermState=ttWaitChange) and not (CurStr[x] in [' ',#13,#10,#9])
-          and not IsClause(Terminator,CurStr,x)
-//Term str
-          then
-          begin
-           NewTerminator:=NewTerminator+CurStr[x]
-          end;
-          if  IsClause(Terminator,CurStr,x) then
-          begin
-           if (TermState=ttWaitChange) then
-           begin
-             Terminator:=NewTerminator;
-             NewTerminator:='';
-             TermState:=ttNorma;
-             Dec(CurStmt) //
-           end
-           else
-           begin
-            TermState:=ttNorma;
-            if (X>1) or (Y=0) then
-             FScriptMap[CurStmt-1].smdEnd:=StmtCoord(X-1,Y)
-            else
-             FScriptMap[CurStmt-1].smdEnd:=StmtCoord(Length(FScript[Y-1]),Y-1);
-             if FScriptMap[CurStmt-1].smtType<>sInvalid then
-              vCanEndStmt:=ValidateStatement(FScriptMap[CurStmt-1],Terminator=';');
-           end;
-           if vCanEndStmt then
-           begin
-            pd:=pdBetweenStatements;
-            if FScriptMap[CurStmt-1].smtType =sDML then
-             FHaveDMLStatements:=True
-            else
-            if FScriptMap[CurStmt-1].smtType in [sUnknown,sInvalid] then
-             FHaveUnknownStatements:=True
-           end
-           else
-            FScriptMap[CurStmt-1].smdEnd.X:=0;
-          end;
-         end;
-      psInComment:
-         case  CurStr[x] of
-          '/': if (x>1) and (CurStr[x-1]='*') then
-                 State:=psNormal;
-         end;
-      psInQuote:
-         case  CurStr[x] of
-          '''':  State:=psNormal;
-         end;
-      psInDoubleQuote:
-         case  CurStr[x] of
-          '"':  State:=psNormal;
-         end;
-     end;
-    end; // end case pd
-   end
+          ObjWord := 1;
+        Result := FHeader[ObjWord] in [kwProcedure, kwTrigger, kwFunction, kwPackage];
+      end;
+  else
+    Result := False;
   end;
- finally
-
-   SetLength(FScriptMap,CurStmt);
-   SetLength(FCDMap,LastDirective);
-   FValidationInfo.Active:=False;
-   if IgnoreLastTerm  then
-    if Length(FScriptMap)>0 then
-     if  (FScriptMap[CurStmt-1].smdEnd.X=0)  then // End term don't exist
-     begin
-      FScriptMap[CurStmt-1].smdEnd.X:=Length(FScript[FScript.Count-1]);
-      FScriptMap[CurStmt-1].smdEnd.Y:=FScript.Count-1;
-      ValidateStatement(FScriptMap[CurStmt-1],False)
-     end;
-
-   if  Length(DirectivesStack)>0 then
-   begin
-      raise Exception.Create('Parse script error.'+CLRF+'$ENDIF skipped '+
-       IntToStr(Length(DirectivesStack))+' times'
-      );
-   end
- end
 end;
 
-//================
-constructor TpFIBScriptParser.Create;
+// Follows the words that decide where the statement ends: SET TERM, and the body
+// of a PSQL module, where ";" ends the statement only after the END of the body.
+// Other words are only skipped.
+procedure TpFIBScriptParser.ProcessWord(const S: string; X, Len: Integer);
+var
+  K: TScriptKeyword;
 begin
-  inherited;
-  FTemp  :=TStringList.Create;
+  if (FWordCount > High(FHeader)) and not FInBody and not FMayHaveBody then
+    Exit;
+  K := KeywordOf(S, X, Len);
+  if FWordCount <= High(FHeader) then
+  begin
+    FHeader[FWordCount] := K;
+    if FWordCount = 0 then
+      FMayHaveBody := (FTerminator = ';') and (K in [kwCreate, kwAlter, kwRecreate, kwExecute]);
+  end;
+  Inc(FWordCount);
+  if FInBody then
+  begin
+    FLastWordIsEnd := K = kwEnd;
+    if K = kwEnd then
+    begin
+      if FBlockDepth > 0 then
+        Dec(FBlockDepth);
+    end
+    else if K in [kwBegin, kwCase] then
+      Inc(FBlockDepth);
+  end
+  else if (FWordCount = 2) and (FHeader[0] = kwSet) and (K = kwTerm) then
+    FInSetTerm := True
+  else if FMayHaveBody then
+  begin
+    if K = kwExternal then // EXTERNAL NAME ... ENGINE ... [AS '<body>']
+      FExternal := True
+    else if (K = kwAs) and (FParenDepth = 0) and not FExternal and IsModuleHeader then
+      FInBody := True;
+  end;
 end;
 
-destructor TpFIBScriptParser.Destroy;
+procedure TpFIBScriptParser.BeginStatement(X, Y: Integer; StmtType: TStmtType);
+var
+  P: PStatementDesc;
+  I: Integer;
 begin
-  FTemp.Free;
-  inherited;
+  if FStatementCount = Length(FStatements) then
+    SetLength(FStatements, FStatementCount + FStatementCount div 2 + 8);
+  Inc(FStatementCount);
+  P := @FStatements[FStatementCount - 1];
+  P.smdBegin := StmtCoord(X, Y);
+  P.smdEnd := StmtCoord(0, 0);
+  P.smtType := StmtType;
+  P.objType := otNone;
+  P.objName := '';
+  P.DirectiveNum := FCurDirective;
+  P.DirectiveElse := (FCurDirective >= 0) and (FDirectives[FCurDirective].dElse.X > 0);
+
+  FDisposition := pdInStatement;
+  FLastSignificant := StmtCoord(X, Y);
+  FWordCount := 0;
+  for I := 0 to High(FHeader) do
+    FHeader[I] := kwOther;
+  FParenDepth := 0;
+  FMayHaveBody := False;
+  FExternal := False;
+  FInBody := False;
+  FBlockDepth := 0;
+  FLastWordIsEnd := False;
+  FInSetTerm := False;
+  FNewTerminator := '';
+  FNewTerminatorDone := False;
+end;
+
+procedure TpFIBScriptParser.EndStatement;
+var
+  P: PStatementDesc;
+begin
+  P := @FStatements[FStatementCount - 1];
+  P.smdEnd := FLastSignificant;
+  if FDisposition = pdInStatement then
+  begin
+    if P.smtType <> sInvalid then
+      ValidateStatement(P^);
+    if P.smtType = sDML then
+      FHaveDMLStatements := True
+    else if P.smtType in [sUnknown, sInvalid] then
+      FHaveUnknownStatements := True;
+  end;
+  FCompleteCount := FStatementCount;
+  FDisposition := pdBetweenStatements;
+end;
+
+procedure TpFIBScriptParser.EndSetTerm;
+begin
+  if FNewTerminator = '' then
+    raise Exception.Create('Parse script error.' + CLRF + 'SET TERM without terminator' + CLRF +
+      'Line :' + IntToStr(FStatements[FStatementCount - 1].smdBegin.Y + 1));
+  SetTerminator(FNewTerminator);
+  Dec(FStatementCount); // SET TERM is not executed
+  FInSetTerm := False;
+  FDisposition := pdBetweenStatements;
+end;
+
+procedure TpFIBScriptParser.BeginDirective(X, Y: Integer);
+var
+  D: PDirectiveDesc;
+  Owner: Integer;
+begin
+  if FDirectiveCount = Length(FDirectives) then
+    SetLength(FDirectives, FDirectiveCount + FDirectiveCount div 2 + 4);
+  Inc(FDirectiveCount);
+  D := @FDirectives[FDirectiveCount - 1];
+  D.dBegin := StmtCoord(X, Y);
+  D.dConditionClose := StmtCoord(0, 0);
+  D.dElse := StmtCoord(0, 0);
+  D.dEnd := StmtCoord(0, 0);
+  D.dState := dsUnknown;
+  D.dCondition := '';
+  if Length(FDirectiveStack) = 0 then
+  begin
+    D.OwnerDirectiveNum := -1;
+    D.OwnerDirectiveElse := False;
+  end
+  else
+  begin
+    Owner := FDirectiveStack[High(FDirectiveStack)];
+    D.OwnerDirectiveNum := Owner;
+    D.OwnerDirectiveElse := FDirectives[Owner].dElse.X > 0;
+  end;
+  SetLength(FDirectiveStack, Length(FDirectiveStack) + 1);
+  FCurDirective := FDirectiveCount - 1;
+  FDirectiveStack[High(FDirectiveStack)] := FCurDirective;
+  FState := psInConditional;
+end;
+
+procedure TpFIBScriptParser.CloseDirectiveCondition(X, Y: Integer);
+var
+  D: PDirectiveDesc;
+  Text: TStrings;
+begin
+  D := @FDirectives[FCurDirective];
+  D.dConditionClose := StmtCoord(X, Y);
+  Text := TStringList.Create;
+  try
+    CopyFragment(D.dBegin, D.dConditionClose, Text);
+    D.dCondition := Text.Text;
+  finally
+    Text.Free;
+  end;
+  FState := psNormal;
+end;
+
+procedure TpFIBScriptParser.ElseDirective(X, Y: Integer);
+begin
+  if Length(FDirectiveStack) = 0 then
+    RaiseParserDirectiveError(dElse, Y + 1);
+  FDirectives[FDirectiveStack[High(FDirectiveStack)]].dElse := StmtCoord(X, Y);
+end;
+
+procedure TpFIBScriptParser.EndIfDirective(X, Y: Integer);
+begin
+  if Length(FDirectiveStack) = 0 then
+    RaiseParserDirectiveError(dEndIf, Y + 1);
+  FDirectives[FDirectiveStack[High(FDirectiveStack)]].dEnd := StmtCoord(X, Y);
+  SetLength(FDirectiveStack, Length(FDirectiveStack) - 1);
+  if Length(FDirectiveStack) > 0 then
+    FCurDirective := FDirectiveStack[High(FDirectiveStack)]
+  else
+    FCurDirective := -1;
+end;
+
+procedure TpFIBScriptParser.ScanLine(Y: Integer);
+var
+  S: string;
+  L, X, E: Integer;
+  C: Char;
+begin
+  S := Line(Y);
+  L := Length(S);
+  X := 1;
+  while X <= L do
+  begin
+    C := S[X];
+    case FState of
+      psInComment:
+        begin
+          while (X < L) and not ((S[X] = '*') and (S[X + 1] = '/')) do
+            Inc(X);
+          if X < L then
+          begin
+            FState := psNormal;
+            Inc(X);
+          end
+          else
+            X := L;
+        end;
+      psInQuote, psInDoubleQuote: // a doubled quote closes and opens the string again
+        begin
+          while (X <= L) and (S[X] <> FQuoteClose) do
+            Inc(X);
+          if X <= L then
+          begin
+            FState := psNormal;
+            FLastSignificant := StmtCoord(X, Y);
+          end;
+        end;
+      psInQString:
+        begin
+          while (X < L) and not ((S[X] = FQuoteClose) and (S[X + 1] = '''')) do
+            Inc(X);
+          if X < L then
+          begin
+            Inc(X);
+            FState := psNormal;
+            FLastSignificant := StmtCoord(X, Y);
+          end
+          else
+            X := L;
+        end;
+      psInConditional:
+        if C = '}' then
+          CloseDirectiveCondition(X, Y);
+    else
+      if (C = '-') and (X < L) and (S[X + 1] = '-') then
+        Break
+      else if (C = '/') and (X < L) and (S[X + 1] = '*') then
+      begin
+        FState := psInComment;
+        Inc(X);
+      end
+      else
+        case FDisposition of
+          pdBetweenStatements:
+            if C = '{' then
+            begin
+              if IsClause(dElse, S, X) or IsClause(dEndIf, S, X) then
+              begin
+                if IsClause(dElse, S, X) then
+                  ElseDirective(X, Y)
+                else
+                  EndIfDirective(X, Y);
+                E := X;
+                while (E <= L) and (S[E] <> '}') do
+                  Inc(E);
+                if E > L then
+                  RaiseParserDirectiveError('}', Y + 1);
+                X := E;
+              end
+              else if StrIsIfDirective(S, X) then
+                BeginDirective(X, Y)
+              else
+              begin
+                if (X < L) and (S[X + 1] = '$') then
+                  BeginStatement(X, Y, sDirective)
+                else
+                  BeginStatement(X, Y, sInvalid);
+                FDisposition := pdInDirective;
+              end;
+            end
+            else if ((C = FTermFirst) or (C = FTermFirstLower)) and IsTerminatorAt(S, X) then
+              Inc(X, Length(FTerminator) - 1)
+            else if not CharInSet(C, [' ', #9, #10, #13, ';', ',', '^', '}']) then
+            begin
+              if CharInSet(C, ['-', '/']) then
+                BeginStatement(X, Y, sInvalid)
+              else
+                BeginStatement(X, Y, sUnknown);
+              Continue; // the character is scanned as a part of the statement
+            end;
+          pdInDirective:
+            if not IsBlank(C) then
+            begin
+              FLastSignificant := StmtCoord(X, Y);
+              if C = '}' then
+                EndStatement;
+            end;
+          pdInStatement:
+            if FInSetTerm then
+            begin
+              // SET TERM <new> <current>, the new terminator may be the current one
+              if IsBlank(C) then
+                FNewTerminatorDone := FNewTerminator <> ''
+              else if (FNewTerminator <> '') and IsTerminatorAt(S, X) then
+              begin
+                E := Length(FTerminator);
+                EndSetTerm;
+                Inc(X, E - 1);
+              end
+              else if FNewTerminatorDone then
+                raise Exception.Create('Parse script error.' + CLRF + 'Invalid SET TERM' + CLRF +
+                  'Line :' + IntToStr(Y + 1) + ' Pos:' + IntToStr(X))
+              else
+                FNewTerminator := FNewTerminator + C;
+            end
+            else if ((C = FTermFirst) or (C = FTermFirstLower)) and IsTerminatorAt(S, X) and
+              (not FInBody or ((FBlockDepth = 0) and FLastWordIsEnd)) then
+            begin
+              EndStatement;
+              Inc(X, Length(FTerminator) - 1);
+            end
+            else if not IsBlank(C) then
+            begin
+              FLastSignificant := StmtCoord(X, Y);
+              FLastWordIsEnd := False;
+              case C of
+                '''':
+                  begin
+                    FState := psInQuote;
+                    FQuoteClose := C;
+                  end;
+                '"':
+                  begin
+                    FState := psInDoubleQuote;
+                    FQuoteClose := C;
+                  end;
+                '(':
+                  Inc(FParenDepth);
+                ')':
+                  if FParenDepth > 0 then
+                    Dec(FParenDepth);
+                '{':
+                  raise Exception.Create('Parse script error.' + CLRF + ' Unexpected symbol "{"' + CLRF +
+                    'Line :' + IntToStr(Y + 1) + ' Pos:' + IntToStr(X));
+              else
+                if CharInSet(C, ['q', 'Q']) and (X + 2 <= L) and (S[X + 1] = '''') then
+                begin
+                  // q'<delimiter>...<delimiter>'
+                  FState := psInQString;
+                  case S[X + 2] of
+                    '(': FQuoteClose := ')';
+                    '[': FQuoteClose := ']';
+                    '{': FQuoteClose := '}';
+                    '<': FQuoteClose := '>';
+                  else
+                    FQuoteClose := S[X + 2];
+                  end;
+                  Inc(X, 2);
+                end
+                else if IsWordChar(C) then
+                begin
+                  E := X;
+                  while (E < L) and IsWordChar(S[E + 1]) do
+                    Inc(E);
+                  ProcessWord(S, X, E - X + 1);
+                  FLastSignificant := StmtCoord(E, Y);
+                  X := E;
+                end;
+              end;
+            end;
+        end;
+    end;
+    Inc(X);
+  end;
+  if FInSetTerm and (FNewTerminator <> '') then // the line ends the new terminator
+    FNewTerminatorDone := True;
+end;
+
+procedure TpFIBScriptParser.BeginParse(AScript: TStrings; const Terminator: string);
+begin
+  FScript := AScript;
+  FFirstLine := 0;
+  FNextLine := 0;
+  SetTerminator(Terminator);
+  SetLength(FStatements, 0);
+  FStatementCount := 0;
+  FCompleteCount := 0;
+  FTakenCount := 0;
+  SetLength(FDirectives, 0);
+  FDirectiveCount := 0;
+  SetLength(FDirectiveStack, 0);
+  FCurDirective := -1;
+  FDisposition := pdBetweenStatements;
+  FState := psNormal;
+  FCurDBName := '';
+  FMakeConnectInScript := False;
+  FHaveDMLStatements := False;
+  FHaveUnknownStatements := False;
+end;
+
+procedure TpFIBScriptParser.Scan;
+begin
+  while FNextLine < FFirstLine + FScript.Count do
+  begin
+    ScanLine(FNextLine);
+    Inc(FNextLine);
+  end;
+end;
+
+procedure TpFIBScriptParser.EndParse(IgnoreLastTerm: Boolean);
+begin
+  case FDisposition of
+    pdInStatement:
+      if FInSetTerm then
+        EndSetTerm
+      else if IgnoreLastTerm then
+        EndStatement;
+    pdInDirective:
+      if IgnoreLastTerm then
+        EndStatement;
+  end;
+  if Length(FDirectiveStack) > 0 then
+    raise Exception.Create('Parse script error.' + CLRF + '$ENDIF skipped ' +
+      IntToStr(Length(FDirectiveStack)) + ' times');
+end;
+
+function TpFIBScriptParser.NextStatement(var Stmt: PStatementDesc): Boolean;
+begin
+  Result := FTakenCount < FCompleteCount;
+  if Result then
+  begin
+    Stmt := @FStatements[FTakenCount];
+    Inc(FTakenCount);
+  end;
+end;
+
+procedure TpFIBScriptParser.DiscardParsed;
+var
+  I, KeepLine: Integer;
+begin
+  for I := 0 to FStatementCount - FTakenCount - 1 do
+    FStatements[I] := FStatements[FTakenCount + I];
+  Dec(FStatementCount, FTakenCount);
+  Dec(FCompleteCount, FTakenCount);
+  FTakenCount := 0;
+
+  KeepLine := FNextLine;
+  if FStatementCount > 0 then
+    KeepLine := FStatements[0].smdBegin.Y;
+  if (FState = psInConditional) and (FDirectives[FCurDirective].dBegin.Y < KeepLine) then
+    KeepLine := FDirectives[FCurDirective].dBegin.Y;
+  if KeepLine >= FFirstLine + FScript.Count then
+    FScript.Clear
+  else
+    while FFirstLine < KeepLine do
+    begin
+      FScript.Delete(0);
+      Inc(FFirstLine);
+    end;
+  FFirstLine := KeepLine;
+end;
+
+procedure TpFIBScriptParser.ParseScript(AScript: TStrings; var Terminator: string;
+  var ScriptMap: TScriptMap; var DirectivesMap: TDirectivesMap; IgnoreLastTerm: Boolean);
+begin
+  BeginParse(AScript, Terminator);
+  try
+    Scan;
+    EndParse(IgnoreLastTerm);
+  finally
+    Terminator := FTerminator;
+    ScriptMap := Copy(FStatements, 0, FStatementCount);
+    DirectivesMap := Copy(FDirectives, 0, FDirectiveCount);
+  end;
+end;
+
+procedure TpFIBScriptParser.CopyFragment(BegPos, EndPos: TStmtCoord; Dest: TStrings);
+var
+  Y: Integer;
+  S: string;
+begin
+  if not Assigned(Dest) then
+    Exit;
+  Dest.Clear;
+  if (EndPos.X = 0) and (FScript.Count > 0) then
+  begin
+    // No terminator, up to the end of the script
+    EndPos.Y := FFirstLine + FScript.Count - 1;
+    EndPos.X := Length(Line(EndPos.Y));
+  end;
+  for Y := BegPos.Y to EndPos.Y do
+  begin
+    S := Line(Y);
+    if Y = EndPos.Y then
+      S := Copy(S, 1, EndPos.X);
+    if Y = BegPos.Y then
+      S := Copy(S, BegPos.X, MaxInt);
+    Dest.Add(S);
+  end;
 end;
 
 procedure TpFIBScriptParser.SearchObjectType(var stmtDesc:TStatementDesc;var BegSearch:TStmtCoord;ForGrant:boolean=False);
@@ -2301,7 +2523,7 @@ begin
    TmpCoord1:=NextTokenPos(BegSearch,stmtDesc.smdEnd);
    While (TmpCoord1.X<>0) do
    begin                 // CREATE UNIQUE ASCENDING INDEX
-     CurStr:=FScript[TmpCoord1.Y];
+     CurStr:=Line(TmpCoord1.Y);
      if not ForGrant then
      begin
        stmtDesc.objType:=TypeNameToObjectType(CurStr,TmpCoord1.X);
@@ -2332,125 +2554,14 @@ begin
      BegSearch:=TmpCoord1;
 end;
 
-function   TpFIBScriptParser.ValidateStatement(var stmtDesc: TStatementDesc;const NeedCheckCanEnd:boolean ):boolean;
+// Sets the type and the object of a complete statement
+procedure TpFIBScriptParser.ValidateStatement(var stmtDesc: TStatementDesc);
 var
    CurStr:string;
    TmpCoord:TStmtCoord;
-   DeltaProcessed:boolean;
-
-procedure ValidateDelta;
-var
-   ExistAs:boolean;
-   BegCount:integer;
-   StrIndex:integer;
 begin
-   DeltaProcessed:=False;
-   if NeedCheckCanEnd then
-    if  (stmtDesc.objType in [otProcedure,otTrigger,otBlock,otPackage,otPackageBody,otFunction]) and (stmtDesc.smtType<>sDrop) then
-    begin
-      DeltaProcessed:=True;
-      Result:=False;
-      if FValidationInfo.Active then
-      begin
-       TmpCoord:=FValidationInfo.smdEnd;
-       BegCount:=FValidationInfo.BegCount;
-      end
-      else
-      begin
-        BegCount:=0;
-        ExistAs:=False;
-        TmpCoord:=NextTokenPos(TmpCoord,stmtDesc.smdEnd);
-        StrIndex:=-1;
-        While (TmpCoord.X<>0) do
-        begin
-           if TmpCoord.Y<>StrIndex then
-           begin
-            StrIndex:=TmpCoord.Y;
-            CurStr:=FScript[StrIndex];
-           end;
-           if IsClause('AS',CurStr,TmpCoord.X) then
-           begin
-            ExistAs:=True;
-           end
-           else
-           if IsClause('BEGIN',CurStr,TmpCoord.X) then
-           begin
-            BegCount:=1;
-            FValidationInfo.Active:=True;
-            FValidationInfo.BeginExist:=True;
-            FValidationInfo.BegCount:=1;
-            FValidationInfo.smdEnd:=stmtDesc.smdEnd;
-            Inc(FValidationInfo.smdEnd.X);
-            Break;
-           end;
-           TmpCoord:=NextTokenPos(TmpCoord,stmtDesc.smdEnd);
-        end;
-
-        if (BegCount=0) then
-        begin
-        // Before first begin
-         if not ExistAs then  // ALTER TRIGGER INACTIVE
-           Result:=True
-         else
-         begin
-          FValidationInfo.smdEnd:=stmtDesc.smdEnd;
-          Inc(FValidationInfo.smdEnd.X)
-         end;
-          FValidationInfo.Active:=not Result;
-          FValidationInfo.BeginExist:=False;
-          FValidationInfo.BegCount:=0;
-         Exit;
-        end;
-      end;
-
-
-      TmpCoord:=NextTokenPos(TmpCoord,stmtDesc.smdEnd);
-      StrIndex:=-1;
-      While (TmpCoord.X<>0) do
-      begin
-        if TmpCoord.Y<>StrIndex then
-        begin
-            StrIndex:=TmpCoord.Y;
-            CurStr:=FScript[StrIndex];
-        end;
-
-         if IsClause('BEGIN',CurStr,TmpCoord.X) or IsClause('CASE',CurStr,TmpCoord.X)
-         then
-          if FValidationInfo.BeginExist then
-           Inc(BegCount)
-          else
-          begin
-           if IsClause('BEGIN',CurStr,TmpCoord.X) then
-            FValidationInfo.BeginExist:=True;
-           BegCount  :=1;
-          end
-         else
-         if IsClause('END',CurStr,TmpCoord.X) then
-          Dec(BegCount);
-         if (BegCount=0) and FValidationInfo.BeginExist then
-         begin
-          Result:=True;
-          FValidationInfo.Active:=False;
-          Exit;
-         end;
-         TmpCoord:=NextTokenPos(TmpCoord,stmtDesc.smdEnd);
-      end;
-
-      if not FValidationInfo.Active then
-       FValidationInfo.Active:=True;
-       FValidationInfo.BegCount:=BegCount;
-       FValidationInfo.smdEnd:=stmtDesc.smdEnd;
-       Inc(FValidationInfo.smdEnd.X)
-    end;
-end;
-
-begin
-   Result:=True;
-   ValidateDelta;
-   if DeltaProcessed then
-     Exit;
 // Step 1
-   CurStr:=FScript.Strings[stmtDesc.smdBegin.Y];
+   CurStr:=Line(stmtDesc.smdBegin.Y);
    stmtDesc.smtType:=StmtTypeNameToType(CurStr,stmtDesc.smdBegin.X);
 // Step 2
    stmtDesc.objType:=otNone;
@@ -2489,7 +2600,7 @@ begin
        end
        else
        begin
-        CurStr:=FScript[TmpCoord.Y];
+        CurStr:=Line(TmpCoord.Y);
         stmtDesc.objType:=TypeNameToObjectType(CurStr,TmpCoord.X);
        end ;
        case stmtDesc.objType of
@@ -2532,8 +2643,6 @@ begin
        if  stmtDesc.smtType=sDropDatabase then
         stmtDesc.objName:=FCurDBName;
 
-
-        ValidateDelta;
       end;
     end;
     sDeclare:
@@ -2542,7 +2651,7 @@ begin
      TmpCoord:=NextTokenPos(stmtDesc.smdBegin,stmtDesc.smdEnd);
      if TmpCoord.X<>0 then
      begin
-       CurStr:=FScript[TmpCoord.Y];
+       CurStr:=Line(TmpCoord.Y);
        if IsClause('EXTERNAL',CurStr,TmpCoord.X) then
          stmtDesc.objType:=otUDF
        else
@@ -2567,7 +2676,7 @@ begin
      TmpCoord:=NextTokenPos(stmtDesc.smdBegin,stmtDesc.smdEnd);
      if TmpCoord.X<>0 then
      begin
-       CurStr:=FScript[TmpCoord.Y];
+       CurStr:=Line(TmpCoord.Y);
        if IsClause('GENERATOR',CurStr,TmpCoord.X) then
        begin
          stmtDesc.objType:=otGenerator;
@@ -2603,20 +2712,19 @@ begin
     sBatch: // Temporary type
     begin
      TmpCoord:=NextTokenPos(stmtDesc.smdBegin,stmtDesc.smdEnd);
-     CurStr:=FScript[TmpCoord.Y];
-     if IsClause('START',CurStr,TmpCoord.X) then
-     begin
-      stmtDesc.smtType:=sBatchStart;
-//      FInBatchCollect:=True;
-     end
+     if TmpCoord.X=0 then
+      stmtDesc.smtType:=sInvalid
      else
-     if IsClause('EXECUTE',CurStr,TmpCoord.X) then
      begin
-      stmtDesc.smtType:=sBatchExecute;
-//      FInBatchCollect:=False
-     end
-     else
-      stmtDesc.smtType:=sInvalid;
+      CurStr:=Line(TmpCoord.Y);
+      if IsClause('START',CurStr,TmpCoord.X) then
+       stmtDesc.smtType:=sBatchStart
+      else
+      if IsClause('EXECUTE',CurStr,TmpCoord.X) then
+       stmtDesc.smtType:=sBatchExecute
+      else
+       stmtDesc.smtType:=sInvalid;
+     end;
     end;
     sDescribe,sComment:
     begin
@@ -2625,6 +2733,7 @@ begin
       TmpCoord:=NextTokenPos(TmpCoord,stmtDesc.smdEnd);
      if TmpCoord.X<>0 then
      begin
+       CurStr:=Line(TmpCoord.Y);
        stmtDesc.objType:=TypeNameToObjectType(CurStr,TmpCoord.X);
        if stmtDesc.objType<>otNone then
        begin
@@ -2653,90 +2762,89 @@ begin
 end;
 
 
-function TpFIBScriptParser.NextTokenPos(TokenPos: TStmtCoord;EndCoord:TStmtCoord): TStmtCoord;
+function TpFIBScriptParser.NextTokenPos(TokenPos: TStmtCoord; EndCoord: TStmtCoord): TStmtCoord;
 var
-  State:TParserState;
-  i:Word;
-  j:Integer;
-  CurStr:string;
-  lCurStr:integer;
-  FirstChar:Char;
+  InComment: Boolean;
+  I, J, Len: Integer;
+  CurStr: string;
+  FirstChar: Char;
 begin
-  CurStr:=FScript[TokenPos.Y];
-  lCurStr:=Length(CurStr);
-  Result.X:=lCurStr;
-  if LCurStr>0 then
+  CurStr := Line(TokenPos.Y);
+  Len := Length(CurStr);
+  Result.Y := TokenPos.Y;
+  // Skip the token at TokenPos, at least one char
+  I := TokenPos.X;
+  if I <= Len then
   begin
-    FirstChar:=CurStr[TokenPos.X];
-    for i:=TokenPos.X to lCurStr do // Skip first Token
-      if FirstChar in ['''','"'] then
-      begin
-        if i> TokenPos.X then
-         if CurStr[i] =FirstChar then
-         begin
-          Result.X:=i+1;
-          Break
-         end
-      end
-      else
-      if CurStr[i] in [' ',#13,#9,#10,'/','-',';'] then
-      begin
-        Result.X:=i;
-        Break
-      end
+    FirstChar := CurStr[I];
+    if CharInSet(FirstChar, ['''', '"']) then
+    begin
+      repeat
+        Inc(I)
+      until (I > Len) or (CurStr[I] = FirstChar);
+      Inc(I);
+    end
+    else
+      repeat
+        Inc(I)
+      until (I > Len) or CharInSet(CurStr[I], [' ', #13, #9, #10, '/', '-', ';']);
   end;
-  if Result.X=lCurStr then
+  if I > Len then
   begin
-   i:=1;
-   Inc(TokenPos.Y)
-  end
-  else
-   i:= Result.X;
-  Result.X:=0;
-  State:=psNormal;
-  for j:=TokenPos.Y to EndCoord.Y do
+    I := 1;
+    Inc(TokenPos.Y);
+  end;
+  Result.X := 0;
+  InComment := False;
+  for J := TokenPos.Y to EndCoord.Y do
   begin
-   CurStr:=FScript[j];
-   if TokenPos.Y<>EndCoord.Y then
-    lCurStr:=Length(CurStr)
-   else
-    lCurStr:=EndCoord.X;
-   while i<=lCurStr do
-   begin
-     case State of
-      psNormal:
-      case CurStr[i] of
-       ' ',#13,#9,#10,';':; //Skip
-       '-':if (i<lCurStr) and (CurStr[i+1]='-') then
-                 Break; // FBComment
-       '/':if (i<lCurStr) and (CurStr[i+1]='*') then
-             State:=psInComment;
+    CurStr := Line(J);
+    Len := Length(CurStr);
+    if (J = EndCoord.Y) and (EndCoord.X < Len) then
+      Len := EndCoord.X;
+    while I <= Len do
+    begin
+      if InComment then
+      begin
+        if (CurStr[I] = '*') and (I < Len) and (CurStr[I + 1] = '/') then
+        begin
+          InComment := False;
+          Inc(I);
+        end;
+      end
       else
-       Result.Y:=j;
-       Result.X:=i;
-       Exit
-      end;
-      psInComment:
-         case  CurStr[i] of
-          '/': if (i>1) and (CurStr[i-1]='*') then
-                 State:=psNormal;
-         end;
-     end;
-     Inc(i)
-   end;
-   i:=1;
+        case CurStr[I] of
+          ' ', #13, #9, #10, ';':
+            ; // skip
+          '-':
+            if (I < Len) and (CurStr[I + 1] = '-') then
+              Break; // comment up to the end of the line
+          '/':
+            if (I < Len) and (CurStr[I + 1] = '*') then
+            begin
+              InComment := True;
+              Inc(I);
+            end;
+        else
+          Result.Y := J;
+          Result.X := I;
+          Exit;
+        end;
+      Inc(I);
+    end;
+    I := 1;
   end;
 end;
 
 function TpFIBScriptParser.GetToken(TokenPos: TStmtCoord;IgnoreQuote:boolean=True): string;
 var
    CurStr:string;
-   StartPosInStr:Word;
-   EndPosInStr:Word;
+   StartPosInStr:Integer;
+   EndPosInStr:Integer;
    p:PChar;
    L:integer;
 begin
-   CurStr:=FScript[TokenPos.Y];
+   CurStr:=Line(TokenPos.Y);
    StartPosInStr:=TokenPos.X;
    if (CurStr[StartPosInStr] in ['''','"']) and IgnoreQuote then
    begin
