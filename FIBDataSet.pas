@@ -1268,7 +1268,10 @@ type
     function Translate(Src, Dest: PAnsiChar; ToOem: Boolean): Integer; override;
     function UpdateStatus: TUpdateStatus; override;
     function IsSequenced: Boolean; override;        // Scroll bar
-    property qDefaultFields:boolean read GetDefaultFields ;
+    // Before XE6 TDataSet.DefaultFields is a flag that is stale while the dataset is inactive
+{$IFDEF D_20}{$WARN HIDING_MEMBER OFF}{$ENDIF}
+    property DefaultFields:boolean read GetDefaultFields ;
+{$IFDEF D_20}{$WARN HIDING_MEMBER DEFAULT}{$ENDIF}
   public
 {$IFDEF CSMonitor}
     procedure SetCSMonitorSupportToQ;
@@ -6583,30 +6586,39 @@ begin
  end;
 end;
 
-procedure TFIBCustomDataSet.CloseOpen(const DoFetchAll:boolean);
+procedure TFIBCustomDataSet.CloseOpen(const DoFetchAll: Boolean);
 var
   iCurScreenState: Integer;
-  OldDefaultFields:boolean;
+  OldDefaultFields: Boolean;
 begin
- ChangeScreenCursor(iCurScreenState);
- OldDefaultFields:=DefaultFields;
- try
-  SetDefaultFields(False);
-  if not Active then
-  begin
-   Open;
-   if DoFetchAll then FetchAll;
-  end
-  else
-  begin
-   Close;
-   Open;
-   if DoFetchAll then FetchAll;
+  ChangeScreenCursor(iCurScreenState);
+  try
+    if Active then
+    begin
+      // Keep automatic fields alive across the reopen
+      OldDefaultFields := DefaultFields;
+      if OldDefaultFields then
+        SetDefaultFields(False);
+      try
+        Close;
+        Open;
+      finally
+        if OldDefaultFields then
+        begin
+          SetDefaultFields(True);
+          // Reopen failed: drop the automatic fields left over from the previous cursor
+          if not Active then
+            DestroyFields;
+        end;
+      end;
+    end
+    else
+      Open;
+    if DoFetchAll then
+      FetchAll;
+  finally
+    RestoreScreenCursor(iCurScreenState);
   end;
- finally
-  SetDefaultFields(OldDefaultFields);
-  RestoreScreenCursor(iCurScreenState);
- end;
 end;
 
 procedure TFIBCustomDataSet.OpenByTimer(Sender:TObject);
@@ -11272,88 +11284,103 @@ end;
 
 procedure TFIBCustomDataSet.InternalOpen;
 var
-  iCurScreenState,
-  i,j: Integer;
+  iCurScreenState: Integer;
+  i, j: Integer;
+  vForceCreateFields: Boolean;
+  vCalcFields: array of TField;
 begin
-  if drsInClone in FRunState  then
+  if drsInClone in FRunState then
   begin
-   PrepareBookMarkSize; 
-   FOpen:=True;
-   Exit;
+    PrepareBookMarkSize;
+    FOpen := True;
+    Exit;
   end;
   ChangeScreenCursor(iCurScreenState);
- try
+  try
     FUpdatesPending := False;
     if FQSelect.MacroChanged then
-     SQLChanging(QSelect);
+      SQLChanging(QSelect);
     if not FPrepared or not FQSelect.Prepared then
-     Prepare;
-    if (FieldDefs.Count=0) then
+      Prepare;
+    if FieldDefs.Count = 0 then
       InternalInitFieldDefs;
     SetParamsFromMaster;
     if (FQSelect.SQLType = SQLSelect) or (FQSelect.SQLType = SQLSelectForUpdate) then
     begin
+      vForceCreateFields := drsForceCreateCalcFields in FRunState;
+      Exclude(FRunState, drsForceCreateCalcFields);
       if DefaultFields then
-       CreateFields
-      else
-      if drsForceCreateCalcFields in FRunState then
+        CreateFields
+      else if vForceCreateFields then
       begin
-        Exclude(FRunState,drsForceCreateCalcFields);
-        CreateFields;
-        SetDefaultFields(True);
-        i:=0;
-        while Fields[0].FieldKind in [fkCalculated, fkLookup] do
+        // Only fields made by CreateCalcField count as automatic ones
+        for i := 0 to FieldCount - 1 do
+          if not (Fields[i].FieldKind in [fkCalculated, fkLookup]) then
+          begin
+            vForceCreateFields := False;
+            Break;
+          end;
+        if vForceCreateFields then
         begin
-           Fields[0].Index:=FieldCount-1;
-           Inc(i);
-           if i>FieldCount then
-            Break
+          // TDataSet.CreateFields does nothing while any field exists (XE6+),
+          // so detach the calculated fields and append them after the data fields
+          SetLength(vCalcFields, FieldCount);
+          for i := FieldCount - 1 downto 0 do
+          begin
+            vCalcFields[i] := Fields[i];
+            vCalcFields[i].DataSet := nil;
+          end;
+          try
+            try
+              CreateFields;
+            except
+              // Back to the state before Open, so that the next Open retries
+              DestroyFields;
+              Include(FRunState, drsForceCreateCalcFields);
+              raise;
+            end;
+          finally
+            for i := 0 to High(vCalcFields) do
+              vCalcFields[i].DataSet := Self;
+          end;
+          // Before XE6 the flag was computed while the calculated fields were attached
+          SetDefaultFields(True);
         end;
       end;
 
-//+
       InitDataSetSchema;
-
       BindFields(True);
 
-      if BlobFieldCount>0 then
-      begin
-        for i:=0 to Pred(FieldCount) do
-        if Fields[i] is TFIBBlobField then
-        begin
-         TFIBBlobField(Fields[i]).FSubType:=
-          FQSelect[Fields[i].FieldName].AsXSQLVAR^.sqlsubtype;
-        end
-        else
-        if Fields[i] is TFIBMemoField then
-        begin
-         TFIBMemoField(Fields[i]).FSubType:=
-          FQSelect[Fields[i].FieldName].AsXSQLVAR^.sqlsubtype;
-        end
+      if BlobFieldCount > 0 then
+        for i := 0 to Pred(FieldCount) do
+          if Fields[i] is TFIBBlobField then
+            TFIBBlobField(Fields[i]).FSubType :=
+              FQSelect[Fields[i].FieldName].AsXSQLVAR^.sqlsubtype
+          else if Fields[i] is TFIBMemoField then
+            TFIBMemoField(Fields[i]).FSubType :=
+              FQSelect[Fields[i].FieldName].AsXSQLVAR^.sqlsubtype;
 
-      end;
-
-      FQCurrentSelect:=FQSelect;
+      FQCurrentSelect := FQSelect;
       FCurrentRecord := -1;
-      if FCacheModelOptions.FCacheModelKind=cmkLimitedBufferSize then
+      if FCacheModelOptions.FCacheModelKind = cmkLimitedBufferSize then
       begin
         if not Assigned(vPartition) then
-         GetMem(vPartition,SizeOf(TRecordsPartition));
-
-        vPartition^.BeginPartRecordNo:=-1;
-        vPartition^.EndPartRecordNo  :=-1;
-        vPartition^.IncludeBof:=True;
-        vPartition^.IncludeEof:=False;
+          GetMem(vPartition, SizeOf(TRecordsPartition));
+        vPartition^.BeginPartRecordNo := -1;
+        vPartition^.EndPartRecordNo := -1;
+        vPartition^.IncludeBof := True;
+        vPartition^.IncludeEof := False;
       end;
 
       InternalDoBeforeOpen;
       if not FCachedActive then
       begin
-       FQSelect.ExecQuery;
-       FOpen := FQSelect.Open;
+        FQSelect.ExecQuery;
+        FOpen := FQSelect.Open;
       end
       else
-       FOpen := True;
+        FOpen := True;
+
       (*
        * Initialize offsets, buffer sizes, etc...
        * 1. Initially FRecordSize is just the "RecordDataLength".
@@ -11366,31 +11393,29 @@ begin
        *    FRecordBufferSize.
        * 6. Finally, calls to AllocRecordBuffer will work!.
        *)
+      FBlobCacheBufferOffset := FRecordSize;
+      FCalcFieldsOffset := FBlobCacheBufferOffset + (BlobFieldCount * SizeOf(TFIBBlobStream));
+      FRecordBufferSize := FCalcFieldsOffset + CalcFieldsSize;
+      FBlockReadSize := FBlockReadSize + (BlobFieldCount * SizeOf(TFIBBlobStream));
 
-//     InitDataSetSchema;
-
-     FBlobCacheBufferOffset  :=FRecordSize;
-     FCalcFieldsOffset := FBlobCacheBufferOffset + (BlobFieldCount * SizeOf(TFIBBlobStream));
-     FRecordBufferSize := FCalcFieldsOffset + CalcFieldsSize;
-     FBlockReadSize    := FBlockReadSize + (BlobFieldCount * SizeOf(TFIBBlobStream));
-
-     FBufferChunkSize := FRecordBufferSize * FCacheModelOptions.FBufferChunks;
-     vCalcFieldsSavedCache:=poCacheCalcFields in Options;
-     if vCalcFieldsSavedCache then
-      FRecordsCache:=
-       TRecordsCache.Create(FCacheModelOptions.FBufferChunks,FRecordBufferSize,FBlockReadSize+CalcFieldsSize,FStringFieldCount)
-     else
-      FRecordsCache:=
-       TRecordsCache.Create(FCacheModelOptions.FBufferChunks,FRecordBufferSize,FBlockReadSize,FStringFieldCount);
-     FRecordsCache.CreateNewBlock;
-     FRecordsCache.SaveChangeLog:=FCachedUpdates;
-     j:=1;
-     for i:=0 to Pred(vFieldDescrList.Capacity) do
-     if vFieldDescrList[i].fdIsSeparateString then
-     begin
-      FRecordsCache.SetStrOffset(j,vFieldDescrList[i].fdDataOfs-DiffSizesRecData,vFieldDescrList[i].fdDataSize);
-      Inc(j);
-     end;
+      FBufferChunkSize := FRecordBufferSize * FCacheModelOptions.FBufferChunks;
+      vCalcFieldsSavedCache := poCacheCalcFields in Options;
+      if vCalcFieldsSavedCache then
+        FRecordsCache := TRecordsCache.Create(FCacheModelOptions.FBufferChunks,
+          FRecordBufferSize, FBlockReadSize + CalcFieldsSize, FStringFieldCount)
+      else
+        FRecordsCache := TRecordsCache.Create(FCacheModelOptions.FBufferChunks,
+          FRecordBufferSize, FBlockReadSize, FStringFieldCount);
+      FRecordsCache.CreateNewBlock;
+      FRecordsCache.SaveChangeLog := FCachedUpdates;
+      j := 1;
+      for i := 0 to Pred(vFieldDescrList.Capacity) do
+        if vFieldDescrList[i].fdIsSeparateString then
+        begin
+          FRecordsCache.SetStrOffset(j, vFieldDescrList[i].fdDataOfs - DiffSizesRecData,
+            vFieldDescrList[i].fdDataSize);
+          Inc(j);
+        end;
       FBPos := 0;
       FOBPos := 0;
       FBEnd := 0;
@@ -11401,19 +11426,19 @@ begin
       FQSelect.ExecQuery;
       Exit;
     end;
-    if (Filter <> '') and (not Assigned(FFilterParser) )then
-      ExprParserCreate(FastTrim(Filter),FilterOptions) ;
 
-  if (psGetOrderInfo in PrepareOptions)  or (CacheModelOptions.CacheModelKind =cmkLimitedBufferSize)
-  then
-   PrepareAdditionalInfo;
-  PrepareBookMarkSize;
-  if CacheModelOptions.CacheModelKind =cmkLimitedBufferSize then
-    PrepareAdditionalSelects;
+    if (Filter <> '') and not Assigned(FFilterParser) then
+      ExprParserCreate(FastTrim(Filter), FilterOptions);
 
- finally
-   RestoreScreenCursor(iCurScreenState);
- end;
+    if (psGetOrderInfo in PrepareOptions) or
+      (CacheModelOptions.CacheModelKind = cmkLimitedBufferSize) then
+      PrepareAdditionalInfo;
+    PrepareBookMarkSize;
+    if CacheModelOptions.CacheModelKind = cmkLimitedBufferSize then
+      PrepareAdditionalSelects;
+  finally
+    RestoreScreenCursor(iCurScreenState);
+  end;
 end;
 
 procedure TFIBCustomDataSet.InternalPost;
