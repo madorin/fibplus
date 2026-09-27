@@ -1,0 +1,7 @@
+*.pas       text eol=crlf
+*.dpr       text eol=crlf
+*.dpk       text eol=crlf
+*.inc       text eol=crlf
+*.dfm       text eol=crlf
+*.dproj     text eol=crlf
+*.groupproj text eol=crlf
