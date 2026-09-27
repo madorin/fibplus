@@ -64,6 +64,7 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
         <SanitizedProjectName>FIBPlus_D24</SanitizedProjectName>
+        <RuntimeOnlyPackage>true</RuntimeOnlyPackage>
         <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
         <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
         <GenDll>true</GenDll>
@@ -181,7 +182,6 @@
         <DCCReference Include="..\pFIBLists.pas"/>
         <DCCReference Include="..\pFIBStoredProc.pas"/>
         <DCCReference Include="..\IB_ErrorCodes.pas"/>
-        <DCCReference Include="..\RegFIBPlus.pas"/>
         <DCCReference Include="..\FIBCloneComponents.pas"/>
         <DCCReference Include="..\pFIBFieldsDescr.pas"/>
         <DCCReference Include="..\SIBAPI.pas"/>
