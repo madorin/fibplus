@@ -52,7 +52,7 @@ type
       function GetObject(const Index:integer):TObject;
       function GetCount: integer;
       function GetItem(const Index: integer): string;
-      function HashFunc(Str: PChar): Integer;
+      function HashFunc(const Str: string): Integer;
       function FindInHash(const Search: string; var Hash,Index: Integer): Boolean;
     public
      constructor Create(Owner:TObject;aUseHash:boolean);
@@ -61,6 +61,7 @@ type
      function    FindObject(const ObjName:string;ObjClass:TCallClass; var InitRes:boolean):integer;
      function    Find(const S: string; var Index: Integer): Boolean;
      function    AddObject(const S: string; AObject: TObject): Integer;
+     function    IndexOfObject(AObject: TObject): Integer;
      procedure   Remove(const S: string);
      procedure   Delete(Index:integer);
 
@@ -163,6 +164,11 @@ begin
  end;
 end;
 
+function TObjStringList.IndexOfObject(AObject: TObject): Integer;
+begin
+  Result := FList.IndexOfObject(AObject);
+end;
+
 procedure TObjStringList.Remove(const S: string);
 var Index:integer;
     Hash :integer;
@@ -222,53 +228,39 @@ end;
 function TObjStringList.FindInHash(const Search: string; var Hash,
   Index: Integer): Boolean;
 var
-  L, H, I, C: Integer;
+  L, H, I: Integer;
 begin
- with FList do
- begin
   Result := False;
+  Hash := HashFunc(Search);
+
+  // First item with a hash >= Hash. The hashes are compared, not subtracted:
+  // they cover the whole Integer range and the difference would overflow,
+  // breaking the order of the list.
   L := 0;
-  H := Count - 1;
-  Hash:=HashFunc(PChar(Search));
-  while (L <= H)  do
+  H := FList.Count - 1;
+  while L <= H do
   begin
     I := (L + H) shr 1;
-    C := Signum(Integer(FHashList[I]) - Hash);
-    if C < 0 then
-     L := I + 1
+    if Integer(FHashList[I]) < Hash then
+      L := I + 1
     else
-    begin
       H := I - 1;
-      if C = 0 then
-      begin
-        Result :=EquelNames(False,Search,FList[I]);
-        if not Result then
-        begin
-         while (I>=0) and (Hash=Integer(FHashList[I]))  do Dec(I);
-         Inc(I);
-         Result :=EquelNames(False,Search,FList[I]);
-        end; 
-        while not Result and (Hash=Integer(FHashList[I])) do
-        begin
-         Inc(I);
-         if i<FList.Count then
-          Result := EquelNames(False,Search,FList[I])
-         else
-         begin
-          Index := I;
-          Exit;
-         end;
-        end;
-        if Result then
-        begin
-         Index := I;
-         Exit;
-        end;
-      end;
-    end;
   end;
+
+  // The items with the same hash (collisions) are next to each other
   Index := L;
- end;
+  while (Index < FList.Count) and (Integer(FHashList[Index]) = Hash) do
+  begin
+    if EquelNames(False, Search, FList[Index]) then
+    begin
+      Result := True;
+      Exit;
+    end;
+    Inc(Index);
+  end;
+
+  // Not found: insert position
+  Index := L;
 end;
 
 function  TObjStringList.
@@ -298,18 +290,22 @@ begin
 end;
 
 procedure TObjStringList.FullClear;
-var i:integer;
+var
+  I: Integer;
+  Obj: TObject;
 begin
-  with  FList do
+  // Backwards: freeing an object may remove it from the list
+  // (FreeNotification of the list owner)
+  for I := FList.Count - 1 downto 0 do
   begin
-   for i:=0 to Pred(Count)  do
-   begin
-    if (Objects[i] is TComponent) and  (csDestroying in TComponent(Objects[i]).ComponentState) then
+    Obj := FList.Objects[I];
+    if (Obj is TComponent) and (csDestroying in TComponent(Obj).ComponentState) then
       Continue;
-    Objects[i].Free;
-   end;
-   Clear
-  end
+    Obj.Free;
+  end;
+  FList.Clear;
+  if FUseHash then
+    FHashList.Clear;
 end;
 
 function TObjStringList.GetCount: integer;
@@ -327,32 +323,15 @@ begin
  Result:=FList.Objects[Index]
 end;
 
-function TObjStringList.HashFunc(Str: PChar): Integer;
+function TObjStringList.HashFunc(const Str: string): Integer;
 var
-  Off, Len, Skip, I: Integer;
+  I: Integer;
 begin
+  // All the chars: sampling only some of them made similar SQL texts
+  // (e.g. different generator names) collide. Overflow wraps ({$Q-}).
   Result := 0;
-  Off := 1;
-//  Len := Q_StrLen(Str);
-  Len:=Length(Str);
-  if Len < 16 then
-    for I := (Len - 1) downto 0 do
-    begin
-      Result := Result * 37 + Ord(Str[Off])-32;
-      Inc(Off);
-    end
-  else
-  begin
-    { Only sample some characters }
-    Skip := Len div 8;
-    I := Len - 1;
-    while I >= 0 do                               
-    begin
-      Result := Result * 39+ Ord(Str[Off]) -32;
-      Dec(I, Skip);
-      Inc(Off, Skip);
-    end;
-  end;
+  for I := 1 to Length(Str) do
+    Result := Result * 37 + Ord(Str[I]);
 end;
 
 procedure TObjStringList.Delete(Index: integer);
