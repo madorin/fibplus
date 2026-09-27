@@ -25,12 +25,11 @@ interface
 
 {$I FIBPlus.inc}
 uses
-  {$IFDEF WINDOWS}
-   Windows, // For inline functions
-  {$ENDIF}
-  SyncObjs,SysUtils,Classes,DB,FIBPlatforms,FIBDataSet,FIBDataBase,FIBQuery,
-  pFIBQuery,pFIBDataBase,pFIBProps
-  ;
+{$IFDEF WINDOWS}
+  Windows, // for inline functions
+{$ENDIF}
+  SyncObjs, SysUtils, Classes, DB, FIBPlatforms, FIBDataSet, FIBDataBase,
+  FIBQuery, pFIBQuery, pFIBDataBase, pFIBProps;
 
 
  type
@@ -214,23 +213,23 @@ uses
         property    NeedValidate :boolean read FNeedValidate write FNeedValidate;
        end;
 
-       TpStoredProcCollect= class
-       private
-        FStoredProcNames:TStringList;
-        FSPParamTxt:TStringList;
-        FLock: TCriticalSection;
-        function  IndexOfSP(DB:TFIBDatabase;const SPName:string;
-         ForceReQuery:boolean):integer;
-        function  GetParamsText(DB:TFIBDatabase;const SPName:string):string;
-       public
-        constructor Create;
-        destructor  Destroy;override;
-        procedure   Clear;
-        function    GetExecProcTxt(DB:TFIBDatabase;
-         const SPName:string;   ForceReQuery:boolean
-        ):string;
-        procedure   ClearSPInfo(DB:TFIBDatabase);
-       end;
+  // Thread-safe, process-wide cache of stored procedure input parameters
+  TFIBStoredProcMetadataCache = class
+  private
+    FItems: TStringList; // Objects are TFIBStoredProcMetadata
+    FLock: TCriticalSection;
+    function AcquireMetadata(DB: TFIBDatabase; const StoredProcName: string;
+      ForceReQuery: Boolean): TObject;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure Clear;
+    function GetExecProcTxt(DB: TFIBDatabase; const StoredProcName: string;
+      ForceReQuery: Boolean): string;
+    function GetParamDefValue(DB: TFIBDatabase; const StoredProcName: string;
+      ParamNo: Integer): string;
+    procedure ClearSPInfo(DB: TFIBDatabase);
+  end;
 
        TpErrorMessage=class
        private
@@ -269,7 +268,7 @@ uses
 var
      ListTableInfo  :TpFIBTableInfoCollect;
      ListDataSetInfo:TpDataSetInfoCollect;
-     ListSPInfo     :TpStoredProcCollect;
+     ListSPInfo     :TFIBStoredProcMetadataCache;
      ListErrorMessages:TpErrorMessagesCollect;
 // Manage Developer Info tables
 
@@ -298,13 +297,15 @@ function DBPrimaryKeyFields(const TableName:string;
 
 implementation
 
-uses pFIBDataSet,StrUtil,FIBConsts,pFIBCacheQueries,ibase,SqlTxtRtns
- {$IFDEF D_XE3}
-  {$IFDEF MACOS}
-  ,Posix.Unistd // for inline functions
-  {$ENDIF}
- {$ENDIF}
-;
+uses
+  pFIBDataSet, StrUtil, FIBConsts, pFIBCacheQueries, ibase, SqlTxtRtns, fib,
+  StdFuncs
+{$IFDEF D_XE3}
+{$IFDEF MACOS}
+  , Posix.Unistd // for inline functions
+{$ENDIF}
+{$ENDIF}
+  ;
 
 type
    TFriendDatabase= class(TFIBDatabase);
@@ -2206,130 +2207,262 @@ end;
 
 //
 
-constructor TpStoredProcCollect.Create;
+type
+  TFIBStoredProcMetadata = class
+  private
+    FParamsText: string; // '(?A, ?B)' or ''
+    FDefaultValues: array of string;
+  end;
+
+  // Exact and locale independent: quoted names are case sensitive, and keys
+  // with a common prefix stay adjacent
+  TOrdinalStringList = class(TStringList)
+  protected
+    function CompareStrings(const S1, S2: string): Integer; override;
+  end;
+
+function TOrdinalStringList.CompareStrings(const S1, S2: string): Integer;
 begin
- inherited Create;
- FStoredProcNames:=TStringList.Create;
- FStoredProcNames.Sorted:=True;
- FStoredProcNames.Duplicates:=dupIgnore;
- FSPParamTxt    :=TStringList.Create;
- FLock:= TCriticalSection.Create;
+  Result := CompareStr(S1, S2);
 end;
 
-destructor  TpStoredProcCollect.Destroy;//override;
-begin
- FStoredProcNames.Free;
- FSPParamTxt  .Free;
- FLock.Free;
- inherited Destroy;
-end;
+const
+  qInputParams =
+    'SELECT PP.RDB$PARAMETER_NAME, %s' + CLRF +
+    'FROM RDB$PROCEDURE_PARAMETERS PP' + CLRF +
+    '%s' +
+    'WHERE PP.RDB$PROCEDURE_NAME = :PN AND PP.RDB$PARAMETER_TYPE = 0' + CLRF +
+    '%s' +
+    'ORDER BY PP.RDB$PARAMETER_NUMBER';
 
-procedure   TpStoredProcCollect.Clear;
-begin
-  FStoredProcNames.Clear;
-  FSPParamTxt     .Clear;
-end;
-
-function  TpStoredProcCollect.GetParamsText(DB:TFIBDatabase;
-   const SPName:string):string;
+// ODS 11 (Firebird 2.0) has parameter defaults, ODS 12 (Firebird 3.0) packages
+function InputParamsSQL(DB: TFIBDatabase): string;
 var
-  Qry   : TpFIBQuery;
-  Trans : TpFIBTransaction;
-  lSQLDA: TFIBXSQLDA;
+  ODS: Integer;
 begin
-
-    begin
-      Result := '';
-      Qry := TpFIBQuery.Create(nil);
-      Trans := TpFIBTransaction.Create(nil);
-      with Qry,Trans do
-      try
-        Database := DB;
-        DefaultDatabase := Database;
-        Transaction := Trans;
-        SQL.Text :=
-         'SELECT RDB$PARAMETER_NAME, RDB$PARAMETER_TYPE FROM'+CLRF+
-         'RDB$PROCEDURE_PARAMETERS WHERE RDB$PROCEDURE_NAME='+CLRF +
-         '''' + FormatIdentifierValue(Database.SQLDialect, SPName) + ''''+CLRF +
-         'ORDER BY RDB$PARAMETER_NUMBER';
-        StartTransaction;
-        try
-          ExecQuery;
-          lSQLDA := Current;
-          while not Qry.Eof do
-          begin
-            if (lSQLDA.ByName['RDB$PARAMETER_TYPE'].AsInteger = 0) then
-            begin
-              if (Result <> '') then
-                Result := Result + ', ';
-              Result := Result + '?' + FormatIdentifier(Database.SQLDialect,
-              FastTrim(lSQLDA.ByName['RDB$PARAMETER_NAME'].AsString));
-            end;
-            lSQLDA := Next;
-          end;
-          Close;
-        finally
-          Commit;
-        end;
-      finally
-        Qry.Free;
-        Trans.Free;
-      end;
-    end;
-    if Result<>'' then Result:='('+Result+')'
-end;
-
-function TpStoredProcCollect.IndexOfSP(DB:TFIBDatabase;const SPName:string;
- ForceReQuery:boolean
-):integer;
-var
- RegSPName:string;
-begin
- FLock.Acquire;
- try
-   RegSPName:=DB.DBName+'||'+SPName;
-   with FStoredProcNames do
-   begin
-     if ForceReQuery or not Find(RegSPName,Result) then
-     begin
-      Result:=Add(RegSPName);
-      FSPParamTxt.Insert(Result,GetParamsText(DB,SPName))
-     end;
-   end;
- finally
-   FLock.Release
- end;
-end;
-
-function StripQuote(const Value: string): string;
-begin
-  if (Value <> EmptyStr) and  (Value[1] in ['"', '''']) then
-   Result := FastCopy(Value, 2, length(Value) - 2)
+  if DB.IsFirebirdConnect then
+    ODS := DB.ODSMajorVersion
   else
-   Result := Value;
+    ODS := 0;
+  if ODS >= 12 then
+    Result := Format(qInputParams, ['PP.RDB$DEFAULT_SOURCE', '',
+      'AND PP.RDB$PACKAGE_NAME IS NULL' + CLRF])
+  else if ODS >= 11 then
+    Result := Format(qInputParams, ['PP.RDB$DEFAULT_SOURCE', '', ''])
+  else
+    Result := Format(qInputParams, ['F.RDB$DEFAULT_SOURCE',
+      'JOIN RDB$FIELDS F ON F.RDB$FIELD_NAME = PP.RDB$FIELD_SOURCE' + CLRF, '']);
 end;
 
-
-function TpStoredProcCollect.GetExecProcTxt(DB:TFIBDatabase;
-         const SPName:string;   ForceReQuery:boolean
-        ):string;
-
+// '= 5' or 'DEFAULT 5' -> '5'
+function DefaultSourceValue(const Source: string): string;
 begin
-  Result:='EXECUTE PROCEDURE ' + SPName+' '+
-   FSPParamTxt[IndexOfSP(DB,StripQuote(SPName),ForceReQuery)]
+  Result := FastTrim(Source);
+  if (Result <> '') and (Result[1] = '=') then
+    Result := FastTrim(FastCopy(Result, 2, Length(Result)))
+  else if FastUpperCase(FastCopy(Result, 1, 7)) = 'DEFAULT' then
+    Result := FastTrim(FastCopy(Result, 8, Length(Result)));
 end;
 
-
-procedure   TpStoredProcCollect.ClearSPInfo(DB:TFIBDatabase);
-var i,c:integer;
+function LoadStoredProcMetadata(DB: TFIBDatabase;
+  const StoredProcName: string): TFIBStoredProcMetadata;
+var
+  Query: TFIBQuery;
+  Transaction: TFIBTransaction;
+  ParamsText: string;
+  Count: Integer;
 begin
-   c:=Pred(FStoredProcNames.Count);
-   for i:=c downto 0 do
-    if Pos(DB.DBName,FStoredProcNames[i])=1 then
-    begin
-      FStoredProcNames.Delete(i);
-      FSPParamTxt.Delete(i);
+  if not DB.Connected then
+    FIBError(feDatabaseClosed, [CmpFullName(DB)]);
+
+  Result := TFIBStoredProcMetadata.Create;
+  Transaction := TFIBTransaction.Create(nil);
+  Query := TFIBQuery.Create(nil);
+  try
+    try
+      Transaction.DefaultDatabase := DB;
+      Transaction.TRParams.Text := 'read' + CLRF + 'isc_tpb_nowait' + CLRF +
+        'read_committed' + CLRF + 'rec_version';
+      Query.Database := DB;
+      Query.Transaction := Transaction;
+      Query.ParamCheck := True;
+      Query.SQL.Text := InputParamsSQL(DB);
+      // On failure Transaction.Free ends the transaction without masking the error
+      Transaction.StartTransaction;
+      Query.Params[0].AsString := FormatIdentifierValue(DB.SQLDialect,
+        StoredProcName);
+      Query.ExecQuery;
+      ParamsText := '';
+      Count := 0;
+      while not Query.Eof do
+      begin
+        if ParamsText <> '' then
+          ParamsText := ParamsText + ', ';
+        ParamsText := ParamsText + '?' + FormatIdentifier(DB.SQLDialect,
+          FastTrim(Query.Fields[0].AsString));
+        SetLength(Result.FDefaultValues, Count + 1);
+        Result.FDefaultValues[Count] :=
+          DefaultSourceValue(Query.Fields[1].AsString);
+        Inc(Count);
+        Query.Next;
+      end;
+      Query.Close;
+      Transaction.Commit;
+      if ParamsText <> '' then
+        Result.FParamsText := '(' + ParamsText + ')';
+    except
+      Result.Free;
+      raise;
     end;
+  finally
+    Query.Free;
+    Transaction.Free;
+  end;
+end;
+
+function CacheKey(DB: TFIBDatabase; const StoredProcName: string): string;
+begin
+  Result := DB.DBName + #0 + StoredProcName;
+end;
+
+// '"My ""Proc"""' -> 'My "Proc"'
+function StripQuote(const Value: string): string;
+var
+  Quote: Char;
+begin
+  if (Value <> '') and ((Value[1] = '"') or (Value[1] = '''')) then
+  begin
+    Quote := Value[1];
+    Result := StringReplace(FastCopy(Value, 2, Length(Value) - 2),
+      Quote + Quote, Quote, [rfReplaceAll]);
+  end
+  else
+    Result := Value;
+end;
+
+{ TFIBStoredProcMetadataCache }
+
+constructor TFIBStoredProcMetadataCache.Create;
+begin
+  inherited Create;
+  FItems := TOrdinalStringList.Create;
+  FItems.Sorted := True;
+  FLock := TCriticalSection.Create;
+end;
+
+destructor TFIBStoredProcMetadataCache.Destroy;
+begin
+  Clear;
+  FItems.Free;
+  FLock.Free;
+  inherited Destroy;
+end;
+
+procedure TFIBStoredProcMetadataCache.Clear;
+var
+  I: Integer;
+begin
+  FLock.Acquire;
+  try
+    for I := 0 to FItems.Count - 1 do
+      FItems.Objects[I].Free;
+    FItems.Clear;
+  finally
+    FLock.Release;
+  end;
+end;
+
+procedure TFIBStoredProcMetadataCache.ClearSPInfo(DB: TFIBDatabase);
+var
+  Prefix: string;
+  I: Integer;
+begin
+  Prefix := CacheKey(DB, '');
+  FLock.Acquire;
+  try
+    // Keys of the same database are adjacent in the sorted list
+    FItems.Find(Prefix, I);
+    while (I < FItems.Count) and
+      (CompareStr(FastCopy(FItems[I], 1, Length(Prefix)), Prefix) = 0) do
+    begin
+      FItems.Objects[I].Free;
+      FItems.Delete(I);
+    end;
+  finally
+    FLock.Release;
+  end;
+end;
+
+// Returns with FLock acquired, the caller must release it
+function TFIBStoredProcMetadataCache.AcquireMetadata(DB: TFIBDatabase;
+  const StoredProcName: string; ForceReQuery: Boolean): TObject;
+var
+  Name, Key: string;
+  I: Integer;
+  Metadata: TFIBStoredProcMetadata;
+begin
+  Name := StripQuote(StoredProcName);
+  Key := CacheKey(DB, Name);
+  if not ForceReQuery then
+  begin
+    FLock.Acquire;
+    if FItems.Find(Key, I) then
+    begin
+      Result := FItems.Objects[I];
+      Exit;
+    end;
+    FLock.Release;
+  end;
+
+  // Loaded outside the lock; nothing is cached on failure
+  Metadata := LoadStoredProcMetadata(DB, Name);
+  FLock.Acquire;
+  try
+    if FItems.Find(Key, I) then
+    begin
+      FItems.Objects[I].Free;
+      FItems.Objects[I] := Metadata;
+    end
+    else
+      FItems.AddObject(Key, Metadata);
+  except
+    FLock.Release;
+    Metadata.Free;
+    raise;
+  end;
+  Result := Metadata;
+end;
+
+function TFIBStoredProcMetadataCache.GetExecProcTxt(DB: TFIBDatabase;
+  const StoredProcName: string; ForceReQuery: Boolean): string;
+var
+  Metadata: TFIBStoredProcMetadata;
+begin
+  Metadata := TFIBStoredProcMetadata(AcquireMetadata(DB, StoredProcName,
+    ForceReQuery));
+  try
+    Result := 'EXECUTE PROCEDURE ' + StoredProcName;
+    if Metadata.FParamsText <> '' then
+      Result := Result + ' ' + Metadata.FParamsText;
+  finally
+    FLock.Release;
+  end;
+end;
+
+function TFIBStoredProcMetadataCache.GetParamDefValue(DB: TFIBDatabase;
+  const StoredProcName: string; ParamNo: Integer): string;
+var
+  Metadata: TFIBStoredProcMetadata;
+begin
+  Metadata := TFIBStoredProcMetadata(AcquireMetadata(DB, StoredProcName, False));
+  try
+    if (ParamNo >= 0) and (ParamNo < Length(Metadata.FDefaultValues)) then
+      Result := Metadata.FDefaultValues[ParamNo]
+    else
+      Result := '';
+  finally
+    FLock.Release;
+  end;
 end;
 
 // Routine function
@@ -2780,7 +2913,7 @@ initialization
  ListTableInfo    :=TpFIBTableInfoCollect.Create(nil);
  ListDataSetInfo  :=TpDataSetInfoCollect.Create;
  DatabaseRepositories  :=TStringList.Create;
- ListSPInfo       :=TpStoredProcCollect.Create;
+ ListSPInfo       :=TFIBStoredProcMetadataCache.Create;
  ListErrorMessages:=TpErrorMessagesCollect.Create;
 finalization
  ListErrorMessages.Free;

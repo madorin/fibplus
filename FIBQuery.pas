@@ -483,6 +483,8 @@ type
     function  GetTransaction: TFIBTransaction;
     function  GetTRHandle: PISC_TR_HANDLE;
     procedure SetDatabase(Value: TFIBDatabase); virtual;
+    // Descendants that defer their SQL build it here, before Params or Prepare
+    procedure BuildDeferredSQL; virtual;
     procedure SetSQL(Value: TStrings);
     procedure SetMacroChar(Value:Char);
     procedure SetTransaction(Value: TFIBTransaction);
@@ -588,7 +590,7 @@ type
     function  GetMainWhereIndex:integer;
     function  GetMainWhereClause :string;
     procedure SetMainWhereClause (const Value:string);
-    function  IsProc :boolean;
+    function  IsProc :boolean; virtual;
     function  ParamByName(const ParamName:string): TFIBXSQLVAR;
     function  FindParam  (const aParamName: string): TFIBXSQLVAR;
     procedure ApplyMacro;
@@ -4257,6 +4259,7 @@ var
   xSQLDA:PXSQLDA;
   pc: integer;
 begin
+  BuildDeferredSQL;
   DoBeforeExecute;
 {$IFDEF CSMonitor}
   if Pos('/* CSMON$', FParser.SQLText) <= 0 then
@@ -4534,6 +4537,7 @@ begin
  Include(FQueryRunState,qrsInExecute);
  vFetched:=False;
  try
+  BuildDeferredSQL;
   if GetSQLKind=skDDL then
   begin
     ExecuteImmediate;
@@ -5318,8 +5322,13 @@ begin
   end ;
 end;
 
+procedure TFIBQuery.BuildDeferredSQL;
+begin
+end;
+
 function TFIBQuery.GetSQLParams: TFIBXSQLDA;
 begin
+  BuildDeferredSQL;
   if (FUserSQLParams.FXSQLDA=nil)  and not vUserParamsCreated  then
    SQLChange(nil);
   Result := FUserSQLParams;
@@ -5928,6 +5937,7 @@ begin
    if (Transaction<>nil) and not Transaction.InTransaction then
     Transaction.StartTransaction;
   FBase.CheckTransaction;
+  BuildDeferredSQL;
   if (FDoParamCheck) and (Params.Count>0) then
   begin
    if not vUserParamsCreated then

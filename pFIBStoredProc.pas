@@ -26,184 +26,126 @@ unit pFIBStoredProc;
 interface
 
 {$I FIBPlus.inc}
+
 uses
-  Classes,pFIBQuery, FIBQuery,FIBDataBase;
+  pFIBQuery, FIBDatabase;
 
 type
   TpFIBStoredProc = class(TpFIBQuery)
   private
-    FStoredProc: string;
-    FDefaultValues:TStrings;
-    FDefaultLoaded:boolean;
-    procedure SetStoredProc(const Value: string);
-    procedure LoadDefaults;
+    FStoredProcName: string;
+    // SQL is built from metadata, deferred until the database is connected
+    FSQLDeferred: Boolean;
+    procedure SetStoredProcName(const Value: string);
+    function FormattedName: string;
+    procedure BuildSQL;
+    procedure DeferMissingSQL;
   protected
+    procedure BuildDeferredSQL; override;
     procedure SetDatabase(Value: TFIBDatabase); override;
   public
-    constructor Create(AOwner: TComponent); override;
-    destructor Destroy; override;
-    function   GetParamDefValue(ParamNo:integer):string; overload;
-    function   GetParamDefValue(const ParamName:string):string; overload;
-
+    procedure Loaded; override;
+    function IsProc: Boolean; override;
+    // Parameter defaults exist since Firebird 2.0
+    function GetParamDefValue(ParamNo: Integer): string; overload;
+    function GetParamDefValue(const ParamName: string): string; overload;
   published
-    property StoredProcName: string read FStoredProc write SetStoredProc;
+    property StoredProcName: string read FStoredProcName write SetStoredProcName;
   end;
 
 implementation
 
 uses
-   pFIBDatabase, StrUtil, SysUtils,pFIBDataInfo,pFIBCacheQueries;
+  Classes, SysUtils, StrUtil, pFIBDataInfo;
 
-const
- qParDefaults=
-  'SELECT PP.RDB$PARAMETER_NAME AS PARAMETER_NAME, F.RDB$DEFAULT_SOURCE '+
-  'FROM RDB$PROCEDURE_PARAMETERS PP JOIN RDB$FIELDS F ON F.RDB$FIELD_NAME = PP.RDB$FIELD_SOURCE '+
-  'WHERE PP.RDB$PROCEDURE_NAME = :RN AND  PP.RDB$PARAMETER_TYPE = :RT '+
-  'ORDER BY PP.RDB$PARAMETER_NUMBER';
-
-procedure TpFIBStoredProc.SetStoredProc(const Value: string);
-var ProcName:string;
+procedure TpFIBStoredProc.SetStoredProcName(const Value: string);
 begin
-  if (Value <> FStoredProc) then
-  begin
-   FStoredProc := Value;
-   if not (csReading in ComponentState) then
-   begin
-//     FBase.CheckDatabase;
-     if Assigned(Database) then
-     if  IsBlank(Value) then
-      SQL.Clear
-     else
-     begin
-      ProcName:=EasyFormatIdentifier(Database.SQLDialect, FStoredProc,
-       Database.EasyFormatsStr
-      );
-      SQL.Text :=
-       ListSPInfo.GetExecProcTxt(Database,
-        ProcName
-        ,csDesigning in ComponentState
-       );
-     end;
-   end;
-  end;
+  if Value = FStoredProcName then
+    Exit;
+  FStoredProcName := Value;
+  // While reading, SQL comes from the stream
+  if not (csReading in ComponentState) then
+    BuildSQL;
 end;
 
-constructor TpFIBStoredProc.Create(AOwner: TComponent);
+function TpFIBStoredProc.FormattedName: string;
 begin
-  inherited;
-  FStoredProc := '';
-  FDefaultValues:=TStringList.Create;
+  Result := EasyFormatIdentifier(Database.SQLDialect, FStoredProcName,
+    Database.EasyFormatsStr);
 end;
 
-
-destructor TpFIBStoredProc.Destroy;
-begin
-  FDefaultValues.Free;
-  inherited;
-end;
-
-function TpFIBStoredProc.GetParamDefValue(const ParamName: string): string;
+procedure TpFIBStoredProc.BuildSQL;
 var
-   ParamNo:Integer;
+  SQLText: string;
+  Deferred: Boolean;
 begin
-//For Firebird only
- ParamNo:=ParamByName(ParamName).Index;
- Result:=GetParamDefValue(ParamNo)
+  SQLText := '';
+  Deferred := not IsBlank(FStoredProcName);
+  try
+    if Deferred and Assigned(Database) and Database.Connected then
+    begin
+      // In the IDE the procedure may have been altered, re-read its metadata
+      SQLText := ListSPInfo.GetExecProcTxt(Database, FormattedName,
+        csDesigning in ComponentState);
+      Deferred := False;
+    end;
+  finally
+    // Also on failure, so the SQL of the previous procedure can't be run.
+    // Not deferred meanwhile: SQL change notifications read Params.
+    FSQLDeferred := False;
+    SQL.Text := SQLText;
+    FSQLDeferred := Deferred;
+  end;
 end;
 
-function TpFIBStoredProc.GetParamDefValue(ParamNo: integer): string;
+// Name set before the database, or component stored without SQL
+procedure TpFIBStoredProc.DeferMissingSQL;
 begin
-//For Firebird only
- if not FDefaultLoaded then
-   LoadDefaults;
- if FDefaultValues.Count>ParamNo then
- {$IFNDEF D7+}
-  begin
-   Result:=FDefaultValues.Names[ParamNo];
-   Result:=FDefaultValues.Values[Result];
-  end 
- {$ELSE}
-  Result:=FDefaultValues.ValueFromIndex[ParamNo]
- {$ENDIF}
- else
-  Result:='';
+  if not FSQLDeferred and not IsBlank(FStoredProcName) and IsBlank(SQL.Text) then
+    FSQLDeferred := True;
 end;
 
-
-procedure TpFIBStoredProc.LoadDefaults;
-var
- ProcName:string;
- Query: TFIBQuery;
- Trans:TFIBTransaction;
- FreeTrans,CloseTrans:boolean;
+procedure TpFIBStoredProc.BuildDeferredSQL;
 begin
-//For Firebird only
- FDefaultValues.Clear;
- FDefaultLoaded:=False;
- if (Length(FStoredProc)=0)  or (Database=nil) then
-  Exit;
+  if FSQLDeferred and Assigned(Database) and Database.Connected and
+    not (csDestroying in ComponentState) then
+    BuildSQL;
+end;
 
- ProcName:=EasyFormatIdentifier(Database.SQLDialect, FStoredProc,
-   Database.EasyFormatsStr
- );
-//Init Transaction
- FreeTrans:=False;
- CloseTrans:=False;
- if (Transaction<>nil) and Transaction.Active then
-  Trans:=Transaction
- else
-  Trans:=Database.FirstActiveTransaction;
- if (Trans=nil) then
- begin
-  Trans:=TFIBTransaction.Create(Self);
-  Trans.DefaultDatabase:=Database;
-  FreeTrans:=True
- end;
-//end Init Transaction
- Query :=GetQueryForUse(Trans,qParDefaults);
- try
-
-  Query.Params[0].AsString:=ProcName;
-  Query.Params[1].AsInteger:=0;
-  if not Trans.Active then
-  begin
-   CloseTrans:=True;
-   Trans.StartTransaction;
-  end;
-  Query.ExecQuery;
-  while not Query.Eof do
-  begin
-   FDefaultValues.Add(Trim(Query.Fields[0].asString)+Trim(Query.Fields[1].asString));
-   Query.Next;
-  end;
- finally
-   FreeQueryForUse(Query);
-   if CloseTrans then
-    if Trans.Active then
-     Trans.Commit;
-   if FreeTrans then
-   begin
-    Trans.Free;
-   end;
- end;
- FDefaultLoaded:=True
+// Deferred SQL is a procedure call too, ExecProc must not skip it
+function TpFIBStoredProc.IsProc: Boolean;
+begin
+  BuildDeferredSQL;
+  Result := FSQLDeferred or inherited IsProc;
 end;
 
 procedure TpFIBStoredProc.SetDatabase(Value: TFIBDatabase);
-var
-  s:string;
-
 begin
   inherited SetDatabase(Value);
-  if Assigned(Value) and (Length(FastTrim(SQL.Text))=0)
-   and (Length(FStoredProc)>0)
-  then
+  if not (csLoading in ComponentState) then
   begin
-    s:=FStoredProc;
-    FStoredProc:='';
-    StoredProcName:=s
+    DeferMissingSQL;
+    BuildDeferredSQL;
   end;
 end;
 
-end.
+procedure TpFIBStoredProc.Loaded;
+begin
+  inherited Loaded;
+  DeferMissingSQL;
+end;
 
+function TpFIBStoredProc.GetParamDefValue(const ParamName: string): string;
+begin
+  Result := GetParamDefValue(ParamByName(ParamName).Index);
+end;
+
+function TpFIBStoredProc.GetParamDefValue(ParamNo: Integer): string;
+begin
+  if IsBlank(FStoredProcName) or (Database = nil) then
+    Result := ''
+  else
+    Result := ListSPInfo.GetParamDefValue(Database, FormattedName, ParamNo);
+end;
+
+end.
