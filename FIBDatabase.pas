@@ -1405,7 +1405,6 @@ procedure TFIBDatabase.Close;
 begin
  if Connected then
   InternalClose(False);
-  vAttachmentID:=-1;
   vInternalTransaction.Timeout      :=0;  
 end;
 
@@ -1416,6 +1415,7 @@ begin
   // Create database interprets the DBParams string list
   // as mere text. It makes it extremely simple to do this way.
   CheckInactive; // Make sure the database ain't connected.
+  vAttachmentID := -1;
   LoadLibrary;
   tr_handle := nil;
   Call(
@@ -1861,6 +1861,7 @@ begin
 //  EnterCriticalSection(vConnectCS);
   try
    CheckInactive;
+   vAttachmentID := -1;
    CheckDatabaseName;
    LoadLibrary;
   (*
@@ -2153,6 +2154,7 @@ begin
     Close
   else
     CheckInactive;
+  vAttachmentID := -1;
   FHandle := Value;
   FHandleIsShared := (Value <> nil);
   if FHandleIsShared then
@@ -3042,18 +3044,16 @@ end;
 
 function TFIBDatabase.GetAttachmentID  :Long;
 begin
- if vAttachmentID=-1 then
- begin
-  if FHandle=nil then
-   Result    :=-1
-  else
-  begin
-    Result:= GetLongDBInfo(isc_info_attachment_id);
-    vAttachmentID:=Result;
-  end;
- end
+ // The cached value is reset whenever a new handle is obtained (Open,
+ // CreateDatabase, SetHandle), so it never outlives its attachment
+ if FHandle=nil then
+  Result:=-1
  else
+ begin
+  if vAttachmentID=-1 then
+   vAttachmentID:=GetLongDBInfo(isc_info_attachment_id);
   Result:= vAttachmentID;
+ end;
 end;
 
 //Wrappers DBParams
