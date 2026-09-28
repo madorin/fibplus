@@ -962,7 +962,11 @@ type
     function GetRecordCount: Integer; override;
     function GetRecordSize: Word; override; (* abstract *)
 
+    {$IFDEF D_23}
+    procedure InternalAddRecord(Buffer: TRecBuf; Append: Boolean); override;
+    {$ELSE}
     procedure InternalAddRecord(Buffer: Pointer; Append: Boolean); override; (* abstract *)
+    {$ENDIF}
     procedure InternalCancel; override;
     procedure InternalClose; override; (* abstract *)
     procedure CloseCursor; override;
@@ -10141,28 +10145,24 @@ begin
    end;
 end;
 
+// InsertRecord, AppendRecord: the new record is positioned as by Insert, Append.
+// AddRecord calls the TRecBuf overload, TDataSet does not forward it to Pointer.
+{$IFDEF D_23}
+procedure TFIBCustomDataSet.InternalAddRecord(Buffer: TRecBuf; Append: Boolean);
+{$ELSE}
 procedure TFIBCustomDataSet.InternalAddRecord(Buffer: Pointer; Append: Boolean);
+{$ENDIF}
 begin
-  if CanInsert then
+  if Append then
   begin
-    if Append and not UniDirectional then
-     InternalLast;
-    with PRecordData(Buffer)^ do
-    begin
-      if Append then
-      begin
-       rdRecordNumber:=FRecordCount;
-       FCurrentRecord:=rdRecordNumber ;
-      end
-      else
-       rdRecordNumber:=FCurrentRecord-FDeletedRecords ;
-       TCachedUpdateStatus(rdFlags):=cusInserted;
-
-    end;
-    InternalPost;
+    // also when UniDirectional, as Append + Post does
+    InternalLast;
+    SetBookmarkFlag(TRecordBuffer(Buffer), bfEOF);
   end
   else
-    FIBError(feCannotInsert, [CmpFullName(Self)]);
+  if not IsEmpty then
+   PRecordData(Buffer)^.rdRecordNumber := FCurrentRecord;
+  InternalPost;
 end;
 
 procedure TFIBCustomDataSet.InternalCancel;
