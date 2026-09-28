@@ -1112,8 +1112,6 @@ begin
 end;
 
 function TFIBXSQLVAR.GetAsUTCDateTime: TDateTime;
-var
-  ts: TTimeStamp;
 begin
   Result := 0;
   if not IsNull then
@@ -1121,12 +1119,7 @@ begin
     SQL_TIME_TZ, SQL_TIME_TZ_EX:
       Result := (PISC_TIME(FXSQLVAR^.sqldata)^ div 10) / MSecsPerDay;
     SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX:
-      with PISC_TIMESTAMP(FXSQLVAR^.sqldata)^ do
-      begin
-        ts.Date := timestamp_date + IBBuffDateDelta;
-        ts.Time := timestamp_time div 10;
-        Result := HookTimeStampToDateTime(ts);
-      end;
+      Result := FBTimeStampToDateTime(PISC_TIMESTAMP(FXSQLVAR^.sqldata)^);
   else
     Result := AsDateTime;
   end;

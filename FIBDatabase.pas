@@ -274,6 +274,7 @@ type
     function GetOldestSnapshot: Long;            // frb_info_oldest_snapshot
     function GetFBVersion: string;               // frb_info_firebird_version
     function GetAttachCharset: integer;               // frb_info_att_charset
+    function GetCreationDate: TDateTime;         // frb_info_creation_date
   private
 // Versions
     FServerMajorVersion:integer;
@@ -495,6 +496,8 @@ type
     property ServerActiveTransactions  :TStringList read GetActiveTransactions;
     property OldestTransactionID       :Long   read GetOldestTransaction;
     property OldestActiveTransactionID :Long   read GetOldestActive;
+    // In the session time zone (FB4+) or server local time, 0 if unsupported
+    property CreationDate              :TDateTime read GetCreationDate;
     property Busy:boolean read GetBusy;
   public
     procedure StartTransaction;
@@ -836,7 +839,7 @@ uses
 {$IFDEF D_XE3}
   System.Types, // for inline funcs
 {$ENDIF}
-  FIBMiscellaneous,pFIBDataInfo,FIBQuery, StrUtil,pFIBCacheQueries, FIBConsts;
+  FIBMiscellaneous,pFIBDataInfo,FIBQuery, StrUtil,pFIBCacheQueries, FIBConsts, FIBTypes;
 
 
 var
@@ -2650,6 +2653,28 @@ begin
  Result:=GetProtectLongDBInfo(frb_info_att_charset,Success);
  if not Success then
   Result := -1
+end;
+
+function TFIBDatabase.GetCreationDate: TDateTime;
+var
+  local_buffer: array[0..FIBLocalBufferLength - 1] of AnsiChar;
+  DBInfoCommand: AnsiChar;
+  ts: TISC_TIMESTAMP;
+begin
+  CheckActive;
+  DBInfoCommand := AnsiChar(frb_info_creation_date);
+  Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1, @DBInfoCommand,
+                        FIBLocalBufferLength, local_buffer), True);
+  // Other tag: not supported (FB < 2.0, InterBase)
+  if (local_buffer[0] = DBInfoCommand) and
+     (FClientLibrary.isc_vax_integer(@local_buffer[1], 2) = SizeOf(TISC_TIMESTAMP)) then
+  begin
+    ts.timestamp_date := FClientLibrary.isc_vax_integer(@local_buffer[3], 4);
+    ts.timestamp_time := FClientLibrary.isc_vax_integer(@local_buffer[7], 4);
+    Result := FBTimeStampToDateTime(ts);
+  end
+  else
+    Result := 0;
 end;
 
 procedure TFIBDatabase.FillServerVersions;

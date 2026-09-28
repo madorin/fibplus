@@ -118,6 +118,10 @@ function  FBFormatZoneOffset(OffsetMinutes: Integer): string;
 function  FBTimeZoneName(ZoneID: Word): string;
 function  FBTimeZoneIDByName(const Name: string; out ZoneID: Word): Boolean;
 
+{ Date and time }
+
+function  FBTimeStampToDateTime(const Value: TISC_TIMESTAMP): TDateTime;
+
 { Values of TIME/TIMESTAMP WITH TIME ZONE in the dataset record cache.
   The cache keeps the extended form fetched from the server. When a local time
   is assigned in a region zone (or without a zone) the UTC fields hold the local
@@ -1603,6 +1607,15 @@ end;
 
 const
   IBBuffDateDelta = 678576; // ISC_DATE -> TTimeStamp.Date
+
+function FBTimeStampToDateTime(const Value: TISC_TIMESTAMP): TDateTime;
+var
+  ts: TTimeStamp;
+begin
+  ts.Date := Value.timestamp_date + IBBuffDateDelta;
+  ts.Time := Value.timestamp_time div 10;
+  Result := TimeStampToDateTime(ts);
+end;
 
 function CacheOffset(ExtOffset: Smallint): Int64;
 begin
