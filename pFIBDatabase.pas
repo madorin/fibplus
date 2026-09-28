@@ -185,11 +185,6 @@ uses
 {$IFNDEF NO_REGISTRY} RegUtils, {$ENDIF}
 StrUtil,pFIBCacheQueries,pFIBQuery,pFIBDataSet,pFIBDataInfo;
 
-type  THackTransaction = class(TFIBTransaction)
-      end;
-
-      THackFIBQuery  = class (TFIBQuery);
-
 function  GetQueriesCount(ForObj:TComponent):integer;
 var i,bc:integer;
     CurB:TFIBBase;
@@ -597,39 +592,15 @@ begin
 end;
 
 procedure TpFIBDatabase.CloseLostConnect;
-var
- i:integer;
 begin
-  if not Connected then
+  // closed already or being closed
+  if not Connected or (drsInCloseLostConnect in FDatabaseRunState) then
     Exit;
   Include(FDatabaseRunState,drsInCloseLostConnect);
   try
  // Let's avoid of calls IB Api
     FHandle:=nil;
-    for i := 0 to Pred(FIBBaseCount) do
-     try
-      if FIBBases[i] <> nil then
-       if FIBBases[i].Owner is TFIBQuery then
-        with THackFIBQuery(FIBBases[i].Owner) do
-        begin
-          FHandle:=nil;
-          Close;
-          FPrepared:=False;
-        end;
-     except
- //      raise;
-     end;
-    for i:=0 to Pred(TransactionCount) do
-    try
-     if (Transactions[i] <> nil)  and (Transactions[i].Active) then
-     with THackTransaction(Transactions[i]) do
-     begin
-       FHandleIsShared:=True;
-       EndTransaction(TACommit,True)
-     end;
-    except
-//      raise
-    end;
+    AbandonServerHandles;
   finally
    Exclude(FDatabaseRunState,drsInCloseLostConnect);
   end;

@@ -150,6 +150,25 @@ begin
    Result := nil;       
 end;
 
+(*
+ * A Firebird 3+ client defers the cursor close, so on a dead attachment
+ * reopening fails with isc_dsql_cursor_open_err instead of a lost connection
+ * code. Only then the attachment is pinged; returns the lost code or 0.
+ *)
+function HiddenLostConnection(DB: THackDatabase): ISC_STATUS;
+begin
+  Result := 0;
+  if (DB <> nil) and DB.Connected and
+    not (drsInCloseLostConnect in DB.FDatabaseRunState) and
+    CheckStatusVector([isc_dsql_cursor_open_err])
+  then
+  begin
+    Result := DB.PingAttachment;
+    if not IsConnectionLost(Result) then
+      Result := 0;
+  end;
+end;
+
 procedure TpFibErrorHandler.DefaultOnError(Sender: TObject;
   ErrorValue: EFIBError;
   var DoRaise: boolean);
@@ -157,6 +176,8 @@ var
   p: integer;
   s: string;
   CurTr:TFIBTransaction;
+  vDB: THackDatabase;
+  LostCode: ISC_STATUS;
 begin
   FConstraintName  := '';
   FExceptionNumber := -1;
@@ -259,16 +280,26 @@ begin
         end
       end;
    else
-    if IsConnectionLost(IBErrorCode) or
-      ((SQLCode = sqlcode_902) and (IBErrorCode = isc_network_error)) then
     begin
-     // if (IBErrorCode=isc_shutdown) or (IBErrorCode=isc_att_shutdown) and (FindDatabaseForObject(Sender)<>nil) then
-      if (IBErrorCode=isc_shutdown) and (FindDatabaseForObject(Sender)<>nil) then
-       FindDatabaseForObject(Sender).InternalClose(True,True);
+      vDB := FindDatabaseForObject(Sender);
+      if IsConnectionLost(IBErrorCode) or
+        ((SQLCode = sqlcode_902) and (IBErrorCode = isc_network_error)) then
+        LostCode := IBErrorCode
+      else
+        LostCode := HiddenLostConnection(vDB);
+      if LostCode <> 0 then
+      begin
+        FLastError := keLostConnect;
+        // raised while closing this lost connection
+        if (vDB <> nil) and (drsInCloseLostConnect in vDB.FDatabaseRunState) then
+          Exit;
+       // if (IBErrorCode=isc_shutdown) or (IBErrorCode=isc_att_shutdown) and (FindDatabaseForObject(Sender)<>nil) then
+        if (LostCode=isc_shutdown) and (vDB<>nil) and vDB.Connected then
+         vDB.InternalClose(True,True);
 
-      FLastError := keLostConnect;
-      if oeLostConnect in Options then
-        DoOnLostConnect(FindDatabaseForObject(Sender),ErrorValue,DoRaise);
+        if oeLostConnect in Options then
+          DoOnLostConnect(vDB,ErrorValue,DoRaise);
+      end
     end
    end;
 end;
@@ -342,6 +373,7 @@ begin
     end
   else
 //  if Database.Connected then
+  if DataBase is TpFIBDatabase then
   begin
    Actions := laCloseConnect;
    THackpFIBDatabase(DataBase).DoOnLostConnect(DataBase, ErrorValue, Actions,DoRaise)

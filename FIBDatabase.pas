@@ -62,7 +62,7 @@ type
   TFIBUseRepository=(urFieldsInfo,urDataSetInfo,urErrorMessagesInfo);
   TFIBUseRepositories=set of TFIBUseRepository;
   TFBContextSpace=(csSystem,csSession,csTransaction);
-  TDatabaseRunStateValues=(drsInCloseLostConnect,drsInRestoreLostConnect);
+  TDatabaseRunStateValues=(drsInCloseLostConnect,drsInRestoreLostConnect,drsInClose);
   TDatabaseRunState= set of TDatabaseRunStateValues;
   TBeforeSaveBlobToSwap=procedure(const TableName,FieldName:string;
    { const } RecordKeyValues:array of variant;Stream:TStream;var FileName:string; var CanSave:boolean) of object;
@@ -312,6 +312,7 @@ type
     procedure Loaded; override;
     procedure Notification(AComponent: TComponent; Operation: TOperation);override;
     procedure InternalClose(Force: Boolean;DBinShutDown:boolean=False); virtual ;
+    procedure AbandonServerHandles;
     procedure DoOnConnect;
     procedure DoBeforeDisconnect;
     procedure DoAfterDisconnect;
@@ -361,6 +362,7 @@ type
     function  IndexOfDBConst(const st: string): Integer;       // Get the index of a given constant in DBParams
     procedure Open(RaiseExcept:boolean = True); virtual;
     function  TestConnected: Boolean;
+    function  PingAttachment: ISC_STATUS;
     function  GetServerTime:TDateTime;
 //FB
     procedure ShutDown(const ShutParams:array of integer;Delay:integer=0);
@@ -751,7 +753,8 @@ type
     procedure FOnDatabaseConnected;
 
     procedure FOnDatabaseDisconnecting;
-    procedure FOnDatabaseDisconnected; 
+    procedure FOnDatabaseDisconnected;
+    procedure FOnDatabaseConnectionLost;
 
     procedure FOnTransactionStarting;
     procedure FOnTransactionStarted;
@@ -775,6 +778,8 @@ type
 
     OnDatabaseDisconnecting: TNotifyEvent;
     OnDatabaseDisconnected: TNotifyEvent;
+    // forget server handles without calling the API
+    OnDatabaseConnectionLost: TNotifyEvent;
     OnDatabaseFree: TNotifyEvent;
     OnTransactionEnding: TNotifyEvent;
     OnTransactionEnded: TNotifyEvent;
@@ -1596,80 +1601,131 @@ end;
  *  Close the database connection and all other
  *  attached components that the database
  *  connection is terminating.
+ *  DBinShutDown: the attachment is dead, calls on it would reach the error
+ *  handler and close again (#24), so handles are only forgotten.
  *)
 procedure TFIBDatabase.InternalClose(Force: Boolean;DBinShutDown:boolean);
 var
   i: Integer;
+  OldRunState: TDatabaseRunState;
 begin
+  // the error handler may close again while closing
+  if drsInClose in FDatabaseRunState then
+    Exit;
   (*
    * Check that the database connection is active.
    *)
   CheckActive;
-  DoBeforeDisconnect;
-  (*
-   * Tell all connected transactions that we're disconnecting.
-   * This is so transactions can commit/rollback, accordingly
-   *)
-
-  for i := 0 to FTransactions.Count - 1 do
+  if DBinShutDown then
+    Force := True;
+  OldRunState := FDatabaseRunState;
+  Include(FDatabaseRunState, drsInClose);
+  if DBinShutDown then
+    Include(FDatabaseRunState, drsInCloseLostConnect);
   try
-    if FTransactions[i] <> nil then
-      Transactions[i].OnDatabaseDisconnecting(Self);
-  except
-    if not Force then
-     raise;
-  end;
+    DoBeforeDisconnect;
+    if DBinShutDown then
+      AbandonServerHandles;
+    (*
+     * Tell all connected transactions that we're disconnecting.
+     * This is so transactions can commit/rollback, accordingly
+     *)
 
-  (*
-   * Tell all attached components (TFIBBase's) that we're
-   * disconnecting
-   *)
+    for i := 0 to FTransactions.Count - 1 do
+    try
+      if FTransactions[i] <> nil then
+        Transactions[i].OnDatabaseDisconnecting(Self);
+    except
+      if not Force then
+       raise;
+    end;
+
+    (*
+     * Tell all attached components (TFIBBase's) that we're
+     * disconnecting
+     *)
+    for i := 0 to FFIBBases.Count - 1 do
+    try
+      if FFIBBases[i] <> nil then
+       FIBBases[i].FOnDatabaseDisconnecting;
+    except
+      if not Force then
+       raise;
+    end;
+
+    (*
+     * Disconnect..., and if the force parameter is true, guarantee that
+     * the handle is reset to nil. A dead attachment is detached too, to
+     * release the client resources.
+     *)
+
+      try
+        if (not HandleIsShared) and
+           (Call(FClientLibrary.isc_detach_database(StatusVector, @FHandle), not Force) > 0) and
+           (not Force)
+        then
+          IbError(Self,Self)
+        else
+        begin
+          FHandle := nil;
+          FHandleIsShared := False;
+        end;
+      except
+          FHandle := nil;
+          FHandleIsShared := False;
+      end;
+
+{$IFNDEF NO_MONITOR}
+    if MonitoringEnabled  then
+     if MonitorHook<>nil then
+      MonitorHook.DBDisconnect(Self);
+{$ENDIF}
+    (*
+     * Tell all attached components (TFIBBase's) that we have
+     * disconnected.
+     *)
+    for i := 0 to FFIBBases.Count - 1 do
+    if FFIBBases[i] <> nil then
+      FIBBases[i].FOnDatabaseDisconnected;
+    DoAfterDisconnect;
+   if Assigned(FSQLLogger) then
+    FSQLLogger.WriteData(CmpFullName(Self),'Disconnect','',lfConnect);
+  finally
+    // only own states: the error handler may have started a restore
+    if not (drsInCloseLostConnect in OldRunState) then
+      Exclude(FDatabaseRunState, drsInCloseLostConnect);
+    Exclude(FDatabaseRunState, drsInClose);
+  end;
+end;
+
+(*
+ * AbandonServerHandles -
+ *  Forget the handles of a dead attachment without calling the API.
+ *  Statements first, so that datasets notified by the transaction end
+ *  don't fetch from it.
+ *)
+procedure TFIBDatabase.AbandonServerHandles;
+var
+  i: Integer;
+begin
   for i := 0 to FFIBBases.Count - 1 do
   try
     if FFIBBases[i] <> nil then
-     FIBBases[i].FOnDatabaseDisconnecting;
+      FIBBases[i].FOnDatabaseConnectionLost;
   except
-    if not Force then
-     raise;
   end;
-
-  (*
-   * Disconnect..., and if the force parameter is true, guarantee that
-   * the handle is reset to nil.
-   *)
-
+  for i := 0 to FTransactions.Count - 1 do
+    if (FTransactions[i] <> nil) and Transactions[i].InTransaction then
+    with Transactions[i] do
     try
-      if (not HandleIsShared) and
-         (Call(FClientLibrary.isc_detach_database(StatusVector, @FHandle), not Force) > 0) and
-         (not Force)
-      then
-        IbError(Self,Self)
-      else
-      begin
-        FHandle := nil;
-        FHandleIsShared := False;
-      end;
+      // a shared handle is only forgotten by EndTransaction
+      FHandleIsShared := True;
+      EndTransaction(TARollback, True);
     except
-        FHandle := nil;
-        FHandleIsShared := False;
+      FHandle := nil;
+      FHandleIsShared := False;
+      FState := tsClosed;
     end;
-
-{$IFNDEF NO_MONITOR}
-  if MonitoringEnabled  then
-   if MonitorHook<>nil then
-    MonitorHook.DBDisconnect(Self);
-{$ENDIF}
-  (*
-   * Tell all attached components (TFIBBase's) that we have
-   * disconnected.
-   *)
-  for i := 0 to FFIBBases.Count - 1 do
-  if FFIBBases[i] <> nil then
-    FIBBases[i].FOnDatabaseDisconnected;
-  DoAfterDisconnect;
- if Assigned(FSQLLogger) then
-  FSQLLogger.WriteData(CmpFullName(Self),'Disconnect','',lfConnect);
-
 end;
 
 
@@ -2166,6 +2222,27 @@ begin
    LoadLibrary;
    DoOnConnect
   end;
+end;
+
+(*
+ * PingAttachment -
+ *  0 if the server answers, else the error code. Raises nothing and
+ *  bypasses the error handler, so it's safe while handling an error.
+ *)
+function TFIBDatabase.PingAttachment: ISC_STATUS;
+var
+  Status: TStatusVector;
+  DBInfoCommand: AnsiChar;
+  local_buffer: array[0..31] of AnsiChar;
+begin
+  Result := 0;
+  if not Connected then
+    Exit;
+  DBInfoCommand := AnsiChar(isc_info_base_level);
+  if FClientLibrary.isc_database_info(PISC_STATUS(@Status), @FHandle, 1, @DBInfoCommand,
+    SizeOf(local_buffer), local_buffer) > 0
+  then
+    Result := Status[1];
 end;
 
 function TFIBDatabase.TestConnected: Boolean;
@@ -4206,7 +4283,7 @@ begin
  begin
   Result:=0; Exit;
  end;
- if MainDatabase.FDatabaseRunState<>[] then
+ if MainDatabase.FDatabaseRunState*[drsInCloseLostConnect,drsInRestoreLostConnect]<>[] then
  begin
   Result:=0; Exit;
  end;
@@ -4338,6 +4415,12 @@ procedure TFIBBase.FOnDatabaseDisconnected;
 begin
   if Assigned(OnDatabaseDisconnected) then
     OnDatabaseDisconnected(Self);
+end;
+
+procedure TFIBBase.FOnDatabaseConnectionLost;
+begin
+  if Assigned(OnDatabaseConnectionLost) then
+    OnDatabaseConnectionLost(Self);
 end;
 
 procedure TFIBBase.FOnDatabaseFree;

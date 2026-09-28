@@ -469,6 +469,7 @@ type
     procedure SetParamCheck(Value:boolean);
     function  GetModifyTable:string;
     procedure DatabaseDisconnecting(Sender: TObject);
+    procedure DatabaseConnectionLost(Sender: TObject);
     function  GetDatabase: TFIBDatabase;
     function  GetDBHandle: PISC_DB_HANDLE;
     function  GetEOF: Boolean;
@@ -3430,6 +3431,7 @@ begin
   with FBase do
   begin
    OnDatabaseDisconnecting := DatabaseDisconnecting;
+   OnDatabaseConnectionLost := DatabaseConnectionLost;
    OnTransactionEnding     := DoTransactionEnding;
   end;
   FBOF := False;
@@ -3883,6 +3885,14 @@ begin
     Close;
     FreeHandle;
   end;
+end;
+
+procedure TFIBQuery.DatabaseConnectionLost(Sender: TObject);
+begin
+  // Close must not call the server
+  FHandle := nil;
+  Close;
+  FPrepared := False;
 end;
 
 
