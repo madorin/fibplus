@@ -10145,11 +10145,8 @@ begin
    end;
 end;
 
-// Called by TDataSet.AddRecord (InsertRecord, AppendRecord). The new record
-// is posted without Insert or Append, so position the buffer as they do and
-// let InternalPost place it in the cache. CanInsert is checked by DoBeforeInsert.
-// The TRecBuf overload is the one called: TDataSet forwards it to an empty
-// legacy overload, not to the Pointer one.
+// InsertRecord, AppendRecord: the new record is positioned as by Insert, Append.
+// AddRecord calls the TRecBuf overload, TDataSet does not forward it to Pointer.
 {$IFDEF D_23}
 procedure TFIBCustomDataSet.InternalAddRecord(Buffer: TRecBuf; Append: Boolean);
 {$ELSE}
@@ -10158,16 +10155,12 @@ procedure TFIBCustomDataSet.InternalAddRecord(Buffer: Pointer; Append: Boolean);
 begin
   if Append then
   begin
-    // as Append + Post, where UpdateCursorPos calls InternalLast for the
-    // bfEOF buffer, also when UniDirectional; InternalPost then adds the
-    // record after the last one
+    // also when UniDirectional, as Append + Post does
     InternalLast;
     SetBookmarkFlag(TRecordBuffer(Buffer), bfEOF);
   end
   else
   if not IsEmpty then
-   // as SetBookmarkData in TDataSet.Insert: before the current record,
-   // positioned by UpdateCursorPos in AddRecord
    PRecordData(Buffer)^.rdRecordNumber := FCurrentRecord;
   InternalPost;
 end;
