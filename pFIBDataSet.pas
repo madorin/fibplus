@@ -3910,15 +3910,23 @@ var
     Values    : array of Variant;
     i,j:integer;
     CurRec    : integer;
+    CurKeys   : Variant;
     OldActiveRecord:integer;
+    OldFiltered:boolean;
 begin
  fl:= TFIBList.Create;
  CurRec    :=GetRecno;
  DisableControls;
  DisableScrollEvents;
  OldActiveRecord:=ActiveRecord;
+ OldFiltered:=Filtered;
  try
+   if OldFiltered then
+    Filtered:=False; // Locate must find the records hidden by the filter
    GetFieldList(fl, KeyFields);
+   // Added records can take a place before the current one: restore by key
+   if not IsEmpty then
+    CurKeys:=FieldValues[KeyFields];
    if fl.Count>0 then
    with RefreshQuery do
    begin
@@ -3949,13 +3957,14 @@ begin
       j:=0;
       for i:=0 to Self.FieldCount-1 do
       begin
-       SrcValues[i]:=RefreshQuery.FindField(Self.Fields[i].FieldName);
-       if  SrcValues[i]<>nil then
+       SrcValues[j]:=RefreshQuery.FindField(Self.Fields[i].FieldName);
+       if  SrcValues[j]<>nil then
        begin
         EditFields[j]:=i;
         Inc(j)
        end;
       end;
+      SetLength(SrcValues,j);
       SetLength(EditFields,j);
       SetLength(Values,j);
     end
@@ -3986,26 +3995,30 @@ begin
       if not DoAdditionalRefreshRec then
       begin
        for i:=0 to Length(EditFields)-1 do
-        Values[i]:=SrcValues[EditFields[i]].Value;
+        Values[i]:=SrcValues[i].Value;
        CacheEdit(EditFields,Values)
       end
     end  // Locate
     else
+    if not IsDeletedRecords then
     begin
        for i:=0 to Length(EditFields)-1 do
-        Values[i]:=SrcValues[EditFields[i]].Value;
+        Values[i]:=SrcValues[i].Value;
        CacheAppend(EditFields,Values);
        if Sorted then
         MoveRecordToOrderPos;
     end;
-    if DoAdditionalRefreshRec then
+    if DoAdditionalRefreshRec and not IsDeletedRecords then
      Refresh; // For Record which anymore approach conditions
 
     Next;
    end
   end
  finally
-  Recno:=CurRec;
+  if VarIsEmpty(CurKeys) or not Locate(KeyFields, CurKeys, []) then
+   Recno:=CurRec;
+  if OldFiltered then
+   Filtered:=True;
   SetRecordPosInBuffer(OldActiveRecord);
   EnableControls;
   EnableScrollEvents;
@@ -4024,6 +4037,7 @@ var
     SrcKeys   : array of TField;
     i:integer;
     CurRec    : integer;
+    CurKeys   : Variant;
     OldActiveRecord:integer;
     OldFiltered:boolean;
 begin
@@ -4034,8 +4048,12 @@ begin
  OldActiveRecord:=ActiveRecord;
  OldFiltered:=Filtered;
  try
-   Filtered:=False;
+   if OldFiltered then
+    Filtered:=False; // Locate must find the records hidden by the filter
    GetFieldList(fl, KeyFields);
+   // Added records can take a place before the current one: restore by key
+   if not IsEmpty then
+    CurKeys:=FieldValues[KeyFields];
 
     if not RefreshDataSet.Active then
     begin
@@ -4074,15 +4092,17 @@ begin
 //      SaveToFile('c:\Logs\Err.dataset', IntToStr(KeyValues[0]));
     end;
 
-    if DoAdditionalRefreshRec then
+    if DoAdditionalRefreshRec and not IsDeletedRecords then
      Refresh; // For Record which anymore approach conditions
 
     RefreshDataSet.Next
    end;
 
  finally
-  Recno:=CurRec;
-  Filtered:=OldFiltered;
+  if VarIsEmpty(CurKeys) or not Locate(KeyFields, CurKeys, []) then
+   Recno:=CurRec;
+  if OldFiltered then
+   Filtered:=True;
   SetRecordPosInBuffer(OldActiveRecord);
   EnableControls;
   EnableScrollEvents;
