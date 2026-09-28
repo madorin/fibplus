@@ -520,6 +520,10 @@ type
 
 
   TFIBDataLink = class(TDetailDataLink)
+  private
+    FMasterChangedInPost: Boolean;
+    function DetailPosting: Boolean;
+    procedure ApplyMasterChangedInPost;
   protected
     FDataSet: TFIBCustomDataSet;
   protected
@@ -3856,11 +3860,25 @@ begin
   end;
 end;
 
+// Master posted from the detail Post (e.g. BeforePost)
+function TFIBDataLink.DetailPosting: Boolean;
+begin
+  Result := (drsInPost in FDataSet.FRunState) and (FDataSet.State in dsEditModes);
+end;
+
 procedure TFIBDataLink.CheckBrowseMode;
 begin
-  if FDataSet.Active then
+  if FDataSet.Active and not DetailPosting then
+    FDataSet.CheckBrowseMode;
+end;
+
+// The posted record belongs to the new master key, a reopen would drop cached updates
+procedure TFIBDataLink.ApplyMasterChangedInPost;
+begin
+  if FMasterChangedInPost then
   begin
-     FDataSet.CheckBrowseMode;
+    FMasterChangedInPost := False;
+    FDataSet.SetParamsFromMaster;
   end;
 end;
 
@@ -3868,6 +3886,11 @@ procedure TFIBDataLink.RecordChanged(Field: TField);
 begin
   if (Field=nil) and (FDataSet.Active) then
   begin
+   if DetailPosting then
+   begin
+    FMasterChangedInPost := True;
+    Exit;
+   end;
    if (not FDataSet.MasterFieldsChanged) then
     Exit;
    FDataSet.SourceChanged;
@@ -4189,19 +4212,14 @@ end;
 
 procedure TFIBCustomDataSet.Post;
 begin
-  //!!! De pus pe urma in AfterPost daca ceva
-  //~ if not (drsInPost in FRunState) then << WAS ORIGINAL UNCOMMENTED
-  //  prevent stack overflow when BeforePost call Post again
-  // For master/detail case
-  begin
-    Include(FRunState,drsInPost);
-    try
-     inherited Post;
-    finally
-     vLockResync := 0;
-     Exclude(FRunState,drsInPost);
-    end
+  Include(FRunState,drsInPost);
+  try
+   inherited Post;
+  finally
+   vLockResync := 0;
+   Exclude(FRunState,drsInPost);
   end;
+  FSourceLink.ApplyMasterChangedInPost;
 end;
 
 
