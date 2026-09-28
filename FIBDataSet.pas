@@ -962,7 +962,11 @@ type
     function GetRecordCount: Integer; override;
     function GetRecordSize: Word; override; (* abstract *)
 
+    {$IFDEF D_23}
+    procedure InternalAddRecord(Buffer: TRecBuf; Append: Boolean); override;
+    {$ELSE}
     procedure InternalAddRecord(Buffer: Pointer; Append: Boolean); override; (* abstract *)
+    {$ENDIF}
     procedure InternalCancel; override;
     procedure InternalClose; override; (* abstract *)
     procedure CloseCursor; override;
@@ -10141,28 +10145,31 @@ begin
    end;
 end;
 
+// Called by TDataSet.AddRecord (InsertRecord, AppendRecord). The new record
+// is posted without Insert or Append, so position the buffer as they do and
+// let InternalPost place it in the cache. CanInsert is checked by DoBeforeInsert.
+// The TRecBuf overload is the one called: TDataSet forwards it to an empty
+// legacy overload, not to the Pointer one.
+{$IFDEF D_23}
+procedure TFIBCustomDataSet.InternalAddRecord(Buffer: TRecBuf; Append: Boolean);
+{$ELSE}
 procedure TFIBCustomDataSet.InternalAddRecord(Buffer: Pointer; Append: Boolean);
+{$ENDIF}
 begin
-  if CanInsert then
+  if Append then
   begin
-    if Append and not UniDirectional then
-     InternalLast;
-    with PRecordData(Buffer)^ do
-    begin
-      if Append then
-      begin
-       rdRecordNumber:=FRecordCount;
-       FCurrentRecord:=rdRecordNumber ;
-      end
-      else
-       rdRecordNumber:=FCurrentRecord-FDeletedRecords ;
-       TCachedUpdateStatus(rdFlags):=cusInserted;
-
-    end;
-    InternalPost;
+    // as Append + Post, where UpdateCursorPos calls InternalLast for the
+    // bfEOF buffer, also when UniDirectional; InternalPost then adds the
+    // record after the last one
+    InternalLast;
+    SetBookmarkFlag(TRecordBuffer(Buffer), bfEOF);
   end
   else
-    FIBError(feCannotInsert, [CmpFullName(Self)]);
+  if not IsEmpty then
+   // as SetBookmarkData in TDataSet.Insert: before the current record,
+   // positioned by UpdateCursorPos in AddRecord
+   PRecordData(Buffer)^.rdRecordNumber := FCurrentRecord;
+  InternalPost;
 end;
 
 procedure TFIBCustomDataSet.InternalCancel;
