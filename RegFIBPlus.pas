@@ -28,7 +28,7 @@ uses
   Classes, Sysutils, DB, pFIBDataSet, pFIBDatabase, pFIBQuery, DSContainer,
   pFIBSQLLog, SIBFIBEA, pFIBMetadata, pFIBDataRefresh, pFIBExports,
   {$IFNDEF NO_MONITOR} FIBSQLMonitor, {$ENDIF} pFIBErrorHandler,
-  pFIBStoredProc, pFIBProps {$IFDEF INC_SERVICE_SUPPORT}, IB_Services {$ENDIF}
+  pFIBStoredProc, pFIBProps, pFIBClientDataSet {$IFDEF INC_SERVICE_SUPPORT}, IB_Services {$ENDIF}
   {$IFDEF IBINSTALL_SUPPORT}, IB_Install{$ENDIF};
 
 procedure Register;
@@ -52,7 +52,7 @@ begin
     TFIBBCDField, TFIBFMTBCDField, TFIBFloatField, TFIBBooleanField, TFIBDateTimeField,
     TFIBDateField, TFIBTimeField, TFIBGuidField, TFIBStringField,
     TFIBWideStringField, TFIBBlobField, TFIBMemoField
-    {$IFDEF SUPPORT_ARRAY_FIELD}, TFIBArrayField{$ENDIF}
+    {$IFDEF SUPPORT_ARRAY_FIELD}, TFIBArrayField{$ENDIF}, TpFIBClientBCDField
     ]);
 
   RegisterFields([TFIBStringField, TFIBIntegerField, TFIBSmallIntField,
@@ -63,7 +63,8 @@ begin
   RegisterComponents(pnFIBPlus, [TpFIBDatabase, TpFIBDataSet, TpFIBTransaction,
     TpFIBQuery, TpFIBStoredProc, TpFIBUpdateObject, TDataSetsContainer,
     TpFibErrorHandler, TpFIBScripter, TpFIBDBSchemaExtract,
-    TpFIBTableChangesReader, TFIBSQLLogger, TSIBfibEventAlerter
+    TpFIBTableChangesReader, TFIBSQLLogger, TSIBfibEventAlerter,
+    TpFIBClientDataSet, TpFIBDataSetProvider
     {$IFNDEF NO_MONITOR}, TFIBSQLMonitor{$ENDIF}]);
 
   {$IFDEF INC_SERVICE_SUPPORT}

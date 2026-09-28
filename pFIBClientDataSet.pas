@@ -101,8 +101,6 @@ type
   end;
 
 
-procedure Register;
-
 implementation
 
 {$R fibplus_midas.dcr}
@@ -685,14 +683,6 @@ begin
     Source.Cancel;
     raise;
   end;
-end;
-
-
-// Register;
-procedure Register;
-begin
-   RegisterClasses([TpFIBClientBCDField]);
-   RegisterComponents('FIBPlus', [TpFIBClientDataSet,TpFIBDataSetProvider]);
 end;
 
 
