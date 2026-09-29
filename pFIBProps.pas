@@ -281,6 +281,8 @@ type
     procedure SetPassword(const Value:string);
     function  GetCharSet: string;
     procedure SetCharSet(const Value:string);
+    function  GetWireCompression: Boolean;
+    procedure SetWireCompression(const Value: Boolean);
 
   public
    constructor Create(Owner:TComponent);
@@ -291,6 +293,7 @@ type
     property Password : string read GetPassword write SetPassword stored False;
     property CharSet  : string read GetCharSet  write SetCharSet  stored False;
     property IsFirebird:boolean read FIsFirebird write FIsFirebird default True ;
+    property WireCompression: Boolean read GetWireCompression write SetWireCompression stored False;
 {$IFDEF SUPPORT_IB2007}
     property IB2007   : TIBConnectParams read FIBParams write SetIBParams;
 {$ENDIF}
@@ -836,6 +839,27 @@ begin
  if Assigned(FOwner) and (FOwner is TFIBDataBase) then
   with TFIBDataBase(FOwner) do
    DBParamByDPB[isc_dpb_lc_ctype]:= FastUpperCase(Value)
+end;
+
+// Same rules as the boolean values of firebird.conf
+function IsConfigTrue(const Value: string): Boolean;
+begin
+  Result := SameText(Value, 'true') or SameText(Value, 'yes') or
+    SameText(Value, 'y') or (StrToIntDef(Value, 0) <> 0);
+end;
+
+function  TConnectParams.GetWireCompression: Boolean;
+begin
+ Result := Assigned(FOwner) and (FOwner is TFIBDataBase) and
+   IsConfigTrue(TFIBDataBase(FOwner).ConfigParam['WireCompression']);
+end;
+
+procedure TConnectParams.SetWireCompression(const Value: Boolean);
+const
+  ConfigValues: array[Boolean] of string = ('', 'true');
+begin
+ if Assigned(FOwner) and (FOwner is TFIBDataBase) then
+  TFIBDataBase(FOwner).ConfigParam['WireCompression'] := ConfigValues[Value];
 end;
 
 {$IFDEF SUPPORT_IB2007}

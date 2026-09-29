@@ -732,6 +732,7 @@ var
   j, DPBVal:integer;
   param_name, param_value: AnsiString;
   pval: Integer;
+  config: AnsiString;
 
   procedure ApplyStrParam;
   begin
@@ -812,6 +813,15 @@ begin
       begin
         if IsFirebird then
           ApplyStrParam;
+      end;
+      isc_dpb_config: // FB3
+      begin
+        // The client reads only the first isc_dpb_config
+        if IsFirebird and (param_value <> '') then
+          if config = '' then
+            config := param_value
+          else
+            config := config + #10 + param_value;
       end;
       isc_dpb_set_db_charset:
       begin
@@ -908,6 +918,12 @@ begin
           FIBError(feDPBConstantUnknown, [param_name]);
       end;
     end;
+  end;
+  if config <> '' then
+  begin
+    DPBVal := isc_dpb_config;
+    param_value := config;
+    ApplyStrParam;
   end;
 end;
 
@@ -1052,6 +1068,7 @@ begin
    AddObject('set_bind', TObject(isc_dpb_set_bind));
    AddObject('decfloat_round', TObject(isc_dpb_decfloat_round));
    AddObject('decfloat_traps', TObject(isc_dpb_decfloat_traps));
+   AddObject('config', TObject(isc_dpb_config));
 
 
   // Sorted:=true;

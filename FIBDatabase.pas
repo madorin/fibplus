@@ -185,6 +185,8 @@ type
     function GetFIBBase(Index: Integer): TFIBBase;      // Get the indexed FIBBase.
     function GetFIBBasesCount: Integer;                  // Get the number of FIBBase connected.
     function GetDBParamByDPB(const Idx: Integer): string;
+    function FindConfigParam(const Name: string; out Value: string): Integer;
+    function GetConfigParam(const Name: string): string;
     function GetTimeout: Cardinal;                       // Get the timeout
     function GetTransaction(Index: Integer): TFIBTransaction;
     function GetFirstActiveTransaction: TFIBTransaction;
@@ -195,6 +197,7 @@ type
     procedure SetDatabaseName(const Value: string);
     procedure SetDBParamByDPB(const Idx: Integer; Value: string);
     procedure SetDBParamByName(const ParName,Value: string);
+    procedure SetConfigParam(const Name: string; const Value: string);
     procedure SetDBParams(Value: TDBParams);
     procedure SetDefaultTransaction(Value: TFIBTransaction);
     procedure SetDefaultUpdateTransaction(Value: TFIBTransaction);
@@ -357,6 +360,8 @@ type
     procedure CreateDatabase;
     property  DBParamByDPB[const Idx: Integer]: string read GetDBParamByDPB
                                                       write SetDBParamByDPB;
+    property  ConfigParam[const Name: string]: string read GetConfigParam
+                                                      write SetConfigParam;
     procedure DropDatabase;
     function  FindTransaction(TR: TFIBTransaction): Integer;
     procedure ForceClose;
@@ -1537,6 +1542,38 @@ begin
     Result := '';
 end;
 
+function TFIBDatabase.FindConfigParam(const Name: string; out Value: string): Integer;
+var
+  i, EqualsIdx: Integer;
+  S, ParName: string;
+begin
+  for i := 0 to DBParams.Count - 1 do
+  begin
+    S := Trim(DBParams[i]);
+    EqualsIdx := PosCh('=', S);
+    if EqualsIdx = 0 then
+      Continue;
+    ParName := FastCopy(S, 1, EqualsIdx - 1);
+    if not SameText(ParName, 'config') and not SameText(ParName, DPBPrefix + 'config') then
+      Continue;
+    S :=FastCopy(S, EqualsIdx + 1, Length(S));
+    EqualsIdx := PosCh('=', S);
+    if (EqualsIdx > 0) and SameText(Trim(FastCopy(S, 1, EqualsIdx - 1)), Name) then
+    begin
+      Value := Trim(FastCopy(S, EqualsIdx + 1, Length(S)));
+      Result := i;
+      Exit;
+    end;
+  end;
+  Value := '';
+  Result := -1;
+end;
+
+function TFIBDatabase.GetConfigParam(const Name: string): string;
+begin
+  FindConfigParam(Name, Result);
+end;
+
 function TFIBDatabase.GetTimeout: Cardinal;
 begin
    if Assigned(FTimer) then
@@ -2141,6 +2178,24 @@ end;
 procedure TFIBDatabase.SetDBParamByDPB(const Idx: Integer; Value: string);
 begin
   SetDBParamByName(DPBConstantNames[Idx],Value);
+end;
+
+procedure TFIBDatabase.SetConfigParam(const Name: string; const Value: string);
+var
+  ParamIdx: Integer;
+  OldValue: string;
+begin
+  ParamIdx := FindConfigParam(Name, OldValue);
+  if Value = '' then
+  begin
+    if ParamIdx <> -1 then
+      DBParams.Delete(ParamIdx);
+  end
+  else
+  if ParamIdx = -1 then
+    DBParams.Add('config=' + Name + '=' + Value)
+  else
+    DBParams[ParamIdx] := 'config=' + Name + '=' + Value;
 end;
 
 procedure TFIBDatabase.SetDBParams(Value: TDBParams);
