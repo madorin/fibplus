@@ -509,7 +509,7 @@ begin
     if Assigned(FOnAcceptCacheSchema) and  FCacheSchemaOptions.ValidateAfterLoad
     then
     begin
-      if LoadSchemaFromFile(FCacheSchemaOptions.LocalCacheFile)then
+      if LoadSchemaFromFile(FCacheSchemaOptions.LocalCacheFile, True, Self) then
       begin
        ListTableInfo.ValidateSchema(Self,FOnAcceptCacheSchema);
        SaveSchemaToFile(FCacheSchemaOptions.LocalCacheFile);

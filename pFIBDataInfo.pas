@@ -1457,24 +1457,15 @@ begin
   end
   else
   begin
-    q:=GetQueryForUse(aTransaction,  FormatNumberSQL  );
-    with q do
-    try
-     Options:=[qoStartTransaction];
-     Prepare;
-     Params[0].asString:=TableName;
-     q.ExecQuery;
-     FFormatNumber:=q.Fields[0].asInteger;
-    finally
-      Close;
-      FreeQueryForUse(q);
-    end;
     q:=GetQueryForUse(aTransaction,
          'Select R.RDB$FIELD_NAME,R.RDB$FIELD_SOURCE,F.RDB$COMPUTED_BLR, '+CLRF+
      'R.RDB$DEFAULT_SOURCE DS,F.RDB$DEFAULT_SOURCE DS1, '+CLRF+
-     'F.RDB$FIELD_TYPE, '+CLRF+'F.RDB$CHARACTER_SET_ID, F. RDB$DIMENSIONS'+CLRF+
+     'F.RDB$FIELD_TYPE, ' + CLRF + 'F.RDB$CHARACTER_SET_ID, F.RDB$DIMENSIONS, ' + CLRF +
+     'RL.RDB$FORMAT, RL.RDB$RELATION_ID, RL.RDB$VIEW_BLR ' + CLRF +
      'from  RDB$RELATION_FIELDS R '+CLRF+
      'JOIN RDB$FIELDS F ON (R.RDB$FIELD_SOURCE = F.RDB$FIELD_NAME) '+CLRF+
+     'LEFT JOIN RDB$RELATIONS RL ON (RL.RDB$RELATION_NAME = R.RDB$RELATION_NAME ' + CLRF +
+     '  and RL.RDB$SYSTEM_FLAG = 0) ' + CLRF +
      'where  R.RDB$RELATION_NAME=:TN '+CLRF+
      'order by R.RDB$FIELD_POSITION'
     );
@@ -1484,6 +1475,13 @@ begin
      Options:=[qoStartTransaction,qoTrimCharFields];
      Params[0].asString:=TableName;
      ExecQuery;
+     // Same value as FormatNumberSQL, which IsActualInfo compares with
+     if Eof then
+       FFormatNumber := 0
+     else if Fields[10].IsNull then
+       FFormatNumber := Fields[8].AsInteger
+     else
+       FFormatNumber := Fields[9].AsInteger;
      if q.eof then
      begin
       Close;
@@ -1778,7 +1776,9 @@ begin
       begin
        Objects[i].Free;
        Delete(i)
-      end;
+      end
+      else
+        TpFIBTableInfo(Objects[i]).FNonValidated := False;
      end;
    finally
 {    if vTr.InTransaction then
