@@ -1711,6 +1711,8 @@ var i:integer;
     DelCache,rt:boolean;
     FiDs,TfDs: TpFIBDataSet;
     vTr:TFIBTransaction;
+    DBCount: Integer;
+    BulkCheck: Boolean;
 //  FiDs - Versions from FIB$FIELDS_INFO
 //  TfDs - metadata counters
 begin
@@ -1719,7 +1721,13 @@ begin
  TfDs:=nil; FiDs:=nil;
  with FListTabInfo do
  begin
-   if (Count<=MaxCountSeparate) or   Assigned(Proc) then
+   // The cache is shared by all databases, only the entries of aDataBase are validated
+   DBCount := 0;
+   for i := 0 to Count - 1 do
+     if TpFIBTableInfo(Objects[i]).FDBName = aDataBase.DBName then
+       Inc(DBCount);
+   BulkCheck := (DBCount > MaxCountSeparate) and not Assigned(Proc);
+   if not BulkCheck then
     rt:=False
    else
    begin
@@ -1752,6 +1760,8 @@ begin
    try
      for i:=Count-1 downto 0 do
      begin
+      if TpFIBTableInfo(Objects[i]).FDBName <> aDataBase.DBName then
+        Continue;
       if Assigned(Proc) then
       begin
        DelCache:=False;
@@ -1759,7 +1769,7 @@ begin
        DelCache:= not DelCache
       end
       else
-      if Count>MaxCountSeparate then
+      if BulkCheck then
       begin
         DelCache:=(TFDS=nil) or(FListTabInfo[i]<>'ALIAS') and not (
          TfDs.ExtLocate('RDB$RELATION_NAME',FListTabInfo[i],[eloInSortedDS]) and
