@@ -2529,7 +2529,8 @@ end;
 
 function  TFIBDatabase.CanCancelOperationFB21:boolean;
 begin
-  Result:= IsFirebirdConnect and  (ServerMajorVersion>=2) and    (ServerMinorVersion>=1) ;  
+  Result := IsFirebirdConnect and ((ServerMajorVersion > 2) or
+    (ServerMajorVersion = 2) and (ServerMinorVersion >= 1));
 end;
 
 procedure TFIBDatabase.CancelOperationFB21(ConnectForCancel:TFIBDatabase=nil);
