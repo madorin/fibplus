@@ -7,9 +7,37 @@ FIBPlus is a flexible and easy-to-use library of Delphi, C++ Builder, Kylix comp
 
 # Installation
 
-  * Open project group or appropriate packages from `Packages` folder matching your Delphi compiler version.
-  * Compile and install design time packages.
-  * Add source patch to library path in IDE for Win32/Win64 platforms.
+The `Packages` folder contains a project group `FibPlus_Dxx.groupproj` for each supported Delphi version, where `xx` is the product version:
+
+| Delphi | Suffix |
+|--------|--------|
+| 10 Seattle | D23 |
+| 10.1 Berlin | D24 |
+| 10.2 Tokyo | D25 |
+| 10.3 Rio | D26 |
+| 10.4 Sydney | D27 |
+| 11 Alexandria | D28 |
+| 12 Athens | D29 |
+| 13 Florence | D37 |
+
+Each group contains three packages:
+
+| Package | Type | Purpose |
+|---------|------|---------|
+| `FIBPlus_Dxx` | runtime | Components, required by the other two |
+| `DclFIBPlus_Dxx` | design time | Registers the components in the Tool Palette |
+| `FIBPlusEditors_Dxx` | design time | Property and component editors |
+
+### Steps
+
+1. Open `Packages\FibPlus_Dxx.groupproj` for your Delphi version.
+2. In Project Manager, select the **Win32** platform (**Win64x** for the 64-bit IDE) for all three packages.
+3. Right-click `FIBPlus_Dxx` and choose **Build**. It is a never-build package (`{$IMPLICITBUILD OFF}`), so it must be built explicitly before the design packages. Skipping this step causes *E2225 Never-build package 'FibPlus_Dxx' must be recompiled*.
+4. Right-click `DclFIBPlus_Dxx`, choose **Build**, then **Install**.
+5. Right-click `FIBPlusEditors_Dxx`, choose **Build**, then **Install**.
+6. In **Tools > Options > Language > Delphi > Library**, add the library root folder (the one containing `FIBDatabase.pas`) to the **Library path** for every target platform you use (Win32, Win64, ...).
+
+The runtime package itself does not need to be installed. The design packages exist only for the IDE platform (Win32, or Win64x for the 64-bit IDE), as the IDE loads them; for Win64 applications it is enough to set the library path, as in step 6. Build `FIBPlus_Dxx` for Win64 only if your application is built with runtime packages.
 
 
 ## Disclaimer
