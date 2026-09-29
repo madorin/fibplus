@@ -516,6 +516,9 @@ type
     procedure DoBeforeExecute;
     procedure DoAfterExecute;
     procedure DoAfterFirstFetch;
+    procedure CloseCursor(Complete: Boolean);
+    procedure CompleteStatement;
+    function  CloseOnEof: Boolean;
   public
     constructor Create(AOwner: TComponent); override;
     destructor  Destroy; override;
@@ -3483,23 +3486,26 @@ end;
 
 destructor TFIBQuery.Destroy;
 begin
-  if (FOpen) then   Close;
-  if (FHandle <> nil) then   FreeHandle;
+  // Close may commit; free the query even if that raises
+  try
+    if (FOpen) then   Close;
+    if (FHandle <> nil) then   FreeHandle;
+  finally
+    {$IFDEF CSMonitor}
+    FCSMonitorSupport.Free;
+    {$ENDIF}
 
-  {$IFDEF CSMonitor}
-  FCSMonitorSupport.Free;
-  {$ENDIF}
-
-  FBase.Free;
-  FSQLParams.Free;
-  FSQLRecord.Free;
-  FUserSQLParams.Free;
-  FOnlySrvParams.Free;
-  FConditions.Free;
-  FParser.Free;
-  SetLength(FExtSQLDA,0);
-  inherited;
-  FSQL.Free;
+    FBase.Free;
+    FSQLParams.Free;
+    FSQLRecord.Free;
+    FUserSQLParams.Free;
+    FOnlySrvParams.Free;
+    FConditions.Free;
+    FParser.Free;
+    SetLength(FExtSQLDA,0);
+    inherited;
+    FSQL.Free;
+  end;
 end;
 
 procedure   TFIBQuery.Loaded;
@@ -3824,9 +3830,16 @@ begin
 end;
 
 procedure TFIBQuery.Close;
+begin
+  CloseCursor(True);
+end;
+
+procedure TFIBQuery.CloseCursor(Complete: Boolean);
 var
   isc_res: ISC_STATUS;
+  WasOpen: Boolean;
 begin
+    WasOpen := FOpen;
     try
       Include(FQueryRunState,qrsInClose);
       if (FHandle <> nil)  and FOpen then
@@ -3851,9 +3864,29 @@ begin
       FBOF := False;
       FOpen := False;
       FProcExecuted:=False;
-      if  (qoFreeHandleAfterExecute in Options) then
-       FreeHandle
     end;
+    if Complete and WasOpen then
+      CompleteStatement;
+end;
+
+// qoAutoCommit, qoFreeHandleAfterExecute: after ExecQuery without cursor, on Close of a cursor
+procedure TFIBQuery.CompleteStatement;
+begin
+  // Not from DoTransactionEnding
+  if (qoAutoCommit in Options) and Assigned(Transaction)
+    and Transaction.InTransaction and (Transaction.State = tsActive)
+  then
+    if Transaction.TimeoutAction = TACommitRetaining then
+      Transaction.CommitRetaining
+    else
+      Transaction.Commit;
+  if qoFreeHandleAfterExecute in Options then
+    FreeHandle;
+end;
+
+function TFIBQuery.CloseOnEof: Boolean;
+begin
+  Result := Options * [qoAutoCommit, qoFreeHandleAfterExecute] <> [];
 end;
 
 function TFIBQuery.Call(ErrCode: ISC_STATUS; RaiseError: Boolean): ISC_STATUS;
@@ -3875,7 +3908,7 @@ procedure TFIBQuery.DatabaseDisconnecting(Sender: TObject);
 begin
   if (FHandle <> nil) then
   begin
-    Close;
+    CloseCursor(False);
     FreeHandle;
   end;
 end;
@@ -3884,7 +3917,7 @@ procedure TFIBQuery.DatabaseConnectionLost(Sender: TObject);
 begin
   // Close must not call the server
   FHandle := nil;
-  Close;
+  CloseCursor(False);
   FPrepared := False;
 end;
 
@@ -4222,15 +4255,6 @@ begin
     if MonitorHook<>nil then
       MonitorHook.SQLExecute(Self,'');
 {$ENDIF}
-
-  if (qoAutoCommit in Options) and not FOpen then
-  with Transaction do
-  begin
-    if TimeoutAction=TACommitRetaining then
-     CommitRetaining
-    else
-     Commit;
-  end;
 end;
 
 procedure  TFIBQuery.ConvertSQLTextToCodePage;
@@ -4300,7 +4324,7 @@ begin
    True
   );
   DoAfterExecute;
-
+  CompleteStatement;
 end;
 
 
@@ -4540,6 +4564,9 @@ begin
  Include(FQueryRunState,qrsInExecute);
  vFetched:=False;
  try
+  // Before DoBeforeExecute, as closing may commit
+  if FOpen then
+   Close;
   BuildDeferredSQL;
   if GetSQLKind=skDDL then
   begin
@@ -4578,7 +4605,6 @@ begin
      case FSQLType of
       SQLSelect,SQLSelectForUpdate:
       begin
-        if Open then Close;
         StartStatisticExec(FProcessedSQL);
         Call(
          Database.ClientLibrary.isc_dsql_execute(SV,TRHandle,@FHandle,DataBase.SQLDialect,xSQLDA),
@@ -4642,9 +4668,15 @@ begin
 
      if FDoParamCheck and (pc>0) and FHaveMacros then
       SaveRestoreValues(FUserSQLParams,True);
-     DoAfterExecute;
+     // AfterExecute sees the first record
      if FGoToFirstRecordOnExecute and FOpen then
        Next;
+     DoAfterExecute;
+     if not (FSQLType in [SQLSelect, SQLSelectForUpdate]) then
+       CompleteStatement
+     else
+     if FOpen and FEOF and CloseOnEof then
+       Close;
     except
      On E:Exception do
      begin
@@ -4664,8 +4696,6 @@ begin
       raise;
      end
     end;
-    if not Open and (qoFreeHandleAfterExecute in Options) then
-     FreeHandle;
  finally
   Exclude(FQueryRunState,qrsInExecute);
  end
@@ -4710,8 +4740,6 @@ end;
 function TFIBQuery.GetEOF: Boolean;
 begin
   Result := FEOF or not FOpen;
-  if FEOF and FOpen and (qoFreeHandleAfterExecute in Options)  then
-     FreeHandle;
 end;
 
 
@@ -4876,7 +4904,7 @@ begin
            try
              IbError(FBase.Database.ClientLibrary,Self);
            except
-              Close;
+              CloseCursor(False);
               raise ;
            end
         end
@@ -4900,6 +4928,9 @@ begin
        vFetched:=True;
        DoAfterFirstFetch;
     end;
+    // ExecQuery closes it after AfterExecute
+    if FEOF and FOpen and not (qrsInExecute in FQueryRunState) and CloseOnEof then
+      Close;
 end;
 
 procedure TFIBQuery.FreeHandle;
@@ -6297,10 +6328,7 @@ end;
 
 procedure TFIBQuery.SQLChanging(Sender: TObject);
 begin
-  if not (csDesigning in ComponentState) then
-   CheckClosed('change sql text')
-  else
-   Close;
+  Close;
   with Conditions do
    if State =[] then
    begin
