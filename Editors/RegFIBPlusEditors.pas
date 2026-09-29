@@ -33,7 +33,7 @@ type
        function  GetCaretX:integer;
        function  GetCaretY:integer;
        procedure iSetCaretPos(X,Y:integer);
-       procedure  ScreenPosToTextPos(const ScrX,ScrY:Integer; var DestX,DestY:Integer ); // для драг дропа
+       procedure  ScreenPosToTextPos(const ScrX,ScrY:Integer; var DestX,DestY:Integer ); // for drag and drop
 
        procedure  ISetProposalItems(ts1,ts2:TStrings);
        procedure       SaveProposals(const aName:string);
@@ -59,7 +59,7 @@ type
       end;
 
 
-{ TODO 1 : Тулзы подключить. Проверить на компиляцию под Д6 перенести под Д2009 }
+{ TODO 1 : Plug in the tools. Check that it compiles under D6, port to D2009 }
 
 
 
@@ -99,7 +99,7 @@ type   TFIBSQLMemo=class(TMemo,IFIBSQLTextEditor)
         function        GetBeforePropCall:TiBeforeProposalCall;
         procedure       SetBeforePropCall(Event:TiBeforeProposalCall);
         function        GetPosInText:Integer;
-        procedure ScreenPosToTextPos(const ScrX,ScrY:Integer; var DestX,DestY:Integer ); // для драг дропа
+        procedure ScreenPosToTextPos(const ScrX,ScrY:Integer; var DestX,DestY:Integer ); // for drag and drop
        public
          constructor Create(AOwner:TComponent);override;
        end;
@@ -184,7 +184,7 @@ procedure Register;
 
    Supports(FIBClassesExporter,IFIBClassesExporter,expCl);
    try
-    expCl.iGetStringer;    // AV  если триал пытаются использовать с не триалом
+    expCl.iGetStringer;    // AV  if a trial is used with a non-trial
   //database  Properties
     DatabaseClass:=expDatabaseClass;
     TransactionClass:=expTransactionClass;
@@ -362,7 +362,7 @@ begin
 end;
 
 
-procedure TFIBSQLMemo.ScreenPosToTextPos(const ScrX,ScrY:Integer; var DestX,DestY:Integer ); // для драг дропа
+procedure TFIBSQLMemo.ScreenPosToTextPos(const ScrX,ScrY:Integer; var DestX,DestY:Integer ); // for drag and drop
 begin
  DestX:=-1
 end;

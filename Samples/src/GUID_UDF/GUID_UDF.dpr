@@ -6,8 +6,8 @@ library GUID_UDF;
   RETURNS PARAMETER 2
   ENTRY_POINT 'CreateGUID' MODULE_NAME 'GUID_UDF';
 
-  // первый параметр  - фальшивка.
-  // вызывать "CreateGUID(1)"
+  // the first parameter is a dummy.
+  // call as "CreateGUID(1)"
   }
 
  function CoCreateGuid(out guid: TGUID): HResult; stdcall; external 'ole32.dll' name 'CoCreateGuid';

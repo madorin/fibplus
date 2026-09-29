@@ -12,14 +12,14 @@ unit gzsIO;
 }
 
 {
-  “рансл€ци€ gzsIO дл€ работы с потоками.
-  —делана на основе кода gzio, с заменой файловых процедур на потоковые.
+  Translation of gzsIO for working with streams.
+  Based on the gzio code, with file procedures replaced by stream ones.
 
   Made by Ivan Ravin (ivan_ra@chat.ru)
 
   19.04.2002
-  Ёто перва€ бета верси€, с минимальной обработкой ошибок.
-  ¬озможно, и последн€€ :-)
+  This is the first beta version, with minimal error handling.
+  Possibly the last one too :-)
 }
 
 //{$DEFINE NO_DEFLATE}

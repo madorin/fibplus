@@ -422,7 +422,7 @@ end;
 const
   CMPFORMAT = '\color{clBlue}%s \style{+B}\color{clBlack}%s\style{-B} ';
 
-  { TODO : Добить пропозал }
+  { TODO : Finish the proposal }
 
 procedure TfSQLEdit.cmbTabsNameViewsChange(Sender: TObject);
 begin
@@ -787,7 +787,7 @@ var L,p,j:integer;
     CurMemo:TMemo;
   {$ENDIF}*)
 begin
-  //Некое подобие поиска.
+  //A kind of search.
   L:=0;
   CurMemo:=viewSQL;
   ObjSupports(CurMemo,IFIBSQLTextEditor,iCurMemo);

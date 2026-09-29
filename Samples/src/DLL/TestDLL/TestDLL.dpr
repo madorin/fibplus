@@ -9,13 +9,13 @@ uses
 
 {$R *.res}
 
-var // Добавлено
-    SIBfibEventAlerter: TSIBfibEventAlerter; // Добавлено
+var // Added
+    SIBfibEventAlerter: TSIBfibEventAlerter; // Added
 
 begin
- SIBfibEventAlerter := TSIBfibEventAlerter.Create(Nil); // Добавлено
+ SIBfibEventAlerter := TSIBfibEventAlerter.Create(Nil); // Added
 // ShowMessage('Is I');
 //----------------
-// На этой строчке - зависание
-  SIBfibEventAlerter.Free; // Добавлено
+// Hangs on this line
+  SIBfibEventAlerter.Free; // Added
 end.

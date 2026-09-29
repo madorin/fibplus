@@ -919,7 +919,7 @@ begin
 end;
 
 begin
-  Result:=1; //Не ассигнован ДбНаме
+  Result:=1; //DBName is not assigned
 
   DPB :=TStringList.Create;
   try
@@ -1308,7 +1308,7 @@ begin
   FSearchResult.Clear;
   if not SearchContext(FindDialog1.FindText) then
   {$IFNDEF D9+}
-  // Почему-то окно с мессаджем не показывается, дельфа становится недоступной
+  // For some reason the message box is not shown and Delphi becomes unresponsive
    ShowMessage(
      Format(FPTNavNotFound, [FindDialog1.FindText])
    );
@@ -1767,7 +1767,7 @@ end;
 
 function TfrmSaveSQLs.Connect(DPB: TStrings): integer;
 begin
-     Result:=0; // не смогли подконнектиться
+     Result:=0; // could not connect
      with pFIBDatabase1 do
      begin
       if (DBName<>DPB.Values['DBName']) and
@@ -1844,7 +1844,7 @@ begin
 end;
 
 begin
-  Result:=1; //Не ассигнован ДбНаме
+  Result:=1; //DBName is not assigned
   ResultStrings.Clear;
 
  try

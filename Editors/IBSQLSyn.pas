@@ -56,7 +56,7 @@ uses
 function IsClause( const EtalonClause:string; const Source:string;
  Position:integer;EndPosition:integer
 ):boolean;
- // 1 аргумент обязан быть написан в uppercase. Это эталон
+ // the 1st argument must be in uppercase. It is the reference
 var
   Len:Integer;
   LenEtalon:Byte;
@@ -81,7 +81,7 @@ begin
     begin                                      
       if pSource^<>pEtalon^ then
       begin
-        // все что не между 'a'..'z' должно отсеяться на пред проверке
+        // anything not in 'a'..'z' must be filtered out by the pre-check
           if Byte(pSource^)-32<>Byte(pEtalon^) then
           begin
             Result:=False;

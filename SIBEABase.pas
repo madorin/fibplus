@@ -1,7 +1,7 @@
 unit SIBEABase;
 
 // SuperIB
-// Copyright © 1999 David S. Becker
+// Copyright (c) 1999 David S. Becker
 // dhbecker@jps.net
 // www.jps.net/dhbecker/superib
 

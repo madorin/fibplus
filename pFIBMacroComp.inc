@@ -17,7 +17,7 @@
 {                                                               }
 {  Please see the file License.txt for full license information }
 {***************************************************************}
-// Эмуляция макроподстановок для компайлера.
+// Macro substitution emulation for the compiler.
 {$IFDEF FP_STDCALL}
   {$IFDEF WINDOWS} stdcall; {$ENDIF} 
   {$IFDEF LINUX} cdecl; {$ENDIF}

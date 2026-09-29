@@ -4,5 +4,5 @@ DECLARE EXTERNAL FUNCTION CreateGUID
   RETURNS PARAMETER 2
   ENTRY_POINT 'CreateGUID' MODULE_NAME 'GUID_UDF';
 
-  // первый параметр фальшивка.
-  // вызывать "CreateGUID(1)"
+  // the first parameter is a dummy.
+  // call as "CreateGUID(1)"

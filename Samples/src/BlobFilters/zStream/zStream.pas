@@ -1,15 +1,15 @@
 unit zStream;
 {
-  Адаптер zlib для работы с потоками. Сделан на основе кодов
-  freeware библиотеки, предназначенной для работы с файлами
+  zlib adapter for working with streams. Based on the code
+  of a freeware library intended for working with files
   Delphi Zip v.1.6L By Eric W. Engler, Chris Vleghert(cvleghrt@worldonline.nl).
-  Код в данном файле "соответствует" методам компоненты TGzip из DelphiGzip.
+  The code in this file "matches" the methods of the TGzip component from DelphiGzip.
 
   Made by Ivan Ravin (ivan_ra@chat.ru)
 
   19.04.2002
-  Это первая бета версия, с минимальной обработкой ошибок.
-  Возможно, и последняя :-)
+  This is the first beta version, with minimal error handling.
+  Possibly the last one too :-)
 }
 interface
 

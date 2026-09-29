@@ -169,20 +169,20 @@ const
 
     EMPSyntaxMemo       = class(Exception);
 
-    // Токен
+    // Token
     TToken              = tokBlank..tokUser;
     PToken              = ^TToken;
     TTokenSet           = set of TToken;
     TCharSet            = set of AnsiChar;
 
-    // Опции парсера
+    // Parser options
     TParseOption        = (poHasELComment, poHasMLComment, poHasILComment,
                            poHasHexPrefix, poFloatValid, poHasReference,
                            poHasDereference, poBLSeparated, poHasILCompDir,
                            poHasMLCompDir, poHasChar);
     TParseOptions       = set of TParseOption;
 
-    // Пользовательское прерывание определения токена слова
+    // User hook for word token detection
     TUserTokenEvent     = procedure(
         Sender          : TObject;
         Word            : string;
@@ -190,18 +190,18 @@ const
         var Token       : TToken
     ) of object;
                                        
-    // Тип - массив размеров символов текущего шрифта
+    // Type - array of character widths of the current font
     TCharWidths         = array [Boolean] of array [AnsiChar] of Byte;
     //TCharWidths         = array [Boolean] of array [Char] of Byte;
 
-    // Атрибуты визуального выделения токена
+    // Visual highlighting attributes of a token
     TTokenStyle         = record
-                            tsForeground : TColor;          // цвет шрифта
-                            tsBackground : TColor;          // цвет фона
-                            tsStyle      : TFontStyles;     // стиль шрифта
+                            tsForeground : TColor;          // font color
+                            tsBackground : TColor;          // background color
+                            tsStyle      : TFontStyles;     // font style
                           end;
 
-    // Класс, управляющий правилами выделения и визуальными атрибутами токенов
+    // Class managing highlighting rules and visual attributes of tokens
     TMPSyntaxAttributes = class
     private
         fRichMemo       : TMPCustomSyntaxMemo;
@@ -255,21 +255,21 @@ const
     end;
 
 
-    // Слово - токен
-    // Параметры слова
-    TMPSyntaxTokenStyle = ( stsInSelection,     // слово внутри выделения
-                            stsPressed          // слово под нажатым указателем мыши - reserved for future use
+    // Word - token
+    // Word parameters
+    TMPSyntaxTokenStyle = ( stsInSelection,     // word inside the selection
+                            stsPressed          // word under the pressed mouse pointer - reserved for future use
                           );
     TMPSyntaxTokenStyles= set of TMPSyntaxTokenStyle;
     TMPSyntaxToken      = class
     public
-        stStart         : Word;                     // Начало слова, символов
-        stLength        : Word;                     // Длина слова, символов
-        stToken         : TToken;                   // Тип (токен) слова
-        stStyle         : TMPSyntaxTokenStyles;     // Слово выделено
+        stStart         : Word;                     // Word start, in chars
+        stLength        : Word;                     // Word length, in chars
+        stToken         : TToken;                   // Word type (token)
+        stStyle         : TMPSyntaxTokenStyles;     // Word is selected
     end;
 
-    // Синтаксический парсер строки /копию имеет КАЖДАЯ строка текста/
+    // Line syntax parser /EVERY text line has its own copy/
     TMPSyntaxParser     = class (TObjectList)
     private
         fSection        : TMPSynMemoSection;
@@ -300,27 +300,27 @@ const
 
 
     { Max Proof Syntax Memo Strings Class }
-    // Класс инкапсулирует управление содержанием текста и его синтаксическим анализом
-    // с помощью вспомогательного класса TMPSyntaxParser, по экземпляру которого имеет
-    // КАЖДАЯ строка текста. Все изменения в тексте сводятся к трем элементарным override
-    // процедурам-операторам: Put, Insert и Delete.
+    // Class encapsulating text content management and its syntax analysis
+    // via the helper class TMPSyntaxParser, an instance of which is owned by
+    // EVERY text line. All text changes come down to three elementary override
+    // operator procedures: Put, Insert and Delete.
     TStringsStateItem   = (
-                        ssTextChanged,      // Есть измененные строки
-                        ssSectionsChanged,  // Есть измененные секции (New, Explode)
-                        ssNeedReIndex,      // Есть измененные секции (Expand, Collapse)
-                        ssNeedReparseAll,   // Требуется полный репарсинг строк
-                        ssUndoProcess       // В данный момент производится откат
+                        ssTextChanged,      // There are changed lines
+                        ssSectionsChanged,  // There are changed sections (New, Explode)
+                        ssNeedReIndex,      // There are changed sections (Expand, Collapse)
+                        ssNeedReparseAll,   // Full reparsing of lines is required
+                        ssUndoProcess       // Undo is currently in progress
     );
     TStringsState       = set of TStringsStateItem;
 
     TMPSynMemoStrings    = class(TStringList)
     private
-        fRichMemo       : TMPCustomSyntaxMemo;              // Хозяин
-        fFileName       : string;                           // Имя файла
-        fVirtualFileName: Boolean;                          // Имя файла сгенерировано (не настоящее)
-        fState          : TStringsState;                    // Набор состояний
-        fModified       : Boolean;                          // Текст изменен
-        fDirectAccess   : Boolean;                          // Прямой доступ к тексту
+        fRichMemo       : TMPCustomSyntaxMemo;              // Owner
+        fFileName       : string;                           // File name
+        fVirtualFileName: Boolean;                          // File name is generated (not real)
+        fState          : TStringsState;                    // Set of states
+        fModified       : Boolean;                          // Text is modified
+        fDirectAccess   : Boolean;                          // Direct access to the text
         function        GetParser(const Row: Integer): TMPSyntaxParser;
         procedure       SetModified(const Value: Boolean);
         procedure       SetFileName(const Value: string);
@@ -355,16 +355,16 @@ const
     end;
 
 
-    // Класс "Секция текта"
-    // Имеет маркеры начала и конца (номера строк), причем в одной строке
-    // может "располагаться" только один маркер, неважно какой секции
+    // "Text section" class
+    // Has begin and end markers (line numbers); a single line
+    // may "hold" only one marker, no matter of which section
     TMPSynMemoSection    = class(TObjectList)
     private
-        fParent         : TMPSynMemoSection;    // Секция - родитель
-        fRowBeg         : Integer;              // Начало диапазона строк хранения
-        fRowEnd         : Integer;              // Конец диапазона строк хранения
-        fLevel          : Integer;              // Уровень вложенности секции
-        fCollapsed      : Boolean;              // Признак того, что секция свернута
+        fParent         : TMPSynMemoSection;    // Parent section
+        fRowBeg         : Integer;              // Start of the stored line range
+        fRowEnd         : Integer;              // End of the stored line range
+        fLevel          : Integer;              // Section nesting level
+        fCollapsed      : Boolean;              // Section is collapsed
         function        GetSections(const Idx: Integer): TMPSynMemoSection;
         procedure       SetLevel(const Value: Integer);
     public
@@ -391,18 +391,18 @@ const
     // Section Manager Class
     TSectionMark = (smNone, smExpanded, smCollapsed, smEnd);
 
-    // Класс - менеджер секций.
-    // Обеспечивает выполнение высокоуровневых операций с секциями (свернуть, развернуть, создать, разрушить и т.д.)
-    // Не обеспечивает откат.
+    // Section manager class.
+    // Performs high-level section operations (collapse, expand, create, explode, etc.)
+    // Does not provide undo.
     TMPSynMemoSections   = class(TObject)
     private
-        fRichMemo       : TMPCustomSyntaxMemo;          // Хозяин
-        fRoot           : TMPSMSectionClone;            // Корневая секция
-        fIndexes        : TList;                        // Индексация текста для быстрого доступа к экранным индексам
-        fMaxLevel       : Integer;                      // Максимальный уровень вложенности секций
-        fMaxExpandLevel : Integer;                      // Максимальный открытый уровень вложенности секций
-        fErrorLine      : Integer;                      // Индекс строки текста с нарушением управления секциями
-        fErrorString    : string;                       // Ошибка управления секциями
+        fRichMemo       : TMPCustomSyntaxMemo;          // Owner
+        fRoot           : TMPSMSectionClone;            // Root section
+        fIndexes        : TList;                        // Text indexing for fast access to screen indexes
+        fMaxLevel       : Integer;                      // Maximum section nesting level
+        fMaxExpandLevel : Integer;                      // Maximum expanded section nesting level
+        fErrorLine      : Integer;                      // Index of the text line violating section management
+        fErrorString    : string;                       // Section management error
         procedure       ReIndex;
         procedure       MakeUnique;
         procedure       SetRoot(const Value: TMPSMSectionClone);
@@ -435,15 +435,15 @@ const
     end;
 
 
-    //Типы операций для группировки UNDO
-    TUndoKind=(ukNone,          //Не группируется ни с чем (даже сам с собой) - не для использования в нормальном режиме
-               ukLetterTyped,   //Символ введен с клавиатуры
-               ukLetterDeleted, //Символ удален с клавиатуры (Delete BackSpace)
-               ukRangeInserted, //Вставлен кусок текста (Paste)
-               ukRangeDeleted,  //Удален кусок текста (Delete или Cut)
-               ukCursorMoved,   //Курсор убежал на другую позицию
-               ukBlockCreated,  //Создан новый блок
-               ukBlockExploded  //Блок удален
+    //Operation kinds for UNDO grouping
+    TUndoKind=(ukNone,          //Not grouped with anything (not even itself) - not for normal use
+               ukLetterTyped,   //Char typed from the keyboard
+               ukLetterDeleted, //Char deleted from the keyboard (Delete BackSpace)
+               ukRangeInserted, //Text fragment inserted (Paste)
+               ukRangeDeleted,  //Text fragment deleted (Delete or Cut)
+               ukCursorMoved,   //Cursor moved to another position
+               ukBlockCreated,  //New block created
+               ukBlockExploded  //Block removed
                );
     // Range Class
     TMPSynMemoUndoItem  = class
@@ -459,24 +459,24 @@ const
     end;
 
     // TMPSynMemoRange
-    // Класс является прослойкой между железом исполнительных классов
-    // T..Strings, T..Sections и командами пользователя. Основные задачи -
-    // - преобразование действий над позицией каретки (PosY, PosX) к
-    // действиям над объектами (Strings, Sections), а также обеспечение
-    // возможности отмены действий пользователя (поддержка стека отката)
+    // This class is a layer between the low-level worker classes
+    // T..Strings, T..Sections and user commands. Main tasks -
+    // - translating actions on the caret position (PosY, PosX) into
+    // actions on objects (Strings, Sections), and providing
+    // the ability to undo user actions (undo stack support)
 
     TPosChangeProc = procedure(Pos:TPoint) of object;
 
 
     TMPSynMemoRange = class(TObject)
     private
-        fRichMemo       : TMPCustomSyntaxMemo;  // Владелец
-        fStart          : TPoint;               // Начало выделенной области
-        fEnd            : TPoint;               // Конец выделенной области
-        fPos            : TPoint;               // Текущие координаты курсора относительно текста [Row,Col]
-        fSealing        : Boolean;              // Режим Collapsed (залипание, пустое выделение)
-        fMaxUndoDepth   : Integer;              // Максимальный размер стека отката
-        fUndoStack      : TObjectList;          // Стек отката
+        fRichMemo       : TMPCustomSyntaxMemo;  // Owner
+        fStart          : TPoint;               // Start of the selected area
+        fEnd            : TPoint;               // End of the selected area
+        fPos            : TPoint;               // Current cursor coordinates relative to the text [Row,Col]
+        fSealing        : Boolean;              // Collapsed mode (sticking, empty selection)
+        fMaxUndoDepth   : Integer;              // Maximum undo stack size
+        fUndoStack      : TObjectList;          // Undo stack
         fOnSetPosProc   : TPosChangeProc;
         function        GetLength: Integer;
         function        GetPosition: Integer;
@@ -505,17 +505,17 @@ const
         procedure       Collapse;
         procedure       Enlarge(const Value: Integer; const EnlargeLine: Boolean = False; const VisiblesOnly: Boolean = False);
         procedure       Delete;
-        { Операции над секциями }
+        { Section operations }
         procedure       CreateSection;
         procedure       ExplodeSection(const Recursive: Boolean);
         procedure       ExpandSection(const Recursive: Boolean);
         procedure       CollapseSection(const Recursive: Boolean);
         procedure       GotoSection(const GoForward: Boolean);
-        { Поддержка буфера обмена }
+        { Clipboard support }
         procedure       CopyToClipboard;
         procedure       CutToClipBoard;
         procedure       PasteFromClipboard;
-        { Стек отката }
+        { Undo stack }
         procedure       DoUndo;
         function        GetLastUndoItem:TMPSynMemoUndoItem;
         procedure       ClearUndo;
@@ -547,27 +547,27 @@ const
     TWordInfoEvent      = procedure (Sender: TMPCustomSyntaxMemo; const X, Y, WordIndex, Row: Integer; Showing: Boolean) of object;
     //TDrawWordEvent      = procedure (Sender: TMPCustomSyntaxMemo; ACanvas: TCanvas; Rect: TRect; Row, Index: Integer) of object;
     TRowIndexConvertionDirection = (cdNeedReal, cdNeedScreen);
-    // Опции редактора
-    TMPSynMemoOption = (smoShowFileNameInTabSheet,      // отображать имя файла на закладке
-                        smoShowFileNameInFormCaption,   // отображать имя файла в форме
-                        smoReadOnly,                    // запрет изменения текста (кроме секций)
-                        smoOverwrite,                   // режим замены символов
-                        smoSkipSectionsOnCopy,          // не копировать в буфер обмена информацию о секциях
-                        smoSkipSectionsOnPaste,         // не восстанавливать секции при вставке текста из буфера обмена
-                        smoAutoGutterWidth,             // ширина гуттера зависит от ОТКРЫТЫХ секций
-                        smoWriteMarkersOnSave,          // при сохранении текста внедрять маркеры секций
-                        smoVSNET_SectionsStyle,         // стиль маркеров секций как в Visual Studio NET
-                        smoBreakPointsNeedPosibility,   // режим требующий установки BreakPoint'ов типа bpPosible
-                        smoShowCursorPos,               // Показывает окно отображения позиции курсора
-                        smoShowPageScroll,              // Показывае дополнительный скролл для прокрутки страниц
-                        smoPanning,                     // Разрешает/запрещает панорамирование вообще
-                        smoHorPanning,                  // Дополнительно разрешает/запрещает горизонтальное панорамирование
-                        smoVerPanningReverse,           // Режим обратного вертикального панарамирования
-                        smoHighlightLine,               // Включает закразивание комментариев и директив компилятора до конца строки.
-                        smoSolidSpecialLine,            // Включает "залитый" режим для BreakPoint'ов и Линии отладки.
-                        smoGroupUndo,                   // Включает группировку сходных Undo
-                        smoTabulatedReturn,             // Включает автоматическую табуляцию при нажатии Enter
-                        smoShowLineNumberToGutter       // Показ нумерации строк на гуттере
+    // Editor options
+    TMPSynMemoOption = (smoShowFileNameInTabSheet,      // show file name on the tab
+                        smoShowFileNameInFormCaption,   // show file name in the form
+                        smoReadOnly,                    // forbid text changes (except sections)
+                        smoOverwrite,                   // overwrite mode
+                        smoSkipSectionsOnCopy,          // do not copy section info to the clipboard
+                        smoSkipSectionsOnPaste,         // do not restore sections when pasting text from the clipboard
+                        smoAutoGutterWidth,             // gutter width depends on EXPANDED sections
+                        smoWriteMarkersOnSave,          // embed section markers when saving text
+                        smoVSNET_SectionsStyle,         // section marker style as in Visual Studio NET
+                        smoBreakPointsNeedPosibility,   // mode requiring BreakPoints of type bpPosible
+                        smoShowCursorPos,               // Shows the cursor position window
+                        smoShowPageScroll,              // Shows an extra scroll for paging
+                        smoPanning,                     // Enables/disables panning in general
+                        smoHorPanning,                  // Additionally enables/disables horizontal panning
+                        smoVerPanningReverse,           // Reverse vertical panning mode
+                        smoHighlightLine,               // Enables painting comments and compiler directives to the end of line.
+                        smoSolidSpecialLine,            // Enables "filled" mode for BreakPoints and the debug line.
+                        smoGroupUndo,                   // Enables grouping of similar Undo steps
+                        smoTabulatedReturn,             // Enables auto indentation on Enter
+                        smoShowLineNumberToGutter       // Show line numbers in the gutter
 
     );
     TMPSynMemoOptions   = set of TMPSynMemoOption;
@@ -577,7 +577,7 @@ const
     TMPChangeEvent      = procedure (Sender: TObject; ChangedItems: TChangedItems) of object;
 
 
-    // Управляющий закладками
+    // Bookmark manager
     TBookmarkIndex      = 0..9;
     TMPBookmarkManager    = class
     private
@@ -595,7 +595,7 @@ const
         property        BookMarks[const Index: TBookmarkIndex]: Integer read GetBookMarks write SetBookMarks; default;
     end;
 
-    //Классы для управления BreakPoint'ами
+    //Classes for managing BreakPoints
 //    TBPKind = (bkPosible=0,bkEnabled=1,bkDisabled=2);
     TBPKind = (bkPosible,bkEnabled,bkDisabled);
     TBPMode = (bmFreeMode,bmNeedPosibility);
@@ -620,7 +620,7 @@ const
 
     TMPBreakPointCollection = class(TObject)
     private
-        fRichMemo       : TMPCustomSyntaxMemo;  // Владелец
+        fRichMemo       : TMPCustomSyntaxMemo;  // Owner
         fBPList         : TStringList;
         fImages         : TBitmap;
         fImagesMask     : TBitmap;
@@ -759,7 +759,7 @@ const
         procedure       NeedRedraw(const Row: Integer);
         procedure       NeedReDrawLE(const Row: Integer);
         procedure       NeedRedrawAll;
-        { Приведение координат }
+        { Coordinate conversion }
         function        CharPosToPixOffset(const Col, Row: Integer): Integer; overload;
         function        CharPosToPixOffset(const Col: Integer; s: string; Sp: TMPSyntaxParser): Integer; overload;
         function        PixOffsetToCharPos(const Pix, Row: Integer; const WordIndex: PInteger = nil): Integer;
@@ -795,7 +795,7 @@ const
         procedure       Change(const ChangedItems: TChangedItems); virtual;
         procedure       ProposalCall;
         procedure       CloseProposal;
-                        // Координаты специальных элементов строки экрана
+                        // Coordinates of special screen line elements
         property        EntireRowRect[const ScreenRow: Integer]: TRect      index 0 read GetWndRect;
         property        TextRowRect[const ScreenRow: Integer]: TRect        index 1 read GetWndRect;
         property        EntireGutterRect[const ScreenRow: Integer]: TRect   index 2 read GetWndRect;
@@ -804,8 +804,8 @@ const
         constructor     Create(AOwner: TComponent); override;
         destructor      Destroy; override;
 
-        procedure       ScreenPosToTextPos(const ScrX,ScrY:Integer;var DestX,DestY:Integer ); // для драг дропа
-        function        TextPosToScreen(const X,Y:Integer):TPoint; // для драг дропа
+        procedure       ScreenPosToTextPos(const ScrX,ScrY:Integer;var DestX,DestY:Integer ); // for drag and drop
+        function        TextPosToScreen(const X,Y:Integer):TPoint; // for drag and drop
         function        CharPosToWordIndex(const Col, Row: Integer): Integer;
         function        GetWordAtPos(const X, Y: Integer; var WordIndex, Row: Integer): Boolean;
         function        GetCurrentWord(PartOnly:boolean =False):string;
@@ -1014,25 +1014,25 @@ end;
 
 // Class TParseAttributes Implementation
 
-// К О Н С Т Р У К Т О Р
+// C O N S T R U C T O R
 constructor TMPSyntaxAttributes.Create(Owner: TMPCustomSyntaxMemo);
 var T: TToken;
 begin
 
     inherited Create;
     fRichMemo := Owner;
-    // Очистка таблицы стилей
+    // Clear the style table
     for T := Low(TToken) to High(TToken) do
         with fTokenStyles[T] do begin
             tsForeground    := clDefault;
             tsBackground    := clDefault;
             tsStyle         := [];
         end;
-    // Стили по умолчанию
+    // Default styles
     fLitString        := '''';
-    fLitChar          := '''';//Для C
+    fLitChar          := '''';//For C
     fLitILComment     := '//';
-    fLitILCompDir     := '#';//Для C
+    fLitILCompDir     := '#';//For C
     fLitMLCommentB    := '{';
     fLitMLCommentE    := '}';
     fLitELCommentB    := '(*';
@@ -1101,7 +1101,7 @@ begin
 end;
 
 
-// Присваивает себе все состояние родственника
+// Copies the whole state of a sibling
 procedure TMPSyntaxAttributes.Assign(Friend: TMPSyntaxAttributes);
 begin
     if (self = Friend) or (Friend = nil) then Exit;
@@ -1127,7 +1127,7 @@ begin
 end;
 
 
-// Возвращает истину, если визуальные атрибуты токенов одинаковы
+// Returns True if the visual attributes of the tokens are equal
 function TMPSyntaxAttributes.Equals(const T1, T2: TToken): Boolean;
 begin
     Result := (fTokenStyles[T1].tsForeground = fTokenStyles[T2].tsForeground)
@@ -1136,7 +1136,7 @@ begin
 end;
 
 
-// Возвращает атрибут цвета токена
+// Returns the token color attribute
 function TMPSyntaxAttributes.GetColor(const Token: TToken; const Index: Integer): TColor;
 begin
     if Index = 0
@@ -1145,14 +1145,14 @@ begin
 end;
 
 
-// Возвращает атрибут стиля шрифта токена
+// Returns the token font style attribute
 function TMPSyntaxAttributes.GetStyle(const Token: TToken): TFontStyles;
 begin
     Result := fTokenStyles[Token].tsStyle;
 end;
 
 
-// Устанавливает атрибут цвета токена
+// Sets the token color attribute
 procedure TMPSyntaxAttributes.SetColor(const Token: TToken; const Index: Integer; const Value: TColor);
 begin
     if Index = 0
@@ -1161,14 +1161,14 @@ begin
 end;
 
 
-// Устанавливает атрибут стиля шрифта токена
+// Sets the token font style attribute
 procedure TMPSyntaxAttributes.SetStyle(const Token: TToken; const Value: TFontStyles);
 begin
     fTokenStyles[Token].tsStyle := Value;
 end;
 
 
-// Копирует атрибуты токена SrcToken во все токены из списка DstTokArray
+// Copies the attributes of token SrcToken to all tokens in DstTokArray
 procedure TMPSyntaxAttributes.CopyAttrs(const SrcToken: TToken; DstTokArray: array of TToken);
 var T: TToken;
 begin
@@ -1214,7 +1214,7 @@ const
     SPOBLSeparated      = 'BLSeparated';
 
 
-// Загружает настройки из файла
+// Loads settings from a file
 procedure TMPSyntaxAttributes.LoadFromFile(const FileName: string);
 var T: TToken;
     {}
@@ -1229,7 +1229,7 @@ begin
         try
             LoadFromFile(FileName);
             if Values[SSynVersion] <> CURRENT_SYN_VERSION then
-                raise Exception.Create('Неподходящая версия синтаксиса');
+                raise Exception.Create('Unsuitable syntax version');
             fLitString          := FirstChar( Values[SLitString] );
             fLitChar            := FirstChar( Values[SLitChar] );
             fLitILCompDir       := Values[SLitILCompDir];
@@ -1277,7 +1277,7 @@ begin
 end;
 
 
-// Сохраняет настройки в файл
+// Saves settings to a file
 procedure TMPSyntaxAttributes.SaveToFile(const FileName: string);
 var T: TToken;
 begin
@@ -1351,7 +1351,7 @@ const
 
 
 
-// Создает клон существующего парсера
+// Creates a clone of an existing parser
 constructor TMPSyntaxParser.Create(const AsCloneOf: TMPSyntaxParser = nil);
 begin
     inherited Create(True);
@@ -1360,7 +1360,7 @@ begin
 end;
 
 
-// Добавляет позицию начала (0-based), длину и токен слова
+// Adds the start position (0-based), length and token of a word
 procedure TMPSyntaxParser.AddToken(const Beg, Len: Integer; Token: TToken);
 var W: TMPSyntaxToken;
 begin
@@ -1373,21 +1373,21 @@ begin
 end;
 
 
-// Возвращает заданный токен
+// Returns the given token
 function TMPSyntaxParser.GetToken(const TokIndex: Integer): TMPSyntaxToken;
 begin
     Result := TMPSyntaxToken( inherited Items[TokIndex] );
 end;
 
 
-// Устанавливает заданный токен
+// Sets the given token
 procedure TMPSyntaxParser.SetToken(const TokIndex: Integer; const Value: TMPSyntaxToken);
 begin
     Items[TokIndex] := Value;
 end;
 
 
-// Возвращает "портрет" кода строки (для отладки)
+// Returns a "portrait" of the line code (for debugging)
 function TMPSyntaxParser.AsString: string;
 var i: Integer;
     s: string;
@@ -1404,7 +1404,7 @@ begin
 end;
 
 
-// Принимает данные
+// Takes the data
 procedure TMPSyntaxParser.Assign(const Friend: TMPSyntaxParser);
 var i: Integer;
     T, NewT: TMPSyntaxToken;
@@ -1425,7 +1425,7 @@ begin
 end;
 
 
-// Удаляет информацию о строке
+// Removes line info
 procedure TMPSyntaxParser.Clear;
 begin
     inherited Clear;
@@ -1433,8 +1433,8 @@ begin
 end;
 
 
-// Группирует смежные токены (tokString-tokStringEnd и т.п.)
-// Операция необратимая.
+// Groups adjacent tokens (tokString-tokStringEnd etc.)
+// Irreversible operation.
 procedure TMPSyntaxParser.GroupTokens;
 var wi: Integer;
     {}
@@ -1482,10 +1482,10 @@ begin
 end;
 
 
-// Разбивает токены, исходя из заданного диапазона выделения
-// Если sx < 0, то строка выделена с начала экрана (не первая строка области выделения)
-// Если ex = MAXINT, то строка выделена до конца экрана (не последняя строка области выделения)
-// Операция необратимая.
+// Splits tokens based on the given selection range
+// If sx < 0, the line is selected from the screen start (not the first line of the selection)
+// If ex = MAXINT, the line is selected to the screen end (not the last line of the selection)
+// Irreversible operation.
 
 function CenterPoint(const Rect: TRect): TPoint;
 begin
@@ -1679,7 +1679,7 @@ var wi: Integer;
         with T do begin
             Result := InRange(r, stStart + 1, stStart + stLength - 1);
             if Result then begin
-                // Разбиваем цепочку на две
+                // Split the chain in two
                 TT := TMPSyntaxToken.Create;
                 TT.stStart  := r;
                 TT.stLength := stStart + stLength - r;
@@ -1703,7 +1703,7 @@ begin
 end;
 
 
-// Возвращает первый токен строки (если он есть - иначе tokText)
+// Returns the first token of the line (if any - otherwise tokText)
 function TMPSyntaxParser.FirstToken: TToken;
 begin
     if Count > 0
@@ -1712,7 +1712,7 @@ begin
 end;
 
 
-// Возвращает последний токен строки (...)
+// Returns the last token of the line (...)
 function TMPSyntaxParser.LastToken: TToken;
 begin
     if Count > 0
@@ -1721,7 +1721,7 @@ begin
 end;
 
 
-// Основное - производит синтаксический разбор строки (парсер)
+// Main - performs syntax parsing of the line (parser)
 function TMPSyntaxParser.Parse(Line: string; LineIndex: Integer; LastToken: TToken; PA: TMPSyntaxAttributes): TToken;
 begin
     if poBLSeparated in PA.ParseOptions  then
@@ -1732,7 +1732,7 @@ begin
 end;
 
 
-// ParseLine() Синтаксический разбор строки со словами, разделенными пробелами
+// ParseLine() Syntax parsing of a line with space-separated words
 function TMPSyntaxParser.ParseLine(Line: string; LineIndex: Integer; LastToken: TToken; PA: TMPSyntaxAttributes): TToken;
 var si: string;
     i, wordbeg: Integer;
@@ -1763,7 +1763,7 @@ begin
     for i := 1 to Length(Line) do
 
         if Line[i] > ' ' then begin
-            // Найден символ
+            // Symbol found
             if not InWord then
                 WordBeg := i;
             InWord := True;
@@ -1802,7 +1802,7 @@ begin
 
                 { Test for comments end }
                 case Result of
-                tokILComment: ;   // остается до конца строки
+                tokILComment: ;   // lasts to the end of line
                 tokILCompDir: ;
 
                 tokMLCommentBeg:
@@ -1821,7 +1821,7 @@ begin
                             then Result := tokMLCompDirEnd;
 
                 else
-                    // Возвращаемся к токену по умолчанию
+                    // Return to the default token
                     Result := tokText;
 
                     { Test for string begin }
@@ -1861,7 +1861,7 @@ begin
                 end;
 
                 { User tokens }
-                if Result = tokText then     // Подключаем внешнее прерывание
+                if Result = tokText then     // Call the external hook
                     if Assigned(PA.OnUserToken) then
                         PA.OnUserToken(self, si, WordBeg, LineIndex, Result);
 
@@ -1872,20 +1872,20 @@ begin
             InWord := False;
         end;
 
-    // Внутристрочный комментарий всегда завершается в конце строки
-    // Общая нормализация конечного токена строки
-    // (важны только открытые многострочные комментарии)
+    // An inline comment always ends at the end of line
+    // General normalization of the line's final token
+    // (only open multiline comments matter)
     if not (Result in [tokMLCommentBeg, tokELCommentBeg, tokMLCompDirBeg]) then
         Result := tokText;
 end;
 
 
-// Синтаксический разбор строки "продвинутый"
+// "Advanced" line syntax parsing
 function TMPSyntaxParser.ParseLineEx(const Line: string; LineIndex: Integer; LastToken: TToken; PA: TMPSyntaxAttributes): TToken;
 const
     HexChars            : TCharSet = ['0'..'9','A'..'F','a'..'f'];
     IntChars            : TCharSet = ['0'..'9'];
-    { Возвращает категорию символа в строке }
+    { Returns the char category in the line }
 type TCharRange = (crBlank, crSymbol, crLetter, crLit);
     function CharRange(c: Char): TCharRange;
     begin
@@ -1902,13 +1902,13 @@ type TCharRange = (crBlank, crSymbol, crLetter, crLit);
             end;
     end;
 
-    // Возвращает признак того, что сменился ранг символа
+    // Returns whether the char rank has changed
     function CharRangeChange(c1, c2: Char): Boolean;
     begin
         Result := CharRange(c1) <> CharRange(c2);
     end;
 
-    // Проверка на начало комментария
+    // Check for comment start
     function TestCommentsBegin(const Pos: Integer; var Token: TToken): Boolean;
     begin
         Result := True;
@@ -1935,16 +1935,16 @@ type TCharRange = (crBlank, crSymbol, crLetter, crLit);
             Result := False;
     end;
 
-    // Возвращает признак того, что токен является комментарием
+    // Returns whether the token is a comment
     function InComment(const Token: TToken): Boolean;
     begin
         Result := Token in [tokELCommentBeg, tokMLCommentBeg, tokILComment, tokMLCompDirBeg, tokILCompDir];
     end;
 
-    // Обрабатывает комментарии, начиная с заданного символа (Pos)
-    // Возвращает позицию следующего за концом комментария символа (Pos)
-    // Тип комментария получает через Token, туда же кладет последний
-    // обработанный токен
+    // Processes comments starting at the given char (Pos)
+    // Returns the position of the char following the comment end (Pos)
+    // Gets the comment type via Token, and stores the last
+    // processed token there too
     procedure ProcessComments(var Pos: Integer; var Token: TToken);
     var WordBeg: Integer;
         si: string;
@@ -1959,7 +1959,7 @@ type TCharRange = (crBlank, crSymbol, crLetter, crLit);
                     WordBeg := Pos;
                 InWord := True;
                 si := si + Line[Pos];
-                // Проверка на конец комментария
+                // Check for comment end
                 case Token of
                 tokMLCommentBeg:
                     if RightStr(si, Length(PA.LiteralMLCommentEnd)) = PA.LiteralMLCommentEnd then begin
@@ -2001,8 +2001,8 @@ type TCharRange = (crBlank, crSymbol, crLetter, crLit);
         end;
     end;
 
-    // Обрабатывает строку, начиная с заданного символа, так что Line[Pos] = fLitString
-    // Возвращает позицию следующего за концом строки символа
+    // Processes a string starting at the given char, so that Line[Pos] = fLitString
+    // Returns the position of the char following the string end
     procedure ProcessString(var Pos: Integer);
     var WordBeg: Integer;
         InWord: Boolean;
@@ -2016,7 +2016,7 @@ type TCharRange = (crBlank, crSymbol, crLetter, crLit);
                 if not InWord then
                     WordBeg := Pos;
                 InWord := True;
-                // Проверка на конец строки
+                // Check for string end
                 if Line[Pos] = PA.LiteralString then begin
                     Inc(Pos);
                     AddToken(WordBeg, Pos - WordBeg, tokStringEnd);
@@ -2037,8 +2037,8 @@ type TCharRange = (crBlank, crSymbol, crLetter, crLit);
         end;
     end;
 
-    // Обрабатывает символ, начиная с заданного символа, так что Line[Pos] = fLitChar
-    // Возвращает позицию следующего за концом строки символа
+    // Processes a char literal starting at the given char, so that Line[Pos] = fLitChar
+    // Returns the position of the char following the string end
     procedure ProcessChar(var Pos: Integer);
     var WordBeg: Integer;
         InWord: Boolean;
@@ -2051,7 +2051,7 @@ type TCharRange = (crBlank, crSymbol, crLetter, crLit);
                 if not InWord then
                     WordBeg := Pos;
                 InWord := True;
-                // Проверка на конец строки
+                // Check for string end
                 if Line[Pos] = PA.LiteralChar then begin
                     Inc(Pos);
                     AddToken(WordBeg, Pos - WordBeg, tokCharEnd);
@@ -2072,9 +2072,9 @@ type TCharRange = (crBlank, crSymbol, crLetter, crLit);
         end;
     end;
 
-    // Обрабатывает шестнадцатиричное число, начиная с заданного символа,
-    // так что Line[Pos] = fLitHexPrefix
-    // Возвращает позицию следующего за концом числа символа
+    // Processes a hexadecimal number starting at the given char,
+    // so that Line[Pos] = fLitHexPrefix
+    // Returns the position of the char following the number end
     procedure ProcessHexValue(var Pos: Integer);
     var WordBeg: Integer;
     begin
@@ -2085,9 +2085,9 @@ type TCharRange = (crBlank, crSymbol, crLetter, crLit);
         AddToken(WordBeg, Pos - WordBeg, tokHexValue);
     end;
 
-    // Обрабатывает целое или дробное число, начиная с заданного символа,
-    // так что Line[Pos] in IntChars
-    // Возвращает позицию следующего за концом числа символа
+    // Processes an integer or fractional number starting at the given char,
+    // so that Line[Pos] in IntChars
+    // Returns the position of the char following the number end
     procedure ProcessNumber(var Pos: Integer);
     var Token: TToken;
         WordBeg: Integer;
@@ -2178,7 +2178,7 @@ begin
         // Next AnsiChar
         c := Line[Col];
 
-        // Сразу обрабатываем открытые и потенциальные комментарии
+        // Handle open and potential comments right away
         if InComment(Result) or TestCommentsBegin(Col, Result) then begin
 //            ProcessWord(Word, WordBeg);
             ProcessWord(WordBeg);
@@ -2280,7 +2280,7 @@ var GlobalUntitledIndex: Integer = 1;
 const UNTITLEDFN = 'Untitled';
 
 
-// Create() Конструктор
+// Create() Constructor
 constructor TMPSynMemoStrings.Create(const Owner: TMPCustomSyntaxMemo);
 begin
     inherited Create;
@@ -2295,7 +2295,7 @@ begin
 end;
 
 
-// Clear() Очищает ссодержимое, удаляя ключевый объекты
+// Clear() Clears the content, removing key objects
 procedure TMPSynMemoStrings.Clear;
 var i: Integer;
     Da: Boolean;
@@ -2304,16 +2304,16 @@ begin
     {} fRichMemo.Log('Strings.Clear {');
     {} {$ENDIF}
     BeginUpdate;
-    // Сохраняем текущий режим и устанавливаем режим прямого доступа к тексту
+    // Save the current mode and set direct text access mode
     Da := fDirectAccess;
     fDirectAccess := True;
-    // Очищаем все строки
+    // Clear all lines
     for i := Count - 1 downto 0 do
         Objects[i].Free;
     inherited Clear;
     fRichMemo.Sections.Scan;
     fRichMemo.Reset;
-    // Восстанавливаем режим
+    // Restore the mode
     fDirectAccess := Da;
     fState := fState + [ssNeedReparseAll, ssNeedReIndex];
     SetModified(True);
@@ -2326,7 +2326,7 @@ begin
 end;
 
 
-// Преобразует отсчет от начала файла в значение строки и символа в ней
+// Converts an offset from the file start into a line and char in it
 function TMPSynMemoStrings.PositionToRC(Value: Integer): TPoint;
 var i: Integer;
 begin
@@ -2341,7 +2341,7 @@ begin
 end;
 
 
-// Преобразует значение символа в заданной строке в его отсчет от начала текста
+// Converts a char in the given line into its offset from the text start
 function TMPSynMemoStrings.RCToPosition(Col, Row: Integer): Integer;
 var i: Integer;
 begin
@@ -2352,21 +2352,21 @@ begin
 end;
 
 
-// Устанавливает содержимое заданной строки
+// Sets the content of the given line
 procedure TMPSynMemoStrings.Put(Index: Integer; const s: string);
 begin
     if fDirectAccess then
         inherited Put(Index, s)
     else begin
         BeginUpdate;
-        // Изменяем строку
+        // Change the line
         inherited Put(Index, s);
-        // Помечаем строку как изменившуюся
+        // Mark the line as changed
         Parser[Index].NeedReparse := True;
         Include(fState, ssTextChanged);
-        // Её надо перерисовывать, если она видна, конечно,
-        // но эта строка закомментирована, поскольку неявно это будет
-        // сделано при репарсинге
+        // It must be repainted, if visible of course,
+        // but this line is commented out, since this will be done
+        // implicitly during reparsing
         { fRichMemo.NeedRedraw(Index); }
         {} {$IFDEF SYNDEBUG}
         {} fRichMemo.LogFmt('Strings.Put(%d, "%s")', [Index, s]);
@@ -2382,7 +2382,7 @@ begin
 
 end;
 
-// Вставляет строку после заданной
+// Inserts a line after the given one
 procedure TMPSynMemoStrings.Insert(Index: Integer; const s: string);
 begin
     if fDirectAccess then
@@ -2396,20 +2396,20 @@ begin
         {} {$IFDEF SYNDEBUG}
         {} fRichMemo.LogFmt('Strings.Insert(%d, "%s") {', [Index, s]);
         {} {$ENDIF}
-        // Вставляем строку
+        // Insert the line
 //        inherited InsertItem(Index, s, TMPSyntaxParser.Create);
          inherited Insert(Index, s);
          Objects[Index]:=TMPSyntaxParser.Create;
 
 
-        // Помечаем строку как изменившуюся
+        // Mark the line as changed
         Parser[Index].NeedReparse := True;
         Include(fState, ssTextChanged);
-        // Корректируем секции, если это не откат, конечно
+        // Adjust sections, unless this is an undo of course
         if not (ssUndoProcess in fState) then
             fRichMemo.Sections.InsertRow(Index);
-        { TODO : Это не совсем так.. Перерисовывать нужно только строки ниже этой }
-        // При добавлении строки ВСЕГДА перерисовываем ВЕСЬ текст
+        { TODO : Not quite right.. Only lines below this one need repainting }
+        // When adding a line ALWAYS repaint the WHOLE text
         fRichMemo.NeedRedrawLE(Index);
         {} {$IFDEF SYNDEBUG}
         {} fRichMemo.Log('} Strings.Insert');
@@ -2419,7 +2419,7 @@ begin
 end;
 
 
-// Удаляет заданную строку
+// Deletes the given line
 procedure TMPSynMemoStrings.Delete(Index: Integer);
 begin
     if DirectAccess then
@@ -2429,21 +2429,21 @@ begin
         {} {$IFDEF SYNDEBUG}
         {} fRichMemo.LogFmt('Strings.Delete(%d) {', [Index]);
         {} {$ENDIF}
-        // Корректируем секции, если это не откат
+        // Adjust sections, unless this is an undo
         if not (ssUndoProcess in fState) then
             fRichMemo.Sections.DeleteRow(Index);
-        // Освобождаем StringParser этой строки
+        // Free the StringParser of this line
         if Assigned(Objects[Index]) then
             Objects[Index].Free;
 {           FreeParser(TMPSyntaxParser(Objects[Index]));}
-        // Удаляем строку
+        // Delete the line
         inherited Delete(Index);
-        // Строка, севшая на её место, может зависить от удаленной
+        // The line taking its place may depend on the deleted one
         if Index<Count then
          Parser[Index].NeedReparse := True;
         Include(fState, ssTextChanged);
-        { TODO : Это не совсем так.. Перерисовывать нужно только строки ниже этой }
-        // При удалении строки ВСЕГДА перерисовываем ВЕСЬ текст
+        { TODO : Not quite right.. Only lines below this one need repainting }
+        // When deleting a line ALWAYS repaint the WHOLE text
         if Index<Count then
          fRichMemo.NeedReDrawLE(Index);
         {} {$IFDEF SYNDEBUG}
@@ -2454,13 +2454,13 @@ begin
 end;
 
 
-// Устанавливает флаг изменения - ЗАГЛУШКА
+// Sets the modified flag - STUB
 procedure TMPSynMemoStrings.Changed;
 begin
 end;
 
 
-// SetUpdateState() Установка признака блокировки
+// SetUpdateState() Sets the lock flag
 procedure TMPSynMemoStrings.SetUpdateState(Updating: Boolean);
 begin
     inherited;
@@ -2478,40 +2478,40 @@ begin
         {} fRichMemo.Log('} EndUpdate');
         {} {$ENDIF}
 
-        // Если строки менялись, устанавливаем состояние изменения
+        // If lines were changed, set the modified state
         if fState * [ssTextChanged, ssSectionsChanged] <> [] then
             SetModified(True);
 
-        // Если необходимо, заново настраивает индексы строк
+        // If needed, re-adjust line indexes
         if ssNeedReIndex in fState then
             fRichMemo.Sections.ReIndex;
 
-        // Просматриваем строки. Производим парсинг строк, которые
-        // изменились, либо зависят от изменившихся, пропуская пустые;
-        // Измененные строки перерисовываем
+        // Scan the lines. Parse lines that
+        // changed or depend on changed ones, skipping empty ones;
+        // Repaint changed lines
         if fState * [ssTextChanged, ssNeedReparseAll] <> [] then
             Parse(ssNeedReparseAll in fState, True);
 
-        // Перерисовываем строки, которые еще не перерисовывались
-        // И переставляем курсор
+        // Repaint lines not yet repainted
+        // And reposition the cursor
         fRichMemo.ReDraw;
 
-        // Обновляем ScrollBars
+        // Update ScrollBars
         if not (csDesigning in fRichMemo.ComponentState) then
             fRichMemo.UpdateScrollBars;
     end;
 end;
 
 
-// Тупой перерасчет всех строк (EntireText is True) или только изменившихся
-// Если (NeedRepaint is True) - производится перерисовка измененных строк
+// Brute-force recalculation of all lines (EntireText is True) or only changed ones
+// If (NeedRepaint is True) - changed lines are repainted
 procedure TMPSynMemoStrings.Parse(const EntireText : Boolean; const NeedRepaint: Boolean = False);
 var Row: Integer;
     NeedNext: Boolean;
     Sp: TMPSyntaxParser;
 begin
-    // Просматриваем строки. Производим парсинг строк, которые
-    // изменились, либо зависят от изменившихся, пропуская пустые;
+    // Scan the lines. Parse lines that
+    // changed or depend on changed ones, skipping empty ones;
     NeedNext := False;
     Row := 0;
     while Row < Count do begin
@@ -2532,20 +2532,20 @@ begin
 end;
 
 
-// Parse() Расчет ключа строки
-// !! Возвращает истину, если следующая строка требует пересчета ключа
-// (в случае несовпадения признаков многострочного комментария в конце данной строки и начала следующей)
+// Parse() Calculates the line key
+// !! Returns True if the next line needs its key recalculated
+// (when the multiline comment flags at the end of this line and the start of the next one differ)
 function TMPSynMemoStrings.ParseLine(const Index: Integer; const TestNextLine: Boolean): Boolean;
 var i: integer;
     Key: TToken;
 begin
     Result := False;
-    // Перемычка - для случая удаления последней строки
+    // Guard - for the case of deleting the last line
     if Index >= Count then Exit;
     Key := tokText;
 
-    // Просматриваем предыдущую непустую строку в надежде,
-    // что текущая строка входит в мультистрочный комментарий
+    // Look at the previous non-empty line hoping
+    // that the current line is part of a multiline comment
     for i := Index - 1 downto 0 do
         with Parser[i] do
             if Count > 0 then begin
@@ -2554,15 +2554,15 @@ begin
                 Break;
             end;
 
-    // Парсинг строки
+    // Line parsing
     {$IFDEF SYNDEBUG}
     fRichMemo.LogFmt('Strings.Parse %d', [Index]);
     {$ENDIF}
     Key := Parser[Index].Parse(Get(Index), Index, Key, fRichMemo.fParseAttributes);
 
-    // Если необходимо (TestNextLine = True),
-    // то просматриваем непустую строку ниже, для того,
-    // чтобы понять - нужно ее определять заново, или нет.
+    // If needed (TestNextLine = True),
+    // look at the non-empty line below in order
+    // to find out whether it must be re-parsed or not.
     if TestNextLine then
         for i := Index + 1 to Count - 1 do
             with Parser[i] do
@@ -2579,8 +2579,8 @@ begin
 end;
 
 
-// LoadFromStream() Загружает текст из потока
-// После загрузки разбирается с секциями, удаляя маркеры и производит полный репарсинг
+// LoadFromStream() Loads text from a stream
+// After loading, processes sections removing markers and performs full reparsing
 procedure TMPSynMemoStrings.LoadFromStream(Stream: TStream);
 begin
     {} {$IFDEF SYNDEBUG}
@@ -2588,15 +2588,15 @@ begin
     {} {$ENDIF}
 
     BeginUpdate;
-    { Разрешаем прямое изменение строк }
+    { Allow direct line changes }
     fDirectAccess := True;
     try
         inherited LoadFromStream(Stream);
     finally
         fDirectAccess := False;
-        // Заново сканируем секции
+        // Rescan sections
         fRichMemo.Sections.Scan;
-        // Требуется перерисовка, переиндексация, репарсинг
+        // Repaint, reindexing and reparsing are required
         fRichMemo.NeedRedrawAll;
         fState := [ssNeedReIndex, ssNeedReparseAll];
         EndUpdate;
@@ -2605,13 +2605,13 @@ begin
     {} {$IFDEF SYNDEBUG}
     {} fRichMemo.Log('} Strings.LoadFromStream - Ok');
     {} {$ENDIF}
-    // Текст сурово обновился
+    // Text was thoroughly updated
     fRichMemo.Change([ciText, ciSelection, ciSections, ciUndoStack]);
 end;
 
 
-// SaveToStream() Сохраняет текст в поток.
-// Предварительно, если необходимо, добавляет маркеры секций
+// SaveToStream() Saves text to a stream.
+// Beforehand, if needed, adds section markers
 procedure TMPSynMemoStrings.SaveToStream(Stream: TStream);
 var Sl: TStringList;
 begin
@@ -2619,30 +2619,30 @@ begin
     {} fRichMemo.Log('Strings.SaveToStream');
     {} {$ENDIF}
 
-    // Создаем вспомогательный текст
+    // Create a helper text
     Sl := TStringList.Create;
-    // Куда и копируем имеющийся
+    // And copy the existing one into it
     Sl.Assign(self);
-    // Если в настройках указано запись маркеров секций,
-    // выполняем заданную коррекцию временного текста
+    // If the settings specify writing section markers,
+    // apply the corresponding correction to the temporary text
     if smoWriteMarkersOnSave in fRichMemo.Options then
         fRichMemo.Sections.FillOutput(Sl);
     try
-        // Пишем временный текст в поток
+        // Write the temporary text to the stream
         Sl.SaveToStream(Stream);
     finally
-        // Забываем его
+        // Forget it
         Sl.Free;
     end;
-    // Текст записан - потому сбрасываем флаг изменения
+    // Text is written - so reset the modified flag
     SetModified(False);
-    // Обновить информацию о тексте
+    // Update text info
     fRichMemo.Change([ciText]);
 end;
 
 
-// Загружает текст из файла, устанавливая свойства имени файла
-// и признака изменения содержимого.
+// Loads text from a file, setting the file name
+// and content modified flag properties.
 procedure TMPSynMemoStrings.LoadFromFile(const NewFileName: string);
 begin
     {} {$IFDEF SYNDEBUG}
@@ -2650,10 +2650,10 @@ begin
     {} {$ENDIF}
 
     inherited;
-    // Новое имя.. =)
+    // New name.. =)
     FileName := NewFileName;
     fVirtualFileName := False;
-    // Сброс первоначального обновления
+    // Reset initial update
     SetModified(False);
 
     {} {$IFDEF SYNDEBUG}
@@ -2662,7 +2662,7 @@ begin
 end;
 
 
-// Сохраняет содержимое в файле с заданным именем
+// Saves the content to a file with the given name
 procedure TMPSynMemoStrings.SaveToFile(const NewFileName: string);
 begin
     {} {$IFDEF SYNDEBUG}
@@ -2676,7 +2676,7 @@ begin
 end;
 
 
-// New() Создает новый документ
+// New() Creates a new document
 procedure TMPSynMemoStrings.New;
 begin
     {} {$IFDEF SYNDEBUG}
@@ -2690,28 +2690,28 @@ begin
     fState := [];
     fRichMemo.Change([ciText, ciSelection, ciSections, ciUndoStack]);
 
-    //SiO: Создадим пустую строчку, а то пользователю печатать будет негде...
+    //SiO: Create an empty line, otherwise the user has nowhere to type...
     Add('');
 //    InsertItem(Count,'',nil);
 
 end;
 
 
-// IsValidLineIndex() Допустим ли заданный индекс строки
+// IsValidLineIndex() Whether the given line index is valid
 function TMPSynMemoStrings.IsValidLineIndex(const Row: Integer): Boolean;
 begin
     Result := InRange(Row, 0, Count - 1);
 end;
 
 
-// GetParser() Гарантированно возвращает парсер указанной строки
+// GetParser() Always returns the parser of the given line
 function TMPSynMemoStrings.GetParser(const Row: Integer): TMPSyntaxParser;
 begin
     Result := TMPSyntaxParser(Objects[Row]);
 end;
 
 
-// SetFileName() Устанавливает имя файла
+// SetFileName() Sets the file name
 procedure TMPSynMemoStrings.SetFileName(const Value: string);
 var F: TCustomForm;
 begin
@@ -2719,12 +2719,12 @@ begin
     {} fRichMemo.Log('Strings.SetFileName(' + Value + ')');
     {} {$ENDIF}
     fFileName := Value;
-    { Выводим имя файла в заголовок закладки }
+    { Show file name in the tab caption }
     if (smoShowFileNameInTabSheet in fRichMemo.fOptions)
     and Assigned(fRichMemo.Parent)
     and (fRichMemo.Parent is TTabSheet) then
         TTabSheet(fRichMemo.Parent).Caption := ExtractFileName(fFileName);
-    { Выводим имя файла в заголовок формы }
+    { Show file name in the form caption }
     if smoShowFileNameInFormCaption in fRichMemo.fOptions then begin
         F := GetParentForm(fRichMemo);
         if F <> nil then
@@ -2733,7 +2733,7 @@ begin
 end;
 
 
-// SetModified() Сбрасывает показатель изменения текста
+// SetModified() Resets the text modified flag
 procedure TMPSynMemoStrings.SetModified(const Value: Boolean);
 begin
     if Value <> fModified then begin
@@ -2749,22 +2749,22 @@ end;
 
 { TMPSMSectionClone }
 
-// Увеличивает счетчик ссылок на 1
+// Increments the reference count by 1
 procedure TMPSMSectionClone.AddRef;
 begin
     Inc(fRefCount);
 end;
 
 
-// Уменьшает счетчик ссылок на 1.
-// Как только счетчик станет равным 0, объект уничтожается
+// Decrements the reference count by 1.
+// As soon as the count reaches 0, the object is destroyed
 procedure TMPSMSectionClone.Release;
 begin
     Dec(fRefCount);
     if fRefCount <= 0 then Free;
 end;
 
-//SiO: Делаем копию
+//SiO: Make a copy
 procedure TMPSMSectionClone.Assign(original:TMPSMSectionClone);
 begin
   fParent:=original.fParent;
@@ -2779,14 +2779,14 @@ end;
 
 // Class TMPSynMemoSection Implementation
 
-// Create() Конструктор
+// Create() Constructor
 constructor TMPSynMemoSection.Create;
 begin
     inherited Create(True);
 end;
 
 
-// GetSections() Возвращает вложенную секцию по индексу
+// GetSections() Returns a nested section by index
 function TMPSynMemoSection.GetSections(const Idx: Integer): TMPSynMemoSection;
 begin
     Assert(InRange(Idx, 0, Count - 1), 'Bad nested section index: ' + IntToStr(Idx));
@@ -2794,8 +2794,8 @@ begin
 end;
 
 
-// Устанавливает новый уровень вложенности секции
-// Рекурсивно изменяет уровень внутренних секций
+// Sets the new section nesting level
+// Recursively changes the level of inner sections
 procedure TMPSynMemoSection.SetLevel(const Value: Integer);
 var i: Integer;
 begin
@@ -2808,7 +2808,7 @@ end;
 
 // Class TMPSynMemoManager Implementation
 
-// Create() Конструктор менеджера секций
+// Create() Section manager constructor
 constructor TMPSynMemoSections.Create(Owner: TMPCustomSyntaxMemo);
 begin
     inherited Create;
@@ -2820,7 +2820,7 @@ begin
 end;
 
 
-// Destroy() Деструктор менеджера секций
+// Destroy() Section manager destructor
 destructor TMPSynMemoSections.Destroy;
 begin
     fIndexes.Free;
@@ -2829,7 +2829,7 @@ begin
 end;
 
 
-// Возвращает тип заголовка секции
+// Returns the section header type
 class function TMPSynMemoSections.DetectSectionMark(const s: string): TSectionMark;
 begin
     if s = '' then Result := smNone else
@@ -2840,7 +2840,7 @@ begin
 end;
 
 
-// Возвращает тип заголовка секции, которому принадлежит строка
+// Returns the header type of the section the line belongs to
 function TMPSynMemoSections.SectionBorder(const Row: Integer): TSectionMark;
 begin
     with Section[Row] do
@@ -2855,7 +2855,7 @@ begin
 end;
 
 
-// Возвращает следующую секцию после заданной без учета видимости и вложенности
+// Returns the next section after the given one, ignoring visibility and nesting
 function TMPSynMemoSections.Next(Sec: TMPSynMemoSection): TMPSynMemoSection;
     {}
     function _next(Sec: TMPSynMemoSection): TMPSynMemoSection;
@@ -2881,7 +2881,7 @@ begin
 end;
 
 
-// Возвращает предыдущую секцию перед заданной без учета видимости и вложенности
+// Returns the previous section before the given one, ignoring visibility and nesting
 function TMPSynMemoSections.Prev(Sec: TMPSynMemoSection): TMPSynMemoSection;
     function _last(Sec: TMPSynMemoSection): TMPSynMemoSection;
     begin
@@ -2909,22 +2909,22 @@ begin
 end;
 
 
-// Возвращает секцию, которой принадлежит строка
+// Returns the section the line belongs to
 function TMPSynMemoSections.GetSection(const Row: Integer): TMPSynMemoSection;
 begin
     Result := fRichMemo.Lines.Parser[Row].Section;
 end;
 
 
-// Устанавливает секцию, которой принадлежит строка
+// Sets the section the line belongs to
 procedure TMPSynMemoSections.SetSection(const Row: Integer; Value: TMPSynMemoSection);
 begin
     fRichMemo.Lines.Parser[Row].Section := Value;
 end;
 
 
-// Возвращает True, если хотябы заголовок секции виден
-// !!! Работает только после переиндексации строк !!!
+// Returns True if at least the section header is visible
+// !!! Works only after line reindexing !!!
 function TMPSynMemoSections.Visible(const Sec: TMPSynMemoSection): Boolean;
 begin
     if ssNeedReIndex in fRichMemo.Lines.State then
@@ -2933,11 +2933,11 @@ begin
 end;
 
 
-// Плющит заданную секцию
-// Если Recursive = True, плющит все вложенные секции
+// Collapses the given section
+// If Recursive = True, collapses all nested sections
 procedure TMPSynMemoSections.Collapse(const Row: Integer; const Recursive, SafeSelf: Boolean);
 var Sec: TMPSynMemoSection;
-    { Для чистой рекурсии }
+    { For pure recursion }
     procedure CollapseChildren(Father: TMPSynMemoSection);
     var i: Integer;
     begin
@@ -2952,7 +2952,7 @@ begin
     {} fRichMemo.LogFmt('Sections.Collapse(%d)', [Row]);
     {} {$ENDIF}
 
-    // Секции должны быть подготовлены
+    // Sections must be prepared
     with fRichMemo.Lines do begin
         if ssNeedReindex in State then ReIndex;
         BeginUpdate;
@@ -2966,9 +2966,9 @@ begin
 end;
 
 
-// Раскрывает заданную секцию
-// Если Recursive = True, раскрывает все вложенные секции
-// Если ParentRecursive = True, раскрывает всех родителей
+// Expands the given section
+// If Recursive = True, expands all nested sections
+// If ParentRecursive = True, expands all parents
 procedure TMPSynMemoSections.Expand(const Row: Integer; const Recursive, ParentRecursive: Boolean);
     procedure ExpandChildren(Father: TMPSynMemoSection);
     var i: Integer;
@@ -2984,7 +2984,7 @@ begin
     {} fRichMemo.LogFmt('Sections.Expand(%d)', [Row]);
     {} {$ENDIF}
 
-    // Секции должны быть подготовлены
+    // Sections must be prepared
     if ssNeedReindex in fRichMemo.Lines.State then
         ReIndex;
     with fRichMemo.fLines do begin
@@ -3004,8 +3004,8 @@ begin
 end;
 
 
-// Разбивает секцию.
-// Если Recursive = True, разбить все вложенные секции
+// Breaks up a section.
+// If Recursive = True, break up all nested sections
 procedure TMPSynMemoSections.Explode(const Row: Integer; const Recursive: Boolean);
     { Recurse }
     procedure ExplodeChildren(Father: TMPSynMemoSection);
@@ -3015,8 +3015,8 @@ procedure TMPSynMemoSections.Explode(const Row: Integer; const Recursive: Boolea
         if Father.Level > 0 then begin
             n := Father.Parent.IndexOf(Father);
             for i := Father.Count-1 downto 0 do begin
-                // Если внутри этой секции есть вложенные,
-                // они тоже теперь принадлежат родителю
+                // If this section has nested sections,
+                // they now belong to the parent too
                 Child := Father[i];
                 Child.Level := Child.Level - 1;
                 Child.Parent := Father.Parent;
@@ -3024,13 +3024,13 @@ procedure TMPSynMemoSections.Explode(const Row: Integer; const Recursive: Boolea
                 if Recursive then
                     ExplodeChildren(Child);
             end;
-            // Если строка ранее принадлежала родительской секции,
-            // теперь она принадлежит родителю разрушенной секции
+            // If the line belonged to the parent section before,
+            // it now belongs to the parent of the destroyed section
             for i := Father.RowBeg to Father.RowEnd do
                 with fRichMemo.Lines.Parser[i] do
                     if Section = Father then
                         Section := Father.Parent;
-            // Удаляем разрушенную секцию
+            // Delete the destroyed section
             Father.Parent.Delete(n);
         end;
     end;
@@ -3040,10 +3040,10 @@ begin
     {} fRichMemo.LogFmt('Sections.Explode(%d)', [Row]);
     {} {$ENDIF}
 
-    // Секции должны быть подготовлены
+    // Sections must be prepared
     if ssNeedReindex in fRichMemo.Lines.State then
         ReIndex;
-    { TODO : С этим разобраться - что-то здесь не так.. }
+    { TODO : Sort this out - something is wrong here.. }
     MakeUnique;
     with fRichMemo.Lines do begin
         BeginUpdate;
@@ -3057,7 +3057,7 @@ begin
 end;
 
 
-{ Создает новую секцию с охватом возможных существующих }
+{ Creates a new section enclosing any existing ones }
 function TMPSynMemoSections.New(const Row1, Row2: Integer; const IsCollapsed: Boolean = False): TMPSynMemoSection;
 var i: Integer;
     Father, iSec: TMPSynMemoSection;
@@ -3066,23 +3066,23 @@ begin
     {} fRichMemo.LogFmt('Sections.New(%d, %d)', [Row1, Row2]);
     {} {$ENDIF}
 
-    // Секции должны быть подготовлены
+    // Sections must be prepared
     if ssNeedReindex in fRichMemo.Lines.State then
         ReIndex;
-    { TODO : С этим разобраться - что-то здесь не так.. }
+    { TODO : Sort this out - something is wrong here.. }
     MakeUnique;
 
-    // Если одна строка принадлежит секции "A", а другая строка
-    // принадлежит её родителю ("^A"), но при этом не является её границей,
-    // то вначале разбиваем существующую секцию ("A"->(^A"),
-    // а, затем, создаем её заново - либо с новым размером,
-    // либо с новым местоположением
+    // If one line belongs to section "A" and the other line
+    // belongs to its parent ("^A") but is not its boundary,
+    // first break up the existing section ("A"->(^A"),
+    // and then create it again - either with a new size
+    // or with a new location
     if ((Section[Row2] = Section[Row1].Parent) and (SectionBorder(Row2) = smNone))
     or ((Section[Row1] = Section[Row2].Parent) and (SectionBorder(Row1) = smNone)) then
         Explode(Row1, False);
 
-    // Если после всего этого исходные параметры остаются недопустимыми,
-    // присваиваем результату nil и выходим из процедуры
+    // If after all this the input parameters are still invalid,
+    // set the result to nil and exit the procedure
     if (Section[Row1] <> Section[Row2])
     or (SectionBorder(Row1) <> smNone)
     or (SectionBorder(Row2) <> smNone) then begin
@@ -3090,13 +3090,13 @@ begin
         Exit;
     end;
 
-    // Пакетные изменения
+    // Batch changes
     fRichMemo.Lines.BeginUpdate;
 
-    // Будущий отец новой секции
+    // Future parent of the new section
     Father := Section[Row1];
 
-    // Создаем новую секцию
+    // Create the new section
     Result := TMPSynMemoSection.Create;
     Result.Parent    := Father;
     Result.RowBeg    := Row1;
@@ -3104,18 +3104,18 @@ begin
     Result.Level     := Father.Level + 1;
     Result.Collapsed := IsCollapsed;
 
-    // Соотносим секцию и новые строки
+    // Associate the section with the new lines
     for i := Row1 to Row2 do begin
         iSec := Section[i];
-        // Если строка ранее принадлежала родительской секции,
-        // теперь она принадлежит созданной дочерней секции
-        // ( так часто бывает ;)
+        // If the line belonged to the parent section before,
+        // it now belongs to the created child section
+        // ( happens a lot ;)
         if iSec = Father then
             Section[i] := Result
         else
-        // Если внутри выделенного объема есть вложенные секции,
-        // они тоже теперь принадлежат ребенку и имеют гораздо
-        // меньшую значимость ;))
+        // If the selected range contains nested sections,
+        // they now belong to the child too and have much
+        // lower significance ;))
         if (i = iSec.RowBeg) and (iSec.Parent = Father) then begin
             iSec.Level := Result.Level + 1;
             iSec.Parent := Result;
@@ -3123,13 +3123,13 @@ begin
         end;
     end;
 
-    // Вставляем новую секцию к детишкам старой
+    // Insert the new section among the old one's children
     i := Father.Count;
     while (i > 0) and (Father[i-1].RowBeg > Row1) do
         Dec(i);
     Father.Insert(i, Result);
 
-    // Фиксируем изменения
+    // Commit the changes
     with fRichMemo.Lines do begin
         State := State + [ssSectionsChanged, ssNeedReIndex];
         fRichMemo.NeedRedrawAll;
@@ -3137,13 +3137,13 @@ begin
         EndUpdate;
     end;
 
-    // Обновляемся
+    // Refresh
     fRichMemo.Change([ciText, ciSelection, ciSections]);
 end;
 
 
-// Удаляет строку - пересчитываются индексы секций
-// !!! Только для вложений в пакетные изменения !!!
+// Deletes a line - section indexes are recalculated
+// !!! Only for use inside batch changes !!!
 procedure TMPSynMemoSections.DeleteRow(const Row: Integer);
     { Recurse }
     procedure UpdateIndexes(Sec: TMPSynMemoSection);
@@ -3152,7 +3152,7 @@ procedure TMPSynMemoSections.DeleteRow(const Row: Integer);
         if Sec.RowBeg > Row then Dec(Sec.fRowBeg);
         if Sec.RowEnd > Row then begin
             Dec(Sec.fRowEnd);
-            { Рекурсивно пересчитываются индексы вложенных секций}
+            { Recursively recalculate indexes of nested sections}
             for i := 0 to Sec.Count - 1 do
                 UpdateIndexes( Sec.Sections[i] );
         end;
@@ -3163,23 +3163,23 @@ begin
     {} fRichMemo.LogFmt('Sections.DeleteRow(%d)', [Row]);
     {} {$ENDIF}
 
-    { TODO : С этим разобраться - что-то здесь не так.. }
+    { TODO : Sort this out - something is wrong here.. }
     MakeUnique;
 
-    // Если удаляемая строка является границей секции, секция разрушается.
+    // If the deleted line is a section boundary, the section is destroyed.
     with fRichMemo do
         if Sections.SectionBorder(Row) <> smNone then
             Explode(Row, False);
 
-    // .. а уже потом корректируются индексы
+    // .. and only then the indexes are adjusted
     UpdateIndexes(fRoot);
     with fRichMemo.Lines do
         State := State + [ssSectionsChanged, ssNeedReIndex];
 end;
 
 
-// Добавляется строка - пересчитываются индексы секций
-// !!! Только для вложений в пакетные изменения !!!
+// A line is added - section indexes are recalculated
+// !!! Only for use inside batch changes !!!
 procedure TMPSynMemoSections.InsertRow(const Row: Integer);
 var ParentSec: TMPSynMemoSection;
     {}
@@ -3190,10 +3190,10 @@ var ParentSec: TMPSynMemoSection;
             Inc(Sec.fRowBeg);
         if Row <= Sec.RowEnd then begin
             Inc(Sec.fRowEnd);
-            { Проверяем, не в эту ли секцию добавлена строка }
+            { Check whether the line was added to this section }
             if InRange(Row, Sec.RowBeg, Sec.RowEnd) and (Sec.Level > ParentSec.Level) then
                 ParentSec := Sec;
-            { Рекурсивно пересчитываются индексы вложенных секций}
+            { Recursively recalculate indexes of nested sections}
             for i := 0 to Sec.Count - 1 do
                 UpdateIndexes( Sec.Sections[i] );
         end;
@@ -3204,7 +3204,7 @@ begin
     {} fRichMemo.LogFmt('Sections.InsertRow(%d)', [Row]);
     {} {$ENDIF}
 
-    { TODO : С этим разобраться - что-то здесь не так.. }
+    { TODO : Sort this out - something is wrong here.. }
     MakeUnique;
     ParentSec := fRoot;
     UpdateIndexes(fRoot);
@@ -3214,7 +3214,7 @@ begin
 end;
 
 
-// FillOutput() Заполняет выходной текст в зависимости от опций менеджера смекций
+// FillOutput() Fills the output text depending on the section manager options
 procedure TMPSynMemoSections.FillOutput(const Sl: TStringList);
 const pm: array[Boolean] of string[4] = ('{<+}', '{<-}');
     {}
@@ -3237,10 +3237,10 @@ begin
 end;
 
 
-{ TODO : ВОТ С ЭТИ И БУДЕМ РАЗБИРАТЬСЯ - завтра с утра }
-// Текущее дерево секций становится уникальным
+{ TODO : THIS IS WHAT WE WILL SORT OUT - tomorrow morning }
+// The current section tree becomes unique
 procedure TMPSynMemoSections.MakeUnique;
-    { Создает копию секции - recurse }
+    { Creates a copy of the section - recurse }
     function Clone(const Father, Sec: TMPSynMemoSection): TMPSynMemoSection;
     var i: Integer;
     begin
@@ -3263,7 +3263,7 @@ begin
         {} fRichMemo.LogFmt('Sections.MakeUnique %d->%d', [fRoot.fRefCount, fRoot.fRefCount + 1]);
         {} {$ENDIF}
 
-        { Создаем реальный /занимающий отдельную память/ клон дерева секций }
+        { Create a real /with its own memory/ clone of the section tree }
         NewRoot := TMPSMSectionClone.Create;
         NewRoot.fParent    := nil;
         NewRoot.fRowBeg    := fRoot.fRowBeg;
@@ -3275,7 +3275,7 @@ begin
         SetRoot(NewRoot);
     end else begin
 
-        { Создаем виртуальный /индексация счетчиком ссылок/ клон дерева секций }
+        { Create a virtual /reference-counted/ clone of the section tree }
         {} {$IFDEF SYNDEBUG}
         {} fRichMemo.Log('Sections.MakeUnique VIRTUAL');
         {} {$ENDIF}
@@ -3283,7 +3283,7 @@ begin
 end;
 
 
-// Возвращает данные секций как многострочный текст
+// Returns section data as multiline text
 function TMPSynMemoSections.AsText: string;
 var sl: TStringList;
     procedure SecAsString(Sec: TMPSynMemoSection);
@@ -3307,7 +3307,7 @@ begin
 end;
 
 
-// Заново переиндексирует строки соответствия секций
+// Reindexes the section mapping of lines
 procedure TMPSynMemoSections.ReIndex;
 var Row: Integer;
     {}
@@ -3319,8 +3319,8 @@ var Row: Integer;
         if ParentOpen and (Sec.fLevel > fMaxExpandLevel)
             then fMaxExpandLevel := Sec.fLevel;
 { TODO -oBuzz : 
-Когда накрываешь большой текст пастой маленького - АВ
-Тупо забью. Потом разберусь. }
+Pasting a small text over a large one gives an AV
+Just ignoring it for now. Will sort it out later. }
        if fRichMemo.Lines.Count<=Sec.fRowEnd then
         Sec.fRowEnd:=fRichMemo.Lines.Count-1;
         while Row <= Sec.fRowEnd do begin
@@ -3352,31 +3352,31 @@ begin
     fIndexes.Clear;
     ProcessSection(fRoot, True);
     Inc(fRoot.fRowEnd);
-    { Фиксируем обновление }
+    { Commit the update }
     fRichMemo.Lines.State := fRichMemo.Lines.State - [ssNeedReIndex];
-    { Вызываем процедуру поддержки }
+    { Call the support procedure }
     fRichMemo.Change([ciSections]);
 end;
 
 
-// Задает новый корень секций (он может был сохранен в Undo)
+// Sets a new section root (it may have been saved in Undo)
 procedure TMPSynMemoSections.SetRoot(const Value: TMPSMSectionClone);
 begin
     {$IFDEF SYNDEBUG}
     fRichMemo.Log('Sections.SetRoot');
     {$ENDIF}
-    { Если дерево не меняется, просто переиндексируем строки }
+    { If the tree does not change, just reindex the lines }
     if fRoot <> Value then begin
         fRoot.Release;
         fRoot := Value;
         fRoot.AddRef;
     end;
-    { Обновляем строки }
+    { Update the lines }
     ReIndex;
 end;
 
 
-// Прочитывает весь текст и создает набор секций
+// Reads the whole text and builds the set of sections
 procedure TMPSynMemoSections.Scan;
 var Row, i: Integer;
     ParentSec, Sec: TMPSynMemoSection;
@@ -3386,7 +3386,7 @@ begin
     {$IFDEF SYNDEBUG}
     fRichMemo.Log('Sections.SCAN');
     {$ENDIF}
-    { Очищаем корень секций }
+    { Clear the section root }
     with fRoot do begin
         Clear;
         fRowBeg     := -1;
@@ -3396,10 +3396,10 @@ begin
         fCollapsed  := False;
     end;
 
-    { Создаем стек открытых секций }
+    { Create the stack of open sections }
     Stack := TObjectStack.Create;
 
-    { Просматривает весь текст и создаем новое дерево секций }
+    { Scan the whole text and build a new section tree }
     Row := 0;
     ParentSec := fRoot;
     repeat
@@ -3409,7 +3409,7 @@ begin
             smExpanded,
             smCollapsed:
                 begin
-                    { Создаем новую секцию }
+                    { Create a new section }
                     Sec := TMPSynMemoSection.Create;
                     with Sec do begin
                         fRowBeg     := Row;
@@ -3418,62 +3418,62 @@ begin
                         fParent     := ParentSec;
                         fCollapsed  := Sm = smCollapsed;
                     end;
-                    { Вкладываем ее внутрь ParentSec }
+                    { Nest it inside ParentSec }
                     ParentSec.Add(Sec);
-                    { Кладем ее в стек }
+                    { Push it onto the stack }
                     Stack.Push(Sec);
-                    { Делаем ее родительской }
+                    { Make it the parent }
                     ParentSec := Sec;
-                    { Каждая строка из заданного диапазона будет принадлежать этой секции }
+                    { Every line in the given range will belong to this section }
                     fRichMemo.Sections.Section[Row] := ParentSec;
-                    { Убираем маркер начала секции }
+                    { Remove the section start marker }
                     fRichMemo.Lines[Row] := StuffString(fRichMemo.Lines[Row], 1, SECTION_HEADER_LENGTH, '');
                 end;
             smEnd:
                 begin
-                    { Проверяем стек }
+                    { Check the stack }
                     if Stack.Count = 0 then begin
-                        // Ошибка: несогласованное закрытие секции (лишний {>>}):
-                        // Восстановление - вставляем строку с открытием секции
+                        // Error: unmatched section close (extra {>>}):
+                        // Recovery - insert a line opening a section
                         fRichMemo.fLines.Insert(Row, SectionMarks[smExpanded]);
                         Continue;
                     end;
-                    { Достаем последнюю открытую секцию из стека и закрываем ее }
+                    { Pop the last open section from the stack and close it }
                     Sec := TMPSynMemoSection(Stack.Pop);
                     Sec.fRowEnd := Row;
-                    { Каждая строка из заданного диапазона будет принадлежать этой секции }
+                    { Every line in the given range will belong to this section }
                     fRichMemo.Sections.Section[Row] := Sec;
-                    { Родительской секцией становится ее родитель }
+                    { Its parent becomes the parent section }
                     ParentSec := Sec.fParent;
-                    { Убираем маркер конца секции }
+                    { Remove the section end marker }
                     fRichMemo.Lines[Row] := StuffString(fRichMemo.Lines[Row], 1, SECTION_HEADER_LENGTH, '');
                 end;
             else
-                { Каждая строка из заданного диапазона будет принадлежать текущей секции }
+                { Every line in the given range will belong to the current section }
                 fRichMemo.Sections.Section[Row] := ParentSec;
             end;
             Inc(Row);
         end;
 
-        { Проверяем стек на наличие открытых секций }
+        { Check the stack for open sections }
         if Stack.Count > 0 then
-            // Ошибка: не хватает закрывашек {>>}:
-            // Восстановление - добавляем строки с закрывашками
+            // Error: missing closing {>>} markers:
+            // Recovery - add lines with closing markers
             for i := 0 to Stack.Count - 1 do
                 fRichMemo.Lines.Append(SectionMarks[smEnd]);
     until Stack.Count = 0;
 
-    { Освобождаем стек }
+    { Free the stack }
     Stack.Free;
 end;
 
 
 { TMPSynMemoUndoItem }
 
-// Деструктор.
+// Destructor.
 destructor TMPSynMemoUndoItem.Destroy;
 begin
-    // Вначале освобождает дерево секций
+    // First frees the section tree
     uiSections.Release;
     inherited;
 end;
@@ -3482,7 +3482,7 @@ end;
 
 // Class TMPSynMemoRange Implementation
 
-// Create() Конструктор
+// Create() Constructor
 constructor TMPSynMemoRange.Create(Owner: TMPCustomSyntaxMemo);
 begin
     inherited Create;
@@ -3495,7 +3495,7 @@ begin
 end;
 
 
-// Destroy() Деструктор
+// Destroy() Destructor
 destructor TMPSynMemoRange.Destroy;
 begin
 fUndoStack.Clear;
@@ -3503,7 +3503,7 @@ fUndoStack.Free;
 inherited;
 end;
 
-// Сдвигает выделенные строки вправо
+// Shifts the selected lines right
 procedure TMPSynMemoRange.MakeIndent;
 var i: Integer;
 begin
@@ -3513,7 +3513,7 @@ for i := StartY to EndY do
 fRichMemo.Lines.EndUpdate;
 end;
 
-// Сдвигает выделенные строки влево
+// Shifts the selected lines left
 procedure TMPSynMemoRange.MakeUnIndent;
 var i: Integer;
 begin
@@ -3524,7 +3524,7 @@ for i := StartY to EndY do
 fRichMemo.Lines.EndUpdate;
 end;
 
-//Комментируем выделенные строки
+//Comment out the selected lines
 procedure TMPSynMemoRange.MakeComment(LitILComment:string);
 var i: Integer;
 begin
@@ -3546,7 +3546,7 @@ if copy(fRichMemo.Lines[StartY],1,length(LitILComment))<>LitILComment
 end;
 
 
-// Collaps() Сворачивает выделение к началу
+// Collaps() Collapses the selection to its start
 procedure TMPSynMemoRange.Collapse;
 var yb, ye: Integer;
     e: Boolean;
@@ -3555,18 +3555,18 @@ begin
     {} fRichMemo.Log('Range.Collapse');
     {} {$ENDIF}
 
-    // Сохраняем значения начальной и конечной строк выделения ..
+    // Save the selection start and end lines ..
     yb       := fStart.Y;
     ye       := fEnd.Y;
-    // .. и признака пустоты выделения
+    // .. and the empty-selection flag
     e        := IsEmpty();
-    // Включаем залипание
-    // При этом, границы выделения всегда будут соответствовать позиции ввода
+    // Enable sticky mode
+    // The selection bounds will then always follow the input position
     fSealing := True;
     fStart   := fPos;
     fEnd     := fPos;
-    // Устраняем следы прошлого - перерисовываем те строки,
-    // где раньше былы границы выделения
+    // Clean up leftovers - repaint the lines
+    // where the selection bounds used to be
     if not e then
         with fRichMemo do begin
             Lines.BeginUpdate;
@@ -3576,12 +3576,12 @@ begin
             until yb > ye;
             Lines.EndUpdate;
         end;
-    // Подтверждение изменения
+    // Confirm the change
     fRichMemo.Change([ciSelection]);
 end;
 
 
-// Enlarge() Увеличивает область выделения на Value символов (или строк - если EnlargeLine is True)
+// Enlarge() Grows the selection by Value characters (or lines - if EnlargeLine is True)
 procedure TMPSynMemoRange.Enlarge(const Value: Integer; const EnlargeLine: Boolean = False; const VisiblesOnly: Boolean = False);
 var n, PrevY: Integer;
 begin
@@ -3591,37 +3591,37 @@ begin
         {} {$IFDEF SYNDEBUG}
         {} fRichMemo.LogFmt('Range.Enlarge(Cols=%d)', [Value]);
         {} {$ENDIF}
-        // Прикидываем увеличиваем/уменьшаем выделение по горизонтали
+        // Estimate growing/shrinking the selection horizontally
         n := PosX + Value;
-        // Ограничиваем выделение в пределах текущей строки (как в Delphi)
+        // Limit the selection to the current line (as in Delphi)
         if n < 0 then n := -PosX else
             if n > Length(fRichMemo.Lines[PosY]) then n := Length(fRichMemo.Lines[PosY]) - PosX else
                 n := Value;
-        // Если в результате ограничений, ничего не сдвинуть - просто выходим
+        // If the limits leave nothing to move - just exit
         if n <> 0 then begin
-            // Корректируем границы выделения
+            // Adjust the selection bounds
             if (PosX = StartX) and (PosY = StartY) then Inc(fStart.X, n) else Inc(fEnd.X, n);
             if (StartY = EndY) and (StartX > EndX) then Swap(fStart.X, fEnd.X);
-            // Перемещаем курсор по горизонтали, при необходимости осуществляя прокрутку
+            // Move the cursor horizontally, scrolling if needed
             PosX := PosX + n;
-            // Перерисовываем текущую строку
+            // Repaint the current line
             fRichMemo.NeedRedraw(PosY);
         end
     end else begin
         {} {$IFDEF SYNDEBUG}
         {} fRichMemo.LogFmt('Range.Enlarge(Rows=%d)', [Value]);
         {} {$ENDIF}
-        // Прикидываем увеличиваем/уменьшаем выделение по вертикали
+        // Estimate growing/shrinking the selection vertically
         if VisiblesOnly
             then n := fRichMemo.FindVisibleRow(PosY, Value, True)
             else n := EnsureRange(PosY + Value, 0, fRichMemo.Lines.Count - 1);
 
-        // Если в результате ограничений, ничего не сдвинуть - просто выходим
+        // If the limits leave nothing to move - just exit
         if n <> PosY then begin
-            // Запоминаем начальную строку
+            // Remember the start line
             PrevY := PosY;
 
-            // Корректируем границы выделения
+            // Adjust the selection bounds
             if PointsEqual(fPos, fStart)
                 then fStart.Y := n
                 else fEnd.Y := n;
@@ -3632,10 +3632,10 @@ begin
                 Swap(fStart.X, fEnd.X);
             end;
 
-            // Перемещаем курсор по вертикали, при необходимости осуществляя прокрутку
+            // Move the cursor vertically, scrolling if needed
             PosY := n;
 
-            // Перерисовываем строки с начальной по конечную
+            // Repaint lines from start to end
             for n := Min(PrevY, PosY) to Max(PrevY, PosY) do
                 fRichMemo.NeedRedraw(n);
         end;
@@ -3645,7 +3645,7 @@ begin
 end;
 
 
-// Удаляет символ, разрыв строки или содержимое области выделения
+// Deletes a character, a line break or the selection contents
 procedure TMPSynMemoRange.Delete;
 begin
     {} {$IFDEF SYNDEBUG}
@@ -3661,12 +3661,12 @@ begin
     end
     else
     if PosX < Length(fRichMemo.fLines[PosY]) then begin
-        // выделения нет; курсор не в конце строки - удаление символа
+        // no selection; cursor not at end of line - delete a character
         EndX := StartX + 1;
         SetTextEx('',ukLetterDeleted);
     end else
     if PosY < fRichMemo.fLines.Count - 1 then begin
-        // курсор в конце строки - объединение двух строк
+        // cursor at end of line - join two lines
         EndX := 0;
         EndY := StartY + 1;
         SetTextEx('',ukLetterDeleted);
@@ -3674,14 +3674,14 @@ begin
 end;
 
 
-// Сворачивает секцию, в строке которой находится позиция ввода
+// Collapses the section whose line holds the input position
 procedure TMPSynMemoRange.CollapseSection(const Recursive: Boolean);
 begin
     with fRichMemo do begin
         {} {$IFDEF SYNDEBUG}
         {} Log('Range.CollapseSection');
         {} {$ENDIF}
-        // Если курсор внутри секции, выносим его к заголовку секции
+        // If the cursor is inside the section, move it to the section header
         if Sections.SectionBorder(PosY) in [smNone, smEnd] then
             SetPos( Point(0, Sections.Section[PosY].RowBeg) );
         Sections.Collapse(PosY, Recursive, Recursive);
@@ -3689,7 +3689,7 @@ begin
 end;
 
 
-// Раскрываем секцию, в заголовке которой находится позиция ввода
+// Expand the section whose header holds the input position
 procedure TMPSynMemoRange.ExpandSection(const Recursive: Boolean);
 begin
     {$IFDEF SYNDEBUG}
@@ -3699,7 +3699,7 @@ begin
 end;
 
 
-// Разбиваем секцию
+// Break up the section
 procedure TMPSynMemoRange.ExplodeSection(const Recursive: Boolean);
 begin
     {$IFDEF SYNDEBUG}
@@ -3711,8 +3711,8 @@ begin
 end;
 
 
-// CreateSection() Создает секцию со строки Row1 по строку Row2
-// Если Row2 = -1 (по умолчанию), создается новая секция Row1..Row1+1
+// CreateSection() Creates a section from line Row1 to line Row2
+// If Row2 = -1 (default), a new section Row1..Row1+1 is created
 procedure TMPSynMemoRange.CreateSection;
 begin
     with fRichMemo do begin
@@ -3721,27 +3721,27 @@ begin
         {} {$ENDIF}
         Lines.BeginUpdate;
         // Row1 = Row2
-        // Выделение пустое или располагается на одной строке текста
-        // Курсор может находиться в любом месте строки
-        // СТРОКА НЕ МОЖЕТ БЫТЬ ГРАНИЦЕЙ СУЩЕСТВУЮЩЕЙ СЕКЦИИ
-        // Предварительно вставляется пустая строка
+        // Selection is empty or lies on a single text line
+        // The cursor can be anywhere in the line
+        // THE LINE CANNOT BE A BOUNDARY OF AN EXISTING SECTION
+        // An empty line is inserted first
         if (StartY = EndY)
         and (Sections.SectionBorder(StartY) = smNone) then begin
             Collapse;
-            // Генерим откат в виде команды удаления строки..
+            // Generate undo as a delete-line command..
             with AddUndo() do begin
                 uiSelStart := Point(0, StartY + 1);
                 uiSelEnd   := Point(0, StartY + 2);
                 uiSealing  := False;
             end;
-            // .. которую мы щас добавим
+            // .. for the line we are about to add
             Lines.Insert(StartY + 1, '');
-            // Генерим секцию
+            // Generate the section
             Sections.New(StartY, StartY + 1);
         end else
         // Row1 < Row2
-        // Выделение не пустое, начальная и конечная строки принадлежат
-        // одной или разным секциям и не являются границами этих секций
+        // Selection is not empty; start and end lines belong to
+        // the same or different sections and are not their boundaries
         if (StartY <> EndY)
         and (Sections.SectionBorder(StartY) = smNone)
         and (Sections.SectionBorder(EndY) = smNone) then begin
@@ -3759,29 +3759,29 @@ begin
 end;
 
 
-// Переход к следующей (Delta=+1) или предыдущей (Delta=-1) секции,
-// если это возможно, конечно
+// Go to the next (Delta=+1) or previous (Delta=-1) section,
+// if possible, of course
 procedure TMPSynMemoRange.GotoSection(const GoForward: Boolean);
 var Sec: TMPSynMemoSection;
 begin
     {} {$IFDEF SYNDEBUG}
     {} fRichMemo.LogFmt('Range.GotoSection(%s)', [BoolToStr(GoForward)]);
     {} {$ENDIF}
-    // Получаем текущую секцию (к которой относится строка с курсором)
+    // Get the current section (the one the cursor line belongs to)
     Sec := fRichMemo.Sections.Section[PosY];
-    // Пытаемся найти предыдущую или следующую секцию
+    // Try to find the previous or next section
     repeat
         if GoForward
             then Sec := fRichMemo.Sections.Next(Sec)
             else Sec := fRichMemo.Sections.Prev(Sec);
     until (Sec = nil) or fRichMemo.Sections.Visible(Sec);
-    // Если секция найдена, устанавливаем курсор в её заголовок
+    // If a section is found, put the cursor on its header
     if Sec <> nil then
         SetPos( Point(0, Sec.RowBeg) );
 end;
 
 
-// Копирует в буфер обмена текст и информацию о вложенных секциях
+// Copies text and nested section info to the clipboard
 procedure TMPSynMemoRange.CopyToClipboard;
 var Data: THandle;
     DataPtr: Pointer;
@@ -3792,22 +3792,22 @@ begin
     {$IFDEF SYNDEBUG}
     fRichMemo.Log('Range.CopyToClipboard');
     {$ENDIF}
-    // Просто копируем текст
+    // Just copy the text
     Clipboard.AsText := self.GetText;
-    // Если не запрещено, и границы выделения находятся в разных строках,
-    // сохраняем информацию о границах вложенных секций
+    // Unless disabled, and if the selection bounds are on different lines,
+    // save the nested section boundary info
     if not (smoSkipSectionsOnCopy in fRichMemo.Options)
     and (fStart.Y <> fEnd.Y) then begin
         s := GetMarkedText;
         sa:=s;
 
-        // Открываем буфер обмена
+        // Open the clipboard
         OpenClipboard(Application.Handle);
         try
-            // Резервируем глобальную область
+            // Allocate a global memory block
             Data := GlobalAlloc(GMEM_MOVEABLE + GMEM_DDESHARE, Length(s)*SizeOf(Char) + SizeOf(Char));
             try
-                // Получаем указатель на неё
+                // Get a pointer to it
                 DataPtr := GlobalLock(Data);
                 try
                     {$IFDEF D11+}
@@ -3827,14 +3827,14 @@ begin
                 raise;
             end;
         finally
-            // Закрываем буфер обмена
+            // Close the clipboard
             CloseClipboard;
         end;
     end;
 end;
 
 
-// Вставляет в текст строки и, если есть информация, секции текста
+// Inserts lines into the text and, if info is present, text sections
 procedure TMPSynMemoRange.PasteFromClipboard;
 var Data: THandle;
     oldDirAccess:boolean;
@@ -3846,18 +3846,18 @@ begin
     {$IFDEF SYNDEBUG}
     fRichMemo.Log('Range.PasteFromClipboard');
     {$ENDIF}
-    // Запоминаем позицию вставки для коррекции секций
+    // Remember the insert position to adjust sections
     fRichMemo.Lines.BeginUpdate;
     oldDirAccess:=fRichMemo.Lines.fDirectAccess;
     fRichMemo.Lines.fDirectAccess:=True;
     try
       if not (smoSkipSectionsOnPaste in fRichMemo.Options) and Clipboard.HasFormat(CF_SYNTAX) then begin
-          // Открываем буфер обмена
+          // Open the clipboard
           OpenClipboard(Application.Handle);
           Data := GetClipboardData(CF_SYNTAX);
           try
-              // На основе полученной информации о границах секций в переданном тексте,
-              // создаем их на новом месте
+              // Using the received section boundary info of the passed text,
+              // create them at the new location
               p:=  GlobalLock(Data);
               s:= PChar(p);
               sa:=PAnsiChar(p);
@@ -3875,13 +3875,13 @@ begin
               CloseClipboard;
           end;
       end else
-      // Если нет синтаксиса или он запрещен, вставляем просто текст
+      // If there is no syntax or it is disabled, insert plain text
       if Clipboard.HasFormat(CF_TEXT) then
           SetTextEx(Clipboard.AsText,ukRangeInserted);
     finally
      fRichMemo.Lines.fDirectAccess:=oldDirAccess;
      fRichMemo.Sections.Scan;
-        // Требуется перерисовка, переиндексация, репарсинг
+        // Repaint, reindex and reparse are needed
      fRichMemo.NeedRedrawAll;
      fRichMemo.Lines.fState := [ssNeedReIndex, ssNeedReparseAll];
     end;
@@ -3891,7 +3891,7 @@ begin
 end;
 
 
-// CutToClipboard() Вырезает текст выделения и помещает в буфер обмена
+// CutToClipboard() Cuts the selected text and puts it on the clipboard
 procedure TMPSynMemoRange.CutToClipBoard;
 begin
     if not IsEmpty and not (smoReadOnly in fRichMemo.fOptions) then begin
@@ -3904,14 +3904,14 @@ begin
 end;
 
 
-// IsEmpty() Возвращает True, если область пустая (только позиция ввода)
+// IsEmpty() Returns True if the range is empty (input position only)
 function TMPSynMemoRange.IsEmpty: Boolean;
 begin
     Result := (StartX = EndX) and (StartY = EndY);
 end;
 
 
-// Устаналивает точку ввода
+// Sets the input point
 procedure TMPSynMemoRange.SetPos(const NewPos: TPoint);
 begin
     if PointsEqual(fPos, NewPos) then Exit;
@@ -3920,7 +3920,7 @@ begin
         {} LogFmt('Range Col = %d Row = %d', [NewPos.X, NewPos.Y]);
         {} {$ENDIF}
 
-        //SiO: Пока еще ничего не изменилось - запишем точку UnDo
+        //SiO: Nothing has changed yet - record an UnDo point
         if (not (ssUndoProcess in Lines.State))and(Assigned(LastUndoItem))
            then begin
                 if not (LastUndoItem.uiKind=ukCursorMoved)
@@ -3936,16 +3936,16 @@ begin
 
 
         Lines.BeginUpdate;
-        // По вертикали
-        // Убираем лишние пробелы справа после окончания редактирования строки
-        // (: Если строка еще существует :)
+        // Vertically
+        // Remove extra trailing spaces after a line has been edited
+        // (: If the line still exists :)
         if NewPos.Y <> fPos.Y then
              CutFinalSpaces(fPos.Y);
-        // Устанавливаем строку
+        // Set the line
         fPos.Y := EnsureRange(NewPos.Y, 0, Lines.Count);
-        // Если курсор после последней строки текста и эта последняя строка текста НЕ ПУСТАЯ,
-        // создается новая строка - вообщем-то в этом и состоит весь механизм последовательного
-        // набора текста ..:)
+        // If the cursor is past the last text line and that last line is NOT EMPTY,
+        // a new line is created - that is basically the whole mechanism of sequential
+        // typing ..:)
         if fPos.Y = Lines.Count then
             if (Lines.Count = 0)
             or ((Lines.Count > 0) and (Lines[Lines.Count-1] <> '')) then begin
@@ -3953,14 +3953,14 @@ begin
                 Lines.Add('');
                 SetPos(Point(0, Lines.Count-1));
             end;
-        // По горизонтали
+        // Horizontally
         fPos.X := Max(0, NewPos.X);
-        // Если включено залипание, корректируем выделение по текущему положению курсора
+        // If sticky mode is on, adjust the selection to the current cursor position
         if fSealing then begin
             fStart := fPos;
             fEnd   := fPos;
         end;
-        // Курсор должен быть виден на экране
+        // The cursor must be visible on screen
         MakeVisible(fPos.X, fPos.Y);
         Lines.EndUpdate;
         Change([ciSelection]);
@@ -3971,7 +3971,7 @@ begin
 end;
 
 
-// Устанавливает одно из значений выделения
+// Sets one of the selection values
 procedure TMPSynMemoRange.SetRange(const Index, Value: Integer);
 begin
     case Index of
@@ -3981,7 +3981,7 @@ begin
 end;
 
 
-// Удаляет финальные пробелы в строке
+// Removes trailing spaces in a line
 procedure TMPSynMemoRange.CutFinalSpaces(const Row: Integer);
 var s: string;
     Da: Boolean;
@@ -4002,7 +4002,7 @@ begin
 end;
 
 
-// GetText() Возвращает текст выделения
+// GetText() Returns the selected text
 function TMPSynMemoRange.GetText: string;
 var Row: Integer;
 begin
@@ -4022,22 +4022,22 @@ begin
 end;
 
 
-// Возвращает текст выделения с маркерами целых секций
+// Returns the selected text with whole-section markers
 function TMPSynMemoRange.GetMarkedText: string;
 var Row, Row1, Row2: Integer;
 begin
     with fRichMemo do begin
-        // Секции будут действительны только для полных строк
+        // Sections are valid only for whole lines
         Row1 := fStart.Y;
         if fStart.X > 0 then Inc(Row1);
         Row2 := fEnd.Y;
         if fEnd.X < Length(Lines[fEnd.Y]) then Dec(Row2);
-        // Если первая строка была не полной, её копируем без учета секций
+        // If the first line was partial, copy it without sections
         if Row1 > fStart.Y
 //            then Result := Copy(Lines[fStart.Y], fStart.X, MAXINT) + #13#10
             then Result := Copy(Lines[fStart.Y], fStart.X+1, MAXINT) + #13#10
             else Result := '';
-        // Каждую строку копируем с учетом секций
+        // Copy each line with sections
         for Row := Row1 to Row2 do
             with Sections.Section[Row] do
                 if (Row = RowBeg) and (RowEnd <= Row2) then
@@ -4049,7 +4049,7 @@ begin
                     Result := Result + SectionMarks[smEnd] + Lines[Row] + #13#10
                 else
                     Result := Result + Lines[Row] + #13#10;
-        // Если последняя строка была не полной, её копируем без учета секций
+        // If the last line was partial, copy it without sections
         if Row2 < fEnd.Y then
             Result := Result +
              Copy(Lines[fEnd.Y], 1, fEnd.X)
@@ -4060,7 +4060,7 @@ begin
 end;
 
 
-// DoUndo() Производит откат (если есть куда)
+// DoUndo() Performs an undo (if there is one)
 procedure TMPSynMemoRange.DoUndo;
 var  ui:TMPSynMemoUndoItem;
 begin
@@ -4075,28 +4075,28 @@ begin
 
             Lines.BeginUpdate;
 
-            // Старые установки
+            // Old settings
             fStart :=   uiSelStart;
             fEnd :=     uiSelEnd;
             fSealing := uiSealing;
 
-            // Восстанавливаем прежний текст
+            // Restore the previous text
             Lines.State := Lines.State + [ssUndoProcess];
-            Self.SetTextEx(uiText,ukNone);//Прямой вызов действительной процедуры (без прослойки)
+            Self.SetTextEx(uiText,ukNone);//Direct call of the actual procedure (no wrapper)
             Lines.State := Lines.State - [ssUndoProcess];
 
-            // Прежнее дерево секций
+            // Previous section tree
             Sections.EntireSection := uiSections;
 
-            // Старая позиция курсора
+            // Old cursor position
             Lines.State := Lines.State + [ssUndoProcess];
             SetPos( uiCaretPos );
             Lines.State := Lines.State - [ssUndoProcess];
 
-            // Удаляем использованный откат
+            // Delete the used undo entry
             with fUndoStack do Delete(Count - 1);
 
-            // Фиксируем изменения
+            // Commit the changes
             Change([ciUndoStack]);
             Lines.State := [ssNeedReIndex, ssNeedReparseAll];
             fRichMemo.NeedRedrawAll;
@@ -4105,7 +4105,7 @@ begin
    end
 end;
 
-// Получаем последний откат
+// Get the last undo entry
 function TMPSynMemoRange.GetLastUndoItem:TMPSynMemoUndoItem;
 begin
 result:=nil;
@@ -4115,7 +4115,7 @@ end;
 
 
 
-// Создает точку отката
+// Creates an undo point
 function TMPSynMemoRange.AddUndo(const UndoText: string = ''): TMPSynMemoUndoItem;
 begin
     {$IFDEF SYNDEBUG}
@@ -4130,17 +4130,17 @@ begin
     Result.uiSections := fRichMemo.Sections.EntireSection;
     Result.uiText     := UndoText;
 
-//SiO: А объекты кто за нас создавать будет?!!
-//Три часа, блин, искал причину ошибки "Runtime error 204"!
-//P.S. Потом еще столько же искал, почему откаты перестали работать.
-//А всего-то нужно было _копию_ сделать.
-//Как оно до этого работало - ума не приложу.
+//SiO: And who is going to create the objects for us?!!
+//Spent three damn hours hunting the cause of "Runtime error 204"!
+//P.S. Then as long again figuring out why undo stopped working.
+//And all it took was making a _copy_.
+//How it worked before - no idea.
 
     Result.uiSections := TMPSMSectionClone.Create;
     Result.uiSections.Assign(fRichMemo.Sections.EntireSection);
     Result.uiSections.AddRef;
 
-    { Записываем откат }
+    { Record the undo entry }
     if fUndoStack.Count >= fMaxUndoDepth then
         fUndoStack.Delete(0);
     fUndoStack.Add(Result);
@@ -4148,7 +4148,7 @@ begin
 end;
 
 
-// Чистит стек отката
+// Clears the undo stack
 procedure TMPSynMemoRange.ClearUndo;
 begin
     {$IFDEF SYNDEBUG}
@@ -4156,17 +4156,17 @@ begin
     {$ENDIF}
     fUndoStack.Clear;
     Assert(fRichMemo.Sections.EntireSection.RefCount = 1,
-        'После ClearUndo должно быть fRichMemo.Sections.EntireSection.RefCount == 1');
+        'After ClearUndo fRichMemo.Sections.EntireSection.RefCount must be == 1');
     fRichMemo.Change([ciUndoStack]);
 end;
 
 
-{ TODO : Это очень похоже на Sections.Scan ! }
-// Вставляет текст с маркерами секций
+{ TODO : This looks a lot like Sections.Scan ! }
+// Inserts text with section markers
 procedure TMPSynMemoRange.SetMarkedText(Value: string);
 type TIntArray = array of Integer;
 
-    { Производит разбор секций во вставляемом тексте и выделяет законченные }
+    { Parses sections in the inserted text and extracts complete ones }
     procedure _Scan(var s: string; var secs: TIntArray);
     const signs: array [Boolean] of Integer = (-1, +1);
     var Sl: TStringList;
@@ -4215,38 +4215,38 @@ begin
 
         Lines.BeginUpdate;
 
-        // Запоминаем начальную позицию вставки
+        // Remember the insert start position
         SafeStart := fStart;
 
-        // Если начало выделения, куда вставляем, было не выровнено по строке
-        // запрещаем любой маркер секции в этой строке, чтобы не получилось что-то типа Line10: abc{<+}def
+        // If the selection start we insert at was not line-aligned,
+        // forbid any section marker on this line, to avoid something like Line10: abc{<+}def
         if (SafeStart.X > 0)
         and (TMPSynMemoSections.DetectSectionMark(Value) <> smNone) then
             System.Delete(Value, 1, SECTION_HEADER_LENGTH);
 
-        // Разбор и выделение секций
+        // Parse and extract sections
         _Scan(Value, SecIndexes);
 
-        // Вставляем как текст и переиндексируемся
+        // Insert as text and reindex
         SetTextEx(Value,ukRangeInserted);
         Sections.ReIndex;
 
-        // Пробуем создать секции там, где они вставились
+        // Try to create sections where they were inserted
         for i := 0 to Length(SecIndexes) shr 1 - 1 do begin
             Row1 := SafeStart.Y + SecIndexes[i*2] * sign(SecIndexes[i*2]) - 1;
             Row2 := SafeStart.Y + SecIndexes[i*2 + 1];
             Sections.New(Row1, Row2, SecIndexes[i*2] < 0);
         end;
 
-        // Освобождаем временный массив границ секций
+        // Free the temporary section boundary array
         SecIndexes := nil;
 
-        // Переиндексация строк
+        // Reindex lines
         Lines.EndUpdate;
     end;
 end;
 
-//SiO: Прослойка для совместимости
+//SiO: Compatibility wrapper
 procedure TMPSynMemoRange.SetText(const Value: string);
 var ActionKind:TUndoKind;
 begin
@@ -4258,7 +4258,7 @@ SetTextEx(Value,ActionKind);
 end;
 
 
-// SetText() Самое главное. Задает текст выделения.
+// SetText() The most important one. Sets the selected text.
 procedure TMPSynMemoRange.SetTextEx(const Value: string;ActionKind: TUndoKind);
 var Sl: TStringList;
     n, n1, n2: Integer;
@@ -4276,7 +4276,7 @@ begin
          System.SetLength(Dest,255*(fEnd.Y-fStart.Y));
          for n := fStart.Y + 1 to fEnd.Y do
          begin
-  //Buzz оптимизировано
+  //Buzz optimized
              if Length(Dest)<p+Length(fLines[n])+2 then
               System.SetLength(Dest, Length(Dest)+255*(fEnd.Y-n));
               Move(#13#10,Dest[p+1],2*SizeOf(Char));
@@ -4298,7 +4298,7 @@ begin
     {} fRichMemo.LogFmt('Range.SetText("%.20s")', [Value]);
     {} {$ENDIF}
 
-    // Корректируем позицию ввода
+    // Adjust the input position
     with fRichMemo do
     begin
         if Lines.Count<PosY+1 then
@@ -4314,11 +4314,11 @@ begin
     Sl := TStringList.Create;
     Sl.Text := Value + #13#10;
     with fRichMemo do begin
-        { Создаем вспомогательные строки }
+        { Create helper lines }
         n1 := EndY - StartY + 1;
         n2 := Sl.Count;
 
-        // Готовим вспомогательные строки
+        // Prepare helper lines
         NewSelEnd.Y := fStart.Y + n2 - 1;
 //        Sl[0] := LeftStr(fLines[fStart.Y], fStart.X) + Sl[0];
         Sl[0] := Copy(fLines[fStart.Y],1 ,fStart.X) + Sl[0];
@@ -4326,20 +4326,20 @@ begin
         NewSelEnd.X := Length(Sl[n2-1]);
         Sl[n2-1] := Sl[n2-1] + RightStr(fLines[fEnd.Y], Length(fLines[fEnd.Y]) - fEnd.X);
 
-        { Сохраняем параметры отката }
+        { Save undo parameters }
         if not (ssUndoProcess in Lines.State) then
-           // Смотрим, нельзя ли сгруппировать с предыдущим
+           // Check whether it can be grouped with the previous one
            if (not Assigned(LastUndoItem))or(ActionKind in [ukNone, ukBlockCreated, ukBlockExploded])or
               (Assigned(LastUndoItem) and ((LastUndoItem.uiKind=ukNone)or(LastUndoItem.uiKind<>ActionKind)))
               or(not (smoGroupUndo in Options))
-              then //Если нельзя - создаем новый откат
+              then //If not - create a new undo entry
               begin
                    ui:=AddUndo;
                    with ui do
                    begin
                      uiCaretPos:=fPos;
                      uiSelEnd := NewSelEnd;
-                     { Сохраняем текст отката }
+                     { Save the undo text }
 
                      uiText := Copy(fLines[fStart.Y], fStart.X + 1, MAXINT);
                      SaveUndo(uiText,fLines);
@@ -4351,15 +4351,15 @@ begin
                      uiKind:=ActionKind;
                    end
               end     
-              else //Если можно - группируем.
+              else //If yes - group them.
                    //begin
                    with LastUndoItem do
                    begin
-                   //Выясняем направление изменение
+                   //Determine the direction of the change
                    if ((NewSelEnd.X>=uiSelEnd.X)and(NewSelEnd.Y=uiSelEnd.Y))
                       or(NewSelEnd.Y>uiSelEnd.Y)
                       then
-                      begin //Вперед
+                      begin //Forward
                        uiSelEnd := NewSelEnd;
                        uiText := uiText+Copy(fLines[fStart.Y], fStart.X + 1, MAXINT);
 
@@ -4370,7 +4370,7 @@ begin
 
                       end
                       else
-                      begin //Назад
+                      begin //Backward
                            s:=uiText;
                            uiSelEnd := NewSelEnd;
                            uiSelStart := fStart;
@@ -4385,7 +4385,7 @@ begin
                    if system.Pos(#13#10,uiText)>0 then uiSealing:=False;
                    end;(**)
 
-        { Меняем исходные строки }
+        { Change the source lines }
         Lines.BeginUpdate;
 //Buzz
         if Lines.Capacity<fStart.Y+n2-n1 then
@@ -4423,7 +4423,7 @@ begin
          for n := n1 - n2 downto 1 do
            Lines.Delete(Lines.Count-1);
          NeedReDrawLE(fStart.Y);
-// Последняя строка всегда пустая
+// The last line is always empty
        end;
 {        for n := n1 - n2 downto 1 do
             Lines.Delete(fStart.Y);  }
@@ -4431,18 +4431,18 @@ begin
         for n := 0 to n2 - 1 do
             Lines[fStart.Y + n] := Sl[n];
 
-        // Устанавливаем новое положение курсора
+        // Set the new cursor position
         fEnd := NewSelEnd;
         fStart := fEnd;
         fSealing := True;
 
-        //Чтобы движение символа не записывалось
+        //So that character movement is not recorded
         Lines.State := Lines.State + [ssUndoProcess];
         SetPos( fEnd );
         Lines.State := Lines.State - [ssUndoProcess];
 
         MakeVisible(fEnd.X, fEnd.Y);
-        // Репарсинг и перерисовка
+        // Reparse and repaint
         Lines.EndUpdate;
     end;
     Sl.Free;
@@ -4450,7 +4450,7 @@ begin
 end;
 
 
-// GetLength() Подсчитывает длину строки выделения
+// GetLength() Computes the length of the selected text
 function TMPSynMemoRange.GetLength: Integer;
 var i: Integer;
 begin
@@ -4460,7 +4460,7 @@ begin
 end;
 
 
-// GetPosition() Вовращает позицию начала выделения (0-based)
+// GetPosition() Returns the selection start position (0-based)
 function TMPSynMemoRange.GetPosition: Integer;
 begin
     Result := fRichMemo.Lines.RCToPosition(StartX, StartY);
@@ -4488,7 +4488,7 @@ begin
       Inc(Result,PosCoord.X);
 end;
 
-// SetLength() Устанавливает длину выделения
+// SetLength() Sets the selection length
 procedure TMPSynMemoRange.SetLength(const Value: Integer);
 var x0, dy, i, n: Integer;
 begin
@@ -4513,7 +4513,7 @@ begin
 end;
 
 
-// SetPosition() Устанавливает позицию курсора по его отсчету от начала текста
+// SetPosition() Sets the cursor position as an offset from the start of the text
 procedure TMPSynMemoRange.SetPosition(const Value: Integer);
 begin
     {} {$IFDEF SYNDEBUG}
@@ -4524,14 +4524,14 @@ begin
 end;
 
 
-// CanUndo() Возвращает True, если есть возможность отката
+// CanUndo() Returns True if undo is possible
 function TMPSynMemoRange.CanUndo: Boolean;
 begin
     Result := fUndoStack.Count > 0;
 end;
 
 
-// SetMaxUndoDepth() Устанавливает новую границу стека отката
+// SetMaxUndoDepth() Sets a new undo stack limit
 procedure TMPSynMemoRange.SetMaxUndoDepth(const Value: Integer);
 begin
     {$IFDEF SYNDEBUG}
@@ -4545,7 +4545,7 @@ begin
 end;
 
 
-// SelectAll() Выделяет весь текст
+// SelectAll() Selects all text
 procedure TMPSynMemoRange.SelectAll;
 begin
     {$IFDEF SYNDEBUG}
@@ -4556,7 +4556,7 @@ begin
 end;
 
 
-// SelectFromStart() Выделяет текст от начала до текущей позиции
+// SelectFromStart() Selects text from the start to the current position
 procedure TMPSynMemoRange.SelectFromStart;
 var L: Integer;
 begin
@@ -4569,7 +4569,7 @@ begin
 end;
 
 
-// SelectToEnd() Выделяет текст от текущей позиции до конца документа
+// SelectToEnd() Selects text from the current position to the end of the document
 procedure TMPSynMemoRange.SelectToEnd;
 var L: Integer;
 begin
@@ -4581,11 +4581,11 @@ begin
     SetLength(Length(fRichMemo.Lines.Text) - L);
 end;
 
-//Реализация
+//Implementation
 
 {TBreakPoint}
 
-//Создаем экземпляр объекта БП
+//Create a breakpoint object instance
 constructor TBreakPoint.Create(Owner: TMPBreakPointCollection);
 begin
 inherited Create;
@@ -4597,7 +4597,7 @@ Comment:='';
 fKind:=bkPosible;
 end;
 
-//Удаляем объект БП
+//Delete the breakpoint object
 destructor TBreakPoint.Destroy;
 begin
 inherited;
@@ -4611,7 +4611,7 @@ end;
 
 {TMPBreakPointCollection}
 
-//Создаем коллекцию БП'ов
+//Create the breakpoint collection
 constructor TMPBreakPointCollection.Create(Owner: TMPCustomSyntaxMemo);
 begin
 inherited Create;
@@ -4625,7 +4625,7 @@ fOnBeforeBreakPointChangedNotify:=nil;
 fRowOfCurrentBP:=-1;
 end;
 
-//Удаляем
+//Delete
 destructor TMPBreakPointCollection.Destroy;
 var i:integer;
 begin
@@ -4638,8 +4638,8 @@ fBPList.Free;
 inherited;
 end;
 
-//Добавляет новый БП в коллекцию. Если на этой строке уже был БП - удаляет старый,
-//создает новый
+//Adds a new breakpoint to the collection. If this line already had one - deletes the old one,
+//creates a new one
 procedure TMPBreakPointCollection.Add(const Row: Integer;const Kind:TBPKind=bkEnabled;
                       Condition:string='';PassCount:cardinal=0;Group:string='';Comment:string='');
 var BP:TBreakPoint;
@@ -4660,7 +4660,7 @@ fRichMemo.NeedRedraw(Row);
 fRowOfCurrentBP:=Row;
 end;
 
-//Удаляет БП из указанной строки. Если его там не было - игнорирует...
+//Deletes the breakpoint from the given line. If there was none - ignores it...
 function TMPBreakPointCollection.Delete(const Row: Integer):boolean;
 var i:integer;
 begin
@@ -4675,8 +4675,8 @@ if fBPList.Find(IntToStr(Row),i) then
 fRichMemo.NeedRedraw(Row);
 end;
 
-//Возвращает информацию о наличии или отсутствии БП на указанной строке.
-//В режиме bmNeedPosibility bpPosible не считается БП
+//Returns whether there is a breakpoint on the given line.
+//In bmNeedPosibility mode bpPosible does not count as a breakpoint
 function TMPBreakPointCollection.fGetIsBreakPoint(const LineIndex:integer):boolean;
 var Kind:TBPKind;
 begin
@@ -4692,13 +4692,13 @@ case fMode of
      end;
 end;
 
-//Устанавливает информацию о наличии или отсутствии БП на указанной строке.
-//Всегда ставил БП типа bpEnabled или удаляет его.
-//В режиме bmNeedPosibility ставит только там, где есть bpPosible, а при удалении
-//возвращает bpPosible.
-//Так же генерирует событие OnBeforeBreakPointChanged, в котором можно разрешить
-//или запретить установу БП. В случает если нужно, чтобы поставленный БП был типа
-//bpDisabled необходимо запретить установку и поставить его вручную. На откуп программисту редактора
+//Sets whether there is a breakpoint on the given line.
+//Always sets a bpEnabled breakpoint or deletes it.
+//In bmNeedPosibility mode sets it only where bpPosible exists, and on deletion
+//restores bpPosible.
+//Also fires the OnBeforeBreakPointChanged event, where setting the breakpoint can be
+//allowed or denied. If the set breakpoint must be of type
+//bpDisabled, deny the setting and set it manually. Left to the editor's programmer
 procedure TMPBreakPointCollection.fSetIsBreakPoint(const LineIndex:integer;bp:boolean);
 var Kind:TBPKind;
     Action:TBPAction;
@@ -4752,16 +4752,16 @@ if bp
            then Add(LineIndex,bkPosible);
         end
    else begin
-        // Если БП нет, то и удалять нечего
+        // If there is no breakpoint, there is nothing to delete
         if not (Find(LineIndex,Kind)) then exit;
-        // Если есть, проверим установленый БП, если его нет - удалим возможный
+        // If there is, check the set breakpoint; if there is none - delete the possible one
         if BreakPoint[LineIndex].Kind=bkPosible
            then Delete(LineIndex);
         end;
 end;
 
 
-//Реализация работы с массивом БП'ов
+//Breakpoint array handling implementation
 function TMPBreakPointCollection.fGetBreakPoint(const LineIndex:integer):TBreakPoint;
 var i:integer;
 begin
@@ -4770,7 +4770,7 @@ if fBPList.Find(IntToStr(LineIndex),i)
    then result:=TBreakPoint(fBPList.Objects[i]);
 end;
 
-//Реализация работы с массивом БП'ов
+//Breakpoint array handling implementation
 procedure TMPBreakPointCollection.fSetBreakPoint(const LineIndex:integer;BP:TBreakPoint);
 begin
 Delete(LineIndex);
@@ -4792,8 +4792,8 @@ end;
 
 
 
-//Прорисовка БП на гутере.
-//Прорисовка в два этапа позволяет сделать "прозрачный" край иконок. (маскирование)
+//Drawing breakpoints on the gutter.
+//Two-pass drawing allows a "transparent" icon edge. (masking)
 procedure TMPBreakPointCollection.PaintAt(const ACanvas: TCanvas; const x, y: Integer; const Kind:TBPKind);
 const BOOKMARK_GLYPH_SIZE = 11;
 begin
@@ -4817,9 +4817,9 @@ begin
             SRCPAINT);{}
 end;
 
-//Поиск брейкпоинта в указанной строке.
-//Если найден - возвращает TRUE и тип брейкпоинта
-//Если не найдет - тип игнорируется
+//Look up a breakpoint on the given line.
+//If found - returns TRUE and the breakpoint type
+//If not found - the type is ignored
 function TMPBreakPointCollection.Find(const Row: Integer; var Kind:TBPKind): Boolean;
 var i:integer;
 begin
@@ -4835,7 +4835,7 @@ end;
 
 // Class TMPCustomSyntaxMemo methods implementation
 
-// Create() Конструктор
+// Create() Constructor
 constructor TMPCustomSyntaxMemo.Create(AOwner: TComponent);
 var F: TFont;
 begin
@@ -4898,7 +4898,7 @@ begin
         Parent      := Self;
         Width       := fVScroll.Width;
         Height      := fHScroll.Height;
-        Caption     := '';//'…';
+        Caption     := '';//'...';
         Visible     := True;
         BevelInner  := bvNone;
         BevelOuter  := bvNone;
@@ -4909,7 +4909,7 @@ begin
     fPageUpDown:=nil;
     CreateDestroyPageUpDown;
 
-    // Параметры отображения синтаксиса по умолчанию
+    // Default syntax display settings
     F := TFont.Create;
     F.Name := 'Arial';
     F.Size := 9;
@@ -4918,7 +4918,7 @@ begin
     Font.Assign(F);
     F.Free;
     fLettersCalculated:=False;
-    // настройки синтаксиса по умолчанию
+    // default syntax settings
     TabStop         := True;
     Font.OnChange   := FontChange;
     fSectionIndent  := 16;
@@ -4930,9 +4930,9 @@ begin
 
 end;
 
-//Созадние/удаление дополнительного элемента управления PageUpDown
-//Создается или удаляется в зависимости от Options
-//Вызывается при изменении Options
+//Creation/deletion of the extra PageUpDown control
+//Created or deleted depending on Options
+//Called when Options changes
 procedure TMPCustomSyntaxMemo.CreateDestroyPageUpDown;
 begin
 if (smoShowPageScroll in fOptions)
@@ -4964,9 +4964,9 @@ if (smoShowPageScroll in fOptions)
         end;
 end;
 
-//Созадние/удаление дополнительного элемента управления CursorPos
-//Создается или удаляется в зависимости от Options
-//Вызывается при изменении Options
+//Creation/deletion of the extra CursorPos control
+//Created or deleted depending on Options
+//Called when Options changes
 procedure TMPCustomSyntaxMemo.CreateDestroyCursorPos;
 begin
 if (smoShowCursorPos in fOptions)
@@ -4995,10 +4995,10 @@ end;
 
 
 
-// Destroy() Деструктор
+// Destroy() Destructor
 destructor TMPCustomSyntaxMemo.Destroy;
 begin
-//Вроде бы как не нужно удалять то, что имеет владельца, а эти видимые элементы имеют
+//Apparently there is no need to free what has an owner, and these visual controls have
 {    if fPosInfo<>nil
        then begin
             fPosInfo.Free;
@@ -5025,7 +5025,7 @@ end;
 
 
 
-//Установка события изменения БП
+//Set the breakpoint change event
 function TMPCustomSyntaxMemo.GetOnBeforeBreakPointChangedNotify;
 begin
 result:=fBreakPoints.OnBeforeBreakPointChangedNotify;
@@ -5036,53 +5036,53 @@ begin
  Result:=Range.PosInText
 end;
 
-//Получение события изменения БП
+//Get the breakpoint change event
 procedure TMPCustomSyntaxMemo.SetOnBeforeBreakPointChangedNotify;
 begin
 if Assigned(fBreakPoints)
    then fBreakPoints.OnBeforeBreakPointChangedNotify:=OnBeforeBreakPointChangedNotify;
 end;
 
-//Установка выпадающего меню
+//Set the popup menu
 function TMPCustomSyntaxMemo.GetBreakPointsPopupMenu:TPopupMenu;
 begin
 result:=fBreakPoints.PopupMenu;
 end;
 
-//Получение выпадающего меню
+//Get the popup menu
 procedure TMPCustomSyntaxMemo.SetBreakPointsPopupMenu(pum:TPopupMenu);
 begin
 if Assigned(fBreakPoints)
    then fBreakPoints.PopupMenu:=pum;
 end;
 
-//Указывает строку, которая будет выделена, как шаг отладки
+//Specifies the line to be highlighted as the debug step
 procedure TMPCustomSyntaxMemo.SetStepDebugLine(Row:integer);
 var OldLine:integer;
 begin
 OldLine:=fStepDebugLine;
 fStepDebugLine:=Row;
-// На всякий случай проверим, есть ли такая строка вообще
+// Just in case, check whether such a line exists at all
 if not Lines.IsValidLineIndex(row)
    then exit;
 
-// Обновим строку, где линии отладки уже нет
+// Update the line where the debug line no longer is
 if OldLine<>-1 then NeedRedraw(OldLine);
 
-//Нарисуем новую линию
+//Draw the new line
 if fStepDebugLine<>-1
    then begin
-        //Если строка не видима - сделаем видимой!
+        //If the line is not visible - make it visible!
         if not (IsLineVisible(Row))
            then OffsetY := Row;
-        //Перересуем
+        //Repaint
         NeedRedraw(fStepDebugLine);
         end;
 end;
 
 
 
-// SetSelColor() Устанавливает цвет выделения
+// SetSelColor() Sets the selection color
 procedure TMPCustomSyntaxMemo.SetSelColor(const Value: TColor);
 begin
     if Value <> fSelColor then begin
@@ -5092,16 +5092,16 @@ begin
 end;
 
 
-// ClientLines() Возвращает количество строк текста, умещающихся в окне редактора
+// ClientLines() Returns the number of text lines that fit in the editor window
 function TMPCustomSyntaxMemo.ClientLines: Integer;
 begin
     with TextRowRect[-1] do
-        { DONE -oMax Proof -c19.03.2006 : Ошибка. Должно быть видно только целое число строк текста }
+        { DONE -oMax Proof -c19.03.2006 : Bug. Only a whole number of text lines must be visible }
         Result := (Bottom - Top {+ fCharHeight - 1}) div fCharHeight;
 end;
 
 
-// WMSIZE() Реакция на изменение размеров редактора
+// WMSIZE() Handles editor resizing
 procedure TMPCustomSyntaxMemo.WMSIZE(var Message : TMessage);
 begin
     Invalidate;
@@ -5112,8 +5112,8 @@ begin
 end;
 
 
-// CanResize() Обрабатывает высоту таким образом,
-// чтобы клиентская область была кратна высоте строки
+// CanResize() Adjusts the height so that
+// the client area is a multiple of the line height
 function TMPCustomSyntaxMemo.CanResize(var NewWidth, NewHeight: Integer): Boolean;
 begin
 //    with TextRowRect[-1] do
@@ -5123,27 +5123,27 @@ begin
 end;
 
 
-// Двойной щелчок мышью - выделение текущего слова
+// Mouse double click - selects the current word
 procedure TMPCustomSyntaxMemo.WMLButtonDblClk(var Message : TWMMouse);
 var Row, WIndex: Integer;
     Sec: TMPSynMemoSection;
     T: TMPSyntaxToken;
 begin
     inherited;
-    // Если нажата клавиша Ctrl во время двойного щелчка,
-    // выделяется соответствующая секция
+    // If Ctrl is held during the double click,
+    // the corresponding section is selected
     if (GetKeyState(VK_CONTROL) and $8000) <> 0 then begin
         WndOffsetToPixOffset(Point(Message.XPos, Message.YPos), WIndex, Row, True);
         if Lines.IsValidLineIndex(Row) then begin
             Sec := Sections.Section[Row];
             Sections.Expand(Row, False, True);
             Range.Collapse;
-            { Так как корневая секция начинается с -1, корректируем возм. ошибку }
+            { Since the root section starts at -1, correct a possible error }
             Range.Pos := Point(0, EnsureRange(Sec.RowBeg, 0, Lines.Count - 1));
             Range.Enlarge(Sec.RowEnd - Sec.RowBeg + 1, True);
         end
     end else
-    // Иначе, выделяем слово под курсором
+    // Otherwise, select the word under the cursor
     if GetWordAtPos(Message.XPos, Message.YPos, WIndex, Row) then
         if InRange(WIndex, 0, Lines.Parser[Row].Count - 1) then begin
             T := Lines.Parser[Row].Tokens[WIndex];
@@ -5164,14 +5164,14 @@ begin
      DestX:=DestX div fCharWidths[False][' ']
 end;
 
-function   TMPCustomSyntaxMemo.TextPosToScreen(const X,Y:Integer):TPoint; // для драг дропа
+function   TMPCustomSyntaxMemo.TextPosToScreen(const X,Y:Integer):TPoint; // for drag and drop
 begin
  Result.X:=CharPosToPixOffset(X,Y);
  Result:=PixOffsetToWndOffsetEx(Result.X,Y-fOffsets.Y)
 end;
 
-// Перерасчет параметров шрифта
-//SiO: Разделил на две
+// Recalculate font parameters
+//SiO: Split into two
 procedure TMPCustomSyntaxMemo.CalcFontParams;
 var c: AnsiChar;
 begin
@@ -5247,7 +5247,7 @@ begin
     end;
 end;
 
-//Обновление элемента индикации положения курсора
+//Update the cursor position indicator
 procedure TMPCustomSyntaxMemo.OnChangePos(Pos:TPoint);
 begin
 if pos.X<0 then pos.X:=0;
@@ -5256,7 +5256,7 @@ if fPosInfo<>nil
 end;
 
 
-//Обработчик нажатия на PageUpDown элемент
+//Handler for clicking the PageUpDown element
 procedure TMPCustomSyntaxMemo.PageUpDownOnClick(Sender: TObject);
 begin
 if fPageUpDown.Position<>0
@@ -5266,7 +5266,7 @@ if fPageUpDown.Position<>0
         end;
 end;
 
-// Возвращает смещение от начала строки (в пикселах)
+// Returns the offset from the line start (in pixels)
 function TMPCustomSyntaxMemo.CharPosToPixOffset(const Col: Integer; s: string; Sp: TMPSyntaxParser): Integer;
 var T: TMPSyntaxToken;
     i, j, WordIndex: Integer;
@@ -5302,8 +5302,8 @@ begin
 end;
 
 
-// Возвращает смещение от начала строки (в пикселах)
-// для заданного символа (Col, 0-based) заданной строки (Row, base=0)
+// Returns the offset from the line start (in pixels)
+// for the given character (Col, 0-based) of the given line (Row, base=0)
 function TMPCustomSyntaxMemo.CharPosToPixOffset(const Col, Row: Integer): Integer;
 begin
     if fLines.IsValidLineIndex(Row) then
@@ -5313,12 +5313,12 @@ begin
 end;
 
 
-// PixOffsetToCharPos() Возвращает номер позиции (0-based) символа в строке Row
-// по его смещению от начала строки в пикселах Pix
-// Если WordIndex <> nil, то через него возвращается индекс слова в этой позиции:
-// WordIndex^ > 0, если позиция внутри слова
-// WordIndex^ < 0, если позиция перед данным словом (индекс слова отрицателен)
-// WordIndex = MAXINT, если позиция после последнего слова в строке
+// PixOffsetToCharPos() Returns the position (0-based) of the character in line Row
+// by its offset from the line start in pixels Pix
+// If WordIndex <> nil, it returns the index of the word at this position:
+// WordIndex^ > 0, if the position is inside a word
+// WordIndex^ < 0, if the position is before this word (word index is negative)
+// WordIndex = MAXINT, if the position is after the last word in the line
 function TMPCustomSyntaxMemo.PixOffsetToCharPos(const Pix, Row: Integer; const WordIndex: PInteger = nil): Integer;
 var Sp: TMPSyntaxParser;
     s: string;
@@ -5361,18 +5361,18 @@ begin
 end;
 
 
-// WMGetDlgCode() Для того, чтобы компонент не терял фокус при нажатии управляющих клавиш
+// WMGetDlgCode() Keeps the component from losing focus when control keys are pressed
 procedure TMPCustomSyntaxMemo.WMGetDlgCode(var Message: TWMGetDlgCode);
 begin
-   Message.Result := DLGC_WANTARROWS    // что бы при нажатии стрелок фокус не терялся}
-                  or DLGC_WANTALLKEYS   // что бы реакция на Enter оставалась}
+   Message.Result := DLGC_WANTARROWS    // so focus is not lost on arrow keys}
+                  or DLGC_WANTALLKEYS   // so Enter is still handled}
                   or DLGC_WANTTAB
                   or DLGC_WANTCHARS
                   ;
 end;
 
 
-// KeyDown() Отработка нажатия специальных клавиш
+// KeyDown() Handles special key presses
 procedure TMPCustomSyntaxMemo.KeyDown(var Key: Word; Shift: TShiftState);
 var xn, yn,x: Integer;
     {$IFDEF SYNDEBUG}
@@ -5629,11 +5629,11 @@ begin
                        then Range.SetTextEx(#13#10,ukLetterTyped);
                        else{}
                        begin
-                            //Следующая строка смотрится слегка сложновато, но
-                            //по сути все просто - берем количество пробелов в
-                            //текущей строке, и при добавлении новой строки
-                            //вставляем их
-                            x:=PosY;//Не удивляйтесь - не хочу вводить новую переменную
+                            //The next line looks a bit complicated, but
+                            //it is simple really - take the number of spaces in
+                            //the current line and, when adding a new line,
+                            //insert them
+                            x:=PosY;//Don't be surprised - don't want to add a new variable
                             if x<Lines.Count then
                             begin
                               while Length(Trim(Lines.Strings[x]))=0 do
@@ -5658,8 +5658,8 @@ begin
                           else SetOptions(fOptions - [smoOverwrite]);
                     end
                else begin
-                    //SiO: Добавим возможность копирования и вставки
-                    //по Ctrl+Ins / Shift+Ins - я без них не могу =)
+                    //SiO: Add copy and paste
+                    //via Ctrl+Ins / Shift+Ins - I can't live without them =)
                     if Shift=[ssCtrl] then fRange.CopyToClipboard;
                     if Shift=[ssShift] then fRange.PasteFromClipboard;
                     end;
@@ -5748,7 +5748,7 @@ begin
 end;
 
 
-// Вставка символа в текущую позицию
+// Insert a character at the current position
 procedure TMPCustomSyntaxMemo.KeyPress(var Key: Char);
 begin
     inherited;
@@ -5774,7 +5774,7 @@ begin
 end;
 
 
-// Отпускание кнопки
+// Key release
 procedure TMPCustomSyntaxMemo.KeyUp(var Key: Word; Shift: TShiftState);
 begin
     Cursor := crIBeam;
@@ -5791,7 +5791,7 @@ begin
 end;
 
 
-// Paint() Перерисовка всего компонента
+// Paint() Repaints the whole component
 procedure TMPCustomSyntaxMemo.Paint;
 begin
 //    inherited;
@@ -5803,18 +5803,18 @@ begin
 end;
 
 
-// CreateParams() Задание параметров компонента
+// CreateParams() Sets the component parameters
 procedure TMPCustomSyntaxMemo.CreateParams(var Params: TCreateParams);
 begin
     inherited;
     with Params do begin
-        ExStyle := ExStyle or WS_EX_CLIENTEDGE; // 3d рамка окна
+        ExStyle := ExStyle or WS_EX_CLIENTEDGE; // 3d window border
         Style   := Style and not WS_TABSTOP;
     end;
 end;
 
 
-// WMMouseWheel() Отработка колеса мыши
+// WMMouseWheel() Handles the mouse wheel
 procedure TMPCustomSyntaxMemo.WMMouseWheel(var Message: TMessage);
 begin
     inherited;
@@ -5829,7 +5829,7 @@ begin
 end;
 
 
-// WMKillFocus() Отработка потери фокуса
+// WMKillFocus() Handles focus loss
 procedure TMPCustomSyntaxMemo.WMKillFocus(var Msg: TWMKillFocus);
 begin
     inherited;
@@ -5841,7 +5841,7 @@ begin
 end;
 
 
-// WMSetFocus() Отработка получения фокуса
+// WMSetFocus() Handles focus gain
 procedure TMPCustomSyntaxMemo.WMSetFocus(var Msg: TWMSetFocus);
 begin
     inherited;
@@ -5853,14 +5853,14 @@ begin
 end;
 
 
-// ScrollEnter() Вхождение в скроллинг
+// ScrollEnter() Enters scrolling
 procedure TMPCustomSyntaxMemo.ScrollEnter(Sender: TObject);
 begin
     SetFocus;
 end;
 
 
-// MouseDown() Нажатие кнопки мыши
+// MouseDown() Mouse button press
 procedure TMPCustomSyntaxMemo.MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 var Col, Row, SRow: Integer;
     R: TRect;
@@ -5869,12 +5869,12 @@ begin
     {} LogFmt('MouseDown at (%d, %d)', [X, Y]);
     {} {$ENDIF}
     if not Focused then SetFocus;
-    { Левая кнопка мыши }
+    { Left mouse button }
     if (Button = mbLeft) and (Shift = [ssLeft]) then
         if PtInRect(EntireGutterRect[-1], Point(X, Y)) then begin
             if x>11
                then begin
-                    { Нажата кнопка в гуттере - отработка скрытия / раскрытия секции }
+                    { Button pressed in the gutter - collapse / expand the section }
                     WndOffsetToPixOffset(Point(X, Y), Col, SRow, False);
                     Row := FindVisibleRow(OffsetY, SRow, False);
                     if Row<>-1
@@ -5899,7 +5899,7 @@ begin
                     end;
         end else begin
             fDown := True;
-            { сжимаем выделение }
+            { shrink the selection }
             Range.Collapse;
             WndOffsetToPixOffset(Point(X, Y), Col, Row, True);
             if fLines.IsValidLineIndex(Row) then begin
@@ -5909,8 +5909,8 @@ begin
             end;
         end
     else
-    { Средняя кнопка мыши - панорамирование (!!!) }
-    {SiO: Переделано}
+    { Middle mouse button - panning (!!!) }
+    {SiO: Reworked}
     if (Button = mbMiddle) and (Shift = [ssMiddle])and(smoPanning in fOptions) then begin
         fPanning := True;
         Cursor := crSizeAll;
@@ -5927,24 +5927,24 @@ end;
 
 
 
- // MouseMove() Движение мыши - отработка изменения выделения
+ // MouseMove() Mouse move - handles selection changes
 procedure TMPCustomSyntaxMemo.MouseMove(Shift: TShiftState; X, Y: Integer);
 var Col, Row: Integer;
     oX,oY:integer;
     R:TRect;
     P:TPoint;
 begin
-    // Управление выделением
+    // Selection handling
     if fDown and (Shift = [ssLeft]) then begin
-        // происходят изменения только если сменилась позиция
+        // changes happen only if the position changed
         { DONE -oMax Proof -c19.03.2006 :
-            WndOffsetToPixOffset может вернуть Row <= 0 для
-            специальных районов (выше текста, ниже текста, скрытый текст)
-            и т. д. Эта ситуация никак не обрабатывалась. }
+            WndOffsetToPixOffset may return Row <= 0 for
+            special areas (above the text, below the text, hidden text)
+            etc. This case was not handled at all. }
         WndOffsetToPixOffset(Point(X, Y), Col, Row, False);
-        // получаем номер строки
+        // get the line number
         Row := FindVisibleRow(OffsetY, Row, True);
-        // получаем номер столбца в строке
+        // get the column number in the line
         Col := PixOffsetToCharPos(Col, Row);
         if (Col <> Range.PosX) or (Row <> Range.PosY) then begin
             Range.Enlarge(Row - Range.PosY, True);
@@ -5988,7 +5988,7 @@ begin
            then oY:=-oY;
         OffsetY := FindVisibleRow(OffsetY, oY, True);
 
-        //Перебрысывание курсора
+        //Cursor jump
         GetWindowRect(self.Handle,R);
         R.Bottom:=R.Bottom-fHScroll.Height-5;
         R.Top:=R.Top+2;
@@ -6018,7 +6018,7 @@ end;
 
 
 
- // MouseUp() Отпускание кнопки мыши
+ // MouseUp() Mouse button release
 procedure TMPCustomSyntaxMemo.MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 var p:TPoint;
     Handled:boolean;
@@ -6051,9 +6051,9 @@ if (Button=mbLeft)and(Shift=[ssRight])and(smoPanning in fOptions)
 if Button=mbRight
    then begin
         if PtInRect(EntireGutterRect[-1], Point(X, Y))
-           then begin //Щелчок на гутере
+           then begin //Click on the gutter
                 if x<11
-                   then begin //Щелчок на BreakPoint'е
+                   then begin //Click on a BreakPoint
                         GetWordAtPos(X,Y,W,Row);
                         fBreakPoints.RowOfCurrentBP:=Row;
                         GetCursorPos(P);
@@ -6067,7 +6067,7 @@ if Button=mbRight
                                 end;
                         end;
                 end
-           else begin //Щелчок на тексте
+           else begin //Click on the text
                 GetCursorPos(P);
                 if Assigned(fPopUpMenu)
                    then begin
@@ -6082,9 +6082,9 @@ if Button=mbRight
 end;
 
 
-// FindNextWord() Ищет следующее слово.
-// Если слово найдено (не конец текста), его начало возвращается
-// через ссылки wx, wy
+// FindNextWord() Finds the next word.
+// If the word is found (not end of text), its start is returned
+// via the wx, wy references
 function TMPCustomSyntaxMemo.FindNextWord(var wx, wy: Integer): Boolean;
 var Sp: TMPSyntaxParser;
     wn:integer;
@@ -6093,12 +6093,12 @@ begin
     wx := CharPosToWordIndex(Range.PosX, Range.PosY);
     wy := Range.PosY;
     Sp := fLines.Parser[wy];
-    { Курсор между словами в середине строки }
+    { Cursor between words in the middle of the line }
     if wx < 0 then begin
         wy := Range.PosY;
         wx := Sp[-wx].stStart;
     end else
-    { Курсор после последнего слова в строке }
+    { Cursor after the last word in the line }
     if wx = MAXINT then begin
         wy := FindVisibleRow(wy, 1, False);
         Result := wy >= 0;
@@ -6109,11 +6109,11 @@ begin
                 else wx := 0;
         end
     end else
-    { Курсор на последнем слове в строке }
+    { Cursor on the last word in the line }
     if wx = Sp.Count - 1 then
         with Sp[wx] do
             wx := stStart + stLength
-    { Курсор на любом другом слове в строке }
+    { Cursor on any other word in the line }
     else
     begin
      wn:=wx;
@@ -6132,9 +6132,9 @@ begin
 end;
 
 
-// FindPrevWord() Ищет предыдующее слово.
-// Если слово найдено (не начало текста), его начало возвращается
-// через ссылки wx, wy
+// FindPrevWord() Finds the previous word.
+// If the word is found (not start of text), its start is returned
+// via the wx, wy references
 function TMPCustomSyntaxMemo.FindPrevWord(var wx, wy: Integer): Boolean;
 var Sp: TMPSyntaxParser;
     function FindLastWordOfPrevRow: Boolean;
@@ -6157,22 +6157,22 @@ begin
     wx := CharPosToWordIndex(Range.PosX, Range.PosY);
     wy := Range.PosY;
     Sp := fLines.Parser[wy];
-    { Курсор между словами в середине строки }
+    { Cursor between words in the middle of the line }
     if wx < 0 then
-        { Перед первым словом - слева ничего нет }
+        { Before the first word - nothing on the left }
         if wx = -1
             then Result := FindLastWordOfPrevRow
             else wx := Sp[-wx - 1].stStart
     else
-    { После последнего слова в строке }
+    { After the last word in the line }
     if wx = MAXINT then
         if Sp.Count = 0
             then Result := FindLastWordOfPrevRow
             else wx := Sp[Sp.Count-1].stStart
     else
-    { Внутри произвольного слова в строке }
+    { Inside an arbitrary word in the line }
     if Sp[wx].stStart = Range.PosX then
-        { В начале слова }
+        { At the word start }
         if wx = 0
             then Result := FindLastWordOfPrevRow
             else
@@ -6193,7 +6193,7 @@ begin
 //             wx := Sp[wx - 1].stStart
             end
     else
-        { В середине слова }
+        { In the middle of the word }
         wx := Sp[wx].stStart;
 end;
 
@@ -6216,7 +6216,7 @@ begin
  end;
 end;
 
-// PaintLine() Перерисовывает строку
+// PaintLine() Repaints a line
 (*procedure TMPCustomSyntaxMemo.PaintLine(const ScreenRow, Row: Integer);
 var CharPos, WIndex, SelIndeXFrom, SelIndeXTo, i: Integer;
     T: TMPSyntaxToken;
@@ -6227,19 +6227,19 @@ var CharPos, WIndex, SelIndeXFrom, SelIndeXTo, i: Integer;
     Sp: TMPSyntaxParser;
     Sec: TMPSynMemoSection;
 begin
-    // Если компонент не видет - чего ж перерисовывать его?
+    // If the component is not visible - why repaint it?
     if not Visible then Exit;
 
     {} {$IFDEF SYNDEBUG}
     {} LogFmt('Memo.PaintLine %d as %d', [ScreenRow, Row]);
     {} {$ENDIF}
 
-    // Параметры строки
+    // Line parameters
     RowRect := TextRowRect[ScreenRow];
 
-    // Отрисовываем GUTTER
+    // Draw the GUTTER
     with Canvas do begin
-        // Закраска области Gutter-a
+        // Fill the Gutter area
         if smoVSNET_SectionsStyle in fOptions
             then R := SymbolsGutterRect[ScreenRow]
             else R := EntireGutterRect[ScreenRow];
@@ -6247,7 +6247,7 @@ begin
         Brush.Color := clBtnFace;
         Dec(R.Right, 4);
         FillRect( R );
-        // Bevel Edge справа Gutter-a
+        // Bevel Edge on the right of the Gutter
         Pen.Color := clBtnHighlight;
         MoveTo(R.Right, R.Top); LineTo(R.Right, R.Bottom); Inc(R.Right);
         Pen.Color := clBtnShadow;
@@ -6255,22 +6255,22 @@ begin
         Pen.Color := self.Color;
         MoveTo(R.Right, R.Top); LineTo(R.Right, R.Bottom); Inc(R.Right);
         MoveTo(R.Right, R.Top); LineTo(R.Right, R.Bottom); Inc(R.Right);
-        // Чистим строку
+        // Clear the line
         Canvas.Brush.Color := Self.Color;
         FillRect(Rect(R.Right, RowRect.Top, RowRect.Right, RowRect.Bottom));
 
-        // Если номер строки недопустимый (напр. строки снизу текста)
-        // То просто все стираем и выходим
+        // If the line number is invalid (e.g. lines below the text)
+        // Just erase everything and exit
         if Row < 0 then Exit;
 
-        // Обработка действительной строки текста
-        Sp := fLines.Parser[Row];                           // парсер строки
-        Sec := Sp.Section;                                  // секция строки
-        s := fLines[Row];                                   // строка
-        R := GetSectionButtonRect(ScreenRow, Sec.Level);    // кадватик
-        SecPnt := CenterPoint(R);                           // центральная точка кадватика
+        // Handle a real text line
+        Sp := fLines.Parser[Row];                           // line parser
+        Sec := Sp.Section;                                  // line section
+        s := fLines[Row];                                   // line
+        R := GetSectionButtonRect(ScreenRow, Sec.Level);    // square box
+        SecPnt := CenterPoint(R);                           // center point of the box
 
-        // Начало секции - прорисовываем кадватик
+        // Section start - draw the box
         if (Sec.RowBeg = Row) and (Sec.Level > 0) then begin
             if Sec.Collapsed then begin
                 Brush.Color := clWhite;
@@ -6289,16 +6289,16 @@ begin
                     LineTo(SecPnt.X, Bottom - 2);
                 end;
                 Pen.Color := clDkGray;
-                // Линия справа от кадватика
+                // Line to the right of the box
                 MoveTo(Right, SecPnt.Y);
                 LineTo(RowRect.Left - 2, SecPnt.Y);
                 if not Sec.Collapsed then begin
-                    // Линия внизу кадватика
+                    // Line below the box
                     MoveTo(SecPnt.X, Bottom);
                     LineTo(SecPnt.X, RowRect.Bottom);
                 end;
             end;
-            // Отрисовываем троеточие в конце строки
+            // Draw the ellipsis at the end of the line
             if Sec.Collapsed then begin
                 R := RowRect;
                 Inc(R.Top, 1);
@@ -6316,7 +6316,7 @@ begin
             end;
         end else
 
-        // Конец секции - рисуем гориз. палочку
+        // Section end - draw a horizontal tick
         if (Sec.RowEnd = Row) and (Sec.Level > 0) then begin
             Pen.Color := clDkGray;
             MoveTo(SecPnt.X, RowRect.Top);
@@ -6324,15 +6324,15 @@ begin
             LineTo(RowRect.Left - 2, SecPnt.Y);
         end else
 
-        // Просто строка, принадлежащая не-корневой секции
+        // Plain line belonging to a non-root section
         if Sec.Level > 0 then begin
             Pen.Color := clDkGray;
             MoveTo(SecPnt.X, RowRect.Top);
             LineTo(SecPnt.X, RowRect.Bottom);
         end;
 
-        // Отрисовка вертикальных линий родительских секций
-        // только НЕ ДЛЯ режима эмуляции MS VS NET
+        // Draw the vertical lines of parent sections
+        // only NOT FOR MS VS NET emulation mode
         if not (smoVSNET_SectionsStyle in fOptions) then
             for i := Sec.Level - 1 downto 1 do begin
                 Dec(SecPnt.X, fSectionIndent);
@@ -6340,34 +6340,34 @@ begin
                 LineTo(SecPnt.X, RowRect.Bottom);
             end;
 
-        // Рассчитываем и устанавливаем Clip Region для канвы текста
+        // Calculate and set the Clip Region for the text canvas
         with RowRect do
             if Sec.Collapsed
                 then ClipRgn := CreateRectRgn(Left, Top, Right - 33, Bottom)
                 else ClipRgn := CreateRectRgn(Left, Top, Right, Bottom);
         SelectClipRgn(Canvas.Handle, ClipRgn);
 
-        // Смещение для начала строки (X<=0 !!!)
+        // Offset for the line start (X<=0 !!!)
         PaintOffset := PixOffsetToWndOffsetEx(0, ScreenRow);
 
-        // Отображение выделения
+        // Draw the selection
         if not Range.IsEmpty() and InRange(Row, Range.StartY, Range.EndY) then begin
-            // Если строка = первой строке выделения, то определяемся с левой границей,
-            // иначе, принимаем её за начало видимой области текста (OffsetX)
+            // If the line = first selection line, determine the left bound,
+            // otherwise, take it as the start of the visible text area (OffsetX)
             if Row = Range.StartY
                 then SelIndeXFrom := PaintOffset.X + CharPosToPixOffset(Range.StartX, Row)
                 else SelIndeXFrom := RowRect.Left;
-            // Аналогично определяемся с правой границей выделения
+            // Likewise determine the right selection bound
             if Row = Range.EndY
                 then SelIndeXTo   := PaintOffset.X + CharPosToPixOffset(Range.EndX, Row)
                 else SelIndeXTo   := RowRect.Right;
-            // Рисуем выделение
+            // Draw the selection
             Canvas.Brush.Style := bsSolid;
             Canvas.Brush.Color := fSelColor;
             Canvas.FillRect( Rect(SelIndeXFrom, RowRect.Top, SelIndeXTo, RowRect.Bottom) );
         end;
 
-        // Рисуем, по очереди, все слова
+        // Draw all words, one by one
         if Assigned(Sp) then
             with Canvas do begin
                 Brush.Style := bsClear;
@@ -6392,14 +6392,14 @@ begin
                 end;
             end;
 
-        // Отменяем Clip Region для канвы строки
+        // Remove the Clip Region for the line canvas
         SelectClipRgn(Canvas.Handle, 0);
         DeleteObject(ClipRgn);
     end;
 end;    *)
 
 
-// Пересчитывает параметры прорисовки, если изменился шрифт
+// Recalculates painting parameters if the font changed
 procedure TMPCustomSyntaxMemo.FontChange(Sender: TObject);
 begin
     fLines.BeginUpdate;
@@ -6409,20 +6409,20 @@ begin
 end;
 
 
-// Устанавливает/снимает выделение для конкретного слова в строке (красная рамка)
+// Sets/clears the highlight for a specific word in the line (red frame)
 procedure TMPCustomSyntaxMemo.SetSelectedWord(const Value: TPoint);
 begin
     fLines.BeginUpdate;
-    // Снимаем старое выделение
+    // Clear the old highlight
     if fLines.IsValidLineIndex( fSelWord.Y ) then
         NeedRedraw(fSelWord.Y);
-    // Сбрасываем выделение
+    // Reset the highlight
     fSelWord := Point(-1, -1);
-    // Устанавливаем новое выделение
+    // Set the new highlight
     if fLines.IsValidLineIndex( Value.Y ) then begin
-        // Устанавливаем смещение так, чтобы выделяемое слово было целиком на экране
+        // Set the offset so the highlighted word is fully on screen
         ShowWord(Value.Y, Value.X);
-        // Если создается выделение - так посему и быть
+        // If a highlight is being created - so be it
         fSelWord := Value;
         NeedRedraw(fSelWord.Y);
     end;
@@ -6430,7 +6430,7 @@ begin
 end;
 
 
-// Показывает слово на экране (устанавливая соответствующее смещение экрана)
+// Shows the word on screen (setting the appropriate screen offset)
 procedure TMPCustomSyntaxMemo.ShowWord(const Row, WordIndex: Integer);
 begin
     {$IFDEF SYNDEBUG}
@@ -6444,10 +6444,10 @@ begin
 end;
 
 
-// Возвращает информацию о слове в позиции X, Y относительно окна
-// LineIndex - номер строки
-// WBeg      - номер первого символа слова в строке
-// WLen      - длина слова
+// Returns info about the word at position X, Y relative to the window
+// LineIndex - line number
+// WBeg      - index of the word's first character in the line
+// WLen      - word length
 function TMPCustomSyntaxMemo.GetWordAtPos(const X, Y: Integer; var WordIndex, Row: Integer): Boolean;
 var n, Row1: Integer;
 begin
@@ -6460,8 +6460,8 @@ begin
 end;
 
 
-// Устанавливает видимой строку Row, столбец Col,
-// при необходимости открывая соответствующие секции
+// Makes line Row, column Col visible,
+// expanding the corresponding sections if needed
 procedure TMPCustomSyntaxMemo.Navigate(const Col, Row: Integer);
 begin
     if not fLines.IsValidLineIndex(Row) then Exit;
@@ -6476,7 +6476,7 @@ begin
 end;
 
 
-// Устанавливает видимой позицию символа PosX в строке PosY
+// Makes character position PosX in line PosY visible
 procedure TMPCustomSyntaxMemo.MakeVisible(const Col, Row: Integer; const Length: Integer = 1);
 var RowPix, CharPix, CharPixLen: Integer;
     NewOffsets: TPoint;
@@ -6486,7 +6486,7 @@ begin
     {} LogFmt('Memo.MakeVisible(Col=%d; Row=%d; Length=%d)', [Col, Row, Length]);
     {} {$ENDIF}
 
-    // Вертикаль
+    // Vertical
     RowPix := RangeRowToScreenRow(Row);
     if RowPix = ROW_HIDEN then Exit else
     if RowPix = ROW_ABOVE_SCREEN then NewOffsets.Y := Row else
@@ -6495,7 +6495,7 @@ begin
     else
         NewOffsets.Y := OffsetY;
 
-    // Горизонталь
+    // Horizontal
     R := TextRowRect[0];
     CharPixLen := Length * 10;
     CharPix := CharPosToPixOffset(Col, Row);
@@ -6505,15 +6505,15 @@ begin
     else
         NewOffsets.X := OffsetXPix;
 
-    // Все вместе
+    // All together
     if (NewOffsets.X <> OffsetXPix) or (NewOffsets.Y <> OffsetY) then
         SetOffsets(NewOffsets);
 end;
 
 
-// Возвращает индекс слова в строке по индексу символа
-// Если попадаем в пробелы - возвращает отрицательное значение индекса ближайшего слова справа
-// Если вне строки - возвращает MAXINT
+// Returns the word index in the line by character index
+// If in spaces - returns the negative index of the nearest word to the right
+// If outside the line - returns MAXINT
 function TMPCustomSyntaxMemo.CharPosToWordIndex(const Col, Row: Integer): Integer;
 var Sp: TMPSyntaxParser;
     i, WBeg: Integer;
@@ -6536,7 +6536,7 @@ begin
 end;
 
 
-// Возвращает прерывание по определению пользовательского слова
+// Returns the user word definition event
 function TMPCustomSyntaxMemo.GetUserTokenEvent: TUserTokenEvent;
 begin
     if Assigned(fParseAttributes)
@@ -6545,7 +6545,7 @@ begin
 end;
 
 
-// Устанавливает прерывание по определению пользовательского слова
+// Sets the user word definition event
 procedure TMPCustomSyntaxMemo.SetUserTokenEvent(const Value: TUserTokenEvent);
 begin
     if Assigned(fParseAttributes) then
@@ -6553,7 +6553,7 @@ begin
 end;
 
 
-// Устанавливает ширину GUTTER-а
+// Sets the GUTTER width
 procedure TMPCustomSyntaxMemo.SetGutterWidth(const Value: Integer);
 begin
     if fGutterWidth <> Value then begin
@@ -6563,7 +6563,7 @@ begin
 end;
 
 
-// Возвращает истину, если строка показывается на экране
+// Returns True if the line is shown on screen
 function TMPCustomSyntaxMemo.IsLineVisible(const Row: Integer; const PScreenRow: PInteger = nil): Boolean;
 var sr: Integer;
 begin
@@ -6574,7 +6574,7 @@ begin
 end;
 
 
-// Устанавливает новое смещение для уровня секции
+// Sets a new offset for the section level
 procedure TMPCustomSyntaxMemo.SetSectionIndent(const Value: Integer);
 begin
     fSectionIndent := Value;
@@ -6582,12 +6582,12 @@ begin
 end;
 
 
-// Возвращает прямоугольник экранных координат заданной области
-// Глобальная функция. Должна быть переписана при изменении способа вычисления
-// координат специальных зон экрана.
-// На входе - ЭКРАННЫЙ индекс строки (относительно верхней строки экрана).
-// Если ScreenRow = -1, возвращается соответствующая область ОКНА.
-// НЕ ПРОИЗВОДИТ ПРОВЕРКУ ВИДИМОСТИ СТРОКИ и ТОГО, ЧТО СТРОКА НАХОДИТСЯ В ПРЕДЕЛАХ ЭКРАНА
+// Returns the screen coordinate rectangle of the given area
+// Global function. Must be rewritten if the way of computing
+// coordinates of special screen zones changes.
+// Input - SCREEN line index (relative to the top screen line).
+// If ScreenRow = -1, the corresponding WINDOW area is returned.
+// DOES NOT CHECK LINE VISIBILITY NOR THAT THE LINE IS WITHIN THE SCREEN
 function TMPCustomSyntaxMemo.GetWndRect(const ScreenRow, Index: Integer): TRect;
 begin
     if smoVSNET_SectionsStyle in fOptions then
@@ -6596,11 +6596,11 @@ begin
         { EntireRowRect }
         0:  begin
                 if ScreenRow = -1 then begin
-                    { Для всех строк сразу }
+                    { For all lines at once }
                     Result := ClientRect;
                     Dec(Result.Bottom, fHScroll.Height);
                 end else
-                    { Для заданной строки }
+                    { For the given line }
                     Result := Bounds(   0,
                                         ScreenRow * fCharHeight,
                                         ClientWidth,
@@ -6635,11 +6635,11 @@ begin
         { EntireRowRect }
         0:  begin
                 if ScreenRow = -1 then begin
-                    { Для всех строк сразу }
+                    { For all lines at once }
                     Result := ClientRect;
                     Dec(Result.Bottom, fHScroll.Height);
                 end else
-                    { Для заданной строки }
+                    { For the given line }
                     Result := Bounds(
                         0,
                         ScreenRow * fCharHeight,
@@ -6672,23 +6672,23 @@ begin
 end;
 
 
-// Преобразует позицию X, Y клиентской области
-// в смещение от начала строки и номер строки текста
+// Converts position X, Y of the client area
+// to the offset from the line start and the text line number
 procedure TMPCustomSyntaxMemo.WndOffsetToPixOffset(OfsPoint: TPoint; var CharPix, Row: Integer; const TextRow: Boolean);
 var R: TRect;
 begin
     R := TextRowRect[ 0 ];
     CharPix := OfsPoint.X - R.Left + OffsetXPix;
-    // Получаем индекс строки на экране ..
+    // Get the line index on screen ..
     Row := (OfsPoint.Y - R.Top) div fCharHeight;
-    // .. и, если надо, переводим его в реальный индекс строки в тексте
+    // .. and, if needed, convert it to the real line index in the text
     if TextRow then
         Row := FindVisibleRow(OffsetY, Row, False);
 end;
 
 
-// Преобразует смещение в пикселах внутри строки к координатам
-// внутри клиентской области окна
+// Converts a pixel offset within a line to coordinates
+// within the window client area
 function TMPCustomSyntaxMemo.PixOffsetToWndOffsetEx(const CharPix, ScreenRow: Integer): TPoint;
 var Rect:TRect;
 begin
@@ -6700,16 +6700,16 @@ begin
 end;
 
 
-// Возвращает область прорисовки кадватика заголовка секции через R: TRect
-// Если кадватика нет, возвращается False
+// Returns the paint area of the section header box via R: TRect
+// If there is no box, returns False
 function TMPCustomSyntaxMemo.GetSectionButtonRect(const ScreenRow, ALevel: Integer): TRect;
 begin
-    // Область Guttera для данной строки
+    // Gutter area for this line
     Result := SymbolsGutterRect[ScreenRow];
     if smoVSNET_SectionsStyle in fOptions
-        // Все квадратики на одной линии
+        // All boxes on one line
         then Result.Left := Result.Right + 2
-        // Область кадватика по горизонтали внутри своего SectionIndent
+        // Horizontal box area within its SectionIndent
         else Result.Left   := Result.Right + (ALevel - 1)*fSectionIndent;
     Result.Right  := Result.Left + 9;
     Result.Top    := (Result.Top + Result.Bottom) shr 1 - 4;
@@ -6717,7 +6717,7 @@ begin
 end;
 
 
-// Прячет курсор
+// Hides the cursor
 procedure TMPCustomSyntaxMemo.HideCaret;
 begin
     if fCaretVisible and Assigned(Parent) then begin
@@ -6742,7 +6742,7 @@ type
  {$ENDIF}    
 
 
-// Показывает курсор
+// Shows the cursor
 procedure TMPCustomSyntaxMemo.ShowCaret;
 var n, ScreenRow: Integer;
     Cp: TPoint;
@@ -6766,7 +6766,7 @@ begin
     end
     else
     if  (THackStrings(Lines).UpdateCount = 0) and
-    { TODO : Д5 }
+    { TODO : D5 }
       ( Lines.IsValidLineIndex(Range.PosY)
      and IsLineVisible(Range.PosY, @ScreenRow)) then
     begin
@@ -6784,15 +6784,15 @@ end;
 
 
 
-// RangeRowToScreenRow() Переводит реальный индекс строки в экранный с учетом секционности.
-// Если экранных координат не существует (выше верхней границы текста), возвращается -1
-// Если строка не видна (в свернутой секции), возвращается -2;
-// Если строка ниже нижней границы текста, возвращается -3
-// Возвращается индекс строки относительно верхней строки экрана.
+// RangeRowToScreenRow() Converts a real line index to a screen one, honoring sections.
+// If there are no screen coordinates (above the text top), returns -1
+// If the line is not visible (in a collapsed section), returns -2;
+// If the line is below the text bottom, returns -3
+// Returns the line index relative to the top screen line.
 function TMPCustomSyntaxMemo.RangeRowToScreenRow(const Row: Integer): Integer;
 begin
-    // Реальный индекс строки должен быть больше или равен индексу смещения OffsetY,
-    // иначе она точно не видна на экране + строка НЕ должна быть латентной [loLatent]
+    // The real line index must be greater than or equal to the OffsetY offset index,
+    // otherwise it is surely not visible on screen + the line must NOT be latent [loLatent]
     if Row < OffsetY then
         Result := ROW_ABOVE_SCREEN
     else
@@ -6806,14 +6806,14 @@ begin
 end;
 
 
-// FindVisibleRow() Ищет видимую строку на удалении Delta видимых строк от заданной.
-// Delta может быть >=0 или <0.
-// Если EnsureInRange = True, результат будет ВСЕГДА в пределах текста,
-// иначе при выходе за пределы текста, функция вернет -1
+// FindVisibleRow() Finds a visible line Delta visible lines away from the given one.
+// Delta may be >=0 or <0.
+// If EnsureInRange = True, the result is ALWAYS within the text,
+// otherwise when going beyond the text, the function returns -1
 function TMPCustomSyntaxMemo.FindVisibleRow(const Row, Delta: Integer; const EnsureInRange: Boolean): Integer;
 var n: Integer;
 begin
-    // Видимый индекс искомой строки
+    // Visible index of the target line
     n := RowIndexConvert(Row, cdNeedScreen) + Delta;
     if EnsureInRange then
         n := EnsureRange(n, 0, fSections.Indexes.Count - 1);
@@ -6821,7 +6821,7 @@ begin
 end;
 
 
-// RowIndexConvert() Конвертирует видимый индекс строки в реальный и наоборот
+// RowIndexConvert() Converts a visible line index to a real one and vice versa
 function TMPCustomSyntaxMemo.RowIndexConvert(const Index: Integer; const Direction: TRowIndexConvertionDirection): Integer;
 begin
     Result := -1;
@@ -6835,18 +6835,18 @@ begin
 end;
 
 
-// Обновляет ScrollBar-ы компонента в зависимости от содержания текста
-// и текущей позиции курсора
+// Updates the component ScrollBars based on the text content
+// and the current cursor position
 procedure TMPCustomSyntaxMemo.UpdateScrollBars;
 var i, MaxLine: Integer;
 begin
     {} {$IFDEF SYNDEBUG}
     {} Log('Memo.UpdateScrollBars');
     {} {$ENDIF}
-    // Выход если нет хозяина или режим пакетных изменений
+    // Exit if there is no owner or in batch update mode
     if (Parent = nil) or (THackStrings(Lines).UpdateCount > 0) then Exit;
-{ TODO : Д5a }
-    // Временно блокируем вертикальный скролл, пока его обновляем
+{ TODO : D5a }
+    // Temporarily lock the vertical scroll while updating it
     fVScroll.OnChange := nil;
     with fVScroll do begin
         Max := Math.Max(fSections.Indexes.Count - ClientLines, 0);
@@ -6861,13 +6861,13 @@ begin
     if fPageUpDown<>nil
        then fPageUpDown.Enabled := (fSections.Indexes.Count > ClientLines);
 
-    // Временно блокируем горизонтальный скролл, пока его обновляем
+    // Temporarily lock the horizontal scroll while updating it
     fHScroll.OnChange := nil;
     with fHScroll do begin
         MaxLine := 0;
         for i := 0 to fLines.Count-1 do
             if Length(fLines[i]) > MaxLine then MaxLine := Length(fLines[i]);
-        // SLAB - 10 взято с потолка
+        // SLAB - 10 picked out of thin air
         with TextRowRect[-1] do
             Max := Math.Max(MaxLine * 10 - (Right - Left), 0);
         Enabled := Max > 0;
@@ -6876,13 +6876,13 @@ begin
         LargeChange := 32;
     end;
 
-    // Все восстанавливаем
+    // Restore everything
     fVScroll.OnChange := ScrollClick;
     fHScroll.OnChange := ScrollClick;
 end;
 
 
-// Щелчок на скроллинге
+// Click on the scrollbar
 procedure TMPCustomSyntaxMemo.ScrollClick(Sender: TObject);
 begin
     if Sender = fVScroll
@@ -6892,14 +6892,14 @@ end;
 
 
 
- // SetOffset() Устанавливает оба смещения текста сразу
-// (для уменьшения количества перерисовок)
+ // SetOffset() Sets both text offsets at once
+// (to reduce the number of repaints)
 procedure TMPCustomSyntaxMemo.SetOffsets(NewOffsets: TPoint);
 begin
     {} {$IFDEF SYNDEBUG}
     {} LogFmt('Memo.SetOffsets Pix=%d; Row=%d', [NewOffsets.X, NewOffsets.Y]);
     {} {$ENDIF}
-    { Проверка на допустимость новых смещений }
+    { Check that the new offsets are valid }
     // OffsetXPix
     if NewOffsets.X <> fOffsets.X then
         NewOffsets.X := EnsureRange(NewOffsets.X, 0, fHScroll.Max);
@@ -6908,7 +6908,7 @@ begin
         NewOffsets.Y := EnsureRange(RowIndexConvert(NewOffsets.Y, cdNeedScreen), 0, fVScroll.Max);
         NewOffsets.Y := RowIndexConvert(NewOffsets.Y, cdNeedReal);
     end;
-    { Проверка изменившихся значений и перерисовка, если она ДЕЙСТВИТЕЛЬНО требуется }
+    { Check changed values and repaint if it is REALLY needed }
     if (NewOffsets.X <> fOffsets.X) or (NewOffsets.Y <> fOffsets.Y) then begin
         fOffsets := NewOffsets;
         NeedRedrawAll;
@@ -6917,8 +6917,8 @@ begin
 end;
 
 
-// SetOffset() Устанавливает смещение текста относительно окна компонента
-// в отдельности по вертикали или горизонтали.
+// SetOffset() Sets the text offset relative to the component window
+// separately for vertical or horizontal.
 procedure TMPCustomSyntaxMemo.SetOffset(const Index, Value: Integer);
 begin
     case Index of
@@ -6928,7 +6928,7 @@ begin
 end;
 
 
-// Reset() Сбрасывает параметры
+// Reset() Resets parameters
 procedure TMPCustomSyntaxMemo.Reset;
 begin
     {$IFDEF SYNDEBUG}
@@ -6949,26 +6949,26 @@ begin
 end;
 
 
-// SetOption() Устанавливает опцию
+// SetOption() Sets an option
 procedure TMPCustomSyntaxMemo.SetOptions(const Value: TMPSynMemoOptions);
 var oi: TMPSynMemoOption;
     os: TMPSynMemoOptions;
     new: Boolean;
 begin
     if fOptions <> Value then begin
-        // Реально меняем опцию
+        // Actually change the option
         os := fOptions;
         fOptions := Value;
-        // Отрабатываем изменение каждой опции
+        // Handle the change of each option
         for oi := Low(TMPSynMemoOption) to High(TMPSynMemoOption) do
             if [oi]*os <> [oi]*Value then begin
                 new := oi in Value;
                 case oi of
-                { Опции отображения имени файла }
+                { File name display options }
                 smoShowFileNameInTabSheet,
                 smoShowFileNameInFormCaption:
                     if new then fLines.FileName := fLines.FileName;
-                { Опция изменения ширины гуттера }
+                { Gutter width change option }
                 smoAutoGutterWidth,
                 smoHighlightLine,
                 smoSolidSpecialLine,
@@ -6988,30 +6988,30 @@ begin
            then fBreakPoints.Mode:=bmNeedPosibility
            else fBreakPoints.Mode:=bmFreeMode;
 
-        // Подтверждаем изменение
+        // Confirm the change
         Change([ciOptions]);
     end;
 end;
 
 
-// Вызывает пользовательское прерывание на изменение
+// Fires the user change event
 procedure TMPCustomSyntaxMemo.Change(const ChangedItems: TChangedItems);
 begin
-    // Если параметр пустой [], производится сброс изменений
+    // If the parameter is empty [], changes are reset
     if ChangedItems = [] then
         fChangesSummator := []
     else
     begin
-        // Суммируем изменения
+        // Accumulate changes
         fChangesSummator := fChangesSummator + ChangedItems;
-        // Если нет блокировки изменений, вызываем пользовательское прерывание
-        // со всеми накопленными изменениями
+        // If changes are not locked, fire the user event
+        // with all accumulated changes
 
         if THackStrings(fLines).UpdateCount = 0 then
         begin
             if Assigned(fOnChange) then
                 fOnChange(self, fChangesSummator);
-            // Сбрасываем изменения, чтобы они не повторялись
+            // Reset changes so they do not repeat
             fChangesSummator := [];
         end;
     end;
@@ -7025,7 +7025,7 @@ end;
 
 
 {$IFDEF SYNDEBUG}
-// Лог компонента для отладки
+// Component log for debugging
 procedure TMPCustomSyntaxMemo.Log(const LogString: string);
 begin
     if LogString = '' then
@@ -7045,7 +7045,7 @@ end;
 {$ENDIF}
 
 
-// Помечаем строку как необходимую к перерисовке
+// Mark the line as needing repaint
 procedure TMPCustomSyntaxMemo.NeedRedraw(const Row: Integer);
 var Index: Integer;
 begin
@@ -7053,15 +7053,15 @@ begin
     {} {$IFDEF SYNDEBUG}
     {} LogFmt('Memo.NeedRedraw %d', [Row]);
     {} {$ENDIF}
-    // Только помечаем строки к перерисовке
+    // Only mark lines for repaint
     if IsLineVisible(Row, @Index) then
         fScreenLines[Index] := True;
-    // Пробуем перерисовать
+    // Try to repaint
     ReDraw;
 end;
 
 
-// Помечаем к перерисовки все строки, ниже и равной заданной
+// Mark for repaint all lines at or below the given one
 procedure TMPCustomSyntaxMemo.NeedReDrawLE(const Row: Integer);
 var Index: Integer;
 begin
@@ -7069,18 +7069,18 @@ begin
     {} {$IFDEF SYNDEBUG}
     {} LogFmt('Memo.NeedRedrawLE %d', [Row]);
     {} {$ENDIF}
-    // Только помечаем строки к перерисовке
+    // Only mark lines for repaint
     if IsLineVisible(Row, @Index) then
         while Index <= High(fScreenLines) do begin
             fScreenLines[Index] := True;
             Inc(Index);
         end;
-    // Пробуем перерисовать
+    // Try to repaint
     ReDraw;
 end;
 
 
-// Помечаем к перерисовки все строки
+// Mark all lines for repaint
 procedure TMPCustomSyntaxMemo.NeedRedrawAll;
 var i: Integer;
 begin
@@ -7089,12 +7089,12 @@ begin
     {} {$ENDIF}
     for i := Low(fScreenLines) to High(fScreenLines) do
         fScreenLines[i] := True;
-    // Пробуем перерисовать
+    // Try to repaint
     ReDraw;
 end;
 
 
-// Перерисовка экрана - перерисовываем только помеченные к перерисовке строки
+// Screen repaint - repaint only lines marked for repaint
 procedure TMPCustomSyntaxMemo.ReDraw;
 var i: Integer;
 begin
@@ -7112,7 +7112,7 @@ begin
 end;
 
 
-// Устанавливает новый цвет текста/фона по умолчанию
+// Sets the new default text/background color
 procedure TMPCustomSyntaxMemo.SetDefColor(const Index: Integer; const Value: TColor);
 begin
     case Index of
@@ -7138,32 +7138,32 @@ var Sp: TMPSyntaxParser;
     R: TRect;
 
 begin
-    // Если компонент не виден - чего ж перерисовывать его?
+    // If the component is not visible - why repaint it?
     if not Visible then Exit;
 
     {} {$IFDEF SYNDEBUG}
     {} LogFmt('Memo.PaintLineEx3 %d as %d', [ScreenRow, Row]);
     {} {$ENDIF}
 
-    // Отрисовка гуттера
+    // Draw the gutter
     PaintGutter(fBuffer.Canvas, Row, ScreenRow);
 
-    // Если номер строки недопустимый (строки после текста),
-    // просто все стираем и выходим
+    // If the line number is invalid (lines after the text),
+    // just erase everything and exit
     if Lines.IsValidLineIndex(Row) then begin
-        // Маркеры секций
+        // Section markers
         PaintSectionMarks( fBuffer.Canvas, Row, ScreenRow );
-        // Смещение для начала строки (X <= default_offset !!!)
+        // Offset for the line start (X <= default_offset !!!)
         TextIndent := PixOffsetToWndOffsetEx(0, ScreenRow).X;
-        // Создаем временный вспомогательный парсер как клон имеющегося строчного
+        // Create a temporary helper parser as a clone of the existing line parser
 
 //         Sp := TMPSyntaxParser.Create( Lines.Parser[Row] );
          Sp := FCurParser;
          Sp.Assign(Lines.Parser[Row]);
-          // Группируем смежные токены (У КОПИИ!!)
+          // Group adjacent tokens (ON THE COPY!!)
          Sp.GroupTokens;
 
-        // Корректируем его на основе информации о выделении
+        // Adjust it based on selection info
         if not fRange.IsEmpty()
         and InRange(Row, fRange.StartY, fRange.EndY) then begin
             SelStart := IfThen(Row = fRange.StartY, fRange.StartX, -1);
@@ -7173,19 +7173,19 @@ begin
             SelStart := 0;
             SelEnd := 0;
         end;
-        // Рассчитываем и устанавливаем Clip Region для канвы текста
-        // отсекаем гуттер, иначе он перекроется текстом при OffsetXPix > 0
+        // Calculate and set the Clip Region for the text canvas
+        // clip out the gutter, otherwise text overlaps it when OffsetXPix > 0
         with TextRowRect[ScreenRow] do
             ClipRgn := CreateRectRgn(Left, 0, Right, Bottom - Top);
         SelectClipRgn(fBuffer.Canvas.Handle, ClipRgn);
-        // Рисуем строку
+        // Draw the line
         PaintTokens(fBuffer.Canvas, Lines[Row], Sp, Row, TextIndent, SelStart, SelEnd );
-        // Если строка является первой строкой свернутой секции,
-        // прорисовываем знак свертывания (троеточие справа текста)
+        // If the line is the first line of a collapsed section,
+        // draw the collapse mark (ellipsis right of the text)
         if fSections.Section[Row].Collapsed then
             PaintDots(fBuffer.Canvas);
 
-        // Если строка содержит БП - обозначим красной рамкой
+        // If the line has a BP - mark it with a red frame
         if (fBreakPoints.IsBreakPoint[Row])and(fBreakPoints.BreakPoint[Row].Kind<>bkPosible)
            then begin
 
@@ -7199,7 +7199,7 @@ begin
                 fBuffer.Canvas.FrameRect( R );
                 end;
 
-        // Если строка является строкой пошагового дебага - обозначим это
+        // If the line is the step-debug line - mark it
         if Row=fStepDebugLine
            then begin
                 R.Left  := TextIndent + CharPosToPixOffset(0, Row);
@@ -7210,7 +7210,7 @@ begin
                 fBuffer.Canvas.FrameRect( R );
                 end;
 
-        // Если строка содержит выделенное слово - обозначаем его
+        // If the line contains the highlighted word - mark it
         if fSelWord.Y = Row then
            if fLines.Parser[Row].Count> fSelWord.X then
 
@@ -7219,7 +7219,7 @@ begin
                 R.Right := TextIndent + CharPosToPixOffset(stStart + stLength, Row)+1;
                 R.Top := 0;
                 R.Bottom := fCharHeight;
-                fBuffer.Canvas.Brush.Color := fSelectedWordColor;///!!!"Красная" рамка!
+                fBuffer.Canvas.Brush.Color := fSelectedWordColor;///!!!"Red" frame!
                 fBuffer.Canvas.FrameRect( R );
 
                 R.Left  := TextIndent + CharPosToPixOffset(stStart, Row);
@@ -7230,20 +7230,20 @@ begin
             end;
 
 
-        // Отменяем Clip Region для канвы строки
+        // Remove the Clip Region for the line canvas
         SelectClipRgn(fBuffer.Canvas.Handle, 0);
         DeleteObject(ClipRgn);
-        // Уничтожаем вспомогательный список токенов
+        // Destroy the helper token list
 //       FreeParser(Sp)
 //        Sp.Free;
     end;
-    // Отрисовываем буфер
+    // Draw the buffer
     with EntireRowRect[ScreenRow] do
         BitBlt(Canvas.Handle, 0, Top, Right - Left, Bottom - Top, fBuffer.Canvas.Handle, 0, 0, SRCCOPY)
 end;
 
 
-// Прорисовка гуттера и очистка строки
+// Draw the gutter and clear the line
 procedure TMPCustomSyntaxMemo.PaintGutter(const ACanvas: TCanvas; const Row, ScreenRow: Integer);
 var RR, GR, R: TRect;
     i: TBookmarkIndex;
@@ -7258,7 +7258,7 @@ begin
     Dec(GR.Bottom, GR.Top);
     GR.Top := 0;
 
-    // Левый гуттер
+    // Left gutter
     with ACanvas do begin
         R := GR;
         Brush.Style := bsSolid;
@@ -7281,7 +7281,7 @@ begin
         FillRect( R );
         FillRect( RR );
         if not Lines.IsValidLineIndex(Row) then Exit;
-        // Закладка
+        // Bookmark
         if fBookMarks.Find(Row, i) then
             fBookMarks.PaintAt(ACanvas, GR.Left + 9, GR.Top + 2, i);
         // BreakPoints
@@ -7295,7 +7295,7 @@ begin
 end;
 
 
-// Отрисовка маркеров секций
+// Draw section markers
 procedure TMPCustomSyntaxMemo.PaintSectionMarks(const ACanvas: TCanvas; const Row, ScreenRow: Integer);
 var SecPnt: TPoint;
     Sec: TMPSynMemoSection;
@@ -7318,7 +7318,7 @@ begin
 
     with ACanvas do begin
         if Sec.RowBeg = Row then begin
-            // Начало секции - прорисовываем кадватик
+            // Section start - draw the box
             if Sec.Collapsed then begin
                 Brush.Color := clWhite;
                 Pen.Color   := clBlack;
@@ -7336,18 +7336,18 @@ begin
                     LineTo(SecPnt.X, Bottom - 2);
                 end;
                 Pen.Color := clDkGray;
-                // Линия справа от кадватика
+                // Line to the right of the box
                 MoveTo(Right, SecPnt.Y);
                 LineTo(GR.Right - 2, SecPnt.Y);
                 if not Sec.Collapsed then begin
-                    // Линия внизу кадватика
+                    // Line below the box
                     MoveTo(SecPnt.X, Bottom);
                     LineTo(SecPnt.X, GR.Bottom);
                 end;
             end;
         end else
 
-        // Конец секции - рисуем гориз. палочку
+        // Section end - draw a horizontal tick
         if Sec.RowEnd = Row then begin
             Pen.Color := clDkGray;
             MoveTo(SecPnt.X, GR.Top);
@@ -7355,15 +7355,15 @@ begin
             LineTo(GR.Right - 2, SecPnt.Y);
         end else
 
-        // Просто строка, принадлежащая не-корневой секции
+        // Plain line belonging to a non-root section
         if Sec.Level > 0 then begin
             Pen.Color := clDkGray;
             MoveTo(SecPnt.X, GR.Top);
             LineTo(SecPnt.X, GR.Bottom);
         end;
 
-        // Отрисовка вертикальных линий родительских секций
-        // только НЕ ДЛЯ режима эмуляции MS VS NET
+        // Draw the vertical lines of parent sections
+        // only NOT FOR MS VS NET emulation mode
         if not (smoVSNET_SectionsStyle in fOptions) then
             for i := Sec.Level - 1 downto 1 do begin
                 Dec(SecPnt.X, fSectionIndent);
@@ -7374,7 +7374,7 @@ begin
 end;
 
 
-// Прорисовывает многоточие справа текста
+// Draws the ellipsis right of the text
 procedure TMPCustomSyntaxMemo.PaintDots(const ACanvas: TCanvas);
 var R: TRect;
 begin
@@ -7398,7 +7398,7 @@ begin
 end;
 
 
-// Отрисовывает строку с синтаксисом на заданную канву
+// Draws a syntax-highlighted line on the given canvas
 procedure TMPCustomSyntaxMemo.PaintTokens(const ACanvas: TCanvas; s: string; Sp: TMPSyntaxParser; Row, TextIndent, SelStart, SelEnd: Integer);
 var wi, CharPos,i: Integer;
     col,ErrCol: TColor;
@@ -7406,7 +7406,7 @@ var wi, CharPos,i: Integer;
 begin
     with ACanvas do begin
         R := ClipRect;
-        // Прорисовка фона
+        // Draw the background
         Brush.Style := bsSolid;
         for wi := 0 to Sp.Count - 1 do
             with Sp[wi] do begin
@@ -7436,7 +7436,7 @@ begin
                          FillRect( R );
                          end;
             end;
-        // Прорисовка фона выделения
+        // Draw the selection background
         if SelStart <> SelEnd then begin
             R.Left := TextIndent;
             if SelStart > 0 then
@@ -7447,7 +7447,7 @@ begin
             Brush.Color := fSelColor;
             FillRect( R );
         end;
-        // Прорисовка всех слов по очереди
+        // Draw all words one by one
         Brush.Style := bsClear;
         Font.Assign(Self.Font);
         PenPos := Point(TextIndent, 0);
@@ -7477,14 +7477,14 @@ begin
                 end;
                 R.TopLeft := PenPos;
                 Inc(R.Left, (stStart - CharPos) * fCharWidths[False][' ']);
-(*                // Подключение прерывания юзера
+(*                // Hook up the user event
                 if (stToken = tokCustomDraw) and Assigned(fOnDrawWord) then
                     R.BottomRight := Point(TextIndent + CharPosToPixOffset(stStart+stLength, s, Sp), fCharHeight);
                     fOnDrawWord(self, ACanvas, R, Row, wi);
                 end;    *)
                 TextOut(R.Left, R.Top, Copy(s, stStart + 1, stLength));
 
-                //Если ошибка - подчеркнем
+                //If there is an error - underline it
                 if (stToken=tokErroneous)or(stToken=tokErroneous2)
                    then begin
                         ErrCol:=clRed;
@@ -7672,7 +7672,7 @@ end;
 
 { TBookmarkManager }
 
-// Конструктор
+// Constructor
 constructor TMPBookmarkManager.Create(Owner: TMPCustomSyntaxMemo);
 begin
     inherited Create;
@@ -7683,7 +7683,7 @@ begin
 end;
 
 
-// Деструктор
+// Destructor
 destructor TMPBookmarkManager.Destroy;
 begin
     fImages.Free;
@@ -7691,7 +7691,7 @@ begin
 end;
 
 
-// Сбрасывает информацию о закладках
+// Resets bookmark info
 procedure TMPBookmarkManager.Clear;
 var i: TBookmarkIndex;
 begin
@@ -7700,7 +7700,7 @@ begin
 end;
 
 
-// Возвращает
+// Returns
 function TMPBookmarkManager.Find(const Row: Integer; var Index: TBookmarkIndex): Boolean;
 var i: TBookmarkIndex;
 begin
@@ -7714,34 +7714,34 @@ begin
 end;
 
 
-// Возвращает заклвдку
+// Returns a bookmark
 function TMPBookmarkManager.GetBookMarks(const Index: TBookmarkIndex): Integer;
 begin
     Result := fBookMarks[Index];
 end;
 
 
-// Устанавливает закладку
+// Sets a bookmark
 procedure TMPBookmarkManager.SetBookMarks(const Index: TBookmarkIndex; const Row: Integer);
     {}
     procedure SetBookMarkInt;
     var i: TBookmarkIndex;
         n: Integer;
     begin
-        // На этой строке могла быть другая закладка..
+        // This line could have had another bookmark..
         if Find(Row, i) then begin
             fBookMarks[i] := -1;
-            // ..или та же - в этом случае её просто удаляем
+            // ..or the same one - in which case just remove it
             if i = Index then
                 Exit;
         end;
-        // Эта закладка могла принадлежать другой странице
+        // This bookmark could belong to another page
         if fBookMarks[Index] >= 0 then begin
             n := fBookMarks[Index];
             fBookMarks[Index] := -1;
             fRichMemo.NeedRedraw(n);
         end;
-        // Новая закладка
+        // New bookmark
         fBookMarks[Index] := Row;
     end;
 begin
@@ -7752,7 +7752,7 @@ begin
 end;
 
 
-// Рисует пончик на гуттере
+// Draws the donut on the gutter
 procedure TMPBookmarkManager.PaintAt(const ACanvas: TCanvas; const x, y: Integer; const Index: TBookmarkIndex);
 const BOOKMARK_GLYPH_SIZE = 11;
 begin

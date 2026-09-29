@@ -102,7 +102,7 @@ begin
   WhenGetC.Items.Add(FPAutoOptEditorWhenGet3);
   SQLText:=TStrings(GetObjectProp(FDataSet,'SelectSQL')).Text;
   FIBClassesExporter.iGetStringer.AllTables(SQLText, TableC.Items);
-{ TODO : может ключ поля заполнить + добавить новые опции }
+{ TODO : maybe fill in the key field + add new options }
 
   begin
     AllowChangeC.Checked := GetSubPropValue(FDataSet,'AutoUpdateOptions.CanChangeSQLs');
