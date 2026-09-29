@@ -407,7 +407,9 @@ begin
     UseLoginPrompt:=False;
     SynchronizeTime:=False;
     Name:='dbValidateBlobCache';
-    LibraryName:=Database.LibraryName
+    LibraryName:=Database.LibraryName;
+    CryptKey := Database.CryptKey;
+    OnCryptKeyRequest := Database.OnCryptKeyRequest;
 //    Connected:=True;
   end;
 

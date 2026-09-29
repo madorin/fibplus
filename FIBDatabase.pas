@@ -102,10 +102,15 @@ type
     FAutoReconnect:boolean;
     FGenerators :TGeneratorsCache;
     FMemoSubtypes : TMemoSubtypes;
+    FCryptKey: FIBByteString;
+    FOnCryptKeyRequest: TFIBCryptKeyRequestEvent;
+    FCryptKeyCallback: TFIBCryptKeyCallback;
    {$IFDEF D_XE2}
     FLibraryName64        :string;
     FDoChangeScreenCursor: TDoChangeScreenCursor  ;
    {$ENDIF}
+    procedure DoCryptKeyRequest(Sender: TObject; const Data: FIBByteString;
+      var Key: FIBByteString);
 
     function GetMemoSubtypes :string;
     procedure SetMemoSubtypes(const Value:string);
@@ -504,6 +509,8 @@ type
     // In the session time zone (FB4+) or server local time, 0 if unsupported
     property CreationDate              :TDateTime read GetCreationDate;
     property Busy:boolean read GetBusy;
+    // Not published, the key must not be stored in the form
+    property CryptKey: FIBByteString read FCryptKey write FCryptKey;
   public
     procedure StartTransaction;
     procedure Commit;
@@ -575,6 +582,9 @@ type
     property AfterLoadBlobFromSwap :TAfterSaveLoadBlobSwap read FAfterLoadBlobFromSwap write FAfterLoadBlobFromSwap;
     property BeforeLoadBlobFromSwap:TBeforeLoadBlobFromSwap read FBeforeLoadBlobFromSwap write FBeforeLoadBlobFromSwap;
     property OnIdleConnect:TOnIdleConnect read FOnIdleConnect write FOnIdleConnect;
+    // Called in the connecting thread, inside the global connect lock; Key starts as CryptKey
+    property OnCryptKeyRequest: TFIBCryptKeyRequestEvent read FOnCryptKeyRequest
+      write FOnCryptKeyRequest;
     property UseRepositories:TFIBUseRepositories read FUseRepositories write FUseRepositories
      default [urFieldsInfo,urDataSetInfo,urErrorMessagesInfo] ;
     property LibraryName:string read FLibraryName write SetLibraryName stored StoredLibraryName;
@@ -1096,6 +1106,7 @@ begin
    FBlobSwapSupport.Free;
    FGenerators.Free;
    FMemoSubtypes.Free;
+   FCryptKeyCallback.Free;
    FClientLibrary:=nil;
    inherited Destroy;
 end;
@@ -1948,6 +1959,7 @@ var
   isc_res:ISC_STATUS;
   i: Integer;
   SV: PISC_STATUS;
+  UseCryptKey: Boolean;
 begin
   // isc_res:=0;
   (*
@@ -1990,9 +2002,21 @@ begin
       * the statement doesn't execute correctly.
       *)
      SV:=StatusVector;
-     isc_res:=Call(FClientLibrary.isc_attach_database(SV, Length(FDBName),
-                            PAnsiChar(FDBName), @FHandle,
-                            FDPBLength, FDPB), False);
+     // The crypt callback is per thread, set only around this attachment
+     UseCryptKey := (FCryptKey <> '') or Assigned(FOnCryptKeyRequest);
+     if UseCryptKey then
+     begin
+       if FCryptKeyCallback = nil then
+         FCryptKeyCallback := TFIBCryptKeyCallback.Create(Self, DoCryptKeyRequest);
+       Call(FCryptKeyCallback.Activate(FClientLibrary, SV), True);
+     end;
+     try
+       isc_res := Call(FClientLibrary.isc_attach_database(SV, Length(FDBName),
+         PAnsiChar(FDBName), @FHandle, FDPBLength, FDPB), False);
+     finally
+       if UseCryptKey then
+         FCryptKeyCallback.Deactivate(FClientLibrary);
+     end;
   finally
    vConnectCS.Release
 //   LeaveCriticalSection(vConnectCS);
@@ -2002,7 +2026,12 @@ begin
   begin
     FHandle := nil;
     if RaiseExcept then
-     IbError(Self,Self)
+    begin
+      // More precise than the server's "missing crypt key"
+      if UseCryptKey then
+        FCryptKeyCallback.RaiseRequestError;
+      IbError(Self, Self);
+    end
     else
      Exit;
   end;
@@ -2029,6 +2058,14 @@ begin
   end;
  if Assigned(FSQLLogger) then
   FSQLLogger.WriteData(CmpFullName(Self),'Connect','',lfConnect);
+end;
+
+procedure TFIBDatabase.DoCryptKeyRequest(Sender: TObject; const Data: FIBByteString;
+  var Key: FIBByteString);
+begin
+  Key := FCryptKey;
+  if Assigned(FOnCryptKeyRequest) then
+    FOnCryptKeyRequest(Self, Data, Key);
 end;
 
 function  TFIBDatabase.GetServerTime:TDateTime;
@@ -2510,6 +2547,8 @@ begin
       ConnectForCancel.DBName:=DBName;
       ConnectForCancel.DBParams.Assign(DBParams);
       ConnectForCancel.LibraryName:=LibraryName;
+      ConnectForCancel.CryptKey := CryptKey;
+      ConnectForCancel.OnCryptKeyRequest := OnCryptKeyRequest;
       ConnectForCancel.Connected:=True;
      end;
      try

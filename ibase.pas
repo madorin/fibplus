@@ -585,6 +585,8 @@ Tfb_shutdown = function (timeout : Cardinal;
                          reason  : Integer): Integer;
              {$I pFIBMacroComp.inc}
 //end FB 2.5
+
+Tfb_database_crypt_callback = function(StatusVector: PISC_STATUS; Callback: Pointer): ISC_STATUS; {$I pFIBMacroComp.inc}
 Tisc_dsql_execute_immediate = function (status_vector     : PISC_STATUS;
 				 db_handle                : PISC_DB_HANDLE;
 				 tran_handle              : PISC_TR_HANDLE;

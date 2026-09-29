@@ -203,6 +203,7 @@ type
     ) : ISC_STATUS;
 
     function fb_sqlstate(user_status: PISC_STATUS):FIBByteString;
+    function fb_database_crypt_callback(StatusVector: PISC_STATUS; Callback: Pointer): ISC_STATUS;
    // Service manager functions
    function isc_service_attach (status_vector             : PISC_STATUS;
                                  isc_arg2                  : UShort;
@@ -336,6 +337,7 @@ type
 //FB2.5
     Ffb_cancel_operation: Tfb_cancel_operation;
     Ffb_shutdown        : Tfb_shutdown;
+    Ffb_database_crypt_callback: Tfb_database_crypt_callback;
   private
     FBusy:boolean;
 
@@ -532,6 +534,7 @@ type
     ) : ISC_STATUS;
 
     function fb_sqlstate(user_status: PISC_STATUS):FIBByteString;
+    function fb_database_crypt_callback(StatusVector: PISC_STATUS; Callback: Pointer): ISC_STATUS;
 
   public
     constructor Create(const aLibName:string);
@@ -540,6 +543,28 @@ type
     procedure   FreeIBLibrary;
     function    LibraryLoaded:boolean;
     function    LibraryFilePath:string;
+  end;
+
+  // Data and Key are in the format of the server KeyHolder plugin
+  TFIBCryptKeyRequestEvent = procedure(Sender: TObject; const Data: FIBByteString;
+    var Key: FIBByteString) of object;
+
+  // Firebird ICryptKeyCallback in the cloop layout: an unused slot (VMT), then the VTable
+  TFIBCryptKeyCallback = class
+  private
+    FVTable: Pointer; // must stay the first field
+    FSender: TObject;
+    FOnRequest: TFIBCryptKeyRequestEvent;
+    FRequestError: TObject;
+    function Callback(DataLength: Cardinal; Data: Pointer;
+      BufferLength: Cardinal; Buffer: Pointer): Cardinal;
+  public
+    constructor Create(Sender: TObject; OnRequest: TFIBCryptKeyRequestEvent);
+    destructor Destroy; override;
+    function Activate(const ClientLibrary: IIBClientLibrary;
+      StatusVector: PISC_STATUS): ISC_STATUS;
+    procedure Deactivate(const ClientLibrary: IIBClientLibrary);
+    procedure RaiseRequestError;
   end;
 
 
@@ -2048,6 +2073,7 @@ begin
 
     Ffb_sqlstate:=TryGetProcAddr('fb_sqlstate');
     Ffb_shutdown:=TryGetProcAddr('fb_shutdown');
+    Ffb_database_crypt_callback := TryGetProcAddr('fb_database_crypt_callback');
   end
   else
   begin
@@ -2133,6 +2159,15 @@ begin
     EAPICallException.Create(Format(SCantFindApiProc,['fb_cancel_operation',FLibraryName]));
 end;
 
+function TIBClientLibrary.fb_database_crypt_callback(StatusVector: PISC_STATUS;
+  Callback: Pointer): ISC_STATUS;
+begin
+  if not Assigned(Ffb_database_crypt_callback) then
+    raise EAPICallException.Create(Format(SCantFindApiProc,
+      ['fb_database_crypt_callback', FLibraryName]));
+  Result := Ffb_database_crypt_callback(StatusVector, Callback);
+end;
+
 function TIBClientLibrary.GetBusy: boolean;
 begin
   Result:=FBusy
@@ -2144,6 +2179,98 @@ var
 begin
    GetModuleFileName(FLibraryHandle,Buffer,SizeOf(Buffer));
    Result:=Buffer
+end;
+
+{$IFNDEF D2009+}
+type
+  NativeInt = Integer; // older compilers target 32 bits only
+{$ENDIF}
+
+type
+  TCryptKeyCallbackVTable = record
+    Dummy: Pointer;
+    Version: NativeInt;
+    Callback: function(This: TFIBCryptKeyCallback; DataLength: Cardinal; Data: Pointer;
+      BufferLength: Cardinal; Buffer: Pointer): Cardinal; cdecl;
+  end;
+
+function CryptKeyCallbackDispatcher(This: TFIBCryptKeyCallback; DataLength: Cardinal;
+  Data: Pointer; BufferLength: Cardinal; Buffer: Pointer): Cardinal; cdecl;
+begin
+  Result := This.Callback(DataLength, Data, BufferLength, Buffer);
+end;
+
+const
+  // Version 2: IVersioned + callback()
+  CryptKeyCallbackVTable: TCryptKeyCallbackVTable = (
+    Dummy: nil;
+    Version: 2;
+    Callback: CryptKeyCallbackDispatcher
+  );
+
+constructor TFIBCryptKeyCallback.Create(Sender: TObject;
+  OnRequest: TFIBCryptKeyRequestEvent);
+begin
+  inherited Create;
+  FVTable := @CryptKeyCallbackVTable;
+  FSender := Sender;
+  FOnRequest := OnRequest;
+end;
+
+destructor TFIBCryptKeyCallback.Destroy;
+begin
+  FRequestError.Free;
+  inherited Destroy;
+end;
+
+function TFIBCryptKeyCallback.Callback(DataLength: Cardinal; Data: Pointer;
+  BufferLength: Cardinal; Buffer: Pointer): Cardinal;
+var
+  RequestData, Key: FIBByteString;
+begin
+  Result := 0;
+  try
+    SetString(RequestData, PAnsiChar(Data), DataLength);
+    Key := '';
+    FOnRequest(FSender, RequestData, Key);
+    // A truncated key would fail with a misleading error
+    if Cardinal(Length(Key)) > BufferLength then
+      raise EAPICallException.Create(Format(SCryptKeyTooLong, [Length(Key), BufferLength]));
+    Result := Length(Key);
+    if Result > 0 then
+      Move(Pointer(Key)^, Buffer^, Result);
+  except
+    // Must not cross the client library: raised by the caller after the attachment
+    if FRequestError = nil then
+      FRequestError := AcquireExceptionObject;
+  end;
+end;
+
+function TFIBCryptKeyCallback.Activate(const ClientLibrary: IIBClientLibrary;
+  StatusVector: PISC_STATUS): ISC_STATUS;
+begin
+  FreeAndNil(FRequestError);
+  Result := ClientLibrary.fb_database_crypt_callback(StatusVector, Self);
+end;
+
+procedure TFIBCryptKeyCallback.Deactivate(const ClientLibrary: IIBClientLibrary);
+var
+  Status: array[0..19] of ISC_STATUS;
+begin
+  // Own status vector, to keep the error of the attachment
+  ClientLibrary.fb_database_crypt_callback(@Status, nil);
+end;
+
+procedure TFIBCryptKeyCallback.RaiseRequestError;
+var
+  E: TObject;
+begin
+  E := FRequestError;
+  if E <> nil then
+  begin
+    FRequestError := nil;
+    raise E;
+  end;
 end;
 
 initialization
