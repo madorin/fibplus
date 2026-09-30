@@ -919,20 +919,20 @@ begin
   begin
     DoBeforeRefresh;
 
-    if InternalRefreshRow(FQRefresh, Buff) and (BlobFieldCount>0) then
+    if InternalRefreshRow(FQRefresh, Buff) and (StreamFieldCount>0) then
     begin
-     UpdateBlobInfo(Buff,ubiClearOldValue,False,False);
+     UpdateFieldStreams(Buff,ufsClearOldValue,False,False);
      if  CachedUpdates then
-        UpdateBlobInfo(Buff,ubiCheckIsNull,True,False)
+        UpdateFieldStreams(Buff,ufsCheckIsNull,True,False)
      else
-        UpdateBlobInfo(Buff,ubiPost,True,False);
+        UpdateFieldStreams(Buff,ufsPost,True,False);
      WriteRecordCache(PRecordData(Buff).rdRecordNumber,Buff);
     end;
 
 
     DoAfterRefresh;
   end;
-  UpdateBlobInfo(Buff,ubiClearOldValue,False,False);
+  UpdateFieldStreams(Buff,ufsClearOldValue,False,False);
 end;
 
 procedure TpFIBDataSet.InternalDeleteRecord(Qry: TFIBQuery; Buff: Pointer);

@@ -61,8 +61,8 @@ type
   TFIBCustomDataSet = class;
   TFIBDataSet = class;
 
-  TBlobDataArray =array[0..0] of TFIBBlobStream;
-  PBlobDataArray = ^TBlobDataArray;
+  TFIBFieldStreamArray =array[0..0] of TFIBFieldStream;
+  PFIBFieldStreamArray = ^TFIBFieldStreamArray;
 
 
   TFieldData =record
@@ -578,7 +578,7 @@ type
   end;
 
 
-  TUpdateBlobInfo=(ubiCheckIsNull,ubiPost,ubiCancel,ubiClearOldValue,ubiRefresh);
+  TUpdateFieldStreams = (ufsCheckIsNull, ufsPost, ufsCancel, ufsClearOldValue, ufsRefresh);
   TOnFillClientBlob=procedure(DataSet:TFIBCustomDataSet;Field:TFIBBlobField;Stream:TFIBBlobStream) of object;
   TOnBlobFieldProcessing=procedure(Field:TBlobField;BlobSize:integer;Progress:integer;var Stop:boolean) of object;
 
@@ -615,10 +615,10 @@ type
      * Fields, and internal objects
      *)
     FBase: TFIBBase;          (* Manages database and transaction *)
-    FBlobCacheBufferOffset: Integer;
-    FBlobCacheOffset: Integer;
-    FBlobStreamList: TList;
-    FOpenedBlobStreams: TList;    
+    FStreamsBufferOffset: Integer;
+    FStreamsCacheOffset: Integer;
+    FFieldStreamList: TList;
+    FOpenedFieldStreams: TList;    
     FRecordsCache:TRecordsCache;
     FBufferChunkSize,
     FBPos,
@@ -745,7 +745,7 @@ type
     function  StoreUpdTransaction: Boolean;
     procedure SetOnEndScroll(Event:TDataSetNotifyEvent);
     function  GetDefaultFields:boolean;
-    procedure ClearBlobStreamList;
+    procedure ClearFieldStreamList;
 
     function  CreateInternalQuery(const QName:string):TFIBQuery;
     function GetGroupByString: string;
@@ -784,10 +784,11 @@ type
     procedure CheckFieldCompatibility(Field: TField; FieldDef: TFieldDef); override;
     procedure CheckInactive; override;
     procedure CheckEditState;
-    procedure UpdateBlobInfo(Buff: Pointer;Operation:TUpdateBlobInfo;ClearModified,ForceWrite:boolean
-     ; Field:TField=nil
-    );
+    procedure UpdateFieldStreams(Buff: Pointer; Operation: TUpdateFieldStreams;
+      ClearModified, ForceWrite: Boolean; Field: TField = nil);
     procedure CallBackBlobWrite(BlobSize:integer; BytesProcessing:integer; var Stop:boolean);
+    function  StreamFieldCount: Integer;
+    function  FieldStreamIndex(Field: TField): Integer;
     (*
      * When copying a given record buffer, should we overwrite
      * the pointers to "memory" or should we just copy the
@@ -1544,24 +1545,21 @@ type
 
   end;
 
-  (* TFIBDSBlobStream *)
-  TFIBDSBlobStream = class(TStream)
+  // The stream returned by CreateBlobStream for the value of a BLOB field
+  TFIBDSFieldStream = class(TStream)
   protected
-    FBlobDataArray: PBlobDataArray;
-    FBlobID   : TISC_QUAD;
-    FModified :boolean;
+    FModified: Boolean;
     FField: TField;
-    FBlobStream: TFIBBlobStream;
-    FOnBlobFieldRead :TOnBlobFieldProcessing;
-    procedure DoCallBack(BlobSize:integer; BytesProcessing:integer; var Stop:boolean);
+    FFieldStream: TFIBFieldStream;
+    FOnBlobFieldRead: TOnBlobFieldProcessing;
+    procedure DoCallBack(BlobSize: Integer; BytesProcessing: Integer; var Stop: Boolean);
   public
-    constructor Create(AField: TField; ABlobStream: TFIBBlobStream;
-      Mode: TBlobStreamMode; ABlobID: TISC_QUAD;aBlobDataArray: PBlobDataArray);
+    constructor Create(AField: TField; AFieldStream: TFIBFieldStream; Mode: TBlobStreamMode);
     destructor Destroy; override;
-    function  Read(var Buffer; Count: Longint): Longint; override;
-    function  Seek(Offset: Longint; Origin: Word): Longint; override;
+    function Read(var Buffer; Count: Longint): Longint; override;
+    function Seek(Offset: Longint; Origin: Word): Longint; override;
     procedure SetSize(NewSize: Longint); override;
-    function  Write(const Buffer; Count: Longint): Longint; override;
+    function Write(const Buffer; Count: Longint): Longint; override;
   end;
 
 
@@ -3934,8 +3932,8 @@ begin
 {$IFDEF CSMonitor}
   FCSMonitorSupport := TCSMonitorSupport.Create(Self);
 {$ENDIF}
-  FBlobStreamList := TList.Create;
-  FOpenedBlobStreams:= TList.Create;
+  FFieldStreamList := TList.Create;
+  FOpenedFieldStreams:= TList.Create;
   FSourceLink := TFIBDataLink.Create(Self);
   FQDelete  := CreateInternalQuery('DeleteQuery' );
   FQInsert  := CreateInternalQuery('InsertQuery' );
@@ -4030,9 +4028,9 @@ begin
   {$ENDIF}
   FSourceLink.Free;
   FBase.Free;
-  ClearBlobStreamList;
-  FBlobStreamList.Free;
-  FOpenedBlobStreams.Free;
+  ClearFieldStreamList;
+  FFieldStreamList.Free;
+  FOpenedFieldStreams.Free;
   FRelationTables.Free;
   vFieldDescrList.Free;
   FSQLs.Free;
@@ -4568,7 +4566,7 @@ begin
       FRecordsCache.SaveOldBuffer(R1);
       AssignSQLObjectParams(QRefresh,[Self]);
       RefreshAround(QRefresh,R ,False,ReopenRefreshSQL);
-      ClearBlobStreamList;
+      ClearFieldStreamList;
       if NeedResync then
        Resync([]);
       DoAfterRefresh;
@@ -4939,13 +4937,13 @@ begin
 end;
 
 
-procedure TFIBCustomDataSet.ClearBlobStreamList;
+procedure TFIBCustomDataSet.ClearFieldStreamList;
 var
   i: Integer;
 begin
- if Assigned(FBlobStreamList) then
-  for i :=FBlobStreamList.Count - 1  downto 0 do
-   TFIBBlobStream(FBlobStreamList[i]).Free;
+ if Assigned(FFieldStreamList) then
+  for i :=FFieldStreamList.Count - 1  downto 0 do
+   TFIBFieldStream(FFieldStreamList[i]).Free;
 end;
 
 function  TFIBCustomDataSet.CompareFieldValues(Field:TField;const S1,S2:variant):integer;
@@ -5124,13 +5122,13 @@ const
   FMSecsPerDay: Single = MSecsPerDay;
 
 type
- TFriendBlobStream=class(TFIBBlobStream);
+ TFriendFieldStream = class(TFIBFieldStream);
  PTimeStamp=^TTimeStamp;
  
 procedure TFIBCustomDataSet.FetchRecordToCache(Qry: TFIBQuery; RecordNumber: Integer);
 var
   p: PSavedRecordData;
-  pbd: PBlobDataArray;
+  pbd: PFIBFieldStreamArray;
   i, j,c: Integer;
   LocalData: TDataBuffer;
   StopFetching:boolean;
@@ -5147,14 +5145,14 @@ begin
   p     := PSavedRecordData(Buffer);
   qda   :=Qry.Current;
   (* Make sure blob cache is empty *)
-  pbd := PBlobDataArray(Buffer + FBlobCacheOffset);
+  pbd := PFIBFieldStreamArray(Buffer + FStreamsCacheOffset);
   if not (drsInRefreshRow in FRunState) then
-  for i := 0 to BlobFieldCount - 1 do
+  for i := 0 to StreamFieldCount - 1 do
   begin
      if pbd^[i] <>nil then
       begin
-        if (pbd^[i].IndexInList>=0) and (pbd^[i].IndexInList<FBlobStreamList.Count) then
-         if (pbd^[i]=FBlobStreamList[pbd^[i].IndexInList]) then
+        if (pbd^[i].IndexInList>=0) and (pbd^[i].IndexInList<FFieldStreamList.Count) then
+         if (pbd^[i]=FFieldStreamList[pbd^[i].IndexInList]) then
             pbd^[i].Free;
         pbd^[i] := nil
       end
@@ -5279,7 +5277,7 @@ begin
 //  if (Qry=FQRefresh) then
   if (drsInRefreshRow in FRunState) then
   begin
-   for i := 0 to BlobFieldCount - 1 do
+   for i := 0 to StreamFieldCount - 1 do
     if pbd^[i] <>nil then
     begin
      j:=Qry.FieldIndex[FQSelect.Fields[pbd^[i].FieldNo-1].Name];
@@ -5288,7 +5286,7 @@ begin
          (pbd^[i].UpdateTransaction=Qry.Transaction)
        then
        begin
-         TFriendBlobStream(pbd^[i]).ReplaceBlobID(Qry.Fields[j].AsQuad);
+         TFriendFieldStream(pbd^[i]).ReplaceBlobID(Qry.Fields[j].AsQuad);
        end
        else
          if not EquelQUADs(Qry.Fields[j].AsQuad,pbd^[i].BlobID) then
@@ -5300,7 +5298,7 @@ begin
            then
            begin
            // Is decoded blob
-             pbd^[i].CloseBlob;
+             TFIBBlobStream(pbd^[i]).CloseBlob;
              pbd^[i].DeInitialize;
              pbd^[i].Transaction:=UpdateTransaction;
              pbd^[i].BlobID:=Qry.Fields[j].AsQuad;
@@ -5437,7 +5435,7 @@ begin
     end;
   end;
 
-  FBlobCacheOffset:=FBlockReadSize;
+  FStreamsCacheOffset:=FBlockReadSize;
    for i := 0 to c do
     begin
      fi:=vFieldDescrList[i];
@@ -5747,80 +5745,91 @@ begin
 end;
 
 
-procedure TFIBCustomDataSet.UpdateBlobInfo(Buff: Pointer;Operation:TUpdateBlobInfo;ClearModified,ForceWrite:boolean
- ; Field:TField=nil
-);
-var
-  i, j, k: Integer;
-  pbd: PBlobDataArray;
-  vTableName:string;
-  vFieldName:string;
-  vKeyValues:TDynArray;
-
-
-function FillCacheInfo(Field:TField):boolean;
+function TFIBCustomDataSet.StreamFieldCount: Integer;
 begin
-  with  Database.BlobSwapSupport do
-  if not Active or (Length(SwapDirectory)=0) then
-  begin
-    Result := False;
-    Exit;
-  end;
-  Result:=GetRecordFieldInfo(Field,vTableName,vFieldName,vKeyValues);
+  Result := BlobFieldCount;
 end;
 
-procedure UpdateBlobFieldInfo(aField:TField);
+// Index of the stream slot of Field in a record buffer, -1 when it has none
+function TFIBCustomDataSet.FieldStreamIndex(Field: TField): Integer;
 begin
-  with PRecordData(Buff)^ do
-   if aField.IsBlob then
-   begin
-    k := aField.FieldNo;
-    j := aField.Offset;
-    if pbd^[j] <> nil then
-    begin
-      case Operation of
-       ubiPost:
-       begin
-         if FillCacheInfo(aField) then
-         begin
-           pbd^[j].TableName:=vTableName;
-           pbd^[j].FieldName:=vFieldName;
-           pbd^[j].RecordKeyValues:=vKeyValues
-         end;
-         FWritingBlob:=aField;
-         try
-          pbd^[j].DoFinalize(ClearModified and (pbd^[j].BlobID.gds_quad_high<>0),ForceWrite,CallBackBlobWrite);
-         finally
-          FWritingBlob:=nil;
-         end
-       end;
-       ubiCancel:     pbd^[j].Cancel;
-       ubiClearOldValue: pbd^[j].FreeOldBuffer;
-      end;
-      rdFields[k].fdIsNull := pbd^[j].Size = 0;
-      if rdFields[k].fdIsNull  and (pbd^[j].BlobID.gds_quad_high=0) then
-      begin
-       pbd^[j].BlobID:=NullQUID;
-      end;
-      PISC_QUAD(PAnsiChar(Buff) + vFieldDescrList[k-1].fdDataOfs)^ :=pbd^[j].BlobID;
-    end;
-   end;
-end;
-
-begin
-  if not Assigned(Buff) then
-   Exit;
-  if BlobFieldCount=0 then
-   Exit;    
-  pbd := PBlobDataArray(PAnsiChar(Buff) + FBlobCacheBufferOffset);
-  if Field=nil then
-  begin
-   if (BlobFieldCount>0) then
-    for i := 0 to FieldCount - 1 do
-     UpdateBlobFieldInfo(Fields[i])
-  end
+  if Field.IsBlob then
+    Result := Field.Offset
   else
-    UpdateBlobFieldInfo(Field)
+    Result := -1;
+end;
+
+procedure TFIBCustomDataSet.UpdateFieldStreams(Buff: Pointer; Operation: TUpdateFieldStreams;
+  ClearModified, ForceWrite: Boolean; Field: TField = nil);
+var
+  i: Integer;
+  Streams: PFIBFieldStreamArray;
+  SwapTableName, SwapFieldName: string;
+  SwapKeyValues: TDynArray;
+
+  function FillSwapInfo(Field: TField): Boolean;
+  begin
+    with Database.BlobSwapSupport do
+      if not Active or (Length(SwapDirectory) = 0) then
+      begin
+        Result := False;
+        Exit;
+      end;
+    Result := GetRecordFieldInfo(Field, SwapTableName, SwapFieldName, SwapKeyValues);
+  end;
+
+  procedure UpdateFieldStream(Field: TField);
+  var
+    Index: Integer;
+    Stream: TFIBFieldStream;
+  begin
+    Index := FieldStreamIndex(Field);
+    if Index < 0 then
+      Exit;
+    Stream := Streams^[Index];
+    if Stream = nil then
+      Exit;
+    case Operation of
+      ufsPost:
+      begin
+        if (Stream is TFIBBlobStream) and FillSwapInfo(Field) then
+          with TFIBBlobStream(Stream) do
+          begin
+            TableName := AnsiString(SwapTableName);
+            FieldName := AnsiString(SwapFieldName);
+            RecordKeyValues := SwapKeyValues;
+          end;
+        FWritingBlob := Field;
+        try
+          Stream.DoFinalize(ClearModified and (Stream.BlobID.gds_quad_high <> 0), ForceWrite,
+            CallBackBlobWrite);
+        finally
+          FWritingBlob := nil;
+        end;
+      end;
+      ufsCancel:
+        Stream.Cancel;
+      ufsClearOldValue:
+        Stream.FreeOldBuffer;
+    end;
+    with PRecordData(Buff)^.rdFields[Field.FieldNo] do
+    begin
+      fdIsNull := Stream.Size = 0;
+      if fdIsNull and (Stream.BlobID.gds_quad_high = 0) then
+        Stream.BlobID := NullQUID;
+    end;
+    PISC_QUAD(PAnsiChar(Buff) + vFieldDescrList[Field.FieldNo - 1].fdDataOfs)^ := Stream.BlobID;
+  end;
+
+begin
+  if not Assigned(Buff) or (StreamFieldCount = 0) then
+    Exit;
+  Streams := PFIBFieldStreamArray(PAnsiChar(Buff) + FStreamsBufferOffset);
+  if Field = nil then
+    for i := 0 to FieldCount - 1 do
+      UpdateFieldStream(Fields[i])
+  else
+    UpdateFieldStream(Field);
 end;
 
 
@@ -5882,8 +5891,8 @@ begin
       finally
         Qry.Close;
       end;
-      UpdateBlobInfo(Buff,ubiCheckIsNull,False,False);
-//      UpdateBlobInfo(Buff,ubiRefresh,False,False);
+      UpdateFieldStreams(Buff,ufsCheckIsNull,False,False);
+//      UpdateFieldStreams(Buff,ufsRefresh,False,False);
     end
     else
     if RecordCount>0 then
@@ -6420,7 +6429,7 @@ begin
             SQL_BLOB,  SQL_QUAD:
             begin
               if tf <>nil then
-               UpdateBlobInfo(Buffer,ubiPost,False,False, tf);
+               UpdateFieldStreams(Buffer,ufsPost,False,False, tf);
               cur_param.AsQuad := PISC_QUAD(data)^;
             end;
             SQL_TYPE_DATE:
@@ -7322,10 +7331,10 @@ begin
    fs:=CreateBlobStream(Field,bmRead);
    if Assigned(fs) then
    begin
-    if Assigned(TFIBDSBlobStream(fs).FBlobStream) then
-     Result:=TFIBDSBlobStream(fs).FModified or TFIBDSBlobStream(fs).FBlobStream.Modified
+    if Assigned(TFIBDSFieldStream(fs).FFieldStream) then
+     Result:=TFIBDSFieldStream(fs).FModified or TFIBDSFieldStream(fs).FFieldStream.Modified
     else
-     Result:=TFIBDSBlobStream(fs).FModified;
+     Result:=TFIBDSFieldStream(fs).FModified;
     fs.Free;
    end
    else
@@ -7370,8 +7379,10 @@ end;
 
 function TFIBCustomDataSet.CreateBlobStream(Field: TField; Mode: TBlobStreamMode): TStream;
 var
-  pb: PBlobDataArray;
-  fs,fs1: TFIBBlobStream;
+  pb: PFIBFieldStreamArray;
+  vIndex: Integer;
+  fs,fs1: TFIBFieldStream;
+  bs: TFIBBlobStream;
   Buff: TRecordBuffer;
 
   fOfs  :integer;
@@ -7423,30 +7434,32 @@ begin
   if (Buff = nil)  then
   begin
     fs:=nil;
-    Result := TFIBDSBlobStream.Create(Field, fs, Mode,BlobID,nil);
+    Result := TFIBDSFieldStream.Create(Field, fs, Mode);
     Exit;
   end;
 
 
   try
-   pb := PBlobDataArray(Buff + FBlobCacheBufferOffset);
+   pb := PFIBFieldStreamArray(Buff + FStreamsBufferOffset);
+   vIndex := FieldStreamIndex(Field);
    if drsGetBlobStream in FRunState then
    begin
-     Result:=pb^[Field.Offset];
+     Result:=pb^[vIndex];
      Exit;
    end;
-   if (pb^[Field.Offset] = nil) or (vNeedReloadClientBlobs and pb^[Field.Offset].IsClientField)  then
+   if (pb^[vIndex] = nil) or (vNeedReloadClientBlobs and pb^[vIndex].IsClientField)  then
    begin
     fOfs := vFieldDescrList[Field.FieldNo - 1].fdDataOfs;
     BlobID :=PISC_QUAD(@Buff[fOfs])^;
     if (Field is TFIBBlobField)  and (TFIBBlobField(Field).FIsClientCalcField) and (Mode = bmRead) then
     begin
       Field.ReadOnly:=True;
-      fs := TFIBBlobStream.CreateNew(Field.FieldNo, FBlobStreamList);
-      pb^[Field.Offset] := fs;
-      fs.IsClientField:=True;
+      bs := TFIBBlobStream.CreateNew(Field.FieldNo, FFieldStreamList);
+      fs := bs;
+      pb^[vIndex] := fs;
+      fs.IsClientField := True;
       if Assigned(FOnFillClientBlob) then
-       FOnFillClientBlob(Self,TFIBBlobField(Field),fs);
+        FOnFillClientBlob(Self, TFIBBlobField(Field), bs);
     end
     else
     begin
@@ -7461,21 +7474,22 @@ begin
       end
       else
       begin
-        if FillFieldInfo then
-         fs :=TFIBBlobStream.CreateNew(Field.FieldNo, FBlobStreamList,
-          vTableName, vFieldName, @vKeyValues
-         )
-        else
-         fs := TFIBBlobStream.CreateNew(Field.FieldNo, FBlobStreamList);
-
-        pb^[Field.Offset] := fs;
-        if Field is TFIBBlobField then
-         fs.blobSubType := TFIBBlobField(Field).FSubType
-        else
-        if Field is TFIBMemoField then
-         fs.blobSubType := TFIBMemoField(Field).FSubType
-        else
-         fs.blobSubType := FQSelect[Field.FieldName].AsXSQLVAR^.sqlsubtype;  // ivan_ra
+        begin
+          if FillFieldInfo then
+            bs := TFIBBlobStream.CreateNew(Field.FieldNo, FFieldStreamList, vTableName, vFieldName,
+              @vKeyValues)
+          else
+            bs := TFIBBlobStream.CreateNew(Field.FieldNo, FFieldStreamList);
+          if Field is TFIBBlobField then
+            bs.BlobSubType := TFIBBlobField(Field).FSubType
+          else
+          if Field is TFIBMemoField then
+            bs.BlobSubType := TFIBMemoField(Field).FSubType
+          else
+            bs.BlobSubType := FQSelect[Field.FieldName].AsXSQLVAR^.sqlsubtype;
+          fs := bs;
+        end;
+        pb^[vIndex] := fs;
         fs.Mode := bmReadWrite;
         fs.Database := Database;
         fs.Transaction := Transaction;
@@ -7489,35 +7503,34 @@ begin
      WriteRecordCache(PRecordData(Buff)^.rdRecordNumber, Buff);
    end
    else
-    fs := pb^[Field.Offset];
+    fs := pb^[vIndex];
    if Assigned(fs) then
    begin
-    BlobID:=fs.BlobID;
     fs.UpdateTransaction:=UpdateTransaction;
 
 
     if (FCacheModelOptions.FBlobCacheLimit>0) then
     begin
-       fOfs:=FOpenedBlobStreams.IndexOf(fs);
+       fOfs:=FOpenedFieldStreams.IndexOf(fs);
        if fOfs>=0 then
        begin
-          FOpenedBlobStreams.Delete(fOfs);
+          FOpenedFieldStreams.Delete(fOfs);
        end;
-       FOpenedBlobStreams.Add(fs); // Last to Last
+       FOpenedFieldStreams.Add(fs); // Last to Last
 
-      if (FOpenedBlobStreams.Count>FCacheModelOptions.FBlobCacheLimit)  then
+      if (FOpenedFieldStreams.Count>FCacheModelOptions.FBlobCacheLimit)  then
       begin
 //
-       fs1:=TFIBBlobStream(FOpenedBlobStreams[0]);
+       fs1:=TFIBFieldStream(FOpenedFieldStreams[0]);
        // a modified value (CachedUpdates) exists only in the stream until it is stored
        if not fs1.Modified then
          fs1.DeInitialize;
-       FOpenedBlobStreams.Delete(0);       
+       FOpenedFieldStreams.Delete(0);
       end;
     end
    end;
 //
-   Result := TFIBDSBlobStream.Create(Field, fs, Mode,BlobID,pb);
+   Result := TFIBDSFieldStream.Create(Field, fs, Mode);
   finally
    if (State in [dsFilter]) or (vTypeDispositionField<>dfNormal)
    then
@@ -7783,7 +7796,7 @@ begin
       FBufferChunkSize  := DataSet.FBufferChunkSize;
       FRecordSize       := DataSet.FRecordSize;
       FCalcFieldsOffset := DataSet.FCalcFieldsOffset;
-      FBlobCacheBufferOffset  := DataSet.FBlobCacheBufferOffset ;
+      FStreamsBufferOffset  := DataSet.FStreamsBufferOffset ;
       FRecordBufferSize := DataSet.FRecordBufferSize;
       FRecordCount      := DataSet.FRecordCount;
       FStringFieldCount := DataSet.FStringFieldCount;
@@ -10213,7 +10226,7 @@ begin
      end;
     end;
   end;
-  UpdateBlobInfo(Buff,ubiCancel,False,False);
+  UpdateFieldStreams(Buff,ufsCancel,False,False);
 end;
  
 
@@ -10229,7 +10242,7 @@ end;
 
 procedure TFIBCustomDataSet.InternalClose;
 begin
-  ClearBlobStreamList;
+  ClearFieldStreamList;
   FCurrentRecord := -1;
   FOpen := False;
   FRecordCount := 0;
@@ -11084,7 +11097,7 @@ begin
      end;
 
 
-     ClearBlobStreamList;
+     ClearFieldStreamList;
      FQCurrentSelect.Close;
      if FQSelectDesc.Open then
       FQSelectDesc.Close;
@@ -11408,15 +11421,15 @@ begin
        * 3. After the dummy fetch, FRecordSize will be appropriately
        *    adjusted to reflect the additional "weight" of the field
        *    data.
-       * 4. Set up the FCalcFieldsOffset, FBlobCacheBufferOffset and FRecordBufferSize.
+       * 4. Set up the FCalcFieldsOffset, FStreamsBufferOffset and FRecordBufferSize.
        * 5. Re-allocate the model buffer, accounting for the new
        *    FRecordBufferSize.
        * 6. Finally, calls to AllocRecordBuffer will work!.
        *)
-      FBlobCacheBufferOffset := FRecordSize;
-      FCalcFieldsOffset := FBlobCacheBufferOffset + (BlobFieldCount * SizeOf(TFIBBlobStream));
+      FStreamsBufferOffset := FRecordSize;
+      FCalcFieldsOffset := FStreamsBufferOffset + (StreamFieldCount * SizeOf(TFIBFieldStream));
       FRecordBufferSize := FCalcFieldsOffset + CalcFieldsSize;
-      FBlockReadSize := FBlockReadSize + (BlobFieldCount * SizeOf(TFIBBlobStream));
+      FBlockReadSize := FBlockReadSize + (StreamFieldCount * SizeOf(TFIBFieldStream));
 
       FBufferChunkSize := FRecordBufferSize * FCacheModelOptions.FBufferChunks;
       vCalcFieldsSavedCache := poCacheCalcFields in Options;
@@ -11496,7 +11509,7 @@ begin
   end;
 
   Buff := GetActiveBuf;
-  UpdateBlobInfo(Buff,ubiCheckIsNull,False,False);
+  UpdateFieldStreams(Buff,ufsCheckIsNull,False,False);
   try
     with PRecordData(Buff)^ do
     begin
@@ -12763,62 +12776,49 @@ begin
 end;
 
 
-(* TFIBDSBlobStream *)
-constructor TFIBDSBlobStream.Create(AField: TField; ABlobStream: TFIBBlobStream;
-  Mode: TBlobStreamMode; ABlobID: TISC_QUAD;aBlobDataArray: PBlobDataArray);
+(* TFIBDSFieldStream *)
+constructor TFIBDSFieldStream.Create(AField: TField; AFieldStream: TFIBFieldStream;
+  Mode: TBlobStreamMode);
 var
- vDataSet:TFIBCustomDataSet;
- bTr, bDB: Boolean;
+  DataSet: TFIBCustomDataSet;
+  NeedTransaction, NeedConnection: Boolean;
 begin
-  FModified := Mode=bmWrite;
+  FModified := Mode = bmWrite;
   FField := AField;
-  FBlobStream := ABlobStream;
-  FBlobDataArray:=aBlobDataArray;
-  if Assigned(FBlobStream ) then
-  begin
-   FBlobID:=FBlobStream.BlobID;
-//   FBlobStream.Mode:=Mode;
-   if AField.DataSet is TFIBCustomDataSet then
-     vDataSet:=TFIBCustomDataSet(AField.DataSet)
-   else
-     vDataSet:=nil;
-   if Assigned(vDataSet) then
-   begin
-    if (Mode=bmRead) and  Assigned(vDataSet.FOnBlobFieldRead) then
-      FOnBlobFieldRead:=vDataSet.FOnBlobFieldRead;
-   end
-    else
-      FOnBlobFieldRead:=nil;
-   bTr:=False;
-   bDB:=False;
-   if Assigned(vDataSet) then
-   with vDataSet do
-   begin
-    if (CachedUpdates or (poDontCloseAfterEndTransaction in Options))  then
-    begin
-      bTr := not Transaction.InTransaction;
-      bDB := not Database.Connected;
-    end;
-      if bDB then
-        Database.Open;
-      if bTr then
-        Transaction.StartTransaction;
-   end        ;
-   FBlobStream.DoSeek(0, soFromBeginning,DoCallBack);
-   if (Mode = bmWrite) then
-    FBlobStream.Truncate;
-
-   if bTr then
-        vDataSet.Transaction.Commit;
-   if bDB and (vDataSet.Database.TimeOut=0) then
-        vDataSet.Database.Close;
-
-  end
+  FFieldStream := AFieldStream;
+  if not Assigned(FFieldStream) then
+    Exit;
+  if AField.DataSet is TFIBCustomDataSet then
+    DataSet := TFIBCustomDataSet(AField.DataSet)
   else
-   FBlobID:=ABlobID
+    DataSet := nil;
+  if Assigned(DataSet) and (Mode = bmRead) then
+    FOnBlobFieldRead := DataSet.FOnBlobFieldRead;
+  NeedTransaction := False;
+  NeedConnection := False;
+  if Assigned(DataSet) then
+    with DataSet do
+    begin
+      if CachedUpdates or (poDontCloseAfterEndTransaction in Options) then
+      begin
+        NeedTransaction := not Transaction.InTransaction;
+        NeedConnection := not Database.Connected;
+      end;
+      if NeedConnection then
+        Database.Open;
+      if NeedTransaction then
+        Transaction.StartTransaction;
+    end;
+  FFieldStream.DoSeek(0, soFromBeginning, DoCallBack);
+  if Mode = bmWrite then
+    FFieldStream.Truncate;
+  if NeedTransaction then
+    DataSet.Transaction.Commit;
+  if NeedConnection and (DataSet.Database.TimeOut = 0) then
+    DataSet.Database.Close;
 end;
 
-destructor TFIBDSBlobStream.Destroy;
+destructor TFIBDSFieldStream.Destroy;
 begin
   if FModified then
   begin
@@ -12830,63 +12830,57 @@ begin
   inherited Destroy;
 end;
 
-procedure TFIBDSBlobStream.DoCallBack(BlobSize:integer; BytesProcessing:integer; var Stop:boolean);
+procedure TFIBDSFieldStream.DoCallBack(BlobSize: Integer; BytesProcessing: Integer;
+  var Stop: Boolean);
 begin
-   if (GlobalContainer<>nil)  then
-     GlobalContainer.DoOnReadBlobField(TBlobField(FField),BlobSize,BytesProcessing,Stop);
-   if Assigned(FOnBlobFieldRead) then
-   begin
-    FOnBlobFieldRead(TBlobField(FField),BlobSize,BytesProcessing,Stop);
-   end
+  if GlobalContainer <> nil then
+    GlobalContainer.DoOnReadBlobField(TBlobField(FField), BlobSize, BytesProcessing, Stop);
+  if Assigned(FOnBlobFieldRead) then
+    FOnBlobFieldRead(TBlobField(FField), BlobSize, BytesProcessing, Stop);
 end;
 
-function TFIBDSBlobStream.Read(var Buffer; Count: Longint): Longint;
+function TFIBDSFieldStream.Read(var Buffer; Count: Longint): Longint;
 begin
-  if Assigned(FBlobStream ) then
-   case FField.DataSet.State of
-     dsOldValue:
-      Result := FBlobStream.ReadOldBuffer(Buffer, Count) ;
-   else
-    Result := FBlobStream.Read(Buffer, Count)
-   end
-  else
-   Result := 0
-end;
-
-function TFIBDSBlobStream.Seek(Offset: Longint; Origin: Word): Longint;
-begin
-  if Assigned(FBlobStream ) then
-   case FField.DataSet.State of
-     dsOldValue:
-      Result := FBlobStream.SeekInOldBuffer(Offset, Origin);
-   else
-    Result := FBlobStream.Seek(Offset, Origin)
-   end
-  else
+  if not Assigned(FFieldStream) then
     Result := 0
-end;
-
-procedure TFIBDSBlobStream.SetSize(NewSize: Longint);
-begin
-  if Assigned(FBlobStream ) then
-   FBlobStream.SetSize(NewSize);
-end;
-
-function TFIBDSBlobStream.Write(const Buffer; Count: Longint): Longint;
-begin
-  if (FField is TFIBBlobField) and TFIBBlobField(FField ).FIsClientCalcField then
   else
-  if not (FField.DataSet.State in [dsEdit, dsInsert]) then
+  if FField.DataSet.State = dsOldValue then
+    Result := FFieldStream.ReadOldBuffer(Buffer, Count)
+  else
+    Result := FFieldStream.Read(Buffer, Count);
+end;
+
+function TFIBDSFieldStream.Seek(Offset: Longint; Origin: Word): Longint;
+begin
+  if not Assigned(FFieldStream) then
+    Result := 0
+  else
+  if FField.DataSet.State = dsOldValue then
+    Result := FFieldStream.SeekInOldBuffer(Offset, Origin)
+  else
+    Result := FFieldStream.Seek(Offset, Origin);
+end;
+
+procedure TFIBDSFieldStream.SetSize(NewSize: Longint);
+begin
+  if Assigned(FFieldStream) then
+    FFieldStream.SetSize(NewSize);
+end;
+
+function TFIBDSFieldStream.Write(const Buffer; Count: Longint): Longint;
+begin
+  // client calculated BLOB fields are written outside of the edit state
+  if not ((FField is TFIBBlobField) and TFIBBlobField(FField).FIsClientCalcField) and
+    not (FField.DataSet.State in [dsEdit, dsInsert])
+  then
     FIBError(feNotEditing, [CmpFullName(FField.DataSet)]);
   FModified := True;
   TFIBDataSet(FField.DataSet).RecordModified(True);
   TBlobField(FField).Modified := True;
-  if Assigned(FBlobStream) then
-  begin
-   Result := FBlobStream.Write(Buffer, Count);
-  end
+  if Assigned(FFieldStream) then
+    Result := FFieldStream.Write(Buffer, Count)
   else
-   Result:=0
+    Result := 0;
 end;
 
 
