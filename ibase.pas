@@ -341,7 +341,7 @@ Tisc_array_get_slice = function (status_vector            : PISC_STATUS;
 				 array_id                 : PISC_QUAD;
 				 descriptor               : PISC_ARRAY_DESC;
 				 dest_array               : PVoid;
-				 slice_length             : ISC_LONG): ISC_STATUS;
+				 slice_length             : PISC_LONG): ISC_STATUS;
                                  {$I pFIBMacroComp.inc}
 
 Tisc_array_lookup_bounds = function (status_vector        : PISC_STATUS;

@@ -31,7 +31,8 @@ uses
  {$ENDIF}
 
   SysUtils,SyncObjs, Classes, ibase,IB_Intf,IB_Externals,
-  DB, fib, FIBDatabase, FIBQuery, StdFuncs,IB_ErrorCodes,FIBPlatforms ;
+  DB, fib, FIBDatabase, FIBQuery, StdFuncs,IB_ErrorCodes,FIBPlatforms
+  {$IFDEF SUPPORT_ARRAY_FIELD}, pFIBArray{$ENDIF};
 
 const
   DefaultBlobSegmentSize = High(Word);
@@ -172,6 +173,19 @@ type
     property RecordKeyValues: TDynArray read FKeyValues write FKeyValues;
   end;
 
+{$IFDEF SUPPORT_ARRAY_FIELD}
+  // The whole ARRAY value, with the layout of the slice calls (see TpFIBArray)
+  TFIBArrayStream = class(TFIBFieldStream)
+  private
+    FArray: TpFIBArray;
+  protected
+    procedure Load(CallBack: TCallBackBlobReadWrite); override;
+    procedure Store(CallBack: TCallBackBlobReadWrite); override;
+  public
+    constructor CreateNew(AFieldNo: Integer; AStreamList: TList; AArray: TpFIBArray); reintroduce;
+    property FIBArray: TpFIBArray read FArray;
+  end;
+{$ENDIF}
 
 // Blob routine functions
   TBlobInfo= record
@@ -1675,6 +1689,38 @@ begin
   end;
 end;
 
+{$IFDEF SUPPORT_ARRAY_FIELD}
+constructor TFIBArrayStream.CreateNew(AFieldNo: Integer; AStreamList: TList; AArray: TpFIBArray);
+begin
+  inherited CreateNew(AFieldNo, AStreamList);
+  FArray := AArray;
+end;
+
+procedure TFIBArrayStream.Load(CallBack: TCallBackBlobReadWrite);
+begin
+  CheckReadable;
+  CheckHandles;
+  SetSize(FArray.ArraySize);
+  if FArray.GetSlice(@FBlobID, FBuffer, DBHandle, TRHandle) = 0 then
+    SetSize(0);
+end;
+
+procedure TFIBArrayStream.Store(CallBack: TCallBackBlobReadWrite);
+begin
+  // an empty value is NULL
+  if FDataSize = 0 then
+  begin
+    FBlobID.gds_quad_high := 0;
+    FBlobID.gds_quad_low := 0;
+  end
+  else
+  if FDataSize <> FArray.ArraySize then
+    FIBErrorEx('Array %s.%s: the value has %d bytes instead of %d',
+      [FArray.TableName, FArray.FieldName, FDataSize, FArray.ArraySize])
+  else
+    FArray.PutSlice(FBuffer, FBlobID, DBHandle, UpdateTRHandle);
+end;
+{$ENDIF}
 
 (*
  * TFIBOutputDelimitedFile

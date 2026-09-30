@@ -44,7 +44,7 @@ type
     function  isc_array_get_slice(status_vector : PISC_STATUS; db_handle : PISC_DB_HANDLE;
                                  trans_handle : PISC_TR_HANDLE; array_id : PISC_QUAD;
                                  descriptor : PISC_ARRAY_DESC; dest_array : PVoid;
-				                         slice_length : ISC_LONG): ISC_STATUS;
+				                         slice_length : PISC_LONG): ISC_STATUS;
     function  isc_array_lookup_bounds(status_vector : PISC_STATUS; db_handle : PISC_DB_HANDLE;
                                      trans_handle : PISC_TR_HANDLE; table_name, column_name : PAnsiChar;
 				                             descriptor : PISC_ARRAY_DESC): ISC_STATUS;
@@ -351,7 +351,7 @@ type
     function  isc_array_get_slice(status_vector : PISC_STATUS; db_handle : PISC_DB_HANDLE;
                                  trans_handle : PISC_TR_HANDLE; array_id : PISC_QUAD;
                                  descriptor : PISC_ARRAY_DESC; dest_array : PVoid;
-				                         slice_length : ISC_LONG): ISC_STATUS;
+				                         slice_length : PISC_LONG): ISC_STATUS;
     function  isc_array_lookup_bounds(status_vector : PISC_STATUS; db_handle : PISC_DB_HANDLE;
                                      trans_handle : PISC_TR_HANDLE; table_name, column_name : PAnsiChar;
 				                             descriptor : PISC_ARRAY_DESC): ISC_STATUS;
@@ -941,7 +941,7 @@ end;
 function TIBClientLibrary.isc_array_get_slice(status_vector: PISC_STATUS;
   db_handle: PISC_DB_HANDLE; trans_handle: PISC_TR_HANDLE;
   array_id: PISC_QUAD; descriptor: PISC_ARRAY_DESC; dest_array: PVoid;
-  slice_length: ISC_LONG): ISC_STATUS;
+  slice_length: PISC_LONG): ISC_STATUS;
 begin
   if Assigned(Fisc_array_get_slice) then
    Result:=

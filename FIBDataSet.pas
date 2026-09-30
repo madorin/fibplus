@@ -31,6 +31,7 @@ uses
  pFIBProps,pFIBFieldsDescr, DB,FIBCacheManage,
  DBCommon,DbConsts,DBParsers,
  FIBDatabase, FIBQuery, FIBMiscellaneous,SqlTxtRtns,pFIBLists,FIBCloneComponents ,
+ {$IFDEF SUPPORT_ARRAY_FIELD}pFIBArray,{$ENDIF}
  pFIBInterfaces,pFIBEventLists,
   Classes,StdFuncs
   {$IFNDEF NO_GUI}
@@ -457,7 +458,7 @@ type
   {$IFDEF SUPPORT_ARRAY_FIELD}
    TFIBArrayField=class(TBytesField)
    private
-    FOldValueBuffer:PAnsiChar;
+    FStreamIndex: Integer;
     function GetFIBXSQLVAR:TFIBXSQLVAR;
    protected
     procedure GetText(var Text: string; DisplayText: Boolean); override;
@@ -465,15 +466,12 @@ type
     function  GetElementType:TFieldType;
     function  GetDimension(Index:integer):TISC_ARRAY_BOUND;
     function  GetArraySize:integer;
-    procedure SaveOldBuffer   ;
-    procedure RestoreOldBuffer;
     function  GetArrayId:TISC_QUAD;
     function GetAsVariant: Variant; override;
     procedure SetAsVariant(const Value: Variant); override;
 
    public
     constructor Create(AOwner: TComponent); override;
-    destructor Destroy; override;
     property DimensionCount:integer read GetDimCount;
     property ElementType:TFieldType read GetElementType;
     property Dimension[Index: Integer]: TISC_ARRAY_BOUND read GetDimension;
@@ -617,6 +615,8 @@ type
     FBase: TFIBBase;          (* Manages database and transaction *)
     FStreamsBufferOffset: Integer;
     FStreamsCacheOffset: Integer;
+    // array fields have stream slots after the BLOB fields, see FieldStreamIndex
+    FArrayFieldCount: Integer;
     FFieldStreamList: TList;
     FOpenedFieldStreams: TList;    
     FRecordsCache:TRecordsCache;
@@ -789,6 +789,12 @@ type
     procedure CallBackBlobWrite(BlobSize:integer; BytesProcessing:integer; var Stop:boolean);
     function  StreamFieldCount: Integer;
     function  FieldStreamIndex(Field: TField): Integer;
+  {$IFDEF SUPPORT_ARRAY_FIELD}
+    procedure PrepareStreamFields;
+    function  GetFieldArray(Field: TField): TpFIBArray;
+    function  ReadArrayBuffer(Field: TField; Buffer: PAnsiChar): Boolean;
+    procedure WriteArrayBuffer(Field: TField; Buffer: PAnsiChar);
+  {$ENDIF}
     (*
      * When copying a given record buffer, should we overwrite
      * the pointers to "memory" or should we just copy the
@@ -931,7 +937,6 @@ type
     procedure DoBeforeScroll; override;
     procedure DoAfterScroll;  override;
     procedure DoBeforePost;   override;
-    procedure DoAfterInsert;  override;
     procedure DoAfterPost;    override;
     procedure DoAfterDelete;  override;
     procedure DoOnEndScroll(Sender:TObject);
@@ -1185,14 +1190,10 @@ type
 
 
 {$IFDEF SUPPORT_ARRAY_FIELD}
-    function  ArrayFieldValue(Field:TField):Variant;
-    procedure SetArrayValue(Field:TField;Value:Variant);
-    function  GetElementFromValue( Field:TField;
-               Indexes:array of integer):Variant;
-
-    procedure SetArrayElementValue(Field:TField;Value:Variant;
-     Indexes:array of integer
-    );
+    function ArrayFieldValue(Field: TField): Variant;
+    procedure SetArrayValue(Field: TField; Value: Variant);
+    function GetElementFromValue(Field: TField; Indexes: array of Integer): Variant;
+    procedure SetArrayElementValue(Field: TField; Value: Variant; Indexes: array of Integer);
 {$ENDIF}
     function  GetRelationTableName(Field:TObject):string;
     function  GetRelationFieldName(Field:TObject):string;
@@ -1545,7 +1546,7 @@ type
 
   end;
 
-  // The stream returned by CreateBlobStream for the value of a BLOB field
+  // The stream returned by CreateBlobStream for the value of a BLOB or ARRAY field
   TFIBDSFieldStream = class(TStream)
   protected
     FModified: Boolean;
@@ -3136,13 +3137,7 @@ end;
  constructor TFIBArrayField.Create(AOwner: TComponent); //override;
  begin
   inherited Create(AOwner);
-  FOldValueBuffer:=nil;
- end;
-
- destructor TFIBArrayField.Destroy; //override;
- begin
-  FIBAlloc(FOldValueBuffer, 0, 0);
-  inherited Destroy;
+  FStreamIndex := -1;
  end;
 
  
@@ -3225,17 +3220,6 @@ begin
   TFIBDataSet(DataSet).SetArrayValue(Self,Value)
 end;
 
-
-procedure  TFIBArrayField.SaveOldBuffer;
-begin
-  FIBAlloc(FOldValueBuffer,0,ArraySize);
-  GetData(FOldValueBuffer);
-end;
-
-procedure TFIBArrayField.RestoreOldBuffer;
-begin
-  SetData(FOldValueBuffer);
-end;
 
 {$ENDIF}
 
@@ -5747,7 +5731,7 @@ end;
 
 function TFIBCustomDataSet.StreamFieldCount: Integer;
 begin
-  Result := BlobFieldCount;
+  Result := BlobFieldCount + FArrayFieldCount;
 end;
 
 // Index of the stream slot of Field in a record buffer, -1 when it has none
@@ -5755,6 +5739,11 @@ function TFIBCustomDataSet.FieldStreamIndex(Field: TField): Integer;
 begin
   if Field.IsBlob then
     Result := Field.Offset
+  {$IFDEF SUPPORT_ARRAY_FIELD}
+  else
+  if Field is TFIBArrayField then
+    Result := TFIBArrayField(Field).FStreamIndex
+  {$ENDIF}
   else
     Result := -1;
 end;
@@ -6422,11 +6411,7 @@ begin
               else
                 cur_param.AsDouble := PDouble(data)^;
             end;
-            SQL_ARRAY:
-            begin
-             cur_param.AsQuad := PISC_QUAD(data)^;
-            end;
-            SQL_BLOB,  SQL_QUAD:
+            SQL_BLOB, SQL_ARRAY, SQL_QUAD:
             begin
               if tf <>nil then
                UpdateFieldStreams(Buffer,ufsPost,False,False, tf);
@@ -7474,6 +7459,12 @@ begin
       end
       else
       begin
+        {$IFDEF SUPPORT_ARRAY_FIELD}
+        if Field is TFIBArrayField then
+          fs := TFIBArrayStream.CreateNew(Field.FieldNo, FFieldStreamList,
+            FQSelect[Field.FieldName].FIBArray)
+        else
+        {$ENDIF}
         begin
           if FillFieldInfo then
             bs := TFIBBlobStream.CreateNew(Field.FieldNo, FFieldStreamList, vTableName, vFieldName,
@@ -7791,6 +7782,9 @@ begin
     if DataSet.Active then
     begin
       CopyFieldsStructure(DataSet,RecreateFields);
+      {$IFDEF SUPPORT_ARRAY_FIELD}
+      PrepareStreamFields;
+      {$ENDIF}
       vFieldDescrList.Assign(DataSet.vFieldDescrList);
       vrdFieldCount     := DataSet.vrdFieldCount;
       FBufferChunkSize  := DataSet.FBufferChunkSize;
@@ -8171,9 +8165,6 @@ end;
 procedure TFIBCustomDataSet.DoBeforeEdit;
 var
   Buff: PRecordData;
-  {$IFDEF SUPPORT_ARRAY_FIELD}
-  i:integer;
-  {$ENDIF}
 begin
   ForceEndWaitMaster;
   if not CanEdit then Abort;
@@ -8183,15 +8174,6 @@ begin
   inherited;
   if not Active then
    FIBError(feDatasetClosed , ['continue after BeforeEdit',CmpFullName(Self)]);
-
-  {$IFDEF SUPPORT_ARRAY_FIELD}
-   for i:=0 to Pred(FieldCount) do
-   begin
-    if Fields[i] is TFIBArrayField then
-     TFIBArrayField(Fields[i]).SaveOldBuffer
-   end;
-  {$ENDIF}
-
 end;
 
 procedure TFIBCustomDataSet.DoBeforePost; //override;
@@ -8274,35 +8256,9 @@ begin
  end;
 end;
 
-procedure  TFIBCustomDataSet.DoAfterInsert;
-{$IFDEF SUPPORT_ARRAY_FIELD}
-var i:integer;
-{$ENDIF}
-begin
-  {$IFDEF SUPPORT_ARRAY_FIELD}
-   for i:=0 to Pred(FieldCount) do
-   begin
-    if Fields[i] is TFIBArrayField then
-     TFIBArrayField(Fields[i]).SaveOldBuffer
-   end;
-  {$ENDIF}
-  inherited;
-end;
-
 procedure TFIBCustomDataSet.DoOnPostError(DataSet: TDataSet; E: EDatabaseError;
- var Action: TDataAction
-);
-{$IFDEF SUPPORT_ARRAY_FIELD}
-var     i:integer;
-{$ENDIF}
+  var Action: TDataAction);
 begin
-  {$IFDEF SUPPORT_ARRAY_FIELD}
-  for i:=0 to Pred(FieldCount) do
-  begin
-    if Fields[i] is TFIBArrayField then
-     TFIBArrayField(Fields[i]).RestoreOldBuffer
-  end;
-  {$ENDIF}
 end;
 
 procedure TFIBCustomDataSet.DoAfterDelete;  //override;
@@ -11383,6 +11339,9 @@ begin
 
       InitDataSetSchema;
       BindFields(True);
+      {$IFDEF SUPPORT_ARRAY_FIELD}
+      PrepareStreamFields;
+      {$ENDIF}
 
       if BlobFieldCount > 0 then
         for i := 0 to Pred(FieldCount) do
@@ -12401,68 +12360,145 @@ end;
 // Array support
 
 {$IFDEF SUPPORT_ARRAY_FIELD}
-function  TFIBCustomDataSet.ArrayFieldValue(Field:TField):Variant;
+// Array fields keep their value in a TFIBArrayStream until Post, like BLOB fields
+
+procedure TFIBCustomDataSet.PrepareStreamFields;
 var
-  qf:TFIBXSQLVAR;
+  i: Integer;
 begin
- Result:=False;
- if not Assigned(Field) then Exit;
- qf:=QSelect[Field.FieldName];
- if qf.FIBArray=nil then
-  Exit;
- Result:=
-  qf.FIBArray.GetFieldArrayValues(Field,DBHandle,TRHandle)
+  FArrayFieldCount := 0;
+  for i := 0 to FieldCount - 1 do
+    if Fields[i] is TFIBArrayField then
+    begin
+      TFIBArrayField(Fields[i]).FStreamIndex := BlobFieldCount + FArrayFieldCount;
+      Inc(FArrayFieldCount);
+    end;
 end;
 
-procedure TFIBCustomDataSet.SetArrayValue(Field:TField;Value:Variant);
-var
- qf:TFIBXSQLVAR;
+function TFIBCustomDataSet.GetFieldArray(Field: TField): TpFIBArray;
 begin
- if not (State in [dsEdit,dsInsert]) then
-  Exit;
- if not Assigned(Field) then
-  Exit;
- if VarIsEmpty( Value ) or VarIsNull( Value ) then
- begin
-   Field.Clear;              
-   Exit;
- end;
- qf:=QSelect[Field.FieldName];
- if qf.FIBArray=nil then
-  Exit;
- AutoStartUpdateTransaction;
- CheckUpdateTransaction;
- qf.FIBArray.SetFieldArrayValue(Value,Field, DBHandle,@UpdateTransaction.Handle)
+  Result := QSelect[Field.FieldName].FIBArray;
+  if Result = nil then
+    FIBError(feNotIsArrayField, [Field.FieldName]);
 end;
 
-function TFIBCustomDataSet.GetElementFromValue( Field:TField;
-          Indexes:array of integer):Variant;
+// Whole array of Field in Buffer (ArraySize bytes), False for NULL
+function TFIBCustomDataSet.ReadArrayBuffer(Field: TField; Buffer: PAnsiChar): Boolean;
 var
-  qf:TFIBXSQLVAR;
+  Stream: TStream;
 begin
- if not Assigned(Field) then
-  Exit;
- qf:=QSelect[Field.FieldName];
- if qf.FIBArray=nil then Exit;
- Result:=
-  qf.FIBArray.GetElementFromField(Field, Indexes,DBHandle,TRHandle );
+  Result := not Field.IsNull;
+  if not Result then
+    Exit;
+  Stream := CreateBlobStream(Field, bmRead);
+  try
+    Result := Stream.Size > 0;
+    if Result then
+    begin
+      Stream.Position := 0;
+      Stream.ReadBuffer(Buffer^, GetFieldArray(Field).ArraySize);
+    end;
+  finally
+    Stream.Free;
+  end;
 end;
 
-procedure TFIBCustomDataSet.SetArrayElementValue(Field:TField;Value:Variant;
-     Indexes:array of integer
-);
+procedure TFIBCustomDataSet.WriteArrayBuffer(Field: TField; Buffer: PAnsiChar);
 var
- qf:TFIBXSQLVAR;
+  Stream: TStream;
 begin
- if not (State in [dsEdit,dsInsert]) then
-  Exit;
- if not Assigned(Field) then
-  Exit;
- qf:=QSelect[Field.FieldName];
- if qf.FIBArray=nil then Exit;
- AutoStartUpdateTransaction;
- CheckUpdateTransaction;
- qf.FIBArray.PutElementToField(Field,Value,Indexes,DBHandle,@UpdateTransaction.Handle);
+  Stream := CreateBlobStream(Field, bmWrite);
+  try
+    if Buffer <> nil then
+      Stream.WriteBuffer(Buffer^, GetFieldArray(Field).ArraySize);
+  finally
+    Stream.Free;
+  end;
+end;
+
+function TFIBCustomDataSet.ArrayFieldValue(Field: TField): Variant;
+var
+  Arr: TpFIBArray;
+  Buffer: TDataBuffer;
+begin
+  Result := Null;
+  if not Assigned(Field) then
+    Exit;
+  Arr := GetFieldArray(Field);
+  Buffer := nil;
+  FIBAlloc(Buffer, 0, Arr.ArraySize);
+  try
+    if ReadArrayBuffer(Field, PAnsiChar(Buffer)) then
+      Result := Arr.BufferToVariant(PAnsiChar(Buffer));
+  finally
+    FIBAlloc(Buffer, 0, 0);
+  end;
+end;
+
+procedure TFIBCustomDataSet.SetArrayValue(Field: TField; Value: Variant);
+var
+  Buffer: TDataBuffer;
+begin
+  CheckEditState;
+  if not Assigned(Field) then
+    Exit;
+  // an empty stream is NULL
+  if VarIsEmpty(Value) or VarIsNull(Value) then
+  begin
+    WriteArrayBuffer(Field, nil);
+    Exit;
+  end;
+  Buffer := nil;
+  FIBAlloc(Buffer, 0, GetFieldArray(Field).ArraySize);
+  try
+    GetFieldArray(Field).VariantToBuffer(Value, PAnsiChar(Buffer));
+    WriteArrayBuffer(Field, PAnsiChar(Buffer));
+  finally
+    FIBAlloc(Buffer, 0, 0);
+  end;
+end;
+
+function TFIBCustomDataSet.GetElementFromValue(Field: TField; Indexes: array of Integer): Variant;
+var
+  Arr: TpFIBArray;
+  Buffer: TDataBuffer;
+begin
+  Result := Null;
+  if not Assigned(Field) then
+    Exit;
+  Arr := GetFieldArray(Field);
+  Buffer := nil;
+  FIBAlloc(Buffer, 0, Arr.ArraySize);
+  try
+    if ReadArrayBuffer(Field, PAnsiChar(Buffer)) then
+      Result := Arr.GetBufferElement(PAnsiChar(Buffer), Indexes)
+    else
+      Arr.CheckIndexes(Indexes);
+  finally
+    FIBAlloc(Buffer, 0, 0);
+  end;
+end;
+
+procedure TFIBCustomDataSet.SetArrayElementValue(Field: TField; Value: Variant;
+  Indexes: array of Integer);
+var
+  Arr: TpFIBArray;
+  Buffer: TDataBuffer;
+begin
+  CheckEditState;
+  if not Assigned(Field) then
+    Exit;
+  Arr := GetFieldArray(Field);
+  Buffer := nil;
+  FIBAlloc(Buffer, 0, Arr.ArraySize);
+  try
+    if not ReadArrayBuffer(Field, PAnsiChar(Buffer)) then
+      Arr.InitBuffer(PAnsiChar(Buffer));
+    Arr.SetBufferElement(PAnsiChar(Buffer), Indexes, Value);
+    WriteArrayBuffer(Field, PAnsiChar(Buffer));
+  finally
+    FIBAlloc(Buffer, 0, 0);
+  end;
 end;
 {$ENDIF}
 
@@ -12823,8 +12859,15 @@ begin
   if FModified then
   begin
     FModified := False;
-    if not TBlobField(FField).Modified then
-      TBlobField(FField).Modified := True;
+    if FField is TBlobField then
+    begin
+      if not TBlobField(FField).Modified then
+        TBlobField(FField).Modified := True;
+    end
+    else
+      // TBlobField.IsNull checks the stream when Modified, other fields keep the NULL flag
+      with TFIBCustomDataSet(FField.DataSet) do
+        UpdateFieldStreams(GetActiveBuf, ufsCheckIsNull, False, False, FField);
     TFIBCustomDataSet(FField.DataSet).DataEvent(deFieldChange, EventInfo(FField));
   end;
   inherited Destroy;
@@ -12833,6 +12876,8 @@ end;
 procedure TFIBDSFieldStream.DoCallBack(BlobSize: Integer; BytesProcessing: Integer;
   var Stop: Boolean);
 begin
+  if not (FField is TBlobField) then
+    Exit;
   if GlobalContainer <> nil then
     GlobalContainer.DoOnReadBlobField(TBlobField(FField), BlobSize, BytesProcessing, Stop);
   if Assigned(FOnBlobFieldRead) then
@@ -12876,7 +12921,8 @@ begin
     FIBError(feNotEditing, [CmpFullName(FField.DataSet)]);
   FModified := True;
   TFIBDataSet(FField.DataSet).RecordModified(True);
-  TBlobField(FField).Modified := True;
+  if FField is TBlobField then
+    TBlobField(FField).Modified := True;
   if Assigned(FFieldStream) then
     Result := FFieldStream.Write(Buffer, Count)
   else

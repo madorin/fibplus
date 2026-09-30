@@ -576,9 +576,7 @@ type
     function  SQLFieldName(const aFieldName:string):string;
 {$IFDEF SUPPORT_ARRAY_FIELD}
     procedure PrepareArrayFields;
-    procedure PrepareArraySqlVar(
-      SqlVar:TFIBXSQLVAR;const RelName,aSQLName:string; IsField:boolean
-    );
+    procedure PrepareArraySqlVar(SqlVar: TFIBXSQLVAR; const RelName, SQLName: string);
 {$ENDIF}
     procedure SetParamValues(const ParamValues: array of Variant); overload;
     procedure SetParamValues(const ParamNames: string;ParamValues: array of Variant); overload;
@@ -1756,29 +1754,30 @@ end;
 
 
 
-procedure TFIBXSQLVAR.SetArrayValue(Value:Variant);
+procedure TFIBXSQLVAR.SetArrayValue(Value: Variant);
 begin
- CheckArrayType;
- vFIBArray.SetArrayValue(Value, FXSQLVAR^.sqldata,
-  FQuery.DBHandle,FQuery.TRHandle
- );
- AsQuad:=PISC_QUAD(FXSQLVAR^.sqldata)^
+  CheckArrayType;
+  vFIBArray.SetArrayValue(Value, FXSQLVAR^.sqldata, FQuery.DBHandle, FQuery.TRHandle);
+  AsQuad := PISC_QUAD(FXSQLVAR^.sqldata)^;
 end;
 
-function TFIBXSQLVAR.GetArrayValues:Variant;
+function TFIBXSQLVAR.GetArrayValues: Variant;
 begin
- CheckArrayType;
- Result:=False;
- if not Assigned(vFIBArray) then Exit;
- Result:= vFIBArray.GetArrayValues(FXSQLVAR^.sqldata,
-             FQuery.DBHandle, FQuery.TRHandle
-          );
+  CheckArrayType;
+  // sqldata of a NULL column may keep the array ID of the previous row
+  if IsNull then
+    Result := Null
+  else
+    Result := vFIBArray.GetArrayValues(FXSQLVAR^.sqldata, FQuery.DBHandle, FQuery.TRHandle);
 end;
 
-function TFIBXSQLVAR.GetArrayElement(Indexes: array of Integer):Variant;
+function TFIBXSQLVAR.GetArrayElement(Indexes: array of Integer): Variant;
 begin
- CheckArrayType;
- Result:=GetArrayValues[Indexes[0]]
+  CheckArrayType;
+  if IsNull then
+    Result := Null
+  else
+    Result := vFIBArray.GetElement(FXSQLVAR^.sqldata, Indexes, FQuery.DBHandle, FQuery.TRHandle);
 end;
 
 function TFIBXSQLVAR.GetArraySize:integer;
@@ -5848,32 +5847,11 @@ end;
 // Array Support
 {$IFDEF SUPPORT_ARRAY_FIELD}
 
-procedure TFIBQuery.PrepareArraySqlVar(SqlVar:TFIBXSQLVAR;
-           const RelName,aSQLName:string; IsField:boolean
-          );
+procedure TFIBQuery.PrepareArraySqlVar(SqlVar: TFIBXSQLVAR; const RelName, SQLName: string);
 begin
- if SqlVar= nil then
-  FIBError(feInvalidParamColumnIndex,['']);
- with Database.ClientLibrary do
- try
-    with SqlVar do
-    begin
-     if SqlVar.vFIBArray=nil then
-      vFIBArray:=TpFIBArray.Create(Database.ClientLibrary,FXSQLVAR,
-       DBHandle,TRHandle, RelName, aSQLName
-      );
-     if not IsField then
-     begin
-      FIBAlloc(FXSQLVAR^.sqldata, 0, 0);
-      FIBAlloc(FXSQLVAR^.sqldata, 0, vFIBArray.ArraySize);
-      FXSQLVAR^.sqltype:=SQL_ARRAY
-     end;
-    end;
- except
-   IbError(Database.ClientLibrary,Self)
- end;
+  if SqlVar.vFIBArray = nil then
+    SqlVar.vFIBArray := TpFIBArray.Create(Database, Transaction, RelName, SQLName);
 end;
-
 
 procedure TFIBQuery.PrepareArrayFields;
 var i:integer;
@@ -5886,7 +5864,7 @@ begin
    v:=da.FXSQLVARs^[i];
    with v,v.FXSQLVAR^ do
     if (sqltype and (not 1) = SQL_ARRAY) then
-     PrepareArraySqlVar(v,RelName,SQLName,True);
+     PrepareArraySqlVar(v, RelName, SQLName);
  end;
 end;
 {$ENDIF}
@@ -6083,6 +6061,10 @@ begin
                   );
                   IsNull:=True
                 end
+                else
+                if (tmpVar.SQLType = SQL_ARRAY) and (SQLType = SQL_BLOB) then
+                  // array ID set by AsQuad before the server type was known
+                  FXSQLVAR^.sqltype := SQL_ARRAY or (FXSQLVAR^.sqltype and 1)
                 else
             if tmpVar.IsBlob and (not IsBlob or IsDefferedLongString) then
                 begin
