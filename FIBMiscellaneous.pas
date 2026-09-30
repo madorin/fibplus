@@ -907,6 +907,8 @@ begin
    ReallocMem(FOldBuffer,0);
    FOldBlobSize:=0;   
   end;
+  // the current value is the one to restore on the next Cancel
+  FNeedSaveOldBuffer := True;
 end;
 
 procedure TFIBBlobStream.GetBlobInfo;

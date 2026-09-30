@@ -7509,7 +7509,9 @@ begin
       begin
 //
        fs1:=TFIBBlobStream(FOpenedBlobStreams[0]);
-       fs1.DeInitialize;
+       // a modified value (CachedUpdates) exists only in the stream until it is stored
+       if not fs1.Modified then
+         fs1.DeInitialize;
        FOpenedBlobStreams.Delete(0);       
       end;
     end
