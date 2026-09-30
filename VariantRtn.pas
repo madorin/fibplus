@@ -29,25 +29,6 @@ uses
 
    SysUtils,FIBPlatforms, Variants;
 
-{$IFDEF SUPPORT_ARRAY_FIELD}
-type
-
-// CallBack procedures definitions
-      TProcReadElementValue=procedure (Value:Variant; IndexValue:array of integer;
-       const HighBoundInd:integer;
-       Var Continue:boolean
-      );
-      TProcWriteElementValue=
-       procedure (OldValue:Variant; IndexValue:array of integer;
-        Var NewValue:Variant;  Var Continue:boolean
-       );
-//  End CallBack procedures definitions
-
-
-
-function CycleReadArray(vArray:Variant;CallBackProc:TProcReadElementValue):boolean;
-function CycleWriteArray(var vArray:Variant;CallBackProc:TProcWriteElementValue):boolean;
- {$ENDIF}
 function CompareVarArray1(vArray1,vArray2:Variant):boolean;
 function EasyCompareVarArray1(vArray1,vArray2:Variant;HighBound:integer):boolean;
 function NeedCastForCompare(const v,v1:Variant):boolean;
@@ -422,93 +403,6 @@ begin
  except
  end
 end;
-{$IFDEF SUPPORT_ARRAY_FIELD}
-
-
-  
-function NextElements(v: Variant;var CurIndex:array of Integer): boolean;
-var
-  Dimensions: integer;
-  i: integer;
-begin
-  Result := False;
-  Dimensions := VarArrayDimCount(v);
-  for i := Dimensions-1 downto 0 do
-  begin
-    if CurIndex[i] = VarArrayHighBound(v,i+1) then
-    begin
-      CurIndex[i] := VarArrayLowBound(v,i+1);
-    end
-    else
-    begin
-      CurIndex[i] := CurIndex[i]+1;
-      Result := True;
-      Exit;
-    end;
-  end;
-end;
-
-
-
-
-function CycleReadArray(vArray:Variant;CallBackProc:TProcReadElementValue):boolean;
-var
-  Value:Variant;
-  CurIndex:array of Integer;
-  DimCount,I:Integer;
-begin
- Result:=false;
- if not Assigned(CallBackProc) then Exit;
- if not VarIsArray(vArray) then Exit;
-
- DimCount := VarArrayDimCount(vArray);
- SetLength(CurIndex,DimCount);
- for i:=0 to DimCount-1 do
-  CurIndex[i]:= VarArrayLowBound(vArray,i+1);
-
-// InitializationCurIndexArray(vArray,CurIndex);
-
-
-  repeat
-    Value:= VarArrayGet(vArray, CurIndex);
-    Result:=true;
-    CallBackProc(Value,CurIndex,DimCount-1,Result);
-    if not Result then Exit;
-    if not NextElements(vArray,CurIndex) then Break;
-  until False;
-end;
-
-
-
-function CycleWriteArray
- (var vArray:Variant;CallBackProc:TProcWriteElementValue):boolean;
-var
-  OldValue,NewValue: Variant;
-  CurIndex:array of Integer;
-  DimCount,I:Integer;
-
-begin
-// vArray - Variant array of Variant
- Result:=false;
- if not Assigned(CallBackProc) then Exit;
-
- DimCount := VarArrayDimCount(vArray);
- SetLength(CurIndex,DimCount);
- for i:=0 to DimCount-1 do
-  CurIndex[i]:= VarArrayLowBound(vArray,i+1);
-
-// InitializationCurIndexArray(vArray,CurIndex);
- repeat
-    OldValue:=VarArrayGet(vArray, CurIndex);
-    Result:=true;
-    CallBackProc(OldValue,CurIndex,NewValue,Result);
-    if not Result then Exit;
-    VarArrayPut(vArray, NewValue, CurIndex );
-    if not NextElements(vArray,CurIndex) then Break;
- until False;
-end;
-
-{$ENDIF}
 end.
 
 
