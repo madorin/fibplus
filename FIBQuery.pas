@@ -81,6 +81,8 @@ type
     FParDataIsPrepared:boolean;
  {$IFDEF SUPPORT_ARRAY_FIELD}
     vFIBArray:TpFIBArray;
+    // value of an array parameter, written before the execution (TFIBQuery.PutArrayParams)
+    FArrayValue: Variant;
  {$ENDIF}
 
     function GetAsInt64: Int64;
@@ -206,6 +208,7 @@ type
     function  GetArrayElement(Indexes: array of Integer):Variant;
     function  GetArrayValues:Variant;
     procedure SetArrayValue(Value:Variant);
+    function IsArrayParamValue(const Value: Variant; ServerType: Integer): Boolean;
 {$ENDIF}
     function  IsDefMacroValue :boolean;
     procedure SetDefMacroValue;
@@ -576,6 +579,7 @@ type
     function  SQLFieldName(const aFieldName:string):string;
 {$IFDEF SUPPORT_ARRAY_FIELD}
     procedure PrepareArrayFields;
+    procedure PutArrayParams;
     procedure PrepareArraySqlVar(SqlVar: TFIBXSQLVAR; const RelName, SQLName: string);
 {$ENDIF}
     procedure SetParamValues(const ParamValues: array of Variant); overload;
@@ -795,8 +799,15 @@ begin
       Exit;
     end
     else
-    if (DestSQLType = SQL_ARRAY) or   (SrcSQLType = SQL_ARRAY) then  Exit;
-     // arrays not supported.
+    if SrcSQLType = SQL_ARRAY then
+    begin
+      // array ID written by TFIBQuery.PutArrayParams
+      AsQuad := Source.AsQuad;
+      Exit;
+    end
+    else
+    if DestSQLType = SQL_ARRAY then
+      Exit;
 
     if (DestSQLType <> SQL_BLOB) and not bSourceBlob then
     begin
@@ -1755,10 +1766,26 @@ end;
 
 
 procedure TFIBXSQLVAR.SetArrayValue(Value: Variant);
+const
+  NullID: TISC_QUAD = (gds_quad_high: 0; gds_quad_low: 0);
 begin
+  if FParent.FIsParams then
+  begin
+    // the column of the parameter is known only after Prepare
+    SetValue(SQL_ARRAY, SizeOf(TISC_QUAD), tspValue, NullID);
+    FArrayValue := Value;
+    Exit;
+  end;
   CheckArrayType;
   vFIBArray.SetArrayValue(Value, FXSQLVAR^.sqldata, FQuery.DBHandle, FQuery.TRHandle);
   AsQuad := PISC_QUAD(FXSQLVAR^.sqldata)^;
+end;
+
+// Byte arrays set to a parameter of an unknown type are BLOB data (VariantToStream)
+function TFIBXSQLVAR.IsArrayParamValue(const Value: Variant; ServerType: Integer): Boolean;
+begin
+  Result := IsArray or (ServerType = SQL_ARRAY) or
+    (FParent.FIsParams and (ServerType = 0) and (VarType(Value) and varTypeMask <> varByte));
 end;
 
 function TFIBXSQLVAR.GetArrayValues: Variant;
@@ -2084,6 +2111,13 @@ var
   xvar: TFIBXSQLVAR;
   OldIsNull:boolean;
 begin
+{$IFDEF SUPPORT_ARRAY_FIELD}
+  // any other value replaces a pending array value
+  if ((ValueType = tspValue) and (aSQLType <> SQL_ARRAY)) or (ValueType = tspSqlVar) or
+    ((ValueType = tspNull) and Boolean(aValue))
+  then
+    VarClear(FArrayValue);
+{$ENDIF}
   OldIsNull:=IsNull;
   i:=NonAnsiIndexOf(FParent.FEquelNames,FName);
 //  if (FParent.FEquelNames.Count=0) or not FParent.FEquelNames.Find(FName,i) then
@@ -2641,7 +2675,7 @@ begin
       AsAnsiString := Value;
     varArray:
     {$IFDEF SUPPORT_ARRAY_FIELD}
-     if IsArray then
+     if IsArrayParamValue(Value, sSQLType) then
       SetArrayValue(Value)
      else
     {$ENDIF}
@@ -2665,7 +2699,7 @@ begin
    if VarIsArray(Value) then
    begin
 {$IFDEF SUPPORT_ARRAY_FIELD}
-     if IsArray then
+     if IsArrayParamValue(Value, sSQLType) then
       SetArrayValue(Value)
      else
 {$ENDIF}
@@ -4582,6 +4616,9 @@ begin
   if not Prepared then
    Prepare;
     SaveStreamedParams(FUserSQLParams);
+    {$IFDEF SUPPORT_ARRAY_FIELD}
+    PutArrayParams;
+    {$ENDIF}
     if (vDiffParams and  FDoParamCheck and (pc>0)) then
     begin
      FSQLParams.AssignValues(FUserSQLParams);
@@ -5851,6 +5888,51 @@ procedure TFIBQuery.PrepareArraySqlVar(SqlVar: TFIBXSQLVAR; const RelName, SQLNa
 begin
   if SqlVar.vFIBArray = nil then
     SqlVar.vFIBArray := TpFIBArray.Create(Database, Transaction, RelName, SQLName);
+end;
+
+// Writes the array values of the parameters as new arrays
+procedure TFIBQuery.PutArrayParams;
+var
+  i: Integer;
+  Par, SrvPar: TFIBXSQLVAR;
+  ColumnRelation, ColumnName: string;
+  Buffer: TDataBuffer;
+  ID: TISC_QUAD;
+begin
+  for i := 0 to FUserSQLParams.Count - 1 do
+  begin
+    Par := FUserSQLParams[i];
+    if VarIsEmpty(Par.FArrayValue) then
+      Continue;
+    if vDiffParams then
+      SrvPar := FSQLParams.FindParam(Par.Name)
+    else
+      SrvPar := FSQLParams[i];
+    if (SrvPar = nil) or (SrvPar.SQLType <> SQL_ARRAY) then
+      FIBErrorEx('Parameter %s is not an array', [Par.Name]);
+    // the column the parameter is assigned to
+    with SrvPar.FXSQLVAR^ do
+    begin
+      SetString(ColumnRelation, relname, relname_length);
+      SetString(ColumnName, sqlname, sqlname_length);
+    end;
+    if (Par.vFIBArray = nil) or (Par.vFIBArray.TableName <> AnsiString(ColumnRelation)) or
+      (Par.vFIBArray.FieldName <> AnsiString(ColumnName))
+    then
+    begin
+      FreeAndNil(Par.vFIBArray);
+      Par.vFIBArray := TpFIBArray.Create(Database, Transaction, ColumnRelation, ColumnName);
+    end;
+    Buffer := nil;
+    FIBAlloc(Buffer, 0, Par.vFIBArray.ArraySize);
+    try
+      Par.vFIBArray.VariantToBuffer(Par.FArrayValue, PAnsiChar(Buffer));
+      Par.vFIBArray.PutSlice(PAnsiChar(Buffer), ID, DBHandle, TRHandle);
+    finally
+      FIBAlloc(Buffer, 0, 0);
+    end;
+    Par.AsQuad := ID;
+  end;
 end;
 
 procedure TFIBQuery.PrepareArrayFields;
