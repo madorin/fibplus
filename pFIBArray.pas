@@ -33,12 +33,12 @@ uses
 type
   TpFIBArray = class
   private
-    FClientLibrary: IIBClientLibrary;
+    FDatabase: TFIBDatabase;
+    FCharSet: string;
     FArrayType: TFieldType;
     FTableName: AnsiString;
     FFieldName: AnsiString;
     FArrayDesc: TISC_ARRAY_DESC;
-    FUnicode: Boolean;
     procedure CheckStatus(Status: ISC_STATUS);
     function DescScale: Integer;
     function ElementSize: Integer;
@@ -54,11 +54,12 @@ type
     function GetStoredElement(ArrayID: TDataBuffer; const Desc: TISC_ARRAY_DESC;
       DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;
     function GetScale: Byte;
-    procedure AdjustStringLength(Database: TFIBDatabase; Transaction: TFIBTransaction);
+    procedure AdjustStringLength(Transaction: TFIBTransaction);
   public
     constructor Create(Database: TFIBDatabase; Transaction: TFIBTransaction;
       const ATableName, AFieldName: string);
-    destructor Destroy; override;
+    // The descriptor fits the column and the character set of the connection
+    function Matches(Database: TFIBDatabase; const ATableName, AFieldName: string): Boolean;
     // for FIBQuery: the array with the ID in ArrayID
     function GetArrayValues(ArrayID: TDataBuffer;
       DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;
@@ -164,14 +165,14 @@ constructor TpFIBArray.Create(Database: TFIBDatabase; Transaction: TFIBTransacti
   const ATableName, AFieldName: string);
 begin
   inherited Create;
-  FClientLibrary := Database.ClientLibrary;
+  FDatabase := Database;
+  FCharSet := Database.ConnectParams.CharSet;
   FTableName := AnsiString(ATableName);
   FFieldName := AnsiString(AFieldName);
-  FUnicode := Database.IsUnicodeConnect;
-  CheckStatus(FClientLibrary.isc_array_lookup_bounds(StatusVector, @Database.Handle,
+  CheckStatus(FDatabase.ClientLibrary.isc_array_lookup_bounds(StatusVector, @Database.Handle,
     @Transaction.Handle, PAnsiChar(FTableName), PAnsiChar(FFieldName), @FArrayDesc));
   if FArrayDesc.array_desc_dtype in [blr_text, blr_varying] then
-    AdjustStringLength(Database, Transaction);
+    AdjustStringLength(Transaction);
   with FArrayDesc do
   begin
     case array_desc_dtype of
@@ -226,18 +227,18 @@ end;
 
 // String elements are transferred in the connection character set, but the descriptor has
 // the length in bytes of the column character set: CHAR(5) NONE is 5 bytes, one character in UTF8
-procedure TpFIBArray.AdjustStringLength(Database: TFIBDatabase; Transaction: TFIBTransaction);
+procedure TpFIBArray.AdjustStringLength(Transaction: TFIBTransaction);
 var
   Info: Variant;
   Length: Integer;
 begin
-  Info := Database.QueryValues(
+  Info := FDatabase.QueryValues(
     'select coalesce(f.RDB$CHARACTER_LENGTH, f.RDB$FIELD_LENGTH), cs.RDB$BYTES_PER_CHARACTER ' +
     'from RDB$RELATION_FIELDS rf ' +
     'join RDB$FIELDS f on f.RDB$FIELD_NAME = rf.RDB$FIELD_SOURCE ' +
     'join RDB$CHARACTER_SETS cs on cs.RDB$CHARACTER_SET_ID = :CHARSET_ID ' +
     'where rf.RDB$RELATION_NAME = :RELATION_NAME and rf.RDB$FIELD_NAME = :FIELD_NAME',
-    [Database.FBAttachCharsetID, string(FTableName), string(FFieldName)], Transaction);
+    [FDatabase.FBAttachCharsetID, string(FTableName), string(FFieldName)], Transaction);
   if not VarIsArray(Info) or VarIsNull(Info[0]) or VarIsNull(Info[1]) then
     Exit;
   Length := Info[0] * Info[1];
@@ -245,16 +246,16 @@ begin
     FArrayDesc.array_desc_length := Length;
 end;
 
-destructor TpFIBArray.Destroy;
+function TpFIBArray.Matches(Database: TFIBDatabase; const ATableName, AFieldName: string): Boolean;
 begin
-  FClientLibrary := nil;
-  inherited;
+  Result := (FDatabase = Database) and (FTableName = AnsiString(ATableName)) and
+    (FFieldName = AnsiString(AFieldName)) and (FCharSet = Database.ConnectParams.CharSet);
 end;
 
 procedure TpFIBArray.CheckStatus(Status: ISC_STATUS);
 begin
   if Status > 0 then
-    IbError(FClientLibrary, Self);
+    IbError(FDatabase.ClientLibrary, Self);
 end;
 
 function TpFIBArray.DescScale: Integer;
@@ -368,7 +369,7 @@ begin
             Dec(L);
         end;
         SetString(S, P, L);
-        if FUnicode then
+        if FDatabase.IsUnicodeConnect then
           {$IFDEF D2009+}
           Result := UTF8ToString(S)
           {$ELSE}
@@ -458,7 +459,7 @@ begin
     case array_desc_dtype of
       blr_text, blr_varying:
       begin
-        if FUnicode then
+        if FDatabase.IsUnicodeConnect then
           S := UTF8Encode(VarToStr(Value))
         else
           S := AnsiString(VarToStr(Value));
@@ -611,7 +612,7 @@ function TpFIBArray.GetSlice(ID: PISC_QUAD; Buffer: PAnsiChar;
   DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Integer;
 begin
   Result := ArraySize;
-  CheckStatus(FClientLibrary.isc_array_get_slice(StatusVector, DBHandle, TRHandle,
+  CheckStatus(FDatabase.ClientLibrary.isc_array_get_slice(StatusVector, DBHandle, TRHandle,
     ID, @FArrayDesc, Pointer(Buffer), @Result));
 end;
 
@@ -625,7 +626,7 @@ begin
   // for that ID (Firebird keeps it until the transaction ends)
   ID.gds_quad_high := 0;
   ID.gds_quad_low := 0;
-  CheckStatus(FClientLibrary.isc_array_put_slice(StatusVector, DBHandle, TRHandle,
+  CheckStatus(FDatabase.ClientLibrary.isc_array_put_slice(StatusVector, DBHandle, TRHandle,
     @ID, @FArrayDesc, Pointer(Buffer), @ArrSize));
 end;
 
@@ -639,7 +640,7 @@ begin
   Buffer := nil;
   FIBAlloc(Buffer, 0, SliceSize + 1);
   try
-    CheckStatus(FClientLibrary.isc_array_get_slice(StatusVector, DBHandle, TRHandle,
+    CheckStatus(FDatabase.ClientLibrary.isc_array_get_slice(StatusVector, DBHandle, TRHandle,
       PISC_QUAD(ArrayID), @Desc, Pointer(Buffer), @SliceSize));
     if SliceSize = 0 then
       Result := Null

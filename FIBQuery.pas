@@ -5886,8 +5886,12 @@ end;
 
 procedure TFIBQuery.PrepareArraySqlVar(SqlVar: TFIBXSQLVAR; const RelName, SQLName: string);
 begin
-  if SqlVar.vFIBArray = nil then
+  // the variables of the query are reused by the next Prepare, also for another statement
+  if (SqlVar.vFIBArray = nil) or not SqlVar.vFIBArray.Matches(Database, RelName, SQLName) then
+  begin
+    FreeAndNil(SqlVar.vFIBArray);
     SqlVar.vFIBArray := TpFIBArray.Create(Database, Transaction, RelName, SQLName);
+  end;
 end;
 
 // Writes the array values of the parameters as new arrays
@@ -5916,9 +5920,7 @@ begin
       SetString(ColumnRelation, relname, relname_length);
       SetString(ColumnName, sqlname, sqlname_length);
     end;
-    if (Par.vFIBArray = nil) or (Par.vFIBArray.TableName <> AnsiString(ColumnRelation)) or
-      (Par.vFIBArray.FieldName <> AnsiString(ColumnName))
-    then
+    if (Par.vFIBArray = nil) or not Par.vFIBArray.Matches(Database, ColumnRelation, ColumnName) then
     begin
       FreeAndNil(Par.vFIBArray);
       Par.vFIBArray := TpFIBArray.Create(Database, Transaction, ColumnRelation, ColumnName);
