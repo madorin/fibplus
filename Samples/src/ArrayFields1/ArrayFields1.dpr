@@ -11,4 +11,5 @@ begin
   Application.Title := 'Array Fields1';
   Application.CreateForm(TForm1, Form1);
   Application.Run;
+
 end.

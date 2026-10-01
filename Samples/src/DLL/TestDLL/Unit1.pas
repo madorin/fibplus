@@ -10,7 +10,7 @@ uses
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    db: TpFIBDatabase;
+    DB: TpFIBDatabase;
     tr: TpFIBTransaction;
     dt: TpFIBDataSet;
     ds: TDataSource;
@@ -25,10 +25,9 @@ type
 var
   Form1: TForm1;
 
-  procedure ShowFormFromDLL(AppHandle: THandle; DBHandle: TISC_DB_HANDLE); StdCall;
+procedure ShowFormFromDLL(AppHandle: THandle; DBHandle: TISC_DB_HANDLE); StdCall;
 
-exports
-  ShowFormFromDLL;
+exports ShowFormFromDLL;
 {$I FIBExamples.inc}
 
 implementation
@@ -38,11 +37,10 @@ begin
   try
     Application.Handle := AppHandle;
     Form1 := TForm1.Create(Application);
-   {$IFDEF FBCLIENT.DLL}
-    Form1.db.LibraryName:='fbclient.dll';
-   {$ENDIF}
-
-    Form1.db.Handle := DBHandle;
+{$IFDEF FBCLIENT.DLL}
+    Form1.DB.LibraryName := 'fbclient.dll';
+{$ENDIF}
+    Form1.DB.Handle := DBHandle;
     Form1.dt.Open;
     Form1.ShowModal;
   finally
@@ -51,7 +49,6 @@ begin
     Form1.Free;
   end;
 end;
-
 
 {$R *.dfm}
 

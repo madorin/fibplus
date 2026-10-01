@@ -90,5 +90,3 @@ contains
   FIBSaveDataSetToXml in '..\FIBSaveDataSetToXml.pas';
 
 end.
-
-

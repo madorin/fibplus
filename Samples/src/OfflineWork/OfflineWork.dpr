@@ -11,4 +11,5 @@ begin
   Application.Title := 'Offline work';
   Application.CreateForm(TForm1, Form1);
   Application.Run;
+
 end.

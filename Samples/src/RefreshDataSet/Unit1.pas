@@ -1,5 +1,5 @@
 unit Unit1;
-                                                     
+
 interface
 
 uses
@@ -12,7 +12,7 @@ uses
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    db: TpFIBDatabase;
+    DB: TpFIBDatabase;
     tr: TpFIBTransaction;
     dt: TpFIBDataSet;
     ds: TDataSource;
@@ -28,7 +28,7 @@ type
     procedure Button2Click(Sender: TObject);
     procedure dtBeforeOpen(DataSet: TDataSet);
   private
-    FLastVersionFetch:TDateTime;
+    FLastVersionFetch: TDateTime;
   public
     { Public declarations }
   end;
@@ -44,39 +44,41 @@ implementation
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   Caption := 'FIBPlus Example - ' + Application.Title;
-  db.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\'+DemoDB;
-  {$IFDEF FBCLIENT.DLL}
-   db.LibraryName:='fbclient.dll';
-  {$ENDIF}
-
-  db.Connected := True;
+  DB.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\' + DemoDB;
+{$IFDEF FBCLIENT.DLL}
+  DB.LibraryName := 'fbclient.dll';
+{$ENDIF}
+  DB.Connected := True;
   dt.Open;
 
 end;
 
 procedure TForm1.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) + ' session. Proceed?',
-    mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
+  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) +
+    ' session. Proceed?', mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
 begin
   case cmbKindRefresh.ItemIndex of
-   0: begin
-       dt.Refresh;
-       ShowMessage('Fetched 1 record')
+    0:
+      begin
+        dt.Refresh;
+        ShowMessage('Fetched 1 record')
       end;
-   1: begin
-       dt.FullRefresh;
-       ShowMessage('Fetched '+IntToStr(dt.RecordCount)+' records')
+    1:
+      begin
+        dt.FullRefresh;
+        ShowMessage('Fetched ' + IntToStr(dt.RecordCount) + ' records')
       end;
-   2: begin
-       qryExactRefresh.Params[0].asDateTime:=FLastVersionFetch;
-       dt.RefreshFromQuery(qryExactRefresh,'ID');
-       if qryExactRefresh.RecordCount>0 then
-        FLastVersionFetch:=qryExactRefresh.FieldByName('LAST_UPDATE').Value;
-       ShowMessage('Fetched '+IntToStr(qryExactRefresh.RecordCount)+' records')
+    2:
+      begin
+        qryExactRefresh.Params[0].asDateTime := FLastVersionFetch;
+        dt.RefreshFromQuery(qryExactRefresh, 'ID');
+        if qryExactRefresh.RecordCount > 0 then
+          FLastVersionFetch := qryExactRefresh.FieldByName('LAST_UPDATE').Value;
+        ShowMessage('Fetched ' + IntToStr(qryExactRefresh.RecordCount) + ' records')
       end
   end
 end;
@@ -84,7 +86,8 @@ end;
 procedure TForm1.dtBeforeOpen(DataSet: TDataSet);
 begin
   //
-  FLastVersionFetch:=db.QueryValue('Select MAX(LAST_UPDATE) from BIGTABLE',0,tr)
+  FLastVersionFetch := DB.QueryValue
+    ('Select MAX(LAST_UPDATE) from BIGTABLE', 0, tr)
 end;
 
 end.

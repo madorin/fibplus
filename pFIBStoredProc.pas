@@ -18,8 +18,7 @@
 {  Please see the file License.txt for full license information }
 {***************************************************************}
 
-
-{Special thanks to Vadim Yegorov <zg@matrica.apollo.lv>}
+{ Special thanks to Vadim Yegorov <zg@matrica.apollo.lv> }
 
 unit pFIBStoredProc;
 
@@ -64,14 +63,13 @@ begin
     Exit;
   FStoredProcName := Value;
   // While reading, SQL comes from the stream
-  if not (csReading in ComponentState) then
+  if not(csReading in ComponentState) then
     BuildSQL;
 end;
 
 function TpFIBStoredProc.FormattedName: string;
 begin
-  Result := EasyFormatIdentifier(Database.SQLDialect, FStoredProcName,
-    Database.EasyFormatsStr);
+  Result := EasyFormatIdentifier(Database.SQLDialect, FStoredProcName, Database.EasyFormatsStr);
 end;
 
 procedure TpFIBStoredProc.BuildSQL;
@@ -85,8 +83,7 @@ begin
     if Deferred and Assigned(Database) and Database.Connected then
     begin
       // In the IDE the procedure may have been altered, re-read its metadata
-      SQLText := ListSPInfo.GetExecProcTxt(Database, FormattedName,
-        csDesigning in ComponentState);
+      SQLText := ListSPInfo.GetExecProcTxt(Database, FormattedName, csDesigning in ComponentState);
       Deferred := False;
     end;
   finally
@@ -107,8 +104,7 @@ end;
 
 procedure TpFIBStoredProc.BuildDeferredSQL;
 begin
-  if FSQLDeferred and Assigned(Database) and Database.Connected and
-    not (csDestroying in ComponentState) then
+  if FSQLDeferred and Assigned(Database) and Database.Connected and not(csDestroying in ComponentState) then
     BuildSQL;
 end;
 
@@ -122,7 +118,7 @@ end;
 procedure TpFIBStoredProc.SetDatabase(Value: TFIBDatabase);
 begin
   inherited SetDatabase(Value);
-  if not (csLoading in ComponentState) then
+  if not(csLoading in ComponentState) then
   begin
     DeferMissingSQL;
     BuildDeferredSQL;

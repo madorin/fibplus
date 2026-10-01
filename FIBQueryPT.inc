@@ -17,152 +17,121 @@
 {                                                               }
 {  Please see the file License.txt for full license information }
 {***************************************************************}
+
 {$IFDEF FIB_INTERFACE}
- FLoadingPrepared:boolean;
- procedure ReadQueryStartTransaction (Reader: TReader);
- procedure WriteQueryStartTransaction(Writer: TWriter);
-
- procedure ReadQueryAutoCommit (Reader: TReader);
- procedure WriteQueryAutoCommit(Writer: TWriter);
-
-
- procedure ReadQueryTrimChar (Reader: TReader);
- procedure WriteQueryTrimChar(Writer: TWriter);
-
- procedure ReadAutoFreeHandle (Reader: TReader);
- procedure WriteAutoFreeHandle(Writer: TWriter);
-
- procedure ReadQueryNoForceIsNull (Reader: TReader);
- procedure WriteQueryNoForceIsNull(Writer: TWriter);
-
-
-
- procedure DefineProperties(Filer: TFiler); override;
-
+    FLoadingPrepared: boolean;
+    procedure ReadQueryStartTransaction(Reader: TReader);
+    procedure WriteQueryStartTransaction(Writer: TWriter);
+    procedure ReadQueryAutoCommit(Reader: TReader);
+    procedure WriteQueryAutoCommit(Writer: TWriter);
+    procedure ReadQueryTrimChar(Reader: TReader);
+    procedure WriteQueryTrimChar(Writer: TWriter);
+    procedure ReadAutoFreeHandle(Reader: TReader);
+    procedure WriteAutoFreeHandle(Writer: TWriter);
+    procedure ReadQueryNoForceIsNull(Reader: TReader);
+    procedure WriteQueryNoForceIsNull(Writer: TWriter);
+    procedure DefineProperties(Filer: TFiler); override;
 {$ENDIF}
 
 {$IFDEF FIB_IMPLEMENT}
-procedure TFIBQuery.ReadQueryTrimChar (Reader: TReader);
+procedure TFIBQuery.ReadQueryTrimChar(Reader: TReader);
 begin
- if Reader.ReadBoolean then
-   Include(FOptions,qoTrimCharFields)
- else
-   Exclude(FOptions,qoTrimCharFields)
+  if Reader.ReadBoolean then
+    Include(FOptions, qoTrimCharFields)
+  else
+    Exclude(FOptions, qoTrimCharFields);
 end;
 
 procedure TFIBQuery.WriteQueryTrimChar(Writer: TWriter);
 begin
- Writer.WriteBoolean(qoTrimCharFields in Options);
+  Writer.WriteBoolean(qoTrimCharFields in Options);
 end;
 
-procedure TFIBQuery.ReadQueryStartTransaction (Reader: TReader);
+procedure TFIBQuery.ReadQueryStartTransaction(Reader: TReader);
 begin
- if Reader.ReadBoolean then
-   Include(FOptions,qoStartTransaction)
- else
-   Exclude(FOptions,qoStartTransaction);
+  if Reader.ReadBoolean then
+    Include(FOptions, qoStartTransaction)
+  else
+    Exclude(FOptions, qoStartTransaction);
 end;
 
 procedure TFIBQuery.WriteQueryStartTransaction(Writer: TWriter);
 begin
- Writer.WriteBoolean(qoStartTransaction in Options)
+  Writer.WriteBoolean(qoStartTransaction in Options);
 end;
 
-
-procedure TFIBQuery.ReadQueryAutoCommit (Reader: TReader);
+procedure TFIBQuery.ReadQueryAutoCommit(Reader: TReader);
 begin
   if Reader.ReadBoolean then
-   Include(FOptions,qoAutoCommit)
+    Include(FOptions, qoAutoCommit)
   else
-   Exclude(FOptions,qoAutoCommit)
+    Exclude(FOptions, qoAutoCommit);
 end;
 
 procedure TFIBQuery.WriteQueryAutoCommit(Writer: TWriter);
 begin
- Writer.WriteBoolean(qoAutoCommit in Options)
+  Writer.WriteBoolean(qoAutoCommit in Options);
 end;
 
-procedure TFIBQuery.ReadAutoFreeHandle (Reader: TReader);
+procedure TFIBQuery.ReadAutoFreeHandle(Reader: TReader);
 begin
- if Reader.ReadBoolean then
-  Include(FOptions,qoFreeHandleAfterExecute)
- else
-  Exclude(FOptions,qoFreeHandleAfterExecute);
+  if Reader.ReadBoolean then
+    Include(FOptions, qoFreeHandleAfterExecute)
+  else
+    Exclude(FOptions, qoFreeHandleAfterExecute);
 end;
-
 
 procedure TFIBQuery.WriteAutoFreeHandle(Writer: TWriter);
 begin
- Writer.WriteBoolean(qoFreeHandleAfterExecute in Options)
+  Writer.WriteBoolean(qoFreeHandleAfterExecute in Options);
 end;
 
-procedure TFIBQuery.ReadQueryNoForceIsNull (Reader: TReader);
+procedure TFIBQuery.ReadQueryNoForceIsNull(Reader: TReader);
 begin
- if Reader.ReadBoolean then
-  Include(FOptions,qoNoForceIsNull)
- else
-  Exclude(FOptions,qoNoForceIsNull);
+  if Reader.ReadBoolean then
+    Include(FOptions, qoNoForceIsNull)
+  else
+    Exclude(FOptions, qoNoForceIsNull);
 end;
 
 procedure TFIBQuery.WriteQueryNoForceIsNull(Writer: TWriter);
 begin
- Writer.WriteBoolean(qoNoForceIsNull in Options)
+  Writer.WriteBoolean(qoNoForceIsNull in Options);
 end;
-
 
 procedure TFIBQuery.DefineProperties(Filer: TFiler);
 var
-  IsWriteProcess:boolean;
+  IsWriteProcess: boolean;
 
-function DoSave(Option:TpFIBQueryOption):boolean;
-begin
- if Filer.Ancestor <> nil then
- begin
-    Result:=([Option]*TFIBQuery(Filer.Ancestor).Options)<>([Option]*Options)
- end
- else
-  Result:= Option in Options
-end;
+  function DoSave(Option: TpFIBQueryOption): boolean;
+  begin
+    if Filer.Ancestor <> nil then
+      Result := ([Option] * TFIBQuery(Filer.Ancestor).Options) <> ([Option] * Options)
+    else
+      Result := Option in Options;
+  end;
 
 begin
   inherited;
-  IsWriteProcess:=not (Filer is TReader);
-          
+  IsWriteProcess := not (Filer is TReader);
+
   if (csDesigning in ComponentState) and not IsWriteProcess and not FLoadingPrepared then
   begin
-  // Paste component in DesignTime
-  // Clear Values from tools
-   FOptions:=[];
-   FLoadingPrepared:=True;
+    // Paste component in DesignTime
+    // Clear Values from tools
+    FOptions := [];
+    FLoadingPrepared := True;
   end;
 
-
-  Filer.DefineProperty('qoAutoCommit',
-   ReadQueryAutoCommit, WriteQueryAutoCommit,
-    IsWriteProcess and DoSave(qoAutoCommit)
-  );
-
-  Filer.DefineProperty('qoStartTransaction',
-   ReadQueryStartTransaction, WriteQueryStartTransaction,
-    IsWriteProcess and DoSave(qoStartTransaction)
-  );
-
-  Filer.DefineProperty('qoTrimCharFields',
-   ReadQueryTrimChar , WriteQueryTrimChar,
-    IsWriteProcess and DoSave(qoTrimCharFields)
-  );
-
-  Filer.DefineProperty('qoNoForceIsNull',
-   ReadQueryNoForceIsNull, WriteQueryNoForceIsNull,
-    IsWriteProcess and DoSave(qoNoForceIsNull)
-  );
-
-  Filer.DefineProperty('qoFreeHandleAfterExecute',
-   ReadAutoFreeHandle , WriteAutoFreeHandle,
-    IsWriteProcess and DoSave(qoFreeHandleAfterExecute)
-  );
-
-
+  Filer.DefineProperty('qoAutoCommit', ReadQueryAutoCommit, WriteQueryAutoCommit,
+    IsWriteProcess and DoSave(qoAutoCommit));
+  Filer.DefineProperty('qoStartTransaction', ReadQueryStartTransaction, WriteQueryStartTransaction,
+    IsWriteProcess and DoSave(qoStartTransaction));
+  Filer.DefineProperty('qoTrimCharFields', ReadQueryTrimChar, WriteQueryTrimChar,
+    IsWriteProcess and DoSave(qoTrimCharFields));
+  Filer.DefineProperty('qoNoForceIsNull', ReadQueryNoForceIsNull, WriteQueryNoForceIsNull,
+    IsWriteProcess and DoSave(qoNoForceIsNull));
+  Filer.DefineProperty('qoFreeHandleAfterExecute', ReadAutoFreeHandle, WriteAutoFreeHandle,
+    IsWriteProcess and DoSave(qoFreeHandleAfterExecute));
 end;
-
 {$ENDIF}

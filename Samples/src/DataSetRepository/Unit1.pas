@@ -1,5 +1,5 @@
 unit Unit1;
-                                                     
+
 interface
 
 uses
@@ -10,7 +10,7 @@ uses
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    db: TpFIBDatabase;
+    DB: TpFIBDatabase;
     tr: TpFIBTransaction;
     dt: TpFIBDataSet;
     ds: TDataSource;
@@ -39,29 +39,31 @@ implementation
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   Caption := 'FIBPlus Example - ' + Application.Title;
-  db.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\employee.fdb';
-  db.Connected := True;
+  DB.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\employee.fdb';
+  DB.Connected := True;
   Button1Click(nil);
-  //dt.Open;
+  // dt.Open;
 end;
 
 procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  if not db.Connected then Exit;
-  db.CloseDataSets;
-  db.Close;
+  if not DB.Connected then
+    Exit;
+  DB.CloseDataSets;
+  DB.Close;
 end;
 
 procedure TForm1.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) + ' session. Proceed?',
-    mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
+  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) +
+    ' session. Proceed?', mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
 end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 begin
   dt.Close;
-  if not ChooseDSInfo(dt) then Exit;
+  if not ChooseDSInfo(dt) then
+    Exit;
   lblRopositoryName.Caption := '  ' + dt.Description;
   dt.Open;
 end;

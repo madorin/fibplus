@@ -10,7 +10,7 @@ uses
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    db: TpFIBDatabase;
+    DB: TpFIBDatabase;
     tr: TpFIBTransaction;
     dt: TpFIBDataSet;
     ds: TDataSource;
@@ -30,8 +30,7 @@ type
     DBEdit5: TDBEdit;
     procedure FormCreate(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
-    procedure dtPostError(DataSet: TDataSet; E: EDatabaseError;
-      var Action: TDataAction);
+    procedure dtPostError(DataSet: TDataSet; E: EDatabaseError; var Action: TDataAction);
     procedure dtBeforePost(DataSet: TDataSet);
   private
     { Private declarations }
@@ -45,51 +44,40 @@ var
 implementation
 
 {$R *.dfm}
-
 {$I FIBExamples.inc}
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   Caption := 'FIBPlus Example - ' + Application.Title;
-  db.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\'+DemoDB;
-  {$IFDEF FBCLIENT.DLL}
-    db.LibraryName:='fbclient.dll';
-  {$ENDIF}
-
-  db.Connected := True;
+  DB.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\' + DemoDB;
+{$IFDEF FBCLIENT.DLL}
+  DB.LibraryName := 'fbclient.dll';
+{$ENDIF}
+  DB.Connected := True;
   dt.Open;
 end;
 
 procedure TForm1.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) + ' session. Proceed?',
-    mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
+  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) +
+    ' session. Proceed?', mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
 end;
 
-procedure TForm1.dtPostError(DataSet: TDataSet; E: EDatabaseError;
-  var Action: TDataAction);
+procedure TForm1.dtPostError(DataSet: TDataSet; E: EDatabaseError; var Action: TDataAction);
 begin
   Action := daAbort;
   MessageDlg('DataSet Post Error!', mtError, [mbOk], 0);
-  dt.Refresh; 
+  dt.Refresh;
 end;
 
 procedure TForm1.dtBeforePost(DataSet: TDataSet);
 begin
   with dt do
-    if (FBN('LR1').NewValue <> FBN('LR1').OldValue)
-      or (FBN('LR2').NewValue <> FBN('LR2').OldValue)
-      or (FBN('LR3').NewValue <> FBN('LR3').OldValue)
-      or (FBN('LR4').NewValue <> FBN('LR4').OldValue)
-      or (FBN('LR5').NewValue <> FBN('LR5').OldValue)
-    then
-      SetArrayValue(FBN('LANGUAGE_REQ'),
-        VarArrayOf([
-         FBN('LR1').AsString,
-         FBN('LR2').AsString,
-         FBN('LR3').AsString,
-         FBN('LR4').AsString,
-         FBN('LR5').AsString]));
+    if (FBN('LR1').NewValue <> FBN('LR1').OldValue) or (FBN('LR2').NewValue <> FBN('LR2').OldValue) or
+      (FBN('LR3').NewValue <> FBN('LR3').OldValue) or (FBN('LR4').NewValue <> FBN('LR4').OldValue) or
+      (FBN('LR5').NewValue <> FBN('LR5').OldValue) then
+      SetArrayValue(FBN('LANGUAGE_REQ'), VarArrayOf([FBN('LR1').AsString, FBN('LR2').AsString,
+        FBN('LR3').AsString, FBN('LR4').AsString, FBN('LR5').AsString]));
 end;
 
 end.

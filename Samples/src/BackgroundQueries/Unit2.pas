@@ -1,14 +1,17 @@
 unit Unit2;
 
 interface
+
 {$I FIBPlus.Inc}
+
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ExtCtrls, Buttons, StdCtrls, Grids, DBGrids, DB, FIBDatabase,
   pFIBDatabase, FIBDataSet, pFIBDataSet;
 
 type
-  TThreadStatus=(tsWorking,tsEndSuccess,tsEndError);
+  TThreadStatus = (tsWorking, tsEndSuccess, tsEndError);
+
   TThreadSQLForm = class(TForm)
     Panel1: TPanel;
     Panel2: TPanel;
@@ -29,15 +32,14 @@ type
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure Timer1Timer(Sender: TObject);
   private
-    FThreadActive:TThreadStatus;
-    procedure SetThreadStatus(aThreadActive:TThreadStatus);
+    FThreadActive: TThreadStatus;
+    procedure SetThreadStatus(aThreadActive: TThreadStatus);
   public
-    property  ThreadStatus:TThreadStatus read FThreadActive ;
+    property ThreadStatus: TThreadStatus read FThreadActive;
   end;
 
   //
-  procedure ShowBackgroundQuery(FormCaption: string; Qry: String;
-    DBPath, UserName, Password: string);
+procedure ShowBackgroundQuery(FormCaption: string; Qry: String; DBPath, UserName, Password: string);
 
 implementation
 
@@ -59,46 +61,52 @@ type
     FQuery: TpFIBDataSet;
     FDataS: TDataSource;
     FQueryException: Exception;
-    FForm:TThreadSQLForm;
+    FForm: TThreadSQLForm;
     procedure HookUpUI;
     procedure QueryError;
-    procedure StartSQL;    
+    procedure StartSQL;
   protected
     procedure Execute; override;
   public
-    constructor Create(Q: TpFIBDataSet; D: TDataSource; Form:TThreadSQLForm); virtual;
-    destructor  Destroy; override;
+    constructor Create(Q: TpFIBDataSet; D: TDataSource; Form: TThreadSQLForm); virtual;
+    destructor Destroy; override;
   end;
 
 procedure TThreadSQLForm.FormShow(Sender: TObject);
 begin
-  if FLeft + cLeftDelta > MaxLeft
-    then Left := cLeftStart else Left := FLeft + cLeftDelta;
-  if FTop + cTopDelta > MaxTop
-    then Top := cTopStart else Top := FTop + cTopDelta;
-  FLeft := Left; FTop := Top;
+  if FLeft + cLeftDelta > MaxLeft then
+    Left := cLeftStart
+  else
+    Left := FLeft + cLeftDelta;
+  if FTop + cTopDelta > MaxTop then
+    Top := cTopStart
+  else
+    Top := FTop + cTopDelta;
+  FLeft := Left;
+  FTop := Top;
 end;
 
-////////////////////////////////////////////////////////////////////////////////
-procedure ShowBackgroundQuery(FormCaption: string; Qry: String; DBPath,
-  UserName, Password: string);
+/// /////////////////////////////////////////////////////////////////////////////
+procedure ShowBackgroundQuery(FormCaption: string; Qry: String; DBPath, UserName, Password: string);
 var
   F: TThreadSQLForm;
 begin
-  F:=TThreadSQLForm.Create(Application);
-  with F do begin
+  F := TThreadSQLForm.Create(Application);
+  with F do
+  begin
     Caption := FormCaption;
-    with dba do begin
+    with dba do
+    begin
       DBName := DBPath;
-      DBParams.Add(Format('user_name=%s',[UserName]));
-      DBParams.Add(Format('password=%s',[Password]));
-     {$IFDEF FBCLIENT.DLL}
-      LibraryName:='fbclient.dll';
-     {$ENDIF}
-
+      DBParams.Add(Format('user_name=%s', [UserName]));
+      DBParams.Add(Format('password=%s', [Password]));
+{$IFDEF FBCLIENT.DLL}
+      LibraryName := 'fbclient.dll';
+{$ENDIF}
       Connected := True;
     end;
-    with dt do begin
+    with dt do
+    begin
       Database := dba;
       dt.Transaction := tra;
       dt.UpdateTransaction := tra;
@@ -106,9 +114,9 @@ begin
       SelectSQL.Text := Qry;
     end;
     memSQL.Lines.Text := Qry;
-    Label1.Caption:='Start Execute';
+    Label1.Caption := 'Start Execute';
     Show;
-    TFIBQueryThread.Create(dt, ds,F);
+    TFIBQueryThread.Create(dt, ds, F);
   end;
 end;
 
@@ -118,12 +126,13 @@ begin
 end;
 
 { TFIBQueryThread }
-////////////////////////////////////////////////////////////////////////////////
-constructor TFIBQueryThread.Create(Q: TpFIBDataSet; D: TDataSource; Form:TThreadSQLForm);
+/// /////////////////////////////////////////////////////////////////////////////
+constructor TFIBQueryThread.Create(Q: TpFIBDataSet; D: TDataSource; Form: TThreadSQLForm);
 begin
   inherited Create(True);
-  FQuery:= Q; FDataS := D;
-  FForm:=Form;
+  FQuery := Q;
+  FDataS := D;
+  FForm := Form;
   FreeOnTerminate := True;
   Resume;
 end;
@@ -148,7 +157,7 @@ end;
 
 procedure TFIBQueryThread.StartSQL;
 begin
-FForm.SetThreadStatus(tsWorking)
+  FForm.SetThreadStatus(tsWorking)
 end;
 
 procedure TFIBQueryThread.HookUpUI;
@@ -165,52 +174,50 @@ end;
 
 procedure TThreadSQLForm.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
- CanClose:=FThreadActive<>tsWorking ;
- if not CanClose then
- begin
-   if dba.IsFirebirdConnect and (dba.ServerMajorVersion>=2) then
-   begin
-    if (dba.ServerMinorVersion>=1) then
+  CanClose := FThreadActive <> tsWorking;
+  if not CanClose then
+  begin
+    if dba.IsFirebirdConnect and (dba.ServerMajorVersion >= 2) then
     begin
-     if MessageDlg('Do You Want cancel Query?',
-       mtConfirmation, [mbYes, mbNo], 0) = mrYes
-     then
-      if  (dba.ServerMinorVersion<5) then
-       dba.CancelOperationFB21()
-      else
+      if (dba.ServerMinorVersion >= 1) then
       begin
-        dba.RaiseCancelOperations
+        if MessageDlg('Do You Want cancel Query?', mtConfirmation, [mbYes, mbNo], 0) = mrYes then
+          if (dba.ServerMinorVersion < 5) then
+            dba.CancelOperationFB21()
+          else
+          begin
+            dba.RaiseCancelOperations
+          end
       end
     end
-   end
-   else
-    ShowMessage('Sorry, I can''t cancel query'#13#10+
-      'It support for FB2.1 and later Firebrird version'
-    )
+    else
+      ShowMessage('Sorry, I can''t cancel query'#13#10 + 'It support for FB2.1 and later Firebrird version')
 
- end;
+  end;
 end;
 
 procedure TThreadSQLForm.SetThreadStatus(aThreadActive: TThreadStatus);
 begin
-  FThreadActive:=aThreadActive;
+  FThreadActive := aThreadActive;
   case aThreadActive of
-   tsWorking: Label1.Caption:='SQL Executed';
-   tsEndSuccess: Label1.Caption:='SQL success';
-   tsEndError: Label1.Caption:='SQL error';
+    tsWorking: Label1.Caption := 'SQL Executed';
+    tsEndSuccess: Label1.Caption := 'SQL success';
+    tsEndError: Label1.Caption := 'SQL error';
   end;
-  if FThreadActive<> tsWorking then
-   Timer1.Enabled:=False
+  if FThreadActive <> tsWorking then
+    Timer1.Enabled := False
 end;
 
 procedure TThreadSQLForm.Timer1Timer(Sender: TObject);
 begin
- Label2.Caption:=IntToStr(StrToInt(Label2.Caption)+1)
+  Label2.Caption := IntToStr(StrToInt(Label2.Caption) + 1)
 end;
 
 initialization
-  FLeft := 100; FTop  := 100;
-  MaxTop  := Screen.Height - 50;
-  MaxLeft := Screen.Width  - 50;
+
+FLeft := 100;
+FTop := 100;
+MaxTop := Screen.Height - 50;
+MaxLeft := Screen.Width - 50;
 
 end.

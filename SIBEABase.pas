@@ -7,62 +7,63 @@ unit SIBEABase;
 
 // Revision History:
 // 1.54     8/5/1999      Fixed a bug which would cause access violations or
-//                        external exceptions on certain machines due to an
-//                        internal race condition in which threads were getting
-//                        freed before they were fully created.  Also finally
-//                        got to the bottom of a problem which would cause
-//                        the component to lock up for some people.  Basically
-//                        calls to Synchronize() would sometimes fail to execute
-//                        the intended code, effectively hanging the thread.  As
-//                        it turns out, this is a problem in the classes unit of
-//                        the VCL.  The RemoveThread function is calling
-//                        PostMessage when it really should be calling SendMessage.
-//                        Modifying the VCL is not a practical solution, so I've
-//                        managed to work around the issue.
+// external exceptions on certain machines due to an
+// internal race condition in which threads were getting
+// freed before they were fully created.  Also finally
+// got to the bottom of a problem which would cause
+// the component to lock up for some people.  Basically
+// calls to Synchronize() would sometimes fail to execute
+// the intended code, effectively hanging the thread.  As
+// it turns out, this is a problem in the classes unit of
+// the VCL.  The RemoveThread function is calling
+// PostMessage when it really should be calling SendMessage.
+// Modifying the VCL is not a practical solution, so I've
+// managed to work around the issue.
 //
 // 1.53     7/14/1999     Fixed access violation in SIBEventBlock by finding
-//                        a new way to call the InterBase API function
-//                        isc_event_block which did not involve assembly.  Also
-//                        fixed a problem which would cause events not to be
-//                        registered if you unregistered then re-registered events.
+// a new way to call the InterBase API function
+// isc_event_block which did not involve assembly.  Also
+// fixed a problem which would cause events not to be
+// registered if you unregistered then re-registered events.
 //
 // 1.52     7/12/1999     Fixed a bug which would cause an access violation if
-//                        the TSIBbdeEventAlerter gets destroyed before the
-//                        TDatabase does.  Also made a change to try and fix a
-//                        reported a random access violation which would occur
-//                        in the SIBEventBlock procedure if compiled in the $O+
-//                        state.  Thanks again to David Hildingsson!
+// the TSIBbdeEventAlerter gets destroyed before the
+// TDatabase does.  Also made a change to try and fix a
+// reported a random access violation which would occur
+// in the SIBEventBlock procedure if compiled in the $O+
+// state.  Thanks again to David Hildingsson!
 //
 // 1.51     7/10/1999     Fixed a bug in TSIBbdeEventAlerter which would
-//                        cause an access violation when assigning the
-//                        Database property at run time.  Thanks to David
-//                        Hildingsson for finding this one.
+// cause an access violation when assigning the
+// Database property at run time.  Thanks to David
+// Hildingsson for finding this one.
 //
 // 1.50     7/8/1999      Major rearchitecture of the SuperIBEventAlerter
-//                        class structure and naming conventions.  Created
-//                        TSIBbdeEventAlerter, TSIBfibEventAlerter,
-//                        TSIBiboEventAlerter. See the readme file for more info.
+// class structure and naming conventions.  Created
+// TSIBbdeEventAlerter, TSIBfibEventAlerter,
+// TSIBiboEventAlerter. See the readme file for more info.
 //
 // 1.02     4/13/1999     If your TDatabase is not connected at design time,
-//                        it is possible to assign a non-InterBase database.
-//                        This would cause multiple cryptic exceptions to be
-//                        raised when RegisterEvents was called.  Now checks
-//                        for a valid InterBase connection earlier in the
-//                        process and cleanly exits out of RegisterEvents
-//                        with a single exception.
+// it is possible to assign a non-InterBase database.
+// This would cause multiple cryptic exceptions to be
+// raised when RegisterEvents was called.  Now checks
+// for a valid InterBase connection earlier in the
+// process and cleanly exits out of RegisterEvents
+// with a single exception.
 //
 // 1.01     3/29/1999     Wait loop would eat up all available CPU cycles if
-//                        nothing else was running.  Special thanks go to
-//                        Chris Heberle for pointing this out and fixing it.
+// nothing else was running.  Special thanks go to
+// Chris Heberle for pointing this out and fixing it.
 //
 // 1.00     3/26/1999     Initial Release
 
 {$I FIBPlus.inc}
 {$T-}
+
 interface
 
 uses
- SysUtils, Classes,SyncObjs, SIBGlobals, SIBAPI,ibase,IB_Intf,IB_Externals;
+  SysUtils, Classes, SyncObjs, SIBGlobals, SIBAPI, ibase, IB_Intf, IB_Externals;
 
 type
   TSIBEventThread = class;
@@ -73,13 +74,13 @@ type
   TSIBEventAlerter = class(TComponent)
   protected
     { Private declarations }
-    FClientLibrary:IIBClientLibrary;
+    FClientLibrary: IIBClientLibrary;
     FOnEventAlert: TSIBAlertEvent;
     FEvents: TStrings;
     FThreads: TList;
     FNativeHandle: SIB_DBHandle;
     ThreadException: Boolean;
-    FVCLSynchro:boolean;
+    FVCLSynchro: Boolean;
     procedure SetEvents(Value: TStrings);
     function GetRegistered: Boolean;
     procedure SetRegistered(const Value: Boolean);
@@ -99,7 +100,7 @@ type
     property Registered: Boolean read GetRegistered write SetRegistered;
   published
     { Published declarations }
-    property VCLSynchronize:boolean read FVCLSynchro write FVCLSynchro default True;
+    property VCLSynchronize: Boolean read FVCLSynchro write FVCLSynchro default True;
     property Events: TStrings read FEvents write SetEvents;
     property OnEventAlert: TSIBAlertEvent read FOnEventAlert write FOnEventAlert;
   end;
@@ -110,7 +111,7 @@ type
   private
     { Private declarations }
     // IB API call parameters
-    FClientLibrary:IIBClientLibrary;
+    FClientLibrary: IIBClientLibrary;
     WhichEvent: Integer;
     ErrorBuffer: PAnsiChar;
     ErrorVector: SIB_PStatusVector;
@@ -123,14 +124,12 @@ type
     ResultBuffer: PAnsiChar;
     // Local use variables
     Signal: TSimpleEvent;
-    EventsReceived,
-    FirstTime: Boolean;
-    EventGroup,
-    EventCount: Integer;
+    EventsReceived, FirstTime: Boolean;
+    EventGroup, EventCount: Integer;
     Parent: TSIBEventAlerter;
     FExceptObject: TObject;
     FExceptAddr: Pointer;
-    FVCLSynchro:boolean;
+    FVCLSynchro: Boolean;
   protected
     procedure Execute; override;
     procedure SignalEvent; virtual;
@@ -151,28 +150,30 @@ type
     function HandleException: Boolean; virtual;
     procedure UpdateResultBuffer(Length: SIB_UShort; Updated: PAnsiChar); virtual;
   public
-    constructor Create(ClientLibrary:IIBClientLibrary;Owner: TSIBEventAlerter; DBHandle: SIB_DBHandle; EventGrp: Integer; TermEvent: TNotifyEvent; aVCLSynchro:boolean); virtual;
+    constructor Create(ClientLibrary: IIBClientLibrary; Owner: TSIBEventAlerter;
+      DBHandle: SIB_DBHandle; EventGrp: Integer; TermEvent: TNotifyEvent;
+      aVCLSynchro: Boolean); virtual;
     destructor Destroy; override;
   end;
 
-// You normally wouldn't register the TSIBEventAlerter base class directly,
-// but if you aren't using BDE, FIB, or IBO, then you can uncomment this
-// to use the component by accessing the raw InterBase handle.
-// procedure Register;
+  // You normally wouldn't register the TSIBEventAlerter base class directly,
+  // but if you aren't using BDE, FIB, or IBO, then you can uncomment this
+  // to use the component by accessing the raw InterBase handle.
+  // procedure Register;
 
 implementation
 
 {$IFNDEF D_XE2}
-uses Windows;
+
+uses
+  Windows;
 {$ENDIF}
-
-
 // You normally wouldn't register the TSIBEventAlerter base class directly,
 // but if you aren't using BDE, FIB, or IBO, then you can uncomment this
 // to use the component by accessing the raw InterBase handle.
 // procedure Register;
 // begin
-//   RegisterComponents('SuperIB', [TSIBEventAlerter]);
+// RegisterComponents('SuperIB', [TSIBEventAlerter]);
 // end;
 
 // This is the callback generated by IB when an event occurs.  It passes
@@ -198,52 +199,46 @@ end;
 // stub for synchronizing with main thread
 procedure TSIBEventThread.SIBQueEvents;
 begin
-  ResultStatus :=
-   SIB_QueEvents(FClientLibrary,@StatusVector, @DB, @EventID, EventBufferLen,
-    PAnsiChar(EventBuffer),
-     EventCallback
-
-,Self
-   );
+  ResultStatus := SIB_QueEvents(FClientLibrary, @StatusVector, @DB, @EventID,
+    EventBufferLen, PAnsiChar(EventBuffer), EventCallback, Self);
 end;
 
 // stub for synchronizing with main thread
 procedure TSIBEventThread.SIBInterpretError;
 begin
-  ResultStatus :=FClientLibrary.isc_interprete( ErrorBuffer, PPISC_STATUS( @ErrorVector ) );
+  ResultStatus := FClientLibrary.isc_interprete(ErrorBuffer, PPISC_STATUS(@ErrorVector));
   Set8087CW(Default8087CW);
 end;
 
-        // stub for synchronizing with main thread
+// stub for synchronizing with main thread
 procedure TSIBEventThread.SIBEventCounts;
 begin
-  SIB_EventCounts(FClientLibrary,@StatusVector, EventBufferLen, EventBuffer, ResultBuffer);
+  SIB_EventCounts(FClientLibrary, @StatusVector, EventBufferLen, EventBuffer, ResultBuffer);
 end;
 
 // stub for synchronizing with main thread
 procedure TSIBEventThread.SIBFree;
 begin
-  SIB_Free(FClientLibrary,EventBuffer);
+  SIB_Free(FClientLibrary, EventBuffer);
   EventBuffer := nil;
-  SIB_Free(FClientLibrary,ResultBuffer);
+  SIB_Free(FClientLibrary, ResultBuffer);
   ResultBuffer := nil;
 end;
 
 // stub for synchronizing with main thread
 procedure TSIBEventThread.SIBCancelEvents;
 begin
-  ResultStatus := SIB_CancelEvents(FClientLibrary,@StatusVector, @DB, @EventID);
+  ResultStatus := SIB_CancelEvents(FClientLibrary, @StatusVector, @DB, @EventID);
   SIBFree
 end;
-
 
 // stub for synchronizing with main thread
 
 procedure TSIBEventThread.SIBEventBlock;
 var
-  EBPArray : Array[1..SIB_MAX_EVENT_BLOCK] of PAnsiChar;
-  EBPArrayStr : Array of AnsiString;
-  i:integer;
+  EBPArray: Array [1 .. SIB_MAX_EVENT_BLOCK] of PAnsiChar;
+  EBPArrayStr: Array of AnsiString;
+  i: Integer;
 
   function EBP(Index: Integer): PAnsiChar;
   begin
@@ -252,8 +247,8 @@ var
       Result := nil
     else
     begin
-      EBPArrayStr[Index-1]:=Ansistring(Parent.FEvents[Index - 1]);
-      Result := PAnsiChar(EBPArrayStr[Index-1]);
+      EBPArrayStr[Index - 1] := AnsiString(Parent.FEvents[Index - 1]);
+      Result := PAnsiChar(EBPArrayStr[Index - 1]);
     end;
   end;
 
@@ -261,23 +256,21 @@ begin
   EventCount := (Parent.FEvents.Count - (EventGroup * SIB_MAX_EVENT_BLOCK));
   if (EventCount > SIB_MAX_EVENT_BLOCK) then
     EventCount := SIB_MAX_EVENT_BLOCK;
-  SetLength(EBPArrayStr,Parent.FEvents.Count);
+  SetLength(EBPArrayStr, Parent.FEvents.Count);
 
-  for i:=1 to  SIB_MAX_EVENT_BLOCK do
+  for i := 1 to SIB_MAX_EVENT_BLOCK do
   begin
-     EBPArray[i]:=EBP(i);
+    EBPArray[i] := EBP(i);
   end;
-  EventBufferLen :=
-   FClientLibrary.isc_event_block(@EventBuffer, @ResultBuffer, EventCount,
-    EBPArray
-   );
+  EventBufferLen := FClientLibrary.isc_event_block(@EventBuffer, @ResultBuffer, EventCount, EBPArray);
 end;
 
 // stub for synchronizing with main thread
 procedure TSIBEventThread.DoEvent;
 
 begin
-  Parent.FOnEventAlert(Parent, Parent.FEvents[((EventGroup * SIB_MAX_EVENT_BLOCK) + WhichEvent)], StatusVector[WhichEvent])
+  Parent.FOnEventAlert(Parent, Parent.FEvents[((EventGroup * SIB_MAX_EVENT_BLOCK) + WhichEvent)],
+    StatusVector[WhichEvent])
 end;
 
 // called by the IB event callback to copy an update resultbuffer
@@ -289,7 +282,7 @@ end;
 
 function TSIBEventThread.GetIBErrorString: string;
 var
-  Buffer: array[0..255] of AnsiChar;
+  Buffer: array [0 .. 255] of AnsiChar;
   lastMsg: string;
   errCode: SIB_Status;
 begin
@@ -300,9 +293,9 @@ begin
   ErrorVector := @StatusVector;
   repeat
     Synchronize(SIBInterpretError);
-//    SIBInterpretError;
+    // SIBInterpretError;
     errCode := ResultStatus;
-    if (Ansistring(lastMsg) <> Ansistring(Buffer)) then
+    if (AnsiString(lastMsg) <> AnsiString(Buffer)) then
     begin
       lastMsg := string(Buffer);
       if (Length(Result) <> 0) then
@@ -320,13 +313,13 @@ begin
   EventsReceived := False;
   if not Terminated then
   begin
-   Signal.ResetEvent;
-   if FVCLSynchro then
-    Synchronize(SIBQueEvents)
-   else
-    SIBQueEvents;
-   if (ResultStatus <> 0) then
-    raise ESIBError.Create(GetIBErrorString);
+    Signal.ResetEvent;
+    if FVCLSynchro then
+      Synchronize(SIBQueEvents)
+    else
+      SIBQueEvents;
+    if (ResultStatus <> 0) then
+      raise ESIBError.Create(GetIBErrorString);
   end;
 end;
 
@@ -337,28 +330,28 @@ var
 begin
   // find out how many and which events occured
   if Terminated then
-   Exit;
+    Exit;
 
-//  Synchronize(SIBEventCounts);
+  // Synchronize(SIBEventCounts);
   if FVCLSynchro then
-   Synchronize(SIBEventCounts)
+    Synchronize(SIBEventCounts)
   else
-   SIBEventCounts;
+    SIBEventCounts;
   // the first time we come in here is a bogus initialization call, so don't
   // actually do anything
   if (Assigned(Parent.FOnEventAlert) and (not FirstTime)) then
   begin
     for i := 0 to (EventCount - 1) do
     begin
-        // if this particular event occured, call the event handler
-        if (StatusVector[i] <> 0) then
-        begin
-          WhichEvent := i;
-          if FVCLSynchro then
-           Synchronize(DoEvent)
-          else
-           DoEvent
-        end;
+      // if this particular event occured, call the event handler
+      if (StatusVector[i] <> 0) then
+      begin
+        WhichEvent := i;
+        if FVCLSynchro then
+          Synchronize(DoEvent)
+        else
+          DoEvent
+      end;
     end;
   end;
   FirstTime := False;
@@ -368,19 +361,19 @@ end;
 // release the various event buffers
 procedure TSIBEventThread.UnRegisterEvents;
 begin
-//    Synchronize(SIBCancelEvents);
-    SIBCancelEvents;
+  // Synchronize(SIBCancelEvents);
+  SIBCancelEvents;
 
-{  if (ResultStatus <> 0) then
-    raise ESIBError.Create(GetIBErrorString);}
-//^^^^May be shutdown error
+  { if (ResultStatus <> 0) then
+    raise ESIBError.Create(GetIBErrorString); }
+  // ^^^^May be shutdown error
 end;
 
 // setup the various event buffers with IB
 procedure TSIBEventThread.RegisterEvents;
 begin
   if Terminated then
-   Exit; 
+    Exit;
   EventBuffer := nil;
   ResultBuffer := nil;
   EventBufferLen := 0;
@@ -391,25 +384,25 @@ begin
   if (EventCount > SIB_MAX_EVENT_BLOCK) then
     EventCount := SIB_MAX_EVENT_BLOCK;
   SIBEventBlock;
-// For AutoRegistry
+  // For AutoRegistry
 end;
 
 // indicate than an event was received, and stop waiting
 procedure TSIBEventThread.SignalEvent;
 begin
-   EventsReceived := True;
-   Signal.SetEvent;
+  EventsReceived := True;
+  Signal.SetEvent;
 
 end;
 
 // indicate termination desired, and stop waiting
 procedure TSIBEventThread.SignalTerminate;
 begin
-   if not Terminated then
-   begin
-     Terminate;
-     Signal.SetEvent;
-   end;
+  if not Terminated then
+  begin
+    Terminate;
+    Signal.SetEvent;
+  end;
 end;
 
 procedure TSIBEventThread.DoHandleException;
@@ -428,11 +421,11 @@ begin
     FExceptObject := ExceptObject;
     FExceptAddr := ExceptAddr;
     try
-      if not (FExceptObject is EAbort) then
-       if FVCLSynchro then
-        Synchronize(DoHandleException)
-       else
-        DoHandleException;
+      if not(FExceptObject is EAbort) then
+        if FVCLSynchro then
+          Synchronize(DoHandleException)
+        else
+          DoHandleException;
     finally
       FExceptObject := nil;
       FExceptAddr := nil;
@@ -474,38 +467,39 @@ begin
   end;
 end;
 
-constructor TSIBEventThread.Create(ClientLibrary:IIBClientLibrary;Owner: TSIBEventAlerter; DBHandle: SIB_DBHandle; EventGrp: Integer;
- TermEvent: TNotifyEvent;aVCLSynchro:boolean);
+constructor TSIBEventThread.Create(ClientLibrary: IIBClientLibrary;
+  Owner: TSIBEventAlerter; DBHandle: SIB_DBHandle; EventGrp: Integer;
+  TermEvent: TNotifyEvent; aVCLSynchro: Boolean);
 begin
   inherited Create(True);
-  FClientLibrary:=ClientLibrary;
+  FClientLibrary := ClientLibrary;
   Signal := TSimpleEvent.Create;
   Parent := Owner;
   DB := DBHandle;
   EventGroup := EventGrp;
   OnTerminate := TermEvent;
-  FVCLSynchro:=aVCLSynchro;
+  FVCLSynchro := aVCLSynchro;
   Resume;
 end;
 
 destructor TSIBEventThread.Destroy;
 begin
   try
-     UnRegisterEvents;
+    UnRegisterEvents;
   except
     // thread had a problem, if we're the first
     // thread to report handle the problem, return
     // with an error code, otherwise return OK
-   try
-    if HandleException then
-      ReturnValue := 1
-    else
-      ReturnValue := 0;
-   except
-   end;
+    try
+      if HandleException then
+        ReturnValue := 1
+      else
+        ReturnValue := 0;
+    except
+    end;
   end;
   Signal.Free;
-  FClientLibrary:=nil;
+  FClientLibrary := nil;
   inherited Destroy;
 end;
 
@@ -551,7 +545,7 @@ begin
     if (FEvents.Count > 0) then
     begin
       for i := 0 to ((FEvents.Count - 1) div SIB_MAX_EVENT_BLOCK) do
-        FThreads.Add(TSIBEventThread.Create(FClientLibrary,Self, DBH, i, ThreadEnded,FVCLSynchro));
+        FThreads.Add(TSIBEventThread.Create(FClientLibrary, Self, DBH, i, ThreadEnded, FVCLSynchro));
     end;
   end
   else
@@ -562,9 +556,7 @@ end;
 procedure TSIBEventAlerter.EventChange(Sender: TObject);
 var
   i: Integer;
-  TooLong,
-  AnyEmpty,
-  WasRegistered: Boolean;
+  TooLong, AnyEmpty, WasRegistered: Boolean;
   ErrorStr: string;
 begin
   ErrorStr := EmptyStr;
@@ -586,12 +578,11 @@ begin
           AnyEmpty := True;
           FEvents.Delete(i);
         end
-        else
-        if (Length(FEvents[i]) > (SIB_MAX_EVENT_LENGTH - 1)) then
+        else if (Length(FEvents[i]) > (SIB_MAX_EVENT_LENGTH - 1)) then
         begin
           // can't have strings longer than EVENT_LENGTH
           TooLong := True;
-//          FEvents[i] := Copy(FEvents[i], 1, (SIB_MAX_EVENT_LENGTH - 1));
+          // FEvents[i] := Copy(FEvents[i], 1, (SIB_MAX_EVENT_LENGTH - 1));
         end;
       end;
       // build the error message
@@ -624,25 +615,26 @@ begin
   FEvents := TStringList.Create;
   with TStringList(FEvents) do
   begin
-    OnChange   := EventChange;  // assign the routine which validates the event lenghts
-    Duplicates := dupIgnore;  // don't allow duplicate events
-    Sorted     := True;
+    OnChange := EventChange;
+    // assign the routine which validates the event lenghts
+    Duplicates := dupIgnore; // don't allow duplicate events
+    Sorted := True;
   end;
-  FVCLSynchro:=True;
+  FVCLSynchro := True;
   FThreads := TList.Create;
 
 end;
 
 destructor TSIBEventAlerter.Destroy;
 begin
- try
-  if Registered then
-    UnRegisterEvents;
- except
- end;
+  try
+    if Registered then
+      UnRegisterEvents;
+  except
+  end;
   FThreads.Free;
   FEvents.Free;
-  FClientLibrary:=nil;
+  FClientLibrary := nil;
   inherited Destroy;
 end;
 
@@ -669,10 +661,10 @@ begin
   if Value then
     RegisterEvents
   else
-  try
-    UnRegisterEvents;
-  except
-  end  
+    try
+      UnRegisterEvents;
+    except
+    end
 end;
 
 procedure TSIBEventAlerter.ThreadEnded(Sender: TObject);
@@ -703,8 +695,4 @@ begin
   Result := FNativeHandle;
 end;
 
-
-
-
 end.
-

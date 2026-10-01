@@ -28,41 +28,42 @@ type
     { Public declarations }
   end;
 
+function pFIBLoginDialogFMX(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
 
- function pFIBLoginDialogFMX(const ADatabaseName: string; var AUserName, APassword,ARoleName: string): Boolean;
 implementation
- uses fib, FIBConsts;
+
+uses
+  fib, FIBConsts;
+
 {$R *.fmx}
 
 var
   frmFIBDBLoginDlgFMX: TfmxFIBDBLoginDlg;
 
- function pFIBLoginDialogFMX(const ADatabaseName: string;
-   var AUserName, APassword,ARoleName: string
- ): Boolean;
-  var  frmFIBDBLoginDlg: TfmxFIBDBLoginDlg;
- begin
-  frmFIBDBLoginDlg:= TfmxFIBDBLoginDlg.Create(nil);
+function pFIBLoginDialogFMX(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
+var
+  frmFIBDBLoginDlg: TfmxFIBDBLoginDlg;
+begin
+  frmFIBDBLoginDlg := TfmxFIBDBLoginDlg.Create(nil);
   with frmFIBDBLoginDlg do
-  try
-   if Length(ADatabaseName)<=50 then
-    lbDBName.Text:= ADatabaseName
-   else
-    lbDBName.Text:=Copy(ADatabaseName,1,10)+'...'+
-      Copy(ADatabaseName,Length(ADatabaseName)-32,MaxInt);
-   EdUserName.Text      := AUserName;
-   EdRole    .Text      := ARoleName;
-   Result:= ShowModal=mrOk;
-   if Result then
-   begin
-     AUserName  := EdUserName.Text;
-     ARoleName  := EdRole    .Text;
-     APassword  := EdPassword.Text;
-   end;
-  finally
-   Free;
-  end
- end;
+    try
+      if Length(ADatabaseName) <= 50 then
+        lbDBName.Text := ADatabaseName
+      else
+        lbDBName.Text := Copy(ADatabaseName, 1, 10) + '...' + Copy(ADatabaseName, Length(ADatabaseName) - 32, MaxInt);
+      EdUserName.Text := AUserName;
+      EdRole.Text := ARoleName;
+      Result := ShowModal = mrOk;
+      if Result then
+        begin
+          AUserName := EdUserName.Text;
+          ARoleName := EdRole.Text;
+          APassword := EdPassword.Text;
+        end;
+    finally
+      Free;
+    end
+end;
 
 procedure TfmxFIBDBLoginDlg.FormCreate(Sender: TObject);
 begin
@@ -70,15 +71,18 @@ begin
   Label1.Text := SLoginDlgDatabase;
   Label2.Text := SDBEditUserName;
   Label3.Text := SDBEditPassword;
-  Label4.Text  := SDBEditSQLRole;
+  Label4.Text := SDBEditSQLRole;
   Button1.Text := SOKButton;
   Button2.Text := SCancelButton;
 
 end;
 
 initialization
- pFIBLoginDialog  :=pFIBLoginDialogFMX;
+
+pFIBLoginDialog := pFIBLoginDialogFMX;
+
 finalization
- pFIBLoginDialog  :=nil
+
+pFIBLoginDialog := nil
 
 end.

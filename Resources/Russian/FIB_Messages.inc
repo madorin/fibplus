@@ -18,8 +18,7 @@
 {  Please see the file License.txt for full license information }
 {***************************************************************}
 
-
-  FIBErrorMessages: array[TFIBClientError] of String = (
+  FIBErrorMessages: array[TFIBClientError] of string = (
     'Неизвестная ошибка.',
     'Неподдерживаемая функция.',
     'Запрещено.',
@@ -79,21 +78,19 @@
     'Список столбцов не соответствует.',
     'Типы столбцов не соответствуют. (Из номера: %d, в номер: %d)',
     'Невозможно закончить раделяемую транзакцию без прямой команды или ' +'завершения по Timeout.',
-    'Столбец "%s" не является array-полем',//feNotIsArrayField
-    'Размерность %d не существует в "%s" ',//feWrongDimension
-    'Ошибочный диалект SQL',//feSQLDialectInvalid
-   {$IFDEF WINDOWS}
-    'Клиенская библиотека InterBase gds32.dll не обнаружена. Пожалуйста, установите клиента InterBase!',//feIBMissing,
-   {$ENDIF}
-   {$IFDEF LINUX}
-    'Клиенская библиотека InterBase libgds.so.0 не обнаружена. Пожалуйста, установите клиента InterBase!',//feIBMissing,
-   {$ENDIF}
-   {$IFDEF MACOS}
-    'InterBase library  not found in the path. Please install InterBase to use this functionality',//feIBMissing,
-   {$ENDIF}
-
+    'Столбец "%s" не является array-полем', // feNotIsArrayField
+    'Размерность %d не существует в "%s" ', // feWrongDimension
+    'Ошибочный диалект SQL', // feSQLDialectInvalid
+    {$IFDEF WINDOWS}
+    'Клиенская библиотека InterBase gds32.dll не обнаружена. Пожалуйста, установите клиента InterBase!', // feIBMissing
+    {$ENDIF}
+    {$IFDEF LINUX}
+    'Клиенская библиотека InterBase libgds.so.0 не обнаружена. Пожалуйста, установите клиента InterBase!', // feIBMissing
+    {$ENDIF}
+    {$IFDEF MACOS}
+    'InterBase library  not found in the path. Please install InterBase to use this functionality', // feIBMissing
+    {$ENDIF}
     '%s является функцией InterBase6. Пожалуйста обновите InterBase до версии 6 (и выше), чтобы использовать ее!',
-    // Added by Serg Vostrikov
     'Библиотека ibinstall.dll не обнаружена. Пожалуйста, установите InterBase 6, чтобы использовать нужные функции',
     'Невозможно выполнить операцию -- сервис не подключен',
     'Невозможно выполнить операцию -- сервис подключен',
@@ -105,17 +102,14 @@
     'Константа SPB не поддерживается',
     'Неизвестная константа SPB',
     'Размер поля слишком мал. Поле %s.%s',
-
-    '%s. Невозможно использовать ограниченный кэш. '#13#10+
-    'CachedUpdates должно быть установлено в False,'#13#10+
-    'Select должен содержать "Order by" секцию ,'#13#10+
-    'Все поля сортировки должны существовать в секции полей'#13#10+
-    'Select не может использовать параметры с префиксом "NEW_"'#13#10+
-    'UpdateTransaction должна быть эквивалентна Transaction или AutoCommit=True '
-    ,
-
+    '%s. Невозможно использовать ограниченный кэш. '#13#10 +
+      'CachedUpdates должно быть установлено в False,'#13#10 +
+      'Select должен содержать "Order by" секцию ,'#13#10 +
+      'Все поля сортировки должны существовать в секции полей'#13#10 +
+      'Select не может использовать параметры с префиксом "NEW_"'#13#10 +
+      'UpdateTransaction должна быть эквивалентна Transaction или AutoCommit=True ',
     'Ошибка в %s. FieldList пуст.',
     '%s не могу использовать поле "%s"',
     '%s - Firebird 2 функция. Пожалуйста обновитесь до Firebird 2, чтобы использовать эту функциональность'
-
   );
+

@@ -23,19 +23,21 @@ unit pFIBConditionsEdit;
 interface
 
 {$I ..\FIBPlus.inc}
+
 uses
-  Windows, Messages, SysUtils,  Classes,
-  {$IFDEF D_XE2}
-  Vcl.Graphics, Vcl.Controls, Vcl.Forms,  Vcl.Dialogs, Vcl.ComCtrls, Vcl.ExtCtrls,
+  Windows, Messages, SysUtils, Classes,
+{$IFDEF D_XE2}
+  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls,
+  Vcl.ExtCtrls,
   Vcl.StdCtrls,
-  {$ELSE}
-  Graphics, Controls, Forms,  Dialogs, ComCtrls, ExtCtrls, StdCtrls,
-  {$ENDIF}
-  fraConditionsEdit,uFIBEditorForm
-  {$IFDEF LINUX}
-    ,VKCodes
-  {$ENDIF}
-  ;
+{$ELSE}
+  Graphics, Controls, Forms, Dialogs, ComCtrls, ExtCtrls, StdCtrls,
+{$ENDIF}
+  fraConditionsEdit, uFIBEditorForm
+{$IFDEF LINUX}
+    , VKCodes
+{$ENDIF}
+    ;
 
 type
   TfrmEditCheckStrings = class(TFIBEditorCustomForm)
@@ -46,38 +48,37 @@ type
 
   end;
 
-
-function EditConditions(Value:TStrings):boolean;
+function EditConditions(Value: TStrings): boolean;
 
 implementation
 
-uses pFIBEditorsConsts;
+uses
+  pFIBEditorsConsts;
 
 {$R *.dfm}
 
-function EditConditions(Value:TStrings):boolean;
+function EditConditions(Value: TStrings): boolean;
 var
- frm: TfrmEditCheckStrings;
+  frm: TfrmEditCheckStrings;
 begin
- frm:= TfrmEditCheckStrings.Create(nil);
- with frm do
- try
-  fraEdConditions1.PrepareFrame(Value);
-  Result:=ShowModal=mrOk;
-  if Result then
-  begin
-    fraEdConditions1.ApplyChanges;
-{    Value.Clear;
-    for i:=0 to Pred(ListView1.Items.Count) do
-    begin
-     Value.AddCondition(ListView1.Items[i].Caption,FTexts[i],ListView1.Items[i].Checked)
-    end;}
-  end;
- finally
-  frm.Free;
- end;
+  frm := TfrmEditCheckStrings.Create(nil);
+  with frm do
+    try
+      fraEdConditions1.PrepareFrame(Value);
+      Result := ShowModal = mrOk;
+      if Result then
+      begin
+        fraEdConditions1.ApplyChanges;
+        { Value.Clear;
+          for i:=0 to Pred(ListView1.Items.Count) do
+          begin
+          Value.AddCondition(ListView1.Items[i].Caption,FTexts[i],ListView1.Items[i].Checked)
+          end; }
+      end;
+    finally
+      frm.Free;
+    end;
 end;
-
 
 procedure TfrmEditCheckStrings.FormCreate(Sender: TObject);
 begin

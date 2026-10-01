@@ -17,24 +17,26 @@
 {                                                               }
 {  Please see the file License.txt for full license information }
 {***************************************************************}
+
 unit pFIBAutoUpdEditor;
 
 interface
- {$I ..\FIBPlus.inc}
 
-uses {$IFNDEF LINUX}
-      Windows,
-     {$ENDIF}
-     SysUtils,Classes,
-      {$IFDEF D_XE2}
-  Vcl.Graphics, Vcl.Controls, Vcl.Forms,  Vcl.Dialogs, Vcl.ComCtrls, Vcl.ExtCtrls,
+{$I ..\FIBPlus.inc}
+
+uses
+{$IFNDEF LINUX}
+  Windows,
+{$ENDIF}
+  SysUtils, Classes,
+{$IFDEF D_XE2}
+  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls,
+  Vcl.ExtCtrls,
   Vcl.StdCtrls,
-  {$ELSE}
-  Graphics, Controls, Forms,  Dialogs, ComCtrls, ExtCtrls, StdCtrls,
-  {$ENDIF}
-
-
-     Db,     fraAutoUpdEditor,uFIBEditorForm;
+{$ELSE}
+  Graphics, Controls, Forms, Dialogs, ComCtrls, ExtCtrls, StdCtrls,
+{$ENDIF}
+  Db, fraAutoUpdEditor, uFIBEditorForm;
 
 type
 
@@ -52,34 +54,34 @@ function EditAutoUpdateOptions(aDataSet: TDataSet): boolean;
 
 implementation
 
-uses pFIBEditorsConsts;
-
+uses
+  pFIBEditorsConsts;
 
 {$R *.dfm}
 
 function EditAutoUpdateOptions(aDataSet: TDataSet): boolean;
 var
-   aForm: TpFIBAutoUpdateOptionForm;
+  aForm: TpFIBAutoUpdateOptionForm;
 begin
   Result := False;
-  if aDataSet = nil then exit;
+  if aDataSet = nil then
+    exit;
 
   aForm := TpFIBAutoUpdateOptionForm.Create(Application);
   try
-    with aForm,aForm.fAutoUpdateOptionForm1 do
+    with aForm, aForm.fAutoUpdateOptionForm1 do
     begin
       Caption := Format(Caption, [aDataSet.Name]);
       FDataSet := aDataSet;
       PrepareControls;
       Result := ShowModal = mrOk;
       if Result then
-       ApplyToDataSet
-   end;
+        ApplyToDataSet
+    end;
   finally
     aForm.Free;
   end;
 end;
-
 
 procedure TpFIBAutoUpdateOptionForm.FormCreate(Sender: TObject);
 begin
@@ -87,6 +89,5 @@ begin
   OkB.Caption := SOKButton;
   CancelB.Caption := SCancelButton;
 end;
-
 
 end.

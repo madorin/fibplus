@@ -12,4 +12,5 @@ begin
   Application.HelpFile := 'D:\BORLAND\D7\Help\d7com.hlp';
   Application.CreateForm(TForm1, Form1);
   Application.Run;
+
 end.

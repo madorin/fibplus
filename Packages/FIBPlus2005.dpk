@@ -34,7 +34,7 @@ requires
   dsnap;
 
 contains
-  RegFIBPlus in '..\RegFIBPlus.pas',  
+  RegFIBPlus in '..\RegFIBPlus.pas',
   DSContainer in '..\DSContainer.pas',
   FIB in '..\FIB.pas',
   FIBConsts in '..\FIBConsts.pas',

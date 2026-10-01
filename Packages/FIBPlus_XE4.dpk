@@ -27,14 +27,9 @@ package FIBPlus_XE4;
 {$ENDIF IMPLICITBUILDING}
 {$DESCRIPTION 'FIBPlus'}
 {$IMPLICITBUILD OFF}
-
 {$I FIBPlus.inc}
+
 requires
-  {$IFDEF D_XE2}
-   {$IFDEF FIBPLUS_TRIAL}
-    vcl,
-  {$ENDIF}
-  {$ENDIF}
   rtl,
   dbrtl,
   dsnap;
@@ -94,4 +89,3 @@ contains
   SIBGlobals in '..\SIBGlobals.pas';
 
 end.
-

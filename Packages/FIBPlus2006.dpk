@@ -82,7 +82,7 @@ contains
   pFIBScripter in '..\pFIBScripter.pas',
   FIBSafeTimer in '..\FIBSafeTimer.pas',
   pFIBMetaData in '..\pFIBMetaData.pas',
-  pFIBExports in '..\pFIBExports.pas',  
+  pFIBExports in '..\pFIBExports.pas',
   pFIBDataRefresh in '..\pFIBDataRefresh.pas',
   pFIBClientDataSet in '..\pFIBClientDataSet.pas';
 

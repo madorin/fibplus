@@ -17,6 +17,7 @@
 {                                                               }
 {  Please see the file License.txt for full license information }
 {***************************************************************}
+
 {********************************************************************}
 { TIBBlobFilter                                                      }
 {     Copyright (c)  2002 by                                         }
@@ -28,9 +29,8 @@
 
 unit IBBlobFilter;
 
-
-
 interface
+
 {$I FIBPlus.inc}
 
 uses
@@ -38,77 +38,73 @@ uses
 
 type
   PIBBlobFilterProc = ^TIBBlobFilterProc;
-  TIBBlobFilterProc = procedure (var BlobBuffer; var BlobSize:longint);
+  TIBBlobFilterProc = procedure(var BlobBuffer; var BlobSize: longint);
 
   TIBBlobFilters = class(TObject)
   private
-    FIBBlobFilterList : TList;
-    FSorted : boolean;
-    function GetFilterProc(BlobSubType:integer;ForEncode:boolean):PIBBlobFilterProc;
+    FIBBlobFilterList: TList;
+    FSorted: boolean;
+    function GetFilterProc(BlobSubType: integer; ForEncode: boolean): PIBBlobFilterProc;
     procedure Sort;
   public
     destructor Destroy; override;
-    function Find(BlobSubType:integer;var anIndex:integer):boolean;    
-    procedure RegisterBlobFilter(BlobSubType:integer;
-                                 EncodeProc,DecodeProc:PIBBlobFilterProc);
-    procedure RemoveBlobFilter(BlobSubType:integer);
-    procedure IBFilterBuffer(var BlobBuffer:PAnsiChar;var BlobSize:longint;
-                        BlobSubType:integer;ForEncode: boolean);
+    function Find(BlobSubType: integer; var anIndex: integer): boolean;
+    procedure RegisterBlobFilter(BlobSubType: integer; EncodeProc, DecodeProc: PIBBlobFilterProc);
+    procedure RemoveBlobFilter(BlobSubType: integer);
+    procedure IBFilterBuffer(var BlobBuffer: PAnsiChar; var BlobSize: longint; BlobSubType: integer; ForEncode: boolean);
   end;
-
 
 implementation
 
-
 type
   PIBBlobFilter = ^TIBBlobFilter;
+
   TIBBlobFilter = record
-    SubType    : integer;
-    EncodeProc : PIBBlobFilterProc;
-    DecodeProc : PIBBlobFilterProc;
+    SubType: integer;
+    EncodeProc: PIBBlobFilterProc;
+    DecodeProc: PIBBlobFilterProc;
   end;
 
-
-var IBBlobFilters : TIBBlobFilters;
-
+var
+  IBBlobFilters: TIBBlobFilters;
 
 procedure UnLoadFilterList;
 begin
-  if  not assigned(IBBlobFilters) then
+  if not assigned(IBBlobFilters) then
     Exit;
   IBBlobFilters.Free;
-  IBBlobFilters:=nil;
+  IBBlobFilters := nil;
 end;
 
 { TIBBlobFilters }
 
 destructor TIBBlobFilters.Destroy;
-var i:integer;
-    IBBlobFilter:PIBBlobFilter;
+var
+  i: integer;
+  IBBlobFilter: PIBBlobFilter;
 begin
   if assigned(FIBBlobFilterList) then
   begin
-    for i:=0 to FIBBlobFilterList.Count-1 do
+    for i := 0 to FIBBlobFilterList.Count - 1 do
     begin
-      IBBlobFilter:=FIBBlobFilterList.Items[i];
+      IBBlobFilter := FIBBlobFilterList.Items[i];
       Dispose(IBBlobFilter);
     end;
     FIBBlobFilterList.Free;
-    FIBBlobFilterList:=nil;
+    FIBBlobFilterList := nil;
   end;
   inherited;
 end;
 
-function TIBBlobFilters.Find(BlobSubType: integer;
-  var anIndex: integer): boolean;
+function TIBBlobFilters.Find(BlobSubType: integer; var anIndex: integer): boolean;
 var
-  L, H, I, C: Integer;
+  L, H, i, C: integer;
 begin
-  if not Assigned(FIBBlobFilterList) then
+  if not assigned(FIBBlobFilterList) then
   begin
-   Result:=False;
-   anIndex:=0;
-   Exit;
+    Result := False;
+    anIndex := 0;
+    Exit;
   end;
   if not FSorted then
     Sort;
@@ -117,113 +113,110 @@ begin
   H := FIBBlobFilterList.Count - 1;
   while L <= H do
   begin
-    I := (L + H) shr 1;
+    i := (L + H) shr 1;
     C := PIBBlobFilter(FIBBlobFilterList.Items[i])^.SubType - BlobSubType;
     if C < 0 then
-      L := I + 1
+      L := i + 1
     else
     begin
-      H := I - 1;
+      H := i - 1;
       if C = 0 then
       begin
         Result := True;
-        L := I;
+        L := i;
       end;
     end;
   end;
   anIndex := L;
 end;
 
-function TIBBlobFilters.GetFilterProc(BlobSubType: integer;
-  ForEncode: boolean): PIBBlobFilterProc;
-var i:integer;
-    IBBlobFilter:PIBBlobFilter;
+function TIBBlobFilters.GetFilterProc(BlobSubType: integer; ForEncode: boolean): PIBBlobFilterProc;
+var
+  i: integer;
+  IBBlobFilter: PIBBlobFilter;
 begin
-  result:=nil;
+  Result := nil;
   if not assigned(FIBBlobFilterList) then
     Exit;
-  if Find(BlobSubType,i) then
+  if Find(BlobSubType, i) then
   begin
-    IBBlobFilter:=FIBBlobFilterList.Items[i];
+    IBBlobFilter := FIBBlobFilterList.Items[i];
     if ForEncode then
-      result:=IBBlobFilter^.EncodeProc
+      Result := IBBlobFilter^.EncodeProc
     else
-      result:=IBBlobFilter^.DecodeProc;
+      Result := IBBlobFilter^.DecodeProc;
   end;
 end;
 
-procedure TIBBlobFilters.IBFilterBuffer(var BlobBuffer: PAnsiChar;
-  var BlobSize: Integer; BlobSubType: integer; ForEncode: boolean);
+procedure TIBBlobFilters.IBFilterBuffer(var BlobBuffer: PAnsiChar; var BlobSize: integer; BlobSubType: integer; ForEncode: boolean);
 var
-  pProc:PIBBlobFilterProc;
-  IBBlobFilterProc:TIBBlobFilterProc;
+  pProc: PIBBlobFilterProc;
+  IBBlobFilterProc: TIBBlobFilterProc;
 begin
   pProc := nil;
-  if (BlobSubType<0) and (BlobSize>0) and (BlobBuffer<>nil) then
-    pProc:=GetFilterProc(BlobSubType,ForEncode);
+  if (BlobSubType < 0) and (BlobSize > 0) and (BlobBuffer <> nil) then
+    pProc := GetFilterProc(BlobSubType, ForEncode);
   if assigned(pProc) then
   begin
-    IBBlobFilterProc:=TIBBlobFilterProc(pProc);
-    IBBlobFilterProc(BlobBuffer,BlobSize)
+    IBBlobFilterProc := TIBBlobFilterProc(pProc);
+    IBBlobFilterProc(BlobBuffer, BlobSize)
   end;
 end;
 
-procedure TIBBlobFilters.RegisterBlobFilter(BlobSubType: integer;
-  EncodeProc, DecodeProc: PIBBlobFilterProc);
+procedure TIBBlobFilters.RegisterBlobFilter(BlobSubType: integer; EncodeProc, DecodeProc: PIBBlobFilterProc);
 var
-    IBBlobFilter:PIBBlobFilter;
-    i:integer;
+  IBBlobFilter: PIBBlobFilter;
+  i: integer;
 begin
-  i:=0;
-  if not Assigned(FIBBlobFilterList) then
+  i := 0;
+  if not assigned(FIBBlobFilterList) then
     FIBBlobFilterList := TList.Create;
-  if Find(BlobSubType,i) then
-    IBBlobFilter:=FIBBlobFilterList.Items[i]
+  if Find(BlobSubType, i) then
+    IBBlobFilter := FIBBlobFilterList.Items[i]
   else
   begin
     new(IBBlobFilter);
-    IBBlobFilter^.SubType:=BlobSubType;
+    IBBlobFilter^.SubType := BlobSubType;
     FIBBlobFilterList.Add(IBBlobFilter);
-    FSorted:=false;
+    FSorted := False;
   end;
-  IBBlobFilter^.EncodeProc:=EncodeProc;
-  IBBlobFilter^.DecodeProc:=DecodeProc;
+  IBBlobFilter^.EncodeProc := EncodeProc;
+  IBBlobFilter^.DecodeProc := DecodeProc;
 end;
 
 procedure TIBBlobFilters.RemoveBlobFilter(BlobSubType: integer);
-var i:integer;
-    IBBlobFilter:PIBBlobFilter;
+var
+  i: integer;
+  IBBlobFilter: PIBBlobFilter;
 begin
   if not assigned(FIBBlobFilterList) then
     Exit;
-  if Find(BlobSubType,i) then
+  if Find(BlobSubType, i) then
   begin
-    IBBlobFilter:=FIBBlobFilterList.Items[i];
+    IBBlobFilter := FIBBlobFilterList.Items[i];
     Dispose(IBBlobFilter);
-    FIBBlobFilterList.Delete(I);
+    FIBBlobFilterList.Delete(i);
   end;
 end;
 
-
-function CompareFilters(p1,p2:Pointer):integer;
+function CompareFilters(p1, p2: Pointer): integer;
 begin
-  result:=PIBBlobFilter(p1)^.SubType-PIBBlobFilter(p2)^.SubType;
+  Result := PIBBlobFilter(p1)^.SubType - PIBBlobFilter(p2)^.SubType;
 end;
 
 procedure TIBBlobFilters.Sort;
 begin
-  if Assigned(FIBBlobFilterList) then
+  if assigned(FIBBlobFilterList) then
   begin
-   FIBBlobFilterList.Sort(CompareFilters);
-   FSorted:=true;
+    FIBBlobFilterList.Sort(CompareFilters);
+    FSorted := True;
   end;
 end;
 
 initialization
 
 finalization
-  UnLoadFilterList;
+
+UnLoadFilterList;
 
 end.
-
-

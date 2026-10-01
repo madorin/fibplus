@@ -1,5 +1,5 @@
 unit Unit1;
-                                                        
+
 interface
 
 uses
@@ -10,7 +10,7 @@ uses
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    db: TpFIBDatabase;
+    DB: TpFIBDatabase;
     tr: TpFIBTransaction;
     dt: TpFIBDataSet;
     ds: TDataSource;
@@ -42,7 +42,8 @@ var
 
 implementation
 
-uses FIBQuery;
+uses
+  FIBQuery;
 
 {$R *.dfm}
 {$I FIBExamples.inc}
@@ -50,12 +51,11 @@ uses FIBQuery;
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   Caption := 'FIBPlus Example - ' + Application.Title;
-  db.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\'+DemoDB;
-  {$IFDEF FBCLIENT.DLL}
-   db.LibraryName:='fbclient.dll';
-  {$ENDIF}
-
-  db.Connected := True;
+  DB.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\' + DemoDB;
+{$IFDEF FBCLIENT.DLL}
+  DB.LibraryName := 'fbclient.dll';
+{$ENDIF}
+  DB.Connected := True;
   dt.Open;
   dtCountry.Open;
   dtDept.Open;
@@ -63,23 +63,25 @@ end;
 
 procedure TForm1.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) + ' session. Proceed?',
-    mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
+  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) +
+    ' session. Proceed?', mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
 end;
 
 procedure TForm1.DBLookupComboBox1CloseUp(Sender: TObject);
 
 begin
-  with dt do begin
+  with dt do
+  begin
     DisableControls;
     try
-      if dt.Active then Close;
+      if dt.Active then
+        Close;
       ParamByName('COUNTRY').SetDefMacroValue;
       ParamByName('DEPT').SetDefMacroValue;
-      if (DBLookupComboBox1.Text <> '') and (DBLookupComboBox1.Text <> ' --- ALL ---')
-      then ParamByName('COUNTRY').AsString := 'EMP.JOB_COUNTRY = ' + QuotedStr(DBLookupComboBox1.Text);
-      if (DBLookupComboBox2.Text = '') or (DBLookupComboBox2.Text = ' --- ALL ---')
-      then ParamByName('DEPT').AsString := '';
+      if (DBLookupComboBox1.Text <> '') and (DBLookupComboBox1.Text <> ' --- ALL ---') then
+        ParamByName('COUNTRY').AsString := 'EMP.JOB_COUNTRY = ' + QuotedStr(DBLookupComboBox1.Text);
+      if (DBLookupComboBox2.Text = '') or (DBLookupComboBox2.Text = ' --- ALL ---') then
+        ParamByName('DEPT').AsString := '';
       Prepare;
       if Assigned(FindParam('DEPT_NO')) then
         ParamByName('DEPT_NO').AsString := dtDept.FBN('F_1').AsString;

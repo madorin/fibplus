@@ -1,5 +1,5 @@
 unit Unit1;
-                                                     
+
 interface
 
 uses
@@ -11,7 +11,7 @@ uses
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    db: TpFIBDatabase;
+    DB: TpFIBDatabase;
     tr: TpFIBTransaction;
     dt: TpFIBDataSet;
     ds: TDataSource;
@@ -58,7 +58,8 @@ var
 
 implementation
 
-uses Math;
+uses
+  Math;
 
 {$R *.dfm}
 {$I FIBExamples.inc}
@@ -66,57 +67,66 @@ uses Math;
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   Caption := 'FIBPlus Example - ' + Application.Title;
-  db.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\'+DemoDB;
+  DB.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\' + DemoDB;
 
-  {$IFDEF FBCLIENT.DLL}
-   db.LibraryName:='fbclient.dll';
-  {$ENDIF}
-  db.Connected := True;
+{$IFDEF FBCLIENT.DLL}
+  DB.LibraryName := 'fbclient.dll';
+{$ENDIF}
+  DB.Connected := True;
   dt.Open;
 
   FIBSQLLogger1.LogFileName := ExtractFileDir(Application.ExeName) + '\test.log';
-  FIBSQLLogger1.ForceSaveLog:=True;
+  FIBSQLLogger1.ForceSaveLog := True;
 end;
 
 procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  if not db.Connected then Exit;
-  db.CloseDataSets;
-  db.Close;
+  if not DB.Connected then
+    Exit;
+  DB.CloseDataSets;
+  DB.Close;
 end;
 
 procedure TForm1.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) + ' session. Proceed?',
-    mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
+  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) +
+    ' session. Proceed?', mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
 end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 const
-  sqltexts: array [1..10] of string = (
-  'select * from customer',
-  'select * from employee',
-  'select * from project',
-  'select * from phone_list',
-  'select * from department',
-  'update customer set cust_no = cust_no where cust_no > 100',
-  'update employee set emp_no = emp_no',
-  'select * from org_chart',
-  'select * from SUB_TOT_BUDGET(''000'')',
-  'select * from SALARY_HISTORY');
-var i, x: Integer; sqltxt: String;
+  sqltexts: array [1 .. 10] of string = (
+    'select * from customer',
+    'select * from employee',
+    'select * from project',
+    'select * from phone_list',
+    'select * from department',
+    'update customer set cust_no = cust_no where cust_no > 100',
+    'update employee set emp_no = emp_no',
+    'select * from org_chart',
+    'select * from SUB_TOT_BUDGET(''000'')',
+    'select * from SALARY_HISTORY'
+  );
+var
+  i, x: Integer;
+  sqltxt: String;
 begin
   Randomize;
   FIBSQLLogger1.ActiveStatistics := True;
   FIBSQLLogger1.ActiveLogging := True;
-  for i := 1 to 30 do begin
+  for i := 1 to 30 do
+  begin
     x := RandomRange(1, 10);
     sqltxt := sqltexts[x];
-    if pFIBDataSet1.Active then pFIBDataSet1.Close;
-    if pos('update', sqltxt) > 0 then begin
+    if pFIBDataSet1.Active then
+      pFIBDataSet1.Close;
+    if pos('update', sqltxt) > 0 then
+    begin
       pFIBQuery1.SQL.Text := sqltxt;
       pFIBQuery1.ExecQuery;
-    end else begin
+    end
+    else
+    begin
       pFIBDataSet1.SelectSQL.Text := sqltxt;
       pFIBDataSet1.Open;
     end;

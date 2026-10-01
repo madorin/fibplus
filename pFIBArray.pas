@@ -18,23 +18,25 @@
 {  Please see the file License.txt for full license information }
 {***************************************************************}
 
-
-
 unit pFIBArray;
+
 {$I FIBPlus.inc}
 
 interface
 
 uses
-  SysUtils, Classes, ibase, IB_Intf, ib_externals, DB, fib, FIBDatabase, StdFuncs,
+  SysUtils, Classes, ibase, IB_Intf, ib_externals, DB, fib, FIBDatabase,
+  StdFuncs,
   FIBPlatforms, Variants;
 
 {$IFDEF SUPPORT_ARRAY_FIELD}
+
 type
   // Not TISC_ARRAY_BOUND: its 16-bit bounds can't hold every INTEGER bound of the column
   TArrayBound = record
     Lower, Upper: Integer;
   end;
+
   TArrayBounds = array of TArrayBound;
 
   // Array column through slices with an own SDL: full names, not cut like in ISC_ARRAY_DESC
@@ -66,24 +68,21 @@ type
     procedure WriteElement(const Value: Variant; P: PAnsiChar);
     procedure ConversionError(const Value: Variant);
     function ReadSlice(ID: PISC_QUAD; const SDL: AnsiString; Buffer: PAnsiChar;
-      BufferSize: Integer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Integer;
+      BufferSize: Integer; DBHandle: PISC_DB_HANDLE;
+      TRHandle: PISC_TR_HANDLE): Integer;
     procedure CheckStatus(Status: ISC_STATUS);
     function GetDimensionCount: Integer;
     function GetDimension(Index: Integer): TISC_ARRAY_BOUND;
     function GetArraySize: Integer;
     function GetScale: Byte;
   public
-    constructor Create(Database: TFIBDatabase; Transaction: TFIBTransaction;
-      const ATableName, AFieldName: string);
+    constructor Create(Database: TFIBDatabase; Transaction: TFIBTransaction; const ATableName, AFieldName: string);
     // The object fits the column and the character set of the connection
     function Matches(Database: TFIBDatabase; const ATableName, AFieldName: string): Boolean;
     // for FIBQuery: the array with the ID in ArrayID
-    function GetArrayValues(ArrayID: TDataBuffer;
-      DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;
-    function GetElement(ArrayID: TDataBuffer; const Indexes: array of Integer;
-      DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;
-    procedure SetArrayValue(const Value: Variant; var ArrayID: TDataBuffer;
-      DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE);
+    function GetArrayValues(ArrayID: TDataBuffer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;
+    function GetElement(ArrayID: TDataBuffer; const Indexes: array of Integer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;
+    procedure SetArrayValue(const Value: Variant; var ArrayID: TDataBuffer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE);
     // Whole array in a buffer of ArraySize bytes, with the layout of the slice calls
     procedure InitBuffer(Buffer: PAnsiChar);
     function BufferToVariant(Buffer: PAnsiChar): Variant;
@@ -91,14 +90,11 @@ type
     // Raises an error when Indexes don't address an element
     procedure CheckIndexes(const Indexes: array of Integer);
     function GetBufferElement(Buffer: PAnsiChar; const Indexes: array of Integer): Variant;
-    procedure SetBufferElement(Buffer: PAnsiChar; const Indexes: array of Integer;
-      const Value: Variant);
+    procedure SetBufferElement(Buffer: PAnsiChar; const Indexes: array of Integer; const Value: Variant);
     // Reads the array with ID into Buffer, returns 0 for a NULL array
-    function GetSlice(ID: PISC_QUAD; Buffer: PAnsiChar;
-      DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Integer;
+    function GetSlice(ID: PISC_QUAD; Buffer: PAnsiChar; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Integer;
     // Writes Buffer as a new array, ID gets its (temporary) ID
-    procedure PutSlice(Buffer: PAnsiChar; var ID: TISC_QUAD;
-      DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE);
+    procedure PutSlice(Buffer: PAnsiChar; var ID: TISC_QUAD; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE);
 
     property ArrayType: TFieldType read FArrayType;
     property TableName: string read FTableName;
@@ -113,6 +109,7 @@ type
 implementation
 
 {$IFDEF SUPPORT_ARRAY_FIELD}
+
 uses
   StrUtil, Math, FMTBcd, FIBTypes, FIBQuery;
 
@@ -120,7 +117,7 @@ const
   // ISC_DATE 0 (1858-11-17) as TTimeStamp.Date
   IBBuffDateDelta = 678576;
 
-// Next index of a Variant array in row-major order, False after the last element
+  // Next index of a Variant array in row-major order, False after the last element
 function NextIndex(const Value: Variant; var Index: array of Integer): Boolean;
 var
   i: Integer;
@@ -143,19 +140,18 @@ var
   S: string;
 begin
   case VarType(Value) of
-    varShortInt, varByte, varSmallint, varWord, varInteger, varLongWord, varInt64:
-      Result := Int64ToFBDecimal(Value);
+    varShortInt, varByte, varSmallint, varWord, varInteger, varLongWord, varInt64: Result := Int64ToFBDecimal(Value);
     varCurrency:
-    begin
-      C := Value;
-      Result := Int64ToFBDecimal(PInt64(@C)^, -4);
-    end;
+      begin
+        C := Value;
+        Result := Int64ToFBDecimal(PInt64(@C)^, -4);
+      end;
     varString, varOleStr{$IFDEF D2009+}, varUString{$ENDIF}:
-    begin
-      S := StringReplace(Trim(VarToStr(Value)), LocalDecimalSeparator, '.', []);
-      if not StrToFBDecimal(S, Result) then
-        Result := DoubleToFBDecimal(Value);
-    end;
+      begin
+        S := StringReplace(Trim(VarToStr(Value)), LocalDecimalSeparator, '.', []);
+        if not StrToFBDecimal(S, Result) then
+          Result := DoubleToFBDecimal(Value);
+      end;
   else
     if VarIsFMTBcd(Value) then
       Result := BcdToFBDecimal(VarToBcd(Value))
@@ -180,8 +176,7 @@ end;
 
 { TpFIBArray }
 
-constructor TpFIBArray.Create(Database: TFIBDatabase; Transaction: TFIBTransaction;
-  const ATableName, AFieldName: string);
+constructor TpFIBArray.Create(Database: TFIBDatabase; Transaction: TFIBTransaction; const ATableName, AFieldName: string);
 begin
   inherited Create;
   FDatabase := Database;
@@ -210,10 +205,8 @@ begin
   try
     Query.Database := FDatabase;
     Query.Transaction := Transaction;
-    Query.SQL.Text :=
-      'select f.RDB$FIELD_TYPE, f.RDB$FIELD_LENGTH, f.RDB$FIELD_SCALE, f.RDB$CHARACTER_LENGTH, ' +
-      'd.RDB$LOWER_BOUND, d.RDB$UPPER_BOUND ' +
-      'from RDB$RELATION_FIELDS rf ' +
+    Query.SQL.Text := 'select f.RDB$FIELD_TYPE, f.RDB$FIELD_LENGTH, f.RDB$FIELD_SCALE, f.RDB$CHARACTER_LENGTH, ' +
+      'd.RDB$LOWER_BOUND, d.RDB$UPPER_BOUND ' + 'from RDB$RELATION_FIELDS rf ' +
       'join RDB$FIELDS f on f.RDB$FIELD_NAME = rf.RDB$FIELD_SOURCE ' +
       'join RDB$FIELD_DIMENSIONS d on d.RDB$FIELD_NAME = f.RDB$FIELD_NAME ' +
       'where rf.RDB$RELATION_NAME = :RELATION_NAME and rf.RDB$FIELD_NAME = :FIELD_NAME ' +
@@ -261,23 +254,22 @@ begin
   // the server converts them
   case FElementType of
     blr_timestamp_tz, blr_ex_timestamp_tz:
-    begin
-      FElementType := blr_timestamp;
-      FElementLength := SizeOf(TISC_QUAD);
-    end;
+      begin
+        FElementType := blr_timestamp;
+        FElementLength := SizeOf(TISC_QUAD);
+      end;
     blr_sql_time_tz, blr_ex_time_tz:
-    begin
-      FElementType := blr_sql_time;
-      FElementLength := SizeOf(ISC_TIME);
-    end;
+      begin
+        FElementType := blr_sql_time;
+        FElementLength := SizeOf(ISC_TIME);
+      end;
   end;
 end;
 
 function TpFIBArray.ElementFieldType: TFieldType;
 begin
   case FElementType of
-    blr_text, blr_varying:
-      Result := ftString;
+    blr_text, blr_varying: Result := ftString;
     blr_short:
       if FElementScale = 0 then
         Result := ftSmallint
@@ -293,18 +285,12 @@ begin
         Result := ftLargeint
       else
         Result := ftBCD;
-    blr_int128, blr_dec64, blr_dec128:
-      Result := ftFMTBcd;
-    blr_float, blr_double, blr_d_float:
-      Result := ftFloat;
-    blr_timestamp:
-      Result := ftDateTime;
-    blr_sql_date:
-      Result := ftDate;
-    blr_sql_time:
-      Result := ftTime;
-    blr_bool:
-      Result := ftBoolean;
+    blr_int128, blr_dec64, blr_dec128: Result := ftFMTBcd;
+    blr_float, blr_double, blr_d_float: Result := ftFloat;
+    blr_timestamp: Result := ftDateTime;
+    blr_sql_date: Result := ftDate;
+    blr_sql_time: Result := ftTime;
+    blr_bool: Result := ftBoolean;
   else
     Result := ftUnknown;
   end;
@@ -315,18 +301,16 @@ function TpFIBArray.SDLName(const Name: string): AnsiString;
 begin
   if FDatabase.IsUnicodeConnect then
     Result := UTF8Encode(Name)
-  else
-  if FDatabase.IsFirebirdConnect and ((FDatabase.ServerMajorVersion > 2) or
-    (FDatabase.ServerMajorVersion = 2) and (FDatabase.ServerMinorVersion >= 5)) and
-    (FCharSet <> '') and not SameText(FCharSet, 'NONE') then
+  else if FDatabase.IsFirebirdConnect and ((FDatabase.ServerMajorVersion > 2) or (FDatabase.ServerMajorVersion = 2)
+    and (FDatabase.ServerMinorVersion >= 5)) and (FCharSet <> '') and not SameText(FCharSet, 'NONE') then
     Result := UTF8Encode(Name)
   else
 {$IFDEF SUPPORT_KOI8_CHARSET}
-  if FDatabase.IsKOI8Connect then
-    Result := AnsiString(ConvertToCodePage(Name, CodePageKOI8R))
-  else
+    if FDatabase.IsKOI8Connect then
+      Result := AnsiString(ConvertToCodePage(Name, CodePageKOI8R))
+    else
 {$ENDIF}
-    Result := AnsiString(Name);
+      Result := AnsiString(Name);
   if Length(Result) > 255 then
     FIBErrorEx('Array %s.%s: the name %s is too long', [FTableName, FFieldName, Name]);
 end;
@@ -338,17 +322,14 @@ var
 begin
   RelationName := SDLName(FTableName);
   FieldName := SDLName(FFieldName);
-  Result := AnsiChar(isc_sdl_version1) + AnsiChar(isc_sdl_struct) + AnsiChar(1) +
-    AnsiChar(FElementType);
+  Result := AnsiChar(isc_sdl_version1) + AnsiChar(isc_sdl_struct) + AnsiChar(1) + AnsiChar(FElementType);
   case FElementType of
-    blr_short, blr_long, blr_int64, blr_quad, blr_int128:
-      Result := Result + AnsiChar(FElementScale and $FF);
+    blr_short, blr_long, blr_int64, blr_quad, blr_int128: Result := Result + AnsiChar(FElementScale and $FF);
     blr_text, blr_cstring, blr_varying:
       Result := Result + AnsiChar(FElementLength and $FF) + AnsiChar((FElementLength shr 8) and $FF);
   end;
-  Result := Result +
-    AnsiChar(isc_sdl_relation) + AnsiChar(Length(RelationName)) + RelationName +
-    AnsiChar(isc_sdl_field) + AnsiChar(Length(FieldName)) + FieldName;
+  Result := Result + AnsiChar(isc_sdl_relation) + AnsiChar(Length(RelationName))
+    + RelationName + AnsiChar(isc_sdl_field) + AnsiChar(Length(FieldName)) + FieldName;
 end;
 
 function TpFIBArray.SliceSDL(const Bounds: TArrayBounds): AnsiString;
@@ -367,8 +348,7 @@ var
       AddByte(isc_sdl_tiny_integer);
       AddByte(Value);
     end
-    else
-    if (Value >= Low(SmallInt)) and (Value <= High(SmallInt)) then
+    else if (Value >= Low(SmallInt)) and (Value <= High(SmallInt)) then
     begin
       AddByte(isc_sdl_short_integer);
       AddByte(Value);
@@ -455,8 +435,7 @@ begin
   CheckIndexes(Indexes);
   Result := 0;
   for i := 0 to DimensionCount - 1 do
-    Result := Result * (FBounds[i].Upper - FBounds[i].Lower + 1) +
-      Indexes[i] - FBounds[i].Lower;
+    Result := Result * (FBounds[i].Upper - FBounds[i].Lower + 1) + Indexes[i] - FBounds[i].Lower;
   Result := Result * ElementSize;
 end;
 
@@ -469,8 +448,9 @@ begin
       [FTableName, FFieldName, DimensionCount, Length(Indexes)]);
   for i := 0 to DimensionCount - 1 do
     if (Indexes[i] < FBounds[i].Lower) or (Indexes[i] > FBounds[i].Upper) then
-      FIBErrorEx('Array %s.%s: index %d is out of the bounds %d:%d of dimension %d',
-        [FTableName, FFieldName, Indexes[i], FBounds[i].Lower, FBounds[i].Upper, i + 1]);
+      FIBErrorEx
+        ('Array %s.%s: index %d is out of the bounds %d:%d of dimension %d',
+          [FTableName, FFieldName, Indexes[i], FBounds[i].Lower, FBounds[i].Upper, i + 1]);
 end;
 
 function TpFIBArray.GetDimensionCount: Integer;
@@ -483,8 +463,9 @@ begin
   if (Index < 0) or (Index >= DimensionCount) then
     FIBError(feWrongDimension, [Index, FTableName + '.' + FFieldName]);
   if (FBounds[Index].Lower < Low(SmallInt)) or (FBounds[Index].Upper > High(SmallInt)) then
-    FIBErrorEx('Array %s.%s: the bounds %d:%d of dimension %d don''t fit TISC_ARRAY_BOUND',
-      [FTableName, FFieldName, FBounds[Index].Lower, FBounds[Index].Upper, Index + 1]);
+    FIBErrorEx
+      ('Array %s.%s: the bounds %d:%d of dimension %d don''t fit TISC_ARRAY_BOUND',
+        [FTableName, FFieldName, FBounds[Index].Lower, FBounds[Index].Upper, Index + 1]);
   Result.array_bound_lower := FBounds[Index].Lower;
   Result.array_bound_upper := FBounds[Index].Upper;
 end;
@@ -501,8 +482,7 @@ end;
 
 procedure TpFIBArray.ConversionError(const Value: Variant);
 begin
-  FIBErrorEx('Array %s.%s: can''t convert "%s" to the element type',
-    [FTableName, FFieldName, VarToStr(Value)]);
+  FIBErrorEx('Array %s.%s: can''t convert "%s" to the element type', [FTableName, FFieldName, VarToStr(Value)]);
 end;
 
 function TpFIBArray.ReadElement(P: PAnsiChar): Variant;
@@ -515,28 +495,28 @@ var
 begin
   case FElementType of
     blr_text, blr_varying:
-    begin
-      L := 0;
-      if FElementType = blr_varying then
-        while (L < ElementSize) and (P[L] <> #0) do
-          Inc(L)
-      else
       begin
-        // CHAR elements come padded to the length in bytes
-        L := FElementLength;
-        while (L > 0) and (P[L - 1] = ' ') do
-          Dec(L);
+        L := 0;
+        if FElementType = blr_varying then
+          while (L < ElementSize) and (P[L] <> #0) do
+            Inc(L)
+        else
+        begin
+          // CHAR elements come padded to the length in bytes
+          L := FElementLength;
+          while (L > 0) and (P[L - 1] = ' ') do
+            Dec(L);
+        end;
+        SetString(S, P, L);
+        if FDatabase.IsUnicodeConnect then
+{$IFDEF D2009+}
+          Result := UTF8ToString(S)
+{$ELSE}
+          Result := UTF8Decode(S)
+{$ENDIF}
+        else
+          Result := S;
       end;
-      SetString(S, P, L);
-      if FDatabase.IsUnicodeConnect then
-        {$IFDEF D2009+}
-        Result := UTF8ToString(S)
-        {$ELSE}
-        Result := UTF8Decode(S)
-        {$ENDIF}
-      else
-        Result := S;
-    end;
     blr_short:
       if FElementScale = 0 then
         Result := PSmallInt(P)^
@@ -556,51 +536,44 @@ begin
         VarFMTBcdCreate(Result, Bcd);
       end;
     blr_int128, blr_dec64, blr_dec128:
-    begin
-      case FElementType of
-        blr_int128:
-          SQLType := SQL_INT128;
-        blr_dec64:
-          SQLType := SQL_DEC16;
-      else
-        SQLType := SQL_DEC34;
+      begin
+        case FElementType of
+          blr_int128: SQLType := SQL_INT128;
+          blr_dec64: SQLType := SQL_DEC16;
+        else
+          SQLType := SQL_DEC34;
+        end;
+        // NaN, Infinity and values out of TBcd range are returned as Double, like fields
+        if FBRawToBcd(SQLType, FElementScale, P, Bcd) then
+          VarFMTBcdCreate(Result, Bcd)
+        else
+          Result := FBRawToDouble(SQLType, FElementScale, P);
       end;
-      // NaN, Infinity and values out of TBcd range are returned as Double, like fields
-      if FBRawToBcd(SQLType, FElementScale, P, Bcd) then
-        VarFMTBcdCreate(Result, Bcd)
-      else
-        Result := FBRawToDouble(SQLType, FElementScale, P);
-    end;
-    blr_float:
-      Result := Double(PSingle(P)^);
-    blr_double, blr_d_float:
-      Result := PDouble(P)^;
+    blr_float: Result := Double(PSingle(P)^);
+    blr_double, blr_d_float: Result := PDouble(P)^;
     blr_sql_date:
-    begin
-      TS.Date := PISC_DATE(P)^ + IBBuffDateDelta;
-      TS.Time := 0;
-      Result := VarFromDateTime(TimeStampToDateTime(TS));
-    end;
-    blr_sql_time:
-      Result := VarFromDateTime(PISC_TIME(P)^ / (MSecsPerDay * 10.0));
+      begin
+        TS.Date := PISC_DATE(P)^ + IBBuffDateDelta;
+        TS.Time := 0;
+        Result := VarFromDateTime(TimeStampToDateTime(TS));
+      end;
+    blr_sql_time: Result := VarFromDateTime(PISC_TIME(P)^ / (MSecsPerDay * 10.0));
     blr_timestamp:
-    begin
-      TS.Date := PISC_QUAD(P)^.gds_quad_high + IBBuffDateDelta;
-      TS.Time := PISC_QUAD(P)^.gds_quad_low div 10;
-      Result := VarFromDateTime(TimeStampToDateTime(TS));
-    end;
-    blr_bool:
-      Result := PByte(P)^ <> 0;
+      begin
+        TS.Date := PISC_QUAD(P)^.gds_quad_high + IBBuffDateDelta;
+        TS.Time := PISC_QUAD(P)^.gds_quad_low div 10;
+        Result := VarFromDateTime(TimeStampToDateTime(TS));
+      end;
+    blr_bool: Result := PByte(P)^ <> 0;
   else
-    FIBErrorEx('Array %s.%s: element type %d is not supported',
-      [FTableName, FFieldName, FElementType]);
+    FIBErrorEx('Array %s.%s: element type %d is not supported', [FTableName, FFieldName, FElementType]);
   end;
 end;
 
 procedure TpFIBArray.WriteElement(const Value: Variant; P: PAnsiChar);
 var
   S: AnsiString;
-  I: Int64;
+  i: Int64;
   TS: TTimeStamp;
   SQLType: Integer;
 begin
@@ -615,73 +588,65 @@ begin
   end;
   case FElementType of
     blr_text, blr_varying:
-    begin
-      if FDatabase.IsUnicodeConnect then
-        S := UTF8Encode(VarToStr(Value))
-      else
-        S := AnsiString(VarToStr(Value));
-      if Length(S) > FElementLength then
-        FIBErrorEx('Array %s.%s: the string "%s" is longer than %d bytes',
-          [FTableName, FFieldName, VarToStr(Value), FElementLength]);
-      if S <> '' then
-        Move(S[1], P^, Length(S));
-      // CHAR is padded, VARCHAR is null terminated
-      if FElementType = blr_text then
-        FillChar(P[Length(S)], FElementLength - Length(S), ' ')
-      else
-        FillChar(P[Length(S)], ElementSize - Length(S), 0);
-    end;
+      begin
+        if FDatabase.IsUnicodeConnect then
+          S := UTF8Encode(VarToStr(Value))
+        else
+          S := AnsiString(VarToStr(Value));
+        if Length(S) > FElementLength then
+          FIBErrorEx('Array %s.%s: the string "%s" is longer than %d bytes',
+            [FTableName, FFieldName, VarToStr(Value), FElementLength]);
+        if S <> '' then
+          Move(S[1], P^, Length(S));
+        // CHAR is padded, VARCHAR is null terminated
+        if FElementType = blr_text then
+          FillChar(P[Length(S)], FElementLength - Length(S), ' ')
+        else
+          FillChar(P[Length(S)], ElementSize - Length(S), 0);
+      end;
     blr_short, blr_long, blr_int64:
-    begin
-      if not VariantToScaled(Value, FElementScale, I) then
-        ConversionError(Value);
-      case FElementType of
-        blr_short:
-          if (I < Low(SmallInt)) or (I > High(SmallInt)) then
-            ConversionError(Value)
-          else
-            PSmallInt(P)^ := I;
-        blr_long:
-          if (I < Low(Integer)) or (I > High(Integer)) then
-            ConversionError(Value)
-          else
-            PInteger(P)^ := I;
-      else
-        PInt64(P)^ := I;
+      begin
+        if not VariantToScaled(Value, FElementScale, i) then
+          ConversionError(Value);
+        case FElementType of
+          blr_short:
+            if (i < Low(SmallInt)) or (i > High(SmallInt)) then
+              ConversionError(Value)
+            else
+              PSmallInt(P)^ := i;
+          blr_long:
+            if (i < Low(Integer)) or (i > High(Integer)) then
+              ConversionError(Value)
+            else
+              PInteger(P)^ := i;
+        else
+          PInt64(P)^ := i;
+        end;
       end;
-    end;
     blr_int128, blr_dec64, blr_dec128:
-    begin
-      case FElementType of
-        blr_int128:
-          SQLType := SQL_INT128;
-        blr_dec64:
-          SQLType := SQL_DEC16;
-      else
-        SQLType := SQL_DEC34;
+      begin
+        case FElementType of
+          blr_int128: SQLType := SQL_INT128;
+          blr_dec64: SQLType := SQL_DEC16;
+        else
+          SQLType := SQL_DEC34;
+        end;
+        if not FBDecimalToRaw(VariantToDecimal(Value), SQLType, FElementScale, P) then
+          ConversionError(Value);
       end;
-      if not FBDecimalToRaw(VariantToDecimal(Value), SQLType, FElementScale, P) then
-        ConversionError(Value);
-    end;
-    blr_float:
-      PSingle(P)^ := Value;
-    blr_double, blr_d_float:
-      PDouble(P)^ := Value;
-    blr_sql_date:
-      PISC_DATE(P)^ := DateTimeToTimeStamp(VarToDateTime(Value)).Date - IBBuffDateDelta;
-    blr_sql_time:
-      PISC_TIME(P)^ := DateTimeToTimeStamp(VarToDateTime(Value)).Time * 10;
+    blr_float: PSingle(P)^ := Value;
+    blr_double, blr_d_float: PDouble(P)^ := Value;
+    blr_sql_date: PISC_DATE(P)^ := DateTimeToTimeStamp(VarToDateTime(Value)).Date - IBBuffDateDelta;
+    blr_sql_time: PISC_TIME(P)^ := DateTimeToTimeStamp(VarToDateTime(Value)).Time * 10;
     blr_timestamp:
-    begin
-      TS := DateTimeToTimeStamp(VarToDateTime(Value));
-      PISC_QUAD(P)^.gds_quad_high := TS.Date - IBBuffDateDelta;
-      PISC_QUAD(P)^.gds_quad_low := TS.Time * 10;
-    end;
-    blr_bool:
-      PByte(P)^ := Ord(Boolean(Value));
+      begin
+        TS := DateTimeToTimeStamp(VarToDateTime(Value));
+        PISC_QUAD(P)^.gds_quad_high := TS.Date - IBBuffDateDelta;
+        PISC_QUAD(P)^.gds_quad_low := TS.Time * 10;
+      end;
+    blr_bool: PByte(P)^ := Ord(Boolean(Value));
   else
-    FIBErrorEx('Array %s.%s: element type %d is not supported',
-      [FTableName, FFieldName, FElementType]);
+    FIBErrorEx('Array %s.%s: element type %d is not supported', [FTableName, FFieldName, FElementType]);
   end;
 end;
 
@@ -733,8 +698,9 @@ begin
     Count := VarArrayHighBound(Value, i + 1) - VarArrayLowBound(Value, i + 1) + 1;
     MaxCount := FBounds[i].Upper - FBounds[i].Lower + 1;
     if (Count > MaxCount) or ((i > 0) and (Count <> MaxCount)) then
-      FIBErrorEx('Array %s.%s: dimension %d has %d element(s), the value has %d',
-        [FTableName, FFieldName, i + 1, MaxCount, Count]);
+      FIBErrorEx
+        ('Array %s.%s: dimension %d has %d element(s), the value has %d',
+          [FTableName, FFieldName, i + 1, MaxCount, Count]);
   end;
   // elements missing in the value are blank
   InitBuffer(Buffer);
@@ -753,8 +719,7 @@ begin
   Result := ReadElement(Buffer + ElementOffset(Indexes));
 end;
 
-procedure TpFIBArray.SetBufferElement(Buffer: PAnsiChar; const Indexes: array of Integer;
-  const Value: Variant);
+procedure TpFIBArray.SetBufferElement(Buffer: PAnsiChar; const Indexes: array of Integer; const Value: Variant);
 begin
   WriteElement(Value, Buffer + ElementOffset(Indexes));
 end;
@@ -766,36 +731,34 @@ begin
 end;
 
 // Returns the length read, 0 for a NULL array
-function TpFIBArray.ReadSlice(ID: PISC_QUAD; const SDL: AnsiString; Buffer: PAnsiChar;
-  BufferSize: Integer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Integer;
+function TpFIBArray.ReadSlice(ID: PISC_QUAD; const SDL: AnsiString;
+  Buffer: PAnsiChar; BufferSize: Integer; DBHandle: PISC_DB_HANDLE;
+  TRHandle: PISC_TR_HANDLE): Integer;
 var
   ReturnLength: ISC_LONG;
 begin
   ReturnLength := 0;
-  CheckStatus(FDatabase.ClientLibrary.isc_get_slice(StatusVector, DBHandle, TRHandle, ID,
-    Length(SDL), PAnsiChar(SDL), 0, nil, BufferSize, Pointer(Buffer), @ReturnLength));
+  CheckStatus(FDatabase.ClientLibrary.isc_get_slice(StatusVector, DBHandle,
+    TRHandle, ID, Length(SDL), PAnsiChar(SDL), 0, nil, BufferSize, Pointer(Buffer), @ReturnLength));
   Result := ReturnLength;
 end;
 
-function TpFIBArray.GetSlice(ID: PISC_QUAD; Buffer: PAnsiChar;
-  DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Integer;
+function TpFIBArray.GetSlice(ID: PISC_QUAD; Buffer: PAnsiChar; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Integer;
 begin
   Result := ReadSlice(ID, FArraySDL, Buffer, ArraySize, DBHandle, TRHandle);
 end;
 
-procedure TpFIBArray.PutSlice(Buffer: PAnsiChar; var ID: TISC_QUAD;
-  DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE);
+procedure TpFIBArray.PutSlice(Buffer: PAnsiChar; var ID: TISC_QUAD; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE);
 begin
   // A new array: put_slice on a stored ID reuses the array the transaction loaded before
   // for that ID (Firebird keeps it until the transaction ends)
   ID.gds_quad_high := 0;
   ID.gds_quad_low := 0;
-  CheckStatus(FDatabase.ClientLibrary.isc_put_slice(StatusVector, DBHandle, TRHandle, @ID,
-    Length(FArraySDL), PAnsiChar(FArraySDL), 0, nil, ArraySize, Pointer(Buffer)));
+  CheckStatus(FDatabase.ClientLibrary.isc_put_slice(StatusVector, DBHandle,
+    TRHandle, @ID, Length(FArraySDL), PAnsiChar(FArraySDL), 0, nil, ArraySize, Pointer(Buffer)));
 end;
 
-function TpFIBArray.GetArrayValues(ArrayID: TDataBuffer;
-  DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;
+function TpFIBArray.GetArrayValues(ArrayID: TDataBuffer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;
 var
   Buffer: TDataBuffer;
 begin
@@ -811,8 +774,9 @@ begin
   end;
 end;
 
-function TpFIBArray.GetElement(ArrayID: TDataBuffer; const Indexes: array of Integer;
-  DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;
+function TpFIBArray.GetElement(ArrayID: TDataBuffer;
+  const Indexes: array of Integer; DBHandle: PISC_DB_HANDLE;
+  TRHandle: PISC_TR_HANDLE): Variant;
 var
   SDL: AnsiString;
   Buffer: TDataBuffer;
@@ -821,8 +785,7 @@ begin
   Buffer := nil;
   FIBAlloc(Buffer, 0, ElementSize + 1);
   try
-    if ReadSlice(PISC_QUAD(ArrayID), SDL, PAnsiChar(Buffer), ElementSize,
-      DBHandle, TRHandle) = 0 then
+    if ReadSlice(PISC_QUAD(ArrayID), SDL, PAnsiChar(Buffer), ElementSize, DBHandle, TRHandle) = 0 then
       Result := Null
     else
       Result := ReadElement(PAnsiChar(Buffer));
@@ -831,8 +794,7 @@ begin
   end;
 end;
 
-procedure TpFIBArray.SetArrayValue(const Value: Variant; var ArrayID: TDataBuffer;
-  DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE);
+procedure TpFIBArray.SetArrayValue(const Value: Variant; var ArrayID: TDataBuffer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE);
 var
   Buffer: TDataBuffer;
 begin

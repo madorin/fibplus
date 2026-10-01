@@ -5,13 +5,13 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
-  ExtCtrls, StdCtrls, Grids, DBGrids,pFIBProps, FIBQuery, pFIBQuery,
-  DBClient, pFIBClientDataSet, Provider, IBDatabase,ibase;
+  ExtCtrls, StdCtrls, Grids, DBGrids, pFIBProps, FIBQuery, pFIBQuery,
+  DBClient, pFIBClientDataSet, Provider, IBDatabase, ibase;
 
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    db: TpFIBDatabase;
+    DB: TpFIBDatabase;
     tr: TpFIBTransaction;
     dt: TpFIBDataSet;
     ds: TDataSource;
@@ -52,30 +52,30 @@ implementation
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  dt.PrepareOptions:=dt.PrepareOptions;
+  dt.PrepareOptions := dt.PrepareOptions;
   Caption := 'FIBPlus Example - ' + Application.Title;
-  db.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\'+DemoDB;
-  {$IFDEF FBCLIENT.DLL}
-   db.LibraryName:='fbclient.dll';
-  {$ENDIF}
-  db.Connected:=True;
+  DB.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\' + DemoDB;
+{$IFDEF FBCLIENT.DLL}
+  DB.LibraryName := 'fbclient.dll';
+{$ENDIF}
+  DB.Connected := True;
   dt.Open;
-  dt.Options:=dt.Options+[poUseSelectForLock];
-  dbOther.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\'+DemoDB;
-  {$IFDEF FBCLIENT.DLL}
-   dbOther.LibraryName:='fbclient.dll';
-  {$ENDIF}
-
+  dt.Options := dt.Options + [poUseSelectForLock];
+  dbOther.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\' + DemoDB;
+{$IFDEF FBCLIENT.DLL}
+  dbOther.LibraryName := 'fbclient.dll';
+{$ENDIF}
   dbOther.Connected := True;
   dtOther.Open;
-  dtOther.Options:=dtOther.Options+[poUseSelectForLock];
+  dtOther.Options := dtOther.Options + [poUseSelectForLock];
 end;
 
 procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  if not db.Connected then Exit;
-  db.CloseDataSets;
-  db.Close;
+  if not DB.Connected then
+    Exit;
+  DB.CloseDataSets;
+  DB.Close;
 
   dbOther.CloseDataSets;
   dbOther.Connected := False;
@@ -83,8 +83,8 @@ end;
 
 procedure TForm1.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) + ' session. Proceed?',
-    mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
+  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) +
+    ' session. Proceed?', mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
@@ -94,7 +94,8 @@ end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 begin
-  if not dtOther.Locate('EMP_NO', dt.FBN('EMP_NO').AsInteger, []) then begin
+  if not dtOther.Locate('EMP_NO', dt.FBN('EMP_NO').AsInteger, []) then
+  begin
     ShowMessage('Record not found in second connection');
     Exit;
   end;
@@ -103,14 +104,14 @@ end;
 
 procedure TForm1.ProtectedDatasetAfterCancel(DataSet: TDataSet);
 begin
-  if TpFIBDataset(DataSet).UpdateTransaction.InTransaction then
-    TpFIBDataset(DataSet).UpdateTransaction.Rollback;
+  if TpFIBDataSet(DataSet).UpdateTransaction.InTransaction then
+    TpFIBDataSet(DataSet).UpdateTransaction.Rollback;
 end;
 
 procedure TForm1.ProtectedDataSetAfterPost(DataSet: TDataSet);
 begin
-  if TpFIBDataset(DataSet).UpdateTransaction.InTransaction then
-    TpFIBDataset(DataSet).UpdateTransaction.Commit;
+  if TpFIBDataSet(DataSet).UpdateTransaction.InTransaction then
+    TpFIBDataSet(DataSet).UpdateTransaction.Commit;
 end;
 
 end.

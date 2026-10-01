@@ -17,9 +17,11 @@
 {                                                               }
 {  Please see the file License.txt for full license information }
 {***************************************************************}
+
 // Macro substitution emulation for the compiler.
+
 {$IFDEF FP_STDCALL}
-  {$IFDEF WINDOWS} stdcall; {$ENDIF} 
+  {$IFDEF WINDOWS} stdcall; {$ENDIF}
   {$IFDEF LINUX} cdecl; {$ENDIF}
   {$IFDEF MACOS} cdecl; {$ENDIF}
 {$ENDIF}

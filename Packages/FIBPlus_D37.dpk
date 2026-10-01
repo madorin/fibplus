@@ -1,6 +1,7 @@
 package FIBPlus_D37;
 
 {$R *.res}
+
 {$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
 {$ALIGN 8}
 {$ASSERTIONS ON}
@@ -87,6 +88,3 @@ contains
   FIBTypes in '..\FIBTypes.pas';
 
 end.
-
-
-

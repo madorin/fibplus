@@ -11,4 +11,5 @@ begin
   Application.Title := 'UnicodeFSS';
   Application.CreateForm(TForm1, Form1);
   Application.Run;
+
 end.

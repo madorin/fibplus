@@ -30,13 +30,13 @@ type
   end;
 
 const
-  FBDec16Digits = 16;
-  FBDec34Digits = 34;
+  FBDec16Digits  = 16;
+  FBDec34Digits  = 34;
   FBInt128Digits = 39;
 
   // Time zone IDs
-  FBGmtZoneID = 65535;
-  FBOffsetZoneBias = 1439; // offset zone ID = offset in minutes + 1439
+  FBGmtZoneID       = 65535;
+  FBOffsetZoneBias  = 1439; // offset zone ID = offset in minutes + 1439
   FBMaxOffsetZoneID = 2 * FBOffsetZoneBias;
   // Not a Firebird ID. Marks a value without an explicit time zone,
   // which is sent to the server as local time of the session time zone.
@@ -46,81 +46,80 @@ const
   // in region based time zones
   FBTimeTZBaseDate = 58849; // 2020-01-01
 
-{ Generic decimal routines }
+  { Generic decimal routines }
 
-function  FBDecimalIsZero(const Value: TFBDecimal): Boolean;
+function FBDecimalIsZero(const Value: TFBDecimal): Boolean;
 procedure FBDecimalRound(var Value: TFBDecimal; DropDigits: Integer);
-function  FBDecimalRescale(const Value: TFBDecimal; Exponent: Integer): TFBDecimal;
-function  StrToFBDecimal(const S: string; out Res: TFBDecimal): Boolean;
+function FBDecimalRescale(const Value: TFBDecimal; Exponent: Integer): TFBDecimal;
+function StrToFBDecimal(const S: string; out Res: TFBDecimal): Boolean;
 // Scientific notation like the server output, e.g. 1.5, 1E+3, 1.23E-10
-function  FBDecimalToStr(const Value: TFBDecimal; DecSep: Char = '.'): string;
+function FBDecimalToStr(const Value: TFBDecimal; DecSep: Char = '.'): string;
 // Plain notation without an exponent
-function  FBDecimalToPlainStr(const Value: TFBDecimal; DecSep: Char = '.'): string;
-function  FBDecimalToBcd(const Value: TFBDecimal; out Res: TBcd): Boolean;
-function  BcdToFBDecimal(const Value: TBcd): TFBDecimal;
-function  FBDecimalToDouble(const Value: TFBDecimal): Double;
-function  DoubleToFBDecimal(Value: Double): TFBDecimal;
+function FBDecimalToPlainStr(const Value: TFBDecimal; DecSep: Char = '.'): string;
+function FBDecimalToBcd(const Value: TFBDecimal; out Res: TBcd): Boolean;
+function BcdToFBDecimal(const Value: TBcd): TFBDecimal;
+function FBDecimalToDouble(const Value: TFBDecimal): Double;
+function DoubleToFBDecimal(Value: Double): TFBDecimal;
 // Truncates the fractional part
-function  FBDecimalToInt64(const Value: TFBDecimal; out Res: Int64): Boolean;
-function  Int64ToFBDecimal(Value: Int64; Exponent: Integer = 0): TFBDecimal;
+function FBDecimalToInt64(const Value: TFBDecimal; out Res: Int64): Boolean;
+function Int64ToFBDecimal(Value: Int64; Exponent: Integer = 0): TFBDecimal;
 
 { INT128 }
 
-function  Int128IsNegative(const Value: TFB_I128): Boolean;
-function  Int128ToFBDecimal(const Value: TFB_I128; Scale: Integer): TFBDecimal;
+function Int128IsNegative(const Value: TFB_I128): Boolean;
+function Int128ToFBDecimal(const Value: TFB_I128; Scale: Integer): TFBDecimal;
 // Rounds the value to Scale digits. Returns False on overflow.
-function  FBDecimalToInt128(const Value: TFBDecimal; Scale: Integer; out Res: TFB_I128): Boolean;
-function  Int128ToStr(const Value: TFB_I128; Scale: Integer; DecSep: Char = '.'): string;
+function FBDecimalToInt128(const Value: TFBDecimal; Scale: Integer; out Res: TFB_I128): Boolean;
+function Int128ToStr(const Value: TFB_I128; Scale: Integer; DecSep: Char = '.'): string;
 
 { DECFLOAT }
 
-function  Dec16ToFBDecimal(const Value: TFB_DEC16): TFBDecimal;
-function  Dec34ToFBDecimal(const Value: TFB_DEC34): TFBDecimal;
+function Dec16ToFBDecimal(const Value: TFB_DEC16): TFBDecimal;
+function Dec34ToFBDecimal(const Value: TFB_DEC34): TFBDecimal;
 // Rounds the value to the precision of the type. Returns False on overflow.
-function  FBDecimalToDec16(const Value: TFBDecimal; out Res: TFB_DEC16): Boolean;
-function  FBDecimalToDec34(const Value: TFBDecimal; out Res: TFB_DEC34): Boolean;
+function FBDecimalToDec16(const Value: TFBDecimal; out Res: TFB_DEC16): Boolean;
+function FBDecimalToDec34(const Value: TFBDecimal; out Res: TFB_DEC34): Boolean;
 
 { INT128, DECFLOAT(16) and DECFLOAT(34) in the server format, SQLType is one of
   SQL_INT128, SQL_DEC16, SQL_DEC34 and Scale is used for SQL_INT128 only }
 
-function  FBDecimalFromRaw(SQLType, Scale: Integer; Data: Pointer): TFBDecimal;
+function FBDecimalFromRaw(SQLType, Scale: Integer; Data: Pointer): TFBDecimal;
 // Fast path without strings. Returns False for NaN, Infinity and values
 // which do not fit TBcd (64 digits, scale up to 63).
-function  FBRawToBcd(SQLType, Scale: Integer; Data: Pointer; out Res: TBcd): Boolean;
+function FBRawToBcd(SQLType, Scale: Integer; Data: Pointer; out Res: TBcd): Boolean;
 // Truncates the fractional part. Returns False for NaN, Infinity and on overflow.
-function  FBRawToInt64(SQLType, Scale: Integer; Data: Pointer; out Res: Int64): Boolean;
+function FBRawToInt64(SQLType, Scale: Integer; Data: Pointer; out Res: Int64): Boolean;
 // Value * 10^-NewScale rounded half away from zero, e.g. NewScale = -4 for Currency.
 // Returns False for NaN, Infinity and on overflow.
-function  FBRawToScaledInt64(SQLType, Scale: Integer; Data: Pointer; NewScale: Integer;
-  out Res: Int64): Boolean;
-function  FBRawToDouble(SQLType, Scale: Integer; Data: Pointer): Double;
+function FBRawToScaledInt64(SQLType, Scale: Integer; Data: Pointer; NewScale: Integer; out Res: Int64): Boolean;
+function FBRawToDouble(SQLType, Scale: Integer; Data: Pointer): Double;
 // DECFLOAT values drop the padding zeros of the fraction (7.250 -> 7.25),
 // INT128 values are rounded to Scale. Returns False on overflow.
-function  FBDecimalToRaw(const Value: TFBDecimal; SQLType, Scale: Integer; Data: Pointer): Boolean;
+function FBDecimalToRaw(const Value: TFBDecimal; SQLType, Scale: Integer; Data: Pointer): Boolean;
 // Same as FBDecimalToRaw(BcdToFBDecimal(Value), ...) without strings
-function  FBBcdToRaw(const Value: TBcd; SQLType, Scale: Integer; Data: Pointer): Boolean;
+function FBBcdToRaw(const Value: TBcd; SQLType, Scale: Integer; Data: Pointer): Boolean;
 
 { TBcd }
 
 // Value = Res * 10^Scale. Returns False if Res does not fit Int64,
 // Scale is set in any case.
-function  BcdToInt64Scaled(const Value: TBcd; out Res: Int64; out Scale: Integer): Boolean;
+function BcdToInt64Scaled(const Value: TBcd; out Res: Int64; out Scale: Integer): Boolean;
 
 { Time zones }
 
-function  FBIsOffsetZone(ZoneID: Word): Boolean;
-function  FBOffsetToZoneID(OffsetMinutes: Integer): Word;
-function  FBZoneIDToOffset(ZoneID: Word): Integer;
+function FBIsOffsetZone(ZoneID: Word): Boolean;
+function FBOffsetToZoneID(OffsetMinutes: Integer): Word;
+function FBZoneIDToOffset(ZoneID: Word): Integer;
 // Offset of an offset zone, 0 for region zones (resolved only by the server)
-function  FBKnownZoneOffset(ZoneID: Word): Integer;
-function  FBFormatZoneOffset(OffsetMinutes: Integer): string;
+function FBKnownZoneOffset(ZoneID: Word): Integer;
+function FBFormatZoneOffset(OffsetMinutes: Integer): string;
 // '+02:00' for offset zones, region name for region zones, '' if unknown
-function  FBTimeZoneName(ZoneID: Word): string;
-function  FBTimeZoneIDByName(const Name: string; out ZoneID: Word): Boolean;
+function FBTimeZoneName(ZoneID: Word): string;
+function FBTimeZoneIDByName(const Name: string; out ZoneID: Word): Boolean;
 
 { Date and time }
 
-function  FBTimeStampToDateTime(const Value: TISC_TIMESTAMP): TDateTime;
+function FBTimeStampToDateTime(const Value: TISC_TIMESTAMP): TDateTime;
 
 { Values of TIME/TIMESTAMP WITH TIME ZONE in the dataset record cache.
   The cache keeps the extended form fetched from the server. When a local time
@@ -130,15 +129,15 @@ function  FBTimeStampToDateTime(const Value: TISC_TIMESTAMP): TDateTime;
 const
   FBUnresolvedOffset = $7FFF;
 
-// Local time in msecs since 0001-01-01, TDateTimeRec.DateTime format
-function  FBTimeStampTZToMSecs(const Value: TISC_TIMESTAMP_TZ_EX): Double;
+  // Local time in msecs since 0001-01-01, TDateTimeRec.DateTime format
+function FBTimeStampTZToMSecs(const Value: TISC_TIMESTAMP_TZ_EX): Double;
 // Keeps time_zone, sets the other fields
 procedure FBMSecsToTimeStampTZ(const MSecs: Double; var Value: TISC_TIMESTAMP_TZ_EX);
 // Local time in msecs since midnight, TDateTimeRec.Time format
-function  FBTimeTZToMSecs(const Value: TISC_TIME_TZ_EX): Integer;
+function FBTimeTZToMSecs(const Value: TISC_TIME_TZ_EX): Integer;
 procedure FBMSecsToTimeTZ(MSecs: Integer; var Value: TISC_TIME_TZ_EX);
 
-function  LocalDecimalSeparator: Char;
+function LocalDecimalSeparator: Char;
 
 implementation
 
@@ -212,12 +211,10 @@ begin
   if Result.Exponent > Exponent then
   begin
     if Result.Coefficient <> '0' then
-      Result.Coefficient := Result.Coefficient +
-        StringOfChar('0', Result.Exponent - Exponent);
+      Result.Coefficient := Result.Coefficient + StringOfChar('0', Result.Exponent - Exponent);
     Result.Exponent := Exponent;
   end
-  else
-  if Result.Exponent < Exponent then
+  else if Result.Exponent < Exponent then
     FBDecimalRound(Result, Exponent - Result.Exponent);
 end;
 
@@ -269,21 +266,20 @@ begin
   while i <= L do
   begin
     case Str[i] of
-      '0'..'9':
-      begin
-        Res.Coefficient := Res.Coefficient + Str[i];
-        HasDigits := True;
-        if HasPoint then
-          Inc(FracDigits);
-      end;
+      '0' .. '9':
+        begin
+          Res.Coefficient := Res.Coefficient + Str[i];
+          HasDigits := True;
+          if HasPoint then
+            Inc(FracDigits);
+        end;
       '.', ',':
-      begin
-        if HasPoint then
-          Exit;
-        HasPoint := True;
-      end;
-      'e', 'E':
-        Break;
+        begin
+          if HasPoint then
+            Exit;
+          HasPoint := True;
+        end;
+      'e', 'E': Break;
     else
       Exit;
     end;
@@ -323,8 +319,8 @@ end;
 function SpecialToStr(const Value: TFBDecimal): string;
 begin
   case Value.Kind of
-    dkInfinity:     Result := 'Infinity';
-    dkNaN:          Result := 'NaN';
+    dkInfinity: Result := 'Infinity';
+    dkNaN: Result := 'NaN';
     dkSignalingNaN: Result := 'sNaN';
   else
     Result := '';
@@ -381,8 +377,7 @@ begin
   begin
     IntDigits := n + Value.Exponent;
     if IntDigits > 0 then
-      Result := Copy(Value.Coefficient, 1, IntDigits) + DecSep +
-        Copy(Value.Coefficient, IntDigits + 1, MaxInt)
+      Result := Copy(Value.Coefficient, 1, IntDigits) + DecSep + Copy(Value.Coefficient, IntDigits + 1, MaxInt)
     else
       Result := '0' + DecSep + StringOfChar('0', -IntDigits) + Value.Coefficient;
   end;
@@ -397,19 +392,19 @@ const
 type
   // Decimal digits without strings, used on the hot paths to TBcd
   TFBDigits = record
-    Count: Integer;    // at least 1, no leading zeros
+    Count: Integer; // at least 1, no leading zeros
     Exponent: Integer;
     Negative: Boolean;
-    D: array[0..MaxBcdDigits + 1] of Byte; // most significant first
+    D: array [0 .. MaxBcdDigits + 1] of Byte; // most significant first
   end;
 
 const
-  Int64Pow10: array[0..18] of Int64 = (1, 10, 100, 1000, 10000, 100000,
+  Int64Pow10: array [0 .. 18] of Int64 = (1, 10, 100, 1000, 10000, 100000,
     1000000, 10000000, 100000000, 1000000000, 10000000000, 100000000000,
     1000000000000, 10000000000000, 100000000000000, 1000000000000000,
     10000000000000000, 100000000000000000, 1000000000000000000);
   // exact powers of ten in Double
-  DoublePow10: array[0..22] of Double = (1E0, 1E1, 1E2, 1E3, 1E4, 1E5, 1E6,
+  DoublePow10: array [0 .. 22] of Double = (1E0, 1E1, 1E2, 1E3, 1E4, 1E5, 1E6,
     1E7, 1E8, 1E9, 1E10, 1E11, 1E12, 1E13, 1E14, 1E15, 1E16, 1E17, 1E18, 1E19,
     1E20, 1E21, 1E22);
   // integers up to 2^53 are exact in Double
@@ -504,8 +499,7 @@ begin
     end;
     V.Exponent := Exponent;
   end
-  else
-  if V.Exponent < Exponent then
+  else if V.Exponent < Exponent then
     RoundDigits(V, Exponent - V.Exponent);
 end;
 
@@ -776,8 +770,7 @@ begin
         Result := NegInfinity
       else
         Result := Infinity;
-    dkNaN, dkSignalingNaN:
-      Result := NaN;
+    dkNaN, dkSignalingNaN: Result := NaN;
   else
     Val(FBDecimalToStr(Value), Result, Code);
     if Code <> 0 then
@@ -794,8 +787,7 @@ begin
   // FloatToStrF uses the locale decimal separator
   for i := 1 to Length(Result) do
     if (Result[i] <> '-') and (Result[i] <> '+') and (Result[i] <> 'E') and
-      ((Result[i] < '0') or (Result[i] > '9'))
-    then
+      ((Result[i] < '0') or (Result[i] > '9')) then
       Result[i] := '.';
 end;
 
@@ -905,8 +897,7 @@ end;
 
 function Int128IsZero(const Value: TFB_I128): Boolean;
 begin
-  Result := (Value.fb_data[0] = 0) and (Value.fb_data[1] = 0) and
-    (Value.fb_data[2] = 0) and (Value.fb_data[3] = 0);
+  Result := (Value.fb_data[0] = 0) and (Value.fb_data[1] = 0) and (Value.fb_data[2] = 0) and (Value.fb_data[3] = 0);
 end;
 
 // Unsigned division, returns the remainder
@@ -959,7 +950,7 @@ procedure Int128ToDigits(const Value: TFB_I128; Scale: Integer; out Res: TFBDigi
 var
   V: TFB_I128;
   Chunk: Cardinal;
-  Tmp: array[0..44] of Byte; // least significant first, 5 chunks of 9 digits
+  Tmp: array [0 .. 44] of Byte; // least significant first, 5 chunks of 9 digits
   n, i: Integer;
 begin
   Res.Negative := Int128IsNegative(Value);
@@ -1036,13 +1027,11 @@ begin
   if Int128IsNegative(Res) then
   begin
     // only -2^127 is allowed
-    if not (V.Negative and (Res.fb_data[3] = $80000000) and (Res.fb_data[2] = 0) and
-      (Res.fb_data[1] = 0) and (Res.fb_data[0] = 0))
-    then
+    if not(V.Negative and (Res.fb_data[3] = $80000000) and (Res.fb_data[2] = 0)
+      and (Res.fb_data[1] = 0) and (Res.fb_data[0] = 0)) then
       Exit;
   end
-  else
-  if V.Negative then
+  else if V.Negative then
     Int128Negate(Res);
   Result := True;
 end;
@@ -1109,51 +1098,51 @@ begin
     d0 := D and 7;
   end
   else
-  case (D shr 1) and 3 of
-    0:
-    begin
-      d2 := (D shr 7) and 7;
-      d1 := (D shr 4) and 7;
-      d0 := 8 + (D and 1);
-    end;
-    1:
-    begin
-      d2 := (D shr 7) and 7;
-      d1 := 8 + ((D shr 4) and 1);
-      d0 := (((D shr 5) and 3) shl 1) or (D and 1);
-    end;
-    2:
-    begin
-      d2 := 8 + ((D shr 7) and 1);
-      d1 := (D shr 4) and 7;
-      d0 := (((D shr 8) and 3) shl 1) or (D and 1);
-    end;
-  else
-    case (D shr 5) and 3 of
+    case (D shr 1) and 3 of
       0:
-      begin
-        d2 := 8 + ((D shr 7) and 1);
-        d1 := 8 + ((D shr 4) and 1);
-        d0 := (((D shr 8) and 3) shl 1) or (D and 1);
-      end;
+        begin
+          d2 := (D shr 7) and 7;
+          d1 := (D shr 4) and 7;
+          d0 := 8 + (D and 1);
+        end;
       1:
-      begin
-        d2 := 8 + ((D shr 7) and 1);
-        d1 := (((D shr 8) and 3) shl 1) or ((D shr 4) and 1);
-        d0 := 8 + (D and 1);
-      end;
+        begin
+          d2 := (D shr 7) and 7;
+          d1 := 8 + ((D shr 4) and 1);
+          d0 := (((D shr 5) and 3) shl 1) or (D and 1);
+        end;
       2:
-      begin
-        d2 := (D shr 7) and 7;
+        begin
+          d2 := 8 + ((D shr 7) and 1);
+          d1 := (D shr 4) and 7;
+          d0 := (((D shr 8) and 3) shl 1) or (D and 1);
+        end;
+    else
+      case (D shr 5) and 3 of
+        0:
+          begin
+            d2 := 8 + ((D shr 7) and 1);
+            d1 := 8 + ((D shr 4) and 1);
+            d0 := (((D shr 8) and 3) shl 1) or (D and 1);
+          end;
+        1:
+          begin
+            d2 := 8 + ((D shr 7) and 1);
+            d1 := (((D shr 8) and 3) shl 1) or ((D shr 4) and 1);
+            d0 := 8 + (D and 1);
+          end;
+        2:
+          begin
+            d2 := (D shr 7) and 7;
+            d1 := 8 + ((D shr 4) and 1);
+            d0 := 8 + (D and 1);
+          end;
+      else
+        d2 := 8 + ((D shr 7) and 1);
         d1 := 8 + ((D shr 4) and 1);
         d0 := 8 + (D and 1);
       end;
-    else
-      d2 := 8 + ((D shr 7) and 1);
-      d1 := 8 + ((D shr 4) and 1);
-      d0 := 8 + (D and 1);
     end;
-  end;
   Result := d2 * 100 + d1 * 10 + d0;
 end;
 
@@ -1180,10 +1169,9 @@ end;
 
 var
   // declet (10 bits) -> 0..999, filled in the initialization section
-  DPDTable: array[0..1023] of Word;
+  DPDTable: array [0 .. 1023] of Word;
 
-function DecodeDecFloatDigits(const W: array of Cardinal; Declets, ExpBits, Bias: Integer;
-  out Res: TFBDigits): TFBDecimalKind;
+function DecodeDecFloatDigits(const W: array of Cardinal; Declets, ExpBits, Bias: Integer; out Res: TFBDigits): TFBDecimalKind;
 var
   TotalBits, i: Integer;
   Comb, ExpHi, Msd, V: Cardinal;
@@ -1210,8 +1198,7 @@ begin
     Res.D[0] := 0;
     if Comb = $1E then
       Result := dkInfinity
-    else
-    if GetBits(W, TotalBits - 7, 1) = 1 then
+    else if GetBits(W, TotalBits - 7, 1) = 1 then
       Result := dkSignalingNaN
     else
       Result := dkNaN;
@@ -1260,8 +1247,7 @@ begin
 end;
 
 // Zeroes W and sets the sign, NaN and Infinity. Returns False for finite values.
-function EncodeDecFloatSpecial(var W: array of Cardinal; Kind: TFBDecimalKind;
-  Negative: Boolean): Boolean;
+function EncodeDecFloatSpecial(var W: array of Cardinal; Kind: TFBDecimalKind; Negative: Boolean): Boolean;
 var
   TotalBits, i: Integer;
 begin
@@ -1272,25 +1258,23 @@ begin
     SetBits(W, TotalBits - 1, 1, 1);
   Result := True;
   case Kind of
-    dkInfinity:
-      SetBits(W, TotalBits - 6, 5, $1E);
+    dkInfinity: SetBits(W, TotalBits - 6, 5, $1E);
     dkNaN, dkSignalingNaN:
-    begin
-      SetBits(W, TotalBits - 6, 5, $1F);
-      if Kind = dkSignalingNaN then
-        SetBits(W, TotalBits - 7, 1, 1);
-    end;
+      begin
+        SetBits(W, TotalBits - 6, 5, $1F);
+        if Kind = dkSignalingNaN then
+          SetBits(W, TotalBits - 7, 1, 1);
+      end;
   else
     Result := False;
   end;
 end;
 
-function EncodeDecFloatDigits(var W: array of Cardinal; var V: TFBDigits;
-  Digits, Declets, ExpBits, Bias: Integer): Boolean;
+function EncodeDecFloatDigits(var W: array of Cardinal; var V: TFBDigits; Digits, Declets, ExpBits, Bias: Integer): Boolean;
 var
   TotalBits, i, MinExp, MaxExp, Pad: Integer;
-  Comb, Msd, ExpHi, Q: Cardinal;
-  Coef: array[0..FBDec34Digits - 1] of Byte; // right aligned coefficient
+  Comb, Msd, ExpHi, q: Cardinal;
+  Coef: array [0 .. FBDec34Digits - 1] of Byte; // right aligned coefficient
 begin
   Result := False;
   EncodeDecFloatSpecial(W, dkFinite, V.Negative);
@@ -1322,11 +1306,10 @@ begin
   Move(V.D[0], Coef[Pad], V.Count);
   Msd := Coef[0];
   for i := 0 to Declets - 1 do
-    SetBits(W, (Declets - 1 - i) * 10, 10,
-      BinToDPD(Coef[1 + i * 3] * 100 + Coef[2 + i * 3] * 10 + Coef[3 + i * 3]));
-  Q := Cardinal(V.Exponent + Bias);
-  ExpHi := Q shr ExpBits;
-  SetBits(W, Declets * 10, ExpBits, Q and ((Cardinal(1) shl ExpBits) - 1));
+    SetBits(W, (Declets - 1 - i) * 10, 10, BinToDPD(Coef[1 + i * 3] * 100 + Coef[2 + i * 3] * 10 + Coef[3 + i * 3]));
+  q := Cardinal(V.Exponent + Bias);
+  ExpHi := q shr ExpBits;
+  SetBits(W, Declets * 10, ExpBits, q and ((Cardinal(1) shl ExpBits) - 1));
   if Msd < 8 then
     Comb := (ExpHi shl 3) or Msd
   else
@@ -1335,8 +1318,7 @@ begin
   Result := True;
 end;
 
-function EncodeDecFloat(var W: array of Cardinal; const Value: TFBDecimal;
-  Digits, Declets, ExpBits, Bias: Integer): Boolean;
+function EncodeDecFloat(var W: array of Cardinal; const Value: TFBDecimal; Digits, Declets, ExpBits, Bias: Integer): Boolean;
 var
   V: TFBDecimal;
   D: TFBDigits;
@@ -1349,8 +1331,7 @@ begin
   // the digits buffer is limited, round the long coefficients here
   if Length(V.Coefficient) > Digits then
     FBDecimalRound(V, Length(V.Coefficient) - Digits);
-  Result := FBDecimalToDigits(V, D) and
-    EncodeDecFloatDigits(W, D, Digits, Declets, ExpBits, Bias);
+  Result := FBDecimalToDigits(V, D) and EncodeDecFloatDigits(W, D, Digits, Declets, ExpBits, Bias);
 end;
 
 function Dec16ToFBDecimal(const Value: TFB_DEC16): TFBDecimal;
@@ -1377,7 +1358,7 @@ function FBDecimalFromRaw(SQLType, Scale: Integer; Data: Pointer): TFBDecimal;
 begin
   case SQLType of
     SQL_INT128: Result := Int128ToFBDecimal(PFB_I128(Data)^, Scale);
-    SQL_DEC16:  Result := Dec16ToFBDecimal(PFB_DEC16(Data)^);
+    SQL_DEC16: Result := Dec16ToFBDecimal(PFB_DEC16(Data)^);
   else
     Result := Dec34ToFBDecimal(PFB_DEC34(Data)^);
   end;
@@ -1387,12 +1368,11 @@ function FBRawToDigits(SQLType, Scale: Integer; Data: Pointer; out Res: TFBDigit
 begin
   case SQLType of
     SQL_INT128:
-    begin
-      Int128ToDigits(PFB_I128(Data)^, Scale, Res);
-      Result := dkFinite;
-    end;
-    SQL_DEC16:
-      Result := DecodeDecFloatDigits(PFB_DEC16(Data)^.fb_data, 5, 8, 398, Res);
+      begin
+        Int128ToDigits(PFB_I128(Data)^, Scale, Res);
+        Result := dkFinite;
+      end;
+    SQL_DEC16: Result := DecodeDecFloatDigits(PFB_DEC16(Data)^.fb_data, 5, 8, 398, Res);
   else
     Result := DecodeDecFloatDigits(PFB_DEC34(Data)^.fb_data, 11, 12, 6176, Res);
   end;
@@ -1424,8 +1404,7 @@ begin
       Res := Res div Int64Pow10[-Scale];
     Result := True;
   end
-  else
-  if FBRawToDigits(SQLType, Scale, Data, Digits) = dkFinite then
+  else if FBRawToDigits(SQLType, Scale, Data, Digits) = dkFinite then
     Result := DigitsToInt64(Digits, Res)
   else
   begin
@@ -1434,12 +1413,11 @@ begin
   end;
 end;
 
-function FBRawToScaledInt64(SQLType, Scale: Integer; Data: Pointer; NewScale: Integer;
-  out Res: Int64): Boolean;
+function FBRawToScaledInt64(SQLType, Scale: Integer; Data: Pointer; NewScale: Integer; out Res: Int64): Boolean;
 var
   Digits: TFBDigits;
   Drop: Integer;
-  P, R: Int64;
+  p, r: Int64;
 begin
   if (SQLType = SQL_INT128) and Int128ToInt64(PFB_I128(Data)^, Res) then
   begin
@@ -1451,21 +1429,19 @@ begin
     end;
     if (Drop > 0) and (Drop <= 18) then
     begin
-      P := Int64Pow10[Drop];
-      R := Res mod P;
-      Res := Res div P;
+      p := Int64Pow10[Drop];
+      r := Res mod p;
+      Res := Res div p;
       // half away from zero
-      if Abs(R) * 2 >= P then
-        if R < 0 then
+      if Abs(r) * 2 >= p then
+        if r < 0 then
           Dec(Res)
         else
           Inc(Res);
       Result := True;
       Exit;
     end;
-    if (Drop < 0) and (-Drop <= 18) and (Res > Low(Int64)) and
-      (Abs(Res) <= High(Int64) div Int64Pow10[-Drop])
-    then
+    if (Drop < 0) and (-Drop <= 18) and (Res > Low(Int64)) and (Abs(Res) <= High(Int64) div Int64Pow10[-Drop]) then
     begin
       Res := Res * Int64Pow10[-Drop];
       Result := True;
@@ -1474,9 +1450,7 @@ begin
   end;
   Result := False;
   Res := 0;
-  if (FBRawToDigits(SQLType, Scale, Data, Digits) = dkFinite) and
-    RescaleDigits(Digits, NewScale)
-  then
+  if (FBRawToDigits(SQLType, Scale, Data, Digits) = dkFinite) and RescaleDigits(Digits, NewScale) then
   begin
     Digits.Exponent := 0;
     Result := DigitsToInt64(Digits, Res);
@@ -1486,20 +1460,17 @@ end;
 function FBRawToDouble(SQLType, Scale: Integer; Data: Pointer): Double;
 var
   Digits: TFBDigits;
-  C: Int64;
+  c: Int64;
 begin
   if (SQLType = SQL_INT128) and (Scale <= 0) and (Scale >= -22) and
-    Int128ToInt64(PFB_I128(Data)^, C) and
-    (C <= MaxExactDoubleInt) and (C >= -MaxExactDoubleInt)
-  then
+    Int128ToInt64(PFB_I128(Data)^, c) and (c <= MaxExactDoubleInt) and (c >= -MaxExactDoubleInt) then
   begin
     // exact coefficient and power of ten, the result is rounded once
-    Result := C / DoublePow10[-Scale];
+    Result := c / DoublePow10[-Scale];
     Exit;
   end;
   case FBRawToDigits(SQLType, Scale, Data, Digits) of
-    dkFinite:
-      Result := DigitsToDouble(Digits);
+    dkFinite: Result := DigitsToDouble(Digits);
     dkInfinity:
       if Digits.Negative then
         Result := NegInfinity
@@ -1628,8 +1599,8 @@ end;
 function FBTimeStampTZToMSecs(const Value: TISC_TIMESTAMP_TZ_EX): Double;
 begin
   with Value do
-    Result := (Int64(utc_timestamp.timestamp_date) + IBBuffDateDelta) * MSecsPerDay +
-      utc_timestamp.timestamp_time div 10 + CacheOffset(ext_offset);
+    Result := (Int64(utc_timestamp.timestamp_date) + IBBuffDateDelta) *
+      MSecsPerDay + utc_timestamp.timestamp_time div 10 + CacheOffset(ext_offset);
 end;
 
 procedure FBMSecsToTimeStampTZ(const MSecs: Double; var Value: TISC_TIMESTAMP_TZ_EX);
@@ -1727,6 +1698,7 @@ begin
 end;
 
 initialization
-  InitDPDTable;
+
+InitDPDTable;
 
 end.

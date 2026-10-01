@@ -1,5 +1,5 @@
 unit Unit1;
-                                                     
+
 interface
 
 uses
@@ -10,7 +10,7 @@ uses
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    db: TpFIBDatabase;
+    DB: TpFIBDatabase;
     tr: TpFIBTransaction;
     dt: TpFIBDataSet;
     ds: TDataSource;
@@ -37,36 +37,36 @@ var
 implementation
 
 {$R *.dfm}
-uses IBBlobFilter,zStream
-//, DIUclStreams
-;
+
+uses
+  IBBlobFilter, zStream
+  // , DIUclStreams
+  ;
 
 {$I FIBExamples.inc}
-
-
-
 {
-function UclCompressStream(const AInStream, AOutStream: TStream;
-   const ACompressionLevel: Integer = 10;
-   const ABufferSize: Cardinal = $1000;
-   const AOnProgress: TUclProgress = nil;
-   const AUser: Pointer = nil): Boolean;
+  function UclCompressStream(const AInStream, AOutStream: TStream;
+  const ACompressionLevel: Integer = 10;
+  const ABufferSize: Cardinal = $1000;
+  const AOnProgress: TUclProgress = nil;
+  const AUser: Pointer = nil): Boolean;
 
-function UclDeCompressStream(const AInStream, AOutStream: TStream;
-   const ABufferSize: Cardinal = $1000;
-   const AOnProgress: TUclProgress = nil;
-   const AUser: Pointer = nil): Boolean;
+  function UclDeCompressStream(const AInStream, AOutStream: TStream;
+  const ABufferSize: Cardinal = $1000;
+  const AOnProgress: TUclProgress = nil;
+  const AUser: Pointer = nil): Boolean;
 }
 
 procedure PackBuffer(var Buffer: PChar; var BufSize: LongInt);
-var srcStream, dstStream: TStream;
+var
+  srcStream, dstStream: TStream;
 begin
   srcStream := TMemoryStream.Create;
   dstStream := TMemoryStream.Create;
   try
     srcStream.WriteBuffer(Buffer^, BufSize);
     srcStream.Position := 0;
-//    UclCompressStream(srcStream, dstStream);
+    // UclCompressStream(srcStream, dstStream);
     GZipStream(srcStream, dstStream, 6);
     srcStream.Free;
     srcStream := nil;
@@ -75,58 +75,59 @@ begin
     ReallocMem(Buffer, BufSize);
     dstStream.ReadBuffer(Buffer^, BufSize);
   finally
-    if Assigned(srcStream) then srcStream.Free;
+    if Assigned(srcStream) then
+      srcStream.Free;
     dstStream.Free;
   end;
 end;
 
 procedure UnpackBuffer(var Buffer: PChar; var BufSize: LongInt);
-var srcStream,dstStream: TStream;
+var
+  srcStream, dstStream: TStream;
 begin
   srcStream := TMemoryStream.Create;
   dstStream := TMemoryStream.Create;
   try
     srcStream.WriteBuffer(Buffer^, BufSize);
     srcStream.Position := 0;
-//    UclDeCompressStream(srcStream, dstStream);
+    // UclDeCompressStream(srcStream, dstStream);
     GunZipStream(srcStream, dstStream);
     srcStream.Free;
-    srcStream:=nil;
+    srcStream := nil;
     BufSize := dstStream.Size;
     dstStream.Position := 0;
     ReallocMem(Buffer, BufSize);
     dstStream.ReadBuffer(Buffer^, BufSize);
   finally
-    if assigned(srcStream) then srcStream.Free;
+    if Assigned(srcStream) then
+      srcStream.Free;
     dstStream.Free;
   end;
 end;
 
-
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  db.RegisterBlobFilter(-15, @PackBuffer, @UnpackBuffer);
+  DB.RegisterBlobFilter(-15, @PackBuffer, @UnpackBuffer);
 
   Caption := 'FIBPlus Example - ' + Application.Title;
-  db.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\'+DemoDB;
-  {$IFDEF FBCLIENT.DLL}
-   db.LibraryName:='fbclient.dll';
-  {$ENDIF}
-
-  db.Connected := True;
+  DB.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\' + DemoDB;
+{$IFDEF FBCLIENT.DLL}
+  DB.LibraryName := 'fbclient.dll';
+{$ENDIF}
+  DB.Connected := True;
   dt.Open;
 end;
 
 procedure TForm1.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) + ' session. Proceed?',
-    mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
+  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) +
+    ' session. Proceed?', mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
 end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 begin
   if not OpenDialog1.Execute then
-   Exit;
+    Exit;
   dt.Append;
   dt.FBN('NAME').AsString := OpenDialog1.FileName;
   TBlobField(dt.FBN('BLOBDATA')).LoadFromFile(OpenDialog1.FileName);

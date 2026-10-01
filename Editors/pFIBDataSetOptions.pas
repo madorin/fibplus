@@ -17,18 +17,22 @@
 {                                                               }
 {  Please see the file License.txt for full license information }
 {***************************************************************}
+
 unit pFIBDataSetOptions;
 
 interface
-         {$I ..\FIBPlus.inc}
-uses Classes,
- {$IFDEF D_XE2}
-  Vcl.Graphics, Vcl.Controls, Vcl.Forms,  Vcl.Dialogs, Vcl.ComCtrls, Vcl.ExtCtrls,
-  Vcl.StdCtrls,
-  {$ELSE}
-  Graphics, Controls, Forms,  Dialogs, ComCtrls, ExtCtrls, StdCtrls,
-  {$ENDIF}
 
+{$I ..\FIBPlus.inc}
+
+uses
+  Classes,
+{$IFDEF D_XE2}
+  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls,
+  Vcl.ExtCtrls,
+  Vcl.StdCtrls,
+{$ELSE}
+  Graphics, Controls, Forms, Dialogs, ComCtrls, ExtCtrls, StdCtrls,
+{$ENDIF}
   Db, uFIBEditorForm;
 
 type
@@ -72,28 +76,31 @@ type
     procedure ShowChanges;
   public
     { Public declarations }
-    function GetOptionBox(aIndex: Integer;const PropName:string): TCheckBox;
-    function GetMaxOption(const PropName:string):integer;
+    function GetOptionBox(aIndex: Integer; const PropName: string): TCheckBox;
+    function GetMaxOption(const PropName: string): Integer;
   end;
 
 function EditOptions(aDataSets: array of TDataSet; aPageIndex: Integer): boolean;
 
 implementation
 
-uses SysUtils,TypInfo, pFIBEditorsConsts;
+uses
+  SysUtils, TypInfo, pFIBEditorsConsts;
 
 {$R *.dfm}
 
 function EditOptions(aDataSets: array of TDataSet; aPageIndex: Integer): boolean;
-var aForm: TFPDataSetOptionsForm;
-(*I*)    Option: Byte;
-    chBox:TCheckBox;
-    K:integer;
-    Options:Integer;
-    MaxOption:integer;
+var
+  aForm: TFPDataSetOptionsForm;
+  (* I *) Option: Byte;
+  chBox: TCheckBox;
+  K: Integer;
+  Options: Integer;
+  MaxOption: Integer;
 begin
   Result := False;
-  if aDataSets[0] = nil then exit;
+  if aDataSets[0] = nil then
+    exit;
   aForm := TFPDataSetOptionsForm.Create(Application);
   try
     with aForm do
@@ -102,61 +109,59 @@ begin
       Caption := Format(Caption, [FDataSet.Name]);
       Pages.ActivePage := Pages.Pages[aPageIndex];
 
-      Options:=GetPropValue(FDataSet,'Options',False);
+      Options := GetPropValue(FDataSet, 'Options', False);
 
-      MaxOption:=GetMaxOption('Options');
-      for Option:=0 to MaxOption do
+      MaxOption := GetMaxOption('Options');
+      for Option := 0 to MaxOption do
       begin
-        chBox:=GetOptionBox(Option,'Options');
+        chBox := GetOptionBox(Option, 'Options');
         if Assigned(chBox) then
 
-        chBox.Checked :=Option in TIntegerSet(Options)
+          chBox.Checked := Option in TIntegerSet(Options)
       end;
 
+      Options := GetPropValue(FDataSet, 'PrepareOptions', False);
+      MaxOption := GetMaxOption('PrepareOptions');
 
-      Options:=GetPropValue(FDataSet,'PrepareOptions',False);
-      MaxOption:=GetMaxOption('PrepareOptions');
-
-      for Option:=0 to MaxOption do
+      for Option := 0 to MaxOption do
       begin
-        chBox:=GetOptionBox(Option,'PrepareOptions');
+        chBox := GetOptionBox(Option, 'PrepareOptions');
         if Assigned(chBox) then
-         chBox.Checked :=Option in TIntegerSet(Options)
+          chBox.Checked := Option in TIntegerSet(Options)
 
       end;
 
       Result := ShowModal = mrOk;
       if Result then
       begin
-        MaxOption:=GetMaxOption('Options');
-        for k:=Low(aDataSets) to High(aDataSets) do
+        MaxOption := GetMaxOption('Options');
+        for K := Low(aDataSets) to High(aDataSets) do
         begin
-          Options:=0;
+          Options := 0;
 
-          for Option:=0 to MaxOption do
+          for Option := 0 to MaxOption do
           begin
-             chBox:=GetOptionBox(Option,'Options');
-             if Assigned(chBox) then
+            chBox := GetOptionBox(Option, 'Options');
+            if Assigned(chBox) then
               if chBox.Checked then
-                 Include(TIntegerSet(Options),Option);
+                Include(TIntegerSet(Options), Option);
           end;
-          SetPropValue(aDataSets[k],'Options',Options)
+          SetPropValue(aDataSets[K], 'Options', Options)
         end;
 
-        MaxOption:=GetMaxOption('PrepareOptions');
-        for k:=Low(aDataSets) to High(aDataSets) do
+        MaxOption := GetMaxOption('PrepareOptions');
+        for K := Low(aDataSets) to High(aDataSets) do
         begin
-          Options:=0;
-          for Option:=0 to MaxOption do
+          Options := 0;
+          for Option := 0 to MaxOption do
           begin
-             chBox:=GetOptionBox(Option,'PrepareOptions');
-             if Assigned(chBox) then
+            chBox := GetOptionBox(Option, 'PrepareOptions');
+            if Assigned(chBox) then
               if chBox.Checked then
-                 Include(TIntegerSet(Options),Option);
+                Include(TIntegerSet(Options), Option);
           end;
-          SetPropValue(aDataSets[k],'PrepareOptions',Options)
+          SetPropValue(aDataSets[K], 'PrepareOptions', Options)
         end;
-
 
       end;
     end;
@@ -167,66 +172,66 @@ end;
 
 procedure TFPDataSetOptionsForm.ShowChanges;
 var
-    Option: Byte;
-    Options:Integer;
-    MaxOption:integer;
-    chBox:TCheckBox;
+  Option: Byte;
+  Options: Integer;
+  MaxOption: Integer;
+  chBox: TCheckBox;
 
 begin
-  MaxOption:=GetMaxOption('Options');
-  Options:=GetPropValue(FDataSet,'Options',False);
-  for Option:=0 to MaxOption do
+  MaxOption := GetMaxOption('Options');
+  Options := GetPropValue(FDataSet, 'Options', False);
+  for Option := 0 to MaxOption do
   begin
-    chBox:=GetOptionBox(Option,'Options');
+    chBox := GetOptionBox(Option, 'Options');
     if Assigned(chBox) then
     begin
-     if (Ord(chBox.Checked)-Ord(Option in TIntegerSet(Options)))<>0 then
-      chBox.Font.Style:=chBox.Font.Style+[fsBold]
-     else
-      chBox.Font.Style:=chBox.Font.Style-[fsBold]
+      if (Ord(chBox.Checked) - Ord(Option in TIntegerSet(Options))) <> 0 then
+        chBox.Font.Style := chBox.Font.Style + [fsBold]
+      else
+        chBox.Font.Style := chBox.Font.Style - [fsBold]
     end;
   end;
 
-  MaxOption:=GetMaxOption('PrepareOptions');
-  Options:=GetPropValue(FDataSet,'PrepareOptions',False);
-  for Option:=0 to MaxOption do
+  MaxOption := GetMaxOption('PrepareOptions');
+  Options := GetPropValue(FDataSet, 'PrepareOptions', False);
+  for Option := 0 to MaxOption do
   begin
-    chBox:=GetOptionBox(Option,'PrepareOptions');
+    chBox := GetOptionBox(Option, 'PrepareOptions');
     if Assigned(chBox) then
     begin
-     if (Ord(chBox.Checked)-Ord(Option in TIntegerSet(Options)))<>0 then
-      chBox.Font.Style:=chBox.Font.Style+[fsBold]
-     else
-      chBox.Font.Style:=chBox.Font.Style-[fsBold]
+      if (Ord(chBox.Checked) - Ord(Option in TIntegerSet(Options))) <> 0 then
+        chBox.Font.Style := chBox.Font.Style + [fsBold]
+      else
+        chBox.Font.Style := chBox.Font.Style - [fsBold]
     end;
   end;
 
 end;
 
-function TFPDataSetOptionsForm.GetOptionBox(aIndex: Integer;const PropName:string): TCheckBox;
+function TFPDataSetOptionsForm.GetOptionBox(aIndex: Integer; const PropName: string): TCheckBox;
 var
   EnumType: PTypeInfo;
   EnumName: string;
-  PropType:PTypeInfo;
+  PropType: PTypeInfo;
   PropInfo: PPropInfo;
 begin
-    PropInfo := GetPropInfo(FDataSet, PropName);
-    PropType := PPropInfo(PropInfo)^.PropType^;
-    EnumType := GetTypeData(PropType)^.CompType^;
-    EnumName := GetEnumName(EnumType,aIndex);
-    Result   := TCheckBox(FindComponent('Ch_'+EnumName))
+  PropInfo := GetPropInfo(FDataSet, PropName);
+  PropType := PPropInfo(PropInfo)^.PropType^;
+  EnumType := GetTypeData(PropType)^.CompType^;
+  EnumName := GetEnumName(EnumType, aIndex);
+  Result := TCheckBox(FindComponent('Ch_' + EnumName))
 end;
 
-function TFPDataSetOptionsForm.GetMaxOption(const PropName:string):integer;
+function TFPDataSetOptionsForm.GetMaxOption(const PropName: string): Integer;
 var
   EnumType: PTypeInfo;
-  PropType:PTypeInfo;
+  PropType: PTypeInfo;
   PropInfo: PPropInfo;
 begin
-    PropInfo := GetPropInfo(FDataSet, PropName);
-    PropType := PPropInfo(PropInfo)^.PropType^;
-    EnumType := GetTypeData(PropType)^.CompType^;
-    Result   := GetTypeData(EnumType).MaxValue;
+  PropInfo := GetPropInfo(FDataSet, PropName);
+  PropType := PPropInfo(PropInfo)^.PropType^;
+  EnumType := GetTypeData(PropType)^.CompType^;
+  Result := GetTypeData(EnumType).MaxValue;
 end;
 
 procedure TFPDataSetOptionsForm.FormCreate(Sender: TObject);
@@ -252,12 +257,12 @@ begin
   ch_psApplyRepositary.Caption := FPOptionsApplyRepository;
   ch_psGetOrderInfo.Caption := FPOptionsSortFields;
   ch_psAskRecordCount.Caption := FPOptionsRecordCount;
-  ch_poVisibleRecno.Caption := FPVisibleRecno;  
+  ch_poVisibleRecno.Caption := FPVisibleRecno;
 end;
 
 procedure TFPDataSetOptionsForm.ch_poTrimCharFieldsClick(Sender: TObject);
 begin
- ShowChanges
+  ShowChanges
 end;
 
 end.

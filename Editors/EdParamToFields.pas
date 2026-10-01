@@ -1,20 +1,22 @@
 unit EdParamToFields;
 
 interface
-         {$i ..\FIBPlus.inc}
+
+{$I ..\FIBPlus.inc}
+
 uses
   Windows, Messages, SysUtils,
   Classes,
-   {$IFDEF D_XE2}
-  Vcl.Graphics, Vcl.Controls, Vcl.Forms,  Vcl.Dialogs, Vcl.ComCtrls, Vcl.ExtCtrls,
+{$IFDEF D_XE2}
+  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls,
+  Vcl.ExtCtrls,
   Vcl.StdCtrls,
-  {$ELSE}
-  Graphics, Controls, Forms,  Dialogs, ComCtrls, ExtCtrls, StdCtrls,
-  {$ENDIF}
-  DB,  uFIBEditorForm
-  ,Variants
+{$ELSE}
+  Graphics, Controls, Forms, Dialogs, ComCtrls, ExtCtrls, StdCtrls,
+{$ENDIF}
+  DB, uFIBEditorForm, Variants
 
-  ;
+    ;
 
 type
   TfrmEdParamToFields = class(TFIBEditorCustomForm)
@@ -36,7 +38,7 @@ type
     procedure Button4Click(Sender: TObject);
     procedure Splitter1Moved(Sender: TObject);
   private
-    FDataSet  :TDataSet;
+    FDataSet: TDataSet;
   public
     { Public declarations }
   end;
@@ -44,71 +46,69 @@ type
 var
   frmEdParamToFields: TfrmEdParamToFields;
 
- function ShowEdParamToFields(DataSet:TDataSet;CurValues:TStrings):boolean;
+function ShowEdParamToFields(DataSet: TDataSet; CurValues: TStrings): boolean;
 
 implementation
 
-uses pFIBInterfaces, RTTIRoutines;
-
-
+uses
+  pFIBInterfaces, RTTIRoutines;
 
 {$R *.dfm}
- function ShowEdParamToFields(DataSet:TDataSet;CurValues:TStrings):boolean;
- var i:integer;
-     ids:IFIBDataSet;
- begin
-   if not ObjSupports(DataSet,IFIBDataSet,ids) then
-   begin
-     Result:=False;
-     Exit;
-   end;
 
-   frmEdParamToFields:= TfrmEdParamToFields.Create(Application);
-   with frmEdParamToFields do
-   try
-    Caption:=DataSet.Name+':Params to Fields Links (Values for NewRecord)';
-    FDataSet:=DataSet;
+function ShowEdParamToFields(DataSet: TDataSet; CurValues: TStrings): boolean;
+var
+  i: integer;
+  ids: IFIBDataSet;
+begin
+  if not ObjSupports(DataSet, IFIBDataSet, ids) then
+  begin
+    Result := False;
+    Exit;
+  end;
 
-    Memo1.Lines.Assign(CurValues);
-    for i:=0 to DataSet.FieldCount-1 do
-     lstFields.Items.Add(DataSet.Fields[i].FieldName);
-    for i:=0 to ids.ParamCount-1 do
-//     lstParams.Items.Add(DataSet.Params[i].Name);
-     lstParams.Items.Add(ids.ParamName(i));
+  frmEdParamToFields := TfrmEdParamToFields.Create(Application);
+  with frmEdParamToFields do
+    try
+      Caption := DataSet.Name + ':Params to Fields Links (Values for NewRecord)';
+      FDataSet := DataSet;
 
-    if lstFields.Items.Count>0 then
-     lstFields.ItemIndex:=0;
+      Memo1.Lines.Assign(CurValues);
+      for i := 0 to DataSet.FieldCount - 1 do
+        lstFields.Items.Add(DataSet.Fields[i].FieldName);
+      for i := 0 to ids.ParamCount - 1 do
+        // lstParams.Items.Add(DataSet.Params[i].Name);
+        lstParams.Items.Add(ids.ParamName(i));
 
-    if lstParams.Items.Count>0 then
-     lstParams.ItemIndex:=0;
-    Result:=ShowModal=mrOK;
-    if Result then
-     CurValues.Assign(Memo1.Lines)
-   finally
-     Free
-   end;
- end;
+      if lstFields.Items.Count > 0 then
+        lstFields.ItemIndex := 0;
+
+      if lstParams.Items.Count > 0 then
+        lstParams.ItemIndex := 0;
+      Result := ShowModal = mrOK;
+      if Result then
+        CurValues.Assign(Memo1.Lines)
+    finally
+      Free
+    end;
+end;
 
 procedure TfrmEdParamToFields.Button3Click(Sender: TObject);
 begin
- if (lstFields.Items.Count>0) and (lstParams.Items.Count>0) then
-  Memo1.Lines.Values[lstFields.Items[lstFields.ItemIndex]]:=
-   lstParams.Items[lstParams.ItemIndex]
-  ;
+  if (lstFields.Items.Count > 0) and (lstParams.Items.Count > 0) then
+    Memo1.Lines.Values[lstFields.Items[lstFields.ItemIndex]] := lstParams.Items[lstParams.ItemIndex];
 end;
 
-
 procedure TfrmEdParamToFields.Button4Click(Sender: TObject);
- var
-     ids:IFIBDataSet;
+var
+  ids: IFIBDataSet;
 begin
- ObjSupports(FDataSet,IFIBDataSet,ids);
- ids.ParseParamToFieldsLinks(Memo1.Lines);
+  ObjSupports(FDataSet, IFIBDataSet, ids);
+  ids.ParseParamToFieldsLinks(Memo1.Lines);
 end;
 
 procedure TfrmEdParamToFields.Splitter1Moved(Sender: TObject);
 begin
-  Label2.Left:=lstFields.Width+1
+  Label2.Left := lstFields.Width + 1
 end;
 
 end.

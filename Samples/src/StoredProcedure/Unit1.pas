@@ -1,5 +1,5 @@
 unit Unit1;
-                                                     
+
 interface
 
 uses
@@ -10,7 +10,7 @@ uses
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    db: TpFIBDatabase;
+    DB: TpFIBDatabase;
     tr: TpFIBTransaction;
     dtOrgChart: TpFIBDataSet;
     dsOrgChart: TDataSource;
@@ -46,12 +46,11 @@ implementation
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   Caption := 'FIBPlus Example - ' + Application.Title;
-  db.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\'+DemoDB;
-  {$IFDEF FBCLIENT.DLL}
-   db.LibraryName:='fbclient.dll';
-  {$ENDIF}
-
-  db.Connected := True;
+  DB.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\' + DemoDB;
+{$IFDEF FBCLIENT.DLL}
+  DB.LibraryName := 'fbclient.dll';
+{$ENDIF}
+  DB.Connected := True;
 
   dtOrgChart.Open;
   dtDept.Open;
@@ -59,18 +58,19 @@ end;
 
 procedure TForm1.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) + ' session. Proceed?',
-    mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
+  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) +
+    ' session. Proceed?', mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
 end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 begin
-  with spSubTotalBudget do begin
+  with spSubTotalBudget do
+  begin
     Params[0].AsString := dtDept.FBN('DEPT_NO').AsString;
     ExecProc;
     ShowMessageFmt('Total: %m'#10'Avg  : %m'#10'Min  : %m'#10'Max  : %m',
-      [FieldByName('TOT_BUDGET').AsCurrency, FieldByName('AVG_BUDGET').AsCurrency,
-       FieldByName('MIN_BUDGET').AsCurrency, FieldByName('MAX_BUDGET').AsCurrency]);
+      [FieldByName('TOT_BUDGET').AsCurrency, FieldByName('AVG_BUDGET').AsCurrency, FieldByName('MIN_BUDGET').AsCurrency,
+      FieldByName('MAX_BUDGET').AsCurrency]);
   end;
 end;
 

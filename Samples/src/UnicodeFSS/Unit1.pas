@@ -1,5 +1,5 @@
 unit Unit1;
-                                                     
+
 interface
 
 uses
@@ -11,7 +11,7 @@ uses
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    db: TpFIBDatabase;
+    DB: TpFIBDatabase;
     tr: TpFIBTransaction;
     dt: TpFIBDataSet;
     ds: TDataSource;
@@ -49,42 +49,43 @@ implementation
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   Caption := 'FIBPlus Example - ' + Application.Title;
-  db.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\'+DemoDB;
-  {$IFDEF FBCLIENT.DLL}
-   db.LibraryName:='fbclient.dll';
-  {$ENDIF}
-  
-  db.Connected := True;
+  DB.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\' + DemoDB;
+{$IFDEF FBCLIENT.DLL}
+  DB.LibraryName := 'fbclient.dll';
+{$ENDIF}
+  DB.Connected := True;
   dt.Open;
 end;
 
 procedure TForm1.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) + ' session. Proceed?',
-    mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
+  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) +
+    ' session. Proceed?', mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
-var v: variant;
+var
+  v: variant;
 begin
-  v := db.QueryValue('select id from unicode_table where unicode_string = :str',
-    0, [TntEdit1.Text]);
-  if varIsNull(v) then Exit;
+  v := DB.QueryValue('select id from unicode_table where unicode_string = :str', 0, [TntEdit1.Text]);
+  if varIsNull(v) then
+    Exit;
   dt.Locate('ID', v, []);
 end;
 
 procedure TForm1.Button3Click(Sender: TObject);
-var v: variant;
+var
+  v: variant;
 begin
-  v := db.QueryValue('select id from unicode_table where unicode_string = ' +
-    '''' + TntEdit1.Text + '''', 0);
-  if varIsNull(v) then Exit;
+  v := DB.QueryValue('select id from unicode_table where unicode_string = ' + '''' + TntEdit1.Text + '''', 0);
+  if varIsNull(v) then
+    Exit;
   dt.Locate('ID', v, []);
 end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 begin
- dt.Locate('UNICODE_STRING', TntEdit1.Text, []);
+  dt.Locate('UNICODE_STRING', TntEdit1.Text, []);
 end;
 
 end.

@@ -21,12 +21,15 @@
 unit ToCodeEditor;
 
 interface
+
 {$I ..\FIBPlus.inc}
+
 uses
- Classes,ToolsAPI, IStreams;
+  Classes, ToolsAPI, IStreams;
 
 type
-  TStringsModuleCreator = class(TInterfacedObject, IOTACreator, IOTAModuleCreator)
+  TStringsModuleCreator = class(TInterfacedObject, IOTACreator,
+    IOTAModuleCreator)
   private
     FFileName: string;
     FStream: TStringStream;
@@ -65,42 +68,40 @@ type
     function GetAge: TDateTime;
   end;
 
-  function FindPropInCode(Component:TComponent;const PropName:string):boolean;
-  function CreatePropInCode(Component:TComponent;const PropName:string;PropValue:TStrings;
-   aModified:boolean
-  ):boolean;
-  procedure SaveCloseModule(const Ident:string);
-  procedure SaveModule(const Ident:string); overload;
-  procedure SaveModule(Component:TComponent;const PropName:string); overload;
-  function CloseModule(const Ident:string):boolean;overload;
-  function CloseModule(Component:TComponent;const PropName:string):boolean; overload;
+function FindPropInCode(Component: TComponent; const PropName: string): Boolean;
+function CreatePropInCode(Component: TComponent; const PropName: string; PropValue: TStrings; aModified: Boolean): Boolean;
+procedure SaveCloseModule(const Ident: string);
+procedure SaveModule(const Ident: string); overload;
+procedure SaveModule(Component: TComponent; const PropName: string); overload;
+function CloseModule(const Ident: string): Boolean; overload;
+function CloseModule(Component: TComponent; const PropName: string): Boolean; overload;
 
-  procedure SetSQLPropertiesHighlights;
+procedure SetSQLPropertiesHighlights;
 
 implementation
 
-uses SysUtils, TypInfo,StFilSys,
+uses
+  SysUtils, TypInfo, StFilSys,
 {$IFDEF D_XE2}
-Vcl.Forms,Vcl.Controls,
+  Vcl.Forms, Vcl.Controls,
 {$ELSE}
-Forms,Controls,
+  Forms, Controls,
 {$ENDIF}
-ToCodeEditorIntfs ;
+  ToCodeEditorIntfs;
 
 {$IFDEF D9+}
+
 const
- cDfmExt='dfm';
+  cDfmExt = 'dfm';
 {$ENDIF}
 
 type
-  TToCodeEditor= class(TComponent,IStringsToCodeEditor)
+  TToCodeEditor = class(TComponent, IStringsToCodeEditor)
   private
-    function ICreatePropInCode(Component:TComponent;const PropName:string;PropValue:TStrings;
-     aModified:boolean
-    ):boolean;
+    function ICreatePropInCode(Component: TComponent; const PropName: string; PropValue: TStrings; aModified: Boolean): Boolean;
   end;
 
-{ TOTAFile }
+  { TOTAFile }
 
 constructor TOTAFile.Create(const ASource: string; AAge: TDateTime);
 begin
@@ -121,8 +122,7 @@ end;
 
 { TStringsModuleCreator }
 
-constructor TStringsModuleCreator.Create(const FileName: string; Stream: TStringStream;
-  Age: TDateTime);
+constructor TStringsModuleCreator.Create(const FileName: string; Stream: TStringStream; Age: TDateTime);
 begin
   inherited Create;
   FFileName := FileName;
@@ -201,107 +201,100 @@ begin
   Result := False;
 end;
 
-function TStringsModuleCreator.NewFormFile(const FormIdent,
-  AncestorIdent: string): IOTAFile;
+function TStringsModuleCreator.NewFormFile(const FormIdent, AncestorIdent: string): IOTAFile;
 begin
   Result := nil;
 end;
 
-function TStringsModuleCreator.NewImplSource(const ModuleIdent, FormIdent,
-  AncestorIdent: string): IOTAFile;
+function TStringsModuleCreator.NewImplSource(const ModuleIdent, FormIdent, AncestorIdent: string): IOTAFile;
 begin
   Result := TOTAFile.Create(FStream.DataString, FAge);
 end;
 
-function TStringsModuleCreator.NewIntfSource(const ModuleIdent, FormIdent,
-  AncestorIdent: string): IOTAFile;
+function TStringsModuleCreator.NewIntfSource(const ModuleIdent, FormIdent, AncestorIdent: string): IOTAFile;
 begin
   Result := nil;
 end;
 
-function FindPropInCode(Component:TComponent;const PropName:string):boolean;
+function FindPropInCode(Component: TComponent; const PropName: string): Boolean;
 var
   Ident: string;
   Module: IOTAModule;
   ModuleServices: IOTAModuleServices;
 begin
-  Result:=False;
-  if (Component.Owner=nil)  then
-   Exit;
+  Result := False;
+  if (Component.Owner = nil) then
+    Exit;
   ModuleServices := BorlandIDEServices as IOTAModuleServices;
-  {$IFDEF D9+}
-   Ident := cDfmExt+DotSep+Component.Owner.Name + DotSep +
-      Component.Name + DotSep + PropName;
-  {$ELSE}
-   Ident := Component.Owner.Name + DotSep +
-      Component.Name + DotSep + PropName;
-  {$ENDIF}
+{$IFDEF D9+}
+  Ident := cDfmExt + DotSep + Component.Owner.Name + DotSep + Component.Name + DotSep + PropName;
+{$ELSE}
+  Ident := Component.Owner.Name + DotSep + Component.Name + DotSep + PropName;
+{$ENDIF}
   Module := ModuleServices.FindModule(Ident);
   if (Module <> nil) and (Module.GetModuleFileCount > 0) then
   begin
     Module.GetModuleFileEditor(0).Show;
-    Result:=True;
+    Result := True;
   end;
 end;
 
-procedure SaveModule(const Ident:string);
+procedure SaveModule(const Ident: string);
 var
   Module: IOTAModule;
 begin
   if not Assigned(BorlandIDEServices) then
-   Exit;
+    Exit;
 
   Module := (BorlandIDEServices as IOTAModuleServices).FindModule(Ident);
   if (Module <> nil) then
-  try
-   Module.Save(False, True);
-  finally
-   Module:=nil
-  end;
+    try
+      Module.Save(False, True);
+    finally
+      Module := nil
+    end;
 end;
 
-procedure SaveModule(Component:TComponent;const PropName:string);
+procedure SaveModule(Component: TComponent; const PropName: string);
 begin
   SaveModule(Component.Owner.Name + DotSep + Component.Name + DotSep + PropName);
 end;
 
-procedure SaveCloseModule(const Ident:string);
+procedure SaveCloseModule(const Ident: string);
 var
   Module: IOTAModule;
 begin
   Module := (BorlandIDEServices as IOTAModuleServices).FindModule(Ident);
   if (Module <> nil) then
-  try
-   Module.Save(False, True);
-   Module.Close;
-  finally
-   Module:=nil
-  end;
+    try
+      Module.Save(False, True);
+      Module.Close;
+    finally
+      Module := nil
+    end;
 end;
 
-function CloseModule(const Ident:string):boolean;
+function CloseModule(const Ident: string): Boolean;
 var
   Module: IOTAModule;
 begin
   Module := (BorlandIDEServices as IOTAModuleServices).FindModule(Ident);
   if (Module <> nil) then
-  try
-   Result:=Module.Close;
-  finally
-   Module:=nil
-  end
+    try
+      Result := Module.Close;
+    finally
+      Module := nil
+    end
   else
     Result := False;
 end;
 
-function CloseModule(Component:TComponent;const PropName:string):boolean;
+function CloseModule(Component: TComponent; const PropName: string): Boolean;
 begin
- Result:= CloseModule(Component.Owner.Name + DotSep + Component.Name + DotSep + PropName);
+  Result := CloseModule(Component.Owner.Name + DotSep + Component.Name + DotSep + PropName);
 end;
 
-function CreatePropInCode(Component:TComponent;const PropName:string;PropValue:TStrings;
- aModified:boolean
-):boolean;
+function CreatePropInCode(Component: TComponent; const PropName: string; PropValue: TStrings; aModified: Boolean): Boolean;
 var
   Ident: string;
   Module: IOTAModule;
@@ -309,48 +302,50 @@ var
   ModuleServices: IOTAModuleServices;
   Stream: TStringStream;
   Age: TDateTime;
-  pName:string;
+  pName: string;
 begin
-  Result:=False;
-  if (Component.Owner=nil)  then
-   Exit;
+  Result := False;
+  if (Component.Owner = nil) then
+    Exit;
   ModuleServices := BorlandIDEServices as IOTAModuleServices;
 
-  pName:=PropName;
+  pName := PropName;
   case pName[1] of
 
-   'D':  if pName='DeleteQuery' then
-           pName:='DeleteSQL';
-   'I':  if pName='InsertQuery' then
-           pName:='InsertSQL';
-   'R':  if pName='RefreshQuery' then
-           pName:='RefreshSQL';
-   'S':  if pName='SelectQuery' then
-           pName:='SelectSQL';
-   'U':  if pName='UpdateQuery' then
-           pName:='UpdateSQL';
+    'D':
+      if pName = 'DeleteQuery' then
+        pName := 'DeleteSQL';
+    'I':
+      if pName = 'InsertQuery' then
+        pName := 'InsertSQL';
+    'R':
+      if pName = 'RefreshQuery' then
+        pName := 'RefreshSQL';
+    'S':
+      if pName = 'SelectQuery' then
+        pName := 'SelectSQL';
+    'U':
+      if pName = 'UpdateQuery' then
+        pName := 'UpdateSQL';
 
   end;
 
-  {$IFDEF D9+}
-   Ident := cDfmExt+DotSep+Component.Owner.Name + DotSep +
-      Component.Name + DotSep + pName;
-  {$ELSE}
-   Ident := Component.Owner.Name + DotSep +
-      Component.Name + DotSep + pName;
-  {$ENDIF}
-
-//  Ident := Component.Owner.Name + DotSep + Component.Name + DotSep + PropName;
+{$IFDEF D9+}
+  Ident := cDfmExt + DotSep + Component.Owner.Name + DotSep + Component.Name + DotSep + pName;
+{$ELSE}
+  Ident := Component.Owner.Name + DotSep + Component.Name + DotSep + pName;
+{$ENDIF}
+  // Ident := Component.Owner.Name + DotSep + Component.Name + DotSep + PropName;
   SaveCloseModule(Ident);
-      // this used to be done in LibMain's TLibrary.Create but now its done here
-      //  the unregister is done over in ComponentDesigner's finalization
-    StFilSys.Register;
+  // this used to be done in LibMain's TLibrary.Create but now its done here
+  // the unregister is done over in ComponentDesigner's finalization
+  StFilSys.Register;
   Stream := TStringStream.Create('');
 
   if not Assigned(PropValue) then
-   TObject(PropValue):=GetObjectProp(Component,pName,TStrings) ;
+    TObject(PropValue) := GetObjectProp(Component, pName, TStrings);
   if not Assigned(PropValue) then
-   Exit;
+    Exit;
 
   PropValue.SaveToStream(Stream);
   Stream.Position := 0;
@@ -364,48 +359,48 @@ begin
     if aModified then
       Editor.MarkModified
     else
-      Module.Save(False,True);
-    Result:=True;
+      Module.Save(False, True);
+    Result := True;
   end;
 end;
 
-
 procedure SetSQLPropertiesHighlights;
 const
-  SQLProps=';selectsql;insertsql;deletesql;refreshsql;updatesql;';
+  SQLProps = ';selectsql;insertsql;deletesql;refreshsql;updatesql;';
 begin
- {$IFNDEF D7+}
- if Assigned(BorlandIDEServices) then
- with (BorlandIDEServices as IOTAEditorServices).EditOptions do
- begin
-  if Pos(SQLProps,SyntaxHighlightTypes[shSQL])=0 then
-   SyntaxHighlightTypes[shSQL]:=SyntaxHighlightTypes[shSQL]+
-    SQLProps
- end;
- {$ELSE}
- if Assigned(BorlandIDEServices) then
- with (BorlandIDEServices as IOTAEditorServices).GetEditOptionsForFile('*.SQL') do
- begin
-   if Pos(SQLProps,Extensions)=0 then
-    Extensions:=Extensions+SQLProps
- end;
+{$IFNDEF D7+}
+  if Assigned(BorlandIDEServices) then
+    with (BorlandIDEServices as IOTAEditorServices).EditOptions do
+    begin
+      if Pos(SQLProps, SyntaxHighlightTypes[shSQL]) = 0 then
+        SyntaxHighlightTypes[shSQL] := SyntaxHighlightTypes[shSQL] + SQLProps
+    end;
+{$ELSE}
+  if Assigned(BorlandIDEServices) then
+    with (BorlandIDEServices as IOTAEditorServices).GetEditOptionsForFile
+      ('*.SQL') do
+    begin
+      if Pos(SQLProps, Extensions) = 0 then
+        Extensions := Extensions + SQLProps
+    end;
 
- {$ENDIF}
+{$ENDIF}
 end;
 
 { TToCodeEditor }
 
-function TToCodeEditor.ICreatePropInCode(Component: TComponent;
-  const PropName: string; PropValue: TStrings;
-  aModified: boolean): boolean;
+function TToCodeEditor.ICreatePropInCode(Component: TComponent; const PropName: string; PropValue: TStrings; aModified: Boolean): Boolean;
 begin
- Result:=CreatePropInCode(Component, PropName,PropValue,  aModified)
+  Result := CreatePropInCode(Component, PropName, PropValue, aModified)
 end;
 
-
 initialization
-  StringsToCodeEditor:=TToCodeEditor.Create(nil);
-  SetSQLPropertiesHighlights;
+
+StringsToCodeEditor := TToCodeEditor.Create(nil);
+SetSQLPropertiesHighlights;
+
 finalization
-  StringsToCodeEditor:=nil
+
+StringsToCodeEditor := nil
+
 end.

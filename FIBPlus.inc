@@ -18,49 +18,27 @@
 {  Please see the file License.txt for full license information }
 {***************************************************************}
 
-{$DEFINE INTERNAL}
-// {$DEFINE NO_GUI}
-// {$DEFINE FIBPLUS_TRIAL}
-// {$DEFINE SUPPORT_IB2007}
+// Library options
+
 {$DEFINE NO_USE_COMP}
+{$DEFINE SUPPORT_ARRAY_FIELD}         // ARRAY field support
+{$DEFINE INC_SERVICE_SUPPORT}         // include service components
 
-//{$DEFINE CSMonitor}
-//{$DEFINE IBINSTALL_SUPPORT}
-//{$DEFINE UNICODE_TO_STRING_FIELDS}
-
-// {$DEFINE SUPPORT_KOI8_CHARSET}
-
-//{$ENDIF}
-
+// {$DEFINE NO_GUI}
 // {$DEFINE NO_MONITOR}
-
-
-//{$DEFINE LONG_METADATA_NAMES}
-
-//{$DEFINE OBSOLETE_PROPS}
-(*For load old dfms*)
-
-//{$DEFINE NO_GUI}
-
-//{$DEFINE USE_DEPRECATE_METHODS1}
-//{$DEFINE USE_DEPRECATE_METHODS2}
-(* FIBDabase.DataSets ->  FIBDabase.Bases*)
-
-
-
-//{$DEFINE DFM_VERSION1}
-(* This define for save dfm with old format  *)
-(*Conditions and FIBDataSet.Options*)
-
-{$DEFINE SUPPORT_ARRAY_FIELD}
-(* This define for ARRAY FIELD SUPPORT  *)
-{$DEFINE INC_SERVICE_SUPPORT}
-(* This define for include  service components  *)
-
+// {$DEFINE SUPPORT_IB2007}
+// {$DEFINE CSMonitor}
+// {$DEFINE IBINSTALL_SUPPORT}
+// {$DEFINE UNICODE_TO_STRING_FIELDS}
+// {$DEFINE SUPPORT_KOI8_CHARSET}
+// {$DEFINE OBSOLETE_PROPS}           // load old dfms
+// {$DEFINE USE_DEPRECATE_METHODS1}
+// {$DEFINE USE_DEPRECATE_METHODS2}   // FIBDabase.DataSets -> FIBDabase.Bases
+// {$DEFINE DFM_VERSION1}             // save dfm in the old format (Conditions and FIBDataSet.Options)
 
 {$IFDEF VER140}
-  {$IFDEF BCB}			// C++Buider 6.0
-  {$ObjExportAll on}
+  {$IFDEF BCB} // C++Builder 6
+    {$OBJEXPORTALL on}
   {$ENDIF}
 {$ENDIF}
 
@@ -90,9 +68,12 @@
 {$IF CompilerVersion >= 37}   {$DEFINE D_30}   {$IFEND} // Delphi 13 Florence
 
 {$IF CompilerVersion = 17} {$INLINE OFF} {$IFEND} // Delphi 2005 only
+
 {$IF (CompilerVersion >= 18) and (CompilerVersion < 24)} // Delphi 2006 .. XE2
   {$DEFINE TWideDataSet}
 {$IFEND}
+
+// Warnings
 
 {$WARN SYMBOL_DEPRECATED OFF}
 {$WARN SYMBOL_PLATFORM OFF}
@@ -109,64 +90,50 @@
   {$WARN IMPLICIT_STRING_CAST_LOSS OFF}
 {$ENDIF}
 
-
-(* {$IFNDEF LINUX}
-   {$DEFINE MSWINDOWS}
- {$ELSE}
-   {$DEFINE NO_MONITOR}
-   {$DEFINE NO_REGISTRY}
-   {$UNDEF SUPPORT_KOI8_CHARSET}
-   {$UNDEF SUPPORT_DOS_CHARSET}
- {$ENDIF}
-*)
+// Platform
 
 {$IFNDEF LINUX}
- {$IFNDEF  NO_GUI}
-  {$IFNDEF MACOS}
-  {$IFNDEF D_XE2}
-   {$DEFINE DIRECT_USE_DB_LOGIN_FORM}
+  {$IFNDEF NO_GUI}
+    {$IFNDEF MACOS}
+      {$IFNDEF D_XE2}
+        {$DEFINE DIRECT_USE_DB_LOGIN_FORM}
+      {$ENDIF}
+    {$ENDIF}
   {$ENDIF}
- {$ENDIF}
- {$ENDIF}
 {$ENDIF}
 
- {$IFNDEF D7+}
+{$IFNDEF D7+}
   {$DEFINE WINDOWS}
- {$ENDIF}
+{$ENDIF}
 
- {$IFDEF MSWINDOWS}
+{$IFDEF MSWINDOWS}
   {$DEFINE WINDOWS}
- {$ELSE}
+{$ELSE}
   {$IFNDEF WINDOWS}
-   {$DEFINE NO_WINDOWS}
-   {$DEFINE NO_REGISTRY}
-   {$DEFINE NO_MONITOR}
-   {$DEFINE NO_GUI}
-   {$UNDEF SUPPORT_KOI8_CHARSET}
-   {$UNDEF SUPPORT_DOS_CHARSET}
-
+    {$DEFINE NO_WINDOWS}
+    {$DEFINE NO_REGISTRY}
+    {$DEFINE NO_MONITOR}
+    {$DEFINE NO_GUI}
+    {$UNDEF SUPPORT_KOI8_CHARSET}
+    {$UNDEF SUPPORT_DOS_CHARSET}
   {$ENDIF}
- {$ENDIF}
+{$ENDIF}
 
- {$IFNDEF D2009+}
-   {$UNDEF UNICODE_TO_STRING_FIELDS}
- {$ENDIF}
+{$IFNDEF D2009+}
+  {$UNDEF UNICODE_TO_STRING_FIELDS}
+{$ENDIF}
 
- 
-(*
- * Compiler defines
- *)
+// Compiler options
 
-{$A+}                           (* Aligned records: On *)
-{$B-}                           (* Short circuit boolean expressions: Off *)
-{$G+}                           (* Imported data: On *)
-{$H+}                           (* Huge Strings: On *)
-{$J-}                           (* Modification of Typed Constants: Off *)
-{$M+}                           (* Generate run-time type information: On *)
-{$Q-}                           (* Overflow checks: Off *)
-{$R-}                           (* Range checks: Off *)
-{$T+}                           (* Typed address: On *)
-{$U+}                           (* Pentim-safe FDIVs: On *)
-{$X+}                           (* Extended syntax: On *)
-{$Z1}                           (* Minimum Enumeration Size: 1 Byte *)
-
+{$A+} // Aligned records: On
+{$B-} // Short circuit boolean expressions: Off
+{$G+} // Imported data: On
+{$H+} // Huge strings: On
+{$J-} // Modification of typed constants: Off
+{$M+} // Generate run-time type information: On
+{$Q-} // Overflow checks: Off
+{$R-} // Range checks: Off
+{$T+} // Typed address: On
+{$U+} // Pentium-safe FDIVs: On
+{$X+} // Extended syntax: On
+{$Z1} // Minimum enumeration size: 1 byte

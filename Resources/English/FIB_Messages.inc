@@ -17,7 +17,8 @@
 {                                                               }
 {  Please see the file License.txt for full license information }
 {***************************************************************}
-  FIBErrorMessages: array[TFIBClientError] of String = (
+
+  FIBErrorMessages: array[TFIBClientError] of string = (
     'Unknown error.',
     'Unsupported feature.',
     'Not permitted.',
@@ -37,8 +38,8 @@
     '%s :Transaction is active.',
     'Timeout values cannot be negative.',
     '%s :No databases are listed in transaction component.', // Changed
-    '%s :Updating wrong database.',  // Changed
-    '%s :Updating wrong transaction.',// Changed
+    '%s :Updating wrong database.', // Changed
+    '%s :Updating wrong transaction.', // Changed
     'Database not assigned for %s.',
     'Transaction not assigned for %s.',
     'XSQLDA index out of range.',
@@ -77,21 +78,19 @@
     'Column lists do not match.',
     'Column types don''t match. (From index: %d, To index: %d)',
     'Can''t end a shared transaction unless it is forced and equal to the transaction''s TimeoutAction.',
-    'Column types "%s" is not array field',//feNotIsArrayField
-    'Dimension %d don''t exist in "%s" ',//feWrongDimension
-    'SQL Dialect invalid',//feSQLDialectInvalid
-   {$IFDEF WINDOWS}
-    'InterBase library gds32.dll not found in the path. Please install InterBase to use this functionality',//feIBMissing,
-   {$ENDIF}
-   {$IFDEF LINUX}
-    'InterBase library libgds.so.0 not found in the path. Please install InterBase to use this functionality',//feIBMissing,
-   {$ENDIF}
-   {$IFDEF MACOS}
-    'InterBase library  not found in the path. Please install InterBase to use this functionality',//feIBMissing,
-   {$ENDIF}
-
+    'Column types "%s" is not array field', // feNotIsArrayField
+    'Dimension %d don''t exist in "%s" ', // feWrongDimension
+    'SQL Dialect invalid', // feSQLDialectInvalid
+    {$IFDEF WINDOWS}
+    'InterBase library gds32.dll not found in the path. Please install InterBase to use this functionality', // feIBMissing
+    {$ENDIF}
+    {$IFDEF LINUX}
+    'InterBase library libgds.so.0 not found in the path. Please install InterBase to use this functionality', // feIBMissing
+    {$ENDIF}
+    {$IFDEF MACOS}
+    'InterBase library  not found in the path. Please install InterBase to use this functionality', // feIBMissing
+    {$ENDIF}
     '%s is an InterBase6 function. Please upgrade to InterBase6 to use this functonality',
-    // Added by Serg Vostrikov
     'InterBase Install DLL ibinstall.dll not found in the path. Please install InterBase 6 to use this functionality',
     'Cannot perform operation -- service is not attached',
     'Cannot perform operation -- service is attached',
@@ -103,17 +102,14 @@
     'SPB Constant Not supported',
     'SPB Constant Unknown',
     'Field Size too small. Field %s.%s',
-
-    '%s. Can''t use limited cache. '#13#10+
-    'CachedUpdates must be False,'#13#10+
-    'Select must have "Order by" clause ,'#13#10+
-    'All order fields must exist in fields section'#13#10+
-    'Select can''t use params with prefix "NEW_"'#13#10+
-    'UpdateTransaction must be equel Transaction or AutoCommit=True '
-    ,
-
+    '%s. Can''t use limited cache. '#13#10 +
+      'CachedUpdates must be False,'#13#10 +
+      'Select must have "Order by" clause ,'#13#10 +
+      'All order fields must exist in fields section'#13#10 +
+      'Select can''t use params with prefix "NEW_"'#13#10 +
+      'UpdateTransaction must be equel Transaction or AutoCommit=True ',
     'Error in %s. FieldList is empty.',
     '%s can''t use field "%s"',
     '%s is an Firebird 2 function. Please upgrade to Firebird 2 to use this functonality'
-    
   );
+

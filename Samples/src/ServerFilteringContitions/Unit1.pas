@@ -1,5 +1,5 @@
 unit Unit1;
-                                                        
+
 interface
 
 uses
@@ -10,7 +10,7 @@ uses
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    db: TpFIBDatabase;
+    DB: TpFIBDatabase;
     tr: TpFIBTransaction;
     dt: TpFIBDataSet;
     ds: TDataSource;
@@ -42,7 +42,8 @@ var
 
 implementation
 
-uses FIBQuery;
+uses
+  FIBQuery;
 
 {$R *.dfm}
 {$I FIBExamples.inc}
@@ -50,13 +51,12 @@ uses FIBQuery;
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   Caption := 'FIBPlus Example - ' + Application.Title;
-  db.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\'+DemoDB;
+  DB.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\' + DemoDB;
 
-  {$IFDEF FBCLIENT.DLL}
-   db.LibraryName:='fbclient.dll';
-  {$ENDIF}
-
-  db.Connected := True;
+{$IFDEF FBCLIENT.DLL}
+  DB.LibraryName := 'fbclient.dll';
+{$ENDIF}
+  DB.Connected := True;
   dt.Open;
   dtCountry.Open;
   dtDept.Open;
@@ -64,32 +64,38 @@ end;
 
 procedure TForm1.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) + ' session. Proceed?',
-    mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
+  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) +
+    ' session. Proceed?', mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
 end;
 
 procedure TForm1.DBLookupComboBox1CloseUp(Sender: TObject);
-var i: Integer;
+var
+  i: Integer;
 begin
-  with dt do begin
+  with dt do
+  begin
     DisableControls;
     try
-      if dt.Active then Close;
-      if Conditions.Count = 0 then begin
+      if dt.Active then
+        Close;
+      if Conditions.Count = 0 then
+      begin
         Conditions.AddCondition('by_dept', 'EMP.DEPT_NO = :DEPT_NO', False);
         Conditions.AddCondition('by_country', 'EMP.JOB_COUNTRY = :COUNTRY', False);
       end;
       CancelConditions;
-      Conditions.ByName('by_dept').Enabled :=
-        (DBLookupComboBox2.Text <> '') and (DBLookupComboBox2.Text <> ' --- ALL ---');
+      Conditions.ByName('by_dept').Enabled := (DBLookupComboBox2.Text <> '') and
+        (DBLookupComboBox2.Text <> ' --- ALL ---');
 
-      Conditions.ByName('by_country').Enabled :=
-        (DBLookupComboBox1.Text <> '') and (DBLookupComboBox1.Text <> ' --- ALL ---');
+      Conditions.ByName('by_country').Enabled := (DBLookupComboBox1.Text <> '')
+        and (DBLookupComboBox1.Text <> ' --- ALL ---');
       ApplyConditions;
       Prepare;
       for i := 0 to Params.Count - 1 do
-        if Params[i].Name = 'DEPT_NO' then Params[i].Value := dtDept.FBN('F_1').Value
-        else if Params[i].Name = 'COUNTRY' then Params[i].Value := dtCountry.FBN('F_1').Value;
+        if Params[i].Name = 'DEPT_NO' then
+          Params[i].Value := dtDept.FBN('F_1').Value
+        else if Params[i].Name = 'COUNTRY' then
+          Params[i].Value := dtCountry.FBN('F_1').Value;
       Open;
 
       Memo1.Lines.Text := QSelect.ReadySQLText;

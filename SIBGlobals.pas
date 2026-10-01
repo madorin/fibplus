@@ -6,11 +6,13 @@ unit SIBGlobals;
 // www.jps.net/dhbecker/superib
 
 interface
-uses SysUtils;
+
+uses
+  SysUtils;
 
 const
-  SIB_MAX_EVENT_BLOCK   = 15;   // maximum events handled per block by InterBase
-  SIB_MAX_EVENT_LENGTH  = 128;  // maximum event name length
+  SIB_MAX_EVENT_BLOCK  = 15;  // maximum events handled per block by InterBase
+  SIB_MAX_EVENT_LENGTH = 128; // maximum event name length
 
 type
   ESIBError = class(Exception);
@@ -26,4 +28,3 @@ resourcestring
 implementation
 
 end.
-

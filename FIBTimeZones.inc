@@ -1,8 +1,9 @@
 { Firebird built-in time zone names, generated from src/common/TimeZones.h (version 2026d).
   The index corresponds to time zone ID = 65535 - index. Do not change the order. }
+
 const
   FBTimeZoneNamesCount = 638;
-  FBTimeZoneNames: array[0..FBTimeZoneNamesCount-1] of string = (
+  FBTimeZoneNames: array[0 .. FBTimeZoneNamesCount - 1] of string = (
     'GMT',
     'ACT',
     'AET',

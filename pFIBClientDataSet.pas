@@ -26,86 +26,86 @@ interface
 
 uses
   pFIBInterfaces, SysUtils, Classes,
-  Db, DbConsts, DBClient, Provider, DSIntf, MidConst
-  ,FMTBcd, Variants;
+  Db, DbConsts, DBClient, Provider, DSIntf, MidConst, FMTBcd, Variants;
 
 {$T-,H+,X+}
 
 type
 
-  TOnApplyUpdateKind =(aukBefore,aukAfter);
+  TOnApplyUpdateKind = (aukBefore, aukAfter);
 
-  TpFIBClientDataSet = class(TClientDataSet,ISQLObject)
+  TpFIBClientDataSet = class(TClientDataSet, ISQLObject)
   protected
-    function  GetFieldClass(FieldType: TFieldType): TFieldClass; override;
+    function GetFieldClass(FieldType: TFieldType): TFieldClass; override;
     procedure DataConvert(Field: TField; Source, Dest: Pointer; ToNative: Boolean); override;
-//ISQLObject
-   function  ParamCount:integer;
-   function  ParamName(ParamIndex:integer):string;
-   function  FieldsCount:integer;
-   function  FieldExist(const FieldName:string; var FieldIndex:integer):boolean;
-   function  ParamExist(const ParamName:string; var ParamIndex:integer):boolean;
-   function  FieldValue(const FieldName:string; Old:boolean):variant;   overload;
-   function  FieldValue(const FieldIndex:integer;Old:boolean):variant; overload;
-   function  ParamValue(const ParamName:string):variant;   overload;
-   function  ParamValue(const ParamIndex:integer):variant; overload;
-   procedure SetParamValue(const ParamIndex:integer; aValue:Variant);
-   function  FieldName(FieldIndex:integer):string;
-   function  IEof:boolean;
-   procedure INext;
-//
+    // ISQLObject
+    function ParamCount: integer;
+    function ParamName(ParamIndex: integer): string;
+    function FieldsCount: integer;
+    function FieldExist(const FieldName: string; var FieldIndex: integer): Boolean;
+    function ParamExist(const ParamName: string; var ParamIndex: integer): Boolean;
+    function FieldValue(const FieldName: string; Old: Boolean): variant; overload;
+    function FieldValue(const FieldIndex: integer; Old: Boolean): variant; overload;
+    function ParamValue(const ParamName: string): variant; overload;
+    function ParamValue(const ParamIndex: integer): variant; overload;
+    procedure SetParamValue(const ParamIndex: integer; aValue: variant);
+    function FieldName(FieldIndex: integer): string;
+    function IEof: Boolean;
+    procedure INext;
+    //
   public
-    procedure   OpenWP(ParamValues: array of Variant);
-    procedure   Commit;
-    procedure   RollBack;
-    function    TransactionIsActive:boolean;
+    procedure OpenWP(ParamValues: array of variant);
+    procedure Commit;
+    procedure RollBack;
+    function TransactionIsActive: Boolean;
   end;
 
-  TpFIBClientBCDField=class (TBCDField)
+  TpFIBClientBCDField = class(TBCDField)
   private
   protected
-     function  GetAsCurrency: Currency; override;
-     function  GetAsFloat: Double; override;
+    function GetAsCurrency: Currency; override;
+    function GetAsFloat: Double; override;
 
 {$IFNDEF NO_USE_COMP}
-     function  GetAsComp : Comp  ;  virtual;
-     procedure SetAsComp(Value: comp); virtual;
+    function GetAsComp: Comp; virtual;
+    procedure SetAsComp(Value: Comp); virtual;
 {$ENDIF}
-     function  GetAsExtended: Extended;  {$IFNDEF D2009+} virtual{$ELSE} override {$ENDIF};
-     function  GetAsString: string; override;
-     function  GetAsInt64: Int64; virtual;
-     function  GetAsVariant: Variant; override;
-     procedure SetAsFloat(Value: Double); override;
+    function GetAsExtended: Extended; {$IFNDEF D2009+} virtual{$ELSE} override
+    {$ENDIF};
+    function GetAsString: string; override;
+    function GetAsInt64: Int64; virtual;
+    function GetAsVariant: variant; override;
+    procedure SetAsFloat(Value: Double); override;
 
-     procedure SetAsExtended(Value: Extended); {$IFNDEF D2009+} virtual{$ELSE} override {$ENDIF};
-     procedure SetAsString(const Value: string); override;
-     procedure SetAsCurrency(Value: Currency); override;
-     procedure SetAsInt64(Value: Int64); virtual;
-     procedure SetVarValue(const Value: Variant); override;
-     procedure GetText(var Text: string; DisplayText: Boolean); override;
+    procedure SetAsExtended(Value: Extended); {$IFNDEF D2009+} virtual{$ELSE} override {$ENDIF};
+    procedure SetAsString(const Value: string); override;
+    procedure SetAsCurrency(Value: Currency); override;
+    procedure SetAsInt64(Value: Int64); virtual;
+    procedure SetVarValue(const Value: variant); override;
+    procedure GetText(var Text: string; DisplayText: Boolean); override;
   public
-     procedure Assign(Source: TPersistent); override;
-     property AsExtended :Extended read GetAsExtended write SetAsExtended;
-     property AsInt64    :Int64    read GetAsInt64    write SetAsInt64;
+    procedure Assign(Source: TPersistent); override;
+    property AsExtended: Extended read GetAsExtended write SetAsExtended;
+    property AsInt64: Int64 read GetAsInt64 write SetAsInt64;
 {$IFNDEF NO_USE_COMP}
-     property AsComp     :Comp     read GetAsComp     write SetAsComp;
-{$ENDIF}     
-     property Value      :Extended read GetAsExtended write SetAsExtended;
+    property AsComp: Comp read GetAsComp write SetAsComp;
+{$ENDIF}
+    property Value: Extended read GetAsExtended write SetAsExtended;
   end;
 
   TpFIBDataSetProvider = class(TDataSetProvider)
   protected
-    function FindRecord(Source, Delta: TDataSet; UpdateMode: TUpdateMode): Boolean; {$IFDEF D2005+}override;{$ENDIF}
+    function FindRecord(Source, Delta: TDataSet; UpdateMode: TUpdateMode): Boolean; {$IFDEF D2005+}override; {$ENDIF}
     procedure UpdateRecord(Source, Delta: TDataSet; BlobsOnly, KeyOnly: Boolean); override;
     function CreateResolver: TCustomResolver; override;
   end;
-
 
 implementation
 
 {$R fibplus_midas.dcr}
 
-uses StdFuncs;
+uses
+  StdFuncs;
 
 type
   TpFIBDataSetResolver = class(TDataSetResolver)
@@ -119,125 +119,113 @@ type
 
   end;
 
-
   TpFIBSQLResolver = class(TSQLResolver)
   protected
   end;
 
-{ TpFIBClientDataSet }
+  { TpFIBClientDataSet }
 
 procedure TpFIBClientDataSet.Commit;
 var
   DummyOwnerData: OleVariant;
-  DummyParams   : OleVariant;
+  DummyParams: OleVariant;
 begin
-   if Assigned(AppServer) then
+  if Assigned(AppServer) then
     AppServer.AS_Execute(ProviderName, 'FIB$COMMIT', DummyParams, DummyOwnerData);
 end;
 
-procedure   TpFIBClientDataSet.RollBack;
+procedure TpFIBClientDataSet.RollBack;
 var
   DummyOwnerData: OleVariant;
-  DummyParams   : OleVariant;
+  DummyParams: OleVariant;
 begin
-   if Assigned(AppServer) then
+  if Assigned(AppServer) then
     AppServer.AS_Execute(ProviderName, 'FIB$ROLLBACK', DummyParams, DummyOwnerData);
 end;
 
-function TpFIBClientDataSet.TransactionIsActive: boolean;
+function TpFIBClientDataSet.TransactionIsActive: Boolean;
 var
   DummyOwnerData: OleVariant;
-  Params   : OleVariant;
-  v:Variant;
+  Params: OleVariant;
+  v: variant;
 begin
   if Assigned(AppServer) then
   begin
-   AppServer.AS_Execute(ProviderName, 'FIB$GET_INTRANSACTION', Params, DummyOwnerData);
-   v:=Params[0];
-   Result:=v[1];
+    AppServer.AS_Execute(ProviderName, 'FIB$GET_INTRANSACTION', Params, DummyOwnerData);
+    v := Params[0];
+    Result := v[1];
   end
   else
-   Result:=False
+    Result := False
 end;
 
-
-procedure TpFIBClientDataSet.DataConvert(Field: TField; Source,
-  Dest: Pointer; ToNative: Boolean);
+procedure TpFIBClientDataSet.DataConvert(Field: TField; Source, Dest: Pointer; ToNative: Boolean);
 var
- Scale :byte;
+  Scale: byte;
 begin
- if  (Field.DataType<>ftBCD) or (Field.Size=4)
- then
-   inherited DataConvert(Field,Source,  Dest,ToNative)
- else
-   if ToNative then
-        Int64ToBCD(Int64(Source^), Field.Size, TBcd(Dest^))
-   else
-    if not BCDToInt64WithScale(TBcd(Source^), Int64(Dest^),Scale ) then
-        raise EOverFlow.CreateFmt(SFieldOutOfRange, [Field.DisplayName]);
+  if (Field.DataType <> ftBCD) or (Field.Size = 4) then
+    inherited DataConvert(Field, Source, Dest, ToNative)
+  else if ToNative then
+    Int64ToBCD(Int64(Source^), Field.Size, TBcd(Dest^))
+  else if not BCDToInt64WithScale(TBcd(Source^), Int64(Dest^), Scale) then
+    raise EOverFlow.CreateFmt(SFieldOutOfRange, [Field.DisplayName]);
 
 end;
 
-
-
-function TpFIBClientDataSet.FieldExist(const FieldName: string;
-  var FieldIndex: integer): boolean;
+function TpFIBClientDataSet.FieldExist(const FieldName: string; var FieldIndex: integer): Boolean;
 var
-  tf:TField;
+  tf: TField;
 begin
- tf:=FindField(FieldName);
- Result:= Assigned(tf);
- if Result then
-  FieldIndex:=tf.Index;
+  tf := FindField(FieldName);
+  Result := Assigned(tf);
+  if Result then
+    FieldIndex := tf.Index;
 end;
 
 function TpFIBClientDataSet.FieldName(FieldIndex: integer): string;
 begin
-  Result:=Fields[FieldIndex].FieldName;
+  Result := Fields[FieldIndex].FieldName;
 end;
 
 function TpFIBClientDataSet.FieldsCount: integer;
 begin
-  Result:=FieldCount
+  Result := FieldCount
 end;
 
-function TpFIBClientDataSet.FieldValue(const FieldName: string;
-  Old: boolean): variant;
+function TpFIBClientDataSet.FieldValue(const FieldName: string; Old: Boolean): variant;
 var
-  tf:TField;
+  tf: TField;
 begin
- tf:=FieldByName(FieldName);
- if Old then
-  Result:= tf.OldValue
- else
-  Result:= tf.Value
+  tf := FieldByName(FieldName);
+  if Old then
+    Result := tf.OldValue
+  else
+    Result := tf.Value
 end;
 
-function TpFIBClientDataSet.FieldValue(const FieldIndex: integer;
-  Old: boolean): variant;
+function TpFIBClientDataSet.FieldValue(const FieldIndex: integer; Old: Boolean): variant;
 var
-  tf:TField;
+  tf: TField;
 begin
- tf:=Fields[FieldIndex];
- if Old and (State<>dsInsert) then
-  Result:= tf.OldValue
- else
-  Result:= tf.Value
+  tf := Fields[FieldIndex];
+  if Old and (State <> dsInsert) then
+    Result := tf.OldValue
+  else
+    Result := tf.Value
 end;
 
-function TpFIBClientDataSet.GetFieldClass(
-  FieldType: TFieldType): TFieldClass;
+function TpFIBClientDataSet.GetFieldClass(FieldType: TFieldType): TFieldClass;
 begin
- case FieldType of
-  ftBCD :  Result:=TpFIBClientBCDField;
- else
-  Result:=inherited GetFieldClass( FieldType)
- end
+  case FieldType of
+    ftBCD: Result := TpFIBClientBCDField;
+  else
+    Result := inherited GetFieldClass(FieldType)
+  end
 end;
 
-function TpFIBClientDataSet.IEof: boolean;
+function TpFIBClientDataSet.IEof: Boolean;
 begin
- Result:=Eof;
+  Result := Eof;
 end;
 
 procedure TpFIBClientDataSet.INext;
@@ -245,57 +233,55 @@ begin
   Next
 end;
 
-procedure TpFIBClientDataSet.OpenWP(ParamValues: array of Variant);
-var i :integer;
-    pc:integer;
+procedure TpFIBClientDataSet.OpenWP(ParamValues: array of variant);
+var
+  i: integer;
+  pc: integer;
 begin
-// Exec Query with ParamValues
- if High(ParamValues)<Pred(Params.Count) then
-  pc:=High(ParamValues)
- else
-  pc:=Pred(Params.Count);
- for i:=Low(ParamValues)  to pc do
-  Params[i].Value:=ParamValues[i];
- Open
+  // Exec Query with ParamValues
+  if High(ParamValues) < Pred(Params.Count) then
+    pc := High(ParamValues)
+  else
+    pc := Pred(Params.Count);
+  for i := Low(ParamValues) to pc do
+    Params[i].Value := ParamValues[i];
+  Open
 end;
 
 function TpFIBClientDataSet.ParamCount: integer;
 begin
- Result:=Params.Count
+  Result := Params.Count
 end;
 
-function TpFIBClientDataSet.ParamExist(const ParamName: string;
-  var ParamIndex: integer): boolean;
+function TpFIBClientDataSet.ParamExist(const ParamName: string; var ParamIndex: integer): Boolean;
 var
-   par:TParam;
+  par: TParam;
 begin
- par:=Params.FindParam(ParamName);
- Result :=par<>nil;
- if Result then
-  ParamIndex:=par.Index
+  par := Params.FindParam(ParamName);
+  Result := par <> nil;
+  if Result then
+    ParamIndex := par.Index
 end;
 
 function TpFIBClientDataSet.ParamName(ParamIndex: integer): string;
 begin
- Result:=Params[ParamIndex].Name;
+  Result := Params[ParamIndex].Name;
 end;
 
 function TpFIBClientDataSet.ParamValue(const ParamIndex: integer): variant;
 begin
- Result:=Params[ParamIndex].Value
+  Result := Params[ParamIndex].Value
 end;
 
 function TpFIBClientDataSet.ParamValue(const ParamName: string): variant;
 begin
- Result:=Params.ParamByName(ParamName).Value
+  Result := Params.ParamByName(ParamName).Value
 end;
 
-procedure TpFIBClientDataSet.SetParamValue(const ParamIndex: integer;
-  aValue: Variant);
+procedure TpFIBClientDataSet.SetParamValue(const ParamIndex: integer; aValue: variant);
 begin
-  Params[ParamIndex].Value:=aValue;
+  Params[ParamIndex].Value := aValue;
 end;
-
 
 { TpFIBClientBCDField }
 
@@ -303,127 +289,131 @@ procedure TpFIBClientBCDField.Assign(Source: TPersistent);
 begin
   if Source = nil then
     Clear
-  else
-  if Source is TField then
+  else if Source is TField then
     Value := TField(Source).Value
   else
     inherited Assign(Source);
 end;
 
 {$IFNDEF NO_USE_COMP}
+
 function TpFIBClientBCDField.GetAsComp: Comp;
 begin
- Result:=GetAsExtended
+  Result := GetAsExtended
 end;
 
-procedure TpFIBClientBCDField.SetAsComp(Value: comp);
+procedure TpFIBClientBCDField.SetAsComp(Value: Comp);
 begin
- SetData(@Value,False)
+  SetData(@Value, False)
 end;
 
 {$ENDIF}
 
 function TpFIBClientBCDField.GetAsCurrency: Currency;
 begin
- Result:=GetAsExtended
+  Result := GetAsExtended
 end;
 
 function TpFIBClientBCDField.GetAsExtended: Extended;
-var C:Int64;
+var
+  C: Int64;
 begin
- if GetData(@C, False) then
-  Result:=C*E10[-Size]
- else
-  Result:=0
+  if GetData(@C, False) then
+    Result := C * E10[-Size]
+  else
+    Result := 0
 end;
 
 function TpFIBClientBCDField.GetAsFloat: Double;
-var C:Comp;
+var
+  C: Comp;
 begin
- if GetData(@C, False) then
-  Result:=C*E10[-Size]
- else
-  Result:=0
+  if GetData(@C, False) then
+    Result := C * E10[-Size]
+  else
+    Result := 0
 end;
 
 function TpFIBClientBCDField.GetAsInt64: Int64;
 begin
- if GetData(@Result, False) then
-  if Size<>0 then
-     Result:=Round(Result*E10[-Size])
-  else   
- else
-  Result:=0
+  if GetData(@Result, False) then
+    if Size <> 0 then
+      Result := Round(Result * E10[-Size])
+    else
+  else
+    Result := 0
 end;
 
 function TpFIBClientBCDField.GetAsString: string;
-var C:Int64;
+var
+  C: Int64;
 begin
- {$IFDEF D_XE3}with FormatSettings do{$ENDIF}
- if GetData(@C, False) then
-  Result := Int64WithScaleToStr(C,Size,DecimalSeparator) else Result := '';
+{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+    if GetData(@C, False) then
+      Result := Int64WithScaleToStr(C, Size, DecimalSeparator)
+    else
+      Result := '';
 end;
 
-function TpFIBClientBCDField.GetAsVariant: Variant;
+function TpFIBClientBCDField.GetAsVariant: variant;
 begin
- if IsNull then
-  Result:= Null
- else
- case Size of
- 0:
-   Result:= asInt64;
- 4:
-  Result:= asCurrency
- else
-  Result:= asExtended
- end 
+  if IsNull then
+    Result := Null
+  else
+    case Size of
+      0: Result := AsInt64;
+      4: Result := asCurrency
+    else
+      Result := AsExtended
+    end
 end;
 
-procedure TpFIBClientBCDField.GetText(var Text: string;
-  DisplayText: Boolean);
+procedure TpFIBClientBCDField.GetText(var Text: string; DisplayText: Boolean);
 var
   Format: TFloatFormat;
-  Digits: Integer;
+  Digits: integer;
   FmtStr: string;
   C: Int64;
 begin
- {$IFDEF D_XE3}with FormatSettings do{$ENDIF}
-  try
-    if GetData(@C, False) then
-    begin
-      if DisplayText or (EditFormat = '') then
-        FmtStr := DisplayFormat else
-        FmtStr := EditFormat;
-      if FmtStr = '' then
+{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+    try
+      if GetData(@C, False) then
       begin
-        if currency then
+        if DisplayText or (EditFormat = '') then
+          FmtStr := DisplayFormat
+        else
+          FmtStr := EditFormat;
+        if FmtStr = '' then
         begin
-         Digits := CurrencyDecimals;
-         if DisplayText then Format := ffCurrency else Format := ffFixed;
-         Text := CurrToStrF(C*E10[-Size], Format, Digits);
+          if Currency then
+          begin
+            Digits := CurrencyDecimals;
+            if DisplayText then
+              Format := ffCurrency
+            else
+              Format := ffFixed;
+            Text := CurrToStrF(C * E10[-Size], Format, Digits);
+          end
+          else
+          begin
+            Digits := Size;
+            Text := Int64WithScaleToStr(C, Digits, DecimalSeparator)
+          end;
         end
+        else if Size = 4 then
+          Text := FormatCurr(FmtStr, C * E10[-Size])
         else
         begin
-          Digits := Size;
-          Text := Int64WithScaleToStr(C,Digits,DecimalSeparator)
+          Text := FormatNumericString(FmtStr, Int64WithScaleToStr(C, Size, DecimalSeparator));
         end;
       end
       else
-      if Size=4 then
-       Text := FormatCurr(FmtStr, C*E10[-Size])
-      else
-      begin
-          Text := FormatNumericString(FmtStr,Int64WithScaleToStr(C,Size,DecimalSeparator));
-      end;
-    end
-    else
-      Text := '';
-  except
-    on E: Exception do
-      Text := SBCDOverflow;
-  end;
+        Text := '';
+    except
+      on E: Exception do
+        Text := SBCDOverflow;
+    end;
 end;
-
 
 procedure TpFIBClientBCDField.SetAsCurrency(Value: Currency);
 begin
@@ -432,13 +422,13 @@ end;
 
 procedure TpFIBClientBCDField.SetAsExtended(Value: Extended);
 var
- RndComp :Comp;
+  RndComp: Comp;
 begin
   try
-   RndComp :=Value*E10[Size];
-   SetData(@RndComp,False);   
+    RndComp := Value * E10[Size];
+    SetData(@RndComp, False);
   except
-   raise 
+    raise
   end;
 end;
 
@@ -449,59 +439,63 @@ end;
 
 procedure TpFIBClientBCDField.SetAsInt64(Value: Int64);
 begin
-  SetData(@Value,False)
+  SetData(@Value, False)
 end;
 
 procedure TpFIBClientBCDField.SetAsString(const Value: string);
 begin
- if Value = '' then Clear else
-  if (Size=0) then
-   SetAsInt64(StrToInt64(Value))
+  if Value = '' then
+    Clear
+  else if (Size = 0) then
+    SetAsInt64(StrToInt64(Value))
   else
-   SetAsExtended(StrToFloat(Value))
+    SetAsExtended(StrToFloat(Value))
 end;
 
-procedure TpFIBClientBCDField.SetVarValue(const Value: Variant);
+procedure TpFIBClientBCDField.SetVarValue(const Value: variant);
 begin
- case VarType(Value) of
-  varEmpty,varNull      : Clear;
-  varString,varOleStr{$IFDEF D2009+},varUString{$ENDIF}    : AsString :=Value;
-  varSmallint,varInteger,varWord, varLongWord: AsInteger:=Value;
-  varInt64             : AsInt64  :=Value
- else
-  AsExtended :=Value;
- end
+  case VarType(Value) of
+    varEmpty, varNull: Clear;
+    varString, varOleStr{$IFDEF D2009+}, varUString{$ENDIF} :
+      AsString := Value;
+    varSmallint, varInteger, varWord, varLongWord: AsInteger := Value;
+    varInt64: AsInt64 := Value
+  else
+    AsExtended := Value;
+  end
 end;
 
 { TpFIBDataSetProvider }
 
-
 function TpFIBDataSetProvider.CreateResolver: TCustomResolver;
 begin
   if ResolveToDataSet then
-    Result := TpFIBDataSetResolver.Create(Self) else
+    Result := TpFIBDataSetResolver.Create(Self)
+  else
     Result := TpFIBSQLResolver.Create(Self);
 end;
 
-type TUnprotectedPacketDataSet =class(TPacketDataSet);
+type
+  TUnprotectedPacketDataSet = class(TPacketDataSet);
 
-function TpFIBDataSetProvider.FindRecord(Source, Delta: TDataSet;
-  UpdateMode: TUpdateMode): Boolean;
+function TpFIBDataSetProvider.FindRecord(Source, Delta: TDataSet; UpdateMode: TUpdateMode): Boolean;
 
   procedure GetFieldList(DataSet: TDataSet; UpdateMode: TUpdateMode; List: TList);
   var
-    i: Integer;
+    i: integer;
   begin
     for i := 0 to DataSet.FieldCount - 1 do
       with DataSet.Fields[i] do
       begin
-        if (DataType in [ftBytes, ftVarBytes]) or IsBlob or
-           (DataSet.Fields[i] is TObjectField) then continue;
+        if (DataType in [ftBytes, ftVarBytes]) or IsBlob or (DataSet.Fields[i] is TObjectField) then
+          continue;
         case UpdateMode of
           upWhereKeyOnly:
-            if pfInKey in ProviderFlags then List.Add(DataSet.Fields[i]);
+            if pfInKey in ProviderFlags then
+              List.Add(DataSet.Fields[i]);
           upWhereAll:
-            if pfInWhere in ProviderFlags then List.Add(DataSet.Fields[i]);
+            if pfInWhere in ProviderFlags then
+              List.Add(DataSet.Fields[i]);
           upWhereChanged:
             if (pfInKey in ProviderFlags) or (not VarIsEmpty(NewValue)) then
               List.Add(DataSet.Fields[i]);
@@ -510,8 +504,8 @@ function TpFIBDataSetProvider.FindRecord(Source, Delta: TDataSet;
   end;
 
 var
-  i: Integer;
-  KeyValues: Variant;
+  i: integer;
+  KeyValues: variant;
   Fields: string;
   FieldList: TList;
   IsDelta: LongBool;
@@ -528,21 +522,19 @@ begin
       for i := 0 to FieldList.Count - 1 do
         with TField(FieldList[i]) do
         begin
-         if (TField(FieldList[i]) is TBCDField) and
-           (TBCDField(FieldList[i]).Size<>4)
-         then
-            KeyValues[i] := BCDFieldAsString(TField(FieldList[i]),IsDelta)
-         else
-          if IsDelta then
-            KeyValues[i] := OldValue else
+          if (TField(FieldList[i]) is TBCDField) and (TBCDField(FieldList[i]).Size <> 4) then
+            KeyValues[i] := BCDFieldAsString(TField(FieldList[i]), IsDelta)
+          else if IsDelta then
+            KeyValues[i] := OldValue
+          else
             KeyValues[i] := Value;
-          if Fields <> '' then Fields := Fields + ';';
+          if Fields <> '' then
+            Fields := Fields + ';';
           Fields := Fields + FieldName;
         end;
       Result := Source.Locate(Fields, KeyValues, []);
     end
-    else
-    if FieldList.Count = 1 then
+    else if FieldList.Count = 1 then
     begin
       with TField(FieldList[0]) do
         if IsDelta then
@@ -557,13 +549,12 @@ begin
   end;
 end;
 
-procedure TpFIBDataSetProvider.UpdateRecord(Source, Delta: TDataSet;
-  BlobsOnly, KeyOnly: Boolean);
+procedure TpFIBDataSetProvider.UpdateRecord(Source, Delta: TDataSet; BlobsOnly, KeyOnly: Boolean);
 var
   Field: TField;
-  i: Integer;
+  i: integer;
   UseUpMode: TUpdateMode;
-  BcdValue:TBcd;
+  BcdValue: TBcd;
 begin
   if KeyOnly then
     UseUpMode := upWhereKeyOnly
@@ -580,16 +571,15 @@ begin
       for i := 0 to FieldCount - 1 do
       begin
         Field := Source.FindField(Fields[i].FieldName);
-        if (Field <> nil) and (not BlobsOnly or (Field.IsBlob and VarIsNull(Fields[i].NewValue)))
-        then
-         if Fields[i].DataType<>ftBcd then
-          Fields[i].Assign(Field)
-         else
-         begin
-//  main changes:        
-          GetBCDFieldData(Field,False,BcdValue);
-          Fields[i].SetData(@BcdValue)
-         end;
+        if (Field <> nil) and (not BlobsOnly or (Field.IsBlob and VarIsNull(Fields[i].NewValue))) then
+          if Fields[i].DataType <> ftBCD then
+            Fields[i].Assign(Field)
+          else
+          begin
+            // main changes:
+            GetBCDFieldData(Field, False, BcdValue);
+            Fields[i].SetData(@BcdValue)
+          end;
       end;
       Post;
     end;
@@ -598,7 +588,8 @@ end;
 
 { TpFIBDataSetResolver }
 
-type  TUnprotectedUpdateTree= class(TUpdateTree);
+type
+  TUnprotectedUpdateTree = class(TUpdateTree);
 
 procedure TpFIBDataSetResolver.DoDelete(Tree: TUpdateTree);
 begin
@@ -618,8 +609,6 @@ begin
   PutRecord(Tree);
 end;
 
-
-
 procedure TpFIBDataSetResolver.DoUpdate(Tree: TUpdateTree);
 begin
   with TUnprotectedUpdateTree(Tree) do
@@ -631,62 +620,55 @@ begin
   end;
 end;
 
-
 procedure TpFIBDataSetResolver.InternalBeforeResolve(Tree: TUpdateTree);
 begin
   with TUnprotectedUpdateTree(Tree) do
-   TpFIBDataSetProvider(Provider).FindRecord(Source, Delta, Provider.UpdateMode);
+    TpFIBDataSetProvider(Provider).FindRecord(Source, Delta, Provider.UpdateMode);
 end;
-
 
 procedure TpFIBDataSetResolver.PutRecord(Tree: TUpdateTree);
 
-  procedure PutField(Src, Dest: TField); forward;
+procedure PutField(Src, Dest: TField); forward;
 
   procedure PutObjectField(Src, Dest: TObjectField);
   var
-    i: Integer;
+    i: integer;
   begin
     if VarIsNull(Src.NewValue) then
-      Dest.Clear else
+      Dest.Clear
+    else
       for i := 0 to Src.FieldCount - 1 do
-        if (not VarIsEmpty(Src.Fields[i].NewValue)) and
-           (pfInUpdate in Src.Fields[i].ProviderFlags) then
+        if (not VarIsEmpty(Src.Fields[i].NewValue)) and (pfInUpdate in Src.Fields[i].ProviderFlags) then
           PutField(Src.Fields[i], Dest.Fields[i]);
   end;
 
   procedure PutField(Src, Dest: TField);
   begin
     if (Src.DataType in [ftArray, ftADT]) then
-      PutObjectField(TObjectField(Src), TObjectField(Dest)) else
-    if (Src.DataType in [ftDataSet, ftReference]) then
-      raise Exception.CreateRes(Integer(@SNoDataSets)) else
-    if (not VarIsEmpty(Src.NewValue)) and
-       (pfInUpdate in Src.ProviderFlags) then
+      PutObjectField(TObjectField(Src), TObjectField(Dest))
+    else if (Src.DataType in [ftDataSet, ftReference]) then
+      raise Exception.CreateRes(integer(@SNoDataSets))
+    else if (not VarIsEmpty(Src.NewValue)) and (pfInUpdate in Src.ProviderFlags) then
       Dest.Assign(Src);
   end;
 
 var
-  i: Integer;
+  i: integer;
   Field: TField;
 begin
   with TUnprotectedUpdateTree(Tree) do
-  try
-    for i := 0 to Delta.FieldCount - 1 do
-    begin
-      Field := Source.FindField(Delta.Fields[i].FieldName);
-      if (Field <> nil) then
-        PutField(Delta.Fields[i], Field);
+    try
+      for i := 0 to Delta.FieldCount - 1 do
+      begin
+        Field := Source.FindField(Delta.Fields[i].FieldName);
+        if (Field <> nil) then
+          PutField(Delta.Fields[i], Field);
+      end;
+      Source.Post;
+    except
+      Source.Cancel;
+      raise;
     end;
-    Source.Post;
-  except
-    Source.Cancel;
-    raise;
-  end;
 end;
 
-
-
-
 end.
-

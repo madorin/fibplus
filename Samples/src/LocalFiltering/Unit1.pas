@@ -10,7 +10,7 @@ uses
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    db: TpFIBDatabase;
+    DB: TpFIBDatabase;
     tr: TpFIBTransaction;
     dt: TpFIBDataSet;
     ds: TDataSource;
@@ -50,15 +50,15 @@ implementation
 {$I FIBExamples.inc}
 
 procedure TForm1.FormCreate(Sender: TObject);
-var i: Integer;
+var
+  i: Integer;
 begin
   Caption := 'FIBPlus Example - ' + Application.Title;
-  db.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\'+DemoDB;
-  {$IFDEF FBCLIENT.DLL}
-   db.LibraryName:='fbclient.dll';
-  {$ENDIF}
-
-  db.Connected := True;
+  DB.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\' + DemoDB;
+{$IFDEF FBCLIENT.DLL}
+  DB.LibraryName := 'fbclient.dll';
+{$ENDIF}
+  DB.Connected := True;
   dt.Open;
   ComboBox1.Clear;
   for i := 0 to dt.Fields.Count - 1 do
@@ -67,39 +67,43 @@ end;
 
 procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  if not db.Connected then Exit;
-  db.CloseDataSets;
-  db.Close;
+  if not DB.Connected then
+    Exit;
+  DB.CloseDataSets;
+  DB.Close;
 end;
 
 procedure TForm1.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) + ' session. Proceed?',
-    mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
+  CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) +
+    ' session. Proceed?', mtConfirmation, [mbOk, mbCancel], 0) = mrOk;
 end;
 
 procedure TForm1.dtFilterRecord(DataSet: TDataSet; var Accept: Boolean);
 begin
-  if chkIgnoreCase.Checked
-  then Accept := DataSet.FieldByName(ComboBox1.Text).AsString = Edit1.Text
-  else Accept := AnsiUpperCase(DataSet.FieldByName(ComboBox1.Text).AsString) =
-    AnsiUpperCase(Edit1.Text);
+  if chkIgnoreCase.Checked then
+    Accept := DataSet.FieldByName(ComboBox1.Text).AsString = Edit1.Text
+  else
+    Accept := AnsiUpperCase(DataSet.FieldByName(ComboBox1.Text).AsString) = AnsiUpperCase(Edit1.Text);
 end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 begin
-  if (Trim(ComboBox1.Text) = '') or (Trim(Edit1.Text) = '') then Exit;
-  with dt do begin
+  if (Trim(ComboBox1.Text) = '') or (Trim(Edit1.Text) = '') then
+    Exit;
+  with dt do
+  begin
     Filtered := False;
-    Filter   := '';
+    Filter := '';
     OnFilterRecord := nil;
 
-    if RadioButton1.Checked
-    then Filter := Format('[%s] = %s', [ComboBox1.Text, QuotedStr(Edit1.Text)])
-    else OnFilterRecord := dtFilterRecord;
+    if RadioButton1.Checked then
+      Filter := Format('[%s] = %s', [ComboBox1.Text, QuotedStr(Edit1.Text)])
+    else
+      OnFilterRecord := dtFilterRecord;
 
     if chkIgnoreCase.Checked then
-      FilterOptions := FilterOptions + [foCaseInsensitive]; 
+      FilterOptions := FilterOptions + [foCaseInsensitive];
 
     Filtered := True;
   end;
@@ -108,9 +112,8 @@ end;
 procedure TForm1.Button2Click(Sender: TObject);
 begin
   dt.Filtered := False;
-  dt.Filter   := '';
+  dt.Filter := '';
   dt.OnFilterRecord := nil;
 end;
 
 end.
-

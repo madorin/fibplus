@@ -17,25 +17,28 @@
 {                                                               }
 {  Please see the file License.txt for full license information }
 {***************************************************************}
+
 unit fraAutoUpdEditor;
 
 interface
 
-  {$I ..\FIBPlus.inc}
-uses
-     Windows,SysUtils,
+{$I ..\FIBPlus.inc}
 
-      {$IFDEF D_XE2}
-  Vcl.Graphics, Vcl.Controls, Vcl.Forms,  Vcl.Dialogs, Vcl.ComCtrls, Vcl.ExtCtrls,
+uses
+  Windows, SysUtils,
+
+{$IFDEF D_XE2}
+  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls,
+  Vcl.ExtCtrls,
   Vcl.StdCtrls,
-  {$ELSE}
-  Graphics, Controls, Forms,  Dialogs, ComCtrls, ExtCtrls, StdCtrls,
-  {$ENDIF}
-     Db,uFIBEditorForm, Classes
-     ;
+{$ELSE}
+  Graphics, Controls, Forms, Dialogs, ComCtrls, ExtCtrls, StdCtrls,
+{$ENDIF}
+  Db, uFIBEditorForm, Classes;
 
 type
-  TFrame=TFIBEditorCustomFrame;// Fake for D5
+  TFrame = TFIBEditorCustomFrame; // Fake for D5
+
   TfAutoUpdateOptionForm = class(TFrame)
     GroupBox1: TGroupBox;
     AllowChangeC: TCheckBox;
@@ -61,127 +64,120 @@ type
     procedure ApplyToDataSet;
   end;
 
-
-
 implementation
 
-uses TypInfo,pFIBEditorsConsts, RTTIRoutines, RegFIBPlusEditors,
-  pFIBInterfaces
-     ,Variants
-  ;
-
+uses
+  TypInfo, pFIBEditorsConsts, RTTIRoutines, RegFIBPlusEditors,
+  pFIBInterfaces, Variants;
 
 {$R *.dfm}
-
 
 procedure TfAutoUpdateOptionForm.AutoGenCClick(Sender: TObject);
 begin
   ModFieldsC.Enabled := AutoGenC.Checked;
-  if not ModFieldsC.Enabled then ModFieldsC.Checked := False;
+  if not ModFieldsC.Enabled then
+    ModFieldsC.Checked := False;
 end;
 
 procedure TfAutoUpdateOptionForm.PrepareControls;
 var
   Qry: TComponent;
   Trans: TComponent;
-  DB:TComponent;
-  iQry:IFIBQuery;
-  SQLText:string;
+  Db: TComponent;
+  iQry: IFIBQuery;
+  SQLText: string;
 
 begin
   PrimaryKeyL.Caption := FPAutoOptEditorPrimaryKey;
-  ModTableL.Caption   := FPAutoOptEditorModTable;
-  GroupBox1.Caption   := FPAutoOptEditorSQL;
-//  AllowChangeC.Caption:= FPAutoOptEditorAllowChange;
-  AutoGenC.Caption    := FPAutoOptEditorAutoGen;
-  ModFieldsC.Caption  := FPAutoOptEditorModFields;
-  GroupBox2.Caption   := FPAutoOptEditorAutoInc;
-  GenNameL.Caption    := FPAutoOptEditorGenName;
+  ModTableL.Caption := FPAutoOptEditorModTable;
+  GroupBox1.Caption := FPAutoOptEditorSQL;
+  // AllowChangeC.Caption:= FPAutoOptEditorAllowChange;
+  AutoGenC.Caption := FPAutoOptEditorAutoGen;
+  ModFieldsC.Caption := FPAutoOptEditorModFields;
+  GroupBox2.Caption := FPAutoOptEditorAutoInc;
+  GenNameL.Caption := FPAutoOptEditorGenName;
   WhenGetC.Items.Add(FPAutoOptEditorWhenGet1);
   WhenGetC.Items.Add(FPAutoOptEditorWhenGet2);
   WhenGetC.Items.Add(FPAutoOptEditorWhenGet3);
-  SQLText:=TStrings(GetObjectProp(FDataSet,'SelectSQL')).Text;
+  SQLText := TStrings(GetObjectProp(FDataSet, 'SelectSQL')).Text;
   FIBClassesExporter.iGetStringer.AllTables(SQLText, TableC.Items);
-{ TODO : maybe fill in the key field + add new options }
+  { TODO : maybe fill in the key field + add new options }
 
   begin
-    AllowChangeC.Checked := GetSubPropValue(FDataSet,'AutoUpdateOptions.CanChangeSQLs');
-    AutoGenC.Checked     := GetSubPropValue(FDataSet,'AutoUpdateOptions.AutoReWriteSqls');
+    AllowChangeC.Checked := GetSubPropValue(FDataSet, 'AutoUpdateOptions.CanChangeSQLs');
+    AutoGenC.Checked := GetSubPropValue(FDataSet, 'AutoUpdateOptions.AutoReWriteSqls');
 
-    ModFieldsC.Checked   := GetSubPropValue(FDataSet,'AutoUpdateOptions.UpdateOnlyModifiedFields');
+    ModFieldsC.Checked := GetSubPropValue(FDataSet, 'AutoUpdateOptions.UpdateOnlyModifiedFields');
 
-    KeyC.Text            := GetSubPropValue(FDataSet,'AutoUpdateOptions.KeyFields');
+    KeyC.Text := GetSubPropValue(FDataSet, 'AutoUpdateOptions.KeyFields');
 
-    TableC.Text          := GetSubPropValue(FDataSet,'AutoUpdateOptions.UpdateTableName');
-    GenC.Text            := GetSubPropValue(FDataSet,'AutoUpdateOptions.GeneratorName');
+    TableC.Text := GetSubPropValue(FDataSet, 'AutoUpdateOptions.UpdateTableName');
+    GenC.Text := GetSubPropValue(FDataSet, 'AutoUpdateOptions.GeneratorName');
 
-    WhenGetC.ItemIndex   := GetSubPropValue(FDataSet,'AutoUpdateOptions.WhenGetGenID');
-    edGenStep.Text       := IntToStr(GetSubPropValue(FDataSet,'AutoUpdateOptions.GeneratorStep'));
+    WhenGetC.ItemIndex := GetSubPropValue(FDataSet, 'AutoUpdateOptions.WhenGetGenID');
+    edGenStep.Text := IntToStr(GetSubPropValue(FDataSet, 'AutoUpdateOptions.GeneratorStep'));
 
   end;
 
-
-  DB:=TComponent(GetObjectProp(FDataSet,'DataBase'));
-  if DB= nil then exit;
-//  if FDataSet.Database = nil then exit;
+  Db := TComponent(GetObjectProp(FDataSet, 'DataBase'));
+  if Db = nil then
+    exit;
+  // if FDataSet.Database = nil then exit;
   GenC.Items.Clear;
 
- Qry := nil; Trans := nil;
- try
-  Qry := expQueryClass.Create(nil);
-  if not ObjSupports(Qry,IFIBQuery,iQry) then
-   Exit;
-  Trans:=expTransactionClass.Create(nil);
-  SetPropValue(Qry,'ParamCheck','False');
-  SetObjectProp(Qry,'Database',DB);
-  SetObjectProp(Qry,'Transaction',Trans);
-  SetObjectProp(Trans,'DefaultDatabase',DB);
-  AssignStringsToProp(Qry,'SQL',
-   'select RDB$GENERATOR_NAME '+
-                  'from RDB$GENERATORS '+
-   'where (RDB$SYSTEM_FLAG is NULL) or (RDB$SYSTEM_FLAG = 0)'+
-                  'order by RDB$GENERATOR_NAME'
-  );
+  Qry := nil;
+  Trans := nil;
   try
-   SetPropValue(Trans,'Active','True');
-   iQry.ExecQuery;
+    Qry := expQueryClass.Create(nil);
+    if not ObjSupports(Qry, IFIBQuery, iQry) then
+      exit;
+    Trans := expTransactionClass.Create(nil);
+    SetPropValue(Qry, 'ParamCheck', 'False');
+    SetObjectProp(Qry, 'Database', Db);
+    SetObjectProp(Qry, 'Transaction', Trans);
+    SetObjectProp(Trans, 'DefaultDatabase', Db);
+    AssignStringsToProp(Qry, 'SQL', 'select RDB$GENERATOR_NAME ' +
+      'from RDB$GENERATORS ' +
+      'where (RDB$SYSTEM_FLAG is NULL) or (RDB$SYSTEM_FLAG = 0)' +
+      'order by RDB$GENERATOR_NAME');
+    try
+      SetPropValue(Trans, 'Active', 'True');
+      iQry.ExecQuery;
 
-     while not iQry.IEof do
-     begin
-       GenC.Items.Add(Trim(VarToStr(iQry.FieldValue('RDB$GENERATOR_NAME',False))));
-       iQry.iNext;
-     end;
-   iQry.Close;
+      while not iQry.IEof do
+      begin
+        GenC.Items.Add(Trim(VarToStr(iQry.FieldValue('RDB$GENERATOR_NAME', False))));
+        iQry.iNext;
+      end;
+      iQry.Close;
+    finally
+      SetPropValue(Trans, 'Active', 'False');
+    end;
+
   finally
-   SetPropValue(Trans,'Active','False');
-  end;
-
- finally
-    iQry:=nil;
+    iQry := nil;
     Qry.Free;
     Trans.Free;
- end
+  end
 end;
 
-procedure TfAutoUpdateOptionForm.edGenStepKeyPress(Sender: TObject;
-  var Key: Char);
+procedure TfAutoUpdateOptionForm.edGenStepKeyPress(Sender: TObject; var Key: Char);
 begin
- if not  (Key in ['0'..'9',Char(VK_DELETE),Char(VK_BACK)]) then Abort;
+  if not(Key in ['0' .. '9', Char(VK_DELETE), Char(VK_BACK)]) then
+    Abort;
 end;
 
 procedure TfAutoUpdateOptionForm.ApplyToDataSet;
 begin
- SetValueProperty(FDataSet,'AutoUpdateOptions.CanChangeSQLs',AllowChangeC.Checked);
- SetValueProperty(FDataSet,'AutoUpdateOptions.AutoReWriteSqls',AutoGenC.Checked);
- SetValueProperty(FDataSet,'AutoUpdateOptions.UpdateOnlyModifiedFields',ModFieldsC.Checked);
- SetValueProperty(FDataSet,'AutoUpdateOptions.KeyFields',KeyC.Text);
- SetValueProperty(FDataSet,'AutoUpdateOptions.UpdateTableName',TableC.Text);
- SetValueProperty(FDataSet,'AutoUpdateOptions.GeneratorName',GenC.Text);
- SetValueProperty(FDataSet,'AutoUpdateOptions.WhenGetGenID',WhenGetC.ItemIndex);
- if edGenStep.Text<>'' then
-  SetValueProperty(FDataSet,'AutoUpdateOptions.GeneratorStep',StrToInt(edGenStep.Text));
-
-
+  SetValueProperty(FDataSet, 'AutoUpdateOptions.CanChangeSQLs', AllowChangeC.Checked);
+  SetValueProperty(FDataSet, 'AutoUpdateOptions.AutoReWriteSqls', AutoGenC.Checked);
+  SetValueProperty(FDataSet, 'AutoUpdateOptions.UpdateOnlyModifiedFields', ModFieldsC.Checked);
+  SetValueProperty(FDataSet, 'AutoUpdateOptions.KeyFields', KeyC.Text);
+  SetValueProperty(FDataSet, 'AutoUpdateOptions.UpdateTableName', TableC.Text);
+  SetValueProperty(FDataSet, 'AutoUpdateOptions.GeneratorName', GenC.Text);
+  SetValueProperty(FDataSet, 'AutoUpdateOptions.WhenGetGenID', WhenGetC.ItemIndex);
+  if edGenStep.Text <> '' then
+    SetValueProperty(FDataSet, 'AutoUpdateOptions.GeneratorStep', StrToInt(edGenStep.Text));
 
 end;
 

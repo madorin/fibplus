@@ -42,11 +42,11 @@ type
     Y: Longint;
   end;
 
-  {$IFDEF D_XE5}
+{$IFDEF D_XE5}
 
   TFastStringStream = TStringStream;
 
-  {$ELSE}
+{$ELSE}
 
   TFastStringStream = class(TStream)
   private
@@ -71,7 +71,7 @@ type
     procedure WriteString(const AString: string);
     property DataString: string read GetDataString;
   end;
-  {$ENDIF}
+{$ENDIF}
 
 type
   TCharSet = set of AnsiChar;
@@ -127,15 +127,14 @@ procedure DoUtf8Decode(const S: variant; var ws: Widestring); overload;
 function EquelStrings(const S, S1: string; CaseSensitive: Boolean): Boolean;
 
 function iifStr(Condition: Boolean; const Str1, Str2: string): string;
-function iifVariant(Condition: Boolean; const Var1, Var2: variant): Variant;
+function iifVariant(Condition: Boolean; const Var1, Var2: variant): variant;
 function StrOnMask(const StrIn, MaskIn, MaskOut: string): string;
 function StrIsInteger(const Str: string): Boolean;
 
 function FormatIdentifierValue(Dialect: Integer; const Value: string): string; {$IFDEF D2007+} inline; {$ENDIF}
 function FormatIdentifier(Dialect: Integer; const Value: string): string; {$IFDEF D2007+} inline; {$ENDIF}
 function NormalizeName(Dialect: Integer; const Name: string): string; {$IFDEF D2007+} inline; {$ENDIF}
-function EasyFormatIdentifier(Dialect: Integer; const Value: string; DoEasy: Boolean): string; {$IFDEF D2007+} inline;
-{$ENDIF}
+function EasyFormatIdentifier(Dialect: Integer; const Value: string; DoEasy: Boolean): string; {$IFDEF D2007+} inline; {$ENDIF}
 function EquelNames(CI: Boolean; const Value, Value1: String): Boolean; {$IFDEF D2007+} inline; {$ENDIF}
 function NeedQuote(const Name: string): Boolean;
 function EasyNeedQuote(const Name: string): Boolean;
@@ -145,8 +144,7 @@ function PosCh1(aCh: Char; const S: string; StartPos: Integer): Integer; overloa
 {$IFDEF   D2009+}
 function PosCh1(aCh: AnsiChar; const S: AnsiString; StartPos: Integer): Integer; overload;
 {$ENDIF}
-function PosCI(const Substr, Str: string): Integer; {$IFDEF D2007+} inline;
-{$ENDIF}
+function PosCI(const Substr, Str: string): Integer; {$IFDEF D2007+} inline; {$ENDIF}
 function PosExt(const Substr, Str: string; BegSub, EndSub: TCharSet): Integer; {$IFDEF D2009+} inline; {$ENDIF}
 function PosExtCI(const Substr, Str: string; BegSub, EndSub: TCharSet; AnsiUpper: Boolean = True): Integer;
 
@@ -156,8 +154,7 @@ function PosInRight(const Substr, Str: string; BeginPos: Integer): Integer;
 
 function PosInSubstrCI(const SearchStr, Str: string; BeginPos, EndPos: Integer): Integer;
 
-function PosInSubstrExt(const SearchStr: string; Str: string; BeginPos, EndPos: Integer;
-  BegSub, EndSub: TCharSet): Integer;
+function PosInSubstrExt(const SearchStr: string; Str: string; BeginPos, EndPos: Integer; BegSub, EndSub: TCharSet): Integer;
 
 function PosInSubstrCIExt(const SearchStr, Str: string; BeginPos, EndPos: Integer; BegSub, EndSub: TCharSet): Integer;
 
@@ -209,7 +206,8 @@ procedure SLDifference(ASL, BSL: TStringList; ResultSL: TStrings);
 function EmptyStrings(SL: TStrings): Boolean;
 procedure DeleteEmptyStr(Src: TStrings);
 function NonAnsiSortCompareStrings(SL: TStringList; Index1, Index2: Integer): Integer;
-function FindInDiapazon(SL: TStringList; const S: String; const StartIndex, EndIndex: Integer; AnsiCompare: Boolean;
+function FindInDiapazon(SL: TStringList; const S: String;
+  const StartIndex, EndIndex: Integer; AnsiCompare: Boolean;
   var Index: Integer): Boolean;
 function NonAnsiIndexOf(SL: TStringList; const S: string): Integer; // Non Ansi
 
@@ -244,9 +242,8 @@ function CharInSet(C: AnsiChar; const CharSet: TSysCharSet): Boolean;
 
 implementation
 
-uses SysConst
-    , Variants
-    ;
+uses
+  SysConst, Variants;
 
 {$IFNDEF D2009+}
 
@@ -378,65 +375,73 @@ end;
 
 type
   TGUIDBytes = record
-    F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, FA, FB, FC, FD, FE, FF: byte;
+    F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, FA, FB, FC, FD, FE, FF: Byte;
   end;
 
-  {$R+}
+{$R+}
 
 const
 
-  Int2HexHash: Array [0 .. 255] of Word = ($3030, $3130, $3230, $3330, $3430, $3530, $3630, $3730, $3830, $3930, $4130,
-    $4230, $4330, $4430, $4530, $4630, $3031, $3131, $3231, $3331, $3431, $3531, $3631, $3731, $3831, $3931, $4131,
-    $4231, $4331, $4431, $4531, $4631, $3032, $3132, $3232, $3332, $3432, $3532, $3632, $3732, $3832, $3932, $4132,
-    $4232, $4332, $4432, $4532, $4632, $3033, $3133, $3233, $3333, $3433, $3533, $3633, $3733, $3833, $3933, $4133,
-    $4233, $4333, $4433, $4533, $4633, $3034, $3134, $3234, $3334, $3434, $3534, $3634, $3734, $3834, $3934, $4134,
-    $4234, $4334, $4434, $4534, $4634, $3035, $3135, $3235, $3335, $3435, $3535, $3635, $3735, $3835, $3935, $4135,
-    $4235, $4335, $4435, $4535, $4635, $3036, $3136, $3236, $3336, $3436, $3536, $3636, $3736, $3836, $3936, $4136,
-    $4236, $4336, $4436, $4536, $4636, $3037, $3137, $3237, $3337, $3437, $3537, $3637, $3737, $3837, $3937, $4137,
-    $4237, $4337, $4437, $4537, $4637, $3038, $3138, $3238, $3338, $3438, $3538, $3638, $3738, $3838, $3938, $4138,
-    $4238, $4338, $4438, $4538, $4638, $3039, $3139, $3239, $3339, $3439, $3539, $3639, $3739, $3839, $3939, $4139,
-    $4239, $4339, $4439, $4539, $4639, $3041, $3141, $3241, $3341, $3441, $3541, $3641, $3741, $3841, $3941, $4141,
-    $4241, $4341, $4441, $4541, $4641, $3042, $3142, $3242, $3342, $3442, $3542, $3642, $3742, $3842, $3942, $4142,
-    $4242, $4342, $4442, $4542, $4642, $3043, $3143, $3243, $3343, $3443, $3543, $3643, $3743, $3843, $3943, $4143,
-    $4243, $4343, $4443, $4543, $4643, $3044, $3144, $3244, $3344, $3444, $3544, $3644, $3744, $3844, $3944, $4144,
-    $4244, $4344, $4444, $4544, $4644, $3045, $3145, $3245, $3345, $3445, $3545, $3645, $3745, $3845, $3945, $4145,
-    $4245, $4345, $4445, $4545, $4645, $3046, $3146, $3246, $3346, $3446, $3546, $3646, $3746, $3846, $3946, $4146,
-    $4246, $4346, $4446, $4546, $4646);
+  Int2HexHash: Array [0 .. 255] of Word = ($3030, $3130, $3230, $3330, $3430,
+    $3530, $3630, $3730, $3830, $3930, $4130, $4230, $4330, $4430, $4530, $4630,
+    $3031, $3131, $3231, $3331, $3431, $3531, $3631, $3731, $3831, $3931, $4131,
+    $4231, $4331, $4431, $4531, $4631, $3032, $3132, $3232, $3332, $3432, $3532,
+    $3632, $3732, $3832, $3932, $4132, $4232, $4332, $4432, $4532, $4632, $3033,
+    $3133, $3233, $3333, $3433, $3533, $3633, $3733, $3833, $3933, $4133, $4233,
+    $4333, $4433, $4533, $4633, $3034, $3134, $3234, $3334, $3434, $3534, $3634,
+    $3734, $3834, $3934, $4134, $4234, $4334, $4434, $4534, $4634, $3035, $3135,
+    $3235, $3335, $3435, $3535, $3635, $3735, $3835, $3935, $4135, $4235, $4335,
+    $4435, $4535, $4635, $3036, $3136, $3236, $3336, $3436, $3536, $3636, $3736,
+    $3836, $3936, $4136, $4236, $4336, $4436, $4536, $4636, $3037, $3137, $3237,
+    $3337, $3437, $3537, $3637, $3737, $3837, $3937, $4137, $4237, $4337, $4437,
+    $4537, $4637, $3038, $3138, $3238, $3338, $3438, $3538, $3638, $3738, $3838,
+    $3938, $4138, $4238, $4338, $4438, $4538, $4638, $3039, $3139, $3239, $3339,
+    $3439, $3539, $3639, $3739, $3839, $3939, $4139, $4239, $4339, $4439, $4539,
+    $4639, $3041, $3141, $3241, $3341, $3441, $3541, $3641, $3741, $3841, $3941,
+    $4141, $4241, $4341, $4441, $4541, $4641, $3042, $3142, $3242, $3342, $3442,
+    $3542, $3642, $3742, $3842, $3942, $4142, $4242, $4342, $4442, $4542, $4642,
+    $3043, $3143, $3243, $3343, $3443, $3543, $3643, $3743, $3843, $3943, $4143,
+    $4243, $4343, $4443, $4543, $4643, $3044, $3144, $3244, $3344, $3444, $3544,
+    $3644, $3744, $3844, $3944, $4144, $4244, $4344, $4444, $4544, $4644, $3045,
+    $3145, $3245, $3345, $3445, $3545, $3645, $3745, $3845, $3945, $4145, $4245,
+    $4345, $4445, $4545, $4645, $3046, $3146, $3246, $3346, $3446, $3546, $3646,
+    $3746, $3846, $3946, $4146, $4246, $4346, $4446, $4546, $4646);
 
 function StringAsGUID(const AStr: AnsiString): TGUID;
 const
-  Hex2IntHash: Array [0 .. 70] of byte = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0,
-    10, 11, 12, 13, 14, 15);
+  Hex2IntHash: Array [0 .. 70] of Byte = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0,
+    0, 0, 10, 11, 12, 13, 14, 15);
 
 begin
   { Thanks to Anton Tril }
-  if (Length(AStr) <> 38) or (AStr[1] <> '{') or (AStr[38] <> '}') or (AStr[10] <> '-') or (AStr[15] <> '-') or
-    (AStr[20] <> '-') or (AStr[25] <> '-') then
+  if (Length(AStr) <> 38) or (AStr[1] <> '{') or (AStr[38] <> '}') or
+    (AStr[10] <> '-') or (AStr[15] <> '-') or (AStr[20] <> '-') or (AStr[25] <> '-') then
   begin
     raise EConvertError.CreateResFmt(PResStringRec(@SInvalidGUID), [AStr]);
   end;
   try
-    TGUIDBytes(Result).F3 := Hex2IntHash[byte(AStr[2])] shl 4 or Hex2IntHash[byte(AStr[3])];
-    TGUIDBytes(Result).F2 := Hex2IntHash[byte(AStr[4])] shl 4 or Hex2IntHash[byte(AStr[5])];
-    TGUIDBytes(Result).F1 := Hex2IntHash[byte(AStr[6])] shl 4 or Hex2IntHash[byte(AStr[7])];
-    TGUIDBytes(Result).F0 := Hex2IntHash[byte(AStr[8])] shl 4 or Hex2IntHash[byte(AStr[9])];
+    TGUIDBytes(Result).F3 := Hex2IntHash[Byte(AStr[2])] shl 4 or Hex2IntHash[Byte(AStr[3])];
+    TGUIDBytes(Result).F2 := Hex2IntHash[Byte(AStr[4])] shl 4 or Hex2IntHash[Byte(AStr[5])];
+    TGUIDBytes(Result).F1 := Hex2IntHash[Byte(AStr[6])] shl 4 or Hex2IntHash[Byte(AStr[7])];
+    TGUIDBytes(Result).F0 := Hex2IntHash[Byte(AStr[8])] shl 4 or Hex2IntHash[Byte(AStr[9])];
     // -
-    TGUIDBytes(Result).F5 := Hex2IntHash[byte(AStr[11])] shl 4 or Hex2IntHash[byte(AStr[12])];
-    TGUIDBytes(Result).F4 := Hex2IntHash[byte(AStr[13])] shl 4 or Hex2IntHash[byte(AStr[14])];
+    TGUIDBytes(Result).F5 := Hex2IntHash[Byte(AStr[11])] shl 4 or Hex2IntHash[Byte(AStr[12])];
+    TGUIDBytes(Result).F4 := Hex2IntHash[Byte(AStr[13])] shl 4 or Hex2IntHash[Byte(AStr[14])];
     // -
-    TGUIDBytes(Result).F7 := Hex2IntHash[byte(AStr[16])] shl 4 or Hex2IntHash[byte(AStr[17])];
-    TGUIDBytes(Result).F6 := Hex2IntHash[byte(AStr[18])] shl 4 or Hex2IntHash[byte(AStr[19])];
+    TGUIDBytes(Result).F7 := Hex2IntHash[Byte(AStr[16])] shl 4 or Hex2IntHash[Byte(AStr[17])];
+    TGUIDBytes(Result).F6 := Hex2IntHash[Byte(AStr[18])] shl 4 or Hex2IntHash[Byte(AStr[19])];
     // -
-    TGUIDBytes(Result).F8 := Hex2IntHash[byte(AStr[21])] shl 4 or Hex2IntHash[byte(AStr[22])];
-    TGUIDBytes(Result).F9 := Hex2IntHash[byte(AStr[23])] shl 4 or Hex2IntHash[byte(AStr[24])];
+    TGUIDBytes(Result).F8 := Hex2IntHash[Byte(AStr[21])] shl 4 or Hex2IntHash[Byte(AStr[22])];
+    TGUIDBytes(Result).F9 := Hex2IntHash[Byte(AStr[23])] shl 4 or Hex2IntHash[Byte(AStr[24])];
     // -
-    TGUIDBytes(Result).FA := Hex2IntHash[byte(AStr[26])] shl 4 or Hex2IntHash[byte(AStr[27])];
-    TGUIDBytes(Result).FB := Hex2IntHash[byte(AStr[28])] shl 4 or Hex2IntHash[byte(AStr[29])];
-    TGUIDBytes(Result).FC := Hex2IntHash[byte(AStr[30])] shl 4 or Hex2IntHash[byte(AStr[31])];
-    TGUIDBytes(Result).FD := Hex2IntHash[byte(AStr[32])] shl 4 or Hex2IntHash[byte(AStr[33])];
-    TGUIDBytes(Result).FE := Hex2IntHash[byte(AStr[34])] shl 4 or Hex2IntHash[byte(AStr[35])];
-    TGUIDBytes(Result).FF := Hex2IntHash[byte(AStr[36])] shl 4 or Hex2IntHash[byte(AStr[37])];
+    TGUIDBytes(Result).FA := Hex2IntHash[Byte(AStr[26])] shl 4 or Hex2IntHash[Byte(AStr[27])];
+    TGUIDBytes(Result).FB := Hex2IntHash[Byte(AStr[28])] shl 4 or Hex2IntHash[Byte(AStr[29])];
+    TGUIDBytes(Result).FC := Hex2IntHash[Byte(AStr[30])] shl 4 or Hex2IntHash[Byte(AStr[31])];
+    TGUIDBytes(Result).FD := Hex2IntHash[Byte(AStr[32])] shl 4 or Hex2IntHash[Byte(AStr[33])];
+    TGUIDBytes(Result).FE := Hex2IntHash[Byte(AStr[34])] shl 4 or Hex2IntHash[Byte(AStr[35])];
+    TGUIDBytes(Result).FF := Hex2IntHash[Byte(AStr[36])] shl 4 or Hex2IntHash[Byte(AStr[37])];
   except
     raise EConvertError.CreateResFmt(PResStringRec(@SInvalidGUID), [AStr]);
   end;
@@ -501,27 +506,27 @@ end;
 
 function IsOldParamName(const ParamName: string): Boolean;
 begin
-  Result := (Length(ParamName) > 4) and CharInSet(ParamName[1], ['O', 'o']) and (ParamName[4] = '_') and
-    CharInSet(ParamName[2], ['L', 'l']) and CharInSet(ParamName[3], ['D', 'd'])
+  Result := (Length(ParamName) > 4) and CharInSet(ParamName[1], ['O', 'o']) and
+    (ParamName[4] = '_') and CharInSet(ParamName[2], ['L', 'l']) and CharInSet(ParamName[3], ['D', 'd'])
 end;
 
 function IsNewParamName(const ParamName: string): Boolean;
 begin
-  Result := (Length(ParamName) > 4) and CharInSet(ParamName[1], ['N', 'n']) and (ParamName[4] = '_') and
-    CharInSet(ParamName[2], ['E', 'e']) and CharInSet(ParamName[3], ['W', 'w'])
+  Result := (Length(ParamName) > 4) and CharInSet(ParamName[1], ['N', 'n']) and
+    (ParamName[4] = '_') and CharInSet(ParamName[2], ['E', 'e']) and CharInSet(ParamName[3], ['W', 'w'])
 end;
 
 function IsMasParamName(const ParamName: string): Boolean;
 begin
-  Result := (Length(ParamName) > 4) and CharInSet(ParamName[1], ['M', 'm']) and (ParamName[4] = '_') and
-    CharInSet(ParamName[2], ['A', 'a']) and CharInSet(ParamName[3], ['S', 's'])
+  Result := (Length(ParamName) > 4) and CharInSet(ParamName[1], ['M', 'm']) and
+    (ParamName[4] = '_') and CharInSet(ParamName[2], ['A', 'a']) and CharInSet(ParamName[3], ['S', 's'])
 end;
 
 function StrToDateFmt(const ADate, Fmt: string): TDateTime;
 var
   OldShortDateFormat: string;
 begin
-  {$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
   begin
     OldShortDateFormat := {$IFDEF D_XE3}FormatSettings.{$ENDIF}ShortDateFormat;
     try
@@ -551,7 +556,6 @@ begin
   else
     Result := Copy(Str, P + 1, MaxInt)
 end;
-
 
 function IsBeginPartStr(const PartStr, TargetStr: Widestring): Boolean;
 var
@@ -601,11 +605,11 @@ end;
 
 function IsBeginPartStrVarA(const PartStr: variant; const TargetStr: AnsiString): Boolean;
 begin
-  {$IFDEF D2009+}
+{$IFDEF D2009+}
   Result := IsBeginPartStrWA(PartStr, TargetStr)
-  {$ELSE}
+{$ELSE}
   Result := IsBeginPartStr(PartStr, TargetStr)
-  {$ENDIF}
+{$ENDIF}
 end;
 
 function IsBeginPartStr(const PartStr, TargetStr: AnsiString): Boolean;
@@ -686,7 +690,7 @@ begin
     Delete(Str, 1, Left - 1);
 end;
 
-function VarTrimRight(const Str: variant): Variant;
+function VarTrimRight(const Str: variant): variant;
 var
   i: Integer;
   ws: Widestring;
@@ -1114,8 +1118,7 @@ begin
   until False;
 end;
 
-function PosInSubstrExt(const SearchStr: string; Str: string; BeginPos, EndPos: Integer;
-  BegSub, EndSub: TCharSet): Integer;
+function PosInSubstrExt(const SearchStr: string; Str: string; BeginPos, EndPos: Integer; BegSub, EndSub: TCharSet): Integer;
 var
   P, L, l1: Integer;
 begin
@@ -1209,10 +1212,10 @@ begin
     Result := False;
   if Result then
     D1 := ReplaceStr(D, '-',
-      {$IFDEF D_XE3}FormatSettings.{$ENDIF}DateSeparator);
+{$IFDEF D_XE3}FormatSettings.{$ENDIF}DateSeparator);
 end;
 
-function ToClientDateFmt(D: string; caseFmt: byte): string;
+function ToClientDateFmt(D: string; caseFmt: Byte): string;
 var
   Client_dateseparator, Client_timeseparator: Char;
   Client_LongDateFormat, Client_shortdateformat, Client_ShortTimeFormat: string;
@@ -1225,7 +1228,7 @@ begin
     Result := '';
     Exit;
   end;
-  {$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
   begin
     Client_dateseparator := DateSeparator;
     Client_shortdateformat := ShortDateFormat;
@@ -1236,7 +1239,7 @@ begin
 
   IsKeyWord := False;
   Result := '';
-  {$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
     try
       if caseFmt < 2 then
         if Pos('.', D) <> 0 then
@@ -1268,23 +1271,17 @@ begin
       TimeSeparator := ':';
       ShortTimeFormat := 'h:m:s';
       case caseFmt of
-        0:
-          vD := StrToDateTime(D);
-        1:
-          vD := StrToDate(D);
-        2:
-          vD := StrToTime(D);
+        0: vD := StrToDateTime(D);
+        1: vD := StrToDate(D);
+        2: vD := StrToTime(D);
       else
         vD := StrToDateTime(D);
       end;
       if not IsKeyWord then
         case caseFmt of
-          0:
-            Result := DateTimeToStr(vD);
-          1:
-            Result := DateToStr(vD);
-          2:
-            Result := TimeToStr(vD);
+          0: Result := DateTimeToStr(vD);
+          1: Result := DateToStr(vD);
+          2: Result := TimeToStr(vD);
         end
 
     finally
@@ -1446,15 +1443,15 @@ procedure DoAnsiUpperCase(var S: AnsiString);
 {$IFDEF WINDOWS}
 var
   Len: Integer;
-  {$ENDIF}
+{$ENDIF}
 begin
-  {$IFDEF WINDOWS}
+{$IFDEF WINDOWS}
   Len := Length(S);
   if Len > 0 then
     CharUpperBuffA(PAnsiChar(S), Len);
-  {$ELSE}
+{$ELSE}
   S := AnsiUpperCase(S)
-  {$ENDIF}
+{$ENDIF}
 end;
 
 {$IFDEF D2009+}
@@ -1469,15 +1466,15 @@ procedure DoWideUpperCase(var S: Widestring);
 {$IFDEF WINDOWS}
 var
   Len: Integer;
-  {$ENDIF}
+{$ENDIF}
 begin
-  {$IFDEF WINDOWS}
+{$IFDEF WINDOWS}
   Len := Length(S);
   if Len > 0 then
     CharUpperBuffW(Pointer(S), Len);
-  {$ELSE}
+{$ELSE}
   S := WideUpperCase(S)
-  {$ENDIF}
+{$ENDIF}
 end;
 
 {$WARNINGS OFF}
@@ -1499,20 +1496,20 @@ end;
 
 procedure DoUtf8Decode(const S: AnsiString; var ws: Widestring);
 begin
-  {$IFDEF D2009+}
+{$IFDEF D2009+}
   ws := UTF8ToString(S)
-  {$ELSE}
+{$ELSE}
   ws := UTF8Decode(S)
-  {$ENDIF}
+{$ENDIF}
 end;
 
 procedure DoUtf8Decode(const S: variant; var ws: Widestring);
 begin
-  {$IFDEF D2009+}
+{$IFDEF D2009+}
   ws := UTF8ToString(S)
-  {$ELSE}
+{$ELSE}
   ws := UTF8Decode(S)
-  {$ENDIF}
+{$ENDIF}
 end;
 
 {$WARNINGS ON}
@@ -1540,7 +1537,7 @@ begin
   while EndSourse <> Source do
   begin
     if (Source^ >= 'a') and (Source^ <= 'z') then
-      Dest^ := Char(byte(Source^) - 32)
+      Dest^ := Char(Byte(Source^) - 32)
     else
       Dest^ := Source^;
     Inc(Source);
@@ -1570,7 +1567,7 @@ begin
   begin
     if Source^ > Dest^ then
     begin
-      if (byte(Source^) - 32) <> byte(Dest^) then
+      if (Byte(Source^) - 32) <> Byte(Dest^) then
       begin
         Result := False;
         Exit;
@@ -1578,7 +1575,7 @@ begin
     end
     else if Source^ < Dest^ then
     begin
-      if (byte(Source^) + 32) <> byte(Dest^) then
+      if (Byte(Source^) + 32) <> Byte(Dest^) then
       begin
         Result := False;
         Exit;
@@ -1771,8 +1768,8 @@ function WildStringCompare(FirstString, SecondString: string): Boolean;
     begin
       if (l1 > 0) and (l2 > 0) then
       begin
-        Result := (SLine[1] <> '*') and (SLine[1] <> '?') and (FLine[1] <> SLine[1]) and (FLine[1] <> '*') and
-          (FLine[1] <> '?');
+        Result := (SLine[1] <> '*') and (SLine[1] <> '?') and
+          (FLine[1] <> SLine[1]) and (FLine[1] <> '*') and (FLine[1] <> '?');
 
       end
       else
@@ -1836,8 +1833,8 @@ function WildStringCompare(FirstString, SecondString: string): Boolean;
             Exit
         end;
 
-    if (SLine[1] <> '*') and ((FLine[1] <> '*')) and ((FLine[1] = SLine[1]) or ((SLine[1] = '?') or ((FLine[1] = '?'))))
-    then
+    if (SLine[1] <> '*') and ((FLine[1] <> '*')) and
+      ((FLine[1] = SLine[1]) or ((SLine[1] = '?') or ((FLine[1] = '?')))) then
       Result := WildCompare(FastCopy(FLine, 2, l1 - 1), FastCopy(SLine, 2, l2 - 1), OnlyOne);
   end;
 
@@ -2013,8 +2010,7 @@ begin
           LastPos := i;
           Break;
         end;
-      ' ', #9, #13, #10:
-        ;
+      ' ', #9, #13, #10: ;
     else
       Exit;
     end;
@@ -2026,8 +2022,7 @@ begin
           Result := FastCopy(Result, i + 1, LastPos - i - 1);
           Exit;
         end;
-      ' ', #9, #13, #10:
-        ;
+      ' ', #9, #13, #10: ;
     else
       Exit;
     end;
@@ -2075,11 +2070,11 @@ end;
 type
   THackStringList = class(TStrings)
   private
-    {$IFNDEF D_XE2}
+{$IFNDEF D_XE2}
     FList: PStringItemList;
-    {$ELSE}
+{$ELSE}
     FList: TStringItemList;
-    {$ENDIF}
+{$ENDIF}
     FCount: Integer;
   end;
 
@@ -2089,16 +2084,17 @@ var
 begin
   C := THackStringList(SL).FCount - 1;
   for Result := 0 to C do
-    {$IFNDEF D_XE2}
+{$IFNDEF D_XE2}
     if THackStringList(SL).FList^[Result].FString = S then
-    {$ELSE}
+{$ELSE}
     if THackStringList(SL).FList[Result].FString = S then
-      {$ENDIF}
+{$ENDIF}
       Exit;
   Result := -1;
 end;
 
-function FindInDiapazon(SL: TStringList; const S: string; const StartIndex, EndIndex: Integer; AnsiCompare: Boolean;
+function FindInDiapazon(SL: TStringList; const S: string;
+  const StartIndex, EndIndex: Integer; AnsiCompare: Boolean;
   var Index: Integer): Boolean;
 var
   L, H, i, C: Integer;
@@ -2200,8 +2196,7 @@ var
 const
   NonQuotedChars = ['_', '$', '%', '#'];
 
-function InternalNeedQuote(const Name: string; Easy: Boolean): Boolean;
-{$IFDEF D2007+} inline; {$ENDIF}
+function InternalNeedQuote(const Name: string; Easy: Boolean): Boolean; {$IFDEF D2007+} inline; {$ENDIF}
 var
   i, L: Integer;
   ch1, Ch2: Char;
@@ -2290,51 +2285,71 @@ end;
 
 const
   InternalFunctionCount = 40;
-  DefKeywordsCount = 307;
-  DefTypesCount = 21;
+  DefKeywordsCount      = 307;
+  DefTypesCount         = 21;
 
   // Sorted lists; include Firebird reserved words up to Firebird 5.0 plus legacy InterBase/ISQL keywords
-  InternalFunctions: array [0 .. InternalFunctionCount - 1] of AnsiString = ('ACOSH', 'ASINH', 'ATANH', 'AVG',
-    'BIT_LENGTH', 'CAST', 'CORR', 'COSH', 'COUNT', 'COVAR_POP', 'COVAR_SAMP', 'GEN_ID', 'IIF', 'LOWER', 'MAX', 'MIN',
-    'RDB$ERROR', 'RDB$GET_CONTEXT', 'RDB$GET_TRANSACTION_CN', 'RDB$ROLE_IN_USE', 'RDB$SET_CONTEXT',
-    'RDB$SYSTEM_PRIVILEGE', 'REGR_AVGX', 'REGR_AVGY', 'REGR_COUNT', 'REGR_INTERCEPT', 'REGR_R2', 'REGR_SLOPE',
-    'REGR_SXX', 'REGR_SXY', 'REGR_SYY', 'SINH', 'STDDEV_POP', 'STDDEV_SAMP', 'SUBSTRING', 'SUM', 'TANH', 'UPPER',
-    'VAR_POP', 'VAR_SAMP');
-  DefKeywords: array [0 .. DefKeywordsCount - 1] of AnsiString = ('ACTIVE', 'ADD', 'ADMIN', 'AFTER', 'ALL', 'ALTER',
-    'AND', 'ANY', 'AS', 'ASC', 'ASCENDING', 'AT', 'AUTO', 'AUTODDL', 'BASED', 'BASENAME', 'BASE_NAME', 'BEFORE',
-    'BEGIN', 'BETWEEN', 'BLOBEDIT', 'BOTH', 'BUFFER', 'BY', 'CACHE', 'CASE', 'CHARACTER_LENGTH', 'CHAR_LENGTH', 'CHECK',
-    'CHECK_POINT_LEN', 'CHECK_POINT_LENGTH', 'CLOSE', 'COLLATE', 'COLLATION', 'COLUMN', 'COMMENT', 'COMMIT', 'COMMITED',
-    'COMPILETIME', 'COMPUTED', 'CONDITIONAL', 'CONNECT', 'CONSTRAINT', 'CONTAINING', 'CONTINUE', 'CREATE', 'CROSS',
-    'CURRENT', 'CURRENT_CONNECTION', 'CURRENT_DATE', 'CURRENT_ROLE', 'CURRENT_TIME', 'CURRENT_TIMESTAMP',
-    'CURRENT_TRANSACTION', 'CURRENT_USER', 'CURSOR', 'DATABASE', 'DAY', 'DB_KEY', 'DEBUG', 'DEC', 'DECLARE', 'DEFAULT',
-    'DELETE', 'DELETING', 'DESC', 'DESCENDING', 'DESCRIBE', 'DESCRIPTOR', 'DETERMINISTIC', 'DISCONNECT', 'DISTINCT',
-    'DO', 'DOMAIN', 'DROP', 'ECHO', 'EDIT', 'ELSE', 'END', 'ENTRY_POINT', 'ESCAPE', 'EVENT', 'EXCEPTION', 'EXECUTE',
-    'EXISTS', 'EXIT', 'EXTERN', 'EXTERNAL', 'EXTRACT', 'FALSE', 'FETCH', 'FILE', 'FILTER', 'FIRST', 'FOR', 'FOREIGN',
-    'FOUND', 'FREE_IT', 'FROM', 'FULL', 'FUNCTION', 'GDSCODE', 'GENERATOR', 'GLOBAL', 'GOTO', 'GRANT', 'GROUP',
-    'GROUP_COMMIT_WAIT', 'GROUP_COMMIT_WAIT_TIME', 'HAVING', 'HELP', 'HOUR', 'IF', 'IMMEDIATE', 'IN', 'INACTIVE',
-    'INDEX', 'INDICATOR', 'INIT', 'INNER', 'INPUT', 'INPUT_TYPE', 'INSENSITIVE', 'INSERT', 'INSERTING', 'INT', 'INTO',
-    'IS', 'ISOLATION', 'ISQL', 'JOIN', 'KEY', 'LATERAL', 'LC_MESSAGES', 'LC_TYPE', 'LEADING', 'LEFT', 'LENGTH', 'LEV',
-    'LEVEL', 'LIKE', 'LIMIT', 'LOCAL', 'LOCALTIME', 'LOCALTIMESTAMP', 'LOGFILE', 'LOG_BUFFER_SIZE', 'LOG_BUF_SIZE',
-    'LONG', 'MANUAL', 'MAXIMUM', 'MAXIMUM_SEGMENT', 'MAX_SEGMENT', 'MERGE', 'MESSAGE', 'MINIMUM', 'MINUTE',
-    'MODULE_NAME', 'MONTH', 'NAMES', 'NATIONAL', 'NATURAL', 'NCHAR', 'NEW', 'NO', 'NOAUTO', 'NOT', 'NULL',
-    'NUM_LOG_BUFFERS', 'NUM_LOG_BUFFS', 'OCTET_LENGTH', 'OF', 'OFFSET', 'OLD', 'ON', 'ONLY', 'OPEN', 'OPTION', 'OR',
-    'ORDER', 'OUTER', 'OUTPUT', 'OUTPUT_TYPE', 'OVER', 'OVERFLOW', 'PAGE', 'PAGELENGTH', 'PAGES', 'PAGE_SIZE',
-    'PARAMETER', 'PASSWORD', 'PERCENT', 'PLAN', 'PLANONLY', 'POSITION', 'POST_EVENT', 'PRECISION', 'PREPARE', 'PRIMARY',
-    'PRIVILEGES', 'PROCEDURE', 'PROTECTED', 'PUBLIC', 'PUBLICATION', 'QUIT', 'RAW_PARTITIONS', 'RDB$DB_KEY',
-    'RDB$RECORD_VERSION', 'READ', 'REAL', 'RECORD_VERSION', 'RECREATE', 'RECURSIVE', 'REFERENCES', 'RELEASE', 'RESERV',
-    'RESERVING', 'RESETTING', 'RETAIN', 'RETURN', 'RETURNING_VALUES', 'RETURNS', 'REVOKE', 'RIGHT', 'ROLLBACK', 'ROW',
-    'ROWS', 'ROW_COUNT', 'RUNTIME', 'SAVEPOINT', 'SCHEMA', 'SCROLL', 'SECOND', 'SECONDS', 'SEGMENT', 'SELECT',
-    'SENSITIVE', 'SEQUENCE', 'SET', 'SHADOW', 'SHARED', 'SHELL', 'SHOW', 'SIMILAR', 'SINGULAR', 'SIZE', 'SKIP',
-    'SNAPSHOT', 'SOME', 'SORT', 'SQL', 'SQLCODE', 'SQLERROR', 'SQLSTATE', 'SQLWARNING', 'STABILITY', 'START',
-    'STARTING', 'STARTS', 'STATEMENT', 'STATIC', 'STATISTICS', 'SUB_TYPE', 'SUSPEND', 'TABLE', 'TERMINATOR', 'THEN',
-    'TIES', 'TIMEZONE_HOUR', 'TIMEZONE_MINUTE', 'TO', 'TRAILING', 'TRANSACTION', 'TRANSLATE', 'TRANSLATION', 'TRIGGER',
-    'TRIM', 'TRUE', 'TYPE', 'UNBOUNDED', 'UNCOMMITTED', 'UNION', 'UNIQUE', 'UNKNOWN', 'UPDATE', 'UPDATING', 'USER',
-    'USING', 'VALUE', 'VALUES', 'VARIABLE', 'VARYING', 'VERSION', 'VIEW', 'WAIT', 'WEEKDAY', 'WHEN', 'WHENEVER',
-    'WHERE', 'WHILE', 'WINDOW', 'WITH', 'WITHOUT', 'WORK', 'WRITE', 'YEAR', 'YEARDAY');
+  InternalFunctions: array [0 .. InternalFunctionCount - 1] of AnsiString =
+    ('ACOSH', 'ASINH', 'ATANH', 'AVG', 'BIT_LENGTH', 'CAST', 'CORR', 'COSH',
+    'COUNT', 'COVAR_POP', 'COVAR_SAMP', 'GEN_ID', 'IIF', 'LOWER', 'MAX', 'MIN',
+    'RDB$ERROR', 'RDB$GET_CONTEXT', 'RDB$GET_TRANSACTION_CN', 'RDB$ROLE_IN_USE',
+    'RDB$SET_CONTEXT', 'RDB$SYSTEM_PRIVILEGE', 'REGR_AVGX', 'REGR_AVGY',
+    'REGR_COUNT', 'REGR_INTERCEPT', 'REGR_R2', 'REGR_SLOPE', 'REGR_SXX',
+    'REGR_SXY', 'REGR_SYY', 'SINH', 'STDDEV_POP', 'STDDEV_SAMP', 'SUBSTRING',
+    'SUM', 'TANH', 'UPPER', 'VAR_POP', 'VAR_SAMP');
+  DefKeywords: array [0 .. DefKeywordsCount - 1] of AnsiString = ('ACTIVE',
+    'ADD', 'ADMIN', 'AFTER', 'ALL', 'ALTER', 'AND', 'ANY', 'AS', 'ASC',
+    'ASCENDING', 'AT', 'AUTO', 'AUTODDL', 'BASED', 'BASENAME', 'BASE_NAME',
+    'BEFORE', 'BEGIN', 'BETWEEN', 'BLOBEDIT', 'BOTH', 'BUFFER', 'BY', 'CACHE',
+    'CASE', 'CHARACTER_LENGTH', 'CHAR_LENGTH', 'CHECK', 'CHECK_POINT_LEN',
+    'CHECK_POINT_LENGTH', 'CLOSE', 'COLLATE', 'COLLATION', 'COLUMN', 'COMMENT',
+    'COMMIT', 'COMMITED', 'COMPILETIME', 'COMPUTED', 'CONDITIONAL', 'CONNECT',
+    'CONSTRAINT', 'CONTAINING', 'CONTINUE', 'CREATE', 'CROSS', 'CURRENT',
+    'CURRENT_CONNECTION', 'CURRENT_DATE', 'CURRENT_ROLE', 'CURRENT_TIME',
+    'CURRENT_TIMESTAMP', 'CURRENT_TRANSACTION', 'CURRENT_USER', 'CURSOR',
+    'DATABASE', 'DAY', 'DB_KEY', 'DEBUG', 'DEC', 'DECLARE', 'DEFAULT', 'DELETE',
+    'DELETING', 'DESC', 'DESCENDING', 'DESCRIBE', 'DESCRIPTOR', 'DETERMINISTIC',
+    'DISCONNECT', 'DISTINCT', 'DO', 'DOMAIN', 'DROP', 'ECHO', 'EDIT', 'ELSE',
+    'END', 'ENTRY_POINT', 'ESCAPE', 'EVENT', 'EXCEPTION', 'EXECUTE', 'EXISTS',
+    'EXIT', 'EXTERN', 'EXTERNAL', 'EXTRACT', 'FALSE', 'FETCH', 'FILE', 'FILTER',
+    'FIRST', 'FOR', 'FOREIGN', 'FOUND', 'FREE_IT', 'FROM', 'FULL', 'FUNCTION',
+    'GDSCODE', 'GENERATOR', 'GLOBAL', 'GOTO', 'GRANT', 'GROUP',
+    'GROUP_COMMIT_WAIT', 'GROUP_COMMIT_WAIT_TIME', 'HAVING', 'HELP', 'HOUR',
+    'IF', 'IMMEDIATE', 'IN', 'INACTIVE', 'INDEX', 'INDICATOR', 'INIT', 'INNER',
+    'INPUT', 'INPUT_TYPE', 'INSENSITIVE', 'INSERT', 'INSERTING', 'INT', 'INTO',
+    'IS', 'ISOLATION', 'ISQL', 'JOIN', 'KEY', 'LATERAL', 'LC_MESSAGES',
+    'LC_TYPE', 'LEADING', 'LEFT', 'LENGTH', 'LEV', 'LEVEL', 'LIKE', 'LIMIT',
+    'LOCAL', 'LOCALTIME', 'LOCALTIMESTAMP', 'LOGFILE', 'LOG_BUFFER_SIZE',
+    'LOG_BUF_SIZE', 'LONG', 'MANUAL', 'MAXIMUM', 'MAXIMUM_SEGMENT',
+    'MAX_SEGMENT', 'MERGE', 'MESSAGE', 'MINIMUM', 'MINUTE', 'MODULE_NAME',
+    'MONTH', 'NAMES', 'NATIONAL', 'NATURAL', 'NCHAR', 'NEW', 'NO', 'NOAUTO',
+    'NOT', 'NULL', 'NUM_LOG_BUFFERS', 'NUM_LOG_BUFFS', 'OCTET_LENGTH', 'OF',
+    'OFFSET', 'OLD', 'ON', 'ONLY', 'OPEN', 'OPTION', 'OR', 'ORDER', 'OUTER',
+    'OUTPUT', 'OUTPUT_TYPE', 'OVER', 'OVERFLOW', 'PAGE', 'PAGELENGTH', 'PAGES',
+    'PAGE_SIZE', 'PARAMETER', 'PASSWORD', 'PERCENT', 'PLAN', 'PLANONLY',
+    'POSITION', 'POST_EVENT', 'PRECISION', 'PREPARE', 'PRIMARY', 'PRIVILEGES',
+    'PROCEDURE', 'PROTECTED', 'PUBLIC', 'PUBLICATION', 'QUIT', 'RAW_PARTITIONS',
+    'RDB$DB_KEY', 'RDB$RECORD_VERSION', 'READ', 'REAL', 'RECORD_VERSION',
+    'RECREATE', 'RECURSIVE', 'REFERENCES', 'RELEASE', 'RESERV', 'RESERVING',
+    'RESETTING', 'RETAIN', 'RETURN', 'RETURNING_VALUES', 'RETURNS', 'REVOKE',
+    'RIGHT', 'ROLLBACK', 'ROW', 'ROWS', 'ROW_COUNT', 'RUNTIME', 'SAVEPOINT',
+    'SCHEMA', 'SCROLL', 'SECOND', 'SECONDS', 'SEGMENT', 'SELECT', 'SENSITIVE',
+    'SEQUENCE', 'SET', 'SHADOW', 'SHARED', 'SHELL', 'SHOW', 'SIMILAR',
+    'SINGULAR', 'SIZE', 'SKIP', 'SNAPSHOT', 'SOME', 'SORT', 'SQL', 'SQLCODE',
+    'SQLERROR', 'SQLSTATE', 'SQLWARNING', 'STABILITY', 'START', 'STARTING',
+    'STARTS', 'STATEMENT', 'STATIC', 'STATISTICS', 'SUB_TYPE', 'SUSPEND',
+    'TABLE', 'TERMINATOR', 'THEN', 'TIES', 'TIMEZONE_HOUR', 'TIMEZONE_MINUTE',
+    'TO', 'TRAILING', 'TRANSACTION', 'TRANSLATE', 'TRANSLATION', 'TRIGGER',
+    'TRIM', 'TRUE', 'TYPE', 'UNBOUNDED', 'UNCOMMITTED', 'UNION', 'UNIQUE',
+    'UNKNOWN', 'UPDATE', 'UPDATING', 'USER', 'USING', 'VALUE', 'VALUES',
+    'VARIABLE', 'VARYING', 'VERSION', 'VIEW', 'WAIT', 'WEEKDAY', 'WHEN',
+    'WHENEVER', 'WHERE', 'WHILE', 'WINDOW', 'WITH', 'WITHOUT', 'WORK', 'WRITE',
+    'YEAR', 'YEARDAY');
 
-  DefTypes: array [0 .. DefTypesCount - 1] of AnsiString = ('BIGINT', 'BINARY', 'BLOB', 'BOOLEAN', 'CHAR', 'CHARACTER',
-    'CSTRING', 'DATE', 'DECFLOAT', 'DECIMAL', 'DOUBLE', 'FLOAT', 'INT128', 'INT64', 'INTEGER', 'NUMERIC', 'SMALLINT',
-    'TIME', 'TIMESTAMP', 'VARBINARY', 'VARCHAR');
+  DefTypes: array [0 .. DefTypesCount - 1] of AnsiString = ('BIGINT', 'BINARY',
+    'BLOB', 'BOOLEAN', 'CHAR', 'CHARACTER', 'CSTRING', 'DATE', 'DECFLOAT',
+    'DECIMAL', 'DOUBLE', 'FLOAT', 'INT128', 'INT64', 'INTEGER', 'NUMERIC',
+    'SMALLINT', 'TIME', 'TIMESTAMP', 'VARBINARY', 'VARCHAR');
 
 var
   vI: Integer;
@@ -2342,7 +2357,7 @@ var
   OldChar1: Char;
 
 {$IFNDEF D_XE5}
-{ TFastStringStream }
+  { TFastStringStream }
 
 constructor TFastStringStream.Create(const AString: string);
 begin
@@ -2424,12 +2439,9 @@ end;
 function TFastStringStream.Seek(Offset: Integer; Origin: Word): Longint;
 begin
   case Origin of
-    soFromBeginning:
-      FPosition := Offset;
-    soFromCurrent:
-      FPosition := FPosition + Offset;
-    soFromEnd:
-      FPosition := FSize - Offset;
+    soFromBeginning: FPosition := Offset;
+    soFromCurrent: FPosition := FPosition + Offset;
+    soFromEnd: FPosition := FSize - Offset;
   end;
   if FPosition > FSize then
     FPosition := FSize
@@ -2470,9 +2482,9 @@ end;
 
 procedure TFastStringStream.WriteString(const AString: string);
 begin
-  {$IFNDEF   D2009+}
+{$IFNDEF   D2009+}
   Write(PChar(AString)^, Length(AString))
-  {$ELSE}
+{$ELSE}
   if StringCodePage(AString) = StringCodePage(FDataString) then
     Write(PChar(AString)^, Length(AString))
   else
@@ -2482,7 +2494,7 @@ begin
     FActualLength := Length(FDataString);
     FElementSize := StringElementSize(FDataString);
   end;
-  {$ENDIF}
+{$ENDIF}
 end;
 
 {$ENDIF}
@@ -2495,29 +2507,29 @@ end;
 
 initialization
 
-  KeyWords := TStringList.Create;
-  for vI := 0 to InternalFunctionCount - 1 do
-    KeyWords.Add(InternalFunctions[vI]);
-  for vI := 0 to DefKeywordsCount - 1 do
-    KeyWords.Add(DefKeywords[vI]);
-  for vI := 0 to DefTypesCount - 1 do
-    KeyWords.Add(DefTypes[vI]);
-  KeyWords.CustomSort(NonAnsiSortCompareStrings);
-  OldChar := 'A';
-  OldChar1 := 'A';
-  KeyWordsIndexes['A', 'A', 0] := 0;
-  for vI := 0 to KeyWords.Count - 1 do
-    if (OldChar <> KeyWords[vI][1]) or (OldChar1 <> KeyWords[vI][2]) then
-    begin
-      KeyWordsIndexes[OldChar, OldChar1, 1] := vI - 1;
-      KeyWordsIndexes[KeyWords[vI][1], KeyWords[vI][2], 0] := vI;
-      OldChar := KeyWords[vI][1];
-      OldChar1 := KeyWords[vI][2];
-    end;
-  KeyWordsIndexes[OldChar, OldChar1, 1] := KeyWords.Count - 1;
+KeyWords := TStringList.Create;
+for vI := 0 to InternalFunctionCount - 1 do
+  KeyWords.ADD(InternalFunctions[vI]);
+for vI := 0 to DefKeywordsCount - 1 do
+  KeyWords.ADD(DefKeywords[vI]);
+for vI := 0 to DefTypesCount - 1 do
+  KeyWords.ADD(DefTypes[vI]);
+KeyWords.CustomSort(NonAnsiSortCompareStrings);
+OldChar := 'A';
+OldChar1 := 'A';
+KeyWordsIndexes['A', 'A', 0] := 0;
+for vI := 0 to KeyWords.Count - 1 do
+  if (OldChar <> KeyWords[vI][1]) or (OldChar1 <> KeyWords[vI][2]) then
+  begin
+    KeyWordsIndexes[OldChar, OldChar1, 1] := vI - 1;
+    KeyWordsIndexes[KeyWords[vI][1], KeyWords[vI][2], 0] := vI;
+    OldChar := KeyWords[vI][1];
+    OldChar1 := KeyWords[vI][2];
+  end;
+KeyWordsIndexes[OldChar, OldChar1, 1] := KeyWords.Count - 1;
 
 finalization
 
-  KeyWords.Free
+KeyWords.Free
 
 end.

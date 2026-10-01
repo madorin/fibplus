@@ -1,4 +1,4 @@
-library TestDLL; 
+library TestDLL;
 
 uses
   SysUtils,
@@ -10,12 +10,13 @@ uses
 {$R *.res}
 
 var // Added
-    SIBfibEventAlerter: TSIBfibEventAlerter; // Added
+  SIBfibEventAlerter: TSIBfibEventAlerter; // Added
 
 begin
- SIBfibEventAlerter := TSIBfibEventAlerter.Create(Nil); // Added
-// ShowMessage('Is I');
-//----------------
-// Hangs on this line
+  SIBfibEventAlerter := TSIBfibEventAlerter.Create(Nil); // Added
+  // ShowMessage('Is I');
+  // ----------------
+  // Hangs on this line
   SIBfibEventAlerter.Free; // Added
+
 end.
