@@ -314,6 +314,22 @@ var
     DatabaseRepositories:TStringList;
     LockRepList: TCriticalSection;
 
+// One character per repository table: '1' exists, '0' doesn't, '2' unknown; under LockRepList
+procedure SetRepositoryState(DB: TFIBDatabase; const State: AnsiString);
+var
+  Index: Integer;
+begin
+  Index := DatabaseRepositories.IndexOfObject(DB);
+  if Index < 0 then
+  begin
+    DatabaseRepositories.AddObject(string(State), DB);
+    // TpFIBTableInfoCollect.Notification removes the entry with the component
+    DB.FreeNotification(ListTableInfo);
+  end
+  else
+    DatabaseRepositories[Index] := string(State);
+end;
+
 const
   SDefer='@FIB_DEFERRED';
 
@@ -394,10 +410,7 @@ begin
      s[Kind]:='0';
     Close;
 
-    if Index<0 then
-     DatabaseRepositories.AddObject(s,DB)
-    else
-     DatabaseRepositories[Index]:=s;
+    SetRepositoryState(DB, s);
 
     Result:=RepositaryIsRegistered=eTrue;
    finally
@@ -452,13 +465,218 @@ begin
  Result:=ExistRepositaryTable(DB,1)
 end;
 
-procedure   Update1RepositaryTable(Tr:TFIBTransaction);
-var qry:TFIBQuery;
+function TransactionDatabase(Transaction: TFIBTransaction): TFIBDatabase;
 begin
+  Result := Transaction.DefaultDatabase;
+  if (Result = nil) and (Transaction.DatabaseCount > 0) then
+    Result := Transaction.Databases[0];
+end;
+
+const
+  FieldsInfoNamesUpgrade = 'FIB$FIELDS_INFO names';
+  DataSetsInfoKeyFieldUpgrade = 'FIB$DATASETS_INFO KEY_FIELD';
+
+type
+  // Repository upgrades that failed (no rights, table in use), not retried for the component
+  TFailedUpgrades = class(TComponent)
+  private
+    FUpgrades: TStringList;
+  protected
+    procedure Notification(AComponent: TComponent; Operation: TOperation); override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+    function Contains(DB: TFIBDatabase; const Upgrade: string): Boolean;
+    procedure Add(DB: TFIBDatabase; const Upgrade: string);
+  end;
+
+var
+  FailedUpgrades: TFailedUpgrades;
+
+constructor TFailedUpgrades.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  FUpgrades := TStringList.Create;
+end;
+
+destructor TFailedUpgrades.Destroy;
+begin
+  FUpgrades.Free;
+  inherited Destroy;
+end;
+
+procedure TFailedUpgrades.Notification(AComponent: TComponent; Operation: TOperation);
+var
+  i: Integer;
+begin
+  if Operation = opRemove then
+  begin
+    LockRepList.Acquire;
+    try
+      for i := FUpgrades.Count - 1 downto 0 do
+        if FUpgrades.Objects[i] = AComponent then
+          FUpgrades.Delete(i);
+    finally
+      LockRepList.Release;
+    end;
+  end;
+  inherited Notification(AComponent, Operation);
+end;
+
+function TFailedUpgrades.Contains(DB: TFIBDatabase; const Upgrade: string): Boolean;
+var
+  i: Integer;
+begin
+  Result := False;
+  LockRepList.Acquire;
+  try
+    for i := 0 to FUpgrades.Count - 1 do
+      if (FUpgrades.Objects[i] = DB) and (FUpgrades[i] = Upgrade) then
+      begin
+        Result := True;
+        Break;
+      end;
+  finally
+    LockRepList.Release;
+  end;
+end;
+
+// Not at design time: the developer can fix the cause and retry
+procedure TFailedUpgrades.Add(DB: TFIBDatabase; const Upgrade: string);
+begin
+  if csDesigning in DB.ComponentState then
+    Exit;
+  LockRepList.Acquire;
+  try
+    FUpgrades.AddObject(Upgrade, DB);
+    DB.FreeNotification(Self);
+  finally
+    LockRepList.Release;
+  end;
+end;
+
+// Firebird can't change the type of a key column: the primary key is dropped and recreated
+procedure WidenRepositoryColumns(DB: TFIBDatabase; const Upgrade, TableName: string;
+  const ColumnNames: array of string; NewLength: Integer);
+var
+  Transaction: TFIBTransaction;
+  Qry: TFIBQuery;
+  Narrow, KeyColumns: TStringList;
+  KeyName, KeyList: string;
+  DropKey: Boolean;
+  ColumnLength, i: Integer;
+
+  procedure ExecDDL(const SQL: string);
+  begin
+    Qry.SQL.Text := SQL;
+    Qry.ExecQuery;
+  end;
+
+begin
+  if FailedUpgrades.Contains(DB, Upgrade) then
+    Exit;
+  Transaction := TFIBTransaction.Create(nil);
+  Qry := TFIBQuery.Create(nil);
+  Narrow := TStringList.Create;
+  KeyColumns := TStringList.Create;
+  try
+    try
+      Transaction.DefaultDatabase := DB;
+      Qry.Database := DB;
+      Qry.Transaction := Transaction;
+      Transaction.StartTransaction;
+      // no COALESCE: InterBase and Firebird 1.0
+      Qry.SQL.Text :=
+        'select f.RDB$CHARACTER_LENGTH, f.RDB$FIELD_LENGTH ' +
+        'from RDB$RELATION_FIELDS rf ' +
+        'join RDB$FIELDS f on f.RDB$FIELD_NAME = rf.RDB$FIELD_SOURCE ' +
+        'where rf.RDB$RELATION_NAME = :TABLE_NAME and rf.RDB$FIELD_NAME = :COLUMN_NAME';
+      for i := Low(ColumnNames) to High(ColumnNames) do
+      begin
+        Qry.Params[0].AsString := TableName;
+        Qry.Params[1].AsString := ColumnNames[i];
+        Qry.ExecQuery;
+        if not Qry.Eof then
+        begin
+          if Qry.Fields[0].IsNull then
+            ColumnLength := Qry.Fields[1].AsInteger
+          else
+            ColumnLength := Qry.Fields[0].AsInteger;
+          if ColumnLength < NewLength then
+            Narrow.Add(ColumnNames[i]);
+        end;
+        Qry.Close;
+      end;
+      if Narrow.Count > 0 then
+      begin
+        // cached prepared statements on the table keep its index in use
+        DB.ClearQueryCacheList;
+        Qry.SQL.Text :=
+          'select c.RDB$CONSTRAINT_NAME, s.RDB$FIELD_NAME ' +
+          'from RDB$RELATION_CONSTRAINTS c ' +
+          'join RDB$INDEX_SEGMENTS s on s.RDB$INDEX_NAME = c.RDB$INDEX_NAME ' +
+          'where c.RDB$RELATION_NAME = :TABLE_NAME and c.RDB$CONSTRAINT_TYPE = ''PRIMARY KEY'' ' +
+          'order by s.RDB$FIELD_POSITION';
+        Qry.Params[0].AsString := TableName;
+        Qry.ExecQuery;
+        while not Qry.Eof do
+        begin
+          KeyName := Trim(Qry.Fields[0].AsString);
+          KeyColumns.Add(Trim(Qry.Fields[1].AsString));
+          Qry.Next;
+        end;
+        Qry.Close;
+        DropKey := False;
+        for i := 0 to Narrow.Count - 1 do
+          DropKey := DropKey or (KeyColumns.IndexOf(Narrow[i]) >= 0);
+        if DropKey then
+          ExecDDL(Format('ALTER TABLE %s DROP CONSTRAINT %s', [TableName, KeyName]));
+        for i := 0 to Narrow.Count - 1 do
+          ExecDDL(Format('ALTER TABLE %s ALTER COLUMN %s TYPE VARCHAR(%d)',
+            [TableName, Narrow[i], NewLength]));
+        if DropKey then
+        begin
+          KeyList := KeyColumns[0];
+          for i := 1 to KeyColumns.Count - 1 do
+            KeyList := KeyList + ', ' + KeyColumns[i];
+          ExecDDL(Format('ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (%s)',
+            [TableName, KeyName, KeyList]));
+        end;
+      end;
+      Transaction.Commit;
+    except
+      try
+        if Transaction.InTransaction then
+          Transaction.Rollback;
+      except
+      end;
+      FailedUpgrades.Add(DB, Upgrade);
+    end;
+  finally
+    KeyColumns.Free;
+    Narrow.Free;
+    Qry.Free;
+    Transaction.Free;
+  end;
+end;
+
+procedure   Update1RepositaryTable(Tr:TFIBTransaction);
+var
+  qry: TFIBQuery;
+  DB: TFIBDatabase;
+begin
+ DB := TransactionDatabase(Tr);
+ // without rights to widen the table the other changes fail too, don't retry on every read
+ if (DB = nil) or FailedUpgrades.Contains(DB, FieldsInfoNamesUpgrade) then
+   Exit;
+ if DB.Capabilities.MaxIdentifierLength > 31 then
+   WidenRepositoryColumns(DB, FieldsInfoNamesUpgrade, 'FIB$FIELDS_INFO',
+     ['TABLE_NAME', 'FIELD_NAME'], DB.Capabilities.MaxIdentifierLength);
  qry:=TFIBQuery.Create(nil);
  with qry,qry.SQL do
  try
-  Database:=Tr.DefaultDatabase;  Transaction:=Tr;
+  Database := DB;
+  Transaction := Tr;
   ParamCheck:=False;
   if not Tr.InTransaction then Tr.StartTransaction;
   try
@@ -509,9 +727,10 @@ begin
  qry:=TFIBQuery.Create(nil);
  with qry,qry.SQL do
  try
-  Database:=Tr.DefaultDatabase;  Transaction:=Tr;
+  Database := TransactionDatabase(Tr);
+  Transaction := Tr;
   ParamCheck:=False;
-  if not ExistBooleanDomain(Transaction.DefaultDatabase) then
+  if not ExistBooleanDomain(Database) then
   begin
    Text:=
    'CREATE DOMAIN FIB$BOOLEAN AS SMALLINT DEFAULT 1 NOT NULL CHECK (VALUE IN (0,1))';
@@ -570,6 +789,7 @@ end;
 
 procedure   DoCreateRepositaryTable(DB:TFIBDatabase;Kind:byte);
 var Index:integer;
+    State: AnsiString;
     Transaction:TFibTransaction;
     qry:TFIBQuery;
 begin
@@ -590,8 +810,8 @@ begin
        ExecQuery;
       end;
       Text:=
-       'CREATE TABLE FIB$FIELDS_INFO (TABLE_NAME VARCHAR(31) NOT NULL,'+CLRF+
-       'FIELD_NAME VARCHAR(31) NOT NULL,'+CLRF+
+       Format('CREATE TABLE FIB$FIELDS_INFO (TABLE_NAME VARCHAR(%0:d) NOT NULL,', [DB.Capabilities.MaxIdentifierLength])+CLRF+
+       Format('FIELD_NAME VARCHAR(%0:d) NOT NULL,', [DB.Capabilities.MaxIdentifierLength])+CLRF+
        'DISPLAY_LABEL VARCHAR(25),'+CLRF+
        'VISIBLE FIB$BOOLEAN DEFAULT 1 NOT NULL,'+CLRF+
        'DISPLAY_FORMAT VARCHAR(15),'+CLRF+
@@ -614,7 +834,7 @@ begin
        'DELETE_SQL BLOB sub_type 1 segment size 80,'+CLRF+
        'REFRESH_SQL BLOB sub_type 1 segment size 80,'+CLRF+
        'NAME_GENERATOR VARCHAR(68), '+
-       'KEY_FIELD VARCHAR(68),'+
+       'KEY_FIELD VARCHAR(1024),'+
        'CONSTRAINT PK_FIB$DATASETS_INFO PRIMARY KEY (DS_ID))';
       ExecQuery;
       Text:=
@@ -661,14 +881,17 @@ begin
   Transaction.Free;
   qry.Free;
  end;
- with DatabaseRepositories do
- begin
-  Index:=IndexOfObject(DB);
-  if Index=-1 then
-   AddObject(FastCopy('222',1,Kind-1)+'1'+FastCopy('222',1,Kind+1),DB)
-  else
-   DatabaseRepositories[Index]:=
-     FastCopy(DatabaseRepositories[Index],1,Kind-1)+'1'+FastCopy(DatabaseRepositories[Index],1,Kind+1);
+ LockRepList.Acquire;
+ try
+   Index := DatabaseRepositories.IndexOfObject(DB);
+   if Index < 0 then
+     State := '222'
+   else
+     State := AnsiString(DatabaseRepositories[Index]);
+   State[Kind] := '1';
+   SetRepositoryState(DB, State);
+ finally
+   LockRepList.Release;
  end;
 end;
 
@@ -708,6 +931,10 @@ begin
    if not ExistDRepositaryTable(DataSet.Database) then
      raise Exception.Create(SCompEditDataSetInfoNotExists);
 
+   // before the cached query below: its prepared statement would block the DDL
+   if (DS_Info = nil) and (Length(AutoUpdateOptions.KeyFields) > 68) then
+     WidenRepositoryColumns(DataSet.DataBase, DataSetsInfoKeyFieldUpgrade, 'FIB$DATASETS_INFO',
+       ['KEY_FIELD'], 1024);
    DI:=TpFIBDataset.Create(nil);
    vTransaction:=TFibTransaction.Create(nil);
    vTransaction.DefaultDatabase:=DataSet.DataBase;
@@ -1265,7 +1492,9 @@ var
  q:TFIBQuery;
  vTransaction:TFIBTransaction;
  vForceTransaction:boolean;
+ vUpdateRepository: Boolean;
 begin
+    vUpdateRepository := False;
     vTransaction:=TFriendDatabase(DB).GetInternalTransaction;
     if DB.DBName<>FDBName then
     begin
@@ -1302,14 +1531,19 @@ begin
        try
         ExecQuery;
        except
-        Result:=True;
-        Update1RepositaryTable(vTransaction);
-        Exit;
+        vUpdateRepository := True;
        end;
-       Result:=FFIVersion=q.Fields[0].asInteger;
+       if not vUpdateRepository then
+        Result := FFIVersion = q.Fields[0].AsInteger;
       finally
         Close;
         FreeQueryForUse(q);
+      end;
+      // after the query is released, its prepared statement would block the DDL
+      if vUpdateRepository then
+      begin
+        Update1RepositaryTable(vTransaction);
+        Exit;
       end;
     end;
    FNonValidated:=not Result;
@@ -1322,8 +1556,10 @@ var q:TFIBQuery;
     ExistAdInfo:boolean;
     d:TpFIBDataSet;
     i:integer;
+    vUpdateRepository: Boolean;
 begin
   d:=nil;
+  vUpdateRepository := False;
   ExistAdInfo:=ExistFRepositaryTable(aTransaction.DefaultDatabase);
   if ExistAdInfo then
   try
@@ -1337,13 +1573,15 @@ begin
        q.ExecQuery;
        FFIVersion:=q.Fields[0].asInteger;
       except
-       Update1RepositaryTable(aTransaction);
+       vUpdateRepository := True;
        FFIVersion:=0;
       end;
      finally
        Close;
        FreeQueryForUse(q);
      end;
+     if vUpdateRepository then
+       Update1RepositaryTable(aTransaction);
 
     d               :=TpFIBDataSet.Create(nil);
     d.PrepareOptions:=[];
@@ -1401,9 +1639,11 @@ var
     d:TpFIBDataSet;
     p:integer;
     vQuoteExist:boolean;
+    vUpdateRepository: Boolean;
 begin
   if Length(TableName)=0 then Exit;
   d:=nil;
+  vUpdateRepository := False;
   ExistAdInfo:=FWithFieldRepositaryInfo and
    ExistFRepositaryTable(aTransaction.DefaultDatabase);
   if ExistAdInfo then
@@ -1417,13 +1657,15 @@ begin
        q.ExecQuery;
        FFIVersion:=q.Fields[0].asInteger;
       except
-       Update1RepositaryTable(aTransaction);
+       vUpdateRepository := True;
        FFIVersion:=0;
       end;
      finally
        Close;
        FreeQueryForUse(q);
      end;
+     if vUpdateRepository then
+       Update1RepositaryTable(aTransaction);
 
 
     d            :=TpFIBDataSet.Create(nil);
@@ -1590,17 +1832,23 @@ begin
  end;
 end;
 
+// Table infos are per database name, shared and validated on use: only the state goes
 procedure TpFIBTableInfoCollect.Notification(AComponent: TComponent; Operation: TOperation);
-var Index:integer;
+var
+  Index: Integer;
 begin
- if Operation=opRemove then
-  if AComponent is TFIBDataBase then
+  if (Operation = opRemove) and (AComponent is TFIBDataBase) then
   begin
-    ClearForDataBase(TFIBDataBase(AComponent));
-    Index:=DatabaseRepositories.IndexOfObject(AComponent);
-    if Index<>-1 then DatabaseRepositories.Delete(Index)
+    LockRepList.Acquire;
+    try
+      Index := DatabaseRepositories.IndexOfObject(AComponent);
+      if Index <> -1 then
+        DatabaseRepositories.Delete(Index);
+    finally
+      LockRepList.Release;
+    end;
   end;
- inherited Notification(AComponent,Operation);
+  inherited Notification(AComponent, Operation);
 end;
 
 const
@@ -2923,14 +3171,17 @@ initialization
  ListTableInfo    :=TpFIBTableInfoCollect.Create(nil);
  ListDataSetInfo  :=TpDataSetInfoCollect.Create;
  DatabaseRepositories  :=TStringList.Create;
+ FailedUpgrades := TFailedUpgrades.Create(nil);
  ListSPInfo       :=TFIBStoredProcMetadataCache.Create;
  ListErrorMessages:=TpErrorMessagesCollect.Create;
 finalization
  ListErrorMessages.Free;
+ // before the lists they update on the notification of a database
+ ListTableInfo.Free;
+ FailedUpgrades.Free;
  DatabaseRepositories.Free;
  ListDataSetInfo.Free;
  ListSPInfo.Free ;
- ListTableInfo.Free;
  LockRepList.Free;
 end.
 

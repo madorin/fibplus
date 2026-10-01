@@ -4641,7 +4641,7 @@ begin
        with GetXSQLVAR(TField(Field)) do
        begin
         if sqltype<>-1 then
-         SetString(Result, relname, relname_length)
+         Result := QSelect.Current[TField(Field).FieldNo-1].RelationName
        end
       else
       begin
@@ -4661,10 +4661,10 @@ begin
    if Field is TFieldDef  then
    begin
     if QSelect.Prepared then
-    with QSelect.Current[TFieldDef(Field).FieldNo-1].Data^ do
+    with QSelect.Current[TFieldDef(Field).FieldNo-1] do
     begin
-         if sqltype<>-1 then
-          SetString(Result, relname, relname_length);
+         if Data^.sqltype<>-1 then
+          Result := RelationName;
     end
     else
     begin
@@ -4689,7 +4689,7 @@ begin
         with GetXSQLVAR(TField(Field)) do
         begin
          if sqltype<>-1 then
-          SetString(Result, sqlname, sqlname_length);
+          Result := QSelect.Current[TField(Field).FieldNo-1].SqlName;
         end
        else
        begin
@@ -4709,14 +4709,14 @@ begin
    if Field is TFieldDef  then
    begin
     if QSelect.Prepared then
-    with QSelect.Current[TFieldDef(Field).FieldNo-1].Data^ do
+    with QSelect.Current[TFieldDef(Field).FieldNo-1] do
     begin
-         if sqltype<>-1 then
-          SetString(Result, sqlname, sqlname_length);
+         if Data^.sqltype<>-1 then
+          Result := SqlName;
     end
     else
     begin
-      fi:=vFieldDescrList[TField(Field).FieldNo-1];
+      fi := vFieldDescrList[TFieldDef(Field).FieldNo - 1];
       Result:=fi^.fdRelationField
     end
    end;
@@ -5373,10 +5373,10 @@ begin
         if not Database.NeedUnicodeFieldTranslation(Byte(vvSqlSubType)) and
            (Byte(vvSqlSubType) in Database.UnicodeCharSets)
         then
-        if not IsSysField(sqlName) or  not Database.ReturnDeclaredFieldSize then
+        if not IsSysField(qda[i].SqlName) or  not Database.ReturnDeclaredFieldSize then
          vvFieldBufSize :=vvFieldBufSize div  Database.BytesInUnicodeChar(vvSqlSubType);
 
-        if (FieldDefs[i].DataType in [ftGuid]) or  StringInArray(sqlname,['DB_KEY','RDB$DB_KEY']) then
+        if (FieldDefs[i].DataType in [ftGuid]) or StringInArray(qda[i].SqlName, ['DB_KEY', 'RDB$DB_KEY']) then
          vvSeparateString:=False
         else
          vvSeparateString:=(vvFieldBufSize>20)   or (Byte(vvSqlSubType)=OCTETS_CHARSET_ID) ;
@@ -5398,7 +5398,7 @@ begin
         atf:=atfStandard
       end;
       vFieldDescrList.Add(vvSqltype and (not 1),sqlscale,vvFieldBufSize,
-       sqltype and 1 = 1, StringInArray(sqlname,['DB_KEY','RDB$DB_KEY']),
+       sqltype and 1 = 1, StringInArray(qda[i].SqlName, ['DB_KEY', 'RDB$DB_KEY']),
        vvSeparateString,atf
       ) ;
     end;
@@ -6243,7 +6243,8 @@ procedure TFIBCustomDataSet.SetQueryParams(Qry: TFIBQuery; Buffer: Pointer);
 var
   l,i, j,pc,pc1: Integer;
   cr, data: PAnsiChar;
-  fn, st: Ansistring;
+  fn: string;
+  st: Ansistring;
   OldBuffer: Pointer;
   fi:PFIBFieldDescr;
   tf:TField;
@@ -10778,13 +10779,7 @@ begin
     with FQSelect.Current[i].Data^ do
     begin
       (* Get the field name *)
-      SetString(Name, aliasname, aliasname_length);
-      if Database.IsUnicodeConnect then
-        Name:=UTF8Decode(Name);
-{$IFDEF SUPPORT_KOI8_CHARSET}
-      if Database.IsKOI8Connect then
-        Name:=ConvertFromCodePage(Name,CodePageKOI8R);
-{$ENDIF}
+      Name := FQSelect.Current[i].AliasName;
       Size   := 0;
       vPrecision := 0;
       case sqltype and not 1 of
@@ -10801,7 +10796,7 @@ begin
 {$ELSE}
             DataType := ftString;
 {$ENDIF}
-            if not IsSysField(sqlName) or  not Database.ReturnDeclaredFieldSize then
+            if not IsSysField(FQSelect.Current[i].SqlName) or  not Database.ReturnDeclaredFieldSize then
              Size:=Size div   Database.BytesInUnicodeChar(Byte(sqlsubtype));
           end;
           tf       :=FindField(Name);
@@ -10810,8 +10805,8 @@ begin
 
           if (psUseGuidField in PrepareOptions) and (Size=16)  then
           begin
-            SetString(RelTabName  , relname, relname_length);
-            SetString(RelFieldName, sqlname, sqlname_length);
+            RelTabName   := FQSelect.Current[i].RelationName;
+            RelFieldName := FQSelect.Current[i].SqlName;
             Fi:=ListTableInfo.GetFieldInfo(DataBase,RelTabName,RelFieldName,False);
             if Assigned(FI) and Fi.CanBeGUID then
             begin
@@ -10839,8 +10834,8 @@ begin
               and ((FindField(Name)=nil) or (FindField(Name) is TSmallIntField));
              if psUseBooleanField in PrepareOptions then
              begin
-               SetString(RelTabName  , relname, relname_length);
-               SetString(RelFieldName, sqlname, sqlname_length);
+               RelTabName   := FQSelect.Current[i].RelationName;
+               RelFieldName := FQSelect.Current[i].SqlName;
                if RelTabName='FIB$FIELDS_INFO' then
                 Fi:=nil
                else

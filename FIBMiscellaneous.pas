@@ -1761,9 +1761,9 @@ begin
   begin
     for i := 0 to Columns.Count - 1 do
       if i = 0 then
-        st := string(Columns[i].Data^.aliasname)
+        st := Columns[i].AliasName
       else
-        st := st + FColDelimiter + string(Columns[i].Data^.aliasname);
+        st := st + FColDelimiter + Columns[i].AliasName;
     st := st + FRowDelimiter;
 //    FFile.Write(st[1],Length(st)*SizeOf(Char));
     WriteValue(st[1],Length(st)*SizeOf(Char));
@@ -1994,7 +1994,7 @@ begin
      for i := 0 to Columns.Count - 1 do
      with Columns[i].Data^ do
      begin
-       st := aliasname;
+       st := AnsiString(Columns[i].AliasName);
        L:=Length(st);
        WriteValue(L, SizeOf(L));
        WriteValue(st[1], L);

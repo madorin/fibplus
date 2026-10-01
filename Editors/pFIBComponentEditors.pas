@@ -327,7 +327,10 @@ begin
          Script.Add('');
          Script.Add('/*Fields repository table*/');
          Script.Add('');
-         Script.Add(qryCreateTabFieldsRepository+';');
+         if GetPropValue(Component, 'Connected', False) then
+           Script.Add(Format(qryCreateTabFieldsRepository, [RepositoryNameLength(db)]) + ';')
+         else
+           Script.Add(Format(qryCreateTabFieldsRepository, [31]) + ';');
          Script.Add('');
          Script.Add('SET TERM ^;');
          Script.Add(qryCreateFieldRepositoryTriggerBI+' ^');
@@ -1094,7 +1097,10 @@ begin
     idb.Execute('INSERT INTO FIB$DATASETS_INFO (DS_ID,UPDATE_ONLY_MODIFIED_FIELDS) VALUES('+
      IntToStr(DS_ID)+',1)'
     );
-   idb.Execute(
+   if Length(GetPropStringValue(Dataset, 'AutoUpdateOptions.KeyFields')) > 68 then
+     WidenDataSetKeyField(idb);
+   // Execute returns False instead of raising
+   if not idb.Execute(
     'Update FIB$DATASETS_INFO SET '#13#10+
     'SELECT_SQL='''+TStrings(GetObjectProp(DataSet,'SelectSQL')).Text+''','#13#10+
     'INSERT_SQL='''+TStrings(GetObjectProp(DataSet,'InsertSQL')).Text+''','#13#10+    
@@ -1109,7 +1115,8 @@ begin
     'CONDITIONS='''+GetConditionsExchangeStr(TStrings(GetObjectProp(DataSet,'Conditions')))+''''#13#10+
 
     'WHERE DS_ID='+IntToStr(DS_ID)
-   )
+   ) then
+     raise Exception.Create(SCompEditUnableSaveInfoRecord);
  end
 end;
  

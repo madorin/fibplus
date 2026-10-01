@@ -373,6 +373,7 @@ ResourceString
   SCompEditDataSetInfoForbid    = 'Can''t use FIB$DATASETS_INFO.'#13#10+
    'urDataSetInfo not included into Database.UseRepositories.';
   SCompEditUnableInsertInfoRecord = 'Error of inserting new information record';
+  SCompEditUnableSaveInfoRecord = 'Error of saving the dataset information record';
   SCompEditSaveDataSetProperty = 'Save FIBDataSet properties';
   SCompEditDataSetDesc = 'Set dataset description';
   SCompEditFieldInfoLoadError = 'Error of loading FieldInfo from stream';
@@ -388,6 +389,14 @@ const
                       'and RDB$RELATION_NAME=?RT';
    qryExistField='Select Count(*) from RDB$RELATION_FIELDS'#13#10+
     'where    RDB$RELATION_NAME= :TABNAME and RDB$FIELD_NAME =:FIELDNAME';
+
+   qryColumnLength = 'select fs.RDB$CHARACTER_LENGTH, fs.RDB$FIELD_LENGTH'#13#10+
+    'from RDB$RELATION_FIELDS f'#13#10+
+    'join RDB$FIELDS fs on fs.RDB$FIELD_NAME = f.RDB$FIELD_SOURCE'#13#10+
+    'where f.RDB$RELATION_NAME = :TABNAME and f.RDB$FIELD_NAME = :FIELDNAME';
+
+   qryPrimaryKeyName = 'select RDB$CONSTRAINT_NAME from RDB$RELATION_CONSTRAINTS'#13#10+
+    'where RDB$RELATION_NAME = :TABNAME and RDB$CONSTRAINT_TYPE = ''PRIMARY KEY''';
 
    qryExistDomain=    'Select Count(*) FROM RDB$FIELDS FLD'#13#10 +
        'WHERE FLD.RDB$FIELD_NAME = ?DOMAIN' ;
@@ -405,8 +414,8 @@ const
    qryGeneratorExist='    Select COUNT(*) from RDB$GENERATORS   where  RDB$GENERATOR_NAME=:GEN_NAME';
 
    qryCreateTabFieldsRepository=
-       'CREATE TABLE FIB$FIELDS_INFO (TABLE_NAME VARCHAR(31) NOT NULL,'#13#10+
-       ' FIELD_NAME VARCHAR(31) NOT NULL,'#13#10+
+       'CREATE TABLE FIB$FIELDS_INFO (TABLE_NAME VARCHAR(%0:d) NOT NULL,'#13#10+
+       ' FIELD_NAME VARCHAR(%0:d) NOT NULL,'#13#10+
        ' DISPLAY_LABEL VARCHAR(25),'#13#10+
        ' VISIBLE FIB$BOOLEAN DEFAULT 1 NOT NULL,'#13#10+
        ' DISPLAY_FORMAT VARCHAR(15),'#13#10+
@@ -440,7 +449,7 @@ const
        ' DELETE_SQL BLOB sub_type 1 segment size 80,'#13#10+
        ' REFRESH_SQL BLOB sub_type 1 segment size 80,'#13#10+
        ' NAME_GENERATOR VARCHAR(68), '#13#10+
-       ' KEY_FIELD VARCHAR(68),'#13#10+
+       ' KEY_FIELD VARCHAR(1024),'#13#10+
        ' UPDATE_TABLE_NAME  VARCHAR(68),'#13#10+
        ' UPDATE_ONLY_MODIFIED_FIELDS  FIB$BOOLEAN NOT NULL,'#13#10+
        ' CONDITIONS  BLOB sub_type 1 segment size 80,'#13#10+

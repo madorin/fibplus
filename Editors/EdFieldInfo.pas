@@ -99,17 +99,11 @@ procedure ShowFieldInfo( aDataBase:TComponent);
 
 implementation
 
-uses  pFIBEditorsConsts, RegFIBPlusEditors,TypInfo, RTTIRoutines;
+uses pFIBEditorsConsts, RegFIBPlusEditors, TypInfo, RTTIRoutines, pFIBRepositoryOperations;
 
 {$R *.dfm}
 
 const
- qryFieldLength=
- 'select fs.rdb$field_length from rdb$relation_fields f '+
-    'join rdb$fields fs on fs.rdb$field_name = f.rdb$field_source '+
-    'where f.rdb$relation_name = ''RDB$RELATIONS'''+
-    'and f.rdb$field_name=''RDB$RELATION_NAME''';
-
  qryFR_DataSQL='SELECT * FROM FIB$FIELDS_INFO ORDER BY TABLE_NAME,FIELD_NAME';
 
  qryTablesSQL='SELECT CAST(''ALIAS'' AS CHAR( %s )) AS RDB$RELATION_NAME '+
@@ -139,7 +133,7 @@ begin
   if   ObjSupports(pFIBTransaction1,IFIBTransaction,iTr) and ObjSupports(aDataBase,IFIBConnect,iDB) then
   begin
     FFieldLength:=
-     iDB.QueryValueAsStr(qryFieldLength,0,['']);
+     IntToStr(ColumnLength(iDB, 'RDB$RELATIONS', 'RDB$RELATION_NAME'));
     SetObjectProp(pFIBTransaction1,'DefaultDataBase',aDatabase);
     SetEnumProp(pFIBTransaction1,'TimeoutAction','TACommitRetaining'); 
     qryFL   :=  TDataSet(expDatasetClass.Create(frmFields));

@@ -30,13 +30,21 @@ uses
  SyncObjs, Classes,Sysutils, ibase, IB_InstallHeader, IB_Externals,FIBPlatforms;
 
 type
+  TFIBProduct = (fpUnknown, fpInterBase, fpFirebird);
+
+  // 3.0.13.33818 for a Firebird client "WI-V6.3.13.33818 Firebird 3.0"
+  TFIBVersion = record
+    Product: TFIBProduct;
+    Major, Minor, Release, Build: Integer;
+  end;
 
 {$M-}
    IIBClientLibrary = interface
-    ['{BB362CBF-2BD0-41A8-8982-F5E3327354A6}']
+    ['{8C184844-EB77-495F-81F5-AE3246958695}']
     function  GetLibName:string;
-    function  GetIBClientVersion: Integer;
-    function  GetIBClientMinorVersion: Integer;
+    function  GetIBClientVersion: Integer; deprecated;
+    function  GetIBClientMinorVersion: Integer; deprecated;
+    function  GetVersion: TFIBVersion;
     function  GetBusy:boolean;
     function  isc_attach_database(status_vector : PISC_STATUS; db_name_length : Short;
                                  db_name : PAnsiChar; db_handle : PISC_DB_HANDLE;
@@ -58,6 +66,13 @@ type
                                  trans_handle : PISC_TR_HANDLE; array_id : PISC_QUAD;
                                  descriptor : PISC_ARRAY_DESC; source_array : PVoid;
                                  slice_length : PISC_LONG): ISC_STATUS;
+    function isc_get_slice(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE;
+      trans_handle: PISC_TR_HANDLE; array_id: PISC_QUAD; sdl_length: Short; sdl: PAnsiChar;
+      param_length: Short; param: PISC_LONG; slice_length: ISC_LONG; slice: PVoid;
+      return_length: PISC_LONG): ISC_STATUS;
+    function isc_put_slice(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE;
+      trans_handle: PISC_TR_HANDLE; array_id: PISC_QUAD; sdl_length: Short; sdl: PAnsiChar;
+      param_length: Short; param: PISC_LONG; slice_length: ISC_LONG; slice: PVoid): ISC_STATUS;
     function isc_blob_info(status_vector : PISC_STATUS; blob_handle : PISC_BLOB_HANDLE;
 				                   item_list_buffer_length : Short; item_list_buffer : PAnsiChar;
 				                   result_buffer_length : Short; result_buffer : PAnsiChar): ISC_STATUS;
@@ -240,8 +255,10 @@ type
     function  LibraryLoaded:boolean;
     function  LibraryFilePath:string;
     property  LibraryName:string read GetLibName;
+    // 6.3 on every Firebird client, use Version
     property  ClientMinorVersion:integer read GetIBClientMinorVersion;
     property  ClientVersion     :integer read GetIBClientVersion;
+    property  Version: TFIBVersion read GetVersion;
     property  Busy:boolean read GetBusy;
   end;
 {$M+}
@@ -318,6 +335,8 @@ type
     Fisc_array_lookup_bounds :Tisc_array_lookup_bounds;
     Fisc_array_get_slice     :Tisc_array_get_slice;
     Fisc_array_put_slice     :Tisc_array_put_slice;
+    Fisc_get_slice           :Tisc_get_slice;
+    Fisc_put_slice           :Tisc_put_slice;
     Fisc_array_set_desc      :Tisc_array_set_desc;
     Fisc_array_lookup_desc   :Tisc_array_lookup_desc;
 
@@ -338,12 +357,14 @@ type
     Ffb_cancel_operation: Tfb_cancel_operation;
     Ffb_shutdown        : Tfb_shutdown;
     Ffb_database_crypt_callback: Tfb_database_crypt_callback;
+    FVersion: TFIBVersion;
   private
     FBusy:boolean;
 
     function  GetLibName:string;
-    function  GetIBClientVersion: Integer;
-    function  GetIBClientMinorVersion: Integer;
+    function  GetIBClientVersion: Integer; deprecated;
+    function  GetIBClientMinorVersion: Integer; deprecated;
+    function  GetVersion: TFIBVersion;
     function  GetBusy:boolean;
     function  isc_attach_database(status_vector : PISC_STATUS; db_name_length : Short;
                                  db_name : PAnsiChar; db_handle : PISC_DB_HANDLE;
@@ -365,6 +386,13 @@ type
                                  trans_handle : PISC_TR_HANDLE; array_id : PISC_QUAD;
                                  descriptor : PISC_ARRAY_DESC; source_array : PVoid;
                                  slice_length : PISC_LONG): ISC_STATUS;
+    function isc_get_slice(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE;
+      trans_handle: PISC_TR_HANDLE; array_id: PISC_QUAD; sdl_length: Short; sdl: PAnsiChar;
+      param_length: Short; param: PISC_LONG; slice_length: ISC_LONG; slice: PVoid;
+      return_length: PISC_LONG): ISC_STATUS;
+    function isc_put_slice(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE;
+      trans_handle: PISC_TR_HANDLE; array_id: PISC_QUAD; sdl_length: Short; sdl: PAnsiChar;
+      param_length: Short; param: PISC_LONG; slice_length: ISC_LONG; slice: PVoid): ISC_STATUS;
     function isc_blob_info(status_vector : PISC_STATUS; blob_handle : PISC_BLOB_HANDLE;
 				                   item_list_buffer_length : Short; item_list_buffer : PAnsiChar;
 				                   result_buffer_length : Short; result_buffer : PAnsiChar): ISC_STATUS;
@@ -932,6 +960,62 @@ begin
  Result := FIBClientMinorVersion
 end;
 
+function TIBClientLibrary.GetVersion: TFIBVersion;
+begin
+  Result := FVersion;
+end;
+
+// The WI-V numbers are InterBase compatible (6.3 on Firebird), Firebird appends its version
+function ParseClientVersion(const S: AnsiString): TFIBVersion;
+var
+  Api: array[0..3] of Integer;
+  Product: array[0..1] of Integer;
+  p: Integer;
+
+  procedure ReadNumbers(i: Integer; var Numbers: array of Integer);
+  var
+    n: Integer;
+  begin
+    n := 0;
+    while (i <= Length(S)) and (n <= High(Numbers)) do
+    begin
+      if S[i] = '.' then
+        Inc(n)
+      else
+      if S[i] in ['0'..'9'] then
+        Numbers[n] := Numbers[n] * 10 + Ord(S[i]) - Ord('0')
+      else
+        Break;
+      Inc(i);
+    end;
+  end;
+
+begin
+  FillChar(Result, SizeOf(Result), 0);
+  FillChar(Api, SizeOf(Api), 0);
+  FillChar(Product, SizeOf(Product), 0);
+  p := Pos('-', S);
+  if p = 0 then
+    Exit;
+  ReadNumbers(p + 2, Api);
+  p := Pos('Firebird ', S);
+  if p > 0 then
+  begin
+    ReadNumbers(p + Length('Firebird '), Product);
+    Result.Product := fpFirebird;
+    Result.Major := Product[0];
+    Result.Minor := Product[1];
+  end
+  else
+  begin
+    Result.Product := fpInterBase;
+    Result.Major := Api[0];
+    Result.Minor := Api[1];
+  end;
+  Result.Release := Api[2];
+  Result.Build := Api[3];
+end;
+
 function TIBClientLibrary.GetLibName: string;
 begin
   Result:=FLibraryName
@@ -995,6 +1079,29 @@ begin
   else
    raise
     EAPICallException.Create(Format(SCantFindApiProc,['isc_array_put_slice',FLibraryName]));
+end;
+
+function TIBClientLibrary.isc_get_slice(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE;
+  trans_handle: PISC_TR_HANDLE; array_id: PISC_QUAD; sdl_length: Short; sdl: PAnsiChar;
+  param_length: Short; param: PISC_LONG; slice_length: ISC_LONG; slice: PVoid;
+  return_length: PISC_LONG): ISC_STATUS;
+begin
+  if Assigned(Fisc_get_slice) then
+    Result := Fisc_get_slice(status_vector, db_handle, trans_handle, array_id, sdl_length, sdl,
+      param_length, param, slice_length, slice, return_length)
+  else
+    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_get_slice', FLibraryName]));
+end;
+
+function TIBClientLibrary.isc_put_slice(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE;
+  trans_handle: PISC_TR_HANDLE; array_id: PISC_QUAD; sdl_length: Short; sdl: PAnsiChar;
+  param_length: Short; param: PISC_LONG; slice_length: ISC_LONG; slice: PVoid): ISC_STATUS;
+begin
+  if Assigned(Fisc_put_slice) then
+    Result := Fisc_put_slice(status_vector, db_handle, trans_handle, array_id, sdl_length, sdl,
+      param_length, param, slice_length, slice)
+  else
+    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_put_slice', FLibraryName]));
 end;
 
 function TIBClientLibrary.isc_array_set_desc(status_vector: PISC_STATUS;
@@ -1992,7 +2099,8 @@ procedure TIBClientLibrary.LoadIBLibrary;
 
   end;
 
-
+var
+  VersionBuffer: array[0..255] of AnsiChar;
 begin
   FLibraryHandle := LoadLibrary(PChar(FLibraryName));
   if (FLibraryHandle > HINSTANCE_ERROR) then
@@ -2042,6 +2150,8 @@ begin
 
     Fisc_array_get_slice     :=GetProcAddr('isc_array_get_slice');
     Fisc_array_put_slice     :=GetProcAddr('isc_array_put_slice');
+    Fisc_get_slice := GetProcAddr('isc_get_slice');
+    Fisc_put_slice := GetProcAddr('isc_put_slice');
     Fisc_wait_for_event      :=GetProcAddr('isc_wait_for_event');
     Fisc_transaction_info    :=GetProcAddr('isc_transaction_info');
     Fisc_prepare_transaction:=GetProcAddr('isc_prepare_transaction');
@@ -2093,6 +2203,9 @@ begin
     Fisc_get_client_minor_version := GetProcAddr('isc_get_client_minor_version'); {do not localize}
     FIBClientVersion := Fisc_get_client_major_version;
     FIBClientMinorVersion:=Fisc_get_client_minor_version;
+    FillChar(VersionBuffer, SizeOf(VersionBuffer), 0);
+    Fisc_get_client_version(@VersionBuffer[0]);
+    FVersion := ParseClientVersion(AnsiString(PAnsiChar(@VersionBuffer[0])));
 //IB2007
     Fisc_dsql_batch_execute_immed := TryGetProcAddr('isc_dsql_batch_execute_immed');
     Fisc_dsql_batch_execute := TryGetProcAddr('isc_dsql_batch_execute');
@@ -2102,6 +2215,7 @@ begin
   else
   begin
     FIBClientMinorVersion:=0;
+    FillChar(FVersion, SizeOf(FVersion), 0);
   end;
 
 {$IFDEF WINDOWS}

@@ -78,6 +78,18 @@ type
   TOnIdleConnect=procedure (Sender:TFIBDatabase; IdleTicks:Cardinal; var Action:TActionOnIdle) of object;
 
   TIBCharSets=set of byte;
+
+  // What the connection supports, set on connect, 0 while not connected; add new ones here
+  TFIBDatabaseCapabilities = class
+  private
+    FMaxIdentifierLength: Integer;
+    procedure Clear;
+    procedure Update(Database: TFIBDatabase);
+  public
+    // Characters of a metadata name: 63 on Firebird 4 and later, else 31
+    property MaxIdentifierLength: Integer read FMaxIdentifierLength;
+  end;
+
   (* TFIBDatabase *)
 
 
@@ -291,6 +303,7 @@ type
     FServerBuild:integer;
     FNeedUTFDecodeDDL:boolean;
     FIsFB21OrMore :boolean;
+    FCapabilities: TFIBDatabaseCapabilities;
     procedure FillServerVersions;
     function GetServerMajorVersion: integer;
     function GetServerMinorVersion: integer;
@@ -380,8 +393,9 @@ type
     procedure Online;
   public
     function  ClientVersion:string;
-    function  ClientMajorVersion:integer;
-    function  ClientMinorVersion:integer;
+    // 6.3 on every Firebird client, use ClientLibrary.Version
+    function  ClientMajorVersion:integer; deprecated;
+    function  ClientMinorVersion:integer; deprecated;
     function  IsFirebirdConnect :boolean;
 
 
@@ -433,6 +447,7 @@ type
     property Transactions[Index: Integer]: TFIBTransaction read GetTransaction;
 
     property    IsFB21OrMore :boolean read FIsFB21OrMore;
+    property Capabilities: TFIBDatabaseCapabilities read FCapabilities;
     (* Database Info properties -- Advanced stuff (translated from isc_database_info) *)
     property AttachmentID: Long read GetAttachmentID; // isc_info_attachment_id
     property Allocation: Long read GetAllocation;     // isc_info_allocation
@@ -971,6 +986,22 @@ begin
   ListErrorMessages.LoadFromFile(ChangeFileExt(FileName,'.err'));
 end;
 
+{ TFIBDatabaseCapabilities }
+
+procedure TFIBDatabaseCapabilities.Clear;
+begin
+  FMaxIdentifierLength := 0;
+end;
+
+procedure TFIBDatabaseCapabilities.Update(Database: TFIBDatabase);
+begin
+  // Firebird 4+ opens only ODS 13+
+  if Database.IsFirebirdConnect and (Database.ServerMajorVersion >= 4) then
+    FMaxIdentifierLength := 63
+  else
+    FMaxIdentifierLength := 31;
+end;
+
 (* TFIBDatabase *)
 
 constructor TFIBDatabase.Create(AOwner: TComponent);
@@ -991,6 +1022,7 @@ begin
 {$ENDIF}  
 
   FConnectParams  := TConnectParams.Create(Self);
+  FCapabilities := TFIBDatabaseCapabilities.Create;
   FDifferenceTime := 0;
 
   if (csDesigning in ComponentState)   and   not CmpInLoadedState(Self)
@@ -1099,6 +1131,7 @@ begin
    FReadSeqCount.Free;
    FUpdateCount.Free;
    FConnectParams.Free;
+   FCapabilities.Free;
 
    if Assigned(FBlobFilters) then
     FBlobFilters     .Free;
@@ -1365,6 +1398,7 @@ begin
 //  LoadLibrary;
   FIsFireBirdConnect:=GetIsFirebirdConnect;
   vMajorVersion:=ServerMajorVersion;
+  FCapabilities.Update(Self);
   if not  FIsFireBirdConnect then
    FIsIB2007Connect:=vMajorVersion>=8;
 
@@ -1458,6 +1492,7 @@ begin
   FServerBuild       :=-1;
 
   FIsFirebirdConnect:=GetIsFirebirdConnect;
+  FCapabilities.Update(Self);
   if  FIsFirebirdConnect and (ServerMajorVersion>=2) then
   begin
       FIsUnicodeConnect:=FBAttachCharsetID in UnicodeCharsets;
@@ -1485,7 +1520,8 @@ begin
   CheckActive;
   LoadLibrary;
   Call(FClientLibrary.isc_drop_database(StatusVector, @FHandle), True);
-  FHandle:=nil
+  FHandle := nil;
+  FCapabilities.Clear;
 end;
 
 // Set up the FDPBBuffer correctly.
@@ -1738,6 +1774,7 @@ begin
     for i := 0 to FFIBBases.Count - 1 do
     if FFIBBases[i] <> nil then
       FIBBases[i].FOnDatabaseDisconnected;
+    FCapabilities.Clear;
     DoAfterDisconnect;
    if Assigned(FSQLLogger) then
     FSQLLogger.WriteData(CmpFullName(Self),'Disconnect','',lfConnect);
@@ -2314,6 +2351,10 @@ begin
   FHandleIsShared := (Value <> nil);
   if FHandleIsShared then
   begin
+   // read again from the shared attachment
+   FServerMajorVersion := -1;
+   FServerMinorVersion := -1;
+   FServerBuild := -1;
    LoadLibrary;
    DoOnConnect
   end;

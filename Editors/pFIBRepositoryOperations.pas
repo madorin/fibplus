@@ -6,33 +6,81 @@ interface
 
  procedure   AdjustFRepositaryTable(DB:IFIBConnect);
  procedure   CreateErrorRepositoryTable(DB:IFIBConnect);
- procedure   CreateDataSetRepositoryTable(DB:IFIBConnect); 
+ procedure   CreateDataSetRepositoryTable(DB:IFIBConnect);
+ // Length in characters of a column, 0 when it doesn't exist
+ function    ColumnLength(DB: IFIBConnect; const TableName, ColumnName: string): Integer;
+ // TABLE_NAME and FIELD_NAME of FIB$FIELDS_INFO: 63 on Firebird 4+, else 31
+ function    RepositoryNameLength(DB:IFIBConnect): Integer;
+ procedure   WidenDataSetKeyField(DB: IFIBConnect);
 
 implementation
 
-uses pFIBEditorsConsts;
+uses SysUtils, pFIBEditorsConsts;
 
-{const
-    qryCreateTabFieldsRepository=
-       'CREATE TABLE FIB$FIELDS_INFO (TABLE_NAME VARCHAR(31) NOT NULL,'#13#10+
-       'FIELD_NAME VARCHAR(31) NOT NULL,'#13#10+
-       'DISPLAY_LABEL VARCHAR(25),'#13#10+
-       'VISIBLE FIB$BOOLEAN DEFAULT 1 NOT NULL,'#13#10+
-       'DISPLAY_FORMAT VARCHAR(15),'#13#10+
-       'EDIT_FORMAT VARCHAR(15),'#13#10+
-       'TRIGGERED FIB$BOOLEAN DEFAULT 0 NOT NULL,'#13#10+
-       'CONSTRAINT PK_FIB$FIELDS_INFO PRIMARY KEY (TABLE_NAME, FIELD_NAME))';
-}
+const
+  KeyFieldLength = 1024;
+
+function ColumnLength(DB: IFIBConnect; const TableName, ColumnName: string): Integer;
+begin
+  // RDB$CHARACTER_LENGTH is NULL on old servers, no COALESCE on InterBase and Firebird 1.0
+  Result := StrToIntDef(DB.QueryValueAsStr(qryColumnLength, 0, [TableName, ColumnName]), 0);
+  if Result = 0 then
+    Result := StrToIntDef(DB.QueryValueAsStr(qryColumnLength, 1, [TableName, ColumnName]), 0);
+end;
+
+function RepositoryNameLength(DB: IFIBConnect): Integer;
+begin
+  if DB.IsFirebirdConnect and (ColumnLength(DB, 'RDB$RELATIONS', 'RDB$RELATION_NAME') > 31) then
+    Result := 63
+  else
+    Result := 31;
+end;
+
+procedure WidenDataSetKeyField(DB: IFIBConnect);
+begin
+  if ColumnLength(DB, 'FIB$DATASETS_INFO', 'KEY_FIELD') < KeyFieldLength then
+    DB.Execute(Format('ALTER TABLE FIB$DATASETS_INFO ALTER COLUMN KEY_FIELD TYPE VARCHAR(%d)',
+      [KeyFieldLength]));
+end;
+
+// Firebird can't retype key columns: one statement, as Execute commits each one
+procedure WidenFieldsRepositoryNames(DB: IFIBConnect; NewLength: Integer);
+var
+  KeyName, SQL: string;
+begin
+  if (ColumnLength(DB, 'FIB$FIELDS_INFO', 'TABLE_NAME') >= NewLength) and
+    (ColumnLength(DB, 'FIB$FIELDS_INFO', 'FIELD_NAME') >= NewLength) then
+    Exit;
+  KeyName := Trim(DB.QueryValueAsStr(qryPrimaryKeyName, 0, ['FIB$FIELDS_INFO']));
+  SQL := 'EXECUTE BLOCK AS BEGIN'#13#10;
+  if KeyName <> '' then
+    SQL := SQL + '  EXECUTE STATEMENT ''ALTER TABLE FIB$FIELDS_INFO DROP CONSTRAINT ' +
+      KeyName + ''';'#13#10;
+  SQL := SQL +
+    Format('  EXECUTE STATEMENT ''ALTER TABLE FIB$FIELDS_INFO ALTER COLUMN TABLE_NAME TYPE VARCHAR(%d)'';'#13#10,
+      [NewLength]) +
+    Format('  EXECUTE STATEMENT ''ALTER TABLE FIB$FIELDS_INFO ALTER COLUMN FIELD_NAME TYPE VARCHAR(%d)'';'#13#10,
+      [NewLength]);
+  if KeyName <> '' then
+    SQL := SQL + '  EXECUTE STATEMENT ''ALTER TABLE FIB$FIELDS_INFO ADD CONSTRAINT ' + KeyName +
+      ' PRIMARY KEY (TABLE_NAME, FIELD_NAME)'';'#13#10;
+  DB.Execute(SQL + 'END');
+end;
 
  procedure   AdjustFRepositaryTable(DB:IFIBConnect);
+ var
+   NameLength: Integer;
  begin
+    NameLength := RepositoryNameLength(DB);
     if db.QueryValueAsStr(qryExistTable,0,['FIB$FIELDS_INFO'])='0' then
     begin
      if db.QueryValueAsStr(qryExistDomain,0,['FIB$BOOLEAN'])='0' then
        db.Execute(qryCreateBooleanDomain);
-     db.Execute(qryCreateTabFieldsRepository);
+     db.Execute(Format(qryCreateTabFieldsRepository, [NameLength]));
      db.Execute('GRANT SELECT ON TABLE FIB$FIELDS_INFO TO PUBLIC');
-    end;
+    end
+    else
+     WidenFieldsRepositoryNames(DB, NameLength);
 //Adjust1
     if db.QueryValueAsStr(qryExistField,0,['FIB$FIELDS_INFO','DISPLAY_WIDTH'])='0' then
     begin
@@ -126,7 +174,7 @@ uses pFIBEditorsConsts;
        'DELETE_SQL BLOB sub_type 1 segment size 80,'#13#10+
        'REFRESH_SQL BLOB sub_type 1 segment size 80,'#13#10+
        'NAME_GENERATOR VARCHAR(68), '+
-       'KEY_FIELD VARCHAR(68),'+
+       'KEY_FIELD VARCHAR(1024),'+
        'CONSTRAINT PK_FIB$DATASETS_INFO PRIMARY KEY (DS_ID))');
 
        db.Execute('GRANT SELECT ON TABLE FIB$DATASETS_INFO TO PUBLIC');

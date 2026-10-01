@@ -40,11 +40,6 @@ type
   TFIBXSQLDA = class;
   TFIBXSQLVAR = class;
 
-  TExtDescribeSQLVar =
-  record
-   sql_relation_alias: array[0..LENGTH_METANAMES-1] of AnsiChar;
-  end;
-
   TTypeSetToParam =(tspNull,tspIsNullable,tspScale, tspValue,tspSqlVar);
 
   (* TFIBXSQLVAR *)
@@ -56,6 +51,11 @@ type
     FIndex: Integer;
     FModified: Boolean;
     FName: string;
+    FSqlName: string;
+    FRelationName: string;
+    FOwnerName: string;
+    FAliasName: string;
+    FRelationAlias: string;
     FQuery: TFIBQuery;
     FVariantFalse,
     FVariantTrue: Variant;
@@ -86,6 +86,7 @@ type
  {$ENDIF}
 
     function GetAsInt64: Int64;
+    function GetRelationAlias: string;
     function IsDefferedLongString: Boolean;
     // Firebird 4 data types
     function IsDecimalType: Boolean;
@@ -198,9 +199,6 @@ type
     procedure Clear;
     function  IsParam:boolean;
     function  IsBlob:boolean;
-    function  SqlName:string;
-    function  AliasName:string;
-    function  RelationName:string;
     function  CharacterSet :string;
 // Array Support
 {$IFDEF SUPPORT_ARRAY_FIELD}
@@ -262,6 +260,12 @@ type
     property Index: Integer read FIndex;
     property Modified: Boolean read FModified write FModified;
     property Name: string read FName;
+    // Parameters get SqlName and RelationName only from ReadParamNames
+    property SqlName: string read FSqlName;
+    property RelationName: string read FRelationName;
+    property OwnerName: string read FOwnerName;
+    property AliasName: string read FAliasName;
+    property RelationAlias: string read GetRelationAlias;
     property Size: Integer read GetSize;
     property ServerSize: Integer read GetServerSQLSize;
     property SQLType: Integer read GetSQLType;
@@ -529,8 +533,13 @@ type
     property Handle: TISC_STMT_HANDLE read FHandle;
     property QueryRunState:TQueryRunState read FQueryRunState;
   private
-    FExtSQLDA:array of TExtDescribeSQLVar;
-    procedure FillExtDescribeSQLVars;
+    FRelationAliasesRead: Boolean;
+    FParamNamesRead: Boolean;
+    procedure ReadRelationAliases;
+    function FullNamesNeeded(NamesCut: Boolean): Boolean;
+    procedure ReadDescribeInfo(SQLDA: TFIBXSQLDA; ReadNames: Boolean);
+    procedure ReadParamNames;
+    function DecodeName(const Name: AnsiString): string;
     procedure ConvertSQLTextToCodePage;
   public
     function TableAliasForField(FieldIndex:integer):string; overload;
@@ -602,7 +611,7 @@ type
     procedure ApplyMacro;
     procedure RestoreMacroDefaultValues;
     function FieldCount:integer;
-    function SQLDescribeInfo(InfoRequest:array of AnsiChar):PXSQLDA;
+    function SQLDescribeInfo(InfoRequest:array of AnsiChar):PXSQLDA; deprecated;
     property Bof: Boolean read FBOF;
     property DBHandle: PISC_DB_HANDLE read GetDBHandle;
     property Eof: Boolean read GetEOF;
@@ -738,6 +747,31 @@ uses
 
 const
  cPlanMaxLength=16384;
+
+// Clients before Firebird 4 return names over 31 bytes empty, later ones cut them
+function ClientTruncatesNames(const ClientLibrary: IIbClientLibrary): Boolean;
+begin
+  Result := (ClientLibrary.Version.Product = fpFirebird) and (ClientLibrary.Version.Major >= 4);
+end;
+
+function XSQLVARName(const Name: array of AnsiChar; NameLength: Short): AnsiString;
+var
+  L: Integer;
+begin
+  L := NameLength;
+  if L > Length(Name) then
+    L := Length(Name)
+  else
+  if L < 0 then
+    L := 0;
+  SetString(Result, PAnsiChar(@Name[0]), L);
+end;
+
+// A name filling the XSQLVAR array may have been cut by the client
+function XSQLVARNameCut(NameLength: Short): Boolean;
+begin
+  Result := NameLength >= LENGTH_METANAMES - 1;
+end;
 
 
 (* TFIBXSQLVAR *)
@@ -1559,7 +1593,18 @@ begin
   else
   case FXSQLVar^.sqltype and (not 1) of
       SQL_ARRAY:
+      {$IFDEF SUPPORT_ARRAY_FIELD}
+        if FParent.FIsParams then
+          // the value set by the user, written at ExecQuery
+          if VarIsEmpty(FArrayValue) then
+            Result := '(Array)'
+          else
+            Result := FArrayValue
+        else
+          Result := GetArrayValues;
+      {$ELSE}
         Result := '(Array)';
+      {$ENDIF}
       SQL_BLOB:
 //        Result := '(BLOB)';
         Result := AsString;
@@ -1733,9 +1778,11 @@ end;
 
 procedure TFIBXSQLVAR.CheckArrayType;
 begin
- if not IsArray or not Assigned(vFIBArray)
-  then
-   FIBError(feNotIsArrayField,[Ansistring(FXSQLVAR^.relName)+'.'+Ansistring(FXSQLVAR^.SQlName)]);
+ if not IsArray or not Assigned(vFIBArray) then
+   if FParent.FIsParams then
+     FIBError(feNotIsArrayField, [Name])
+   else
+     FIBError(feNotIsArrayField, [RelationName + '.' + SqlName]);
 end;
 
 function TFIBXSQLVAR.GetDimensionCount:Integer;
@@ -2803,31 +2850,12 @@ begin
   Result:= Assigned(FParent) and FParent.FIsParams
 end;
 
-function  TFIBXSQLVAR.SqlName:string;
+function TFIBXSQLVAR.GetRelationAlias: string;
 begin
-  if not Assigned(FParent) or FParent.FIsParams then
-   Result := ''
-  else
-  with FParent.FXSQLVARs[FIndex].Data^ do
-    SetString(Result, sqlname, sqlname_length)
-end;
-
-function  TFIBXSQLVAR.AliasName:string;
-begin
-  if not Assigned(FParent) or FParent.FIsParams then
-   Result := ''
-  else
-  with FParent.FXSQLVARs[FIndex].Data^ do
-    SetString(Result, aliasname, aliasname_length)
-end;
-
-function  TFIBXSQLVAR.RelationName:string;
-begin
-  if not Assigned(FParent) or FParent.FIsParams then
-   Result := ''
-  else
-  with FParent.FXSQLVARs[FIndex].Data^ do
-    SetString(Result, relname, relname_length)
+  if Assigned(FParent) and not FParent.FIsParams and Assigned(FQuery) and
+    not FQuery.FRelationAliasesRead then
+    FQuery.ReadRelationAliases;
+  Result := FRelationAlias;
 end;
 
 
@@ -3299,12 +3327,12 @@ procedure TFIBXSQLDA.Initialize;
 var
   i, j,c: Integer;
   NamesWereEmpty: Boolean;
+  NamesCut: Boolean;
   st,st1: string;
-  ast:AnsiString;
 begin
   if FXSQLDA = nil then Exit;
   NamesWereEmpty := (FNames.Count = 0);
-  j:=0;
+  NamesCut := False;
   for i := 0 to FCount - 1 do
   begin
     with FXSQLVARs^[i].Data^ do
@@ -3314,48 +3342,24 @@ begin
       FXSQLVARs^[i].FSrvSQLScale:=sqlscale;
       FXSQLVARs^[i].FSrvSQLSubType:=sqlsubtype;
       FXSQLVARs^[i].FInitialized:=True;
-      if NamesWereEmpty then
+      if not FIsParams then
       begin
-        SetLength(ast,aliasname_length);
-        if aliasname_length>0 then
-         Move(aliasname[0],ast[1],aliasname_length);
-
-        if FQuery.Database.IsUnicodeConnect then
-         st := UTF8Decode(ast)
-        else
-{$IFDEF SUPPORT_KOI8_CHARSET}
-        if FQuery.Database.IsKOI8Connect then
-         st := ConvertFromCodePage(ast,CodePageKOI8R)
-        else
-{$ENDIF}
-         st := ast;
-        if st = '' then
-        begin
-          Inc(j);
-          st := 'F_'+IntToStr(j);
-          StrPCopy(aliasname, st);
-          aliasname_length:=Length(st)
-        end
-        else
-//        if GetXSQLVARByName(st)<>nil then
-        if NonAnsiIndexOf(FNames,st)>-1 then
-        begin
-//            Reapeated FieldNames
-          c:=0;
-          repeat
-           Inc(c);
-           st1:=st+IntToStr(c);
-           if Length(st1)>=LENGTH_METANAMES-1 then
-            st1:=
-              FastCopy(st,1,Length(st)-(Length(st1)-LENGTH_METANAMES))+IntToStr(c);
-          until GetXSQLVARByName(st1)=nil;
-
-          StrPCopy(aliasname, st1);
-          st:=st1;
-          aliasname_length:=Length(st)
-        end;
-        AddName(st,i,True);
+        FXSQLVARs^[i].FSqlName := FQuery.DecodeName(XSQLVARName(sqlname, sqlname_length));
+        FXSQLVARs^[i].FRelationName := FQuery.DecodeName(XSQLVARName(relname, relname_length));
+        FXSQLVARs^[i].FOwnerName := FQuery.DecodeName(XSQLVARName(ownname, ownname_length));
+        FXSQLVARs^[i].FAliasName := FQuery.DecodeName(XSQLVARName(aliasname, aliasname_length));
+        NamesCut := NamesCut or XSQLVARNameCut(sqlname_length) or
+          XSQLVARNameCut(relname_length) or XSQLVARNameCut(ownname_length) or
+          XSQLVARNameCut(aliasname_length);
+      end
+      else
+      begin
+        FXSQLVARs^[i].FSqlName := '';
+        FXSQLVARs^[i].FRelationName := '';
+        FXSQLVARs^[i].FOwnerName := '';
+        FXSQLVARs^[i].FAliasName := '';
       end;
+      FXSQLVARs^[i].FRelationAlias := '';
       case sqltype and (not 1) of
         0:
          if Self<>FQuery.FUserSQLParams then
@@ -3405,6 +3409,39 @@ begin
       else
       if (sqlind <> nil) then
         FIBAlloc(sqlind, 0, 0);
+    end;
+  end;
+  if (Self = FQuery.FSQLRecord) and (FCount > 0) and FQuery.FullNamesNeeded(NamesCut) then
+    FQuery.ReadDescribeInfo(Self, True);
+  if NamesWereEmpty then
+  begin
+    j := 0;
+    for i := 0 to FCount - 1 do
+    begin
+      if FIsParams then
+        with FXSQLVARs^[i].Data^ do
+          st := FQuery.DecodeName(XSQLVARName(aliasname, aliasname_length))
+      else
+        st := FXSQLVARs^[i].FAliasName;
+      if st = '' then
+      begin
+        Inc(j);
+        st := 'F_' + IntToStr(j);
+      end
+      else
+      if NonAnsiIndexOf(FNames, st) > -1 then
+      begin
+        // repeated field names
+        c := 0;
+        repeat
+          Inc(c);
+          st1 := st + IntToStr(c);
+        until GetXSQLVARByName(st1) = nil;
+        st := st1;
+      end;
+      if not FIsParams then
+        FXSQLVARs^[i].FAliasName := st;
+      AddName(st, i, True);
     end;
   end;
 end;
@@ -3535,7 +3572,6 @@ begin
     FOnlySrvParams.Free;
     FConditions.Free;
     FParser.Free;
-    SetLength(FExtSQLDA,0);
     inherited;
     FSQL.Free;
   end;
@@ -4816,8 +4852,8 @@ begin
   with FSQLRecord do
   for i:=0 to Pred(FCount) do
   begin
-    if   (FXSQLVARs[i].Data^.relname=vTableName)
-     and (FXSQLVARs[i].Data^.sqlname=vFieldName)
+    if (FXSQLVARs[i].RelationName = vTableName) and
+      (FXSQLVARs[i].SqlName = vFieldName)
     then
     begin
       Result:=FXSQLVARs[i];
@@ -5020,133 +5056,209 @@ end;
 
 
 function Get_String_Info(ClientLibrary:IIbClientLibrary;  var SourceBuffer:PAnsiChar;
- DestBuffer:PAnsiChar; Dest_len:integer):integer;
+ DestBuffer:PAnsiChar; Dest_len:integer):integer; overload;
 var
-    p:PAnsiChar;
+    L:integer;
 begin
   if not Assigned(ClientLibrary) then
    Result := -1
   else
   begin
    FillChar(DestBuffer[0],Dest_len,0);
-   p:=SourceBuffer;
-   Result:=ClientLibrary.isc_vax_integer(p, 2);
+   L := ClientLibrary.isc_vax_integer(SourceBuffer, 2);
+   Result := L;
    if Result>=Dest_len then
     Result:=Dest_len-1;
    Move(SourceBuffer[2],DestBuffer[0],Result);
-   Inc(SourceBuffer, Result+2);
+   Inc(SourceBuffer, L+2);
   end
 end;
 
-procedure TFIBQuery.FillExtDescribeSQLVars;
+function Get_String_Info(ClientLibrary: IIbClientLibrary;
+  var SourceBuffer: PAnsiChar): AnsiString; overload;
 var
-  Result_buffer: array[0..32766] of AnsiChar;
-  PResult:PAnsiChar;
-  item:PAnsiChar;
-  index :Short;
-  Lib:IIbClientLibrary;
-  InfoRequest:array[0..4] of AnsiChar;
-  vSQL :Ansistring;
-  RN:Ansistring;
+  L: Integer;
 begin
-  if (not Prepared) then Exit;
-   if not Database.IsFirebirdConnect or (Database.ServerMajorVersion<2) or (FHandle=nil {for MDT } ) then
-   begin
-     if Length(FExtSQLDA)<FSQLRecord.Count then
-       SetLength(FExtSQLDA,FSQLRecord.Count);
-     vSQL:=ReadySQLText(False);
-     for index:=0 to Pred(FieldCount) do
-     begin
-       rn  :=Fields[index].RelationName;
-       if Length(rn) > 0 then
-       begin
-        rn  :=AliasForTable(vSQL, FormatIdentifier(3,rn));
-        if Length(rn) > 0 then
-         Move(AnsiString(rn)[1],FExtSQLDA[index].sql_relation_alias[0],Length(RN))
-        else
-         FillChar(FExtSQLDA[index].sql_relation_alias[0],SizeOf(FExtSQLDA[index].sql_relation_alias[0]),0)
-       end
-       else
-        FillChar(FExtSQLDA[index].sql_relation_alias[0],SizeOf(FExtSQLDA[index].sql_relation_alias[0]),0)
-     end;
-    Exit;
-   end;
+  L := ClientLibrary.isc_vax_integer(SourceBuffer, 2);
+  SetString(Result, SourceBuffer + 2, L);
+  Inc(SourceBuffer, L + 2);
+end;
 
-   InfoRequest[0]:= AnsiChar(isc_info_sql_select);
-   InfoRequest[1]:= AnsiChar(isc_info_sql_describe_vars);
-   InfoRequest[2]:= AnsiChar(isc_info_sql_sqlda_seq);
-   InfoRequest[3]:= AnsiChar(frb_info_sql_relation_alias);
-   InfoRequest[4]:= AnsiChar(isc_info_sql_describe_end);
+function TFIBQuery.DecodeName(const Name: AnsiString): string;
+begin
+  if Database.IsUnicodeConnect then
+{$IFDEF D2009+}
+    Result := UTF8ToString(Name)
+{$ELSE}
+    Result := UTF8Decode(Name)
+{$ENDIF}
+  else
+{$IFDEF SUPPORT_KOI8_CHARSET}
+  if Database.IsKOI8Connect then
+    Result := ConvertFromCodePage(Name, CodePageKOI8R)
+  else
+{$ENDIF}
+    Result := string(Name);
+end;
 
-      Lib:=Database.ClientLibrary;
-      Call(Lib.isc_dsql_sql_info(
-         StatusVector,@FHandle, SizeOf(InfoRequest), @InfoRequest[0],
-//         SizeOf(Result_buffer)
-        32766, Result_buffer), True
-      );
-      if  (Result_buffer[0] <> AnsiChar(isc_info_sql_select))
-       or (Result_buffer[1] <> AnsiChar(isc_info_sql_describe_vars))
-      then
+// The XSQLVAR names may be cut or, with clients before Firebird 4, empty
+function TFIBQuery.FullNamesNeeded(NamesCut: Boolean): Boolean;
+begin
+  Result := (Database.Capabilities.MaxIdentifierLength > LENGTH_METANAMES - 1) and
+    (NamesCut or not ClientTruncatesNames(Database.ClientLibrary));
+end;
+
+procedure TFIBQuery.ReadRelationAliases;
+var
+  i: Integer;
+  vSQL: string;
+  RN: string;
+begin
+  if not Prepared then Exit;
+  if Database.IsFirebirdConnect and (Database.ServerMajorVersion >= 2) and
+    (FHandle <> nil {for MDT }) then
+  begin
+    ReadDescribeInfo(FSQLRecord, False);
+    if FRelationAliasesRead then
+      Exit;
+  end;
+  // old servers or an unreadable info answer
+  FRelationAliasesRead := True;
+  vSQL := ReadySQLText(False);
+  for i := 0 to Pred(FSQLRecord.Count) do
+  begin
+    RN := FSQLRecord.FXSQLVARs^[i].RelationName;
+    if Length(RN) > 0 then
+      RN := AliasForTable(vSQL, FormatIdentifier(3, RN));
+    FSQLRecord.FXSQLVARs^[i].FRelationAlias := RN;
+  end;
+end;
+
+// Relation aliases and, with ReadNames, full names; a failed call keeps the XSQLVAR names
+procedure TFIBQuery.ReadDescribeInfo(SQLDA: TFIBXSQLDA; ReadNames: Boolean);
+var
+  IsSelect: Boolean;
+  Status: ISC_STATUS;
+  DescribeItem: Byte;
+  Request: array[0..12] of AnsiChar;
+  RequestLength: Integer;
+  Buffer: array[0..32766] of AnsiChar;
+  P: PAnsiChar;
+  Lib: IIbClientLibrary;
+  Item: Byte;
+  Index, StartIndex: Integer;
+  Truncated: Boolean;
+  S: string;
+
+  procedure AddItem(Value: Byte);
+  begin
+    Request[RequestLength] := AnsiChar(Value);
+    Inc(RequestLength);
+  end;
+
+begin
+  if FHandle = nil then Exit;
+  IsSelect := SQLDA = FSQLRecord;
+  if IsSelect then
+  begin
+    DescribeItem := isc_info_sql_select;
+    // only after a complete answer, else ReadRelationAliases falls back
+    FRelationAliasesRead := False;
+    for Index := 0 to Pred(SQLDA.Count) do
+      SQLDA.FXSQLVARs^[Index].FRelationAlias := '';
+  end
+  else
+    DescribeItem := isc_info_sql_bind;
+  Lib := Database.ClientLibrary;
+  StartIndex := 1;
+  repeat
+    RequestLength := 0;
+    if StartIndex > 1 then
+    begin
+      AddItem(isc_info_sql_sqlda_start);
+      AddItem(2);
+      AddItem(StartIndex and $FF);
+      AddItem(StartIndex shr 8);
+    end;
+    AddItem(DescribeItem);
+    AddItem(isc_info_sql_describe_vars);
+    AddItem(isc_info_sql_sqlda_seq);
+    if ReadNames then
+    begin
+      AddItem(isc_info_sql_field);
+      AddItem(isc_info_sql_relation);
+      if IsSelect then
       begin
+        AddItem(isc_info_sql_owner);
+        AddItem(isc_info_sql_alias);
+      end;
+    end;
+    if IsSelect then
+      AddItem(frb_info_sql_relation_alias);
+    AddItem(isc_info_sql_describe_end);
+    Status := Lib.isc_dsql_sql_info(StatusVector, @FHandle, RequestLength, @Request[0],
+      SizeOf(Buffer), Buffer);
+    Call(Status, False);
+    if Status > 0 then
+      Exit;
+    if (Buffer[0] <> AnsiChar(DescribeItem)) or
+      (Buffer[1] <> AnsiChar(isc_info_sql_describe_vars)) then
+      Exit;
+    P := @Buffer[2];
+    Get_Numeric_Info(Lib, P);
+    Index := -1;
+    Truncated := False;
+    while not Truncated and (P^ <> AnsiChar(isc_info_end)) do
+    begin
+      Item := Byte(P^);
+      Inc(P);
+      case Item of
+        isc_info_sql_describe_end:;
+        isc_info_truncated:
+          Truncated := True;
+        isc_info_sql_sqlda_seq:
+          Index := Get_Numeric_Info(Lib, P) - 1;
+        isc_info_sql_field, isc_info_sql_relation, isc_info_sql_owner, isc_info_sql_alias,
+        frb_info_sql_relation_alias:
+          begin
+            S := DecodeName(Get_String_Info(Lib, P));
+            if (Index >= 0) and (Index < SQLDA.Count) then
+              with SQLDA.FXSQLVARs^[Index] do
+                case Item of
+                  isc_info_sql_field: FSqlName := S;
+                  isc_info_sql_relation: FRelationName := S;
+                  isc_info_sql_owner: FOwnerName := S;
+                  isc_info_sql_alias: FAliasName := S;
+                else
+                  if S = '' then
+                    FRelationAlias := FRelationName
+                  else
+                    FRelationAlias := S;
+                end;
+          end;
+      else
         Exit;
       end;
-      if Length(FExtSQLDA)<FSQLRecord.Count then
-       SetLength(FExtSQLDA,FSQLRecord.Count);
-      PResult:=@Result_buffer[2];
-      Get_Numeric_Info(Lib,PResult);
-      index:=0;
-      while PResult[0]<>AnsiChar(isc_info_end) do
-      begin
-        item:=PResult;
-        if item[0]=AnsiChar(isc_info_sql_describe_end) then
-         Inc(PResult,1)
-        else
-        while item[0]<>AnsiChar(isc_info_sql_describe_end) do
-        begin
-          Inc(PResult,1);
-          case Byte(item[0]) of
-            isc_info_sql_sqlda_seq:
-            begin
-              index := get_numeric_info(Lib,PResult)-1;
-            end;
-            frb_info_sql_relation_alias:
-            begin
-              get_string_info(Lib,PResult,@FExtSQLDA[index].sql_relation_alias[0],
-                SizeOf(FExtSQLDA[index].sql_relation_alias)
-              );
-              if (FExtSQLDA[index].sql_relation_alias = '') then
-              begin
-               RN:=Fields[index].RelationName;
-               if(Length(RN)>0)then
-                Move(RN[1],
-                 FExtSQLDA[index].sql_relation_alias[0],
-                 Length(RN)
-                );
-              end
-            end;
-            isc_info_truncated:
-            begin
-
-            end;
-          end;
-          item:=PResult;
-        end;
-      end;
+    end;
+    // Continue from the column that did not fit
+    if Truncated then
+      if Index + 1 > StartIndex then
+        StartIndex := Index + 1
+      else
+        Exit;
+  until not Truncated;
+  if IsSelect then
+    FRelationAliasesRead := True;
 end;
 
 function TFIBQuery.TableAliasForField(FieldIndex:integer):string;
 begin
   if not Prepared then
    Prepare;
-    if Length(FExtSQLDA)=0 then
-     FillExtDescribeSQLVars;
-
-    if (FieldIndex<0) or(FieldIndex>=Length(FExtSQLDA)) then
-     Result := ''
-    else
-     begin
-      Result:=   FormatIdentifier(3,FExtSQLDA[FieldIndex].sql_relation_alias);
-     end;
+  if (FieldIndex<0) or(FieldIndex>=FSQLRecord.Count) then
+   Result := ''
+  else
+   Result := FormatIdentifier(3, FSQLRecord[FieldIndex].RelationAlias);
 end;
 
 function TFIBQuery.TableAliasForFieldByName(const aFieldName:string):string;
@@ -5194,9 +5306,10 @@ begin
         Result:=nil;
         Exit;
       end;
-      Result:=AllocMem(SizeOf(TXSQLDA));
       PResult:=@Result_buffer[2];
       N := Get_Numeric_Info(Lib,PResult);
+      Result := AllocMem(XSQLDA_LENGTH(N));
+      Result^.version := SQLDA_VERSION1;
       Result^.sqld:=N;
       while PResult[0]<>AnsiChar(isc_info_end) do
       begin
@@ -5894,6 +6007,24 @@ begin
   end;
 end;
 
+procedure TFIBQuery.ReadParamNames;
+var
+  i: Integer;
+  NamesCut: Boolean;
+begin
+  NamesCut := False;
+  for i := 0 to FSQLParams.Count - 1 do
+    with FSQLParams.FXSQLVARs^[i], FXSQLVAR^ do
+    begin
+      FRelationName := DecodeName(XSQLVARName(relname, relname_length));
+      FSqlName := DecodeName(XSQLVARName(sqlname, sqlname_length));
+      NamesCut := NamesCut or XSQLVARNameCut(relname_length) or XSQLVARNameCut(sqlname_length);
+    end;
+  if (FSQLParams.Count > 0) and FullNamesNeeded(NamesCut) then
+    ReadDescribeInfo(FSQLParams, True);
+  FParamNamesRead := True;
+end;
+
 // Writes the array values of the parameters as new arrays
 procedure TFIBQuery.PutArrayParams;
 var
@@ -5915,11 +6046,10 @@ begin
     if (SrvPar = nil) or (SrvPar.SQLType <> SQL_ARRAY) then
       FIBErrorEx('Parameter %s is not an array', [Par.Name]);
     // the column the parameter is assigned to
-    with SrvPar.FXSQLVAR^ do
-    begin
-      SetString(ColumnRelation, relname, relname_length);
-      SetString(ColumnName, sqlname, sqlname_length);
-    end;
+    if not FParamNamesRead then
+      ReadParamNames;
+    ColumnRelation := SrvPar.FRelationName;
+    ColumnName := SrvPar.FSqlName;
     if (Par.vFIBArray = nil) or not Par.vFIBArray.Matches(Database, ColumnRelation, ColumnName) then
     begin
       FreeAndNil(Par.vFIBArray);
@@ -5946,9 +6076,8 @@ begin
  for i:=0 to Pred(da.Count) do
  begin
    v:=da.FXSQLVARs^[i];
-   with v,v.FXSQLVAR^ do
-    if (sqltype and (not 1) = SQL_ARRAY) then
-     PrepareArraySqlVar(v, RelName, SQLName);
+   if v.FXSQLVAR^.sqltype and (not 1) = SQL_ARRAY then
+     PrepareArraySqlVar(v, v.RelationName, v.SqlName);
  end;
 end;
 {$ENDIF}
@@ -6059,7 +6188,8 @@ begin
   end;
   if FPrepared then
    Exit;
-  SetLength(FExtSQLDA,0);
+  FRelationAliasesRead := False;
+  FParamNamesRead := False;
   if IsBlank(FProcessedSQL) then
     FIBError(feEmptyQuery, ['Prepare']);
   try
