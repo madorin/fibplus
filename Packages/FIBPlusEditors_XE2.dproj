@@ -165,7 +165,7 @@
 				<Form>frmCompSearchResult</Form>
 			</DCCReference>
 			<DCCReference Include="FIBToolsConsts.pas"/>
-			<DCCReference Include="..\FIBDBLoginDlg.pas">
+			<DCCReference Include="..\Source\FIBDBLoginDlg.pas">
 				<Form>frmFIBDBLoginDlg</Form>
 			</DCCReference>
 			<BuildConfiguration Include="Base">

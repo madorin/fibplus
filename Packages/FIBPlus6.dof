@@ -95,7 +95,7 @@ Count=1
 Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
 [HistoryLists\hlSearchPath]
 Count=3
-Item0=..\
+Item0=..\Source\
 Item1=editors\
 Item2=..\d6
 [HistoryLists\hlUnitOutputDirectory]

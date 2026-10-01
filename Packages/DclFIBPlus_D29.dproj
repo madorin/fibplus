@@ -110,7 +110,7 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="FibPlus_D29.dcp"/>
-        <DCCReference Include="..\RegFIBPlus.pas"/>
+        <DCCReference Include="..\Source\RegFIBPlus.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

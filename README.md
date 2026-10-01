@@ -35,7 +35,7 @@ Each group contains three packages:
 3. Right-click `FIBPlus_Dxx` and choose **Build**. It is a never-build package (`{$IMPLICITBUILD OFF}`), so it must be built explicitly before the design packages. Skipping this step causes *E2225 Never-build package 'FibPlus_Dxx' must be recompiled*.
 4. Right-click `DclFIBPlus_Dxx`, choose **Build**, then **Install**.
 5. Right-click `FIBPlusEditors_Dxx`, choose **Build**, then **Install**.
-6. In **Tools > Options > Language > Delphi > Library**, add the library root folder (the one containing `FIBDatabase.pas`) to the **Library path** for every target platform you use (Win32, Win64, ...).
+6. In **Tools > Options > Language > Delphi > Library**, add the `Source` folder to the **Library path** for every target platform you use (Win32, Win64, ...).
 
 The runtime package itself does not need to be installed. The design packages exist only for the IDE platform (Win32, or Win64x for the 64-bit IDE), as the IDE loads them; for Win64 applications it is enough to set the library path, as in step 6. Build `FIBPlus_Dxx` for Win64 only if your application is built with runtime packages.
 

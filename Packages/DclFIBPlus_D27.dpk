@@ -33,6 +33,6 @@ requires
   FibPlus_D27;
 
 contains
-  RegFIBPlus in '..\RegFIBPlus.pas';
+  RegFIBPlus in '..\Source\RegFIBPlus.pas';
 
 end.

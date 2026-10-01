@@ -174,7 +174,7 @@
         </DCCReference>
         <DCCReference Include="FIBToolsConsts.pas"/>
         <DCCReference Include="pFIBSyntaxMemo.pas"/>
-        <DCCReference Include="..\FIBDBLoginDlg.pas">
+        <DCCReference Include="..\Source\FIBDBLoginDlg.pas">
             <Form>frmFIBDBLoginDlg</Form>
             <FormType>dfm</FormType>
         </DCCReference>
