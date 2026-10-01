@@ -379,7 +379,6 @@ end;
 constructor TFIBSQLMonitorHook.Create;
 begin
   inherited Create;
-  vEventsCreated := false;
 
   FActive := true;
   if not vEventsCreated then
@@ -905,7 +904,6 @@ end;
 constructor TMonitorWriterThread.Create;
 
 begin
-  StopExec:=False;
   FMonitorMsgs := TList.Create;
   inherited Create(False);
 {  if FMonitorCount^ <> 0 then

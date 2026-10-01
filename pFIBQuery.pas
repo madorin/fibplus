@@ -236,9 +236,7 @@ constructor TpFIBUpdateObject.Create(AOwner: TComponent);
 begin
  inherited Create(AOwner);
  ParamCheck:=true;
- FKindUpdate:=ukModify;
  FActive:=true;
- FExecuteOrder:=oeBeforeDefault;
 end;
 
 

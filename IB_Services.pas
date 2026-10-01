@@ -157,7 +157,6 @@ type
     NoOfAttachments: Integer;
     NoOfDatabases: Integer;
     DbName: array of string;
-    constructor Create;
     destructor Destroy; override;
   end;
 
@@ -167,7 +166,6 @@ type
     Id: array of string;
     Desc: array of string;
     LicensedUsers: Integer;
-    constructor Create;
     destructor Destroy; override;
   end;
 
@@ -181,7 +179,6 @@ type
   public
     ConfigFileValue: array of integer;
     ConfigFileKey: array of integer;
-    constructor Create;
     destructor Destroy; override;
   end;
 
@@ -248,7 +245,6 @@ type
     procedure InternalServiceStart;
 
   public
-    constructor Create(AOwner: TComponent); override;
     procedure ServiceStart; virtual;
     property IsServiceRunning : Boolean read GetIsServiceRunning;
   end;
@@ -265,7 +261,6 @@ type
     property Action: Integer read FAction write SetAction;
     property OnTextNotify: TServiceGetTextNotify read FOnTextNotify write FOnTextNotify;
   public
-    constructor Create (AOwner: TComponent); override;
     function GetNextLine : String;
     function GetNextChunk : String;
     procedure ServiceStart; override;
@@ -423,7 +418,6 @@ type
   protected
     procedure SetServiceStartOptions; override;
   public
-    constructor Create(AOwner: TComponent); override;
     procedure BackUp(const DBName, BackupName:string; aLevel:integer);
   published
     property BackupFile: string read FBackupFile write FBackupFile;
@@ -544,7 +538,6 @@ type
     procedure Loaded; override;
     procedure SetServiceStartOptions; override;
   public
-    constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure DisplayUsers;
     procedure DisplayUser(UserName: string);
@@ -726,22 +719,16 @@ begin
   inherited Create(AOwner);
   FLibraryName := IBASE_DLL;
   // FGDSLibrary := GetGDSLibrary;
-  FIBLoaded := False;
   // FGDSLibrary.CheckIBLoaded;
   FIBLoaded := True;
   FProtocol := local;
-  FserverName := '';
   FParams := TStringList.Create;
   FParamsChanged := True;
   TStringList(FParams).OnChange := ParamsChange;
   TStringList(FParams).OnChanging := ParamsChanging;
-  FSPB := nil;
-  FQuerySPB := nil;
   FBufferSize := DefaultBufferSize;
-  FHandle := nil;
   FLoginPrompt := True;
   // FTraceFlags := [];
-  FOutputbuffer := nil;
   // FGDSLibrary := GetGDSLibrary;
 end;
 
@@ -1364,14 +1351,6 @@ begin
                    PAnsiChar(@Value)[3];
 end;
 
-constructor TpFIBControlService.Create(AOwner: TComponent);
-begin
-  inherited create(AOwner);
-  FStartParams := '';
-  FStartSPB := nil;
-  FStartSPBLength := 0;
-end;
-
 procedure TpFIBControlService.InternalServiceStart;
 begin
   FStartSPBLength := Length(FStartParams);
@@ -1764,12 +1743,6 @@ begin
 end;
 
 
-constructor TpFIBNBackupService.Create(AOwner: TComponent);
-begin
-  inherited Create(AOwner);
-  FLevel := 0;
-end;
-
 procedure TpFIBNBackupService.BackUp(const DBName, BackupName:string; aLevel:integer);
 begin
   try
@@ -2029,12 +2002,6 @@ begin
 end;
 
 { TpFIBSecurityService }
-constructor TpFIBSecurityService.Create(AOwner: TComponent);
-begin
-  inherited Create(AOwner);
-  FModifyParams := [];
-end;
-
 destructor TpFIBSecurityService.Destroy;
 var
   i : Integer;
@@ -2293,13 +2260,6 @@ begin
 end;
 
 { TIBUnStructuredService }
-constructor TpFIBControlAndQueryService.Create(AOwner: TComponent);
-begin
-  inherited Create(AOwner);
-  FEof := False;
-  FAction := 0;
-end;
-
 procedure TpFIBControlAndQueryService.SetAction(Value: Integer);
 begin
   FEof := False;
@@ -2383,11 +2343,6 @@ end;
 
 { TDatabaseInfo }
 
-constructor TDatabaseInfo.Create;
-begin
-  DbName := nil;
-end;
-
 destructor TDatabaseInfo.Destroy;
 begin
   DbName := nil;
@@ -2395,13 +2350,6 @@ begin
 end;
 
 { TLicenseInfo }
-
-constructor TLicenseInfo.Create;
-begin
-  Key := nil;
-  Id := nil;
-  Desc := nil;
-end;
 
 destructor TLicenseInfo.Destroy;
 begin
@@ -2412,12 +2360,6 @@ begin
 end;
 
 { TConfigFileData }
-
-constructor TConfigFileData.Create;
-begin
-  ConfigFileValue := nil;
-  ConfigFileKey := nil;
-end;
 
 destructor TConfigFileData.Destroy;
 begin
@@ -2431,7 +2373,6 @@ end;
 constructor TConfigParams.Create;
 begin
   ConfigFileData := TConfigFileData.Create;
-  ConfigFileParams := nil;
 end;
 
 destructor TConfigParams.Destroy;

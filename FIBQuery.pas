@@ -352,7 +352,6 @@ type
     FVersion: integer;
     FCharset:Ansistring;
   public
-    constructor Create;
     procedure ReadyStream; virtual; abstract;
     property  Columns: TFIBXSQLDA read FColumns;
     property  Filename: string read FFilename write FFilename;
@@ -780,16 +779,6 @@ begin
   FParent := AParent;
   FVariantFalse := 0;
   FVariantTrue  := 1;
-  FModified:=False;
-  FIsMacro      :=False;
-  FQuoted       :=False;
-  FOldValue     :=Unassigned;
-  FInWhereClause:=False;
-  FInitialized  :=False;
-  FCanForceIsNull:=False;
- {$IFDEF SUPPORT_ARRAY_FIELD}
-  vFIBArray   :=nil;
- {$ENDIF}
 end;
 
 destructor TFIBXSQLVAR.Destroy; //override;
@@ -3004,8 +2993,6 @@ begin
    Duplicates := dupIgnore;
   end;}
   FIsParams              := aIsParams;
-  FSize                  := 0;
-  FXSQLDA                := nil;
 end;
 
 
@@ -3486,7 +3473,6 @@ end;
 constructor TFIBQuery.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
-  FSQLTextChangeCount:=0;
   FAutoCloseOnTransactionEnd:=True;
 
 {$IFDEF CSMonitor}
@@ -3500,21 +3486,14 @@ begin
    OnDatabaseConnectionLost := DatabaseConnectionLost;
    OnTransactionEnding     := DoTransactionEnding;
   end;
-  FBOF := False;
-  FEOF := False;
-  FPrepared := False;
-  FRecordCount := 0;
   FSQL := TStringList.Create;
   TStringList(FSQL).OnChanging := SQLChanging;
-  FHandle := nil;
   FSQLParams := TFIBXSQLDA.Create(True);
   FSQLParams.FQuery := Self;
   FSQLRecord := TFIBXSQLDA.Create(False);
   FSQLRecord.FQuery := Self;
   FUserSQLParams:=TFIBXSQLDA.Create(True);
   FUserSQLParams.FQuery := Self;
-  FSQLType := SQLUnknown;
-  FProcExecuted:=False;
   FMacroChar   :='@';
   FConditions       :=TConditions.Create(Self);
   FParser:=    TSQLParser.Create;
@@ -3532,26 +3511,20 @@ begin
   begin
    FParamCheck :=True;
    FGoToFirstRecordOnExecute :=True;
-   FOptions    :=[];
   end;
 
-  FCountLockSQL:=0;
   FModifyTable:='-1';
 
   if AOwner is TFIBDatabase then
     Database := TFIBDatabase(AOwner)
   else
     if AOwner is TFIBTransaction then  Transaction := TFIBTransaction(AOwner);
-  vDiffParams    :=False;
   FOnlySrvParams :=TStringList.Create;
   with FOnlySrvParams do
   begin
     Sorted    :=True;
     Duplicates:=dupIgnore;
   end;
-  FCallTime :=0;
-  vUserParamsCreated:=False;
-  FMacroChanged     :=False;
 end;
 
 destructor TFIBQuery.Destroy;
@@ -6908,14 +6881,6 @@ begin
   Result := ' ' + Result;
 end;
 {$ENDIF}
-
-{ TFIBBatch }
-
-constructor TFIBBatch.Create;
-begin
-  inherited Create;
-  FState  :=bsNotPrepared;
-end;
 
 initialization
  DisableEncodingSQLText:=False;

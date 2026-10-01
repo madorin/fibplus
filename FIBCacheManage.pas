@@ -150,36 +150,20 @@ begin
 
  if (aBlockSize < FRecordSize) then
   raise EMemManagerError.Create('Incompatible Sizes');
- FBlocks        :=nil;
  FBlocks        :=TFIBList.Create;
  FBlockSize     :=aBlockSize;
- FRecordCount:=0;
  FRecInBlock :=FBlockSize div FRecordSize;
- FLogStringData :=nil;
  if aStrCount>0 then
  begin
    FStrFieldCount :=aStrCount;
    FStringData    :=TStringCollection.Create(aStrCount);
    GetMem(FStringFieldOffsets , aStrCount * SizeOf(Integer));
    GetMem(FStringFieldSize    , aStrCount * SizeOf(Integer));
- end
- else
- begin
-   FStrFieldCount :=0;
-   FStringData :=nil;
-   FStringFieldOffsets:=nil;
  end;
 
  GetMem(FOldBuffer , FInOutRecordSize);
  if FInOutRecordSize>0 then
   FillChar(FOldBuffer[0],FInOutRecordSize,1); // NullValues
-
- FChangeLog    :=nil;
- FChangesPositions:=nil;
-
- FChangesCount :=0;
- FSaveChangeLog:=False;
- FMapRecords  :=nil;
 end;
 
 destructor TRecordsCache.Destroy;

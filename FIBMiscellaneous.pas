@@ -2306,7 +2306,6 @@ end;
 constructor TFIBFileOutputStream.Create;
 begin
   GetMem(FBuffer,cBufSize);
-  FBuffPos:=0;  
   inherited;
 end;
 

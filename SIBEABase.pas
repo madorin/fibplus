@@ -484,7 +484,6 @@ begin
   DB := DBHandle;
   EventGroup := EventGrp;
   OnTerminate := TermEvent;
-  FreeOnTerminate := False;
   FVCLSynchro:=aVCLSynchro;
   Resume;
 end;
@@ -621,10 +620,6 @@ end;
 constructor TSIBEventAlerter.Create(Owner: TComponent);
 begin
   inherited Create(Owner);
-  ThreadException := False;
-
-  FOnEventAlert := nil;
-  FNativeHandle := nil;
 
   FEvents := TStringList.Create;
   with TStringList(FEvents) do

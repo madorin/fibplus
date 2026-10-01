@@ -107,7 +107,6 @@ begin
   inherited Create(AOwner);
   RegisterErrorHandler(Self);
   Options := [oeException, oeLostConnect];
-  FLastError := keNoError;
   FErrorLexems:=TErrorLexems.Create;
 end;
 

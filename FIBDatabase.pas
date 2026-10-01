@@ -1008,10 +1008,8 @@ constructor TFIBDatabase.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FLibraryName  := IBASE_DLL;
-  FClientLibrary:= nil;
   FFIBBases                            := TList.Create;
   FTransactions                        := TList.Create;
-  FDBName                              := '';
   FDBParams                            := TDBParams.Create(Self);
   FDBParamsChanged                     := True;
   TStringList(FDBParams).OnChange      := DBParamsChange;
@@ -1023,7 +1021,6 @@ begin
 
   FConnectParams  := TConnectParams.Create(Self);
   FCapabilities := TFIBDatabaseCapabilities.Create;
-  FDifferenceTime := 0;
 
   if (csDesigning in ComponentState)   and   not CmpInLoadedState(Self)
   then
@@ -1041,8 +1038,6 @@ begin
   else
   begin
    FSynchronizeTime      :=True ;
-   FUpperOldNames        :=False;
-   FUseLoginPrompt       :=False;
    FSQLDialect           :=1;
    FDesignDBOptions      := [ddoStoreConnected]
   end;
@@ -1067,11 +1062,8 @@ begin
   vOnDestroy       :=TNotifyEventList.Create(Self);
 
   vAttachmentID    :=-1;
-  FActiveTransactions:=nil;
 //  FBlobFilters     :=TIBBlobFilters.Create;
   FUseRepositories :=[urFieldsInfo,urDataSetInfo,urErrorMessagesInfo] ;
-  FDBFileName      :='';
-  FConnectType     :=0;
   FBlobSwapSupport:=TBlobSwapSupport.Create;
 
   FGenerators:=TGeneratorsCache.Create(Self);
@@ -3614,26 +3606,19 @@ begin
   
   FDatabases                           := TList.Create;
   FFIBBases                           := TList.Create;
-  FHandle                              := nil;
-  FTPB                                 := nil;
-  FTPBLength                           := 0;
   FTRParams                            := TStringList.Create;
   FTRParamsChanged                     := True;
   TStringList(FTRParams).OnChange      := TRParamsChange;
   TStringList(FTRParams).OnChanging    := TRParamsChanging;
-  FTimer                               := nil;
   FState                               := tsClosed;
-  FTransactionID                       := 0;
   if (csDesigning in ComponentState)   and not CmpInLoadedState(Self)
   then
   begin
    FTimeOutAction := TTransactionAction(DefTimeOutAction);
-   TimeOut        :=0;
    DefaultDataBase:=DefDataBase;
   end
   else
   begin
-   FTimeOutAction :=taRollBack;
    TimeOut        :=DefTimeOut;
   end;
   vOnDestroy          := TNotifyEventList.Create(Self);

@@ -235,7 +235,6 @@ begin
   inherited Create(AOwner);
 
 //    TThread.CurrentThread.ThreadID;
-  FActive := False;
   FInterval := 1000; {}
   FSynchronizing:=True;
   if TimerList<>nil then

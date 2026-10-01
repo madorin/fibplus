@@ -1319,7 +1319,6 @@ constructor TCustomMetaObject.Create(AOwner: TCustomMetaObject;aName:string='' )
 begin
   inherited Create;
   Name:=aName;
-  FItemsCount := 0;
   FOwner := AOwner;
   if (FOwner <> nil) and (ClassIndex >= 0) then
     FOwner.FItems[ClassIndex].Childs.Add(Self)
@@ -2047,8 +2046,6 @@ begin
   FLoadTableChilds := DefTableChilds;
   FLoadViewChilds  := DefViewChilds;
   FDDLTextOptions:=[dtoUseCreateDB,dtoUseSetTerm];
-  FSysInfos := False;
-  FNamesLoaded:=False;  
 end;
 
 destructor  TMetaDataBase.Destroy;

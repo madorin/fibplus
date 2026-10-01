@@ -138,10 +138,6 @@ end;
 constructor TTestVarValues.Create;
 begin
  inherited Create;
- FValue    :=0 ;
- FBufValue :=0 ;
- FStringVal:='';
- FLogStrValue:=false;
  FDoLog      :=true;
  FStrings    :=TStringList.Create;
 end;
@@ -157,11 +153,8 @@ end;
 constructor TTestInfo.Create;
 begin
  inherited Create;
- FPrintListActual:=false;
  FTestVars:=TObjStringList.Create(Self,true);
- FLogFileName:='';
  FPrintList  :=TList.Create;
- FLastObjName:='';
 end;
 
 destructor  TTestInfo.Destroy; //override;

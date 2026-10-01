@@ -345,11 +345,8 @@ end;
 constructor TpFIBSetup.Create(AOwner : TComponent);
 begin
   inherited Create(AOwner);
-  FIBInstallLoaded := False;
   CheckIBInstallLoaded;
   FIBInstallLoaded := True;
-  FRebootToComplete := False;
-  FProgress := 0;
 end;
 
 { TpFIBInstall }
@@ -357,7 +354,6 @@ end;
 constructor TpFIBInstall.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
-  FIBInstallLoaded := False;
   CheckIBInstallLoaded;
   FIBInstallLoaded := True;
   FInstallOptions := TInstallOptions.Create;
@@ -724,7 +720,6 @@ constructor EIBInstall.Create(IscCode: MSG_NO; IscMessage: string);
 begin
    inherited Create(IscMessage);
    FIscError := IscCode;
-   FInstallerError := ieSuccess;
 end;
 
 constructor EIBInstall.Create1(ECode: TIBInstallerError; EMessage: string);

@@ -31,7 +31,6 @@ type
     procedure BeforeDisconnect(Sender:TObject);
 
   public
-    constructor Create(Owner: TComponent); override;
     destructor Destroy; override;
   published
     property Database: TFIBDatabase read FDatabase write SetDatabase;
@@ -79,15 +78,6 @@ procedure TSIBfibEventAlerter.SetNativeHandle(const Value: SIB_DBHandle);
 begin
   raise ESIBError.Create(SIB_RS_FIB_SET_NATIVEHANDLE);
 end;
-
-constructor TSIBfibEventAlerter.Create(Owner: TComponent);
-begin
-  inherited;
-  FAutoRegister := False;
-  FDatabase     := nil;
-  FClientLibrary:= nil;
-end;
-
 
 destructor TSIBfibEventAlerter.Destroy;
 begin

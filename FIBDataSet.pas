@@ -124,7 +124,6 @@ type
     function GetDataSize: Integer; override;
    {$ENDIF}
   public
-    constructor Create(AOwner: TComponent); override;
     destructor  Destroy;override;
     function  IsDBKey:boolean;
     function  SqlSubType:integer;
@@ -1779,13 +1778,6 @@ end;
 
 
 
-constructor TFIBStringField.Create(AOwner: TComponent);
-begin
-   inherited;
-   FDefaultValueEmptyString:=False;
-   //Transliterate:=False;
-end;
-
 destructor  TFIBStringField.Destroy;
 begin
  if Assigned(FReservedBuffer) then
@@ -3233,7 +3225,6 @@ begin
   inherited Create(AOwner);
   SetDataType(ftBCD);
   Size := 8;
-  FDataAsComp  :=False;
 end;
 
 procedure   TFIBBCDField.AddExtended(const Value:Extended);
@@ -3908,11 +3899,7 @@ constructor TFIBCustomDataSet.Create(AOwner: TComponent);
 begin
   inherited;
   FBase := TFIBBase.Create(Self);
-  FRecordsCache:=nil;
-  FUniDirectional:=False;
-  FCachedUpdates :=False;
   FCurrentRecord := -1;
-  FDeletedRecords := 0;
 {$IFDEF CSMonitor}
   FCSMonitorSupport := TCSMonitorSupport.Create(Self);
 {$ENDIF}
@@ -3926,9 +3913,7 @@ begin
   FQSelect  := CreateInternalQuery('SelectQuery' );
   FQCurrentSelect:=FQSelect;
 //  FQSelect.OnSQLFetch    :=DoOnSelectFetch;
-  FRefreshTransactionKind:=tkReadTransaction;
   FUpdateRecordTypes := [cusUnmodified, cusModified, cusInserted];
-  vDisableScrollCount:=0;
   BookmarkSize:=SizeOf(TFIBBookmark);
   FFieldOriginRule:=forTableAndFieldName;
   (* Events... *)
@@ -3952,15 +3937,11 @@ begin
   else
   begin
    FOptions:=StatDefDataSetOptions;
-   FDetailConditions:=[];
    FPrepareOptions    :=  StatDefPrepareOptions;
 //    [pfImportDefaultValues,psGetOrderInfo,psUseBooleanField,psSetEmptyStrToNull];
   end;
-  vTypeDispositionField:=dfNormal;
   FSortFields    :=null;
   vIgnoreLocRecno :=-1;
-  vTimerForDetail:=nil;
-  vScrollTimer   :=nil;
   FRelationTables:=TStringList.Create;
   with FRelationTables do
   begin
@@ -3971,10 +3952,8 @@ begin
   if (csDesigning in ComponentState) and not CmpInLoadedState(Self)
   then
    DataBase:=DefDataBase;
-  FAutoCommit :=False;
   FWaitEndMasterInterval:=300;
   vControlsEnabled:=True;
-  FCountUpdatesPending :=0;
   vFieldDescrList:=TFIBFieldDescrList.Create;
  {$IFNDEF NO_GUI}
   FSQLScreenCursor:=crDefault;

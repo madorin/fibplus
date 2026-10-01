@@ -524,9 +524,7 @@ constructor TAutoUpdateOptions.Create;
 begin
  inherited Create;
  FOwner:=Owner;
- FGeneratorName :='';
  FGenBeforePost:=True;
- FWhenGetGenID :=wgNever;
  FGeneratorStep:=1;
  FParamFieldLinks:=TStringList.Create;
  FKeyFieldList   :=TStringList.Create;
@@ -960,9 +958,6 @@ end;
 constructor TCacheSchemaOptions.Create;
 begin
  inherited Create;
- FLocalCacheFile   :='';
- FAutoSaveToFile   :=False;
- FAutoLoadFromFile :=False;
  FValidateAfterLoad:=True;
 end;
 
@@ -1035,9 +1030,6 @@ constructor TConditions.Create(AOwner:TComponent);
 begin
  inherited Create;
  FFIBQuery:=AOwner;
- FApplied :=False;
- FPrimarySQL:='';
- FState :=[]
 end;
 
 destructor  TConditions.Destroy; 
@@ -1509,10 +1501,6 @@ constructor TCondition.Create(AOwner: TConditions);
 begin
  inherited Create;
  FOwner:=AOwner;
- FInDestroy:=False;
-
- FEnabledFromStream:=False;
- FValueFromStream  :=False;
 end;
 
 destructor TCondition.Destroy;

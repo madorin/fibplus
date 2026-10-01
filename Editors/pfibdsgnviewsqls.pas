@@ -333,7 +333,6 @@ end;
 constructor TFIBSQLOwner.Create(aFIBSQLOwner:TComponent);
 begin
  vFIBSQLOwner:=aFIBSQLOwner;
- vChecked    :=false;
 end;
 
 

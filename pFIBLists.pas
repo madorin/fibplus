@@ -500,8 +500,6 @@ begin
   inherited Create;
   FHighBounds:=aHighBounds;
   SetLength(FData,aHighBounds);
-  FCount     :=0;
-  FCapacity  :=0;
 end;
 
 procedure TStringCollection.Delete(Index: Integer);

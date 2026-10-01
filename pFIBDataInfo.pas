@@ -1162,11 +1162,7 @@ end;
 constructor TpFIBFieldInfo.Create;
 begin
   inherited Create;
-  FWithAdditionalInfo:=False;
-  FIsTriggered       :=False;
   FOtherInfo         :=TStringList.Create;
-  FDefaultValueEmptyString := False;
-  FDisplayWidth      :=0;
   FCanBeBoolean      :=eUnknown;
   FCanBeGUID         :=eUnknown;
 end;
@@ -2216,8 +2212,6 @@ begin
  FUpdateSQL:=TStringList.Create;
  FDeleteSQL:=TStringList.Create;
  FRefreshSQL:=TStringList.Create;
- FKeyField:='';
- FGeneratorName:='';
 end;
 
 constructor TpDataSetInfo.Create(DataSet:TFIBDataSet);
@@ -2238,8 +2232,6 @@ begin
  FUpdateSQL:=TStringList.Create;
  FDeleteSQL:=TStringList.Create;
  FRefreshSQL:=TStringList.Create;
- FKeyField:='';
- FGeneratorName:='';
 end;
 
 destructor  TpDataSetInfo.Destroy;
@@ -2834,7 +2826,6 @@ begin
   FDatabases:=TStringList.Create;
   FDatabases.Sorted:=True;
   FDatabases.Duplicates:=dupIgnore;
-  FValidated :=False;
   FLock:=TMultiReadExclusiveWriteSynchronizer.Create;
 end;
 

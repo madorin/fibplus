@@ -1006,7 +1006,6 @@ begin
     with fTokenStyles[T] do begin
       tsForeground := clDefault;
       tsBackground := clDefault;
-      tsStyle := [];
     end;
   // Default styles
   fLitString := '''';
@@ -2223,7 +2222,6 @@ constructor TMPSynMemoStrings.Create(const Owner: TMPCustomSyntaxMemo);
 begin
   inherited Create;
   fRichMemo := Owner;
-  fState := [];
   FileName := UNTITLEDFN + IntToStr(GlobalUntitledIndex) + '.txt';
   Inc(GlobalUntitledIndex);
 
@@ -3377,7 +3375,6 @@ begin
   fMaxUndoDepth := 100;
   fUndoStack := TObjectList.Create(True);
   fUndoStack.Capacity := 100;
-  fOnSetPosProc := nil;
 end;
 
 // Destroy() Destructor
@@ -4443,11 +4440,6 @@ constructor TBreakPoint.Create(Owner: TMPBreakPointCollection);
 begin
   inherited Create;
   fCollection := Owner;
-  Condition := '';
-  Group := '';
-  PassCount := 0;
-  Comment := '';
-  fKind := bkPosible;
 end;
 
 //Delete the breakpoint object
@@ -4474,7 +4466,6 @@ begin
   fImages.LoadFromResourceName(HInstance, 'BREAKPOINTS');
   fImagesMask := TBitmap.Create;
   fImagesMask.LoadFromResourceName(HInstance, 'BREAKPOINTSMASK');
-  fOnBeforeBreakPointChangedNotify := nil;
   fRowOfCurrentBP := -1;
 end;
 
@@ -4752,9 +4743,7 @@ begin
     BevelOuter := bvNone;
   end;
 
-  fPosInfo := nil;
   CreateDestroyCursorPos;
-  fPageUpDown := nil;
   CreateDestroyPageUpDown;
 
   // Default syntax display settings
@@ -4765,7 +4754,6 @@ begin
   F.Color := clBlack;
   Font.Assign(F);
   F.Free;
-  fLettersCalculated := False;
   // default syntax settings
   TabStop := True;
   Font.OnChange := FontChange;

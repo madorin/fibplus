@@ -464,7 +464,6 @@ begin
   FQuery.Transaction:=FTransaction;
   FSQLDialect:=3;
   FAutoDDL:=True;
-  FBlobFileStream:=nil;
 end;
 
 procedure TpFIBScripter.CreateInternalDatabase;

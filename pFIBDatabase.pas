@@ -340,8 +340,6 @@ begin
    inherited Create(AOwner);
    FRewriteAlias:=True;
    FCacheSchemaOptions:=TCacheSchemaOptions.Create;
-   FAliasName:='';
-   vTimer :=nil;
 end;
 
 destructor TpFIBDatabase.Destroy;

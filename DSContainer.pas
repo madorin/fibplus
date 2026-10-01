@@ -147,7 +147,6 @@ constructor TDataSetsContainer.Create(AOwner:Tcomponent);//override;
 begin
  inherited Create(AOwner);
  FActive         :=true;
- FMasterContainer :=nil;
  vDataSetsList    :=TList.Create;
 end;
 
