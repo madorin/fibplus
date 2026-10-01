@@ -168,7 +168,7 @@ type
   PStatusVector = ^TStatusVector;
 
 const
-  {$I pFIBVersion.inc}
+  {$I FIBVersion.inc}
   // For building buffers to send to IB
   CRLF                     = #13#10;
   FIBLocalBufferLength     = 512;
@@ -307,6 +307,9 @@ var
   (* FIBAlloc acts like Realloc, except that it guarantees that
     the "newly" allocated memory is initialized to 0's *)
 procedure FIBAlloc(var p; OldSize, NewSize: DWORD);
+
+function FIBVersionString: string;
+
 // Error message routines.
 procedure FIBError(ErrMess: TFIBClientError; const Args: array of const);
 procedure FIBErrorEx(const ErrMess: string; const Args: array of const);
@@ -353,6 +356,11 @@ begin
     ReallocMem(Pointer(p), NewSize);
   if NewSize > OldSize then
     FillChar((PAnsiChar(p) + OldSize)^, NewSize - OldSize, 0);
+end;
+
+function FIBVersionString: string;
+begin
+  Result := Format('%d.%d.%d %s', [FIBMajorVersion, FIBMinorVersion, FIBRelease, FIBVersionNote]);
 end;
 
 /// ErrorHandler

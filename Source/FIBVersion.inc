@@ -17,13 +17,12 @@
 {                                                               }
 {  Please see the file License.txt for full license information }
 {***************************************************************}
-  FIBPlusVersion:integer   = 7;
-  FIBPlusBuild:integer     = 632;
-  FIBPlusBuildDate = '17.02.2014';
-  FIBCustomBuild:integer   = 3171;
-  FIBVersionNote   = 'Release';
-  FIBPalette       = 'FIBPlus';
-  FWork            = ''; 
+  FIBMajorVersion: Integer = 7;
+  FIBMinorVersion: Integer = 9;
+  FIBRelease: Integer      = 0;
+  FIBBuildDate             = '01.10.2026';
+  FIBVersionNote           = 'Release';
+  FIBPalette               = 'FIBPlus';
   
 
 

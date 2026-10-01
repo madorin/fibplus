@@ -170,8 +170,7 @@ end;
 
 function TpFIBQuery.GetFIBVersion: string;
 begin
-  Result := IntToStr(FIBPlusVersion) + '.' + IntToStr(FIBPlusBuild) + '.' +
-    IntToStr(FIBCustomBuild) + ' ' + FIBVersionNote
+  Result := FIBVersionString;
 end;
 
 procedure TpFIBQuery.SetFIBVersion(const vs: string);
