@@ -11,13 +11,23 @@
   (the attachment ID is `BIGINT` in Firebird 3+), and is 0 instead of -1 when
   not connected ([#34](https://github.com/madorin/fibplus/issues/34)).
 - `TFIBSQLLogger.CreateStatisticsTable` creates `FIB$APP_STATISTICS.ATTACHMENT_ID`
-  as `BIGINT` in dialect 3.
+  as `BIGINT` in dialect 3. An existing table can be updated with
+  `ALTER TABLE FIB$APP_STATISTICS ALTER ATTACHMENT_ID TYPE BIGINT`.
 - Protected fields of `TFIBDatabase` and `TFIBTransaction` are renamed from the
   `v` prefix to `F`: `FInternalTransaction`, `FAfterConnectEvents`,
   `FBeforeDisconnectEvents`, `FBeforeDestroyEvents`,
   `FBeforeStartTransactionEvents`, `FAfterStartTransactionEvents`,
   `FBeforeEndTransactionEvents`, `FAfterEndTransactionEvents`,
   `FDatabaseTRParams`, `FDatabaseTPBs`.
+
+### Fixed
+
+- `TFIBSQLLogger.StatisticsParams` had no effect. The parameters left out are
+  not written by `SaveStatisticsToFile`, and `SaveStatisticsToDB` writes NULL
+  in their columns (`MAXTIME_PARAMS` follows `fspMaxTimeExecute`).
+- `TFIBSQLLogger.SaveStatisticsToDB` and `CreateStatisticsTable` roll back
+  when a statement fails, instead of committing the rows inserted before it
+  or leaving the transaction active.
 
 ## [7.9.0] - 2026-10-01
 

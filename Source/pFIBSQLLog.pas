@@ -63,6 +63,7 @@ type
 
     procedure SetLogFileName(FileName: string);
     procedure SetStatParams(Value: TFIBStatisticsParams);
+    procedure ApplyStatisticsParams;
     procedure SetDatabase(DB: TObject);
     procedure CheckDatabase;
     procedure OnDisconnect(Sender: TObject);
@@ -162,27 +163,33 @@ begin
     q.ParamCheck := False;
     try
       tr.StartTransaction;
-      q.SQL.Text := 'CREATE GENERATOR FIB$APP_STATISTICS_GEN_ID';
-      q.ExecQuery;
+      try
+        q.SQL.Text := 'CREATE GENERATOR FIB$APP_STATISTICS_GEN_ID';
+        q.ExecQuery;
 
-      q.SQL.Text := 'CREATE TABLE FIB$APP_STATISTICS ( ID INTEGER NOT NULL, ' +
-        'APP_ID VARCHAR(12), SQL_TEXT BLOB SUB_TYPE -2 SEGMENT SIZE 1,' +
-        'EXECUTECOUNT INTEGER, PREPARECOUNT INTEGER, SUMTIMEEXECUTE INTEGER, AVGTIMEEXECUTE INTEGER,' +
-        'MAXTIMEEXECUTE INTEGER, MAXTIME_PARAMS BLOB SUB_TYPE -2 SEGMENT SIZE 1,' +
-        'LASTTIMEEXECUTE INTEGER, LOG_DATE ' +
-        iifStr(FDatabase.SQLDialect < 2, 'DATE', 'TIMESTAMP') +
-        ' ,CMP_NAME VARCHAR(256), ATTACHMENT_ID ' +
-        iifStr(FDatabase.SQLDialect < 3, 'INTEGER', 'BIGINT') + ')';
-      q.ExecQuery;
-      q.SQL.Text := 'ALTER TABLE FIB$APP_STATISTICS ADD CONSTRAINT PK_FIB$APP_STATISTICS PRIMARY KEY (ID)';
-      q.ExecQuery;
-      q.SQL.Text := 'CREATE TRIGGER FIB$APP_STATISTICS_BI FOR FIB$APP_STATISTICS ' +
-        'ACTIVE BEFORE INSERT POSITION 0 ' + 'AS BEGIN ' + #13#10 +
-        'IF (NEW.ID IS NULL) THEN ' + #13#10 +
-        'NEW.ID = GEN_ID(FIB$APP_STATISTICS_GEN_ID,1);' + #13#10 +
-        'NEW.log_date =''NOW'';' + #13#10 + 'END';
-      q.ExecQuery;
-      tr.Commit;
+        q.SQL.Text := 'CREATE TABLE FIB$APP_STATISTICS ( ID INTEGER NOT NULL, ' +
+          'APP_ID VARCHAR(12), SQL_TEXT BLOB SUB_TYPE -2 SEGMENT SIZE 1,' +
+          'EXECUTECOUNT INTEGER, PREPARECOUNT INTEGER, SUMTIMEEXECUTE INTEGER, AVGTIMEEXECUTE INTEGER,' +
+          'MAXTIMEEXECUTE INTEGER, MAXTIME_PARAMS BLOB SUB_TYPE -2 SEGMENT SIZE 1,' +
+          'LASTTIMEEXECUTE INTEGER, LOG_DATE ' +
+          iifStr(FDatabase.SQLDialect < 2, 'DATE', 'TIMESTAMP') +
+          ' ,CMP_NAME VARCHAR(256), ATTACHMENT_ID ' +
+          iifStr(FDatabase.SQLDialect < 3, 'INTEGER', 'BIGINT') + ')';
+        q.ExecQuery;
+        q.SQL.Text := 'ALTER TABLE FIB$APP_STATISTICS ADD CONSTRAINT PK_FIB$APP_STATISTICS PRIMARY KEY (ID)';
+        q.ExecQuery;
+        q.SQL.Text := 'CREATE TRIGGER FIB$APP_STATISTICS_BI FOR FIB$APP_STATISTICS ' +
+          'ACTIVE BEFORE INSERT POSITION 0 ' + 'AS BEGIN ' + #13#10 +
+          'IF (NEW.ID IS NULL) THEN ' + #13#10 +
+          'NEW.ID = GEN_ID(FIB$APP_STATISTICS_GEN_ID,1);' + #13#10 +
+          'NEW.log_date =''NOW'';' + #13#10 + 'END';
+        q.ExecQuery;
+        tr.Commit;
+      except
+        if tr.InTransaction then
+          tr.Rollback;
+        raise;
+      end;
       FExistStatTable := eoYes;
     finally
       q.Free;
@@ -211,6 +218,15 @@ var
   i: integer;
   q: TFIBQuery;
   s: string;
+
+  procedure SetStatParam(const ParamName, ObjName, VarName: string; Param: TFIBStatisticsParam);
+  begin
+    if Param in FStatisticsParams then
+      q.ParamByName(ParamName).AsInteger := FAppStatInfo.GetVarInt(ObjName, VarName)
+    else
+      q.ParamByName(ParamName).IsNull := True;
+  end;
+
 begin
   if not ExistStatisticsTable then
     raise Exception.Create(SFIBStatNoSave);
@@ -221,33 +237,43 @@ begin
     '( APP_ID, SQL_TEXT, EXECUTECOUNT,PREPARECOUNT, SUMTIMEEXECUTE , AVGTIMEEXECUTE ,  MAXTIMEEXECUTE ,' +
     'LASTTIMEEXECUTE, MAXTIME_PARAMS, CMP_NAME,ATTACHMENT_ID) ' +
     'Values (?AP,?S,?E,?PC,?SU,?A,?M,?L,?MP,?C,?AT)');
-  with FAppStatInfo do
+  try
+    tr.StartTransaction;
     try
-      tr.StartTransaction;
-      for i := 0 to Pred(ObjCount) do
-        if (ForMaxExecTime = 0) or (GetVarInt(ObjName(i), scMaxTimeExecute) >= ForMaxExecTime) then
-        begin
-          q.ParamByName('S').asString := ObjName(i);
-          q.ParamByName('AP').asString := FApplicationID;
-          q.ParamByName('E').asInteger := GetVarInt(ObjName(i), scExecuteCount);
-          q.ParamByName('PC').asInteger := GetVarInt(ObjName(i), scPrepareCount);
-          q.ParamByName('SU').asInteger := GetVarInt(ObjName(i), scSumTimeExecute);
-          q.ParamByName('A').asInteger := GetVarInt(ObjName(i), scAvgTimeExecute);
-          q.ParamByName('M').asInteger := GetVarInt(ObjName(i), scMaxTimeExecute);
-          q.ParamByName('L').asInteger := GetVarInt(ObjName(i), scLastTimeExecute);
-          q.ParamByName('C').asString := GetVarStr(ObjName(i), scLastQuery);
-          q.ParamByName('AT').AsInt64 := FDatabase.AttachmentID;
-          s := GetVarStrings(ObjName(i), scMaxTimeExecute).Text;
-          if s <> '' then
-            q.ParamByName('MP').asString := s
-          else
-            q.ParamByName('MP').IsNull := True;
-          q.ExecQuery;
-        end;
-    finally
-      FreeQueryForUse(q);
+      with FAppStatInfo do
+        for i := 0 to Pred(ObjCount) do
+          if (ForMaxExecTime = 0) or (GetVarInt(ObjName(i), scMaxTimeExecute) >= ForMaxExecTime) then
+          begin
+            q.ParamByName('S').asString := ObjName(i);
+            q.ParamByName('AP').asString := FApplicationID;
+            SetStatParam('E', ObjName(i), scExecuteCount, fspExecuteCount);
+            SetStatParam('PC', ObjName(i), scPrepareCount, fspPrepareCount);
+            SetStatParam('SU', ObjName(i), scSumTimeExecute, fspSumTimeExecute);
+            SetStatParam('A', ObjName(i), scAvgTimeExecute, fspAvgTimeExecute);
+            SetStatParam('M', ObjName(i), scMaxTimeExecute, fspMaxTimeExecute);
+            SetStatParam('L', ObjName(i), scLastTimeExecute, fspLastTimeExecute);
+            q.ParamByName('C').asString := GetVarStr(ObjName(i), scLastQuery);
+            q.ParamByName('AT').AsInt64 := FDatabase.AttachmentID;
+            // the parameters of the slowest execution belong to MaxTimeExecute
+            if fspMaxTimeExecute in FStatisticsParams then
+              s := GetVarStrings(ObjName(i), scMaxTimeExecute).Text
+            else
+              s := '';
+            if s <> '' then
+              q.ParamByName('MP').asString := s
+            else
+              q.ParamByName('MP').IsNull := True;
+            q.ExecQuery;
+          end;
       tr.Commit;
-    end
+    except
+      if tr.InTransaction then
+        tr.Rollback;
+      raise;
+    end;
+  finally
+    FreeQueryForUse(q);
+  end;
 end;
 
 function TFIBSQLLogger.GetActiveStatistics: Boolean;
@@ -265,6 +291,8 @@ end;
 
 procedure TFIBSQLLogger.SaveStatisticsToFile(const FileName: string);
 begin
+  // statements first executed after StatisticsParams was set are not filtered yet
+  ApplyStatisticsParams;
   FAppStatInfo.SaveStatisticsToFile(FileName);
 end;
 
@@ -303,6 +331,12 @@ begin
 end;
 
 procedure TFIBSQLLogger.SetStatParams(Value: TFIBStatisticsParams);
+begin
+  FStatisticsParams := Value;
+  ApplyStatisticsParams;
+end;
+
+procedure TFIBSQLLogger.ApplyStatisticsParams;
 begin
   with FAppStatInfo do
   begin
