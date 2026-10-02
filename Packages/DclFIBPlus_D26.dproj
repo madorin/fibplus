@@ -96,7 +96,7 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="FibPlus_D26.dcp"/>
+        <DCCReference Include="FIBPlus_D26.dcp"/>
         <DCCReference Include="..\Source\RegFIBPlus.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>

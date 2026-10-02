@@ -4,7 +4,6 @@
 			<MainSource>FIBPlus2011.dpk</MainSource>
 			<Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
-			<DCC_DependencyCheckOutputName>C:\Documents and Settings\vvs.HOME\Мои документы\RAD Studio\5.0\Bpl\FIBPlus2007.bpl</DCC_DependencyCheckOutputName>
 			<ProjectVersion>12.2</ProjectVersion>
 			<Config Condition="'$(Config)'==''">Release</Config>
 			<Base>True</Base>

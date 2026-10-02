@@ -96,7 +96,7 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="FibPlus_D27.dcp"/>
+        <DCCReference Include="FIBPlus_D27.dcp"/>
         <DCCReference Include="..\Source\RegFIBPlus.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
@@ -141,12 +141,6 @@
                 </DeployFile>
                 <DeployFile LocalName="$(BDS)\Redist\iossimulator\libpcre.dylib" Class="DependencyModule">
                     <Platform Name="iOSSimulator">
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\DclFIBPlus_D27.bpl" Configuration="Debug" Class="ProjectOutput">
-                    <Platform Name="Win32">
-                        <RemoteName>DclFIBPlus_D27.bpl</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

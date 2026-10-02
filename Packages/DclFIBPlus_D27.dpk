@@ -30,7 +30,7 @@ package DclFIBPlus_D27;
 {$IMPLICITBUILD ON}
 
 requires
-  FibPlus_D27;
+  FIBPlus_D27;
 
 contains
   RegFIBPlus in '..\Source\RegFIBPlus.pas';

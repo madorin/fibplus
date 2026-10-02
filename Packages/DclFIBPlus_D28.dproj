@@ -96,7 +96,7 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="FibPlus_D28.dcp"/>
+        <DCCReference Include="FIBPlus_D28.dcp"/>
         <DCCReference Include="..\Source\RegFIBPlus.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
@@ -138,7 +138,6 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\DclFIBPlus_D28.bpl" Configuration="Debug" Class="ProjectOutput"/>
                 <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\22.0\Bpl\DclFIBPlus_D28.bpl" Configuration="Release" Class="ProjectOutput"/>
                 <DeployClass Name="AdditionalDebugSymbols">
                     <Platform Name="OSX32">

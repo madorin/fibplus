@@ -4,7 +4,6 @@
 			<MainSource>FIBPlusEditors2011.dpk</MainSource>
 			<Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
-			<DCC_DependencyCheckOutputName>C:\Documents and Settings\vvs.HOME\Мои документы\RAD Studio\5.0\Bpl\FIBPlusEditors2007.bpl</DCC_DependencyCheckOutputName>
 			<ProjectVersion>12.2</ProjectVersion>
 			<Config Condition="'$(Config)'==''">Release</Config>
 			<Base>True</Base>
@@ -35,7 +34,6 @@
 			<DCC_ImageBase>00400000</DCC_ImageBase>
 			<DesignOnlyPackage>true</DesignOnlyPackage>
 			<DCC_Description>FIBPlus Property Editors</DCC_Description>
-			<DCC_DependencyCheckOutputName>C:\Users\Public\Documents\RAD Studio\7.0\Bpl\FIBPlusEditors2010.bpl</DCC_DependencyCheckOutputName>
 			<DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
 			<GenDll>true</GenDll>
 			<DCC_WriteableConstants>true</DCC_WriteableConstants>
