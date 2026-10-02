@@ -12,12 +12,10 @@
 {                                                               }
 {  Please see the file License.txt for full license information }
 {***************************************************************}
-  FIBMajorVersion: Integer = 7;
-  FIBMinorVersion: Integer = 9;
-  FIBRelease: Integer      = 0;
-  FIBBuildDate             = '01.10.2026';
-  FIBVersionNote           = 'Release';
-  FIBPalette               = 'FIBPlus';
-  
 
-
+FIBMajorVersion = 7;
+FIBMinorVersion = 9;
+FIBPatchVersion = 1;
+FIBVersionNote  = 'Beta 1';
+FIBVersionDate  = '';
+FIBPalette      = 'FIBPlus';

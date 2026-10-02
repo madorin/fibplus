@@ -355,7 +355,7 @@ end;
 
 function FIBVersionString: string;
 begin
-  Result := Format('%d.%d.%d %s', [FIBMajorVersion, FIBMinorVersion, FIBRelease, FIBVersionNote]);
+  Result := Format('%d.%d.%d %s', [FIBMajorVersion, FIBMinorVersion, FIBPatchVersion, FIBVersionNote]);
 end;
 
 /// ErrorHandler

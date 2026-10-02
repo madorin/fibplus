@@ -1,5 +1,13 @@
 # Changelog
 
+## [7.9.1] - Unreleased
+
+### Changed
+
+- `FIBRelease` is renamed to `FIBPatchVersion`.
+- `FIBBuildDate` is renamed to `FIBVersionDate` and uses the ISO date format.
+- Version constants are untyped and can be used in `{$IF}` directives.
+
 ## [7.9.0] - 2026-10-01
 
 First release of the community maintained FIBPlus. It is based on the last
@@ -230,4 +238,5 @@ made since the repository was created in November 2016.
   [#81](https://github.com/madorin/fibplus/pull/81)).
 - Compiler warnings and hints ([#15](https://github.com/madorin/fibplus/pull/15)).
 
+[7.9.1]: https://github.com/madorin/fibplus/releases/tag/v7.9.1
 [7.9.0]: https://github.com/madorin/fibplus/releases/tag/v7.9.0
