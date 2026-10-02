@@ -171,7 +171,8 @@ begin
         'MAXTIMEEXECUTE INTEGER, MAXTIME_PARAMS BLOB SUB_TYPE -2 SEGMENT SIZE 1,' +
         'LASTTIMEEXECUTE INTEGER, LOG_DATE ' +
         iifStr(FDatabase.SQLDialect < 2, 'DATE', 'TIMESTAMP') +
-        ' ,CMP_NAME VARCHAR(256), ATTACHMENT_ID INTEGER)';
+        ' ,CMP_NAME VARCHAR(256), ATTACHMENT_ID ' +
+        iifStr(FDatabase.SQLDialect < 3, 'INTEGER', 'BIGINT') + ')';
       q.ExecQuery;
       q.SQL.Text := 'ALTER TABLE FIB$APP_STATISTICS ADD CONSTRAINT PK_FIB$APP_STATISTICS PRIMARY KEY (ID)';
       q.ExecQuery;
@@ -235,7 +236,7 @@ begin
           q.ParamByName('M').asInteger := GetVarInt(ObjName(i), scMaxTimeExecute);
           q.ParamByName('L').asInteger := GetVarInt(ObjName(i), scLastTimeExecute);
           q.ParamByName('C').asString := GetVarStr(ObjName(i), scLastQuery);
-          q.ParamByName('AT').asInteger := FDatabase.AttachmentID;
+          q.ParamByName('AT').AsInt64 := FDatabase.AttachmentID;
           s := GetVarStrings(ObjName(i), scMaxTimeExecute).Text;
           if s <> '' then
             q.ParamByName('MP').asString := s

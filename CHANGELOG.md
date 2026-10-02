@@ -7,6 +7,11 @@
 - `FIBRelease` is renamed to `FIBPatchVersion`.
 - `FIBBuildDate` is renamed to `FIBVersionDate` and uses the ISO date format.
 - Version constants are untyped and can be used in `{$IF}` directives.
+- `TFIBDatabase.AttachmentID` is `Int64`, read with `isc_portable_integer`
+  (the attachment ID is `BIGINT` in Firebird 3+), and is 0 instead of -1 when
+  not connected ([#34](https://github.com/madorin/fibplus/issues/34)).
+- `TFIBSQLLogger.CreateStatisticsTable` creates `FIB$APP_STATISTICS.ATTACHMENT_ID`
+  as `BIGINT` in dialect 3.
 
 ## [7.9.0] - 2026-10-01
 

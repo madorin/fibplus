@@ -172,7 +172,7 @@ type
     vBeforeDisconnect: TNotifyEventList;
     vOnDestroy: TNotifyEventList;
 
-    vAttachmentID: Long;
+    vAttachmentID: Int64;
     FBlobFilters: TIBBlobFilters;
     FDBFileName: string;
     FConnectType: ShortInt;
@@ -275,7 +275,8 @@ type
     function GetProtectLongDBInfo(DBInfoCommand: Integer; var Success: Boolean): Long;
     function GetStringDBInfo(DBInfoCommand: Integer): string;
     function GetLongDBInfo(DBInfoCommand: Integer): Long;
-    function GetAttachmentID: Long;
+    function GetInt64DBInfo(DBInfoCommand: Integer): Int64;
+    function GetAttachmentID: Int64;
 
     // Firebird Info
     function GetActiveTransactions: TStringList; // frb_info_active_transactions
@@ -427,7 +428,7 @@ type
     property IsFB21OrMore: Boolean read FIsFB21OrMore;
     property Capabilities: TFIBDatabaseCapabilities read FCapabilities;
     // Database Info properties -- Advanced stuff (translated from isc_database_info)
-    property AttachmentID: Long read GetAttachmentID; // isc_info_attachment_id
+    property AttachmentID: Int64 read GetAttachmentID; // isc_info_attachment_id, 0 when not connected
     property Allocation: Long read GetAllocation; // isc_info_allocation
     property BaseLevel: Long read GetBaseLevel; // isc_info_base_level
     property DBFileName: AnsiString read GetDBFileName; // isc_info_db_id
@@ -1039,7 +1040,7 @@ begin
   vBeforeDisconnect := TNotifyEventList.Create(Self);
   vOnDestroy := TNotifyEventList.Create(Self);
 
-  vAttachmentID := -1;
+  vAttachmentID := 0;
   // FBlobFilters     :=TIBBlobFilters.Create;
   FUseRepositories := [urFieldsInfo, urDataSetInfo, urErrorMessagesInfo];
   FBlobSwapSupport := TBlobSwapSupport.Create;
@@ -1437,7 +1438,7 @@ begin
   // Create database interprets the DBParams string list
   // as mere text. It makes it extremely simple to do this way.
   CheckInactive; // Make sure the database ain't connected.
-  vAttachmentID := -1;
+  vAttachmentID := 0;
   LoadLibrary;
   tr_handle := nil;
   Call(FClientLibrary.isc_dsql_execute_immediate(StatusVector, @FHandle,
@@ -1948,7 +1949,7 @@ begin
   // EnterCriticalSection(vConnectCS);
   try
     CheckInactive;
-    vAttachmentID := -1;
+    vAttachmentID := 0;
     CheckDatabaseName;
     LoadLibrary;
     (*
@@ -2283,7 +2284,7 @@ begin
     Close
   else
     CheckInactive;
-  vAttachmentID := -1;
+  vAttachmentID := 0;
   FHandle := Value;
   FHandleIsShared := (Value <> nil);
   if FHandleIsShared then
@@ -3223,16 +3224,29 @@ begin
   Result := PAnsiChar(@local_buffer[4]);
 end;
 
-function TFIBDatabase.GetAttachmentID: Long;
+function TFIBDatabase.GetInt64DBInfo(DBInfoCommand: Integer): Int64;
+var
+  local_buffer: array [0 .. FIBLocalBufferLength - 1] of AnsiChar;
+  Length: Integer;
+  _DBInfoCommand: AnsiChar;
+begin
+  _DBInfoCommand := AnsiChar(DBInfoCommand);
+  Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1,
+    @_DBInfoCommand, FIBLocalBufferLength, local_buffer), True);
+  Length := FClientLibrary.isc_vax_integer(@local_buffer[1], 2);
+  Result := FClientLibrary.isc_portable_integer(@local_buffer[3], Length);
+end;
+
+function TFIBDatabase.GetAttachmentID: Int64;
 begin
   // The cached value is reset whenever a new handle is obtained (Open,
   // CreateDatabase, SetHandle), so it never outlives its attachment
   if FHandle = nil then
-    Result := -1
+    Result := 0
   else
     begin
-      if vAttachmentID = -1 then
-        vAttachmentID := GetLongDBInfo(isc_info_attachment_id);
+      if vAttachmentID = 0 then
+        vAttachmentID := GetInt64DBInfo(isc_info_attachment_id);
       Result := vAttachmentID;
     end;
 end;
