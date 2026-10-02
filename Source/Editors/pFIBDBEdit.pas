@@ -8,12 +8,6 @@
 {    mailto:gdeatz@hlmdd.com                                    }
 {                                                               }
 {    Copyright (c) 1998-2001 Serge Buzadzhy                     }
-{    Contact: buzz@devrace.com                                  }
-{                                                               }
-{ ------------------------------------------------------------- }
-{    FIBPlus home page      : http://www.fibplus.net/           }
-{    FIBPlus support e-mail : fibplus@devrace.com               }
-{ ------------------------------------------------------------- }
 {                                                               }
 {  Please see the file License.txt for full license information }
 {***************************************************************}

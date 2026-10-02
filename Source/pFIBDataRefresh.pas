@@ -8,12 +8,7 @@
 {    mailto:gdeatz@hlmdd.com                                    }
 {                                                               }
 {    Copyright (c) 1998-2010 Devrace Ltd.                       }
-{    Written by Serge Buzadzhy (buzz@devrace.com)               }
-{                                                               }
-{ ------------------------------------------------------------- }
-{    FIBPlus home page: http://www.fibplus.com/                 }
-{    FIBPlus support  : http://www.devrace.com/support/         }
-{ ------------------------------------------------------------- }
+{    Written by Serge Buzadzhy                                  }
 {                                                               }
 {  Please see the file License.txt for full license information }
 {***************************************************************}

@@ -183,7 +183,6 @@ Locate('FIELD', searchstr, [loCaseInsensitive, loPartialKey])
 
 6.8.588
    1. Ошибка в парсере, приводило к неправильной автогенерации RefreshSQL  в некоторых случаях
-    www.devrace.com/bitrix/admin/ticket_edit.php?ID=10095
    2. Ошибка 'Can't read Buffer.Incorrect RecordNo.' 
       при использовании новой версии Locate
    3. Потенциальная утечка памяти при использовании сервисов
