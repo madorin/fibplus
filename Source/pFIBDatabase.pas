@@ -648,7 +648,7 @@ var
   qry: TFIBQuery;
 begin
   CheckActive;
-  qry := GetQueryForUse(vInternalTransaction, TablesSQL);
+  qry := GetQueryForUse(FInternalTransaction, TablesSQL);
   TableNames.Clear;
   with qry do
     try
@@ -666,8 +666,8 @@ begin
         Next;
       end;
     finally
-      if vInternalTransaction.Active then
-        vInternalTransaction.Commit;
+      if FInternalTransaction.Active then
+        FInternalTransaction.Commit;
       TableNames.EndUpdate;
       qry.FreeHandle;
       FreeQueryForUse(qry);
@@ -693,7 +693,7 @@ begin
   else
     FieldsSQL := cFieldsSQL1;
 
-  qry := GetQueryForUse(vInternalTransaction, FieldsSQL);
+  qry := GetQueryForUse(FInternalTransaction, FieldsSQL);
   FieldNames.Clear;
   with qry do
     try
@@ -713,8 +713,8 @@ begin
         Next;
       end;
     finally
-      if vInternalTransaction.Active then
-        vInternalTransaction.Commit;
+      if FInternalTransaction.Active then
+        FInternalTransaction.Commit;
       FieldNames.EndUpdate;
       qry.FreeHandle;
       FreeQueryForUse(qry);

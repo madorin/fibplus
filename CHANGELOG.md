@@ -12,6 +12,12 @@
   not connected ([#34](https://github.com/madorin/fibplus/issues/34)).
 - `TFIBSQLLogger.CreateStatisticsTable` creates `FIB$APP_STATISTICS.ATTACHMENT_ID`
   as `BIGINT` in dialect 3.
+- Protected fields of `TFIBDatabase` and `TFIBTransaction` are renamed from the
+  `v` prefix to `F`: `FInternalTransaction`, `FAfterConnectEvents`,
+  `FBeforeDisconnectEvents`, `FBeforeDestroyEvents`,
+  `FBeforeStartTransactionEvents`, `FAfterStartTransactionEvents`,
+  `FBeforeEndTransactionEvents`, `FAfterEndTransactionEvents`,
+  `FDatabaseTRParams`, `FDatabaseTPBs`.
 
 ## [7.9.0] - 2026-10-01
 

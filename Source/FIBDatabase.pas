@@ -166,13 +166,13 @@ type
     FAfterDisconnect: TNotifyEvent;
     FDifferenceTime: Double;
     FSynchronizeTime: Boolean;
-    vInternalTransaction: TFIBTransaction;
+    FInternalTransaction: TFIBTransaction;
 
-    vOnConnected: TNotifyEventList;
-    vBeforeDisconnect: TNotifyEventList;
-    vOnDestroy: TNotifyEventList;
+    FAfterConnectEvents: TNotifyEventList;
+    FBeforeDisconnectEvents: TNotifyEventList;
+    FBeforeDestroyEvents: TNotifyEventList;
 
-    vAttachmentID: Int64;
+    FAttachmentID: Int64;
     FBlobFilters: TIBBlobFilters;
     FDBFileName: string;
     FConnectType: ShortInt;
@@ -656,14 +656,14 @@ type
     FTRParamsChanged: Boolean;
     FState: TTransactionState;
     FTransactionID: Integer;
-    vOnDestroy: TNotifyEventList;
-    vBeforeStartTransaction: TNotifyEventList;
-    vAfterStartTransaction: TNotifyEventList;
+    FBeforeDestroyEvents: TNotifyEventList;
+    FBeforeStartTransactionEvents: TNotifyEventList;
+    FAfterStartTransactionEvents: TNotifyEventList;
 
-    vBeforeEndTransaction: TCallBackList;
-    vAfterEndTransaction: TCallBackList;
-    vTRParams: array of AnsiString;
-    vTPBArray: array of AnsiString;
+    FBeforeEndTransactionEvents: TCallBackList;
+    FAfterEndTransactionEvents: TCallBackList;
+    FDatabaseTRParams: array of AnsiString;
+    FDatabaseTPBs: array of AnsiString;
     FTransactionRunStates: TTransactionRunStates;
     FHasUncommitedUpdates: Boolean;
     FWatchUpdates: Boolean;
@@ -1026,21 +1026,21 @@ begin
       FDesignDBOptions := [ddoStoreConnected]
     end;
 
-  vInternalTransaction := TFIBTransaction.Create(Self);
-  vInternalTransaction.DefaultDatabase := Self;
-  vInternalTransaction.TimeoutAction := TACommit;
-  vInternalTransaction.Timeout := 1000;
+  FInternalTransaction := TFIBTransaction.Create(Self);
+  FInternalTransaction.DefaultDatabase := Self;
+  FInternalTransaction.TimeoutAction := TACommit;
+  FInternalTransaction.Timeout := 1000;
 
-  with vInternalTransaction.TRParams do
+  with FInternalTransaction.TRParams do
     begin
       Text := 'write' + #13#10 + 'isc_tpb_nowait' + #13#10 + 'read_committed' + #13#10 + 'rec_version' + #13#10;
     end;
   DatabaseList.Add(Self);
-  vOnConnected := TNotifyEventList.Create(Self);
-  vBeforeDisconnect := TNotifyEventList.Create(Self);
-  vOnDestroy := TNotifyEventList.Create(Self);
+  FAfterConnectEvents := TNotifyEventList.Create(Self);
+  FBeforeDisconnectEvents := TNotifyEventList.Create(Self);
+  FBeforeDestroyEvents := TNotifyEventList.Create(Self);
 
-  vAttachmentID := 0;
+  FAttachmentID := 0;
   // FBlobFilters     :=TIBBlobFilters.Create;
   FUseRepositories := [urFieldsInfo, urDataSetInfo, urErrorMessagesInfo];
   FBlobSwapSupport := TBlobSwapSupport.Create;
@@ -1064,13 +1064,13 @@ begin
 
   if Assigned(DatabaseList) then
     DatabaseList.Remove(Self);
-  if Assigned(vInternalTransaction) then
-    with vInternalTransaction do
+  if Assigned(FInternalTransaction) then
+    with FInternalTransaction do
       begin
         if Active then
           Commit;
         Free;
-        vInternalTransaction := nil;
+        FInternalTransaction := nil;
       end;
   if DefDataBase = Self then
     DefDataBase := nil;
@@ -1078,8 +1078,8 @@ begin
   Timeout := 0;
   if FHandle <> nil then
     ForceClose;
-  for i := Pred(vOnDestroy.Count) downto 0 do
-    vOnDestroy.Event[i](Self);
+  for i := Pred(FBeforeDestroyEvents.Count) downto 0 do
+    FBeforeDestroyEvents.Event[i](Self);
 
   // Tell Dataset's we're being freed.
   for i := FFIBBases.Count - 1 downto 0 do
@@ -1298,18 +1298,18 @@ end;
 procedure TFIBDatabase.RemoveEvent(Event: TNotifyEvent; EventType: TpFIBDBEventType);
 begin
   case EventType of
-    detOnConnect: vOnConnected.Remove(Event);
-    detBeforeDisconnect: vBeforeDisconnect.Remove(Event);
-    detBeforeDestroy: vOnDestroy.Remove(Event);
+    detOnConnect: FAfterConnectEvents.Remove(Event);
+    detBeforeDisconnect: FBeforeDisconnectEvents.Remove(Event);
+    detBeforeDestroy: FBeforeDestroyEvents.Remove(Event);
   end;
 end;
 
 procedure TFIBDatabase.AddEvent(Event: TNotifyEvent; EventType: TpFIBDBEventType);
 begin
   case EventType of
-    detOnConnect: vOnConnected.Add(Event);
-    detBeforeDisconnect: vBeforeDisconnect.Add(Event);
-    detBeforeDestroy: vOnDestroy.Add(Event);
+    detOnConnect: FAfterConnectEvents.Add(Event);
+    detBeforeDisconnect: FBeforeDisconnectEvents.Add(Event);
+    detBeforeDestroy: FBeforeDestroyEvents.Add(Event);
   end
 end;
 
@@ -1328,10 +1328,10 @@ begin
         raise Exception.Create(Format(SFIBErrorBeforeDisconnect, [CmpFullName(Self), E.Message]))
   end;
 
-  with vBeforeDisconnect do
+  with FBeforeDisconnectEvents do
     for i := 0 to Pred(Count) do
       begin
-        vBeforeDisconnect.Event[i](Self)
+        FBeforeDisconnectEvents.Event[i](Self)
       end;
 end;
 
@@ -1402,12 +1402,12 @@ begin
 
   if Assigned(FOnConnect) then
     FOnConnect(Self);
-  with vOnConnected do
+  with FAfterConnectEvents do
     for i := 0 to Pred(Count) do
       begin
         if not Connected then
           Break;
-        vOnConnected.Event[i](Self)
+        FAfterConnectEvents.Event[i](Self)
       end;
 end;
 
@@ -1428,7 +1428,7 @@ procedure TFIBDatabase.Close;
 begin
   if Connected then
     InternalClose(False);
-  vInternalTransaction.Timeout := 0;
+  FInternalTransaction.Timeout := 0;
 end;
 
 procedure TFIBDatabase.CreateDatabase;
@@ -1438,7 +1438,7 @@ begin
   // Create database interprets the DBParams string list
   // as mere text. It makes it extremely simple to do this way.
   CheckInactive; // Make sure the database ain't connected.
-  vAttachmentID := 0;
+  FAttachmentID := 0;
   LoadLibrary;
   tr_handle := nil;
   Call(FClientLibrary.isc_dsql_execute_immediate(StatusVector, @FHandle,
@@ -1779,7 +1779,7 @@ begin
   if ddoIsDefaultDatabase in FDesignDBOptions then
     DefDataBase := Self;
   try
-    vInternalTransaction.Name := Name + '_InternalTransaction';
+    FInternalTransaction.Name := Name + '_InternalTransaction';
     if FStreamedConnected and (not Connected) then
       begin
         FStreamedConnected := False;
@@ -1949,7 +1949,7 @@ begin
   // EnterCriticalSection(vConnectCS);
   try
     CheckInactive;
-    vAttachmentID := 0;
+    FAttachmentID := 0;
     CheckDatabaseName;
     LoadLibrary;
     (*
@@ -2011,7 +2011,7 @@ begin
       else
         Exit;
     end;
-  vInternalTransaction.Timeout := 1000;
+  FInternalTransaction.Timeout := 1000;
   FStreammedConnectFail := False;
   AttachmentID;
   DPB := FDPB;
@@ -2284,7 +2284,7 @@ begin
     Close
   else
     CheckInactive;
-  vAttachmentID := 0;
+  FAttachmentID := 0;
   FHandle := Value;
   FHandleIsShared := (Value <> nil);
   if FHandleIsShared then
@@ -2793,7 +2793,7 @@ end;
 
 function TFIBDatabase.GetInternalTransaction: TFIBTransaction;
 begin
-  Result := vInternalTransaction
+  Result := FInternalTransaction
 end;
 
 function TFIBDatabase.GetServerBuild: Integer;
@@ -3245,9 +3245,9 @@ begin
     Result := 0
   else
     begin
-      if vAttachmentID = 0 then
-        vAttachmentID := GetInt64DBInfo(isc_info_attachment_id);
-      Result := vAttachmentID;
+      if FAttachmentID = 0 then
+        FAttachmentID := GetInt64DBInfo(isc_info_attachment_id);
+      Result := FAttachmentID;
     end;
 end;
 
@@ -3355,7 +3355,7 @@ begin
   if Assigned(aTransaction) then
     Query := GetQueryForUse(aTransaction, aSQL)
   else
-    Query := GetQueryForUse(vInternalTransaction, aSQL);
+    Query := GetQueryForUse(FInternalTransaction, aSQL);
   with Query.Params do
     if High(ParamValues) < Count - 1 then
       c := High(ParamValues)
@@ -3476,7 +3476,7 @@ begin
     if aTransaction <> nil then
       vTransaction := aTransaction
     else
-      vTransaction := vInternalTransaction;
+      vTransaction := FInternalTransaction;
 
   Query := GetQueryForUse(vTransaction, 'select gen_id(' + GenName + ', ' + IntToStr(Step) + ') from RDB$DATABASE');
   with Query, Transaction do
@@ -3565,12 +3565,12 @@ begin
     begin
       Timeout := DefTimeOut;
     end;
-  vOnDestroy := TNotifyEventList.Create(Self);
-  vBeforeStartTransaction := TNotifyEventList.Create(Self);
-  vAfterStartTransaction := TNotifyEventList.Create(Self);
+  FBeforeDestroyEvents := TNotifyEventList.Create(Self);
+  FBeforeStartTransactionEvents := TNotifyEventList.Create(Self);
+  FAfterStartTransactionEvents := TNotifyEventList.Create(Self);
 
-  vBeforeEndTransaction := TCallBackList.Create(Self); ;
-  vAfterEndTransaction := TCallBackList.Create(Self); ;
+  FBeforeEndTransactionEvents := TCallBackList.Create(Self); ;
+  FAfterEndTransactionEvents := TCallBackList.Create(Self); ;
 end;
 
 destructor TFIBTransaction.Destroy;
@@ -3584,8 +3584,8 @@ begin
       else
         EndTransaction(FTimeoutAction, True);
     end;
-  for i := Pred(vOnDestroy.Count) downto 0 do
-    vOnDestroy.Event[i](Self);
+  for i := Pred(FBeforeDestroyEvents.Count) downto 0 do
+    FBeforeDestroyEvents.Event[i](Self);
   for i := FFIBBases.Count - 1 downto 0 do
     FIBBases[i].FOnTransactionFree;
   RemoveFIBBases;
@@ -3597,8 +3597,8 @@ begin
 {$IFDEF CSMonitor}
   FCSMonitorSupport.Free;
 {$ENDIF}
-  SetLength(vTRParams, 0);
-  SetLength(vTPBArray, 0);
+  SetLength(FDatabaseTRParams, 0);
+  SetLength(FDatabaseTPBs, 0);
   inherited Destroy;
 end;
 
@@ -3653,9 +3653,9 @@ end;
 procedure TFIBTransaction.AddEvent(Event: TNotifyEvent; EventType: TpFIBTrEventType);
 begin
   case EventType of
-    tetBeforeStartTransaction: vBeforeStartTransaction.Add(Event);
-    tetAfterStartTransaction: vAfterStartTransaction.Add(Event);
-    tetBeforeDestroy: vOnDestroy.Add(Event);
+    tetBeforeStartTransaction: FBeforeStartTransactionEvents.Add(Event);
+    tetAfterStartTransaction: FAfterStartTransactionEvents.Add(Event);
+    tetBeforeDestroy: FBeforeDestroyEvents.Add(Event);
     else
       Assert(False);
   end;
@@ -3664,9 +3664,9 @@ end;
 procedure TFIBTransaction.RemoveEvent(Event: TNotifyEvent; EventType: TpFIBTrEventType);
 begin
   case EventType of
-    tetBeforeStartTransaction: vBeforeStartTransaction.Remove(Event);
-    tetAfterStartTransaction: vAfterStartTransaction.Remove(Event);
-    tetBeforeDestroy: vOnDestroy.Remove(Event);
+    tetBeforeStartTransaction: FBeforeStartTransactionEvents.Remove(Event);
+    tetAfterStartTransaction: FAfterStartTransactionEvents.Remove(Event);
+    tetBeforeDestroy: FBeforeDestroyEvents.Remove(Event);
     else
       Assert(False);
   end;
@@ -3675,8 +3675,8 @@ end;
 procedure TFIBTransaction.AddEndEvent(Event: TEndTrEvent; EventType: TpFIBTrEventType);
 begin
   case EventType of
-    tetBeforeEndTransaction: vBeforeEndTransaction.RegisterCallBack(TMethod(Event));
-    tetAfterEndTransaction: vAfterEndTransaction.RegisterCallBack(TMethod(Event));
+    tetBeforeEndTransaction: FBeforeEndTransactionEvents.RegisterCallBack(TMethod(Event));
+    tetAfterEndTransaction: FAfterEndTransactionEvents.RegisterCallBack(TMethod(Event));
     else
       Assert(False);
   end;
@@ -3685,8 +3685,8 @@ end;
 procedure TFIBTransaction.RemoveEndEvent(Event: TEndTrEvent; EventType: TpFIBTrEventType);
 begin
   case EventType of
-    tetBeforeEndTransaction: vBeforeEndTransaction.UnRegisterCallBack(TMethod(Event));
-    tetAfterEndTransaction: vAfterEndTransaction.UnRegisterCallBack(TMethod(Event));
+    tetBeforeEndTransaction: FBeforeEndTransactionEvents.UnRegisterCallBack(TMethod(Event));
+    tetAfterEndTransaction: FAfterEndTransactionEvents.UnRegisterCallBack(TMethod(Event));
     else
       Assert(False);
   end;
@@ -3748,8 +3748,8 @@ begin
           Result := FDatabases.Count;
           db.AddTransaction(Self);
           FDatabases.Add(db);
-          SetLength(vTRParams, FDatabases.Count);
-          vTRParams[Length(vTRParams) - 1] := '';
+          SetLength(FDatabaseTRParams, FDatabases.Count);
+          FDatabaseTRParams[Length(FDatabaseTRParams) - 1] := '';
         end;
     end;
 end;
@@ -3758,7 +3758,7 @@ function TFIBTransaction.AddDatabase(db: TFIBDatabase; const aTRParams: string):
 begin
   Result := AddDatabase(db);
   if Result >= 0 then
-    vTRParams[Result] := aTRParams
+    FDatabaseTRParams[Result] := aTRParams
 end;
 
 {$IFDEF USE_DEPRECATE_METHODS1}
@@ -3805,8 +3805,8 @@ var
   begin
     for i := FFIBBases.Count - 1 downto 0 do
       FIBBases[i].FOnTransactionEnding;
-    for i := 0 to vBeforeEndTransaction.Count - 1 do
-      TEndTrEvent(vBeforeEndTransaction.CallBackAddr[i]^)(Self, Action, Force);
+    for i := 0 to FBeforeEndTransactionEvents.Count - 1 do
+      TEndTrEvent(FBeforeEndTransactionEvents.CallBackAddr[i]^)(Self, Action, Force);
   end;
 
   procedure DoAfter;
@@ -3815,8 +3815,8 @@ var
   begin
     for i := FFIBBases.Count - 1 downto 0 do
       FIBBases[i].FOnTransactionEnded;
-    for i := 0 to vAfterEndTransaction.Count - 1 do
-      TEndTrEvent(vAfterEndTransaction.CallBackAddr[i]^)(Self, Action, Force);
+    for i := 0 to FAfterEndTransactionEvents.Count - 1 do
+      TEndTrEvent(FAfterEndTransactionEvents.CallBackAddr[i]^)(Self, Action, Force);
 
     FHasUncommitedUpdates := False
   end;
@@ -4201,7 +4201,7 @@ begin
     for i := 0 to DatabaseCount - 1 do
       begin
         pteb^[i].db_handle := @(Databases[i].Handle);
-        if vTRParams[i] = '' then
+        if FDatabaseTRParams[i] = '' then
           begin
             pteb^[i].tpb_address := FTPB;
             pteb^[i].tpb_length := FTPBLength;
@@ -4210,13 +4210,13 @@ begin
           begin
             if vTRParams1 = nil then
               vTRParams1 := TStringList.Create;
-            vTRParams1.Text := vTRParams[i];
+            vTRParams1.Text := FDatabaseTRParams[i];
 
-            SetLength(vTPBArray, i + 1);
-            GenerateTPB(vTRParams1, vTPBArray[i], vTPBLength, vIsFB21orMore);
-            if Length(vTPBArray[i]) > 0 then
+            SetLength(FDatabaseTPBs, i + 1);
+            GenerateTPB(vTRParams1, FDatabaseTPBs[i], vTPBLength, vIsFB21orMore);
+            if Length(FDatabaseTPBs[i]) > 0 then
               begin
-                pteb^[i].tpb_address := @vTPBArray[i][1];
+                pteb^[i].tpb_address := @FDatabaseTPBs[i][1];
                 pteb^[i].tpb_length := vTPBLength;
               end
             else
@@ -4234,8 +4234,8 @@ begin
     *)
     if not InTransaction then
       begin
-        for i := Pred(vBeforeStartTransaction.Count) downto 0 do
-          vBeforeStartTransaction.Event[i](Self);
+        for i := Pred(FBeforeStartTransactionEvents.Count) downto 0 do
+          FBeforeStartTransactionEvents.Event[i](Self);
 
         if (Call(IIbClientLibrary(MainDatabase).isc_start_multiple(StatusVector,
           @FHandle, DatabaseCount, PISC_TEB(pteb)), False) > 0)
@@ -4246,8 +4246,8 @@ begin
             if not(trsInLoaded in FTransactionRunStates) then
               IBError(MainDatabase, Self);
           end;
-        for i := Pred(vAfterStartTransaction.Count) downto 0 do
-          vAfterStartTransaction.Event[i](Self);
+        for i := Pred(FAfterStartTransactionEvents.Count) downto 0 do
+          FAfterStartTransactionEvents.Event[i](Self);
       end;
 
     for i := 0 to FFIBBases.Count - 1 do
