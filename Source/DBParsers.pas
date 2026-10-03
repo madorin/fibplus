@@ -416,7 +416,6 @@ var
                       p1 := StrToInt(FastCopy(S, p + 1, 1000));
                       p := StrToInt(FastCopy(S, 1, p - 1));
                     end;
-                  // Copy is safe for From < 1, FastCopy is not
                   Result := Copy(VarToStr(Arg1), p, p1);
                 end
               else if S = 'DATE' then

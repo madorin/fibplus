@@ -191,9 +191,9 @@ procedure DoCopy(const Source: AnsiString; var Dest: AnsiString; Index, Count: I
 // function  StrTrimmedLen(Str:PChar):Integer;
 
 function FastTrim(const S: string): string;
-function FastCopy(const S: String; Index: Integer; Count: Integer): String; overload;
+function FastCopy(const S: String; Index: Integer; Count: Integer): String; overload; {$IFDEF D2009+} inline; {$ENDIF}
 {$IFDEF D2009+}
-function FastCopy(const S: AnsiString; Index: Integer; Count: Integer): AnsiString; overload;
+function FastCopy(const S: AnsiString; Index: Integer; Count: Integer): AnsiString; overload; inline;
 {$ENDIF}
 // TStringList functions
 
@@ -838,37 +838,37 @@ begin
   end;
 end;
 
+{$IFDEF D2009+}
+
+// System.Copy is at least as fast (measured on Delphi 13)
+function FastCopy(const S: string; Index: Integer; Count: Integer): string;
+begin
+  Result := Copy(S, Index, Count);
+end;
+
+function FastCopy(const S: AnsiString; Index: Integer; Count: Integer): AnsiString;
+begin
+  Result := Copy(S, Index, Count);
+end;
+
+{$ELSE}
+
 function FastCopy(const S: string; Index: Integer; Count: Integer): string;
 var
   L: Integer;
 begin
+  // Same bounds as System.Copy: Index < 1 starts at the first character
   L := Length(S);
-  if (Index > L) or (Count <= 0) then
+  if Index < 1 then
+    Index := 1;
+  if Count > L - Index + 1 then
+    Count := L - Index + 1;
+  if Count <= 0 then
     Result := ''
   else
   begin
-    if (Count - L + Index) > 0 then
-      Count := L - Index + 1;
     SetLength(Result, Count);
     Move(S[Index], Result[1], Count * SizeOf(Char));
-  end;
-end;
-
-{$IFDEF D2009+}
-
-function FastCopy(const S: AnsiString; Index: Integer; Count: Integer): AnsiString;
-var
-  L: Integer;
-begin
-  L := Length(S);
-  if (Index > L) or (Count <= 0) then
-    Result := ''
-  else
-  begin
-    if (Count - L + Index) > 0 then
-      Count := L - Index + 1;
-    SetLength(Result, Count);
-    Move(S[Index], Result[1], Count * SizeOf(AnsiChar));
   end;
 end;
 {$ENDIF}

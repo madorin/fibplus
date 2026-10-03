@@ -83,6 +83,8 @@
   and GB18030.
 - `GetExportDataScript` wrote `ftFMTBcd` values with the locale decimal
   separator.
+- `StrUtil.FastCopy` read before the string for `Index < 1`; it now calls
+  `Copy` on Delphi 2009+.
 
 ## [7.9.0] - 2026-10-01
 
