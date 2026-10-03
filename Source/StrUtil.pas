@@ -517,20 +517,51 @@ begin
     (ParamName[4] = '_') and CharInSet(ParamName[2], ['A', 'a']) and CharInSet(ParamName[3], ['S', 's'])
 end;
 
+function CurrentFormatSettings: TFormatSettings;
+{$IFNDEF D_XE3}
+var
+  I: Integer;
+{$ENDIF}
+begin
+{$IFDEF D_XE3}
+  Result := FormatSettings;
+{$ELSE}
+  Result.CurrencyFormat := CurrencyFormat;
+  Result.NegCurrFormat := NegCurrFormat;
+  Result.ThousandSeparator := ThousandSeparator;
+  Result.DecimalSeparator := DecimalSeparator;
+  Result.CurrencyDecimals := CurrencyDecimals;
+  Result.DateSeparator := DateSeparator;
+  Result.TimeSeparator := TimeSeparator;
+  Result.ListSeparator := ListSeparator;
+  Result.CurrencyString := CurrencyString;
+  Result.ShortDateFormat := ShortDateFormat;
+  Result.LongDateFormat := LongDateFormat;
+  Result.TimeAMString := TimeAMString;
+  Result.TimePMString := TimePMString;
+  Result.ShortTimeFormat := ShortTimeFormat;
+  Result.LongTimeFormat := LongTimeFormat;
+  for I := Low(ShortMonthNames) to High(ShortMonthNames) do
+  begin
+    Result.ShortMonthNames[I] := ShortMonthNames[I];
+    Result.LongMonthNames[I] := LongMonthNames[I];
+  end;
+  for I := Low(ShortDayNames) to High(ShortDayNames) do
+  begin
+    Result.ShortDayNames[I] := ShortDayNames[I];
+    Result.LongDayNames[I] := LongDayNames[I];
+  end;
+  Result.TwoDigitYearCenturyWindow := TwoDigitYearCenturyWindow;
+{$ENDIF}
+end;
+
 function StrToDateFmt(const ADate, Fmt: string): TDateTime;
 var
-  OldShortDateFormat: string;
+  FS: TFormatSettings;
 begin
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
-  begin
-    OldShortDateFormat := {$IFDEF D_XE3}FormatSettings.{$ENDIF}ShortDateFormat;
-    try
-      ShortDateFormat := Fmt;
-      Result := StrToDateTime(ADate);
-    finally
-      ShortDateFormat := OldShortDateFormat;
-    end
-  end;
+  FS := CurrentFormatSettings;
+  FS.ShortDateFormat := Fmt;
+  Result := StrToDateTime(ADate, FS);
 end;
 
 function DateToSQLStr(const ADate: TDateTime): string;
@@ -1212,80 +1243,54 @@ end;
 
 function ToClientDateFmt(D: string; caseFmt: Byte): string;
 var
-  Client_dateseparator, Client_timeseparator: Char;
-  Client_LongDateFormat, Client_shortdateformat, Client_ShortTimeFormat: string;
+  FS: TFormatSettings;
   vD: TDateTime;
-  IsKeyWord: Boolean;
-
 begin
-  if IsBlank(D) then
-  begin
-    Result := '';
-    Exit;
-  end;
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
-  begin
-    Client_dateseparator := DateSeparator;
-    Client_shortdateformat := ShortDateFormat;
-    Client_timeseparator := TimeSeparator;
-    Client_ShortTimeFormat := ShortTimeFormat;
-    Client_LongDateFormat := LongDateFormat;
-  end;
-
-  IsKeyWord := False;
   Result := '';
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
-    try
-      if caseFmt < 2 then
-        if Pos('.', D) <> 0 then
-        begin
-          DateSeparator := '.';
-          ShortDateFormat := 'dd.mm.yyyy';
-        end
-        else if Pos('/', D) <> 0 then
-        begin
-          DateSeparator := '/';
-          ShortDateFormat := 'mm/dd/yyyy';
-        end
-        else if Pos('-', D) <> 0 then
-        begin
-          if StrDDMMMYYYY(D, D) then
-            ShortDateFormat := 'dd.mm.yyyy'
-          else
-          begin
-            DateSeparator := '/';
-            D := ReplaceStr(D, '-', DateSeparator);
-            ShortDateFormat := 'yyyy/mm/dd';
-          end;
-        end
-        else
-        begin
-          Result := UpperCase(D);
-          Exit;
-        end;
-      TimeSeparator := ':';
-      ShortTimeFormat := 'h:m:s';
-      case caseFmt of
-        0: vD := StrToDateTime(D);
-        1: vD := StrToDate(D);
-        2: vD := StrToTime(D);
+  if IsBlank(D) then
+    Exit;
+  FS := CurrentFormatSettings;
+  if caseFmt < 2 then
+    if Pos('.', D) <> 0 then
+    begin
+      FS.DateSeparator := '.';
+      FS.ShortDateFormat := 'dd.mm.yyyy';
+    end
+    else if Pos('/', D) <> 0 then
+    begin
+      FS.DateSeparator := '/';
+      FS.ShortDateFormat := 'mm/dd/yyyy';
+    end
+    else if Pos('-', D) <> 0 then
+    begin
+      if StrDDMMMYYYY(D, D) then
+        FS.ShortDateFormat := 'dd.mm.yyyy'
       else
-        vD := StrToDateTime(D);
+      begin
+        FS.DateSeparator := '/';
+        D := ReplaceStr(D, '-', FS.DateSeparator);
+        FS.ShortDateFormat := 'yyyy/mm/dd';
       end;
-      if not IsKeyWord then
-        case caseFmt of
-          0: Result := DateTimeToStr(vD);
-          1: Result := DateToStr(vD);
-          2: Result := TimeToStr(vD);
-        end
-
-    finally
-      LongDateFormat := Client_LongDateFormat;
-      DateSeparator := Client_dateseparator;
-      ShortDateFormat := Client_shortdateformat;
-      TimeSeparator := Client_timeseparator;
-      ShortTimeFormat := Client_ShortTimeFormat;
+    end
+    else
+    begin
+      Result := UpperCase(D);
+      Exit;
     end;
+  FS.TimeSeparator := ':';
+  FS.ShortTimeFormat := 'h:m:s';
+  case caseFmt of
+    0: vD := StrToDateTime(D, FS);
+    1: vD := StrToDate(D, FS);
+    2: vD := StrToTime(D, FS);
+  else
+    vD := StrToDateTime(D, FS);
+  end;
+  case caseFmt of
+    0: Result := DateTimeToStr(vD, FS);
+    1: Result := DateToStr(vD, FS);
+    2: Result := TimeToStr(vD, FS);
+  end;
 end;
 
 function TrimCLRF(const S: string): string;
