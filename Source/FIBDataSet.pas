@@ -10135,11 +10135,7 @@ var
   begin
     if Rno > -1 then
       begin
-  {$IFDEF D_23}
-        MoveBy(TFIBBookmark(Pointer(BookMark)^).bActiveRecord - ActiveRecord);
-  {$ELSE}
-        MoveBy(TFIBBookmark(BookMark^).bActiveRecord - ActiveRecord);
-  {$ENDIF}
+        MoveBy(PFIBBookMark(BookMark)^.bActiveRecord - ActiveRecord);
         FCurrentRecord := Rno;
       end;
   end;
@@ -10157,21 +10153,13 @@ begin
   DisableControls;
   DisableScrollEvents;
   try
-{$IFDEF D_23}
-    if not BookmarkValid(BookMark) then
-{$ELSE}
     if not BookmarkValid(TBookMark(BookMark)) then
-{$ENDIF}
       begin
         Inc(vLockResync);
         Exit;
       end;
 
-  {$IFDEF D_23}
-    Rno := FRecordsCache.RecordByBookMark(TFIBBookmark(Pointer(BookMark)^).bRecordNumber);
-  {$ELSE}
-    Rno := FRecordsCache.RecordByBookMark(TFIBBookmark(BookMark^).bRecordNumber);
-  {$ENDIF}
+    Rno := FRecordsCache.RecordByBookMark(PFIBBookMark(BookMark)^.bRecordNumber);
     case FCacheModelOptions.CacheModelKind of
       cmkStandard:
         if (FKeyFieldsForBookMark.Count = 0) or (vSimpleBookMark > 0) then
@@ -10233,11 +10221,7 @@ begin
                 if not ControlsDisabled then
                   DisableControls; // Restore after Resync
                 Include(FRunState, drsInGotoBookMark); // Restore after Resync
-    {$IFDEF D_23}
-                MoveBy(TFIBBookmark(Pointer(BookMark)^).bActiveRecord - ActiveRecord);
-    {$ELSE}
-                MoveBy(TFIBBookmark(BookMark^).bActiveRecord - ActiveRecord);
-    {$ENDIF}
+                MoveBy(PFIBBookMark(BookMark)^.bActiveRecord - ActiveRecord);
                 FCurrentRecord := Rno
               end
           end;
@@ -10255,11 +10239,7 @@ begin
                 begin
                   if CompareBookMarkAndRecno(BookMark, i, True) then
                     begin
-      {$IFDEF D_23}
-                      MoveBy(TFIBBookmark(Pointer(BookMark)^).bActiveRecord - ActiveRecord);
-      {$ELSE}
-                      MoveBy(TFIBBookmark(BookMark^).bActiveRecord - ActiveRecord);
-      {$ENDIF}
+                      MoveBy(PFIBBookMark(BookMark)^.bActiveRecord - ActiveRecord);
                       FCurrentRecord := FRecordsCache.BookMarkByRecord(i - 1);
                       Exit;
                     end;
@@ -10307,19 +10287,11 @@ begin
                         end;
                     end; // for
 
-      {$IFDEF D_23}
-                  if RefreshAround(FQBookMark, TFIBBookmark(Pointer(BookMark)^).bRecordNumber) then
+                  if RefreshAround(FQBookMark, PFIBBookMark(BookMark)^.bRecordNumber) then
                     begin
-                      MoveBy(TFIBBookmark(Pointer(BookMark)^).bActiveRecord - ActiveRecord);
-                      FCurrentRecord := TFIBBookmark(Pointer(BookMark)^).bRecordNumber;
+                      MoveBy(PFIBBookMark(BookMark)^.bActiveRecord - ActiveRecord);
+                      FCurrentRecord := PFIBBookMark(BookMark)^.bRecordNumber;
                     end
-      {$ELSE}
-                  if RefreshAround(FQBookMark, TFIBBookmark(BookMark^).bRecordNumber) then
-                    begin
-                      MoveBy(TFIBBookmark(BookMark^).bActiveRecord - ActiveRecord);
-                      FCurrentRecord := TFIBBookmark(BookMark^).bRecordNumber;
-                    end
-      {$ENDIF}
                   else
                     Inc(vLockResync);
                 end;
