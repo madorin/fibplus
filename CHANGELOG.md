@@ -85,6 +85,8 @@
   separator.
 - `StrUtil.FastCopy` read before the string for `Index < 1`; it now calls
   `Copy` on Delphi 2009+.
+- The `FIBPlus_XE3` package did not compile: it contained the XML export units,
+  which are not in the repository.
 
 ## [7.9.0] - 2026-10-01
 

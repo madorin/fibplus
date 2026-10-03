@@ -86,8 +86,6 @@ contains
   pFIBFieldsDescr in '..\Source\pFIBFieldsDescr.pas',
   SIBAPI in '..\Source\SIBAPI.pas',
   SIBFIBEA in '..\Source\SIBFIBEA.PAS',
-  SIBGlobals in '..\Source\SIBGlobals.pas',
-  FIBXMLDataSetReader in '..\Source\FIBXMLDataSetReader.pas',
-  FIBSaveDataSetToXml in '..\Source\FIBSaveDataSetToXml.pas';
+  SIBGlobals in '..\Source\SIBGlobals.pas';
 
 end.

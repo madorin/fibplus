@@ -159,8 +159,6 @@
         <DCCReference Include="SIBAPI.pas"/>
         <DCCReference Include="SIBFIBEA.PAS"/>
         <DCCReference Include="SIBGlobals.pas"/>
-        <DCCReference Include="FIBXMLDataSetReader.pas"/>
-        <DCCReference Include="FIBSaveDataSetToXml.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
