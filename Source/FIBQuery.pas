@@ -22,7 +22,7 @@ interface
 uses
   SysUtils, Classes, ibase, IB_Intf, IB_Externals, FIBPlatforms,
   DB, fib, FIBDatabase, StdFuncs, IB_ErrorCodes, SqlTxtRtns, pFIBProps,
-  pFIBInterfaces {, FIBXMLDataSetReader}
+  pFIBInterfaces
 {$IFDEF SUPPORT_ARRAY_FIELD}, pFIBArray {$ENDIF}
   , FMTBcd, Variants, FIBTypes;
 
@@ -394,10 +394,6 @@ type
   TOnBatching = procedure(BatchOperation: TBatchOperation; RecNumber: integer; var BatchAction: TBatchAction) of object;
   TOnBatchError = procedure(E: EFIBError; var BatchErrorAction: TBatchErrorAction) of object;
 
-  {
-    TOnBatchXMLFile   =
-    procedure (Reader:TXMLDataSetFileReader; const CurRec:TRecordDesc; const RecordNo:integer; var Stop:boolean) of object;
-  }
   TAllRowsAffected = record
     Updates: integer;
     Deletes: integer;
@@ -547,9 +543,6 @@ type
   private
     FOnBatchError: TOnBatchError;
     FCursorName: string;
-    // FOnApplyXMLFile:TOnBatchXMLFile;
-    // FOnApplyXMLError:TOnBatchError;
-    // procedure ReadXmlFile(Reader:TXMLDataSetFileReader; const CurRec:TRecordDesc; const RecordNo:integer; var Stop:boolean);
   public
     function BatchInput(InputObject: TFIBBatchInputStream): boolean;
     function BatchOutput(OutputObject: TFIBBatchOutputStream): Boolean;
@@ -558,7 +551,6 @@ type
     procedure BatchOutputRawFile(const FileName: Ansistring; Version: integer = 3);
 
     procedure BatchToQuery(ToQuery: TFIBQuery; Mappings: TStrings);
-    // procedure BatchXmlFile(const aFileName:string);
   public
     function Call(ErrCode: ISC_STATUS; RaiseError: boolean): ISC_STATUS;
     procedure CheckClosed(const OpName: Ansistring);
@@ -691,8 +683,6 @@ type
     property Options: TpFIBQueryOptions read FOptions write FOptions stored False;
     property OnBatching: TOnBatching read FOnBatching write FOnBatching;
     property OnBatchError: TOnBatchError read FOnBatchError write FOnBatchError;
-    // property OnBatchXMLFile:TOnBatchXMLFile   read FOnApplyXMLFile write FOnApplyXMLFile;
-    // property OnBacthXMLError:TOnBatchError    read FOnApplyXMLError write FOnApplyXMLError;
     property TransactionEnding: TNotifyEvent read FTransactionEnding write FTransactionEnding;
     property TransactionEnded: TNotifyEvent read FTransactionEnded write FTransactionEnded;
     property AfterFirstFetch: TNotifyEvent read FAfterFirstFetch write FAfterFirstFetch;
@@ -3675,59 +3665,6 @@ begin
   end;
 end;
 
-{
-  procedure TFIBQuery.BatchXmlFile(const aFileName:string);
-  begin
-  ApplyXmlFile(aFileName,ReadXmlFile);
-  end;
-
-  procedure TFIBQuery.ReadXmlFile(Reader:TXMLDataSetFileReader; const CurRec:TRecordDesc; const RecordNo:integer; var Stop:boolean);
-  var
-  i,L:integer;
-  cp:TFIBXSQLVAR;
-  bea:TBatchErrorAction;
-  dt:TDateTime;
-  fm:TFormatSettings;
-  begin
-  if Assigned(FOnApplyXMLFile) then
-  FOnApplyXMLFile(Reader,CurRec,RecordNo, Stop);
-  if not Stop then
-  begin
-  L:=Length(CurRec);
-  for i:=0 to L-1 do
-  begin
-  cp:=   FindParam(CurRec[i].DataSetFieldName) ;
-  if cp<>nil then
-  cp.AsWideString:=CurRec[i].CurValue;
-
-  if  CurRec[i].IsDateType <>dtNo then
-  begin
-  fm.ShortDateFormat:='YYYY-MM-DD HH:MM:SS';
-  fm.DateSeparator:='-';
-  fm.TimeSeparator:=':';
-  dt :=StrToDateTime(ReplaceStr(CurRec[i].CurValue,'T',' '),fm);
-  cp.AsDateTime:=dt
-  end;
-  end;
-  try
-  ExecQuery;
-  except
-  on E:EFIBError do
-  if Assigned(FOnApplyXMLError) then
-  begin
-  bea:= beFail;
-  FOnApplyXMLError(E,bea);
-  case bea of
-  beFail :raise;
-  beAbort:Abort;
-  beRetry:raise;
-  beIgnore:;
-  end;
-  end
-  end;
-  end;
-  end;
-}
 procedure TFIBQuery.CheckClosed(const OpName: Ansistring);
 begin
   if FOpen then
