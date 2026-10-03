@@ -111,10 +111,6 @@ function VariantToStream(Value: variant; Stream: TStream): Integer;
 { Length of Blob }
 
 function StringIsDateTimeDefValue(const S: string): Boolean; {$IFDEF D2005+} inline; {$ENDIF}
-{$IFDEF WINDOWS}
-function ConvertFromCodePage(const Source: string; FromCodePage: LongWord): WideString;
-function ConvertToCodePage(const Source: WideString; ToCodePage: LongWord): string;
-{$ENDIF}
 
 var
   TempPath: PAnsiChar;
@@ -138,41 +134,6 @@ implementation
 
 uses
   FIBConsts, StrUtil;
-
-{$IFDEF WINDOWS}
-
-function ConvertToCodePage(const Source: WideString; ToCodePage: LongWord): string;
-var
-  L: Integer;
-begin
-  L := Length(Source);
-  SetLength(Result, L);
-  if
-{$IFDEF D2007+}
-    WideCharToMultiByte(ToCodePage, 0, PWideChar(Source), L, PAnsiChar(AnsiString(Result)), L, nil, nil) = 0
-{$ELSE}
-    WideCharToMultiByte(ToCodePage, 0, PWideChar(Source), L, PChar(Result), L, nil, nil) = 0
-{$ENDIF}
-  then
-    Result := Source
-end;
-
-function ConvertFromCodePage(const Source: string; FromCodePage: LongWord): WideString;
-var
-  L: Integer;
-begin
-  L := Length(Source);
-  SetLength(Result, L);
-  if
-{$IFDEF D2007+}
-    MultiByteToWideChar(FromCodePage, 0, PAnsiChar(AnsiString(Source)), L, PWideChar(Result), L) = 0
-{$ELSE}
-    MultiByteToWideChar(FromCodePage, 0, PChar(Source), L, PWideChar(Result), L) = 0
-{$ENDIF}
-  then
-    Result := Source
-end;
-{$ENDIF}
 
 procedure StreamToVariantArray(Stream: TMemoryStream; var Value: variant);
 var

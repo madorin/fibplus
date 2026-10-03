@@ -217,6 +217,8 @@ function FieldNameForSQL(const TableAlias, FieldName: string): string;
 function FieldUsedInClause(const TableAlias, FieldName, Clause: string): boolean;
 
 function ChangeToSQLDecimalSeparator(const Source: string): string;
+function SQLStringLiteral(const S: string): string;
+function FieldValueToStr(Field: TField; Old: Boolean = False): string;
 { procedure GetExportDataScript(DataSet:TDataSet; const TableName:string;OutPut:TStrings; UseFieldNames:boolean =True;
   FieldList:string=''; FileName:string =''
   ); }
@@ -233,21 +235,7 @@ const
   CharsBeforeClause = [' ', #10, ')', #9, #13, '"'];
   endLexem = ['+', ')', '(', '*', '/', '|', ',', '=', '>', '<', '-', '!', '^',
     '~', ',', ';'];
-  IBStdCharSetsCount   = 61;
-  IBStdCollationsCount = 136;
-  UnknownStr           = 'UNKNOWN';
-
-  IBStdCharacterSets: array [0 .. IBStdCharSetsCount - 1] of string = ('NONE',
-    'OCTETS', 'ASCII', 'UNICODE_FSS', 'UTF8', 'SJIS_0208', 'EUCJ_0208',
-    UnknownStr, UnknownStr, 'DOS737', 'DOS437', 'DOS850', 'DOS865', 'DOS860',
-    'DOS863', 'DOS775', 'DOS858', 'DOS862', 'DOS864', 'NEXT', UnknownStr,
-    'ISO8859_1', 'ISO8859_2', 'ISO8859_3', UnknownStr, UnknownStr, UnknownStr,
-    UnknownStr, UnknownStr, UnknownStr, UnknownStr, UnknownStr, UnknownStr,
-    UnknownStr, 'ISO8859_4', 'ISO8859_5', 'ISO8859_6', 'ISO8859_7', 'ISO8859_8',
-    'ISO8859_9', 'ISO8859_13', UnknownStr, UnknownStr, UnknownStr, 'KSC_5601',
-    'DOS852', 'DOS857', 'DOS861', 'DOS866', 'DOS869', 'CYRL', 'WIN1250',
-    'WIN1251', 'WIN1252', 'WIN1253', 'WIN1254', 'BIG_5', 'GB_2312', 'WIN1255',
-    'WIN1256', 'WIN1257');
+  UnknownStr = 'UNKNOWN';
 
 function ParseMacroString(const MacroString: string; aMacroChar: Char; var DefValue: string): string;
 function PosClause(const Clause, SQLText: string): integer;
@@ -2911,29 +2899,31 @@ begin
     end;
 end;
 
-function FieldValueToStr(Field: TField): string;
+function SQLStringLiteral(const S: string): string;
+begin
+  if Pos('''', S) > 0 then
+    Result := '''' + ReplaceStr(S, '''', '''''') + ''''
+  else
+    Result := '''' + S + '''';
+end;
+
+function FieldValueToStr(Field: TField; Old: Boolean): string;
 var
   v: Variant;
 begin
-  v := Field.Value;
+  if Old then
+    v := Field.OldValue
+  else
+    v := Field.Value;
 
   if VarIsNull(v) or VarIsEmpty(v) then
     Result := 'NULL'
   else
   begin
     case Field.DataType of
-      ftBCD, ftFloat: Result := ChangeToSQLDecimalSeparator(VarToStr(v));
+      ftBCD, ftFloat, ftFMTBcd: Result := ChangeToSQLDecimalSeparator(VarToStr(v));
       ftDate, ftDateTime, ftTime: Result := '''' + VarToStr(v) + '''';
-      ftString, ftWideString:
-        begin
-          { if NeedUnicodeTranslation then
-            Result:=''''+UTF8Encode(v)+''''
-            else }
-          Result := VarToStr(v);
-          if Pos('''', Result) > 0 then
-            Result := ReplaceStr(Result, '''', '''''');
-          Result := '''' + Result + '''';
-        end
+      ftString, ftWideString: Result := SQLStringLiteral(VarToStr(v));
     else
       Result := VarToStr(v)
     end

@@ -122,6 +122,8 @@ type
     FLoadedFromCache: Boolean;
     FCharSet: Integer;
     function GetRecKeyValuesAsStr: string;
+    // InternalSetCharSet, else the attachment charset
+    function BlobCodePage: Word;
   protected
     procedure Load(CallBack: TCallBackBlobReadWrite); override;
     procedure Store(CallBack: TCallBackBlobReadWrite); override;
@@ -294,7 +296,7 @@ procedure ValidateBlobCacheDirectory(Database: TFIBDatabase);
 implementation
 
 uses
-  StrUtil, FIBDataSet, IBBlobFilter, FIBConsts
+  StrUtil, FIBDataSet, IBBlobFilter, FIBConsts, FIBCharSets
 {$IFDEF MACOS}
     , Posix.Unistd
 {$ENDIF}
@@ -1481,6 +1483,19 @@ begin
   SaveToSwapFile;
 end;
 
+function TFIBBlobStream.BlobCodePage: Word;
+begin
+  if (FBlobSubType <> 1) or (FDatabase = nil) then
+    Result := FIBCodePageSystem
+  else if FCharSet >= 0 then
+    Result := FDatabase.Capabilities.BlobCodePage(FCharSet)
+  // charset not given: a text column comes in the attachment charset
+  else if FDatabase.Capabilities.AttachmentCharSetID >= 0 then
+    Result := FDatabase.Capabilities.BlobCodePage(FDatabase.Capabilities.AttachmentCharSetID)
+  else
+    Result := FIBCodePageSystem;
+end;
+
 function TFIBBlobStream.GetAsString: AnsiString;
 begin
   CheckReadable;
@@ -1490,15 +1505,11 @@ begin
     Seek(0, soFromBeginning);
     SetString(Result, nil, FDataSize);
     ReadBuffer(Result[1], FDataSize);
-
-    if (FBlobSubType = 1) and Database.NeedUTFEncodeDDL then
-    begin
-
-      if FCharSet in Database.UnicodeCharsets then
-        Result := UTF8Decode(Result)
-      else if Database.IsUnicodeConnect then
-        Result := UTF8Decode(Result)
-    end;
+{$IFDEF D2009+}
+    SetStringCodePage(RawByteString(Result), BlobCodePage);
+{$ELSE}
+    Result := DecodeString(Result, BlobCodePage);
+{$ENDIF}
   end
   else
     Result := '';
@@ -1506,7 +1517,7 @@ end;
 
 function TFIBBlobStream.GetAsWideString: WideString;
 var
-  s: AnsiString;
+  s: FIBByteString;
 begin
   CheckReadable;
   EnsureInitialized;
@@ -1515,18 +1526,7 @@ begin
     Seek(0, soFromBeginning);
     SetString(s, nil, FDataSize);
     ReadBuffer(s[1], FDataSize);
-
-    if (FBlobSubType = 1) and Database.NeedUTFEncodeDDL then
-    begin
-      if FCharSet in Database.UnicodeCharsets then
-        Result := UTF8Decode(s)
-      else if Database.IsUnicodeConnect then
-        Result := UTF8Decode(s)
-      else
-        Result := s
-    end
-    else
-      Result := s
+    Result := DecodeWideString(s, BlobCodePage);
   end
   else
     Result := '';

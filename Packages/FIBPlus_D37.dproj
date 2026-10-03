@@ -192,6 +192,7 @@
         <DCCReference Include="..\Source\SIBFIBEA.PAS"/>
         <DCCReference Include="..\Source\SIBGlobals.pas"/>
         <DCCReference Include="..\Source\FIBTypes.pas"/>
+        <DCCReference Include="..\Source\FIBCharSets.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

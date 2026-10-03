@@ -2,6 +2,25 @@
 
 ## [7.9.1] - Unreleased
 
+### Added
+
+#### Character sets
+
+- Text goes through the code page of its column's charset (fields, parameters,
+  text BLOBs, dataset fields, array elements, SQL text, object names), not only
+  UTF-8 or the system code page: e.g. WIN1251 data on a Western Windows no
+  longer comes as `?` or mojibake.
+  - Unit `FIBCharSets` (`FirebirdCharSetCodePage`, `FirebirdCharSetName`,
+    `DecodeString`, `EncodeString`); `TFIBDatabase.Capabilities`: `AttachmentCharSetID`,
+    `CodePage`, `MetadataCodePage`, `TextCodePage`, `BlobCodePage`;
+    `TFIBDatabase.ConnectionSerial`; `TFIBCustomDataSet.StringFieldCharSetID`,
+    `StringFieldCodePage`, `BlobFieldCodePage`.
+- Unlike FireDAC and IBDAC (UTF-8 or the system code page only): any Firebird
+  charset, per column also on NONE connections; NONE/OCTETS columns kept as
+  bytes on UTF8 connections; array elements in the column charset; DDL and
+  names in UTF-8 on NONE; an error instead of `?` for characters the charset
+  can't hold.
+
 ### Changed
 
 - `FIBRelease` is renamed to `FIBPatchVersion`.
@@ -19,6 +38,28 @@
   `FBeforeStartTransactionEvents`, `FAfterStartTransactionEvents`,
   `FBeforeEndTransactionEvents`, `FAfterEndTransactionEvents`,
   `FDatabaseTRParams`, `FDatabaseTPBs`.
+- A character the target code page can't hold raises "Cannot transliterate
+  character between character sets" (values and SQL text) instead of being
+  sent as `?` or a look-alike, e.g. `ș`/`ț` with comma (Romanian Standard
+  keyboard) on WIN1250/WIN1252: use UTF8 or the Romanian Legacy keyboard.
+- NONE connections decode a column with its declared charset, so text written
+  in another code page (e.g. cp1250 into a WIN1252 column) shows as stored.
+  Repair by reinterpreting the bytes:
+  `cast(cast(C as varchar(n) character set OCTETS) as varchar(n) character set WIN1250)`.
+- ISO8859_1/ISO8859_9 go through code pages 1252/1254 (`€ “ ” …` instead of
+  the C1 controls), ASCII through the system code page.
+- `TFIBStringField.AsAnsiString` (Delphi 2009+) returns the column bytes with
+  their code page set; calculated and lookup `ftString` fields use the system
+  code page.
+- `TFIBDatabase.FBAttachCharsetID` is a deprecated function, use
+  `Capabilities.AttachmentCharSetID` (read once at connect, -1 when not
+  connected or on InterBase); `IsKOI8Connect` is deprecated.
+
+### Removed
+
+- `SUPPORT_KOI8_CHARSET` and `StdFuncs.ConvertToCodePage`/`ConvertFromCodePage`.
+- `SqlTxtRtns.IBStdCharacterSets`, `IBStdCharSetsCount` and
+  `IBStdCollationsCount`: use `FIBCharSets.FirebirdCharSetName`.
 
 ### Fixed
 
@@ -28,6 +69,20 @@
 - `TFIBSQLLogger.SaveStatisticsToDB` and `CreateStatisticsTable` roll back
   when a statement fails, instead of committing the rows inserted before it
   or leaving the transaction active.
+- Array fields kept the descriptor of a previous connection.
+- Locate, filters, sorting and bookmarks on string fields of a non-system code
+  page; lookup fields with a Unicode result field.
+- `UseExecuteBlock`: apostrophes in literals not doubled, non-ASCII text sent
+  in the system code page.
+- Text BLOB parameters set before `Prepare` sent without their charset; NONE
+  and OCTETS text BLOBs decoded as UTF-8 on UTF8 connections.
+- A string parameter replaced by `AsInteger` before `Prepare` sent the string.
+- Multi-byte charset values (SJIS, GBK, ...) cut in the middle of a character.
+- `DisableEncodingSQLText` sent queries with parameters with an empty SQL text.
+- `CharacterSet` returned `UNKNOWN` for KOI8R/U, WIN1258, TIS620, GBK, CP943C
+  and GB18030.
+- `GetExportDataScript` wrote `ftFMTBcd` values with the locale decimal
+  separator.
 
 ## [7.9.0] - 2026-10-01
 

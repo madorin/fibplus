@@ -139,6 +139,7 @@
         <DCCReference Include="dsnap.dcp"/>
         <DCCReference Include="..\Source\StdFuncs.pas"/>
         <DCCReference Include="..\Source\FIBTypes.pas"/>
+        <DCCReference Include="..\Source\FIBCharSets.pas"/>
         <DCCReference Include="..\Source\IB_Services.pas"/>
         <DCCReference Include="..\Source\ibase.pas"/>
         <DCCReference Include="..\Source\FIBDatabase.pas"/>

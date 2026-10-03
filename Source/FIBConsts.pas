@@ -100,6 +100,8 @@ resourcestring
   SCompDatabaseNotConnected             = 'Database component is not set properly or not connected';
   SEInvalidCharsetData                  = 'Invalid data charset  %s. Need charset %s';
   SErrorInProc                          = 'Error in %s procedure %s ';
+  SCodePageNotAvailable                 = 'Code page %d is not available on this system';
+  SCannotTransliterate                  = 'Cannot transliterate character between character sets: "%s" to code page %d';
 
 implementation
 

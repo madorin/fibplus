@@ -1,7 +1,6 @@
 package FIBPlus_D37;
 
 {$R *.res}
-
 {$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
 {$ALIGN 8}
 {$ASSERTIONS ON}
@@ -85,6 +84,7 @@ contains
   SIBAPI in '..\Source\SIBAPI.pas',
   SIBFIBEA in '..\Source\SIBFIBEA.PAS',
   SIBGlobals in '..\Source\SIBGlobals.pas',
-  FIBTypes in '..\Source\FIBTypes.pas';
+  FIBTypes in '..\Source\FIBTypes.pas',
+  FIBCharSets in '..\Source\FIBCharSets.pas';
 
 end.

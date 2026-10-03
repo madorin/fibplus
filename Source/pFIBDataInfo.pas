@@ -275,7 +275,7 @@ implementation
 
 uses
   pFIBDataSet, StrUtil, FIBConsts, pFIBCacheQueries, ibase, SqlTxtRtns, fib,
-  StdFuncs
+  StdFuncs, FIBCharSets
 {$IFDEF D_XE3}
 {$IFDEF MACOS}
     , Posix.Unistd // for inline functions
@@ -1143,10 +1143,9 @@ end;
 
 function TpFIBFieldInfo.GetCharSet: string;
 begin
-  if (FCharSet < 0) or (FCharSet > IBStdCharSetsCount - 1) then
-    Result := UnknownStr
-  else
-    Result := IBStdCharacterSets[FCharSet]
+  Result := FirebirdCharSetName(FCharSet);
+  if Result = '' then
+    Result := UnknownStr;
 end;
 
 procedure TpFIBFieldInfo.SaveToStream(Stream: TStream);

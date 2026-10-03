@@ -93,7 +93,6 @@ type
     FValueLength: Integer;
     FCollateNumber: Byte;
     FCharacterSetName: string;
-    FNeedUnicodeConvert: Boolean;
     FIsDBKey: Boolean;
     FReservedBuffer: TDataBuffer;
     // FStringBuffer     :FIBByteString;
@@ -103,6 +102,7 @@ type
     procedure UnPrepare(Sender: TObject);
     function GetDataToReserveBuffer: Boolean;
     function InternalGetAsString(var IsNull: Boolean): string;
+    function CodePage: Word;
   protected
     class procedure CheckTypeSize(Value: Integer); override;
     procedure SetDataSet(ADataSet: TDataSet); override;
@@ -111,6 +111,10 @@ type
     procedure SetAsNativeData(const Value: FIBByteString);
     function GetAsVariant: Variant; override;
     procedure SetAsString(const Value: string); override;
+{$IFDEF D2009+}
+    function GetAsAnsiString: AnsiString; override;
+    procedure SetAsAnsiString(const Value: AnsiString); override;
+{$ENDIF}
     procedure SetSize(Value: Integer); override;
 {$IFDEF UNICODE_TO_STRING_FIELDS}
     function GetDataSize: Integer; override;
@@ -287,6 +291,8 @@ type
   private
     FCharSetID: Integer;
     FSubType: SmallInt;
+    // UTF-8 also for a Unicode column known from the metadata (psSupportUnicodeBlobs)
+    function BlobCodePage: Word;
     function GetWideDisplayText: WideString;
     function GetWideEditText: WideString;
     procedure SetWideEditText(const Value: WideString);
@@ -1188,6 +1194,10 @@ type
 
     function RecordFieldValue(Field: TField; RecNumber: Integer): Variant; overload;
     function RecordFieldValue(Field: TField; aBookmark: TBookMark): Variant; overload;
+    // -1 for calculated and lookup fields
+    function StringFieldCharSetID(Field: TField): Integer;
+    function StringFieldCodePage(Field: TField): Word;
+    function BlobFieldCodePage(Field: TField): Word;
 
     function ExtLocate(const KeyFields: string; const KeyValues: Variant; Options: TExtLocateOptions): Boolean;
 
@@ -1534,7 +1544,7 @@ implementation
 
 uses
   StrUtil, FIBConsts, pFIBDataInfo, VariantRtn, IB_ErrorCodes,
-  pFIBCacheQueries, DSContainer, FIBTypes;
+  pFIBCacheQueries, DSContainer, FIBTypes, FIBCharSets;
 
 const
   DiffSizesRecData = SizeOf(TRecordData) - SizeOf(TSavedRecordData);
@@ -1690,7 +1700,6 @@ procedure TFIBStringField.Prepare;
 var
   F: TFIBXSQLVAR;
   st: Short;
-  lookField: TField;
   p: PSmallint;
 begin
   if DataSet is TFIBCustomDataSet then
@@ -1707,33 +1716,24 @@ begin
               Inc(p, 1);
               FCollateNumber := PByte(p)^;
               FCharacterSetName := F.CharacterSet;
-              if (DataSet is TFIBDataSet) then
-                begin
-                  with TFIBDataSet(DataSet).Database do
-                    FNeedUnicodeConvert := NeedUnicodeFieldTranslation
-                      (Byte(F.SqlSubType)) and (Byte(F.SqlSubType) in UnicodeCharSets)
-                end
-              else
-                FNeedUnicodeConvert := false;
             end
           else
             begin
               FCollateNumber := 0;
               FCharacterSetName := UnknownStr;
-              if FieldKind <> fkLookup then
-                FNeedUnicodeConvert := false
-              else
-                begin
-                  lookField := LookupDataSet.FindField(LookupResultField);
-                  if lookField is TWideStringField then
-                    FNeedUnicodeConvert := True
-                  else if lookField is TFIBStringField then
-                    FNeedUnicodeConvert := TFIBStringField(lookField).FNeedUnicodeConvert
-                end;
             end
         end;
   FIsDBKey := IsDBKey;
   FPrepared := True;
+end;
+
+function TFIBStringField.CodePage: Word;
+begin
+  // calculated and lookup: system code page, as TStringField
+  if (FieldKind = fkData) and (DataSet is TFIBCustomDataSet) then
+    Result := TFIBCustomDataSet(DataSet).StringFieldCodePage(Self)
+  else
+    Result := FIBCodePageSystem;
 end;
 
 procedure TFIBStringField.UnPrepare(Sender: TObject);
@@ -1838,14 +1838,8 @@ begin
     begin
       if (FReservedBuffer^ = ZeroData) then
         Result := ''
-      else if FNeedUnicodeConvert then
-  {$IFDEF D2009+}
-        Result := UTF8ToString(PAnsiChar(FReservedBuffer))
-  {$ELSE}
-        Result := UTF8Decode(PAnsiChar(FReservedBuffer))
-  {$ENDIF}
       else
-        Result := PAnsiChar(FReservedBuffer);
+        Result := DecodeString(PAnsiChar(FReservedBuffer), Length(PAnsiChar(FReservedBuffer)), CodePage);
     end
   else
     begin
@@ -1948,29 +1942,63 @@ procedure TFIBStringField.SetAsString(const Value: string);
 
 var
   TempStr: string;
+  Count, Excess: Integer;
+  Bytes: FIBByteString;
 begin
   vInSetAsString := True;
   try
-    TempStr := Value;
-    if Length(Value) > Size then
-      SetLength(TempStr, Size);
-
-    if (FieldKind = fkData) and TFIBDataSet(DataSet).Database.NeedUnicodeFieldTranslation(Byte(SqlSubType)) then
-      InternalSetAsString(UTF8Encode(TempStr))
+    if FieldKind = fkData then
+      begin
+        // Size is in characters, the buffer in bytes: cut at a character boundary
+        Count := Length(Value);
+        if Count > Size then
+          Count := Size;
+        repeat
+{$IFDEF D2009+}
+          if (Count > 0) and (Count < Length(Value)) and (Value[Count] >= #$D800) and (Value[Count] <= #$DBFF) then
+            Dec(Count);
+{$ENDIF}
+          Bytes := EncodeString(Copy(Value, 1, Count), CodePage);
+          Excess := Length(Bytes) - (DataSize - 1);
+          if Excess <= 0 then
+            Break;
+          Dec(Count, (Excess + 1) div 2);
+        until False;
+        InternalSetAsString(Bytes);
+      end
     else
-{$IFDEF SUPPORT_KOI8_CHARSET}
-{$IFDEF WINDOWS}
-      if TFIBDataSet(DataSet).Database.IsKOI8Connect and not(Byte(SqlSubType) in [0, 1]) // OCTETS,NONE
-      then
-        InternalSetAsString(ConvertToCodePage(TempStr, CodePageKOI8R))
-      else
-{$ENDIF}
-{$ENDIF}
-        InternalSetAsString(TempStr);
+      begin
+        TempStr := Value;
+        if Length(Value) > Size then
+          SetLength(TempStr, Size);
+        InternalSetAsString(AnsiString(TempStr));
+      end;
   finally
     vInSetAsString := false;
   end;
 end;
+
+{$IFDEF D2009+}
+
+function TFIBStringField.GetAsAnsiString: AnsiString;
+begin
+  Result := inherited GetAsAnsiString;
+  if FieldKind = fkData then
+    SetStringCodePage(RawByteString(Result), CodePage);
+end;
+
+procedure TFIBStringField.SetAsAnsiString(const Value: AnsiString);
+var
+  CP: Word;
+begin
+  CP := CodePage;
+  // another code page is converted; NONE and OCTETS are stored raw
+  if (CP <> FIBCodePageSystem) and (StringCodePage(Value) <> CP) then
+    SetAsString(string(Value))
+  else
+    inherited SetAsAnsiString(Value);
+end;
+{$ENDIF}
 
 procedure TFIBWideStringField.SetSize(Value: Integer);
 begin
@@ -2125,7 +2153,11 @@ var
   L: Integer;
 begin
   // Call when Field Validate
-  s := UTF8Decode(PAnsiChar(Source));
+  if DataSet is TFIBCustomDataSet then
+    s := DecodeString(PAnsiChar(Source), Length(PAnsiChar(Source)),
+      TFIBCustomDataSet(DataSet).StringFieldCodePage(Self))
+  else
+    s := UTF8Decode(PAnsiChar(Source));
   // Dest has DataSize bytes, the UTF8 source can hold more characters
   L := Length(s);
   if L > DataSize div SizeOf(Char) - 1 then
@@ -2645,19 +2677,24 @@ begin
 end;
 {$ENDIF}
 
+function TFIBMemoField.BlobCodePage: Word;
+begin
+  if DataSet is TFIBCustomDataSet then
+    Result := TFIBCustomDataSet(DataSet).BlobFieldCodePage(Self)
+  else
+    Result := FIBCodePageSystem;
+  // psSupportUnicodeBlobs, for servers that send the column bytes
+  if (Result = FIBCodePageSystem) and (FCharSetID > 0) and (FCharSetID < 256) and (DataSet is TFIBDataSet) and
+    Assigned(TFIBDataSet(DataSet).Database) and (FCharSetID in TFIBDataSet(DataSet).Database.UnicodeCharSets) then
+    Result := FIBCodePageUTF8;
+end;
+
 function TFIBMemoField.GetAsString: string;
 begin
 {$IFDEF D2009+}
-  Result := inherited GetAsAnsiString;
+  Result := DecodeString(inherited GetAsAnsiString, BlobCodePage);
 {$ELSE}
-  Result := inherited GetAsString;
-{$ENDIF}
-  with TFIBDataSet(DataSet).Database do
-    if NeedUTFEncodeDDL and (IsUnicodeConnect or (FCharSetID in UnicodeCharSets)) then
-{$IFDEF D2009+}
-      Result := UTF8ToString(Result)
-{$ELSE}
-      Result := UTF8Decode(Result)
+  Result := DecodeString(inherited GetAsString, BlobCodePage);
 {$ENDIF}
 end;
 
@@ -2665,40 +2702,38 @@ function TFIBMemoField.GetAsVariant: Variant;
 begin
   if IsNull then
     Result := Null
+  else if BlobCodePage <> FIBCodePageSystem then
+    Result := GetAsWideString
   else
-    with TFIBDataSet(DataSet).Database do
-      if (NeedUTFEncodeDDL and IsUnicodeConnect) or (FCharSetID in UnicodeCharSets) then
-        Result := GetAsWideString
-      else
-        Result := inherited GetAsVariant;
+    Result := inherited GetAsVariant;
 end;
 
 procedure TFIBMemoField.SetAsVariant(const Value: Variant);
 begin
-  with TFIBDataSet(DataSet).Database do
-    if (NeedUTFEncodeDDL and IsUnicodeConnect) or (FCharSetID in UnicodeCharSets) then
-      begin
-        if VarIsNull(Value) then
-          Clear
-        else
-          SetAsWideString(Value)
-      end
+  if BlobCodePage <> FIBCodePageSystem then
+  begin
+    if VarIsNull(Value) then
+      Clear
     else
-      inherited SetAsVariant(Value)
+      SetAsWideString(Value)
+  end
+  else
+    inherited SetAsVariant(Value)
 end;
 
 procedure TFIBMemoField.SetAsString(const Value: string);
+var
+  CodePage: Word;
 begin
-  with TFIBDataSet(DataSet).Database do
-    if (NeedUTFEncodeDDL and IsUnicodeConnect) or (FCharSetID in UnicodeCharSets) then
+  CodePage := BlobCodePage;
+  if CodePage <> FIBCodePageSystem then
 {$IFDEF D2009+}
-      // inherited SetAsAnsiString(UTF8Encode(Value))
-      SetAsAnsiString(UTF8Encode(Value))
+    SetAsAnsiString(EncodeString(Value, CodePage))
 {$ELSE}
-      inherited SetAsString(UTF8Encode(Value))
+    inherited SetAsString(EncodeString(Value, CodePage))
 {$ENDIF}
-    else
-      inherited SetAsString(Value)
+  else
+    inherited SetAsString(Value)
 end;
 
 function TFIBMemoField.GetBlobId: TISC_QUAD;
@@ -2773,42 +2808,30 @@ end;
 function TFIBMemoField.GetAsAnsiString: AnsiString;
 begin
   Result := inherited GetAsAnsiString;
-  with TFIBDataSet(DataSet).Database do
-    if (NeedUTFEncodeDDL and IsUnicodeConnect) or (FCharSetID in UnicodeCharSets) then
-      Result := UTF8ToString(Result)
+  SetStringCodePage(RawByteString(Result), BlobCodePage);
 end;
 {$ENDIF}
 
 function TFIBMemoField.GetAsWideString: {$IFDEF D2009+}UnicodeString; {$ELSE} WideString; {$ENDIF}
 begin
-  with TFIBDataSet(DataSet).Database do
-    if NeedUTFEncodeDDL and IsUnicodeConnect or (FCharSetID in UnicodeCharSets) then
 {$IFDEF D2009+}
-      Result := UTF8ToString(inherited GetAsAnsiString)
+  Result := DecodeString(inherited GetAsAnsiString, BlobCodePage);
 {$ELSE}
-      Result := UTF8Decode(inherited GetAsString)
-{$ENDIF}
-    else
-{$IFDEF D2009+}
-      Result := inherited GetAsAnsiString;
-{$ELSE}
-      Result := inherited GetAsString;
+  Result := DecodeWideString(inherited GetAsString, BlobCodePage);
 {$ENDIF}
 end;
 
 procedure TFIBMemoField.SetAsWideString(const aValue:
   {$IFDEF D2009+}UnicodeString{$ELSE} WideString{$ENDIF});
 begin
-  with TFIBDataSet(DataSet).Database do
-    if (NeedUTFEncodeDDL and IsUnicodeConnect) or (FCharSetID in UnicodeCharSets) then
 {$IFDEF D2009+}
-      // inherited SetAsAnsiString(UTF8Encode(aValue))
-      SetAsAnsiString(UTF8Encode(aValue))
+  SetAsString(aValue);
 {$ELSE}
-      inherited SetAsString(UTF8Encode(aValue))
+  if BlobCodePage = FIBCodePageUTF8 then
+    inherited SetAsString(UTF8Encode(aValue))
+  else
+    inherited SetAsString(aValue)
 {$ENDIF}
-    else
-      inherited SetAsString(aValue)
 end;
 
 function TFIBMemoField.GetWideDisplayText: WideString;
@@ -4772,7 +4795,7 @@ begin
         case Field.DataType of
           ftString:
   {$IFDEF UNICODE_TO_STRING_FIELDS}
-            if (Field is TFIBStringField) and TFIBStringField(Field).FNeedUnicodeConvert then
+            if (Field is TFIBStringField) and (TFIBStringField(Field).CodePage = FIBCodePageUTF8) then
               Result := WideCompareStr(S1, S2)
             else
               Result := AnsiCompareStr(S1, S2);
@@ -8602,32 +8625,9 @@ begin
                 begin
                   if fi^.fdIsSeparateString then
                     begin
-
                       case Field.DataType of
-                        ftString:
-                          begin
-      {$IFNDEF UNICODE_TO_STRING_FIELDS}
-                            Result := PAnsiString(p)^;
-      {$ELSE}
-                            if Database.NeedUnicodeFieldsTranslation then
-      {$IFDEF D2009+}
-                              Result := UTF8ToString(PAnsiString(p)^)
-      {$ELSE}
-                              Result := UTF8Decode(PString(p)^)
-      {$ENDIF}
-                            else
-                              Result := PAnsiString(p)^;
-      {$ENDIF}
-                          end;
-                        ftWideString:
-                          if Database.NeedUnicodeFieldsTranslation then
-      {$IFDEF D2009+}
-                            Result := UTF8ToString(PAnsiString(p)^)
-      {$ELSE}
-                            Result := UTF8Decode(PString(p)^)
-      {$ENDIF}
-                          else
-                            Result := PAnsiString(p)^;
+                        ftString: Result := DecodeString(PFIBByteString(p)^, StringFieldCodePage(Field));
+                        ftWideString: Result := DecodeWideString(PFIBByteString(p)^, StringFieldCodePage(Field));
                       end;
 
                       if poTrimCharFields in FOptions then
@@ -8637,20 +8637,18 @@ begin
                     case Field.DataType of
                       ftString:
                         begin
-                          Result := FastCopy(PAnsiChar(p), 1, Field.Size);
+                          Result := DecodeString(FastCopy(AnsiString(PAnsiChar(p)), 1, fi^.fdDataSize),
+                            StringFieldCodePage(Field));
                           if poTrimCharFields in FOptions then
-                            Result := TrimRight(Result);
+                            Result := VarTrimRight(Result);
                         end;
                       ftWideString:
                         begin
-                          if Database.NeedUnicodeFieldsTranslation then
-                            Result := UTF8Decode(FastCopy(PAnsiChar(p), 1, Field.Size))
-                          else
-                            Result := FastCopy(PAnsiChar(p), 1, Field.Size);
-
+                          // fdDataSize: bytes, Size: characters
+                          Result := DecodeWideString(FastCopy(AnsiString(PAnsiChar(p)), 1, fi^.fdDataSize),
+                            StringFieldCodePage(Field));
                           if poTrimCharFields in FOptions then
                             Result := VarTrimRight(Result);
-
                         end;
                       ftGuid: Result := GUIDAsString(PGuid(p)^);
 
@@ -8772,6 +8770,40 @@ begin
     Result := Null
 end;
 
+function TFIBCustomDataSet.StringFieldCharSetID(Field: TField): Integer;
+var
+  fi: PFIBFieldDescr;
+begin
+  fi := DataFieldDescr(Self, Field);
+  if fi <> nil then
+    Result := Byte(fi^.fdSubType)
+  else
+    Result := -1;
+end;
+
+function TFIBCustomDataSet.StringFieldCodePage(Field: TField): Word;
+var
+  CharSetID: Integer;
+begin
+  CharSetID := StringFieldCharSetID(Field);
+  if (CharSetID >= 0) and Assigned(Database) then
+    Result := Database.Capabilities.TextCodePage(CharSetID)
+  else
+    Result := FIBCodePageSystem;
+end;
+
+function TFIBCustomDataSet.BlobFieldCodePage(Field: TField): Word;
+var
+  fi: PFIBFieldDescr;
+begin
+  fi := DataFieldDescr(Self, Field);
+  // text BLOB: the charset is in sqlscale
+  if (fi <> nil) and (fi^.fdSubType = 1) and Assigned(Database) then
+    Result := Database.Capabilities.BlobCodePage(Byte(fi^.fdDataScale))
+  else
+    Result := FIBCodePageSystem;
+end;
+
 {$IFDEF D_XE4}
 
 procedure TFIBCustomDataSet.DataConvert(Field: TField; Source: TValueBuffer; var Dest: TValueBuffer; ToNative: Boolean);
@@ -8799,7 +8831,7 @@ begin
     inherited
   else
     begin
-      if Database.NeedUnicodeFieldsTranslation then
+      if StringFieldCodePage(Field) = FIBCodePageUTF8 then
         begin
           if ToNative then
             begin
@@ -8841,7 +8873,7 @@ begin
   if (Field is TWideStringField) then
     begin
       begin
-        if Database.NeedUnicodeFieldsTranslation then
+        if StringFieldCodePage(Field) = FIBCodePageUTF8 then
           begin
             if ToNative then
               begin
@@ -9150,7 +9182,7 @@ begin
                           end;
                         ftWideString:
                           begin
-                            if Database.NeedUnicodeFieldsTranslation and not(drsInFieldAsData in FRunState) then
+                            if (StringFieldCodePage(Field) = FIBCodePageUTF8) and not(drsInFieldAsData in FRunState) then
                               begin
                                 L := Utf8ToUnicode(PWideChar(Buffer), L + 1, PAnsiChar(Data), L);
                                 if L > Field.Size then
@@ -10180,8 +10212,10 @@ begin
                               end;
                           end;
 
-                        ftString: KeyValues[i] := string(PAnsiChar(AddrValue));
-                        ftWideString: KeyValues[i] := UTF8Decode(PAnsiChar(AddrValue));
+                        ftString: KeyValues[i] := DecodeString(PAnsiChar(AddrValue), Length(PAnsiChar(AddrValue)),
+                            StringFieldCodePage(tf));
+                        ftWideString: KeyValues[i] := DecodeWideString(FIBByteString(PAnsiChar(AddrValue)),
+                            StringFieldCodePage(tf));
                         ftDate: KeyValues[i] := IntDateToDateTime(PInteger(AddrValue)^);
                         // the bookmark keeps the field buffer format (msecs)
                         ftTime: KeyValues[i] := VarFromDateTime(PInteger(AddrValue)^ / MSecsPerDay);
@@ -10255,7 +10289,12 @@ begin
                                 ftSmallint: AsInteger := PSmallint(AddrValue)^;
                                 ftInteger: AsInteger := PInteger(AddrValue)^;
                                 ftFloat: AsDouble := PDouble(AddrValue)^;
-                                ftString, ftWideString: AsString := PAnsiChar(AddrValue);
+                                ftString:
+                                  AsString := DecodeString(PAnsiChar(AddrValue), Length(PAnsiChar(AddrValue)),
+                                    StringFieldCodePage(tf));
+                                ftWideString:
+                                  AsWideString := DecodeWideString(FIBByteString(PAnsiChar(AddrValue)),
+                                    StringFieldCodePage(tf));
                                 ftDate: asDateTime := IntDateToDateTime(PInteger(AddrValue)^);
                                 // the bookmark keeps the field buffer format (msecs)
                                 ftTime: AsTime := PInteger(AddrValue)^ / MSecsPerDay;
@@ -11452,11 +11491,13 @@ const
 
 var
   CalcFieldsList: TList;
+  WideFieldsList: TList;
   i: Integer;
   OldParser: TExpressionParser;
 begin
   OldParser := FFilterParser;
   CalcFieldsList := TList.Create;
+  WideFieldsList := TList.Create;
   Include(FRunState, drsDontCheckInactive);
   try
     for i := 0 to Pred(FieldCount) do
@@ -11465,6 +11506,15 @@ begin
           CalcFieldsList.Add(Fields[i]);
           Fields[i].FieldKind := fkInternalCalc;
         end;
+{$IFDEF D2009+}
+    // VCL converts literals compared with ftString fields to the system code page: keep them Unicode
+    for i := 0 to Pred(FieldCount) do
+      if (Fields[i].DataType = ftString) and not IsSystemCodePage(StringFieldCodePage(Fields[i])) then
+        begin
+          WideFieldsList.Add(Fields[i]);
+          THackField(Fields[i]).SetDataType(ftWideString);
+        end;
+{$ENDIF}
     if IsBlank(Text) then
       FFilterParser := nil
     else
@@ -11474,8 +11524,11 @@ begin
   finally
     for i := 0 to Pred(CalcFieldsList.Count) do
       TField(CalcFieldsList[i]).FieldKind := fkCalculated;
+    for i := 0 to Pred(WideFieldsList.Count) do
+      THackField(WideFieldsList[i]).SetDataType(ftString);
     Exclude(FRunState, drsDontCheckInactive);
     CalcFieldsList.Free;
+    WideFieldsList.Free;
   end;
 end;
 

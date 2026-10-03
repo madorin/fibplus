@@ -1095,7 +1095,7 @@ begin
               // and (FHaveDMLStatements or FHaveUnknownStatements)
               then
               begin
-                if FDatabase.FBAttachCharsetID = 0 then
+                if FDatabase.Capabilities.AttachmentCharSetID = 0 then
                 begin
                   FDatabase.Connected := False;
                   SetConnectParams(vToken, Stmt.smdEnd);

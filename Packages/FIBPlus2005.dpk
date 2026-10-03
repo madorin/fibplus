@@ -61,6 +61,7 @@ contains
   SqlTxtRtns in '..\Source\SqlTxtRtns.pas',
   StdFuncs in '..\Source\StdFuncs.pas',
   FIBTypes in '..\Source\FIBTypes.pas',
+  FIBCharSets in '..\Source\FIBCharSets.pas',
   StrUtil in '..\Source\StrUtil.pas',
   VariantRtn in '..\Source\VariantRtn.pas',
   pFIBStoredProc in '..\Source\pFIBStoredProc.pas',

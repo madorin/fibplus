@@ -149,7 +149,34 @@ var
   WideValue:WideString;
   WideKey:WideString;
   vCalcBuffer:PAnsiChar;
-  
+  CodePages: array of Word;
+
+// To compare a string field as Unicode; 0: as bytes
+function LocateCodePage(Field: TField): Word;
+begin
+  Result := 0;
+  if not (Field.DataType in [ftString, ftWideString]) then
+    Exit;
+  if Field.FieldNo < 0 then
+  begin
+    if (Field.DataType = ftWideString) and Database.NeedUnicodeFieldsTranslation then
+      Result := FIBCodePageUTF8;
+    Exit;
+  end;
+  Result := StringFieldCodePage(Field);
+{$IFDEF D2009+}
+  // ftString of the system code page: as bytes
+  if IsSystemCodePage(Result) then
+    if Field.DataType = ftString then
+      Result := 0
+    else
+      Result := DefaultSystemCodePage;
+{$ELSE}
+  if Result <> FIBCodePageUTF8 then
+    Result := 0;
+{$ENDIF}
+end;
+
 function IsVisibleRecord:boolean;
 var
  vBuff:TRecordBuffer;
@@ -281,8 +308,10 @@ var
       fdt  :TFieldType ;
 begin
   CalcSize:=0;
+  SetLength(CodePages, fl.Count);
   for i:=Pred(fl.Count) downto 0 do
   begin
+     CodePages[i] := LocateCodePage(TField(fl.List^[i]));
 
      if TField(fl.List^[i]).FieldKind in [fkCalculated, fkLookup] then
      begin
@@ -305,6 +334,8 @@ begin
       if fdt=ftString then
        fdt:=ftWideString;
      {$ENDIF}
+     if (fdt = ftString) and (CodePages[i] <> 0) then
+       fdt := ftWideString;
      case fdt  of
       ftString  :
       begin
@@ -325,7 +356,7 @@ begin
       ftCurrency: KeyValues[i]:=VarAsType(KeyValues[i],varCurrency);
       ftWideString :
       begin
-       if Database.NeedUnicodeFieldsTranslation then
+       if CodePages[i] <> 0 then
        begin
          if eloCaseInsensitive in Options then
          begin
@@ -422,12 +453,13 @@ var
   dt:TDateTime;
   cResult:shortInt;
   InitStrValue:boolean;
-  inWS:boolean;
   ts:TTimeStamp;
   fi:PFIBFieldDescr;
   dv:Double;
   fn:Integer;
   vConv: TBcd; // Firebird 4 values converted for comparison
+  fdt: TFieldType;
+  CodePage: Word;
   function UDFCompStr(const s:Ansistring):integer;
   begin
    Result:=CompareFieldValues(TField(fl.List^[i]),KeyValues[i],s )
@@ -438,18 +470,9 @@ var
    Result:=CompareFieldValues(TField(fl.List^[i]),WideKey,s )
   end;
 
-  procedure UDFUtf8DecodeA(var s:Ansistring);
-  begin
-  {$IFDEF   D2009+}
-   s:=UTF8ToString(S)
-  {$ELSE}
-   s:=UTF8Decode(s)
-  {$ENDIF}
-  end;
-
   procedure ChangeArrowInSorted;
   begin
-          case TField(fl.List^[i]).DataType of
+          case fdt of
            ftString    :
            begin
             if not InitStrValue then
@@ -459,15 +482,8 @@ var
              Arrow:=TArrow(vSortInfos[i].Asc xor  (UDFCompStr(StrValue)>0))
            end;
            ftWideString:
+           // WideKey and WideValue set by CompareValues
            begin
-            if not InWs then
-            begin
-             DoUtf8Decode(KeyValues[i],WideKey);
-             if InitStrValue then
-              DoUtf8Decode(StrValue,WideValue)
-             else
-              DoUtf8Decode(PAnsiString(p)^,WideValue);
-            end;
              if eloCaseInsensitive in Options then
               DoWideUppercase(WideValue);
               Arrow:=TArrow(vSortInfos[i].Asc xor  (UDFCompWideStr(WideValue)>0))
@@ -631,9 +647,6 @@ var
               Result:=cResult=0
       end;
 
-var
-    fdt  :TFieldType ;
-
 begin
       i := 0; cResult:=0;
       Result := True;
@@ -641,7 +654,6 @@ begin
       while (Result  and (i < fld_cnt)) do
       begin
         InitStrValue:=False;
-        inWS:=False;
         p:=vCalcBuffer;
         GetFieldDataPointer(TField(fl.List^[i]),RecI,vIsString,p);
         fn:=TField(fl.List^[i]).FieldNo;
@@ -687,10 +699,13 @@ begin
          if fdt=ftString then
           fdt:= ftWideString;
         {$ENDIF}
+        CodePage := CodePages[i];
+        if (fdt = ftString) and (CodePage <> 0) then
+          fdt := ftWideString;
         if Result then
         begin
           if  (Options-[eloInFetchedRecords]=[])
-           and ((fdt = ftString)   or ((fdt =ftWideString)  and not Database.NeedUnicodeFieldsTranslation))
+           and (CodePage = 0) and ((fdt = ftString) or (fdt = ftWideString))
           then
           begin
             sKey:=AnsiString(TVarData(KeyValues[i]).VString);
@@ -763,11 +778,6 @@ begin
               SetString(StrValue,PAnsiChar(p),L);
              end;
 
-             if (TField(fl.List^[i]) is TFIBStringField) and
-               Database.NeedUnicodeFieldTranslation(Byte(TFIBStringField(fl.List^[i]).SqlSubType))
-             then
-              UDFUtf8DecodeA(StrValue);
-
              if (eloPartialKey in Options) then
              begin
               if (eloCaseInsensitive in Options) then
@@ -805,12 +815,13 @@ begin
             ftWideString:
             begin
             // Options<>[]
-              inWS:=True;
               WideKey:=TVarData(KeyValues[i]).VOleStr;
+              if CodePage = 0 then
+                CodePage := FIBCodePageUTF8;
               begin
                if vIsString then
                begin
-                DoUtf8Decode(PAnsiString(p)^,WideValue);
+                WideValue := DecodeWideString(PFIBByteString(p)^, CodePage);
                 if poTrimCharFields in Self.Options then
                    DoTrimRight(WideValue)
                end
@@ -842,7 +853,7 @@ begin
                   while (L>0) and (PAnsiChar(p)[L-1]= ' ') do
                    Dec(L);
                   SetString(StrValue,PAnsiChar(p),L);
-                  DoUtf8Decode(StrValue,WideValue);
+                  WideValue := DecodeWideString(StrValue, CodePage);
                 end
                end;
 

@@ -38,7 +38,7 @@ type
   TpFIBArray = class
   private
     FDatabase: TFIBDatabase;
-    FCharSet: string;
+    FConnectionSerial: Integer;
     FTableName: string;
     FFieldName: string;
     FArrayType: TFieldType;
@@ -46,17 +46,22 @@ type
     FElementType: Integer;
     FElementLength: Integer;
     FElementScale: Integer;
+    // of string elements, as fields get it; -1 (InterBase): not in the SDL
+    FElementCharSetID: Integer;
+    FElementCodePage: Word;
     FBounds: TArrayBounds;
     // SDL up to the bounds: element type and names, the same for every slice
     FSDLHeader: AnsiString;
     FArraySDL: AnsiString;
     procedure LoadMetadata(Transaction: TFIBTransaction);
     function ElementFieldType: TFieldType;
+    function SDLCodePage: Word;
     function SDLName(const Name: string): AnsiString;
     function SDLHeader: AnsiString;
     function SliceSDL(const Bounds: TArrayBounds): AnsiString;
     function SliceSize(const Bounds: TArrayBounds): Integer;
     function ElementSize: Integer;
+    function CharPad: AnsiChar;
     function ElementBounds(const Indexes: array of Integer): TArrayBounds;
     function ElementOffset(const Indexes: array of Integer): Integer;
     function ReadElement(P: PAnsiChar): Variant;
@@ -72,7 +77,7 @@ type
     function GetScale: Byte;
   public
     constructor Create(Database: TFIBDatabase; Transaction: TFIBTransaction; const ATableName, AFieldName: string);
-    // The object fits the column and the character set of the connection
+    // Read for this column on the current connection
     function Matches(Database: TFIBDatabase; const ATableName, AFieldName: string): Boolean;
     // for FIBQuery: the array with the ID in ArrayID
     function GetArrayValues(ArrayID: TDataBuffer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;
@@ -106,7 +111,7 @@ implementation
 {$IFDEF SUPPORT_ARRAY_FIELD}
 
 uses
-  StrUtil, Math, FMTBcd, FIBTypes, FIBQuery;
+  StrUtil, Math, FMTBcd, FIBTypes, FIBQuery, FIBCharSets;
 
 const
   // ISC_DATE 0 (1858-11-17) as TTimeStamp.Date
@@ -175,7 +180,7 @@ constructor TpFIBArray.Create(Database: TFIBDatabase; Transaction: TFIBTransacti
 begin
   inherited Create;
   FDatabase := Database;
-  FCharSet := Database.ConnectParams.CharSet;
+  FConnectionSerial := Database.ConnectionSerial;
   FTableName := ATableName;
   FFieldName := AFieldName;
   LoadMetadata(Transaction);
@@ -186,14 +191,14 @@ end;
 
 function TpFIBArray.Matches(Database: TFIBDatabase; const ATableName, AFieldName: string): Boolean;
 begin
-  Result := (FDatabase = Database) and (FTableName = ATableName) and
-    (FFieldName = AFieldName) and (FCharSet = Database.ConnectParams.CharSet);
+  Result := (FConnectionSerial = Database.ConnectionSerial) and (FTableName = ATableName) and
+    (FFieldName = AFieldName);
 end;
 
 procedure TpFIBArray.LoadMetadata(Transaction: TFIBTransaction);
 var
   Query: TFIBQuery;
-  CharacterLength, BytesPerCharacter: Integer;
+  CharacterLength, ColumnCharSetID, AttachmentCharSetID: Integer;
 begin
   // Not cached: a cached query takes the transaction's database; no COALESCE (InterBase, FB 1.0)
   Query := TFIBQuery.Create(nil);
@@ -201,7 +206,7 @@ begin
     Query.Database := FDatabase;
     Query.Transaction := Transaction;
     Query.SQL.Text := 'select f.RDB$FIELD_TYPE, f.RDB$FIELD_LENGTH, f.RDB$FIELD_SCALE, f.RDB$CHARACTER_LENGTH, ' +
-      'd.RDB$LOWER_BOUND, d.RDB$UPPER_BOUND ' + 'from RDB$RELATION_FIELDS rf ' +
+      'f.RDB$CHARACTER_SET_ID, d.RDB$LOWER_BOUND, d.RDB$UPPER_BOUND ' + 'from RDB$RELATION_FIELDS rf ' +
       'join RDB$FIELDS f on f.RDB$FIELD_NAME = rf.RDB$FIELD_SOURCE ' +
       'join RDB$FIELD_DIMENSIONS d on d.RDB$FIELD_NAME = f.RDB$FIELD_NAME ' +
       'where rf.RDB$RELATION_NAME = :RELATION_NAME and rf.RDB$FIELD_NAME = :FIELD_NAME ' +
@@ -218,29 +223,43 @@ begin
       CharacterLength := FElementLength
     else
       CharacterLength := Query.Fields[3].AsInteger;
+    ColumnCharSetID := Query.Fields[4].AsInteger;
     SetLength(FBounds, 0);
     while not Query.Eof do
     begin
       SetLength(FBounds, Length(FBounds) + 1);
-      FBounds[High(FBounds)].Lower := Query.Fields[4].AsInteger;
-      FBounds[High(FBounds)].Upper := Query.Fields[5].AsInteger;
+      FBounds[High(FBounds)].Lower := Query.Fields[5].AsInteger;
+      FBounds[High(FBounds)].Upper := Query.Fields[6].AsInteger;
       Query.Next;
     end;
     Query.Close;
-    // Strings come in the connection charset, the field length is in bytes of the column one
     if FElementType in [blr_text, blr_varying] then
     begin
-      Query.SQL.Text := 'select RDB$BYTES_PER_CHARACTER from RDB$CHARACTER_SETS ' +
-        'where RDB$CHARACTER_SET_ID = :CHARSET_ID';
-      Query.ParamByName('CHARSET_ID').AsInteger := FDatabase.FBAttachCharsetID;
-      Query.ExecQuery;
-      if not Query.Eof and not Query.Fields[0].IsNull then
+      // The server converts to the attachment charset, except NONE and OCTETS
+      AttachmentCharSetID := FDatabase.Capabilities.AttachmentCharSetID;
+      if AttachmentCharSetID < 0 then
+        FElementCharSetID := -1
+      else if (AttachmentCharSetID = 0) or (ColumnCharSetID in [0, OCTETS_CHARSET_ID]) then
+        FElementCharSetID := ColumnCharSetID
+      else
+        FElementCharSetID := AttachmentCharSetID;
+      if FElementCharSetID >= 0 then
+        FElementCodePage := FDatabase.Capabilities.TextCodePage(FElementCharSetID)
+      else if FDatabase.IsUnicodeConnect then
+        FElementCodePage := FIBCodePageUTF8
+      else
+        FElementCodePage := FIBCodePageSystem;
+      // The field length is in bytes of the column charset
+      if (FElementCharSetID >= 0) and (FElementCharSetID <> ColumnCharSetID) then
       begin
-        BytesPerCharacter := Query.Fields[0].AsInteger;
-        if CharacterLength * BytesPerCharacter > FElementLength then
-          FElementLength := CharacterLength * BytesPerCharacter;
+        Query.SQL.Text := 'select RDB$BYTES_PER_CHARACTER from RDB$CHARACTER_SETS ' +
+          'where RDB$CHARACTER_SET_ID = :CHARSET_ID';
+        Query.ParamByName('CHARSET_ID').AsInteger := AttachmentCharSetID;
+        Query.ExecQuery;
+        if not Query.Eof and not Query.Fields[0].IsNull then
+          FElementLength := CharacterLength * Query.Fields[0].AsInteger;
+        Query.Close;
       end;
-      Query.Close;
     end;
   finally
     Query.Free;
@@ -291,21 +310,19 @@ begin
   end;
 end;
 
-// Metadata is UTF-8 since Firebird 2.5, a NONE connection keeps the stored bytes
+// SDL names are compared with the metadata unconverted: UTF-8 since Firebird 2.5
+function TpFIBArray.SDLCodePage: Word;
+begin
+  if FDatabase.IsUnicodeConnect or FDatabase.IsFirebirdConnect and ((FDatabase.ServerMajorVersion > 2) or
+    (FDatabase.ServerMajorVersion = 2) and (FDatabase.ServerMinorVersion >= 5)) then
+    Result := FIBCodePageUTF8
+  else
+    Result := FDatabase.Capabilities.CodePage;
+end;
+
 function TpFIBArray.SDLName(const Name: string): AnsiString;
 begin
-  if FDatabase.IsUnicodeConnect then
-    Result := UTF8Encode(Name)
-  else if FDatabase.IsFirebirdConnect and ((FDatabase.ServerMajorVersion > 2) or (FDatabase.ServerMajorVersion = 2)
-    and (FDatabase.ServerMinorVersion >= 5)) and (FCharSet <> '') and not SameText(FCharSet, 'NONE') then
-    Result := UTF8Encode(Name)
-  else
-{$IFDEF SUPPORT_KOI8_CHARSET}
-    if FDatabase.IsKOI8Connect then
-      Result := AnsiString(ConvertToCodePage(Name, CodePageKOI8R))
-    else
-{$ENDIF}
-      Result := AnsiString(Name);
+  Result := EncodeString(Name, SDLCodePage);
   if Length(Result) > 255 then
     FIBErrorEx('Array %s.%s: the name %s is too long', [FTableName, FFieldName, Name]);
 end;
@@ -317,11 +334,29 @@ var
 begin
   RelationName := SDLName(FTableName);
   FieldName := SDLName(FFieldName);
-  Result := AnsiChar(isc_sdl_version1) + AnsiChar(isc_sdl_struct) + AnsiChar(1) + AnsiChar(FElementType);
+  Result := AnsiChar(isc_sdl_version1) + AnsiChar(isc_sdl_struct) + AnsiChar(1);
   case FElementType of
-    blr_short, blr_long, blr_int64, blr_quad, blr_int128: Result := Result + AnsiChar(FElementScale and $FF);
+    blr_short, blr_long, blr_int64, blr_quad, blr_int128:
+      Result := Result + AnsiChar(FElementType) + AnsiChar(FElementScale and $FF);
     blr_text, blr_cstring, blr_varying:
-      Result := Result + AnsiChar(FElementLength and $FF) + AnsiChar((FElementLength shr 8) and $FF);
+      begin
+        // Without the charset the server converts NONE and OCTETS too ("Malformed string" in UTF8)
+        if FElementCharSetID < 0 then
+          Result := Result + AnsiChar(FElementType)
+        else
+        begin
+          case FElementType of
+            blr_text: Result := Result + AnsiChar(blr_text2);
+            blr_cstring: Result := Result + AnsiChar(blr_cstring2);
+          else
+            Result := Result + AnsiChar(blr_varying2);
+          end;
+          Result := Result + AnsiChar(FElementCharSetID and $FF) + AnsiChar((FElementCharSetID shr 8) and $FF);
+        end;
+        Result := Result + AnsiChar(FElementLength and $FF) + AnsiChar((FElementLength shr 8) and $FF);
+      end;
+  else
+    Result := Result + AnsiChar(FElementType);
   end;
   Result := Result + AnsiChar(isc_sdl_relation) + AnsiChar(Length(RelationName))
     + RelationName + AnsiChar(isc_sdl_field) + AnsiChar(Length(FieldName)) + FieldName;
@@ -407,6 +442,14 @@ begin
   Result := FElementLength;
   if FElementType = blr_varying then
     Inc(Result, 2);
+end;
+
+function TpFIBArray.CharPad: AnsiChar;
+begin
+  if FElementCharSetID = OCTETS_CHARSET_ID then
+    Result := #0
+  else
+    Result := ' ';
 end;
 
 function TpFIBArray.ElementBounds(const Indexes: array of Integer): TArrayBounds;
@@ -497,20 +540,21 @@ begin
             Inc(L)
         else
         begin
-          // CHAR elements come padded to the length in bytes
+          // CHAR padded to the length in bytes; OCTETS with #0, kept as in fields
           L := FElementLength;
-          while (L > 0) and (P[L - 1] = ' ') do
-            Dec(L);
+          if FElementCharSetID <> OCTETS_CHARSET_ID then
+            while (L > 0) and (P[L - 1] = ' ') do
+              Dec(L);
         end;
         SetString(S, P, L);
-        if FDatabase.IsUnicodeConnect then
 {$IFDEF D2009+}
-          Result := UTF8ToString(S)
+        Result := DecodeString(S, FElementCodePage);
 {$ELSE}
+        if FElementCodePage = FIBCodePageUTF8 then
           Result := UTF8Decode(S)
-{$ENDIF}
         else
           Result := S;
+{$ENDIF}
       end;
     blr_short:
       if FElementScale = 0 then
@@ -576,7 +620,7 @@ begin
   if VarIsNull(Value) or VarIsEmpty(Value) then
   begin
     if FElementType = blr_text then
-      FillChar(P^, FElementLength, ' ')
+      FillChar(P^, FElementLength, CharPad)
     else
       FillChar(P^, ElementSize, 0);
     Exit;
@@ -584,10 +628,7 @@ begin
   case FElementType of
     blr_text, blr_varying:
       begin
-        if FDatabase.IsUnicodeConnect then
-          S := UTF8Encode(VarToStr(Value))
-        else
-          S := AnsiString(VarToStr(Value));
+        S := EncodeString(VarToStr(Value), FElementCodePage);
         if Length(S) > FElementLength then
           FIBErrorEx('Array %s.%s: the string "%s" is longer than %d bytes',
             [FTableName, FFieldName, VarToStr(Value), FElementLength]);
@@ -595,7 +636,7 @@ begin
           Move(S[1], P^, Length(S));
         // CHAR is padded, VARCHAR is null terminated
         if FElementType = blr_text then
-          FillChar(P[Length(S)], FElementLength - Length(S), ' ')
+          FillChar(P[Length(S)], FElementLength - Length(S), CharPad)
         else
           FillChar(P[Length(S)], ElementSize - Length(S), 0);
       end;
@@ -648,7 +689,7 @@ end;
 procedure TpFIBArray.InitBuffer(Buffer: PAnsiChar);
 begin
   if FElementType = blr_text then
-    FillChar(Buffer^, ArraySize, ' ')
+    FillChar(Buffer^, ArraySize, CharPad)
   else
     FillChar(Buffer^, ArraySize, 0);
 end;

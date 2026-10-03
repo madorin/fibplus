@@ -66,15 +66,35 @@ type
 
   TIBCharSets = set of Byte;
 
-  // What the connection supports, set on connect, 0 while not connected; add new ones here
+  // What the connection supports and how it is set up; Close keeps the code pages (open datasets)
   TFIBDatabaseCapabilities = class
   private
     FMaxIdentifierLength: Integer;
+    FAttachmentCharSetID: Integer;
+    FFirebird: Boolean;
+    FBlobsConverted: Boolean;
+    // values in the column charset: NONE, Firebird 1.x not Unicode
+    FCharSetPerColumn: Boolean;
+    FUnicodeCharSets: TIBCharSets;
+    FCodePage: Word;
+    FMetadataCodePage: Word;
     procedure Clear;
     procedure Update(Database: TFIBDatabase);
+    procedure UpdateCodePages(Database: TFIBDatabase);
   public
+    constructor Create;
+    // Of values sent in CharSetID (sqlsubtype)
+    function TextCodePage(CharSetID: Integer): Word;
+    // Of text BLOBs sent in CharSetID (sqlscale)
+    function BlobCodePage(CharSetID: Integer): Word;
     // Characters of a metadata name: 63 on Firebird 4 and later, else 31
     property MaxIdentifierLength: Integer read FMaxIdentifierLength;
+    // -1 when unknown (InterBase), 0 is NONE
+    property AttachmentCharSetID: Integer read FAttachmentCharSetID;
+    // SQL text
+    property CodePage: Word read FCodePage;
+    // DDL and the names the server sends; UTF-8 on NONE (metadata is not converted)
+    property MetadataCodePage: Word read FMetadataCodePage;
   end;
 
 // TFIBDatabase
@@ -173,12 +193,12 @@ type
     FBeforeDestroyEvents: TNotifyEventList;
 
     FAttachmentID: Int64;
+    FConnectionSerial: Integer;
     FBlobFilters: TIBBlobFilters;
     FDBFileName: string;
     FConnectType: ShortInt;
     FNeedUnicodeFieldsTranslation: Boolean;
     FIsUnicodeConnect: Boolean;
-    FIsKOI8Connect: Boolean;
     FIsNoneConnect: Boolean;
     FDatabaseRunState: TDatabaseRunState;
     FLastActiveTime: Cardinal;
@@ -284,7 +304,6 @@ type
     function GetOldestActive: Long; // frb_info_oldest_active
     function GetOldestSnapshot: Long; // frb_info_oldest_snapshot
     function GetFBVersion: string; // frb_info_firebird_version
-    function GetAttachCharset: Integer; // frb_info_att_charset
     function GetCreationDate: TDateTime; // frb_info_creation_date
   private
     // Versions
@@ -389,9 +408,7 @@ type
     function NeedUTFEncodeDDL: Boolean;
     function NeedUnicodeFieldsTranslation: Boolean;
     function NeedUnicodeFieldTranslation(FieldCharacterSet: Integer): Boolean;
-{$IFDEF SUPPORT_KOI8_CHARSET}
-    function IsKOI8Connect: Boolean;
-{$ENDIF}
+    function IsKOI8Connect: Boolean; deprecated;
     { FB2 features }
     function GetContextVariable(ContextSpace: TFBContextSpace; const VarName: string; aTransaction: TFIBTransaction = nil): variant;
     procedure SetContextVariable(ContextSpace: TFBContextSpace; const VarName, VarValue: string; aTransaction: TFIBTransaction = nil);
@@ -429,6 +446,8 @@ type
     property Capabilities: TFIBDatabaseCapabilities read FCapabilities;
     // Database Info properties -- Advanced stuff (translated from isc_database_info)
     property AttachmentID: Int64 read GetAttachmentID; // isc_info_attachment_id, 0 when not connected
+    // Unique in the process per connection, kept after Close
+    property ConnectionSerial: Integer read FConnectionSerial;
     property Allocation: Long read GetAllocation; // isc_info_allocation
     property BaseLevel: Long read GetBaseLevel; // isc_info_base_level
     property DBFileName: AnsiString read GetDBFileName; // isc_info_db_id
@@ -446,7 +465,8 @@ type
     property Version: string read GetVersion; // isc_info_info_version
 
     property FBVersion: string read GetFBVersion;
-    property FBAttachCharsetID: Integer read GetAttachCharset;
+    // Capabilities.AttachmentCharSetID
+    function FBAttachCharsetID: Integer; deprecated;
 
     property ServerMajorVersion: Integer read GetServerMajorVersion;
     property ServerMinorVersion: Integer read GetServerMinorVersion;
@@ -863,10 +883,22 @@ uses
   System.Types, // for inline funcs
 {$ENDIF}
   FIBMiscellaneous, pFIBDataInfo, FIBQuery, StrUtil, pFIBCacheQueries,
-  FIBConsts, FIBTypes;
+  FIBConsts, FIBTypes, FIBCharSets;
 
 var
   vConnectCS: TCriticalSection;
+  LastConnectionSerial: Integer = 0;
+
+function NextConnectionSerial: Integer;
+begin
+  vConnectCS.Acquire;
+  try
+    Inc(LastConnectionSerial);
+    Result := LastConnectionSerial;
+  finally
+    vConnectCS.Release;
+  end;
+end;
 
 procedure AssignSQLObjectParams(Dest: ISQLObject; ParamSources: array of ISQLObject);
 var
@@ -974,18 +1006,80 @@ end;
 
 { TFIBDatabaseCapabilities }
 
+constructor TFIBDatabaseCapabilities.Create;
+begin
+  inherited Create;
+  Clear;
+end;
+
 procedure TFIBDatabaseCapabilities.Clear;
 begin
   FMaxIdentifierLength := 0;
+  FAttachmentCharSetID := -1;
 end;
 
 procedure TFIBDatabaseCapabilities.Update(Database: TFIBDatabase);
+var
+  Success: Boolean;
 begin
   // Firebird 4+ opens only ODS 13+
   if Database.IsFirebirdConnect and (Database.ServerMajorVersion >= 4) then
     FMaxIdentifierLength := 63
   else
     FMaxIdentifierLength := 31;
+  FAttachmentCharSetID := -1;
+  if Database.IsFirebirdConnect then
+  begin
+    FAttachmentCharSetID := Database.GetProtectLongDBInfo(frb_info_att_charset, Success);
+    if not Success then
+      FAttachmentCharSetID := -1;
+  end;
+end;
+
+// After DoOnConnect/CreateDatabase set the Unicode flags
+procedure TFIBDatabaseCapabilities.UpdateCodePages(Database: TFIBDatabase);
+begin
+  FFirebird := Database.FIsFireBirdConnect;
+  FBlobsConverted := Database.FIsFireBirdConnect and Database.FIsFB21OrMore;
+  FCharSetPerColumn := Database.FIsNoneConnect or
+    (FFirebird and (FAttachmentCharSetID < 0) and not Database.FIsUnicodeConnect);
+  FUnicodeCharSets := Database.UnicodeCharSets;
+  if FAttachmentCharSetID >= 0 then
+    FCodePage := FirebirdCharSetCodePage(FAttachmentCharSetID)
+  else if StringInArray(Database.ConnectParams.CharSet, ['UTF8', 'UNICODE_FSS']) then
+    FCodePage := FIBCodePageUTF8
+  else
+    FCodePage := FIBCodePageSystem;
+  if Database.FNeedUTFDecodeDDL then
+    FMetadataCodePage := FIBCodePageUTF8
+  else
+    FMetadataCodePage := FCodePage;
+end;
+
+function TFIBDatabaseCapabilities.TextCodePage(CharSetID: Integer): Word;
+begin
+  // the server converts to the attachment charset, except NONE and OCTETS
+  if (CharSetID = 0) or (CharSetID = OCTETS_CHARSET_ID) then
+    Result := FIBCodePageSystem
+  else if not FCharSetPerColumn then
+    Result := FCodePage
+  else if FFirebird then
+    Result := FirebirdCharSetCodePage(CharSetID)
+  else if (CharSetID > 0) and (CharSetID < 256) and (CharSetID in FUnicodeCharSets) then
+    Result := FIBCodePageUTF8
+  else
+    Result := FIBCodePageSystem;
+end;
+
+function TFIBDatabaseCapabilities.BlobCodePage(CharSetID: Integer): Word;
+begin
+  if FBlobsConverted then
+    Result := TextCodePage(CharSetID)
+  // older servers send the bytes of the column
+  else if (CharSetID >= 0) and (CharSetID < 256) and (CharSetID in FUnicodeCharSets) then
+    Result := FIBCodePageUTF8
+  else
+    Result := FIBCodePageSystem;
 end;
 
 // TFIBDatabase
@@ -1367,14 +1461,13 @@ begin
       FIsNoneConnect := (FConnectParams.CharSet = 'NONE') or (FConnectParams.CharSet = '');
       FNeedUnicodeFieldsTranslation := FIsUnicodeConnect or FIsNoneConnect;
       FNeedUTFDecodeDDL := False;
-  {$IFDEF SUPPORT_KOI8_CHARSET}
-      FIsKOI8Connect := False;
-  {$ENDIF}
+      FIsFB21OrMore := False;
     end
   else
     begin
-      FIsUnicodeConnect := FBAttachCharsetID in UnicodeCharSets;
-      FIsNoneConnect := FBAttachCharsetID = 0;
+      FIsUnicodeConnect := (FCapabilities.AttachmentCharSetID >= 0) and
+        (FCapabilities.AttachmentCharSetID in UnicodeCharSets);
+      FIsNoneConnect := FCapabilities.AttachmentCharSetID = 0;
       FNeedUnicodeFieldsTranslation := FIsUnicodeConnect or FIsNoneConnect;
 
       FIsFB21OrMore := (vMajorVersion > 2) or ((vMajorVersion = 2) and (GetServerMinorVersion >= 1));
@@ -1389,11 +1482,8 @@ begin
         end
       else
         FNeedUTFDecodeDDL := False;
-
-  {$IFDEF SUPPORT_KOI8_CHARSET}
-      FIsKOI8Connect := FBAttachCharsetID in [chFBKOI8R, chFBKOI8U]
-  {$ENDIF}
     end;
+  FCapabilities.UpdateCodePages(Self);
 
   if not(csDesigning in ComponentState) then
     if FBlobSwapSupport.Active and FBlobSwapSupport.AutoValidateSwap and
@@ -1444,21 +1534,26 @@ begin
   Call(FClientLibrary.isc_dsql_execute_immediate(StatusVector, @FHandle,
     @tr_handle, 0, PAnsiChar('CREATE DATABASE ''' + FDBName + ''' ' +
     AnsiString(DBParams.Text)), SQLDialect, nil), True);
+  FConnectionSerial := NextConnectionSerial;
 
   FServerMajorVersion := -1;
   FServerMinorVersion := -1;
   FServerBuild := -1;
 
   FIsFireBirdConnect := GetIsFirebirdConnect;
+  FIsFB21OrMore := False;
   FCapabilities.Update(Self);
   if FIsFireBirdConnect and (ServerMajorVersion >= 2) then
     begin
-      FIsUnicodeConnect := FBAttachCharsetID in UnicodeCharSets;
-      FNeedUnicodeFieldsTranslation := FIsUnicodeConnect or (FBAttachCharsetID = 0); ;
+      FIsUnicodeConnect := (FCapabilities.AttachmentCharSetID >= 0) and
+        (FCapabilities.AttachmentCharSetID in UnicodeCharSets);
+      FIsNoneConnect := FCapabilities.AttachmentCharSetID = 0;
+      FNeedUnicodeFieldsTranslation := FIsUnicodeConnect or FIsNoneConnect;
+      FIsFB21OrMore := (GetServerMajorVersion > 2) or ((GetServerMajorVersion = 2) and (GetServerMinorVersion >= 1));
 
       if FNeedUnicodeFieldsTranslation then
         begin
-          if ((GetServerMajorVersion > 2) or ((GetServerMajorVersion = 2) and (GetServerMinorVersion >= 1))) and
+          if FIsFB21OrMore and
             ((GetODSMajorVersion > 11) or ((GetODSMajorVersion = 11) and (GetODSMinorVersion >= 1))) then
             FNeedUTFDecodeDDL := True
           else
@@ -1466,7 +1561,8 @@ begin
         end
       else
         FNeedUTFDecodeDDL := False;
-    end
+    end;
+  FCapabilities.UpdateCodePages(Self);
 end;
 
 procedure TFIBDatabase.DropDatabase;
@@ -2011,6 +2107,7 @@ begin
       else
         Exit;
     end;
+  FConnectionSerial := NextConnectionSerial;
   FInternalTransaction.Timeout := 1000;
   FStreammedConnectFail := False;
   AttachmentID;
@@ -2289,6 +2386,7 @@ begin
   FHandleIsShared := (Value <> nil);
   if FHandleIsShared then
     begin
+      FConnectionSerial := NextConnectionSerial;
       // read again from the shared attachment
       FServerMajorVersion := -1;
       FServerMinorVersion := -1;
@@ -2427,16 +2525,13 @@ begin
     Result := FIsUnicodeConnect;
 end;
 
-{$IFDEF SUPPORT_KOI8_CHARSET}
-
 function TFIBDatabase.IsKOI8Connect: Boolean;
 begin
   if not Connected then
     Result := (FConnectParams.CharSet = 'KOI8R') or (FConnectParams.CharSet = 'KOI8U')
   else
-    Result := FIsKOI8Connect;
+    Result := FCapabilities.AttachmentCharSetID in [63, 64]; // KOI8R, KOI8U
 end;
-{$ENDIF}
 
 function TFIBDatabase.GetContextVariable(ContextSpace: TFBContextSpace;
   const VarName: string; aTransaction: TFIBTransaction = nil): variant;
@@ -2706,13 +2801,9 @@ begin
     Result := '';
 end;
 
-function TFIBDatabase.GetAttachCharset: Integer; // frb_info_att_charset
-var
-  Success: Boolean;
+function TFIBDatabase.FBAttachCharsetID: Integer;
 begin
-  Result := GetProtectLongDBInfo(frb_info_att_charset, Success);
-  if not Success then
-    Result := -1
+  Result := FCapabilities.AttachmentCharSetID;
 end;
 
 function TFIBDatabase.GetCreationDate: TDateTime;
@@ -4278,10 +4369,14 @@ var
   vSQLText: AnsiString;
 begin
   CheckInTransaction;
+{$IFDEF D2009+}
+  vSQLText := EncodeString(SQLText, MainDatabase.Capabilities.CodePage);
+{$ELSE}
   if MainDatabase.IsUnicodeConnect then
     vSQLText := UTF8Encode(SQLText)
   else
     vSQLText := SQLText;
+{$ENDIF}
   Call(MainDatabase.ClientLibrary.isc_dsql_execute_immediate(StatusVector,
     @MainDatabase.Handle, @FHandle, 0, PAnsiChar(vSQLText), MainDatabase.SQLDialect, nil), True);
 end;

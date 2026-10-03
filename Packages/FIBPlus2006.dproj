@@ -123,6 +123,7 @@
     <DCCReference Include="..\Source\SqlTxtRtns.pas" />
     <DCCReference Include="..\Source\StdFuncs.pas" />
     <DCCReference Include="..\Source\FIBTypes.pas" />
+    <DCCReference Include="..\Source\FIBCharSets.pas" />
     <DCCReference Include="..\Source\StrUtil.pas" />
     <DCCReference Include="..\Source\VariantRtn.pas" />
     <DCCReference Include="vcl.dcp" />

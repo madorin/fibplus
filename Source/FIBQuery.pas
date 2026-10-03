@@ -105,6 +105,8 @@ type
     function GetAsShort: Short;
     function GetAsString: string;
     function GetAsAnsiString: Ansistring;
+    function TextCodePage: Word;
+    function BlobCodePage: Word;
     function GetAsVariant: Variant;
     function GetAsExtended: Extended;
     function GetAsXSQLVAR: PXSQLVAR;
@@ -714,13 +716,6 @@ const
 
   fibGUID_NULL: TGUID = '{00000000-0000-0000-0000-000000000000}';
 
-{$IFDEF SUPPORT_KOI8_CHARSET}
-  chFBKOI8R      = 63;
-  chFBKOI8U      = 64;
-  CodePageKOI8R  = 20866;
-  CodePageKOI8RU = 21866;
-{$ENDIF}
-
 var
   DisableEncodingSQLText: boolean;
   TraceString: string;
@@ -729,7 +724,7 @@ implementation
 
 uses
   FIBMiscellaneous, StrUtil,
-  IBBlobFilter, FIBConsts, FIBCloneComponents
+  IBBlobFilter, FIBConsts, FIBCloneComponents, FIBCharSets
   // Added uses
 {$IFNDEF NO_MONITOR}
   , FIBSQLMonitor
@@ -1358,6 +1353,19 @@ begin
   Result := GetAsWideString
 end;
 
+function TFIBXSQLVAR.TextCodePage: Word;
+begin
+  Result := FQuery.Database.Capabilities.TextCodePage(Byte(FXSQLVAR^.SQLSubtype));
+end;
+
+function TFIBXSQLVAR.BlobCodePage: Word;
+begin
+  if FXSQLVAR^.SQLSubtype = 1 then
+    Result := FQuery.Database.Capabilities.BlobCodePage(Byte(FXSQLVAR^.sqlscale))
+  else
+    Result := FIBCodePageSystem;
+end;
+
 function TFIBXSQLVAR.GetAsAnsiString: Ansistring;
 var
   sz: TDataBuffer;
@@ -1384,7 +1392,11 @@ begin
             begin
               SetLength(Result, FStreamValue.Size);
               FStreamValue.Position := 0;
-              FStreamValue.Read(Result[1], FStreamValue.Size)
+              FStreamValue.Read(Result[1], FStreamValue.Size);
+{$IFDEF D2009+}
+              if Assigned(FQuery.Database) then
+                SetStringCodePage(RawByteString(Result), BlobCodePage);
+{$ENDIF}
             end;
           end
           else
@@ -1394,8 +1406,7 @@ begin
               bs.Mode := bmRead;
               with FQuery do
               begin
-                if Database.NeedUTFEncodeDDL then
-                  bs.InternalSetCharSet(Byte(FXSQLVAR^.sqlscale));
+                bs.InternalSetCharSet(Byte(FXSQLVAR^.sqlscale));
                 bs.Database := Database;
                 bs.Transaction := Transaction;
                 if qoStartTransaction in Options then
@@ -1424,12 +1435,22 @@ begin
             str_len := PWord(sz)^; // It is isc_vax_integer(LocalData, 2);
             Inc(sz, 2);
           end;
-          // SetString(Result, sz, str_len);
-          // SetString(byteStr, sz, str_len);
+{$IFDEF D2009+}
+          // before tagging: SetLength of a shared string drops the code page; spaces are never in
+          // multi-byte characters
+          if qoTrimCharFields in FQuery.Options then
+            while (str_len > 0) and (PAnsiChar(sz)[str_len - 1] = ' ') do
+              Dec(str_len);
+{$ENDIF}
           SetLength(byteStr, str_len);
           if str_len > 0 then
             Move(sz^, byteStr[1], str_len);
 
+{$IFDEF D2009+}
+          if Assigned(FQuery.Database) and (str_len > 0) then
+            SetStringCodePage(byteStr, TextCodePage);
+          Result := byteStr;
+{$ELSE}
           if Assigned(FQuery.Database) and (Byte(FXSQLVAR^.SQLSubtype) in FQuery.Database.UnicodeCharsets) then
           begin
             if FQuery.Database.NeedUnicodeFieldsTranslation then
@@ -1438,18 +1459,11 @@ begin
               Result := byteStr
           end
           else
-
-{$IFDEF SUPPORT_KOI8_CHARSET}
-            if Byte(FXSQLVAR^.SQLSubtype) in [chFBKOI8R, chFBKOI8U] then
-              Result := ConvertFromCodePage(byteStr, CodePageKOI8R)
-            else
-{$ENDIF}
-            begin
-              Result := byteStr
-            end;
+            Result := byteStr;
 
           if qoTrimCharFields in FQuery.Options then
             DoTrimRight(Result);
+{$ENDIF}
         end;
       SQL_TYPE_DATE: Result := DateToStr(AsDateTime);
       SQL_TIMESTAMP: Result := DateTimeToStr(AsDateTime);
@@ -1538,7 +1552,9 @@ begin
         // Result := '(BLOB)';
         Result := AsString;
       SQL_TEXT, SQL_VARYING:
-        if Assigned(FQuery.Database) and (Byte(FXSQLVAR^.SQLSubtype) in FQuery.Database.UnicodeCharsets) then
+        // a variant keeps no code page
+        if Assigned(FQuery.Database) and ((Byte(FXSQLVAR^.SQLSubtype) in FQuery.Database.UnicodeCharsets)
+          {$IFDEF D2009+} or not IsSystemCodePage(TextCodePage){$ENDIF}) then
           Result := GetAsWideString
         else
           Result := AsAnsiString;
@@ -1936,6 +1952,9 @@ begin
           SrvSqlVar := FQuery.FSQLParams.FindParam(FName);
           if SrvSqlVar = nil then
             Result := GetSQLSubtype
+          // not initialized yet: as described (see GetServerSQLType)
+          else if SrvSqlVar.FSrvSQLType = 0 then
+            Result := SrvSqlVar.SQLSubtype
           else
             Result := SrvSqlVar.FSrvSQLSubType;
           FSrvSQLSubType := Result;
@@ -2066,6 +2085,10 @@ begin
     (ValueType = tspSqlVar) or ((ValueType = tspNull) and boolean(aValue)) then
     VarClear(FArrayValue);
 {$ENDIF}
+  // a non-string value replaces the kept string, not the BLOB ID written from it
+  if (ws = nil) and ((ValueType = tspValue) and (aSQLType <> SQL_BLOB) and (aSQLType <> SQL_ARRAY) or
+    (ValueType = tspSqlVar) or (ValueType = tspNull) and boolean(aValue)) then
+    FWideTempValue := '';
   OldIsNull := IsNull;
   i := NonAnsiIndexOf(FParent.FEquelNames, FName);
   // if (FParent.FEquelNames.Count=0) or not FParent.FEquelNames.Find(FName,i) then
@@ -2089,7 +2112,9 @@ begin
           begin
             InternalSetValue(xvar, aSQLType, aSize, aValue);
             if ws <> nil then
-              xvar.FWideTempValue := ws^;
+              xvar.FWideTempValue := ws^
+            else if (aSQLType <> SQL_BLOB) and (aSQLType <> SQL_ARRAY) then
+              xvar.FWideTempValue := '';
           end;
         tspSqlVar: InternalSetAsXSQLVAR(xvar, PXSQLVAR(aValue))
       end;
@@ -2244,109 +2269,130 @@ end;
 procedure TFIBXSQLVAR.InternalSetAsString(aValue: Pointer; IsWide: boolean; AdjustDeffered: boolean = False);
 // Value may be Ansistring or widestring
 var
-  vNeedUTFEncode: boolean;
+  CodePage: Word;
+  // encoded again from FWideTempValue once the server type is known
+  Provisional: Boolean;
   sSubType, sSQLScale: Short;
   sSQLType, vSQLType, vSize: integer;
   vValue: Ansistring;
   B: boolean;
+
+  function ServerBlobCodePage(SubType, CharSetID: Short): Word;
+  begin
+    if SubType = 1 then
+      Result := FQuery.Database.Capabilities.BlobCodePage(Byte(CharSetID))
+    else
+      Result := FIBCodePageSystem;
+  end;
+
 begin
   sSQLType := ServerSQLType;
   sSubType := ServerSQLSubType;
   sSQLScale := GetServerSQLScale;
+  CodePage := FIBCodePageSystem;
+  Provisional := False;
   if AdjustDeffered then
   begin
     case sSQLType of
       SQL_TEXT, SQL_VARYING:
         begin
-          vNeedUTFEncode := (FQuery.Database.IsUnicodeConnect and not(sSubType in [0, 1])) or
-            (Byte(sSubType) in FQuery.Database.UnicodeCharsets);
+          CodePage := FQuery.Database.Capabilities.TextCodePage(Byte(sSubType));
           FIsDefferedSetting := False;
         end;
       SQL_BLOB:
         begin
-          vNeedUTFEncode := FQuery.Database.NeedUTFEncodeDDL and
-            (FQuery.Database.IsUnicodeConnect and (sSubType = 1) and not(sSQLScale in [0, 1])) or
-            (Byte(sSQLScale) in FQuery.Database.UnicodeCharsets);
+          CodePage := ServerBlobCodePage(sSubType, sSQLScale);
           FIsDefferedSetting := False;
         end;
-    else
-      vNeedUTFEncode := False
     end;
   end
-  else if not IsMacro and FQuery.Database.NeedUnicodeFieldsTranslation then
+  // Unicode Delphi: kept until the server type is known
+  else if not IsMacro and ({$IFDEF D2009+}True{$ELSE}FQuery.Database.NeedUnicodeFieldsTranslation{$ENDIF}) then
   begin
-    vNeedUTFEncode := False;
     if IsWide then
       FWideTempValue := PWideString(aValue)^
     else
+{$IFDEF D2009+}
+      // with its own code page, lost in the buffer
+      FWideTempValue := string(PAnsiString(aValue)^);
+{$ELSE}
       FWideTempValue := '';
+{$ENDIF}
 
     case sSQLType of
       0:
         begin
           FIsDefferedSetting := True;
+          Provisional := True;
           FParent.FHasDefferedSettings := True;
           case FXSQLVAR^.SQLType of
             SQL_TEXT, SQL_VARYING:
-              vNeedUTFEncode := not FParDataIsPrepared and
-                (Byte(FXSQLVAR^.SQLSubtype) in FQuery.Database.UnicodeCharsets);
+              if not FParDataIsPrepared then
+                CodePage := FQuery.Database.Capabilities.TextCodePage(Byte(FXSQLVAR^.SQLSubtype));
             SQL_BLOB:
-              vNeedUTFEncode := FQuery.Database.NeedUTFEncodeDDL and
-                (FQuery.Database.IsUnicodeConnect and (FXSQLVAR^.SQLSubtype = 1)) or (Byte(FXSQLVAR^.sqlscale)
-                in FQuery.Database.UnicodeCharsets);
+              CodePage := ServerBlobCodePage(FXSQLVAR^.SQLSubtype, FXSQLVAR^.sqlscale);
           end; // case
         end;
       SQL_TEXT, SQL_VARYING:
         begin
-          vNeedUTFEncode := not FParDataIsPrepared and
-            ((FQuery.Database.IsUnicodeConnect and not(sSubType in [0, 1])) or
-            (Byte(sSubType) in FQuery.Database.UnicodeCharsets));
+          if not FParDataIsPrepared then
+            CodePage := FQuery.Database.Capabilities.TextCodePage(Byte(sSubType));
           FIsDefferedSetting := False;
         end;
       SQL_BLOB:
         begin
-          vNeedUTFEncode := FQuery.Database.NeedUTFEncodeDDL and
-            (FQuery.Database.IsUnicodeConnect and (sSubType = 1) and not(sSQLScale in [0, 1])) or
-            (Byte(sSQLScale) in FQuery.Database.UnicodeCharsets);
+          CodePage := ServerBlobCodePage(sSubType, sSQLScale);
           FIsDefferedSetting := False;
         end;
     end; // case
 
   end
   else
-  begin
     FIsDefferedSetting := False;
-    vNeedUTFEncode := False;
-  end;
 
   if IsWide then
   begin
-    if vNeedUTFEncode then
+    if CodePage = FIBCodePageUTF8 then
       vValue := UTF8Encode(PWideString(aValue)^)
     else
     begin
       FWideTempValue := PWideString(aValue)^;
-      vValue := Ansistring(PWideString(aValue)^);
+      // not sent: macros go into the SQL text, provisional bytes are encoded again
+      if IsMacro or Provisional then
+        vValue := Ansistring(PWideString(aValue)^)
+      else
+        vValue := EncodeString(PWideString(aValue)^, CodePage);
     end;
   end
-  else
+  else if CodePage = FIBCodePageUTF8 then
   begin
-    if vNeedUTFEncode then
-    begin
-      if Length(FWideTempValue) = 0 then
-        vValue := UTF8Encode(PAnsiString(aValue)^)
-      else
-      begin
-        vValue := UTF8Encode(FWideTempValue);
-        FWideTempValue := '';
-      end;
-
-    end
+    if Length(FWideTempValue) = 0 then
+      vValue := UTF8Encode(PAnsiString(aValue)^)
     else
-      vValue := PAnsiString(aValue)^;
-  end;
-  if vNeedUTFEncode then
-    FXSQLVAR^.SQLSubtype := FQuery.Database.UTF8CharSetID;
+    begin
+      vValue := UTF8Encode(FWideTempValue);
+      FWideTempValue := '';
+    end;
+  end
+  else if (CodePage <> FIBCodePageSystem) and not Provisional then
+  begin
+{$IFDEF D2009+}
+    // already in the code page (not deferred values: tagged by the described type)
+    if not AdjustDeffered and (StringCodePage(PAnsiString(aValue)^) = CodePage) then
+      vValue := PAnsiString(aValue)^
+    else
+{$ENDIF}
+    if Length(FWideTempValue) = 0 then
+      vValue := EncodeString(string(PAnsiString(aValue)^), CodePage)
+    else
+      vValue := EncodeString(FWideTempValue, CodePage);
+  end
+  else
+    vValue := PAnsiString(aValue)^;
+  if CodePage = FIBCodePageUTF8 then
+    FXSQLVAR^.SQLSubtype := FQuery.Database.UTF8CharSetID
+  else if (CodePage <> FIBCodePageSystem) and ((sSQLType = SQL_TEXT) or (sSQLType = SQL_VARYING)) then
+    FXSQLVAR^.SQLSubtype := sSubType;
   if Length(vValue) > 32767 then
     sSQLType := SQL_BLOB;
   if (sSQLType = SQL_BLOB) then
@@ -2436,6 +2482,11 @@ begin
 
   if Length(FWideTempValue) > 0 then
     Result := FWideTempValue
+{$IFDEF D2009+}
+  else if Assigned(FQuery.Database) and ((FXSQLVAR^.SQLType and (not 1) = SQL_TEXT) or
+    (FXSQLVAR^.SQLType and (not 1) = SQL_VARYING)) then
+    Result := DecodeString(GetAsAnsiString, TextCodePage)
+{$ENDIF}
   else if Assigned(FQuery.Database) and FQuery.Database.NeedUnicodeFieldsTranslation then
     with FXSQLVAR^ do
       case SQLType and (not 1) of
@@ -2489,14 +2540,7 @@ begin
                 SetLength(byteStr, FStreamValue.Size);
                 FStreamValue.Position := 0;
                 FStreamValue.Read(byteStr[1], FStreamValue.Size);
-                if (SQLSubtype <> 1) or not(Byte(sqlscale) in FQuery.Database.UnicodeCharsets) then
-                  Result := byteStr
-                else
-{$IFDEF D2009+}
-                  Result := UTF8ToString(byteStr);
-{$ELSE}
-                  Result := UTF8Decode(byteStr);
-{$ENDIF}
+                Result := DecodeWideString(byteStr, BlobCodePage);
               end;
             end
             else
@@ -2506,8 +2550,7 @@ begin
                 bs.Mode := bmRead;
                 with FQuery do
                 begin
-                  if Database.NeedUTFEncodeDDL then
-                    bs.InternalSetCharSet(Byte(FXSQLVAR^.sqlscale));
+                  bs.InternalSetCharSet(Byte(FXSQLVAR^.sqlscale));
                   bs.Database := Database;
                   bs.Transaction := Transaction;
                   if qoStartTransaction in Options then
@@ -2733,13 +2776,11 @@ begin
   if not Assigned(FParent) then
     Result := UnknownStr
   else
-    with FParent.FXSQLVARs[FIndex].Data^ do
-    begin
-      if (Byte(SQLSubtype) < 61) then
-        Result := IBStdCharacterSets[Byte(SQLSubtype)]
-      else
-        Result := UnknownStr
-    end
+  begin
+    Result := FirebirdCharSetName(Byte(FParent.FXSQLVARs[FIndex].Data^.SQLSubtype));
+    if Result = '' then
+      Result := UnknownStr;
+  end;
 end;
 
 function TFIBXSQLVAR.GetAsBcd: TBcd;
@@ -3062,13 +3103,10 @@ begin
               FXSQLVARs^[i].SetAsDateTime(FXSQLVARs^[i].Value)
             end;
           SQL_BLOB:
-            if FQuery.Database.NeedUTFEncodeDDL then // More FB21
-              if FXSQLVARs^[i].ServerSQLSubType = 1 then // Blob Text
-                if FXSQLVARs^[i].FSrvSQLScale in FQuery.Database.UnicodeCharsets then
-                begin
-                  S := FXSQLVARs^[i].GetAsAnsiString;
-                  FXSQLVARs^[i].InternalSetAsString(@S, False, True)
-                end;
+            // text set as a string, not bytes loaded from a stream
+            if (FXSQLVARs^[i].ServerSQLSubType = 1) and not FXSQLVARs^[i].IsNull and
+              (Length(FXSQLVARs^[i].FWideTempValue) > 0) then
+              FXSQLVARs^[i].InternalSetAsString(@FXSQLVARs^[i].FWideTempValue, True, True);
         end;
       end;
     end;
@@ -4145,26 +4183,13 @@ end;
 
 procedure TFIBQuery.ConvertSQLTextToCodePage;
 begin
-  if not DisableEncodingSQLText and not FCodePageApplied then
-    case SQLKind of
-      skDDL:
-        if Database.NeedUTFEncodeDDL then
-          FPreparedSQL := UTF8Encode(FProcessedSQL);
+  if not FCodePageApplied then
+    if DisableEncodingSQLText then
+      FPreparedSQL := Ansistring(FProcessedSQL)
+    else if SQLKind = skDDL then
+      FPreparedSQL := EncodeString(FProcessedSQL, Database.Capabilities.MetadataCodePage)
     else
-{$IFDEF SUPPORT_KOI8_CHARSET}
-{$IFDEF WINDOWS}
-      if Database.IsKOI8Connect then
-        FPreparedSQL := ConvertToCodePage(FProcessedSQL, CodePageKOI8R)
-      else
-{$ENDIF}
-{$ENDIF}
-        if Database.IsUnicodeConnect then
-        begin
-          FPreparedSQL := UTF8Encode(FProcessedSQL);
-        end
-        else
-          FPreparedSQL := Ansistring(FProcessedSQL)
-    end;
+      FPreparedSQL := EncodeString(FProcessedSQL, Database.Capabilities.CodePage);
   FCodePageApplied := True;
 end;
 
@@ -4853,19 +4878,7 @@ end;
 
 function TFIBQuery.DecodeName(const Name: Ansistring): string;
 begin
-  if Database.IsUnicodeConnect then
-{$IFDEF D2009+}
-    Result := UTF8ToString(Name)
-{$ELSE}
-    Result := UTF8Decode(Name)
-{$ENDIF}
-  else
-{$IFDEF SUPPORT_KOI8_CHARSET}
-    if Database.IsKOI8Connect then
-      Result := ConvertFromCodePage(Name, CodePageKOI8R)
-    else
-{$ENDIF}
-      Result := string(Name);
+  Result := DecodeString(Name, Database.Capabilities.MetadataCodePage);
 end;
 
 // The XSQLVAR names may be cut or, with clients before Firebird 4, empty
@@ -5145,20 +5158,9 @@ begin
       Dec(Result_length);
     end;
     if Result_length > 0 then
-      SetString(Result, PAnsiChar(@Result_buffer[Position]), Result_length)
+      Result := DecodeString(PAnsiChar(@Result_buffer[Position]), Result_length, Database.Capabilities.MetadataCodePage)
     else
       Result := '';
-
-    if Database.IsUnicodeConnect then
-{$IFDEF D2009+}
-      Result := UTF8ToString(Result);
-{$ELSE}
-      Result := UTF8Decode(Result);
-{$ENDIF}
-{$IFDEF SUPPORT_KOI8_CHARSET}
-    if Database.IsKOI8Connect then
-      Result := ConvertFromCodePage(Result, CodePageKOI8R);
-{$ENDIF}
   end;
 end;
 
@@ -6201,26 +6203,18 @@ begin
     FUserSQLParams.Count := 0;
     FSQLParams.Count := 0;
     FProcessedSQL := FParser.SQLText;
-    if Assigned(Database) and Database.IsUnicodeConnect then
-      FPreparedSQL := UTF8Encode(FParser.SQLText)
-    else
-      FPreparedSQL := Ansistring(FParser.SQLText);
   end
   else
   begin
     // For register Params
     PreprocessSQL(FParser.SQLText, True);
     if FUserSQLParams.Count = 0 then
-    begin
-      FPreparedSQL := Ansistring(FParser.SQLText);
-      FProcessedSQL := FParser.SQLText;
-    end
+      FProcessedSQL := FParser.SQLText
     else
-    begin
-      FPreparedSQL := '';
       FProcessedSQL := '';
-    end;
   end;
+  // set by ConvertSQLTextToCodePage
+  FPreparedSQL := '';
   FreeHandle;
   vUserParamsCreated := True;
   FCodePageApplied := False;

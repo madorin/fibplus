@@ -343,7 +343,7 @@ uses
   System.Types, // for inline funcs
 {$ENDIF}
   StrUtil, DBConsts, SqlTxtRtns, FIBConsts,
-  pFIBFieldsDescr, pFIBCacheQueries, FIBCacheManage;
+  pFIBFieldsDescr, pFIBCacheQueries, FIBCacheManage, FIBCharSets;
 
 const
   SQLKindNames: array [TpSQLKind] of string = (
@@ -1741,10 +1741,14 @@ var
       UpdateAction := uaApply;
       while (UpdateAction in [uaApply, uaRetry]) do
         try
+{$IFDEF D2009+}
+          SQL := FExecBlockStatement.Text;
+{$ELSE}
           if Database.IsUnicodeConnect then
             SQL := UTF8Decode(FExecBlockStatement.Text)
           else
             SQL := FExecBlockStatement.Text;
+{$ENDIF}
 
           UpdateTransaction.ExecSQLImmediate(SQL);
 
@@ -1923,10 +1927,14 @@ begin
       while (UpdateAction in [uaApply, uaRetry]) do
         try
           // FQUpdate.ExecQuery;
+{$IFDEF D2009+}
+          SQL := FExecBlockStatement.Text;
+{$ELSE}
           if Database.IsUnicodeConnect then
             SQL := UTF8Decode(FExecBlockStatement.Text)
           else
             SQL := FExecBlockStatement.Text;
+{$ENDIF}
 
           UpdateTransaction.ExecSQLImmediate(SQL);
 
@@ -2814,51 +2822,71 @@ var
     end;
   end;
 
-  function ChangeToSQLDecimalSeparator(const Source: string): string;
+{$IFDEF D2009+}
+  // NONE: SQL text in the system code page, text of another one as bytes with an introducer
+  // (hex literals: Firebird 2.5+); '' when not needed
+  function CharSetLiteral(Field: TField; const S: string): string;
+  const
+    HexDigits: array [0 .. 15] of Char = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F');
+  var
+    i: Integer;
+    CharSetName: string;
+    Bytes: FIBByteString;
+    Hex: string;
   begin
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
-      if DecimalSeparator = '.' then
-        Result := Source
-      else
-      begin
-        Result := ReplaceStr(Source, DecimalSeparator, '.')
-      end;
+    Result := '';
+    if (S = '') or (Database.Capabilities.AttachmentCharSetID <> 0) or IsSystemCodePage(StringFieldCodePage(Field)) or
+      not Database.IsFirebirdConnect or (Database.ServerMajorVersion < 2) or
+      (Database.ServerMajorVersion = 2) and (Database.ServerMinorVersion < 5) then
+      Exit;
+    CharSetName := FirebirdCharSetName(StringFieldCharSetID(Field));
+    if CharSetName = '' then
+      Exit;
+    Bytes := EncodeString(S, StringFieldCodePage(Field));
+    SetLength(Hex, Length(Bytes) * 2);
+    for i := 1 to Length(Bytes) do
+    begin
+      Hex[2 * i - 1] := HexDigits[Ord(Bytes[i]) shr 4];
+      Hex[2 * i] := HexDigits[Ord(Bytes[i]) and 15];
+    end;
+    Result := '_' + CharSetName + ' x''' + Hex + '''';
   end;
+{$ENDIF}
 
+  // strings in the charset of their column
   function FieldValueToStr(Field: TField; Old: boolean): string;
   var
     v: variant;
+{$IFNDEF D2009+}
     sqlsubtype: integer;
+{$ENDIF}
   begin
     if Old then
       v := Field.OldValue
     else
       v := Field.Value;
-
-    if VarIsNull(v) or VarIsEmpty(v) then
-      Result := 'NULL'
+    if not (Field.DataType in [ftString, ftWideString]) or VarIsNull(v) or VarIsEmpty(v) then
+      Result := SqlTxtRtns.FieldValueToStr(Field, Old)
     else
     begin
-      case Field.DataType of
-        ftBCD, ftFloat, ftFMTBcd: Result := ChangeToSQLDecimalSeparator(VarToStr(v));
-        ftDate, ftDateTime, ftTime: Result := '''' + VarToStr(v) + '''';
-        ftString, ftWideString:
-          begin
-            if Field is TFIBStringField then
-              sqlsubtype := TFIBStringField(Field).sqlsubtype
-            else if Field is TFIBWideStringField then
-              sqlsubtype := TFIBWideStringField(Field).sqlsubtype
-            else
-              sqlsubtype := 0;
-            if Database.NeedUnicodeFieldTranslation(byte(sqlsubtype)) and
-              (byte(sqlsubtype) in Database.UnicodeCharSets) then
-              Result := '''' + UTF8Encode(v) + ''''
-            else
-              Result := '''' + VarToStr(v) + '''';
-          end
+{$IFDEF D2009+}
+      // Unicode text, encoded by ExecSQLImmediate
+      Result := CharSetLiteral(Field, VarToStr(v));
+      if Result = '' then
+        Result := SQLStringLiteral(VarToStr(v));
+{$ELSE}
+      if Field is TFIBStringField then
+        sqlsubtype := TFIBStringField(Field).sqlsubtype
+      else if Field is TFIBWideStringField then
+        sqlsubtype := TFIBWideStringField(Field).sqlsubtype
       else
-        Result := VarToStr(v)
-      end
+        sqlsubtype := 0;
+      if Database.NeedUnicodeFieldTranslation(byte(sqlsubtype)) and
+        (byte(sqlsubtype) in Database.UnicodeCharSets) then
+        Result := SQLStringLiteral(UTF8Encode(v))
+      else
+        Result := SQLStringLiteral(VarToStr(v));
+{$ENDIF}
     end;
   end;
 
