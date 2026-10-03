@@ -69,7 +69,6 @@ type
 
     function UseQuery(aTransaction: TFIBTransaction; const SQLText: string): TFIBQuery;
     procedure UnUseQuery(aFIBQuery: TFIBQuery);
-    procedure FreeUnusedQueries;
   end;
 
 var
@@ -318,19 +317,6 @@ begin
   FLock.Acquire;
   try
     Result := GetCacheForDB(DB).UseQuery(aTransaction, SQLText);
-  finally
-    FLock.Release;
-  end;
-end;
-
-procedure TCacheList.FreeUnusedQueries;
-var
-  i: integer;
-begin
-  FLock.Acquire;
-  try
-    for i := 0 to FList.Count - 1 do
-      TCacheQueries(FList[i]).ClearUnused;
   finally
     FLock.Release;
   end;
