@@ -1259,12 +1259,12 @@ end;
 
 function TRecordsCache.BookMarkValid(BookMark: Integer): Boolean;
 begin
-  Result := (BookMark > -1);
+  Result := (BookMark > 0);
   if Result then
     begin
       if Assigned(FMapRecords) then
         begin
-          Result := (BookMark < FMapRecords.Count) and (FMapRecords.List^[BookMark - 1] = Pointer(BookMark));
+          Result := (BookMark <= FMapRecords.Count) and (FMapRecords.List^[BookMark - 1] = Pointer(BookMark));
           if not Result then
             Result := FMapRecords.IndexOf(Pointer(BookMark)) > -1
         end
