@@ -180,6 +180,14 @@ made since the repository was created in November 2016.
   ([#84](https://github.com/madorin/fibplus/issues/84)).
 - `TFIBDatabase.ClientMajorVersion`, `ClientMinorVersion`,
   `IIBClientLibrary.ClientVersion` and `SQL_DATE` are deprecated.
+- Names over 31 bytes (Firebird 4+) come in full: persistent fields and
+  `FIB$FIELDS_INFO` rows saved with the cut or `F_n` names must be renamed.
+  With a Firebird 3 or older client, preparing a query costs one more round
+  trip on Firebird 4+ servers.
+- The raw export of `FIBMiscellaneous` writes non-ASCII names in the system code
+  page; files written before are read as before.
+- `TpFIBArray.Dimension` raises for bounds outside -32768..32767 instead of
+  cutting them.
 - `qDefaultFields` is removed, use `DefaultFields`.
 - Version constants: `FIBMajorVersion`, `FIBMinorVersion`, `FIBRelease` and
   `FIBVersionString` replace `FIBPlusVersion`, `FIBPlusBuild` and
