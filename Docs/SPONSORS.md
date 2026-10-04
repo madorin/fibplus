@@ -4,18 +4,30 @@ Keeping FibPlus alive takes real time: fixing bugs, reviewing patches and adapti
 
 ## Monthly backers
 
-| | Tier | Monthly | |
-|:---:|---|:---:|:---:|
-| ✨ | **Ember** — for individual developers and hobbyists | €9 | [![Subscribe](https://img.shields.io/badge/Subscribe-PayPal-0070ba?logo=paypal)](https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-7SY82809AH5150521NK7YLJA) |
-| 🔥 | **Flame** — for professional developers and small teams | €29 | [![Subscribe](https://img.shields.io/badge/Subscribe-PayPal-0070ba?logo=paypal)](https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-578585482R1953458NK732BY) |
-| 🐦‍🔥 | **Phoenix** — for companies building on FibPlus | €99 | [![Subscribe](https://img.shields.io/badge/Subscribe-PayPal-0070ba?logo=paypal)](https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-2H024868PP4224610NK735DQ) |
+### ✨ Ember — €9/month
+
+For individual developers and hobbyists.
+
+[![Subscribe](https://img.shields.io/badge/Subscribe-PayPal-0070ba?style=for-the-badge&logo=paypal)](https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-7SY82809AH5150521NK7YLJA)
+
+### 🔥 Flame — €29/month
+
+For professional developers and small teams.
+
+[![Subscribe](https://img.shields.io/badge/Subscribe-PayPal-0070ba?style=for-the-badge&logo=paypal)](https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-578585482R1953458NK732BY)
+
+### 🐦‍🔥 Phoenix — €99/month
+
+For companies building on FibPlus.
+
+[![Subscribe](https://img.shields.io/badge/Subscribe-PayPal-0070ba?style=for-the-badge&logo=paypal)](https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-2H024868PP4224610NK735DQ)
 
 ## One-time support
 
 Prefer a single contribution? Any amount helps.
 
-[![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-0070ba?logo=paypal)](https://paypal.me/marcodor)
-[![Donate with Liberapay](https://img.shields.io/badge/Donate-Liberapay-f6c915?logo=liberapay&logoColor=black)](https://liberapay.com/marcodor)
+[![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-0070ba?style=for-the-badge&logo=paypal)](https://paypal.me/marcodor)&nbsp;&nbsp;
+[![Donate with Liberapay](https://img.shields.io/badge/Donate-Liberapay-f6c915?style=for-the-badge&logo=liberapay&logoColor=black)](https://liberapay.com/marcodor)
 
 ## Companies
 

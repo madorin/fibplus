@@ -1,8 +1,8 @@
 # FibPlus Library
 
-Fast, flexible and high-performance component library for Delphi, C++ Builder and Kylix intended for work with InterBase and Firebird using Direct InterBase API.
+FibPlus is a fast, easy-to-use component library for Delphi and C++Builder that works with Firebird and InterBase directly through the native client API, with no extra data access layers in between.
 
-FIBPlus is a flexible and easy-to-use library of Delphi, C++ Builder, Kylix components and Ada objects for direct work with InterBase and Firebird (Yaffil). It has been made for developers of database applications. From the very outset we were developing it in accordance with our customers wishes and requests. Every component, method and property is intended to solve the most common daily tasks.
+It is built for database application developers and has grown from their real-world needs: every component, method and property is designed to solve the tasks you face every day.
 
 
 ## Installation
@@ -44,7 +44,7 @@ The runtime package itself does not need to be installed. The design packages ex
 
 Keeping FibPlus alive takes real time: fixing bugs, reviewing patches and adapting the code to every new Delphi and Firebird release. If FibPlus powers your apps, please consider [becoming a backer](Docs/SPONSORS.md) — monthly or one-time, every contribution helps.
 
-[![Become a backer](https://img.shields.io/badge/Become_a_backer-❤-e25555)](Docs/SPONSORS.md)
+[![Become a backer](https://img.shields.io/badge/Become_a_backer-❤-e25555?style=for-the-badge)](Docs/SPONSORS.md)
 
 
 ## Disclaimer
