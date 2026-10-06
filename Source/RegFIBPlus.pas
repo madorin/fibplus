@@ -40,6 +40,7 @@ const
   pnFIBPlusServices = 'FIBPlusServices';
 
 {$R fibplus.dcr}
+{$R fibplus_midas.dcr}
 
 procedure Register;
 begin

@@ -97,8 +97,6 @@ type
 
 implementation
 
-{$R fibplus_midas.dcr}
-
 uses
   StdFuncs;
 
