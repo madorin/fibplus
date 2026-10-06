@@ -62,7 +62,6 @@ contains
   FindCmp in '..\Source\Editors\FindCmp.pas',
   IBSQLSyn in '..\Source\Editors\IBSQLSyn.pas',
   pFIBComponentEditors in '..\Source\Editors\pFIBComponentEditors.pas',
-  pfibdsgnviewsqls in '..\Source\Editors\pfibdsgnviewsqls.pas',
   pFIBEditorsConsts in '..\Source\Editors\pFIBEditorsConsts.pas',
   pFIBPreferences in '..\Source\Editors\pFIBPreferences.pas',
   pFIBRepositoryOperations in '..\Source\Editors\pFIBRepositoryOperations.pas',

@@ -93,7 +93,6 @@
     <DCCReference Include="..\Source\Editors\pFIBDBEdit.pas">
       <Form>DBEditForm</Form>
     </DCCReference>
-    <DCCReference Include="..\Source\Editors\pfibdsgnviewsqls.pas" />
     <DCCReference Include="..\Source\Editors\pFIBEditorsConsts.pas" />
     <DCCReference Include="..\Source\Editors\pFIBPreferences.pas" />
     <DCCReference Include="..\Source\Editors\pFIBRepositoryOperations.pas" />

@@ -69,7 +69,6 @@ contains
   uFIBScriptForm in '..\Source\Editors\uFIBScriptForm.pas',
   FIBToolsConsts in '..\Source\Editors\FIBToolsConsts.pas',
   FindCmp in '..\Source\Editors\FindCmp.pas',
-  pfibdsgnviewsqls in '..\Source\Editors\pfibdsgnviewsqls.pas',
   pFIBPreferences in '..\Source\Editors\pFIBPreferences.pas',
   uFrmSearchResult in '..\Source\Editors\uFrmSearchResult.pas';
 
