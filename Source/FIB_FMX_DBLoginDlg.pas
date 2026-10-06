@@ -37,9 +37,6 @@ uses
 
 {$R *.fmx}
 
-var
-  frmFIBDBLoginDlgFMX: TfmxFIBDBLoginDlg;
-
 function pFIBLoginDialogFMX(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
 var
   frmFIBDBLoginDlg: TfmxFIBDBLoginDlg;

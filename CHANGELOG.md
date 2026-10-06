@@ -21,6 +21,12 @@
   names in UTF-8 on NONE; an error instead of `?` for characters the charset
   can't hold.
 
+#### Packages
+
+- `FIBPlusFMX` runtime package for Delphi 13 with the FireMonkey login dialog
+  `FIB_FMX_DBLoginDlg`, which was in no package. Its name has no version
+  suffix: the BPL gets one through `{$LIBSUFFIX AUTO}` (`FIBPlusFMX370.bpl`).
+
 ### Changed
 
 - `FIBRelease` is renamed to `FIBPatchVersion`.
