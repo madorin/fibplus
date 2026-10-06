@@ -41,7 +41,7 @@
         <DCC_ResourcePath>..</DCC_ResourcePath>
         <DCC_ObjPath>..</DCC_ObjPath>
         <DCC_IncludePath>..</DCC_IncludePath>
-        <DCC_DcuOutput>.\$(Platform)\$(Config)</DCC_DcuOutput>
+        <DCC_DcuOutput>$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_UsePackage>rtl;dbrtl;$(DCC_UsePackage)</DCC_UsePackage>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>

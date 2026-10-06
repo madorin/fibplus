@@ -54,6 +54,10 @@
 - `TFIBDatabase.FBAttachCharsetID` is a deprecated function, use
   `Capabilities.AttachmentCharSetID` (read once at connect, -1 when not
   connected or on InterBase); `IsKOI8Connect` is deprecated.
+- The packages for Delphi 2007 and later write DCU files to
+  `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)` instead of
+  `.\$(Platform)\$(Config)`: the folder next to the packages was shared by all
+  Delphi versions, so they overwrote each other's DCU files.
 
 ### Removed
 

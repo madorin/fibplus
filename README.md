@@ -39,6 +39,8 @@ Each group contains three packages:
 
 The runtime package itself does not need to be installed. The design packages exist only for the IDE platform (Win32, or Win64x for the 64-bit IDE), as the IDE loads them; for Win64 applications it is enough to set the library path, as in step 6. Build `FIBPlus_Dxx` for Win64 only if your application is built with runtime packages.
 
+The packages write their DCU files to `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`, e.g. `C:\Users\Public\Documents\Embarcadero\Studio\37.0\Dcu\FIBPlus\Win32\Release`. This folder is separate for each Delphi version, so several versions installed on the same machine don't overwrite each other's DCU files, as they did when the DCU files were written next to the packages. Adding this folder to the library path, before `Source`, is optional and only avoids recompiling FibPlus in each project; `Source` stays needed for the form and resource files.
+
 
 ## ❤️ Support FibPlus
 

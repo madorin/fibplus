@@ -9,7 +9,7 @@
     <DCC_DependencyCheckOutputName>C:\Documents and Settings\All Users\Документы\RAD Studio\5.0\Bpl\FIBPlus2007.bpl</DCC_DependencyCheckOutputName>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DCC_DcuOutput>.\Win32\Release</DCC_DcuOutput>
+    <DCC_DcuOutput>$(BDSCOMMONDIR)\Dcu\FIBPlus\Win32\Release</DCC_DcuOutput>
     <Version>7.0</Version>
     <DCC_DebugInformation>False</DCC_DebugInformation>
     <DCC_WriteableConstants>True</DCC_WriteableConstants>
@@ -19,7 +19,7 @@
     <DCC_Define>RELEASE</DCC_Define>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DCC_DcuOutput>.\Win32\Debug</DCC_DcuOutput>
+    <DCC_DcuOutput>$(BDSCOMMONDIR)\Dcu\FIBPlus\Win32\Debug</DCC_DcuOutput>
     <Version>7.0</Version>
     <DCC_WriteableConstants>True</DCC_WriteableConstants>
   </PropertyGroup>
