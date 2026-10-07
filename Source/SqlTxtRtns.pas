@@ -2922,8 +2922,10 @@ begin
   begin
     case Field.DataType of
       ftBCD, ftFloat, ftFMTBcd: Result := ChangeToSQLDecimalSeparator(VarToStr(v));
-      ftDate, ftDateTime, ftTime: Result := '''' + VarToStr(v) + '''';
-      ftString, ftWideString: Result := SQLStringLiteral(VarToStr(v));
+      ftDate: Result := '''' + FormatDateTime('yyyy-mm-dd', VarToDateTime(v)) + '''';
+      ftTime: Result := '''' + FormatDateTime('hh:nn:ss.zzz', VarToDateTime(v)) + '''';
+      ftDateTime: Result := '''' + FormatDateTime('yyyy-mm-dd hh:nn:ss.zzz', VarToDateTime(v)) + '''';
+      ftString, ftWideString, ftMemo, ftFmtMemo, ftGuid: Result := SQLStringLiteral(VarToStr(v));
     else
       Result := VarToStr(v)
     end
