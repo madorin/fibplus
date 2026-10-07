@@ -354,6 +354,7 @@ type
   // FB 2.5
 
   Tfb_cancel_operation = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; option: UShort): ISC_STATUS; {$I pFIBMacroComp.inc}
+  Tfb_dsql_set_timeout = function(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; timeout: Cardinal): ISC_STATUS; {$I pFIBMacroComp.inc}
   Tfb_shutdown = function(timeout: Cardinal; reason: Integer): Integer; {$I pFIBMacroComp.inc}
   // end FB 2.5
 
@@ -1249,6 +1250,12 @@ const
   frb_info_active_tran_count   = 110;
   frb_info_creation_date       = 111;
 
+  fb_info_ses_idle_timeout_db   = 129;
+  fb_info_ses_idle_timeout_att  = 130;
+  fb_info_ses_idle_timeout_run  = 131;
+  fb_info_statement_timeout_db  = 135;
+  fb_info_statement_timeout_att = 136;
+
   // enum info_db_provider
 
   isc_info_db_code_rdb_eln   = 1;
@@ -1472,6 +1479,7 @@ const
   fb_cancel_disable = 1;
   fb_cancel_enable  = 2;
   fb_cancel_raise   = 3;
+  fb_cancel_abort   = 4;
 
   fb_shutrsn_svc_stopped   = -1;
   fb_shutrsn_no_connection = -2;
@@ -1622,29 +1630,32 @@ const
 
   // SQL information items
 
-  isc_info_sql_select        = 4;
-  isc_info_sql_bind          = 5;
-  isc_info_sql_num_variables = 6;
-  isc_info_sql_describe_vars = 7;
-  isc_info_sql_describe_end  = 8;
-  isc_info_sql_sqlda_seq     = 9;
-  isc_info_sql_message_seq   = 10;
-  isc_info_sql_type          = 11;
-  isc_info_sql_sub_type      = 12;
-  isc_info_sql_scale         = 13;
-  isc_info_sql_length        = 14;
-  isc_info_sql_null_ind      = 15;
-  isc_info_sql_field         = 16;
-  isc_info_sql_relation      = 17;
-  isc_info_sql_owner         = 18;
-  isc_info_sql_alias         = 19;
-  isc_info_sql_sqlda_start   = 20;
-  isc_info_sql_stmt_type     = 21;
-  isc_info_sql_get_plan      = 22;
-  isc_info_sql_records       = 23;
-  isc_info_sql_batch_fetch   = 24;
-  // FB2 consts
-  frb_info_sql_relation_alias = 25;
+  isc_info_sql_select            = 4;
+  isc_info_sql_bind              = 5;
+  isc_info_sql_num_variables     = 6;
+  isc_info_sql_describe_vars     = 7;
+  isc_info_sql_describe_end      = 8;
+  isc_info_sql_sqlda_seq         = 9;
+  isc_info_sql_message_seq       = 10;
+  isc_info_sql_type              = 11;
+  isc_info_sql_sub_type          = 12;
+  isc_info_sql_scale             = 13;
+  isc_info_sql_length            = 14;
+  isc_info_sql_null_ind          = 15;
+  isc_info_sql_field             = 16;
+  isc_info_sql_relation          = 17;
+  isc_info_sql_owner             = 18;
+  isc_info_sql_alias             = 19;
+  isc_info_sql_sqlda_start       = 20;
+  isc_info_sql_stmt_type         = 21;
+  isc_info_sql_get_plan          = 22;
+  isc_info_sql_records           = 23;
+  isc_info_sql_batch_fetch       = 24;
+  frb_info_sql_relation_alias    = 25;
+  isc_info_sql_explain_plan      = 26;
+  isc_info_sql_stmt_flags        = 27;
+  isc_info_sql_stmt_timeout_user = 28;
+  isc_info_sql_stmt_timeout_run  = 29;
   // SQL information return values
 
   isc_info_sql_stmt_select         = 1;

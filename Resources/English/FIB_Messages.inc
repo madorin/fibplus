@@ -105,6 +105,7 @@
       'UpdateTransaction must be equel Transaction or AutoCommit=True ',
     'Error in %s. FieldList is empty.',
     '%s can''t use field "%s"',
-    '%s is an Firebird 2 function. Please upgrade to Firebird 2 to use this functonality'
+    '%s is an Firebird 2 function. Please upgrade to Firebird 2 to use this functonality',
+    '%s is not supported by %s'
   );
 

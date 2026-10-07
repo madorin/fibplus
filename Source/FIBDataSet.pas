@@ -712,6 +712,7 @@ type
     FQSelectDescPart: TFIBQuery;
     FQSelectDesc: TFIBQuery;
     FQBookMark: TFIBQuery;
+    FStatementTimeout: Cardinal;
     FKeyFieldsForBookMark: TStrings;
     FSortFields: Variant;
     function CanHaveLimitedCache: Boolean;
@@ -728,6 +729,7 @@ type
     procedure ClearFieldStreamList;
 
     function CreateInternalQuery(const QName: string): TFIBQuery;
+    procedure SetStatementTimeout(Value: Cardinal);
     function GetGroupByString: string;
     function GetMainWhereClause: string;
     procedure SetGroupByString(const Value: string);
@@ -1296,6 +1298,7 @@ type
 
     property Transaction: TFIBTransaction read GetTransaction write SetTransaction;
     property Database: TFIBDatabase read GetDatabase write SetDatabase;
+    property StatementTimeout: Cardinal read FStatementTimeout write SetStatementTimeout default 0;
     property BeforeFetchRecord: TOnFetchRecord read FBeforeFetchRecord write SetBeforeFetchRecord;
     property AfterFetchRecord: TOnFetchRecord read FAfterFetchRecord write FAfterFetchRecord;
     property OnGetRecordError: TDataSetErrorEvent read FOnGetRecordError write FOnGetRecordError;
@@ -3771,7 +3774,23 @@ begin
       ParamCheck := True;
       Options := [];
       Name := QName;
+      StatementTimeout := FStatementTimeout;
     end;
+end;
+
+procedure TFIBCustomDataSet.SetStatementTimeout(Value: Cardinal);
+var
+  i: Integer;
+begin
+  if FStatementTimeout = Value then
+    Exit;
+  // checked here, so the loop never stops halfway; a query checks only while prepared
+  if Assigned(Database) and Database.Connected and not (csLoading in ComponentState) then
+    Database.RequireStatementTimeout(CmpFullName(Self) + '.StatementTimeout', Value);
+  for i := 0 to ComponentCount - 1 do
+    if Components[i] is TFIBQuery then
+      TFIBQuery(Components[i]).StatementTimeout := Value;
+  FStatementTimeout := Value;
 end;
 
 constructor TFIBCustomDataSet.Create(AOwner: TComponent);
@@ -4647,6 +4666,7 @@ begin
   Qry.CSMonitorSupport.Enabled := FCSMonitorSupport.Enabled;
   Qry.CSMonitorSupport.IncludeDatasetDescription := FCSMonitorSupport.IncludeDatasetDescription;
 {$ENDIF}
+  Qry.StatementTimeout := FStatementTimeout;
   with Qry do
     try
       Database := FBase.Database;

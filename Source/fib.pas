@@ -32,10 +32,13 @@ type
     * order is switched.
   *)
 
+  TFIBErrorCodes = array of Long;
+
   EFIBError = class(EDatabaseError)
   private
     FSQLCode: Long;
     FIBErrorCode: Long;
+    FErrorCodes: TFIBErrorCodes;
     FRaiserName: string; // IMS
     FSQLMessage: string;
     FIBMessage: string;
@@ -53,6 +56,10 @@ type
     constructor CreateEx(ASQLCode: Long; const IBMsg, SQLMsg, CstmMsg: string; Sender: TObject);
     property SQLCode: Long read FSQLCode;
     property IBErrorCode: Long read FIBErrorCode;
+    // every gds code of the status vector, set for server errors only
+    property ErrorCodes: TFIBErrorCodes read FErrorCodes;
+    function HasErrorCode(Code: Long): Boolean;
+    function IsStatementTimeout: Boolean;
     property RaiserName: string read FRaiserName write FRaiserName; // IMS
     property SQLState: FIBByteString read FSQLState;
     // IMS - SQLMessage and IBMessage write permissions
@@ -156,7 +163,8 @@ type
     feCantUseLimitedCache,
     feFieldListEmpty,
     feCantUseField,
-    feFB2feature
+    feFB2feature,
+    feFeatureNotSupported
   );
 
   TStatusVector = array [0 .. 19] of ISC_STATUS;
@@ -334,7 +342,7 @@ var
 implementation
 
 uses
-  pFIBErrorHandler, StdFuncs, StrUtil;
+  IB_ErrorCodes, pFIBErrorHandler, StdFuncs, StrUtil;
 
 var
   IBErrorHandler: TpFibErrorHandler;
@@ -397,6 +405,29 @@ end;
   *  Examine the status vector, and raise an
   *  exception based on the current values in it.
 *)
+
+procedure ReadErrorCodes(Status: PISC_STATUS; var Codes: TFIBErrorCodes);
+var
+  Count: Integer;
+begin
+  Count := 0;
+  SetLength(Codes, 0);
+  while Status^ <> isc_arg_end do
+    case Status^ of
+      isc_arg_gds:
+        begin
+          Inc(Status);
+          SetLength(Codes, Count + 1);
+          Codes[Count] := Long(Status^);
+          Inc(Count);
+          Inc(Status);
+        end;
+      isc_arg_cstring:
+        Inc(Status, 3);
+    else
+      Inc(Status, 2); // string, number, interpreted, sql_state, warning: one value
+    end;
+end;
 
 procedure IBError(ClientLibrary: IIbClientLibrary; Sender: TObject);
 var
@@ -481,6 +512,7 @@ begin
   vRaiseExcept := true;
   vEFIBInterBaseError := EFIBInterBaseError.CreateEx(SQLCode, vIBMessage, vSQLMessage, '', Sender); // '' by IMS
   vEFIBInterBaseError.FSQLState := vSQLState;
+  ReadErrorCodes(StatusVector, vEFIBInterBaseError.FErrorCodes);
   try
     if ErrorHandlerRegistered then
       IBErrorHandler.DoOnErrorEvent(Sender, vEFIBInterBaseError, vRaiseExcept);
@@ -621,6 +653,25 @@ begin
   FSQLCode := ASQLCode;
   FIBErrorCode := StatusVectorArray[1];
   SenderObj := Sender;
+end;
+
+function EFIBError.HasErrorCode(Code: Long): Boolean;
+var
+  i: Integer;
+begin
+  Result := False;
+  i := 0;
+  while (i <= High(FErrorCodes)) and not Result do
+  begin
+    Result := FErrorCodes[i] = Code;
+    Inc(i);
+  end;
+end;
+
+function EFIBError.IsStatementTimeout: Boolean;
+begin
+  Result := (FIBErrorCode = isc_cancelled) and (HasErrorCode(isc_req_stmt_timeout) or
+    HasErrorCode(isc_att_stmt_timeout) or HasErrorCode(isc_cfg_stmt_timeout));
 end;
 
 // Added CstmMsg by IMS

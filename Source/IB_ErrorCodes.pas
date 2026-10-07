@@ -680,7 +680,16 @@ const
   isc_err_max                          = 660;
 
   // FB
-  isc_att_shutdown = 335544856;
+  isc_att_shutdown      = 335544856;
+  isc_cfg_stmt_timeout  = 335545127;
+  isc_att_stmt_timeout  = 335545128;
+  isc_req_stmt_timeout  = 335545129;
+  isc_att_shut_killed   = 335545130;
+  isc_att_shut_idle     = 335545131;
+  isc_att_shut_db_down  = 335545132;
+  isc_att_shut_engine   = 335545133;
+  isc_nothing_to_cancel = 335544933;
+  isc_async_active      = 335545017;
   // Error SQLCodes
   // See Language reference.pdf  Chapter 6. Page186
   sqlcode_checkconstraint          = -297;

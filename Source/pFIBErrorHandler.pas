@@ -34,7 +34,9 @@ type
     keSecurity,
     keCheck,
     keUniqueViolation,
-    keOther
+    keOther,
+    keStatementTimeout,
+    keCancelled
   );
 
   TOnFIBErrorEvent = procedure(Sender: TObject; ErrorValue: EFIBError; KindIBError: TKindIBError; var DoRaise: boolean) of object;
@@ -265,6 +267,14 @@ begin
         end;
     else
       begin
+        if IBErrorCode = isc_cancelled then
+        begin
+          if IsStatementTimeout then
+            FLastError := keStatementTimeout
+          else
+            FLastError := keCancelled;
+          Exit;
+        end;
         vDB := FindDatabaseForObject(Sender);
         if IsConnectionLost(IBErrorCode) or ((SQLCode = sqlcode_902) and (IBErrorCode = isc_network_error)) then
           LostCode := IBErrorCode

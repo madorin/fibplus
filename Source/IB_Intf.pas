@@ -209,6 +209,8 @@ type
       batch_vars: PPXSQLVAR; rows_affected: PULong): ISC_STATUS;
     // FB2.5
     function fb_cancel_operation(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; option: UShort): ISC_STATUS;
+    function fb_dsql_set_timeout(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; timeout: Cardinal): ISC_STATUS;
+    function HasStatementTimeout: Boolean;
 
     function fb_sqlstate(user_status: PISC_STATUS): FIBByteString;
     function fb_database_crypt_callback(StatusVector: PISC_STATUS; Callback: Pointer): ISC_STATUS;
@@ -336,6 +338,7 @@ type
     Fisc_dsql_batch_execute: Tisc_dsql_batch_execute;
     // FB2.5
     Ffb_cancel_operation: Tfb_cancel_operation;
+    Ffb_dsql_set_timeout: Tfb_dsql_set_timeout;
     Ffb_shutdown: Tfb_shutdown;
     Ffb_database_crypt_callback: Tfb_database_crypt_callback;
     FVersion: TFIBVersion;
@@ -532,6 +535,8 @@ type
 
     // FB2.5
     function fb_cancel_operation(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; option: UShort): ISC_STATUS;
+    function fb_dsql_set_timeout(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; timeout: Cardinal): ISC_STATUS;
+    function HasStatementTimeout: Boolean;
 
     function fb_sqlstate(user_status: PISC_STATUS): FIBByteString;
     function fb_database_crypt_callback(StatusVector: PISC_STATUS; Callback: Pointer): ISC_STATUS;
@@ -1985,7 +1990,8 @@ begin
       TryGetProcAddr('isc_dsql_batch_execute_immed');
     Fisc_dsql_batch_execute := TryGetProcAddr('isc_dsql_batch_execute');
     // FB2.5
-    Ffb_cancel_operation := TryGetProcAddr('fb_cancel_operation')
+    Ffb_cancel_operation := TryGetProcAddr('fb_cancel_operation');
+    Ffb_dsql_set_timeout := TryGetProcAddr('fb_dsql_set_timeout')
   end
   else
   begin
@@ -2039,6 +2045,18 @@ begin
     Result := Ffb_cancel_operation(status_vector, db_handle, option)
   else
     raise EAPICallException.Create(Format(SCantFindApiProc, ['fb_cancel_operation', FLibraryName]));
+end;
+
+function TIBClientLibrary.fb_dsql_set_timeout(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; timeout: Cardinal): ISC_STATUS;
+begin
+  if not Assigned(Ffb_dsql_set_timeout) then
+    raise EAPICallException.Create(Format(SCantFindApiProc, ['fb_dsql_set_timeout', FLibraryName]));
+  Result := Ffb_dsql_set_timeout(status_vector, stmt_handle, timeout);
+end;
+
+function TIBClientLibrary.HasStatementTimeout: Boolean;
+begin
+  Result := Assigned(Ffb_dsql_set_timeout);
 end;
 
 function TIBClientLibrary.fb_database_crypt_callback(StatusVector: PISC_STATUS; Callback: Pointer): ISC_STATUS;

@@ -70,6 +70,8 @@ type
   TFIBDatabaseCapabilities = class
   private
     FMaxIdentifierLength: Integer;
+    FSessionTimeouts: Boolean;
+    FStatementTimeout: Boolean;
     FAttachmentCharSetID: Integer;
     FFirebird: Boolean;
     FBlobsConverted: Boolean;
@@ -89,12 +91,51 @@ type
     function BlobCodePage(CharSetID: Integer): Word;
     // Characters of a metadata name: 63 on Firebird 4 and later, else 31
     property MaxIdentifierLength: Integer read FMaxIdentifierLength;
+    // Firebird 4+ server: Session.StatementTimeout and Session.IdleTimeout
+    property SessionTimeouts: Boolean read FSessionTimeouts;
+    // also fb_dsql_set_timeout in the client (fbclient 4+): TFIBQuery and TpFIBDataSet.StatementTimeout
+    property StatementTimeout: Boolean read FStatementTimeout;
     // -1 when unknown (InterBase), 0 is NONE
     property AttachmentCharSetID: Integer read FAttachmentCharSetID;
     // SQL text
     property CodePage: Word read FCodePage;
     // DDL and the names the server sends; UTF-8 on NONE (metadata is not converted)
     property MetadataCodePage: Word read FMetadataCodePage;
+  end;
+
+  // Live state of the attachment; values are kept while disconnected and sent on connect
+  TFIBSession = class(TPersistent)
+  private
+    FDatabase: TFIBDatabase;
+    FStatementTimeout: Cardinal;
+    FIdleTimeout: Cardinal;
+    procedure SetStatementTimeout(Value: Cardinal);
+    procedure SetIdleTimeout(Value: Cardinal);
+    function GetActualStatementTimeout: Cardinal;
+    function GetActualIdleTimeout: Cardinal;
+    function IsLive: Boolean;
+    procedure Execute(const SQL: AnsiString);
+    procedure SendStatementTimeout(Value: Cardinal);
+    procedure SendIdleTimeout(Value: Cardinal);
+    procedure ApplyOnConnect;
+  protected
+    function GetOwner: TPersistent; override;
+  public
+    constructor Create(Database: TFIBDatabase);
+    procedure Assign(Source: TPersistent); override;
+    // Sends all values to the server again, e.g. after ALTER SESSION RESET or a SET sent by SQL
+    procedure Apply;
+    property Database: TFIBDatabase read FDatabase;
+    // the attachment value on the server, without the firebird.conf limit
+    property ActualStatementTimeout: Cardinal read GetActualStatementTimeout;
+    // the attachment value on the server, without the firebird.conf limit
+    property ActualIdleTimeout: Cardinal read GetActualIdleTimeout;
+  published
+    // ms, Firebird 4+; TFIBQuery.StatementTimeout overrides it per statement
+    // also open cursors: the timer runs until EOF
+    property StatementTimeout: Cardinal read FStatementTimeout write SetStatementTimeout default 0;
+    // s, Firebird 4+; the server closes the idle attachment (TFIBDatabase.Timeout is client-side)
+    property IdleTimeout: Cardinal read FIdleTimeout write SetIdleTimeout default 0;
   end;
 
 // TFIBDatabase
@@ -314,6 +355,11 @@ type
     FNeedUTFDecodeDDL: Boolean;
     FIsFB21OrMore: Boolean;
     FCapabilities: TFIBDatabaseCapabilities;
+    FSession: TFIBSession;
+    procedure SetSession(Value: TFIBSession);
+    procedure InitAttachment;
+    procedure DropAttachment;
+    procedure RaiseFeatureNotSupported(const Feature: string; ByClientLibrary: Boolean);
     procedure FillServerVersions;
     function GetServerMajorVersion: Integer;
     function GetServerMinorVersion: Integer;
@@ -402,6 +448,10 @@ type
     function ClientMajorVersion: Integer; deprecated;
     function ClientMinorVersion: Integer; deprecated;
     function IsFirebirdConnect: Boolean;
+    // EFIBClientError for a non-zero value the server or the client library can't apply; 0 never raises
+    procedure RequireSessionTimeouts(const PropName: string; Value: Cardinal);
+    // FIBNoStatementTimeout never raises without SessionTimeouts: there is no attachment value then
+    procedure RequireStatementTimeout(const PropName: string; Value: Cardinal);
 
     function IsUnicodeConnect: Boolean;
     function IsIB2007Connect: Boolean;
@@ -607,6 +657,7 @@ type
     property BeforeDisconnect: TNotifyEvent read FBeforeDisconnect write FBeforeDisconnect;
     property AfterDisconnect: TNotifyEvent read FAfterDisconnect write FAfterDisconnect;
     property ConnectParams: TConnectParams read FConnectParams write FConnectParams stored False;
+    property Session: TFIBSession read FSession write SetSession;
     property SynchronizeTime: Boolean read FSynchronizeTime write FSynchronizeTime default True;
 
     property DesignDBOptions: TDesignDBOptions read FDesignDBOptions write SetDesignDBOptions default [ddoStoreConnected];
@@ -885,6 +936,11 @@ uses
   FIBMiscellaneous, pFIBDataInfo, FIBQuery, StrUtil, pFIBCacheQueries,
   FIBConsts, FIBTypes, FIBCharSets;
 
+{$IFNDEF NO_MONITOR}
+type
+  THackMonitorHook = class(TFIBSQLMonitorHook);
+{$ENDIF}
+
 var
   vConnectCS: TCriticalSection;
   LastConnectionSerial: Integer = 0;
@@ -1015,6 +1071,8 @@ end;
 procedure TFIBDatabaseCapabilities.Clear;
 begin
   FMaxIdentifierLength := 0;
+  FSessionTimeouts := False;
+  FStatementTimeout := False;
   FAttachmentCharSetID := -1;
 end;
 
@@ -1027,6 +1085,8 @@ begin
     FMaxIdentifierLength := 63
   else
     FMaxIdentifierLength := 31;
+  FSessionTimeouts := Database.IsFirebirdConnect and (Database.ServerMajorVersion >= 4);
+  FStatementTimeout := FSessionTimeouts and Database.ClientLibrary.HasStatementTimeout;
   FAttachmentCharSetID := -1;
   if Database.IsFirebirdConnect then
   begin
@@ -1082,6 +1142,120 @@ begin
     Result := FIBCodePageSystem;
 end;
 
+{ TFIBSession }
+
+constructor TFIBSession.Create(Database: TFIBDatabase);
+begin
+  inherited Create;
+  FDatabase := Database;
+end;
+
+function TFIBSession.GetOwner: TPersistent;
+begin
+  Result := FDatabase;
+end;
+
+procedure TFIBSession.Assign(Source: TPersistent);
+begin
+  if Source is TFIBSession then
+  begin
+    StatementTimeout := TFIBSession(Source).StatementTimeout;
+    IdleTimeout := TFIBSession(Source).IdleTimeout;
+  end
+  else
+    inherited Assign(Source);
+end;
+
+// The server is only known while connected; a DFM being loaded is applied later on connect
+function TFIBSession.IsLive: Boolean;
+begin
+  Result := FDatabase.Connected and not (csLoading in FDatabase.ComponentState);
+end;
+
+procedure TFIBSession.Execute(const SQL: AnsiString);
+var
+  NilTransaction: TISC_TR_HANDLE;
+begin
+  NilTransaction := nil;
+  FDatabase.Call(FDatabase.FClientLibrary.isc_dsql_execute_immediate(StatusVector,
+    @FDatabase.FHandle, @NilTransaction, 0, PAnsiChar(SQL), FDatabase.SQLDialect, nil), True);
+{$IFNDEF NO_MONITOR}
+  if MonitoringEnabled then
+    if MonitorHook <> nil then
+      THackMonitorHook(MonitorHook).WriteSQLData(CmpFullName(FDatabase) + ': [Session] ' + string(SQL), tfQExecute);
+{$ENDIF}
+  if Assigned(FDatabase.SQLLogger) then
+    FDatabase.SQLLogger.WriteData(CmpFullName(FDatabase), 'Session:', string(SQL), lfQExecute);
+end;
+
+// Raises before the caller stores the value; sends only when the server supports it
+procedure TFIBSession.SendStatementTimeout(Value: Cardinal);
+begin
+  FDatabase.RequireSessionTimeouts('Session.StatementTimeout', Value);
+  if FDatabase.Capabilities.SessionTimeouts then
+    Execute('SET STATEMENT TIMEOUT ' + AnsiString(IntToStr(Int64(Value))) + ' MILLISECOND');
+end;
+
+procedure TFIBSession.SendIdleTimeout(Value: Cardinal);
+begin
+  FDatabase.RequireSessionTimeouts('Session.IdleTimeout', Value);
+  // the server would close the IDE's attachment; like TFIBDatabase.Timeout
+  if csDesigning in FDatabase.ComponentState then
+    Exit;
+  if FDatabase.Capabilities.SessionTimeouts then
+    Execute('SET SESSION IDLE TIMEOUT ' + AnsiString(IntToStr(Int64(Value))) + ' SECOND');
+end;
+
+procedure TFIBSession.SetStatementTimeout(Value: Cardinal);
+begin
+  if FStatementTimeout = Value then
+    Exit;
+  if IsLive then
+    SendStatementTimeout(Value);
+  FStatementTimeout := Value;
+end;
+
+procedure TFIBSession.SetIdleTimeout(Value: Cardinal);
+begin
+  if FIdleTimeout = Value then
+    Exit;
+  if IsLive then
+    SendIdleTimeout(Value);
+  FIdleTimeout := Value;
+end;
+
+// A new session starts at 0, so zero values cost no round trip
+procedure TFIBSession.ApplyOnConnect;
+begin
+  if FStatementTimeout <> 0 then
+    SendStatementTimeout(FStatementTimeout);
+  if FIdleTimeout <> 0 then
+    SendIdleTimeout(FIdleTimeout);
+end;
+
+// Zero values are sent too, so the server ends up exactly at the property values
+procedure TFIBSession.Apply;
+begin
+  if not IsLive then
+    Exit;
+  SendStatementTimeout(FStatementTimeout);
+  SendIdleTimeout(FIdleTimeout);
+end;
+
+function TFIBSession.GetActualStatementTimeout: Cardinal;
+begin
+  Result := 0;
+  if FDatabase.Connected and FDatabase.Capabilities.SessionTimeouts then
+    Result := Cardinal(FDatabase.GetInt64DBInfo(fb_info_statement_timeout_att));
+end;
+
+function TFIBSession.GetActualIdleTimeout: Cardinal;
+begin
+  Result := 0;
+  if FDatabase.Connected and FDatabase.Capabilities.SessionTimeouts then
+    Result := Cardinal(FDatabase.GetInt64DBInfo(fb_info_ses_idle_timeout_att));
+end;
+
 // TFIBDatabase
 
 constructor TFIBDatabase.Create(AOwner: TComponent);
@@ -1100,6 +1274,7 @@ begin
 {$ENDIF}
   FConnectParams := TConnectParams.Create(Self);
   FCapabilities := TFIBDatabaseCapabilities.Create;
+  FSession := TFIBSession.Create(Self);
 
   if (csDesigning in ComponentState) and not CmpInLoadedState(Self) then
     begin
@@ -1200,6 +1375,7 @@ begin
   FUpdateCount.Free;
   FConnectParams.Free;
   FCapabilities.Free;
+  FSession.Free;
 
   if Assigned(FBlobFilters) then
     FBlobFilters.Free;
@@ -1443,15 +1619,38 @@ begin
   end;
 end;
 
+// Reads the server and sends the Session values; on an error the new attachment is
+// dropped without disconnect events, like a failed attach
+procedure TFIBDatabase.InitAttachment;
+begin
+  FIsFireBirdConnect := GetIsFirebirdConnect;
+  FCapabilities.Update(Self);
+  try
+    FSession.ApplyOnConnect;
+  except
+    DropAttachment;
+    raise;
+  end;
+end;
+
+procedure TFIBDatabase.DropAttachment;
+var
+  Status: TStatusVector;
+begin
+  // own status vector: the one being raised must stay intact
+  if not FHandleIsShared then
+    FClientLibrary.isc_detach_database(PISC_STATUS(@Status), @FHandle);
+  FHandle := nil;
+  FHandleIsShared := False;
+  FCapabilities.Clear;
+end;
+
 procedure TFIBDatabase.DoOnConnect;
 var
   i: Integer;
   vMajorVersion: Integer;
 begin
-  // LoadLibrary;
-  FIsFireBirdConnect := GetIsFirebirdConnect;
   vMajorVersion := ServerMajorVersion;
-  FCapabilities.Update(Self);
   if not FIsFireBirdConnect then
     FIsIB2007Connect := vMajorVersion >= 8;
 
@@ -1540,9 +1739,8 @@ begin
   FServerMinorVersion := -1;
   FServerBuild := -1;
 
-  FIsFireBirdConnect := GetIsFirebirdConnect;
+  InitAttachment;
   FIsFB21OrMore := False;
-  FCapabilities.Update(Self);
   if FIsFireBirdConnect and (ServerMajorVersion >= 2) then
     begin
       FIsUnicodeConnect := (FCapabilities.AttachmentCharSetID >= 0) and
@@ -2107,6 +2305,16 @@ begin
       else
         Exit;
     end;
+  // the Session SQL runs in the dialect of the database
+  if DBSQLDialect < SQLDialect then
+    FSQLDialect := DBSQLDialect;
+  try
+    InitAttachment;
+  except
+    if RaiseExcept then
+      raise;
+    Exit;
+  end;
   FConnectionSerial := NextConnectionSerial;
   FInternalTransaction.Timeout := 1000;
   FStreammedConnectFail := False;
@@ -2119,8 +2327,6 @@ begin
       MonitorHook.DBConnect(Self);
 {$ENDIF}
   FDifferenceTime := 0;
-  if DBSQLDialect < SQLDialect then
-    FSQLDialect := DBSQLDialect;
   if FSynchronizeTime and not(csDesigning in ComponentState) then
     FDifferenceTime := Now - GetServerTime;
   FConnectType := 0;
@@ -2392,6 +2598,7 @@ begin
       FServerMinorVersion := -1;
       FServerBuild := -1;
       LoadLibrary;
+      InitAttachment;
       DoOnConnect
     end;
 end;
@@ -2481,6 +2688,38 @@ end;
 function TFIBDatabase.IsFirebirdConnect: Boolean;
 begin
   Result := FIsFireBirdConnect
+end;
+
+procedure TFIBDatabase.RaiseFeatureNotSupported(const Feature: string; ByClientLibrary: Boolean);
+var
+  Missing: string;
+begin
+  if not IsFirebirdConnect then
+    Missing := 'InterBase'
+  else if ByClientLibrary then
+    Missing := 'the client library ' + ClientLibrary.LibraryName
+  else
+    Missing := Format('Firebird %d.%d', [ServerMajorVersion, ServerMinorVersion]);
+  FIBError(feFeatureNotSupported, [Feature, Missing]);
+end;
+
+procedure TFIBDatabase.RequireSessionTimeouts(const PropName: string; Value: Cardinal);
+begin
+  if (Value <> 0) and not FCapabilities.SessionTimeouts then
+    RaiseFeatureNotSupported(PropName, False);
+end;
+
+procedure TFIBDatabase.RequireStatementTimeout(const PropName: string; Value: Cardinal);
+begin
+  if (Value = 0) or FCapabilities.StatementTimeout then
+    Exit;
+  if not FCapabilities.SessionTimeouts then
+  begin
+    if Value <> FIBNoStatementTimeout then
+      RaiseFeatureNotSupported(PropName, False);
+  end
+  else
+    RaiseFeatureNotSupported(PropName, True);
 end;
 
 function TFIBDatabase.IsIB2007Connect: Boolean;
@@ -3592,6 +3831,11 @@ end;
 procedure TFIBDatabase.SetBlobSwapSupport(const Value: TBlobSwapSupport);
 begin
   FBlobSwapSupport.Assign(Value);
+end;
+
+procedure TFIBDatabase.SetSession(Value: TFIBSession);
+begin
+  FSession.Assign(Value);
 end;
 
 procedure TFIBDatabase.SetSQLLogger(const Value: ISQLLogger);

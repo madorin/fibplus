@@ -461,12 +461,16 @@ type
     FCodePageApplied: boolean;
     FAutoCloseOnTransactionEnd: boolean;
     vFetched: boolean;
+    FStatementTimeout: Cardinal;
 {$DEFINE FIB_INTERFACE}
 {$I FIBQueryPT.inc}
 {$UNDEF FIB_INTERFACE}
     procedure SaveStreamedParams(toParams: TFIBXSQLDA);
     procedure ClearStreamedParams;
     procedure SetParamCheck(Value: boolean);
+    procedure SetStatementTimeout(Value: Cardinal);
+    function TimeoutApplies: boolean;
+    procedure ApplyStatementTimeout(Value: Cardinal);
     function GetModifyTable: string;
     procedure DatabaseDisconnecting(Sender: TObject);
     procedure DatabaseConnectionLost(Sender: TObject);
@@ -677,6 +681,9 @@ type
 
     property GoToFirstRecordOnExecute: boolean read FGoToFirstRecordOnExecute write FGoToFirstRecordOnExecute default True;
     property ParamCheck: boolean read FParamCheck write SetParamCheck default True;
+    // ms; 0: the attachment value applies (Session.StatementTimeout). For a SELECT the timer runs until EOF
+    // FIBNoStatementTimeout: no timeout for this statement, even with a Session value
+    property StatementTimeout: Cardinal read FStatementTimeout write SetStatementTimeout default 0;
     property SQL: TStrings read FSQL write SetSQL;
 
     property OnSQLChanging: TNotifyEvent read FOnSQLChanging write FOnSQLChanging;
@@ -694,6 +701,9 @@ type
 procedure BlobToStream(ModelVar: TFIBXSQLVAR; BlobID: TISC_QUAD; Stream: TStream);
 
 const
+  // StatementTimeout value: this statement ignores Session.StatementTimeout (firebird.conf still applies)
+  FIBNoStatementTimeout = High(Cardinal);
+
   ExecProcPrefix = 'EXECUTE ';
   // Statistic consts
   scPrepareCount    = 'PrepareCount';
@@ -5982,6 +5992,8 @@ begin
 {$ENDIF}
             end;
         end;
+        if FStatementTimeout <> 0 then
+          ApplyStatementTimeout(FStatementTimeout);
         FPrepared := True;
 {$IFNDEF NO_MONITOR}
         if MonitoringEnabled then
@@ -6110,6 +6122,30 @@ begin
       end;
 
   FHaveStreamParams := False
+end;
+
+// the server only times DML
+function TFIBQuery.TimeoutApplies: boolean;
+begin
+  Result := FSQLType in [SQLSelect, SQLSelectForUpdate, SQLInsert, SQLUpdate, SQLDelete, SQLExecProcedure];
+end;
+
+procedure TFIBQuery.ApplyStatementTimeout(Value: Cardinal);
+begin
+  if (FHandle = nil) or not TimeoutApplies then
+    Exit;
+  Database.RequireStatementTimeout(CmpFullName(Self) + '.StatementTimeout', Value);
+  if Database.Capabilities.StatementTimeout then
+    Call(Database.ClientLibrary.fb_dsql_set_timeout(StatusVector, @FHandle, Value), True);
+end;
+
+procedure TFIBQuery.SetStatementTimeout(Value: Cardinal);
+begin
+  if FStatementTimeout = Value then
+    Exit;
+  if FPrepared then
+    ApplyStatementTimeout(Value);
+  FStatementTimeout := Value;
 end;
 
 procedure TFIBQuery.SetParamCheck(Value: boolean);

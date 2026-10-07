@@ -55,7 +55,8 @@ type
     sExecute,
     sInsert,
     sReinsert,
-    sDirective
+    sDirective,
+    sSetSession
   );
   TObjectType = (
     otNone,
@@ -405,6 +406,7 @@ begin
     sSet: Result := 'Set ';
     sSetGenerator: Result := 'Set generator';
     sSetStatistics: Result := 'Set statistics';
+    sSetSession: Result := 'Set session';
     sDescribe: Result := 'Describe ';
     sDeclare: Result := 'Declare ';
     sComment: Result := 'Comment ';
@@ -2551,9 +2553,13 @@ end;
 
 // Sets the type and the object of a complete statement
 procedure TpFIBScriptParser.ValidateStatement(var stmtDesc: TStatementDesc);
+const
+  SessionSetWords: array [0 .. 7] of string = ('STATEMENT', 'SESSION', 'BIND', 'DECFLOAT', 'ROLE', 'TRUSTED',
+    'OPTIMIZE', 'SEARCH_PATH');
 var
   CurStr: string;
   TmpCoord: TStmtCoord;
+  i: Integer;
 begin
   // Step 1
   CurStr := Line(stmtDesc.smdBegin.Y);
@@ -2679,6 +2685,22 @@ begin
             stmtDesc.objType := otIndex;
             stmtDesc.smtType := sSetStatistics;
             TmpCoord := NextTokenPos(TmpCoord, stmtDesc.smdEnd);
+          end
+          else
+          begin
+            for i := Low(SessionSetWords) to High(SessionSetWords) do
+              if IsClause(SessionSetWords[i], CurStr, TmpCoord.X) then
+              begin
+                stmtDesc.smtType := sSetSession;
+                Break;
+              end;
+            if (stmtDesc.smtType = sSet) and IsClause('TIME', CurStr, TmpCoord.X) then
+            begin
+              TmpCoord := NextTokenPos(TmpCoord, stmtDesc.smdEnd);
+              if TmpCoord.X <> 0 then
+                if IsClause('ZONE', Line(TmpCoord.Y), TmpCoord.X) then
+                  stmtDesc.smtType := sSetSession;
+            end;
           end;
 
           if stmtDesc.objType <> otNone then

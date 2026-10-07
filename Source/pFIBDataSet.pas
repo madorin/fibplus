@@ -307,6 +307,9 @@ type
     property Filtered;
     property OnFilterRecord;
 
+    // ms; 0: the attachment value applies (Session.StatementTimeout). For a SELECT the timer runs until EOF
+    // FIBNoStatementTimeout: no timeout, for datasets browsed in a grid while a Session value is set
+    property StatementTimeout;
     property DeleteSQL: TStrings read GetDeleteSQL write SetDeleteSQL;
     property UpdateSQL: TStrings read GetUpdateSQL write SetUpdateSQL;
     property InsertSQL: TStrings read GetInsertSQL write SetInsertSQL;
@@ -4209,6 +4212,7 @@ begin
 
   if ResultSet = nil then
   begin
+    // shared by the query cache: keeps the Session value, a StatementTimeout would leak to other users
     vQuery := GetQueryForUse(UpdateTransaction, sqlStr);
     try
       AssignParams(vQuery);
@@ -4231,6 +4235,7 @@ begin
     try
       vDataset.Database := Database;
       vDataset.Transaction := Transaction;
+      vDataset.StatementTimeout := StatementTimeout;
       if not Transaction.InTransaction then
         Transaction.StartTransaction;
 

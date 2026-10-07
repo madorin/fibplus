@@ -27,6 +27,30 @@
   `FIB_FMX_DBLoginDlg`, which was in no package. Its name has no version
   suffix: the BPL gets one through `{$LIBSUFFIX AUTO}` (`FIBPlusFMX370.bpl`).
 
+#### Timeouts
+
+Firebird 4+ statement and idle timeouts; details in `Docs/guide/timeouts.md`.
+
+- `TFIBDatabase.Session`: `StatementTimeout` (ms, every statement of the
+  attachment) and `IdleTimeout` (s), sent after connect and when changed.
+  `Apply` sends them again (e.g. after `ALTER SESSION RESET`);
+  `ActualStatementTimeout` / `ActualIdleTimeout` read them from the server.
+  `IdleTimeout` is not sent at design time.
+- `TFIBQuery.StatementTimeout` and `TpFIBDataSet.StatementTimeout` (ms, through
+  `fb_dsql_set_timeout`) replace the session value for one statement;
+  `FIBNoStatementTimeout` opts a statement out of it.
+- For a `SELECT` the timer runs until the last row is fetched, so a dataset
+  browsed in a grid can fail on a later scroll. In interactive applications set
+  the timeouts per query, or opt the browsing datasets out.
+- A non-zero value the server or the client library can't apply raises
+  `EFIBClientError` (`feFeatureNotSupported`); 0 never raises. A value stored in
+  a DFM makes `Open` fail on Firebird 3 and older (`Open(False)` returns with
+  `Connected = False`). `Capabilities.SessionTimeouts` and
+  `Capabilities.StatementTimeout` tell what is available.
+- `EFIBError.ErrorCodes`, `HasErrorCode` and `IsStatementTimeout`;
+  `keStatementTimeout` and `keCancelled` in `TKindIBError`. An idle timeout
+  arrives as a lost connection.
+
 ### Changed
 
 - `FIBRelease` is renamed to `FIBPatchVersion`.
@@ -97,6 +121,11 @@
   `Copy` on Delphi 2009+.
 - The `FIBPlus_XE3` package did not compile: it contained the XML export units,
   which are not in the repository.
+- `TpFIBScripter` skipped the session `SET` statements (`STATEMENT TIMEOUT`,
+  `SESSION IDLE TIMEOUT`, `BIND`, `TIME ZONE`, `DECFLOAT`, `ROLE`, `TRUSTED
+  ROLE`, `OPTIMIZE`, `SEARCH_PATH`) without an error; it now sends them to the
+  server, so an old script that contains them now runs them. They have the new
+  `TStmtType` value `sSetSession`.
 
 ## [7.9.0] - 2026-10-01
 
