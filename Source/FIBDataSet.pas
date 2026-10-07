@@ -10127,8 +10127,6 @@ var
   i: Integer;
   tf: TField;
   AddrValue: Pointer;
-  KeyValues: array of Variant;
-  vBcd: TBcd;
   fi: PFIBFieldDescr;
 
   procedure StdGotoBookMark;
@@ -10162,69 +10160,7 @@ begin
     Rno := FRecordsCache.RecordByBookMark(PFIBBookMark(BookMark)^.bRecordNumber);
     case FCacheModelOptions.CacheModelKind of
       cmkStandard:
-        if (FKeyFieldsForBookMark.Count = 0) or (vSimpleBookMark > 0) then
-          StdGotoBookMark
-        else
-          begin
-            SetLength(KeyValues, FKeyFieldsForBookMark.Count);
-            for i := 0 to Pred(FKeyFieldsForBookMark.Count) do
-              begin
-                if Boolean(PAnsiChar(BookMark) [Integer(FKeyFieldsForBookMark.Objects[i])]) then
-                  KeyValues[i] := Null
-                else
-                  begin
-
-                    tf := Self.FN(FKeyFieldsForBookMark[i]);
-                    AddrValue := @PAnsiChar(BookMark)
-                      [Integer(FKeyFieldsForBookMark.Objects[i]) + SizeOf(Boolean)];
-                    fi := TimeZoneFieldDescr(Self, tf);
-                    if fi <> nil then
-                      KeyValues[i] := VarFromDateTime(TimeZoneCacheToDateTime(fi, AddrValue))
-                    else if Assigned(tf) then
-                      case tf.DataType of
-                        ftSmallint: KeyValues[i] := PSmallint(AddrValue)^;
-                        ftInteger: KeyValues[i] := PInteger(AddrValue)^;
-                        ftFloat: KeyValues[i] := PDouble(AddrValue)^;
-                        ftBCD:
-                          begin
-                            if (tf.Size = 0) then
-                              begin
-                                KeyValues[i] := PInt64(AddrValue)^
-                              end
-                            else
-                              begin
-                                Int64ToBCD(PInt64(AddrValue)^, -tf.Size, vBcd);
-                                VarFMTBcdCreate(KeyValues[i], vBcd); ;
-                                if tf.Size = 4 then
-                                  KeyValues[i] := VarAsType(KeyValues[i], varCurrency);
-                              end;
-                          end;
-
-                        ftString: KeyValues[i] := DecodeString(PAnsiChar(AddrValue), Length(PAnsiChar(AddrValue)),
-                            StringFieldCodePage(tf));
-                        ftWideString: KeyValues[i] := DecodeWideString(FIBByteString(PAnsiChar(AddrValue)),
-                            StringFieldCodePage(tf));
-                        ftDate: KeyValues[i] := IntDateToDateTime(PInteger(AddrValue)^);
-                        // the bookmark keeps the field buffer format (msecs)
-                        ftTime: KeyValues[i] := VarFromDateTime(PInteger(AddrValue)^ / MSecsPerDay);
-                        ftDateTime:
-                          KeyValues[i] := VarFromDateTime
-                            (TimeStampToDateTime(MSecsToTimeStamp(PDouble(AddrValue)^)));
-                        ftGuid: KeyValues[i] := GUIDAsString(PGuid(AddrValue)^);
-                        ftLargeint: KeyValues[i] := PInt64(AddrValue)^;
-                        ftFMTBcd: VarFMTBcdCreate(KeyValues[i], PBcd(AddrValue)^);
-                      end;
-                  end;
-              end; // for
-            if InternalLocate(FAutoUpdateOptions.KeyFields, KeyValues, []) then
-              begin
-                if not ControlsDisabled then
-                  DisableControls; // Restore after Resync
-                Include(FRunState, drsInGotoBookMark); // Restore after Resync
-                MoveBy(PFIBBookMark(BookMark)^.bActiveRecord - ActiveRecord);
-                FCurrentRecord := Rno
-              end
-          end;
+        StdGotoBookMark;
       cmkLimitedBufferSize:
         begin
           if InWorkArea and CompareBookMarkAndRecno(BookMark, Rno) then
