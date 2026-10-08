@@ -276,6 +276,8 @@ type
     procedure SetCharSet(const Value: string);
     function GetWireCompression: boolean;
     procedure SetWireCompression(const Value: boolean);
+    function GetParallelWorkers: Integer;
+    procedure SetParallelWorkers(const Value: Integer);
 
   public
     constructor Create(Owner: TComponent);
@@ -287,6 +289,7 @@ type
     property CharSet: string read GetCharSet write SetCharSet stored False;
     property IsFirebird: boolean read FIsFirebird write FIsFirebird default True;
     property WireCompression: boolean read GetWireCompression write SetWireCompression stored False;
+    property ParallelWorkers: Integer read GetParallelWorkers write SetParallelWorkers stored False;
 {$IFDEF SUPPORT_IB2007}
     property IB2007: TIBConnectParams read FIBParams write SetIBParams;
 {$ENDIF}
@@ -842,6 +845,22 @@ const
 begin
   if Assigned(FOwner) and (FOwner is TFIBDataBase) then
     TFIBDataBase(FOwner).ConfigParam['WireCompression'] := ConfigValues[Value];
+end;
+
+function TConnectParams.GetParallelWorkers: Integer;
+begin
+  Result := 0;
+  if Assigned(FOwner) and (FOwner is TFIBDataBase) then
+    Result := StrToIntDef(TFIBDataBase(FOwner).DBParamByDPB[isc_dpb_parallel_workers], 0);
+end;
+
+procedure TConnectParams.SetParallelWorkers(const Value: Integer);
+begin
+  if Assigned(FOwner) and (FOwner is TFIBDataBase) then
+    if Value > 0 then
+      TFIBDataBase(FOwner).DBParamByDPB[isc_dpb_parallel_workers] := IntToStr(Value)
+    else
+      TFIBDataBase(FOwner).DBParamByDPB[isc_dpb_parallel_workers] := '';
 end;
 
 {$IFDEF SUPPORT_IB2007}

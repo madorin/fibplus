@@ -331,6 +331,8 @@ function StatusVectorAsText: string;
 
 // Generate a DPB
 procedure GenerateDPB(sl: TStrings; var DPB: AnsiString; var DPBLength: Short; IsFirebird: Boolean);
+// Name in DBParams of a DPB code, '' when unknown
+function DPBConstantName(Code: Integer): string;
 procedure GenerateTPB(sl: TStrings; var TPB: AnsiString; var TPBLength: Short; IsFB21orMore: Boolean);
 // Manage global options
 procedure SetIBErrorMessages(Value: TIBErrorMessages);
@@ -844,17 +846,14 @@ begin
           begin
             // or isc_dpb_trusted_role
             if not IsFirebird then
-              begin
-                // IB 2007
-                ApplyStrParam;
-              end
+              ApplyStrParam;
           end;
-        isc_dpb_session_time_zone, isc_dpb_set_bind, isc_dpb_decfloat_round, isc_dpb_decfloat_traps: // FB4
+        isc_dpb_session_time_zone, isc_dpb_set_bind, isc_dpb_decfloat_round, isc_dpb_decfloat_traps:
           begin
             if IsFirebird then
               ApplyStrParam;
           end;
-        isc_dpb_config: // FB3
+        isc_dpb_config:
           begin
             // The client reads only the first isc_dpb_config
             if IsFirebird and (param_value <> '') then
@@ -867,10 +866,7 @@ begin
           begin
             // or isc_dpb_gbak_ods_version
             if IsFirebird then
-              begin
-                // FB2
-                ApplyStrParam;
-              end;
+              ApplyStrParam;
           end;
 
         isc_dpb_num_buffers, isc_dpb_dbkey_scope, isc_dpb_force_write,
@@ -892,13 +888,23 @@ begin
               PAnsiChar(@pval)[1] + PAnsiChar(@pval)[2] + PAnsiChar(@pval)[3];
             Inc(DPBLength, 6);
           end;
+        isc_dpb_parallel_workers:
+          begin
+            if IsFirebird then
+              begin
+                pval := StrToInt(param_value);
+                DPB := DPB + AnsiChar(DPBVal) + #4 + PAnsiChar(@pval)[0] +
+                  PAnsiChar(@pval)[1] + PAnsiChar(@pval)[2] + PAnsiChar(@pval)[3];
+                Inc(DPBLength, 6);
+              end;
+          end;
         isc_dpb_activate_shadow, isc_dpb_delete_shadow, isc_dpb_begin_log, isc_dpb_quit_log:
           begin
             DPB := DPB + AnsiChar(DPBVal) + #1#0;
             Inc(DPBLength, 3);
           end;
 
-        isc_dpb_utf8_filename: // FB2
+        isc_dpb_utf8_filename:
           begin
             // or isc_dpb_archive_database
             if IsFirebird then
@@ -908,7 +914,7 @@ begin
               end
           end;
 
-        isc_dpb_no_db_triggers: // FB2
+        isc_dpb_no_db_triggers:
           begin
             // or isc_dpb_client_interbase_var
             if IsFirebird then
@@ -1043,6 +1049,22 @@ begin
     end;
 end;
 
+function DPBConstantName(Code: Integer): string;
+var
+  Idx: Integer;
+begin
+  if (Code > 0) and (Code <= isc_dpb_last_dpb_constant) then
+    Result := DPBConstantNames[Code]
+  else
+    begin
+      Idx := DPBConstants.IndexOfObject(TObject(Code));
+      if Idx = -1 then
+        Result := ''
+      else
+        Result := DPBConstants[Idx];
+    end;
+end;
+
 procedure SetIBErrorMessages(Value: TIBErrorMessages);
 begin
 
@@ -1101,6 +1123,7 @@ begin
       AddObject('decfloat_round', TObject(isc_dpb_decfloat_round));
       AddObject('decfloat_traps', TObject(isc_dpb_decfloat_traps));
       AddObject('config', TObject(isc_dpb_config));
+      AddObject('parallel_workers', TObject(isc_dpb_parallel_workers));
       // Sorted:=true;
     end;
 end;

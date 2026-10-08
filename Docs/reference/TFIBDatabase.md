@@ -104,6 +104,7 @@ Available in the Object Inspector. When the component is dropped on a form at de
 |------|------|---------|-------------|
 | `CharSet` | `string` | | Connection character set (`lc_ctype`). The value is converted to upper case. |
 | `IsFirebird` | `Boolean` | `True` | `False` for InterBase: Firebird-only parameters (such as `config` and `session_time_zone`) are left out of the connection parameters. |
+| `ParallelWorkers` | `Integer` | `0` | *Firebird 5+*. Writes `parallel_workers` in `DBParams`; `0` removes the line. |
 | `Password` | `string` | | Password (`password`). |
 | `RoleName` | `string` | | SQL role (`sql_role_name`). |
 | `UserName` | `string` | | User name (`user_name`). |

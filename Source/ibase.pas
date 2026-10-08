@@ -1518,6 +1518,7 @@ const
   isc_spb_bkp_file               = 5;
   isc_spb_bkp_factor             = 6;
   isc_spb_bkp_length             = 7;
+  isc_spb_bkp_parallel_workers   = 21;
   isc_spb_bkp_ignore_checksums   = $01;
   isc_spb_bkp_ignore_limbo       = $02;
   isc_spb_bkp_metadata_only      = $04;
@@ -1577,6 +1578,7 @@ const
   isc_spb_tra_advise_commit     = 30;
   isc_spb_tra_advise_rollback   = 31;
   isc_spb_tra_advise_unknown    = 33;
+  isc_spb_rpr_par_workers       = 52;
   isc_spb_rpr_validate_db       = $01;
   isc_spb_rpr_sweep_db          = $02;
   isc_spb_rpr_mend_db           = $04;
@@ -1594,6 +1596,7 @@ const
   isc_spb_res_access_mode      = 12;
   isc_spb_res_fix_fss_data     = 13;
   isc_spb_res_fix_fss_metadata = 14;
+  isc_spb_res_parallel_workers = isc_spb_bkp_parallel_workers;
   isc_spb_res_metadata_only    = isc_spb_bkp_metadata_only;
 
   isc_spb_res_deactivate_idx = $0100;
