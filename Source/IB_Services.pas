@@ -344,9 +344,11 @@ type
   TpFIBBackupRestoreService = class(TpFIBControlAndQueryService)
   private
     FVerbose: Boolean;
+    FParallelWorkers: Integer;
   protected
   public
   published
+    property ParallelWorkers: Integer read FParallelWorkers write FParallelWorkers default 0;
     property Verbose: Boolean read FVerbose write FVerbose default False;
     property OnTextNotify;
   end;
@@ -490,6 +492,7 @@ type
   private
     FDatabaseName: string;
     FOptions: TValidateOptions;
+    FParallelWorkers: Integer;
     FLimboTransactionInfo: array of TLimboTransactionInfo;
     FGlobalAction: TTransactionGlobalAction;
     procedure SetDatabaseName(const Value: string);
@@ -509,6 +512,7 @@ type
   published
     property DatabaseName: string read FDatabaseName write SetDatabaseName;
     property Options: TValidateOptions read FOptions write FOptions;
+    property ParallelWorkers: Integer read FParallelWorkers write FParallelWorkers default 0;
     property GlobalAction: TTransactionGlobalAction read FGlobalAction write FGlobalAction;
     property OnTextNotify;
   end;
@@ -1576,6 +1580,8 @@ begin
     ServiceStartParams := ServiceStartParams + AnsiChar(SPBConstantValues[isc_spb_verbose]);
   if FBlockingFactor > 0 then
     ServiceStartAddParam(FBlockingFactor, isc_spb_bkp_factor);
+  if ParallelWorkers > 0 then
+    ServiceStartAddParam(ParallelWorkers, isc_spb_bkp_parallel_workers);
   for i := 0 to FBackupFile.Count - 1 do
   begin
     if (Trim(FBackupFile[i]) = '') then
@@ -1654,6 +1660,8 @@ begin
     ServiceStartAddParam(FPageSize, isc_spb_res_page_size);
   if FPageBuffers > 0 then
     ServiceStartAddParam(FPageBuffers, isc_spb_res_buffers);
+  if ParallelWorkers > 0 then
+    ServiceStartAddParam(ParallelWorkers, isc_spb_res_parallel_workers);
   for i := 0 to FBackupFile.Count - 1 do
   begin
     if (Trim(FBackupFile[i]) = '') then
@@ -1961,6 +1969,8 @@ begin
   ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
   if param > 0 then
     ServiceStartAddParam(param, SPBConstantValues[isc_spb_options]);
+  if (SweepDB in Options) and (FParallelWorkers > 0) then
+    ServiceStartAddParam(FParallelWorkers, isc_spb_rpr_par_workers);
   param := 0;
   if (LimboTransactions in Options) then
     param := param or isc_spb_rpr_list_limbo_trans;

@@ -51,6 +51,18 @@ Firebird 4+ statement and idle timeouts; details in `Docs/guide/timeouts.md`.
   `keStatementTimeout` and `keCancelled` in `TKindIBError`. An idle timeout
   arrives as a lost connection.
 
+#### Parallel workers
+
+Firebird 5+ parallel workers for sweep, index creation, backup and restore; the
+server limits them with `MaxParallelWorkers` in `firebird.conf` (default 1).
+
+- `parallel_workers` in `DBParams` and the typed `ConnectParams.ParallelWorkers`
+  (0 removes the line). The parameter is sent to Firebird only; Firebird 3 and 4
+  ignore it.
+- `ParallelWorkers` on `TpFIBBackupService`, `TpFIBRestoreService` and
+  `TpFIBValidationService` (sweep, sent only with `SweepDB`). It is sent only
+  when greater than 0; a Firebird 3 or 4 server rejects it.
+
 ### Changed
 
 - `FIBRelease` is renamed to `FIBPatchVersion`.
@@ -164,6 +176,8 @@ Firebird 4+ statement and idle timeouts; details in `Docs/guide/timeouts.md`.
   raised "Invalid data conversion".
 - `AsQuad` assigned after a long `AsString` was replaced by the string at the
   execute.
+- `DBParamByDPB` with a code above 83 (such as `isc_dpb_config`) read an empty
+  value and wrote a parameter with a name out of the table range.
 
 ## [7.9.0] - 2026-10-01
 

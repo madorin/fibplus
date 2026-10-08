@@ -54,7 +54,7 @@ end;
 | [TpFIBValidationService](#tpfibvalidationservice) | Validate, sweep, and repair; handle limbo transactions |
 | [TpFIBSecurityService](#tpfibsecurityservice) | Manage users |
 
-`TpFIBBackupRestoreService` sits between `TpFIBControlAndQueryService` and the backup and restore classes. It adds the published `Verbose` and `OnTextNotify`.
+`TpFIBBackupRestoreService` sits between `TpFIBControlAndQueryService` and the backup and restore classes. It adds the published `ParallelWorkers`, `Verbose` and `OnTextNotify`.
 
 The calls of every service are reported to the SQL monitor, unless the library is compiled with `NO_MONITOR`. See [TFIBSQLMonitor](TFIBSQLMonitor.md).
 
@@ -328,6 +328,7 @@ Backs up a database with the server's backup service.
 | `BackupFile` | `TStrings` | | Backup files, one per line. A line is a file name. A line `name=length` also sends a file length, but the code reads only as many characters of the length as the file name has, so use it only with names at least as long as the number. Empty lines are skipped. |
 | `BlockingFactor` | `Integer` | | Blocking factor. Sent only when greater than `0`. |
 | `Options` | `TBackupOptions` | | Backup flags, see below. |
+| `ParallelWorkers` | `Integer` | `0` | *Firebird 5+*. Parallel workers for the backup. Sent only when greater than `0`; the server limits it to `MaxParallelWorkers`. |
 | `Verbose` | `Boolean` | `False` | Ask the server to list each step in the output. |
 | `OnTextNotify` | `TServiceGetTextNotify` | | See [TpFIBControlAndQueryService](#tpfibcontrolandqueryservice). |
 
@@ -361,6 +362,7 @@ Restores a database from a backup with the server's restore service.
 | `PageBuffers` | `Integer` | | Page buffers. Sent only when greater than `0`. |
 | `FixCharset` | `AnsiString` | | Character set name for `FixFssMetadata` and `FixFssData`. Both flags are sent only when this is not empty. |
 | `Options` | `TRestoreOptions` | `[CreateNewDB]` | Restore flags, see below. |
+| `ParallelWorkers` | `Integer` | `0` | *Firebird 5+*. Parallel workers for the restore. Sent only when greater than `0`; the server limits it to `MaxParallelWorkers`. |
 | `Verbose` | `Boolean` | `False` | Ask the server to list each step in the output. |
 | `OnTextNotify` | `TServiceGetTextNotify` | | See [TpFIBControlAndQueryService](#tpfibcontrolandqueryservice). |
 
@@ -437,6 +439,7 @@ Validates and repairs a database, sweeps it, and lists or resolves limbo transac
 |------|------|---------|-------------|
 | `DatabaseName` | `string` | | Database to check. Required; `ServiceStart` raises `feStartParamsError` when empty. |
 | `Options` | `TValidateOptions` | | Validation flags, see below. |
+| `ParallelWorkers` | `Integer` | `0` | *Firebird 5+*. Parallel workers for the sweep. Sent only when greater than `0` and `SweepDB` is in `Options`; the server limits it to `MaxParallelWorkers`. |
 | `GlobalAction` | `TTransactionGlobalAction` | | How `FixLimboTransactionErrors` treats the listed transactions: `CommitGlobal`, `RollbackGlobal`, `RecoverTwoPhaseGlobal`, or `NoGlobalAction`. |
 | `OnTextNotify` | `TServiceGetTextNotify` | | See [TpFIBControlAndQueryService](#tpfibcontrolandqueryservice). |
 

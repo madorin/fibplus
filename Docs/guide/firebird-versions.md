@@ -4,6 +4,7 @@ FibPlus connects to Firebird and InterBase servers of several generations. Some 
 
 | Version | Features in FibPlus |
 |---------|---------------------|
+| [Firebird 5.0](#firebird-50) | Parallel workers for sweep, index creation, backup and restore |
 | [Firebird 4.0](#firebird-40) | Session timeouts, statement timeout, long identifiers, read consistency, `INT128`, `DECFLOAT`, time zones |
 | [Firebird 3.0](#firebird-30) | `BOOLEAN`, encrypted databases, `config=` lines in `DBParams` |
 | [Firebird 2.1](#firebird-21) | Server-side conversion of text BLOBs, metadata in UTF-8 |
@@ -41,6 +42,30 @@ Writeln(Database.ClientLibrary.Version.Major);
 ```
 
 `Capabilities` is empty before the first connection: `MaxIdentifierLength` is `0` and the boolean members are `False`.
+
+## Firebird 5.0
+
+### Parallel workers
+
+*Firebird 5* can use several worker threads for sweep, `CREATE INDEX` and `ALTER INDEX ... ACTIVE`, backup, and restore.
+
+- **Server:** *Firebird 5+*. **Client library:** any.
+- **In FibPlus:** `ConnectParams.ParallelWorkers` of `TFIBDatabase` (the `parallel_workers` entry of `DBParams`) for the work done in the attachment; `ParallelWorkers` of `TpFIBBackupService`, `TpFIBRestoreService`, and `TpFIBValidationService` for the services. The value is sent only when it is greater than `0`, so nothing changes for existing code. FibPlus does not check the server version or the range of the value.
+- **Server settings:** `MaxParallelWorkers` in `firebird.conf` (default `1`) is the upper limit for every request. `ParallelWorkers` (default `1`) is used when the attachment did not ask for a value. With the defaults nothing runs in parallel, whatever the client sends.
+- A value above `MaxParallelWorkers`, or below `0`, is not an error: the server posts a warning and uses the limit (or `1`).
+- On `TpFIBValidationService` the value is used for the sweep only, so it is sent only with `SweepDB` in `Options`.
+
+```delphi
+Database.ConnectParams.ParallelWorkers := 4;
+Database.Connected := True;
+
+BackupService.ParallelWorkers := 4;
+BackupService.ServiceStart;
+```
+
+The effective value of the attachment is returned by `RDB$GET_CONTEXT('SYSTEM', 'PARALLEL_WORKERS')` and by `MON$ATTACHMENTS.MON$PARALLEL_WORKERS`: the requested value limited to `MaxParallelWorkers`, or `ParallelWorkers` from `firebird.conf` when the connection did not set it.
+
+On *Firebird 3* and *Firebird 4* the DPB parameter is ignored, so `ConnectParams.ParallelWorkers` is harmless. The services do not ignore it: `ServiceStart` raises `EFIBInterBaseError` "Unrecognized service parameter block" (checked on *Firebird 3*). Leave `ParallelWorkers` at `0` for a service that can run on those servers.
 
 ## Firebird 4.0
 
@@ -97,7 +122,7 @@ Database.DBParams.Add('set_bind=TIME ZONE TO LEGACY');
 Database.Connected := True;
 ```
 
-The DPB parameters `session_time_zone`, `set_bind`, `decfloat_round`, and `decfloat_traps` are sent to Firebird only; FibPlus ignores them on InterBase. Set them in `DBParams` before connecting, as any other parameter.
+The DPB parameters `session_time_zone`, `set_bind`, `decfloat_round`, `decfloat_traps`, and `parallel_workers` are sent to Firebird only; FibPlus ignores them on InterBase. Set them in `DBParams` before connecting, as any other parameter.
 
 For queries and parameters in general, see [Queries and parameters](queries-and-parameters.md).
 

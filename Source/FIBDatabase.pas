@@ -1824,10 +1824,12 @@ end;
 function TFIBDatabase.GetDBParamByDPB(const Idx: Integer): string;
 var
   ConstIdx, EqualsIdx: Integer;
+  ConstName: string;
 begin
-  if (Idx > 0) and (Idx <= isc_dpb_last_dpb_constant) then
+  ConstName := DPBConstantName(Idx);
+  if ConstName <> '' then
     begin
-      ConstIdx := IndexOfDBConst(DPBConstantNames[Idx]);
+      ConstIdx := IndexOfDBConst(ConstName);
       if ConstIdx = -1 then
         Result := ''
       else
@@ -2503,8 +2505,13 @@ begin
 end;
 
 procedure TFIBDatabase.SetDBParamByDPB(const Idx: Integer; Value: string);
+var
+  ConstName: string;
 begin
-  SetDBParamByName(DPBConstantNames[Idx], Value);
+  ConstName := DPBConstantName(Idx);
+  if ConstName = '' then
+    FIBError(feDPBConstantUnknown, [IntToStr(Idx)]);
+  SetDBParamByName(ConstName, Value);
 end;
 
 procedure TFIBDatabase.SetConfigParam(const Name: string; const Value: string);
