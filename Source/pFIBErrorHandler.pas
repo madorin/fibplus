@@ -55,6 +55,7 @@ type
     function StoredAtProp: boolean;
   public
     constructor Create;
+    procedure Assign(Source: TPersistent); override;
   published
     property Constraint: string read FConstraint write FConstraint stored StoredConstraintProp;
     property Index: string read FIndex write FIndex stored StoredIndexProp;
@@ -169,6 +170,7 @@ var
   LostCode: ISC_STATUS;
 begin
   FConstraintName := '';
+  FExceptionName := '';
   FExceptionNumber := -1;
   FLastError := keOther;
   with ErrorValue do
@@ -200,12 +202,13 @@ begin
           FLastError := keException;
           if oeException in Options then
           begin
+            // the lexem is followed by one separator
             p := Pos(ErrorLexems.FException, AnsiLowerCase(Message));
             if p > 0 then
-              Message := FastCopy(Message, p + 10, MaxInt);
+              Message := FastCopy(Message, p + Length(ErrorLexems.FException) + 1, MaxInt);
             p := Pos(ErrorLexems.FException, AnsiLowerCase(Message));
             if p > 0 then
-              Message := FastCopy(Message, p + 10, MaxInt);
+              Message := FastCopy(Message, p + Length(ErrorLexems.FException) + 1, MaxInt);
             p := PosCh('.', Message);
             if p > 0 then
               try
@@ -223,7 +226,8 @@ begin
                       FExceptionName := FastCopy(Message, 1, p - 1);
                       Message := FastCopy(Message, p + 1, MaxInt);
                       p := Pos(ErrorLexems.FAt, AnsiLowerCase(Message));
-                      if (p > 0) and (p < Length(Message) - 3) and (Message[p + 2] = ' ') then
+                      if (p > 0) and (p + Length(ErrorLexems.FAt) < Length(Message) - 1) and
+                        (Message[p + Length(ErrorLexems.FAt)] = ' ') then
                         Message := FastCopy(Message, 1, p - 1);
 
                     end;
@@ -418,10 +422,22 @@ begin
   Result := FIndex <> 'index';
 end;
 
+procedure TErrorLexems.Assign(Source: TPersistent);
+begin
+  if Source is TErrorLexems then
+  begin
+    FConstraint := TErrorLexems(Source).FConstraint;
+    FIndex := TErrorLexems(Source).FIndex;
+    FException := TErrorLexems(Source).FException;
+    FAt := TErrorLexems(Source).FAt;
+  end
+  else
+    inherited Assign(Source);
+end;
+
 procedure TpFibErrorHandler.SetErrorLexems(const Value: TErrorLexems);
 begin
-  FErrorLexems.FConstraint := Value.FConstraint;
-  FErrorLexems.FIndex := Value.FIndex;
+  FErrorLexems.Assign(Value);
 end;
 
 end.

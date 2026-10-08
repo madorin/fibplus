@@ -249,6 +249,21 @@ server limits them with `MaxParallelWorkers` in `firebird.conf` (default 1).
 - `CharacterSet` of a text BLOB column returned the charset with the BLOB
   subtype as ID (`OCTETS`), and numeric columns returned `NONE`, `OCTETS` or
   `ASCII`; columns that are not CHAR, VARCHAR or text BLOB return `UNKNOWN`.
+- `TFIBSQLMonitor.Release` raised an access violation before the first traced
+  event, and the monitor was never freed while no monitor reader was active.
+  Queries traced from several threads could free the SQL monitor writer thread
+  while another thread used it; freeing the last monitor could hang; messages
+  left at shutdown leaked.
+- SQL monitor: the fields of a fetch trace are on separate indented lines, as
+  the parameters of an execute trace; a failed prepare names the query with
+  its full owner path, as a failed execute.
+- `TpFibErrorHandler`: assigning `ErrorLexems` did not copy `Exception` and
+  `At`; lexems of another length than the default cut the exception message
+  in the wrong place; `ExceptionName` kept the value of an earlier exception.
+- `Database.SQLLogger := nil` left the logger attached, so statistics were
+  still collected; moving a logger to another database left it on the first.
+- `TSIBfibEventAlerter`: the error for too long event names said they were
+  truncated; they are not.
 
 ## [7.9.0] - 2026-10-01
 

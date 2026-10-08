@@ -5829,9 +5829,6 @@ var
   ParamsSQLDA: PXSQLDA;
   BlobValue: Ansistring;
   tmpVar: TFIBXSQLVAR;
-{$IFNDEF NO_MONITOR}
-  st: string;
-{$ENDIF}
   function NeedTransformUserSQL: boolean;
   var
     j, pc: integer;
@@ -6042,14 +6039,7 @@ begin
 {$IFNDEF NO_MONITOR}
         if MonitoringEnabled then
           if MonitorHook <> nil then
-            with THackMonitorHook(MonitorHook) do // Added Source
-            begin
-              if Assigned(Owner) then
-                st := Owner.Name + '.' + Name
-              else
-                st := Name;
-              WriteSQLData(st + ': [Prepare] ' + E.Message, tfQPrepare);
-            end;
+            THackMonitorHook(MonitorHook).WriteSQLData(CmpFullName(Self) + ': [Prepare] ' + E.Message, tfQPrepare);
 {$ENDIF}
         if Assigned(Database.SQLLogger) then
         begin

@@ -582,7 +582,6 @@ begin
         begin
           // can't have strings longer than EVENT_LENGTH
           TooLong := True;
-          // FEvents[i] := Copy(FEvents[i], 1, (SIB_MAX_EVENT_LENGTH - 1));
         end;
       end;
       // build the error message

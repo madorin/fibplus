@@ -3861,14 +3861,26 @@ begin
 end;
 
 procedure TFIBDatabase.SetSQLLogger(const Value: ISQLLogger);
+var
+  OldLogger: ISQLLogger;
 begin
+  if FSQLLogger = Value then
+    Exit;
+  // cleared first: the logger's SetDatabase calls back here
+  OldLogger := FSQLLogger;
+  FSQLLogger := nil;
+  if Assigned(OldLogger) then
+  begin
+    if OldLogger.GetInstance is TComponent then
+      TComponent(OldLogger.GetInstance).RemoveFreeNotification(Self);
+    OldLogger.SetDatabase(nil);
+  end;
   if Assigned(Value) then
-    begin
-      Value.SetDatabase(Self);
-      if (Value.GetInstance is TComponent) then
-        TComponent(Value.GetInstance).FreeNotification(Self);
-    end;
-
+  begin
+    Value.SetDatabase(Self);
+    if Value.GetInstance is TComponent then
+      TComponent(Value.GetInstance).FreeNotification(Self);
+  end;
   FSQLLogger := Value;
 end;
 

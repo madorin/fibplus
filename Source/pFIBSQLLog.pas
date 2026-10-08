@@ -307,19 +307,27 @@ begin
 end;
 
 procedure TFIBSQLLogger.SetDatabase(DB: TObject);
+var
+  OldDatabase: TFIBDatabase;
 begin
-  if Assigned(FDatabase) then
+  if not (DB is TFIBDatabase) then
+    DB := nil;
+  if DB = FDatabase then
+    Exit;
+  // cleared first: the database's SQLLogger setter calls back here
+  OldDatabase := FDatabase;
+  FDatabase := nil;
+  if Assigned(OldDatabase) then
   begin
-    FDatabase.RemoveEvent(OnDisconnect, detBeforeDisconnect);
-    FDatabase.SQLLogger := nil;
-    FDatabase.SQLStatisticsMaker := nil
+    OldDatabase.RemoveEvent(OnDisconnect, detBeforeDisconnect);
+    if Assigned(OldDatabase.SQLLogger) and (OldDatabase.SQLLogger.GetInstance = Self) then
+      OldDatabase.SQLLogger := nil;
+    OldDatabase.SQLStatisticsMaker := nil
   end;
-  if (DB = nil) or (DB is TFIBDatabase) then
-    FDatabase := TFIBDatabase(DB);
+  FDatabase := TFIBDatabase(DB);
   if Assigned(FDatabase) then
   begin
     FDatabase.SQLStatisticsMaker := FAppStatInfo;
-    // FDatabase.SQLLogger:=FSQLLogger;
     FDatabase.AddEvent(OnDisconnect, detBeforeDisconnect);
   end;
   FExistStatTable := eoUnknown;

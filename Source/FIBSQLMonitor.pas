@@ -156,22 +156,28 @@ type
     constructor Create(Handle: THandle);
   end;
 
+  // wakes the reader threads waiting for a write, even without monitors or monitoring
+  TWakeReadersObject = class(TObject);
+
   TMonitorWriterThread = class(TThread)
   private
     StopExec: Boolean;
     FMonitorMsgs: TList;
+    FQueueLock: TRTLCriticalSection;
+    FQueueEvent: THandle;
+    function Dequeue: TObject;
   protected
     procedure Lock;
     Procedure Unlock;
     procedure BeginWrite;
     procedure EndWrite;
     procedure Execute; override;
-    procedure WriteToBuffer;
+    procedure WakeReaders;
+    procedure WriteToBuffer(Trace: TFIBTraceObject);
   public
     constructor Create;
     destructor Destroy; override;
-    procedure WriteSQLData(const Msg: String; DataType: TFIBTraceFlag);
-    procedure ReleaseMonitor(HWND: THandle);
+    procedure Enqueue(Item: TObject);
   end;
 
   TMonitorReaderThread = class(TThread)
@@ -222,6 +228,43 @@ var
   bDone: Boolean;
   CS: TRTLCriticalSection;
   bEnabledMonitoring: Boolean;
+
+// FFIBWriterThread is created and freed under CS, any thread can trace
+procedure QueueToWriter(Item: TObject);
+begin
+  EnterCriticalSection(CS);
+  try
+    if bDone then
+    begin
+      Item.Free;
+      Exit;
+    end;
+    if not Assigned(FFIBWriterThread) then
+      FFIBWriterThread := TMonitorWriterThread.Create;
+    FFIBWriterThread.Enqueue(Item);
+  finally
+    LeaveCriticalSection(CS);
+  end;
+end;
+
+procedure StopWriterThread(DropPending: Boolean);
+var
+  Writer: TMonitorWriterThread;
+begin
+  EnterCriticalSection(CS);
+  try
+    Writer := FFIBWriterThread;
+    FFIBWriterThread := nil;
+  finally
+    LeaveCriticalSection(CS);
+  end;
+  if Assigned(Writer) then
+  begin
+    Writer.StopExec := DropPending;
+    Writer.Free;
+  end;
+end;
+
   { TFIBCustomSQLMonitor }
 
 {$WARN SYMBOL_DEPRECATED OFF}
@@ -516,7 +559,9 @@ end;
 
 procedure TFIBSQLMonitorHook.ReleaseMonitor(Arg: TFIBCustomSQLMonitor);
 begin
-  FFIBWriterThread.ReleaseMonitor(Arg.FHWnd);
+  // queued behind the pending trace messages
+  if Arg.FHWnd <> 0 then
+    QueueToWriter(TReleaseObject.Create(Arg.FHWnd));
 end;
 
 procedure TFIBSQLMonitorHook.SendMisc(Msg: String);
@@ -577,13 +622,8 @@ procedure TFIBSQLMonitorHook.SetEnabled(const Value: Boolean);
 begin
   if FActive <> Value then
     FActive := Value;
-  if (not FActive) and (Assigned(FFIBWriterThread)) then
-  begin
-    FFIBWriterThread.Terminate;
-    FFIBWriterThread.WaitFor;
-    FFIBWriterThread.Free;
-    FFIBWriterThread := nil;
-  end;
+  if not FActive then
+    StopWriterThread(false);
 end;
 
 procedure TFIBSQLMonitorHook.SQLExecute(qry: TFIBQuery; const AdditionalMessage: string);
@@ -652,12 +692,11 @@ begin
     { do not localize }
     for i := 0 to Pred(qry.Current.Count) do
     begin
-      st := st + qry.Fields[i].Name + ' = ';
+      st := st + CRLF + '  ' + qry.Fields[i].Name + ' = ';
       if qry.Fields[i].IsNull then
         st := st + 'NULL'
       else
         st := st + UTF8Encode(qry.Fields[i].asWideString);
-      st := st + CRLF;
     end;
     st := CRLF + st;
 
@@ -784,11 +823,7 @@ begin
   if FFIBReaderThread.FMonitors.Count = 0 then
   begin
     FFIBReaderThread.Terminate;
-    if not Assigned(FFIBWriterThread) then
-    begin
-      FFIBWriterThread := TMonitorWriterThread.Create;
-    end;
-    FFIBWriterThread.WriteSQLData(' ', tfMisc);
+    QueueToWriter(TWakeReadersObject.Create);
     FFIBReaderThread.WaitFor;
     FFIBReaderThread.Free;
     FFIBReaderThread := nil;
@@ -806,85 +841,93 @@ begin
       Enabled := false;
       Exit;
     end;
+  if FMonitorCount^ = 0 then
+    Exit;
   vText := CRLF + '[Application: ' + ExtractFileName(ParamStr(0)) + ']' + CRLF + Text; { do not localize }
-  if not Assigned(FFIBWriterThread) then
-    FFIBWriterThread := TMonitorWriterThread.Create;
-  FFIBWriterThread.WriteSQLData(vText, DataType);
+  QueueToWriter(TFIBTraceObject.Create(vText, DataType));
 end;
 
 procedure TFIBSQLMonitorHook.TerminateWriteThread;
 begin
-  if Assigned(FFIBWriterThread) then
-  begin
-    FFIBWriterThread.Free;
-    FFIBWriterThread := nil
-  end;
+  StopWriterThread(false);
 end;
 
 { TMonitorWriterThread }
 
 constructor TMonitorWriterThread.Create;
-
 begin
   FMonitorMsgs := TList.Create;
+  InitializeCriticalSection(FQueueLock);
+  FQueueEvent := CreateEvent(nil, false, false, nil);
   inherited Create(false);
-  { if FMonitorCount^ <> 0 then
-    Resume; }
 end;
 
 destructor TMonitorWriterThread.Destroy;
 var
-  Msg: TObject;
+  i: integer;
 begin
+  // the queue is written out first, unless StopExec is set
+  Terminate;
+  SetEvent(FQueueEvent);
   inherited Destroy;
-  if FMonitorMsgs.Count > 0 then
-  begin
-    Msg := FMonitorMsgs[0];
-    FMonitorMsgs.Delete(0);
-    Msg.Free;
-  end;
+  for i := 0 to FMonitorMsgs.Count - 1 do
+    TObject(FMonitorMsgs[i]).Free;
   FMonitorMsgs.Free;
+  CloseHandle(FQueueEvent);
+  DeleteCriticalSection(FQueueLock);
+end;
 
+procedure TMonitorWriterThread.Enqueue(Item: TObject);
+begin
+  EnterCriticalSection(FQueueLock);
+  try
+    FMonitorMsgs.Add(Item);
+  finally
+    LeaveCriticalSection(FQueueLock);
+  end;
+  SetEvent(FQueueEvent);
+end;
+
+function TMonitorWriterThread.Dequeue: TObject;
+begin
+  EnterCriticalSection(FQueueLock);
+  try
+    if FMonitorMsgs.Count = 0 then
+      Result := nil
+    else
+    begin
+      Result := TObject(FMonitorMsgs[0]);
+      FMonitorMsgs.Delete(0);
+    end;
+  finally
+    LeaveCriticalSection(FQueueLock);
+  end;
 end;
 
 procedure TMonitorWriterThread.Execute;
+var
+  Item: TObject;
 begin
-  while (((not Terminated) and (not bDone)) or (FMonitorMsgs.Count <> 0)) and not StopExec do
+  while not StopExec do
   begin
-    if (FMonitorCount^ = 0) then
+    Item := Dequeue;
+    if Item = nil then
     begin
-      while FMonitorMsgs.Count <> 0 do
-      begin
-        TObject(FMonitorMsgs[0]).Free;
-        FMonitorMsgs.Delete(0);
-        // FMonitorMsgs.Remove(FMonitorMsgs[0]);
-      end;
-
-      Sleep(50)
-    end
-    else if FMonitorMsgs.Count <> 0 then
-    begin
-      if (TObject(FMonitorMsgs.Items[0]) is TReleaseObject)
-      // or (not bEnabledMonitoring )
-      then
-        PostMessage(TReleaseObject(FMonitorMsgs.Items[0]).FHandle, CM_RELEASE, 0, 0)
-      else
-      begin
-        if bEnabledMonitoring then
-          WriteToBuffer
-        else
-        begin
-          // WriteToBuffer;
-
-          BeginWrite;
-          TFIBTraceObject(FMonitorMsgs[0]).Free;
-          FMonitorMsgs.Delete(0);
-          EndWrite;
-        end;
-      end;
-    end
-    else
-      Sleep(50)
+      if Terminated then
+        Break;
+      WaitForSingleObject(FQueueEvent, INFINITE);
+      Continue;
+    end;
+    try
+      if Item is TReleaseObject then
+        PostMessage(TReleaseObject(Item).FHandle, CM_RELEASE, 0, 0)
+      else if Item is TWakeReadersObject then
+        WakeReaders
+      else if bEnabledMonitoring and (FMonitorCount^ > 0) then
+        WriteToBuffer(TFIBTraceObject(Item));
+    finally
+      Item.Free;
+    end;
   end;
 end;
 
@@ -896,18 +939,6 @@ end;
 procedure TMonitorWriterThread.Unlock;
 begin
   ReleaseMutex(FWriteLock);
-end;
-
-procedure TMonitorWriterThread.WriteSQLData(const Msg: String; DataType: TFIBTraceFlag);
-begin
-  if (FMonitorCount^ <> 0) then
-  begin
-    FMonitorMsgs.Add(TFIBTraceObject.Create(Msg, DataType));
-  end
-  else
-  begin
-    FreeAndNil(FFIBWriterThread)
-  end;
 end;
 
 procedure TMonitorWriterThread.BeginWrite;
@@ -946,58 +977,65 @@ begin
   Unlock;
 end;
 
-procedure TMonitorWriterThread.WriteToBuffer;
+// control characters other than tab, CR and LF are written as #$XX
+function EscapeControlChars(const S: string): string;
 var
-  i, len: integer;
-  Text: Ansistring;
-  ps: PString;
+  i, RunStart: integer;
 begin
+  Result := '';
+  RunStart := 1;
+  for i := 1 to Length(S) do
+    if (Ord(S[i]) < 32) and not (Ord(S[i]) in [9, 10, 13]) then
+    begin
+      Result := Result + Copy(S, RunStart, i - RunStart) + '#$' + IntToHex(Ord(S[i]), 2);
+      RunStart := i + 1;
+    end;
+  if RunStart = 1 then
+    Result := S
+  else
+    Result := Result + Copy(S, RunStart, MaxInt);
+end;
+
+procedure TMonitorWriterThread.WakeReaders;
+begin
+  BeginWrite;
+  try
+    FBufferSize^ := 0;
+  finally
+    EndWrite;
+  end;
+end;
+
+procedure TMonitorWriterThread.WriteToBuffer(Trace: TFIBTraceObject);
+var
+  Text: Ansistring;
+  Offset, Remaining, ChunkSize: integer;
+begin
+  Text := Ansistring(EscapeControlChars(Trace.FMsg));
+  Offset := 1;
+  Remaining := Length(Text);
+  // the outer lock keeps the chunks of one message together
   Lock;
   try
-    if FMonitorCount^ = 0 then
-      FMonitorMsgs.Remove(FMonitorMsgs[0])
-    else
+    while Remaining > 0 do
     begin
-      ps := @TFIBTraceObject(FMonitorMsgs[0]).FMsg;
-      Text := '';
-      for i := 1 to Length(ps^) do
-      begin
-        if ord(ps^[i]) in [0 .. 8, $B, $C, $E .. 31] then
-          Text := Text + '#$' + IntToHex(ord(ps^[i]), 2)
-        else
-          Text := Text + ps^[i];
+      ChunkSize := Min(Remaining, cMaxBufferSize);
+      BeginWrite;
+      try
+        FTraceDataType^ := integer(Trace.FDataType);
+        FTimeStamp^ := Trace.FTimeStamp;
+        FIsUnicodeVersion^ := true;
+        FBufferSize^ := ChunkSize;
+        Move(Text[Offset], FBuffer[0], ChunkSize);
+      finally
+        EndWrite;
       end;
-      i := 1;
-      len := Length(Text);
-      while (len > 0) do
-      begin
-        BeginWrite;
-        try
-          FTraceDataType^ := integer(TFIBTraceObject(FMonitorMsgs[0]).FDataType);
-          FTimeStamp^ := TFIBTraceObject(FMonitorMsgs[0]).FTimeStamp;
-          FIsUnicodeVersion^ := true;
-          FBufferSize^ := Min(len, cMaxBufferSize);
-          Move(Text[i], FBuffer[0], FBufferSize^);
-          Inc(i, cMaxBufferSize);
-          Dec(len, cMaxBufferSize);
-        finally
-          EndWrite;
-        end;
-      end;
-    end;
-    if FMonitorMsgs.Count > 0 then
-    begin
-      TFIBTraceObject(FMonitorMsgs[0]).Free;
-      FMonitorMsgs.Delete(0);
+      Inc(Offset, ChunkSize);
+      Dec(Remaining, ChunkSize);
     end;
   finally
     Unlock;
   end;
-end;
-
-procedure TMonitorWriterThread.ReleaseMonitor(HWND: THandle);
-begin
-  FMonitorMsgs.Add(TReleaseObject.Create(HWND));
 end;
 
 { TFIBTraceObject }
@@ -1161,13 +1199,7 @@ finalization
 try
   bDone := true;
   FreeAndNil(FFIBReaderThread);
-  if Assigned(FFIBWriterThread) then
-  begin
-    FFIBWriterThread.StopExec := true;
-    FFIBWriterThread.Terminate;
-    FFIBWriterThread.WaitFor;
-  end;
-  FreeAndNil(FFIBWriterThread);
+  StopWriterThread(true);
   if Assigned(_MonitorHook) then
     _MonitorHook.Free;
 finally
