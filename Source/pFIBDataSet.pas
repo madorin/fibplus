@@ -3876,12 +3876,11 @@ end;
 function TpFIBDataSet.RecordFieldAsFloat(Field: TField; RecNumber: integer; IsVisibleRecordNum: boolean = True): Double;
 begin
   Result := 0;
-  if (RecNumber > FRecordCount) then
-    Exit;
   if IsVisibleRecordNum then
-    vInspectRecno := VisibleRecnoToRecno(RecNumber)
-  else
-    vInspectRecno := RecNumber;
+    RecNumber := VisibleRecnoToRecno(RecNumber);
+  if (RecNumber < 0) or (RecNumber >= FRecordCount) then
+    Exit;
+  vInspectRecno := RecNumber;
   try
     vTypeDispositionField := dfRRecNumber;
     Result := Field.AsFloat;

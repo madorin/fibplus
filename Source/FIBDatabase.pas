@@ -2682,6 +2682,7 @@ begin
   end
 end;
 
+{$WARN SYMBOL_DEPRECATED OFF}
 function TFIBDatabase.ClientMajorVersion: Integer;
 begin
   LoadLibrary;
@@ -2693,6 +2694,7 @@ begin
   LoadLibrary;
   Result := FClientLibrary.ClientMinorVersion
 end;
+{$WARN SYMBOL_DEPRECATED ON}
 
 function TFIBDatabase.GetIsFirebirdConnect: Boolean;
 begin

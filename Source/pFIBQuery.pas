@@ -88,7 +88,7 @@ uses
   FIBMiscellaneous, pFIBDataSet, StrUtil, FIBConsts;
 
 const
-  ExecProcPrefix1 = ' PROCEDURE ';
+  ExecProcedurePrefix = ExecProcPrefix + 'PROCEDURE ';
 
 constructor TpFIBQuery.Create(AOwner: TComponent); // override;
 begin
@@ -108,9 +108,7 @@ end;
 
 procedure TpFIBQuery.ExecProcedure(const ProcName: string);
 begin
-  if SQL.Text <> ExecProcPrefix + ExecProcPrefix1 + ProcName + CLRF then
-    SQL.Text := ExecProcPrefix + ExecProcPrefix1 + ProcName;
-  ExecProc
+  ExecProcedure(ProcName, []);
 end;
 
 procedure TpFIBQuery.ExecProcedure(const ProcName: string; const InputParams: array of variant);
@@ -118,22 +116,20 @@ var
   i: integer;
   SQLText: string;
 begin
-  SQLText := ExecProcPrefix + ExecProcPrefix1 + ProcName;
-  if High(InputParams) >= 0 then
-    SQLText := SQLText + '(?P0';
-  for i := Low(InputParams) + 1 to High(InputParams) do
+  SQLText := ExecProcedurePrefix + ProcName;
+  if Length(InputParams) > 0 then
   begin
-    SQLText := SQLText + ',?P' + IntToStr(i);
-  end;
-
-  if High(InputParams) >= 0 then
+    SQLText := SQLText + '(?P0';
+    for i := 1 to High(InputParams) do
+      SQLText := SQLText + ',?P' + IntToStr(i);
     SQLText := SQLText + ')';
+  end;
   if SQL.Text <> SQLText + CLRF then
     SQL.Text := SQLText;
   if not Prepared then
     Prepare;
-  for i := 0 to Pred(Params.Count) do
-    Params[i].asVariant := InputParams[i];
+  for i := 0 to High(InputParams) do
+    Params[i].AsVariant := InputParams[i];
   ExecProc
 end;
 

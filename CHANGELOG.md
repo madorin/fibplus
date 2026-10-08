@@ -113,6 +113,9 @@ server limits them with `MaxParallelWorkers` in `firebird.conf` (default 1).
 - `TFIBDatabase.FBAttachCharsetID` is a deprecated function, use
   `Capabilities.AttachmentCharSetID` (read once at connect, -1 when not
   connected or on InterBase); `IsKOI8Connect` is deprecated.
+- `IIBClientLibrary.ClientVersion` and `ClientMinorVersion` are deprecated
+  functions instead of properties, so using them gives a warning; use `Version`.
+  Classes implementing the interface must add them.
 - The default client library is `fbclient.dll` instead of `gds32.dll`
   (`TFIBDatabase.LibraryName`, `TpFIBServices.LibraryName`). The global
   `IBASE_DLL` is renamed to `CLIENT_DLL`. When `fbclient.dll` without a path
@@ -232,6 +235,20 @@ server limits them with `MaxParallelWorkers` in `firebird.conf` (default 1).
   failed call cleared the properties. Setting `SecAdmin` is now always sent;
   the properties, `SecAdmin` included, are cleared only after a successful
   call.
+- `TpFIBQuery.ExecProcedure` wrote two spaces between `EXECUTE` and `PROCEDURE`.
+- `BatchOutputRawFile` ignored its `Version` argument and always wrote version 3.
+- `TFIBTimeField` and `TFIBDateTimeField` with `ShowMsec` wrote milliseconds
+  without leading zeros: 5 ms showed as `.5` instead of `.005`.
+- `RecordFieldAsFloat` read past the last record for `RecNumber = RecordCount`,
+  and on a filtered dataset for a visible number past the end; it returns 0.
+- `TBlobSwapSupport` could not be assigned (`TFIBDatabase.BlobSwapSupport`).
+- `AutoUpdateOptions.Assign` did not copy `UseExecuteBlock`, `UseReturningFields`
+  and `UseRowsClause`, and left `KeyFieldList` empty. Assigning the
+  `AutoUpdateOptions` property replaced the object instead of copying it, which
+  leaked the old one and freed the shared one twice.
+- `CharacterSet` of a text BLOB column returned the charset with the BLOB
+  subtype as ID (`OCTETS`), and numeric columns returned `NONE`, `OCTETS` or
+  `ASCII`; columns that are not CHAR, VARCHAR or text BLOB return `UNKNOWN`.
 
 ## [7.9.0] - 2026-10-01
 

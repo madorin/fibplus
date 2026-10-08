@@ -267,7 +267,7 @@ type
 
   public
     constructor Create;
-    constructor CreateEx(aVersion: Integer; const CharSet: string);
+    constructor CreateEx(AVersion: Integer; const CharSet: string);
     procedure ReadyStream; override;
     function WriteColumns: Boolean; override;
   end;
@@ -1900,11 +1900,13 @@ end;
 
 // TFIBOutputRawFile
 
-constructor TFIBOutputRawFile.CreateEx(aVersion: Integer; const CharSet: string);
+constructor TFIBOutputRawFile.CreateEx(AVersion: Integer; const CharSet: string);
 begin
-  // aVersion is deprecated
   inherited Create;
-  FVersion := 3;
+  if AVersion in [1, 2, 3] then
+    FVersion := AVersion
+  else
+    FVersion := 3;
   FCharSet := CharSet
 end;
 

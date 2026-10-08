@@ -360,6 +360,7 @@ type
   public
     constructor Create;
     destructor Destroy; override;
+    procedure Assign(Source: TPersistent); override;
     property SwapDirectory: string read GetSwapDirectory;
   published
     property Active: boolean read FActive write FActive default False;
@@ -537,7 +538,10 @@ begin
     with TAutoUpdateOptions(Dest) do
     begin
       FUpdateTableName := Self.FUpdateTableName;
-      FKeyFields := Self.FKeyFields;
+      FModifiedTable := '';
+      FAliasModifiedTable := '';
+      // the setter rebuilds KeyFieldList
+      KeyFields := Self.FKeyFields;
       FAutoReWriteSqls := Self.FAutoReWriteSqls;
       FCanChangeSQLs := Self.FCanChangeSQLs;
       FGeneratorName := Self.FGeneratorName;
@@ -550,6 +554,9 @@ begin
       FModifiedTableHaveAlias := Self.FModifiedTableHaveAlias;
       FSeparateBlobUpdate := Self.FSeparateBlobUpdate;
       FAutoParamsToFields := Self.FAutoParamsToFields;
+      FUseExecuteBlock := Self.FUseExecuteBlock;
+      FReturningFields := Self.FReturningFields;
+      FUseRowsClause := Self.FUseRowsClause;
     end
   else
     inherited AssignTo(Dest)
@@ -1611,6 +1618,20 @@ destructor TBlobSwapSupport.Destroy;
 begin
   FTables.Free;
   inherited Destroy;
+end;
+
+procedure TBlobSwapSupport.Assign(Source: TPersistent);
+begin
+  if Source is TBlobSwapSupport then
+  begin
+    FActive := TBlobSwapSupport(Source).FActive;
+    FAutoValidateSwap := TBlobSwapSupport(Source).FAutoValidateSwap;
+    FSwapDirectory := TBlobSwapSupport(Source).FSwapDirectory;
+    FMinBlobSizeToSwap := TBlobSwapSupport(Source).FMinBlobSizeToSwap;
+    FTables.Assign(TBlobSwapSupport(Source).FTables);
+  end
+  else
+    inherited Assign(Source);
 end;
 
 function TBlobSwapSupport.GetSwapDirectory: string;

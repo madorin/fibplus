@@ -237,10 +237,10 @@ type
     procedure LoadIBLibrary;
     function LibraryLoaded: boolean;
     function LibraryFilePath: string;
+    // 6.3 on every Firebird client, use Version; functions: properties can't be deprecated
+    function ClientMinorVersion: Integer; deprecated;
+    function ClientVersion: Integer; deprecated;
     property LibraryName: string read GetLibName;
-    // 6.3 on every Firebird client, use Version
-    property ClientMinorVersion: Integer read GetIBClientMinorVersion;
-    property ClientVersion: Integer read GetIBClientVersion;
     property Version: TFIBVersion read GetVersion;
     property Busy: boolean read GetBusy;
   end;
@@ -348,6 +348,8 @@ type
     function GetLibName: string;
     function GetIBClientVersion: Integer; deprecated;
     function GetIBClientMinorVersion: Integer; deprecated;
+    function ClientMinorVersion: Integer; deprecated;
+    function ClientVersion: Integer; deprecated;
     function GetVersion: TFIBVersion;
     function GetBusy: boolean;
     function isc_attach_database(status_vector: PISC_STATUS;
@@ -882,6 +884,16 @@ end;
 function TIBClientLibrary.GetIBClientMinorVersion: Integer;
 begin
   Result := FIBClientMinorVersion
+end;
+
+function TIBClientLibrary.ClientMinorVersion: Integer;
+begin
+  Result := FIBClientMinorVersion
+end;
+
+function TIBClientLibrary.ClientVersion: Integer;
+begin
+  Result := FIBClientVersion
 end;
 
 function TIBClientLibrary.GetVersion: TFIBVersion;

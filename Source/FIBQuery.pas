@@ -2298,6 +2298,15 @@ var
       Result := FIBCodePageSystem;
   end;
 
+  // SqlName of a parameter is filled only by ReadParamNames
+  function IsDBKey: Boolean;
+  var
+    RawName: AnsiString;
+  begin
+    RawName := XSQLVARName(FXSQLVAR^.SqlName, FXSQLVAR^.sqlname_length);
+    Result := (RawName = 'DB_KEY') or (RawName = 'RDB$DB_KEY');
+  end;
+
 begin
   sSQLType := ServerSQLType;
   sSubType := ServerSQLSubType;
@@ -2422,18 +2431,16 @@ begin
     FXSQLVAR^.sqlscale := sSQLScale;
     Exit;
   end
+  else if IsDBKey then
+  begin
+    vSQLType := FXSQLVAR^.SQLType;
+    vSize := FXSQLVAR^.sqllen
+  end
   else
-    with FXSQLVAR^ do
-      if (SqlName = 'DB_KEY') or (SqlName = 'RDB$DB_KEY') then
-      begin
-        vSQLType := SQLType;
-        vSize := sqllen
-      end
-      else
-      begin
-        vSQLType := SQL_TEXT;
-        vSize := Length(vValue);
-      end;
+  begin
+    vSQLType := SQL_TEXT;
+    vSize := Length(vValue);
+  end;
   FreeAndNil(FStreamValue); // a previous long value
 
 {$IFDEF D_XE3}with FormatSettings do {$ENDIF}
@@ -2785,15 +2792,24 @@ begin
 end;
 
 function TFIBXSQLVAR.CharacterSet: string;
+var
+  SqlVar: PXSQLVAR;
 begin
-  if not Assigned(FParent) then
-    Result := UnknownStr
-  else
+  Result := '';
+  if Assigned(FParent) then
   begin
-    Result := FirebirdCharSetName(Byte(FParent.FXSQLVARs[FIndex].Data^.SQLSubtype));
-    if Result = '' then
-      Result := UnknownStr;
+    SqlVar := FParent.FXSQLVARs[FIndex].Data;
+    case SqlVar^.SQLType and (not 1) of
+      SQL_TEXT, SQL_VARYING:
+        Result := FirebirdCharSetName(Byte(SqlVar^.SQLSubtype));
+      // a text BLOB keeps the charset in sqlscale, SQLSubtype is the BLOB subtype
+      SQL_BLOB:
+        if SqlVar^.SQLSubtype = 1 then
+          Result := FirebirdCharSetName(Byte(SqlVar^.sqlscale));
+    end;
   end;
+  if Result = '' then
+    Result := UnknownStr;
 end;
 
 function TFIBXSQLVAR.GetAsBcd: TBcd;
@@ -3590,7 +3606,6 @@ procedure TFIBQuery.BatchOutputRawFile(const FileName: Ansistring; Version: inte
 var
   RawOutput: TFIBOutputRawFile;
 begin
-  Version := 3;
   RawOutput := TFIBOutputRawFile.CreateEx(Version, Database.ConnectParams.Charset);
   try
     RawOutput.FileName := FileName;

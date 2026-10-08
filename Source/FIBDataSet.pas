@@ -718,6 +718,7 @@ type
     function CanHaveLimitedCache: Boolean;
 
     procedure SetCacheModelOptions(aCacheModelOptions: TCacheModelOptions);
+    procedure SetAutoUpdateOptions(Value: TAutoUpdateOptions);
     function GetBufferChunks: Integer;
     procedure SetBufferChunks(Value: Integer);
     procedure ShiftCurRec;
@@ -1086,7 +1087,7 @@ type
     destructor Destroy; override;
     procedure Loaded; override;
 
-    property AutoUpdateOptions: TAutoUpdateOptions read FAutoUpdateOptions write FAutoUpdateOptions;
+    property AutoUpdateOptions: TAutoUpdateOptions read FAutoUpdateOptions write SetAutoUpdateOptions;
 
   protected
     vLockResync: Integer;
@@ -2537,7 +2538,7 @@ begin
         begin
           Data := Data mod 1000;
           if Data > 0 then
-            Text := Text + '.' + IntToStr(Data)
+            Text := Text + Format('.%.3d', [Data])
         end
     end;
 end;
@@ -2569,7 +2570,7 @@ begin
           ts := MSecsToTimeStamp(Data);
           ts.Time := ts.Time mod 1000;
           if ts.Time > 0 then
-            Text := Text + '.' + IntToStr(ts.Time)
+            Text := Text + Format('.%.3d', [ts.Time])
         end
     end;
 end;
@@ -4278,6 +4279,11 @@ end;
 procedure TFIBCustomDataSet.SetCacheModelOptions(aCacheModelOptions: TCacheModelOptions);
 begin
   FCacheModelOptions.Assign(aCacheModelOptions);
+end;
+
+procedure TFIBCustomDataSet.SetAutoUpdateOptions(Value: TAutoUpdateOptions);
+begin
+  FAutoUpdateOptions.Assign(Value);
 end;
 
 function TFIBCustomDataSet.GetBufferChunks: Integer;
@@ -9207,7 +9213,7 @@ begin
       end;
     dfRRecNumber:
       begin
-        if (vInspectRecno < 0) or (vInspectRecno > FRecordCount) then
+        if (vInspectRecno < 0) or (vInspectRecno >= FRecordCount) then
           Exit;
         GetInspectRecBuffer
       end;
