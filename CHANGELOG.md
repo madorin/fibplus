@@ -51,6 +51,21 @@ Firebird 4+ statement and idle timeouts; details in `Docs/guide/timeouts.md`.
   `keStatementTimeout` and `keCancelled` in `TKindIBError`. An idle timeout
   arrives as a lost connection.
 
+#### Read consistency
+
+Firebird 4+ read committed transactions where every statement reads one
+snapshot taken at its start.
+
+- `read_consistency` in `TRParams` (`isc_tpb_read_consistency`).
+- `TpFIBTransaction.TPBMode` `tpbReadConsistency` sends `write`, `nowait`,
+  `read_committed` and `read_consistency`; on a server older than Firebird 4
+  `StartTransaction` raises `EFIBClientError` (`feFeatureNotSupported`).
+  `tpbReadCommitted` stays the default: with the server default
+  `ReadConsistency = 1` it already runs in this mode on Firebird 4+.
+- `Capabilities.ReadConsistency` and `TFIBDatabase.RequireReadConsistency`;
+  `IsReadCommitedTransaction` also recognizes `read_consistency`.
+- A ReadConsistency kind in the transaction editor.
+
 #### Parallel workers
 
 Firebird 5+ parallel workers for sweep, index creation, backup and restore; the
@@ -176,6 +191,8 @@ server limits them with `MaxParallelWorkers` in `firebird.conf` (default 1).
   raised "Invalid data conversion".
 - `AsQuad` assigned after a long `AsString` was replaced by the string at the
   execute.
+- User transaction kinds saved in the transaction editor shifted to another
+  kind when a predefined kind was added.
 - `DBParamByDPB` with a code above 83 (such as `isc_dpb_config`) read an empty
   value and wrote a parameter with a name out of the table range.
 
