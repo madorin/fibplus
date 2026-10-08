@@ -1709,22 +1709,18 @@ var
   vResume: boolean;
   bRecordsSkipped: boolean;
   RecordsInExecBlock: array of integer;
+  BlockErrorHandled: boolean;
   SQL: Widestring;
   procedure SaveFlagsForRecordsInExecBlock;
   var
     j: integer;
   begin
-    if not DontChangeCacheFlags then
+    for j := 0 to Pred(Length(RecordsInExecBlock)) do
     begin
-      for j := 0 to Pred(Length(RecordsInExecBlock)) do
-      begin
-        ReadRecordCache(RecordsInExecBlock[j], Buff, False);
-        PRecordData(Buff)^.rdFlags := byte(cusUnmodified);
-        WriteRecordCache(RecordsInExecBlock[j], Buff);
-      end;
-      SetLength(RecordsInExecBlock, 1);
-      RecordsInExecBlock[0] := i;
-    end
+      ReadRecordCache(RecordsInExecBlock[j], Buff, False);
+      PRecordData(Buff)^.rdFlags := byte(cusUnmodified);
+      WriteRecordCache(RecordsInExecBlock[j], Buff);
+    end;
   end;
 
   procedure AddRecordToListInExecBlock;
@@ -1736,46 +1732,54 @@ var
     end;
   end;
 
+  // the records of a skipped block keep their cached update status
+  procedure ExecuteBlock;
+  begin
+    FExecBlockStatement.Add('END');
+{$IFDEF D2009+}
+    SQL := FExecBlockStatement.Text;
+{$ELSE}
+    if Database.IsUnicodeConnect then
+      SQL := UTF8Decode(FExecBlockStatement.Text)
+    else
+      SQL := FExecBlockStatement.Text;
+{$ENDIF}
+    FExecBlockStatement.Clear;
+    UpdateAction := uaApply;
+    while (UpdateAction in [uaApply, uaRetry]) do
+      try
+        UpdateTransaction.ExecSQLImmediate(SQL);
+        UpdateAction := uaApplied;
+      except
+        on E: EFIBError do
+        begin
+          UpdateAction := uaFail;
+          if Assigned(FOnUpdateError) then
+            FOnUpdateError(Self, E, UpdateKind, UpdateAction);
+          case UpdateAction of
+            uaFail:
+              begin
+                BlockErrorHandled := True;
+                raise;
+              end;
+            uaAbort: raise EAbort.Create(E.Message);
+            uaSkip: bRecordsSkipped := True;
+          end;
+        end;
+      end;
+    if UpdateAction = uaApplied then
+      SaveFlagsForRecordsInExecBlock;
+    SetLength(RecordsInExecBlock, 0);
+  end;
+
   procedure AddRecordToExecuteBlock(Kind: TpSQLKind);
   begin
     if not AddStatementToExecuteBlock(Kind) then
     begin
-      // FQUpdate.SQL.Assign(FExecBlockStatement);
-      UpdateAction := uaApply;
-      while (UpdateAction in [uaApply, uaRetry]) do
-        try
-{$IFDEF D2009+}
-          SQL := FExecBlockStatement.Text;
-{$ELSE}
-          if Database.IsUnicodeConnect then
-            SQL := UTF8Decode(FExecBlockStatement.Text)
-          else
-            SQL := FExecBlockStatement.Text;
-{$ENDIF}
-
-          UpdateTransaction.ExecSQLImmediate(SQL);
-
-          UpdateAction := uaApplied;
-        except
-          on E: EFIBError do
-          begin
-            UpdateAction := uaFail;
-            if Assigned(FOnUpdateError) then
-              FOnUpdateError(Self, E, UpdateKind, UpdateAction);
-            case UpdateAction of
-              uaFail: raise;
-              uaAbort: raise EAbort.Create(E.Message);
-              uaSkip: bRecordsSkipped := True;
-            end;
-          end;
-        end;
-      FExecBlockStatement.Clear;
-      SaveFlagsForRecordsInExecBlock;
+      ExecuteBlock;
       AddStatementToExecuteBlock(Kind);
-      AddRecordToListInExecBlock;
-    end
-    else
-      AddRecordToListInExecBlock;
+    end;
+    AddRecordToListInExecBlock;
   end;
 
 begin
@@ -1787,6 +1791,7 @@ begin
   Buff := AllocRecordBuffer;
   try
     bRecordsSkipped := False;
+    BlockErrorHandled := False;
     for i := 0 to Pred(FRecordCount) do
     begin
       ReadRecordCache(i, Buff, False);
@@ -1875,10 +1880,7 @@ begin
                 if CanDelete then
                   if FAutoUpdateOptions.UseExecuteBlock then
                   begin
-                    if not AddStatementToExecuteBlock(FIBDataSet.skDelete) then
-                    begin
-                      AddRecordToExecuteBlock(FIBDataSet.skDelete)
-                    end;
+                    AddRecordToExecuteBlock(FIBDataSet.skDelete);
                   end
                   else
                   begin
@@ -1908,6 +1910,9 @@ begin
             *)
             on E: EFIBError do
             begin
+              // a failed block was already reported to OnUpdateError
+              if BlockErrorHandled then
+                raise;
               UpdateAction := uaFail;
               if Assigned(FOnUpdateError) then
                 FOnUpdateError(Self, E, UpdateKind, UpdateAction);
@@ -1922,43 +1927,15 @@ begin
       end;
     end;
 
-    if FAutoUpdateOptions.UseExecuteBlock and (FExecBlockStatement <> nil) and (FExecBlockStatement.Count > 0) then
-    begin
-      FExecBlockStatement.Add('END');
-      // FQUpdate.SQL.Assign(FExecBlockStatement);
-      UpdateAction := uaApply;
-      while (UpdateAction in [uaApply, uaRetry]) do
-        try
-          // FQUpdate.ExecQuery;
-{$IFDEF D2009+}
-          SQL := FExecBlockStatement.Text;
-{$ELSE}
-          if Database.IsUnicodeConnect then
-            SQL := UTF8Decode(FExecBlockStatement.Text)
-          else
-            SQL := FExecBlockStatement.Text;
-{$ENDIF}
-
-          UpdateTransaction.ExecSQLImmediate(SQL);
-
-          UpdateAction := uaApplied;
-        except
-          on E: EFIBError do
-          begin
-            UpdateAction := uaFail;
-            if Assigned(FOnUpdateError) then
-              FOnUpdateError(Self, E, UpdateKind, UpdateAction);
-            case UpdateAction of
-              uaFail: raise;
-              uaAbort: raise EAbort.Create(E.Message);
-              uaSkip: bRecordsSkipped := True;
-            end;
-          end;
-        end;
-
-      FExecBlockStatement.Clear;
-      SaveFlagsForRecordsInExecBlock
-    end;
+    // more than the EXECUTE BLOCK line: records without changes add no statement
+    if FAutoUpdateOptions.UseExecuteBlock and (FExecBlockStatement <> nil) then
+      if FExecBlockStatement.Count > 1 then
+        ExecuteBlock
+      else
+      begin
+        FExecBlockStatement.Clear;
+        SaveFlagsForRecordsInExecBlock;
+      end;
 
     FUpdatesPending := bRecordsSkipped;
     if not FUpdatesPending then
@@ -2715,13 +2692,8 @@ end;
 function TpFIBDataSet.AddStatementToExecuteBlock(SK: TpSQLKind): boolean;
 var
   s: string;
+  Size: Integer;
 begin
-  Result := FBlockContextCount < 255;
-  if not Result then
-  begin
-    FExecBlockStatement.Add('END');
-    Exit;
-  end;
   if not Assigned(FExecBlockStatement) then
     FExecBlockStatement := TStringList.Create;
   if FExecBlockStatement.Count = 0 then
@@ -2731,17 +2703,29 @@ begin
     FBlockSize := Length(FExecBlockStatement[0]) + 2;
   end;
   with FAutoUpdateOptions do
-    s := GenerateSQLTextNoParams(UpdateTableName, KeyFields, SK) + ';';
+    s := GenerateSQLTextNoParams(UpdateTableName, KeyFields, SK);
+  // a record posted without changes with UpdateOnlyModifiedFields
+  Result := s = '';
+  if Result then
+    Exit;
+  s := s + ';';
 
-  Result := (FBlockSize + Length(s) + 2) < High(Word) - 3; // 3 for 'END'
+  // the limit is in bytes of the text sent to the server
+{$IFDEF D2009+}
+  Size := Length(EncodeString(s, Database.Capabilities.CodePage));
+{$ELSE}
+  Size := Length(s);
+{$ENDIF}
+  // each line ends with CRLF, 5 for the last line 'END'
+  Result := (FBlockContextCount < 255) and (FBlockSize + Size + 2 <= High(Word) - 5);
   if Result then
   begin
     FExecBlockStatement.Add(s);
-    Inc(FBlockSize, Length(s) + 2);
+    Inc(FBlockSize, Size + 2);
     Inc(FBlockContextCount);
   end
-  else
-    FExecBlockStatement.Add('END');
+  else if FBlockContextCount = 0 then
+    raise Exception.Create(Format(SFIBErrorExecuteBlockRowSize, [CmpFullName(Self), Size]));
 end;
 
 procedure TpFIBDataSet.AutoGenerateSQLText(ForState: TDataSetState);
@@ -2826,40 +2810,47 @@ var
   end;
 
 {$IFDEF D2009+}
-  // NONE: SQL text in the system code page, text of another one as bytes with an introducer
-  // (hex literals: Firebird 2.5+); '' when not needed
-  function CharSetLiteral(Field: TField; const S: string): string;
-  const
-    HexDigits: array [0 .. 15] of Char = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F');
+  // Unicode text, encoded by ExecSQLImmediate. NONE: SQL text in the system code page, text of
+  // another one as bytes with an introducer (hex literals: Firebird 2.5+)
+  function TextLiteral(Field: TField; const S: string): string;
   var
-    i: Integer;
+    CharSetID: Integer;
+    CodePage: Word;
     CharSetName: string;
     Bytes: FIBByteString;
-    Hex: string;
   begin
-    Result := '';
-    if (S = '') or (Database.Capabilities.AttachmentCharSetID <> 0) or IsSystemCodePage(StringFieldCodePage(Field)) or
-      not Database.IsFirebirdConnect or (Database.ServerMajorVersion < 2) or
-      (Database.ServerMajorVersion = 2) and (Database.ServerMinorVersion < 5) then
-      Exit;
-    CharSetName := FirebirdCharSetName(StringFieldCharSetID(Field));
-    if CharSetName = '' then
-      Exit;
-    Bytes := EncodeString(S, StringFieldCodePage(Field));
-    SetLength(Hex, Length(Bytes) * 2);
-    for i := 1 to Length(Bytes) do
+    CharSetName := '';
+    if (S <> '') and (Database.Capabilities.AttachmentCharSetID = 0) and Database.IsFirebirdConnect and
+      ((Database.ServerMajorVersion > 2) or (Database.ServerMajorVersion = 2) and (Database.ServerMinorVersion >= 5)) then
     begin
-      Hex[2 * i - 1] := HexDigits[Ord(Bytes[i]) shr 4];
-      Hex[2 * i] := HexDigits[Ord(Bytes[i]) and 15];
+      if Field.IsBlob then
+      begin
+        CharSetID := BlobFieldCharSetID(Field);
+        CodePage := BlobFieldCodePage(Field);
+      end
+      else
+      begin
+        CharSetID := StringFieldCharSetID(Field);
+        CodePage := StringFieldCodePage(Field);
+      end;
+      if (CharSetID >= 0) and not IsSystemCodePage(CodePage) then
+        CharSetName := FirebirdCharSetName(CharSetID);
     end;
-    Result := '_' + CharSetName + ' x''' + Hex + '''';
+    if CharSetName = '' then
+      Result := SQLStringLiteral(S)
+    else
+    begin
+      Bytes := EncodeString(S, CodePage);
+      Result := '_' + CharSetName + ' ' + SQLHexLiteral(Pointer(Bytes)^, Length(Bytes));
+    end;
   end;
 {$ENDIF}
 
-  // strings in the charset of their column
   function FieldValueToStr(Field: TField; Old: boolean): string;
   var
     v: variant;
+    SQLType: integer;
+    ZoneName: string;
 {$IFNDEF D2009+}
     sqlsubtype: integer;
 {$ENDIF}
@@ -2868,35 +2859,61 @@ var
       v := Field.OldValue
     else
       v := Field.Value;
-    if not (Field.DataType in [ftString, ftWideString]) or VarIsNull(v) or VarIsEmpty(v) then
-      Result := SqlTxtRtns.FieldValueToStr(Field, Old)
-    else
+    if VarIsNull(v) or VarIsEmpty(v) then
     begin
+      Result := 'NULL';
+      Exit;
+    end;
+    case Field.DataType of
+      ftBoolean:
+        begin
+          // an emulated boolean is a SMALLINT column, a BOOLEAN column does not accept 0/1
+          SQLType := FieldSQLType(Field);
+          if (SQLType <> 0) and (SQLType <> SQL_BOOLEAN) and (SQLType <> IB_SQL_BOOLEAN) then
+            Result := IntToStr(Ord(Boolean(v)))
+          else if Boolean(v) then
+            Result := 'TRUE'
+          else
+            Result := 'FALSE';
+        end;
+      ftBlob, ftBytes:
+        raise Exception.Create(Format(SFIBErrorExecuteBlockField, [CmpFullName(Self), Field.FieldName]));
+      ftTime, ftDateTime:
+        begin
+          Result := SqlTxtRtns.FieldValueToStr(Field, Old);
+          // WITH TIME ZONE: the local time of the value in its own zone
+          ZoneName := TimeZoneFieldLiteralZone(Field, Old);
+          if ZoneName <> '' then
+            System.Insert(' ' + ZoneName, Result, Length(Result));
+        end;
 {$IFDEF D2009+}
-      // Unicode text, encoded by ExecSQLImmediate
-      Result := CharSetLiteral(Field, VarToStr(v));
-      if Result = '' then
-        Result := SQLStringLiteral(VarToStr(v));
+      ftString, ftWideString, ftMemo, ftWideMemo, ftFmtMemo:
+        Result := TextLiteral(Field, VarToStr(v));
 {$ELSE}
-      if Field is TFIBStringField then
-        sqlsubtype := TFIBStringField(Field).sqlsubtype
-      else if Field is TFIBWideStringField then
-        sqlsubtype := TFIBWideStringField(Field).sqlsubtype
-      else
-        sqlsubtype := 0;
-      if Database.NeedUnicodeFieldTranslation(byte(sqlsubtype)) and
-        (byte(sqlsubtype) in Database.UnicodeCharSets) then
-        Result := SQLStringLiteral(UTF8Encode(v))
-      else
-        Result := SQLStringLiteral(VarToStr(v));
+      ftString, ftWideString:
+        begin
+          if Field is TFIBStringField then
+            sqlsubtype := TFIBStringField(Field).sqlsubtype
+          else if Field is TFIBWideStringField then
+            sqlsubtype := TFIBWideStringField(Field).sqlsubtype
+          else
+            sqlsubtype := 0;
+          if Database.NeedUnicodeFieldTranslation(byte(sqlsubtype)) and
+            (byte(sqlsubtype) in Database.UnicodeCharSets) then
+            Result := SQLStringLiteral(UTF8Encode(v))
+          else
+            Result := SQLStringLiteral(VarToStr(v));
+        end;
 {$ENDIF}
+    else
+      Result := SqlTxtRtns.FieldValueToStr(Field, Old);
     end;
   end;
 
 begin
   Result := '';
-  if Length(TableName) = 0 then
-    Exit;
+  if (TableName = '') or (FieldCount = 0) then
+    raise Exception.Create(Format(SFIBErrorGenerationError, [CmpFullName(Self), SQLKindNames[SK], TableName]));
 
   if FAutoUpdateOptions.UpdateTableName = TableName then
   begin
@@ -2918,19 +2935,14 @@ begin
       end;
   end;
 
-  if not FieldCount > 0 then
-    raise Exception.Create(Format(SFIBErrorGenerationError, [CmpFullName(Self), SQLKindNames[SK], TableName]));
-
   vpFIBTableInfo := ListTableInfo.GetTableInfo(Database, FormatTableName, False);
   if vpFIBTableInfo = nil then
-    Exit;
+    raise Exception.Create(Format(SFIBErrorGenerationError, [CmpFullName(Self), SQLKindNames[SK], TableName]));
 
   begin // begin create added where condition
     KeyFieldList := TList.Create;
     try
       GetFieldList(KeyFieldList, KeyFieldNames);
-      if KeyFieldList.Count = 0 then
-        Exit;
 
       // Validate KeyFields
       pWhereClause := '';
@@ -3077,9 +3089,10 @@ begin
     end;
   end; // end for
   if AcceptCount = 0 then
-  begin
-    Result := '';
-  end
+    case SK of
+      skModify: Result := '';
+      FIBDataSet.skInsert: Result := 'Insert into ' + FormatTableName + ' default values';
+    end
   else
     case SK of
       skModify: Result := Result + ' where ' + pWhereClause;

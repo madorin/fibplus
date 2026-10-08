@@ -218,6 +218,8 @@ function FieldUsedInClause(const TableAlias, FieldName, Clause: string): boolean
 
 function ChangeToSQLDecimalSeparator(const Source: string): string;
 function SQLStringLiteral(const S: string): string;
+// x'0A1B...', Firebird 2.5+
+function SQLHexLiteral(const Data; Size: Integer): string;
 function FieldValueToStr(Field: TField; Old: Boolean = False): string;
 { procedure GetExportDataScript(DataSet:TDataSet; const TableName:string;OutPut:TStrings; UseFieldNames:boolean =True;
   FieldList:string=''; FileName:string =''
@@ -2907,9 +2909,30 @@ begin
     Result := '''' + S + '''';
 end;
 
+function SQLHexLiteral(const Data; Size: Integer): string;
+const
+  HexDigits: array [0 .. 15] of Char = '0123456789ABCDEF';
+var
+  i: Integer;
+  P: PByte;
+begin
+  SetLength(Result, Size * 2 + 3);
+  Result[1] := 'x';
+  Result[2] := '''';
+  P := @Data;
+  for i := 0 to Size - 1 do
+  begin
+    Result[2 * i + 3] := HexDigits[P^ shr 4];
+    Result[2 * i + 4] := HexDigits[P^ and 15];
+    Inc(P);
+  end;
+  Result[Size * 2 + 3] := '''';
+end;
+
 function FieldValueToStr(Field: TField; Old: Boolean): string;
 var
   v: Variant;
+  Guid: TGUID;
 begin
   if Old then
     v := Field.OldValue
@@ -2925,7 +2948,13 @@ begin
       ftDate: Result := '''' + FormatDateTime('yyyy-mm-dd', VarToDateTime(v)) + '''';
       ftTime: Result := '''' + FormatDateTime('hh:nn:ss.zzz', VarToDateTime(v)) + '''';
       ftDateTime: Result := '''' + FormatDateTime('yyyy-mm-dd hh:nn:ss.zzz', VarToDateTime(v)) + '''';
-      ftString, ftWideString, ftMemo, ftFmtMemo, ftGuid: Result := SQLStringLiteral(VarToStr(v));
+      ftString, ftWideString, ftMemo, ftWideMemo, ftFmtMemo: Result := SQLStringLiteral(VarToStr(v));
+      ftGuid:
+        begin
+          // CHAR(16) OCTETS column: the bytes of the TGUID, as a parameter sends them
+          Guid := StringToGUID(VarToStr(v));
+          Result := SQLHexLiteral(Guid, SizeOf(Guid));
+        end;
     else
       Result := VarToStr(v)
     end

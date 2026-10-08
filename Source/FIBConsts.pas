@@ -81,6 +81,8 @@ resourcestring
   SFIBErrorUnableGetRecordCount         = '%s unable to get number of records';
   SFIBErrorUnableLock                   = 'Unable to lock record. Update query is empty';
   SFIBErrorGenerationError              = '%s: unable to generate %s because fields for "%s" do not exist in dataset.';
+  SFIBErrorExecuteBlockField            = '%s: field %s cannot be written as a literal, UseExecuteBlock does not support array and binary BLOB fields.';
+  SFIBErrorExecuteBlockRowSize          = '%s: the statement of a record (%d bytes) does not fit in an EXECUTE BLOCK of 64K, UseExecuteBlock cannot apply it.';
   SSuccess                              = 'Successful execution';
   SDelphiException                      = 'DelphiException %s';
   SNoOptionsSet                         = 'No Install Options selected';

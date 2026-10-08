@@ -108,6 +108,17 @@ Firebird 4+ statement and idle timeouts; details in `Docs/guide/timeouts.md`.
   page; lookup fields with a Unicode result field.
 - `UseExecuteBlock`: apostrophes in literals not doubled, non-ASCII text sent
   in the system code page.
+- `UseExecuteBlock`: dates, times and timestamps are written as ISO literals
+  (they depended on the locale); TIME / TIMESTAMP WITH TIME ZONE values keep
+  their zone (they were moved to the session zone); memo, GUID and emulated
+  BOOLEAN values and memo text of a column charset on a NONE connection are
+  written correctly. More than 255 records, or a block over 64K bytes (counted
+  in bytes, not characters), failed with "Token unknown". A record posted without
+  changes with `UpdateOnlyModifiedFields` failed with "Token unknown"; an insert
+  without values writes `DEFAULT VALUES`. Deleted records stayed pending after
+  the apply. `OnUpdateError` was called twice for a failed block, and the records
+  of a skipped block lost their pending state. A record that does not fit in a
+  block, and array and binary BLOB fields, now raise a clear error.
 - Text BLOB parameters set before `Prepare` sent without their charset; NONE
   and OCTETS text BLOBs decoded as UTF-8 on UTF8 connections.
 - A string parameter replaced by `AsInteger` before `Prepare` sent the string.
@@ -117,6 +128,8 @@ Firebird 4+ statement and idle timeouts; details in `Docs/guide/timeouts.md`.
   and GB18030.
 - `GetExportDataScript` wrote `ftFMTBcd` values with the locale decimal
   separator.
+- `GetExportDataScript` wrote dates in the locale format, left memo values
+  unquoted and GUID values as text instead of the 16 bytes of the column.
 - `StrUtil.FastCopy` read before the string for `Index < 1`; it now calls
   `Copy` on Delphi 2009+.
 - The `FIBPlus_XE3` package did not compile: it contained the XML export units,

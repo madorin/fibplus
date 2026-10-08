@@ -1097,6 +1097,9 @@ type
   protected
     procedure ChangeScreenCursor(var OldCursor: Integer);
     procedure RestoreScreenCursor(const OldCursor: Integer);
+    // Zone of a TIME/TIMESTAMP WITH TIME ZONE value for an SQL literal: '' for the session zone,
+    // NULL and other fields
+    function TimeZoneFieldLiteralZone(Field: TField; Old: Boolean): string;
   public
     property RunState: TDataSetRunState read FRunState;
     procedure Resync(Mode: TResyncMode); override;
@@ -1199,7 +1202,14 @@ type
     // -1 for calculated and lookup fields
     function StringFieldCharSetID(Field: TField): Integer;
     function StringFieldCodePage(Field: TField): Word;
+    // -1 for binary BLOB, calculated and lookup fields
+    function BlobFieldCharSetID(Field: TField): Integer;
     function BlobFieldCodePage(Field: TField): Word;
+    // SQL_xxx type of the column, 0 for calculated and lookup fields
+    function FieldSQLType(Field: TField): Integer;
+    // Zone of a TIME/TIMESTAMP WITH TIME ZONE value of the record the field reads, False for NULL
+    // and other fields; ExtOffset is FBUnresolvedOffset for a value not resolved by the server yet
+    function TimeZoneFieldZone(Field: TField; Old: Boolean; out ZoneID: Word; out ExtOffset: Smallint): Boolean;
 
     function ExtLocate(const KeyFields: string; const KeyValues: Variant; Options: TExtLocateOptions): Boolean;
 
@@ -8812,16 +8822,102 @@ begin
     Result := FIBCodePageSystem;
 end;
 
-function TFIBCustomDataSet.BlobFieldCodePage(Field: TField): Word;
+function TFIBCustomDataSet.BlobFieldCharSetID(Field: TField): Integer;
 var
   fi: PFIBFieldDescr;
 begin
   fi := DataFieldDescr(Self, Field);
   // text BLOB: the charset is in sqlscale
-  if (fi <> nil) and (fi^.fdSubType = 1) and Assigned(Database) then
-    Result := Database.Capabilities.BlobCodePage(Byte(fi^.fdDataScale))
+  if (fi <> nil) and (fi^.fdSubType = 1) then
+    Result := Byte(fi^.fdDataScale)
+  else
+    Result := -1;
+end;
+
+function TFIBCustomDataSet.BlobFieldCodePage(Field: TField): Word;
+var
+  CharSetID: Integer;
+begin
+  CharSetID := BlobFieldCharSetID(Field);
+  if (CharSetID >= 0) and Assigned(Database) then
+    Result := Database.Capabilities.BlobCodePage(CharSetID)
   else
     Result := FIBCodePageSystem;
+end;
+
+function TFIBCustomDataSet.FieldSQLType(Field: TField): Integer;
+var
+  fi: PFIBFieldDescr;
+begin
+  fi := DataFieldDescr(Self, Field);
+  if fi <> nil then
+    Result := fi^.fdDataType
+  else
+    Result := 0;
+end;
+
+function TFIBCustomDataSet.TimeZoneFieldZone(Field: TField; Old: Boolean; out ZoneID: Word;
+  out ExtOffset: Smallint): Boolean;
+var
+  fi: PFIBFieldDescr;
+  Buff: TRecordBuffer;
+  Allocated: Boolean;
+  Data: Pointer;
+begin
+  Result := False;
+  ZoneID := 0;
+  ExtOffset := FBUnresolvedOffset;
+  fi := TimeZoneFieldDescr(Self, Field);
+  if fi = nil then
+    Exit;
+  Allocated := (vTypeDispositionField = dfRRecNumber) or Old;
+  if vTypeDispositionField = dfRRecNumber then
+    begin
+      Buff := AllocRecordBuffer;
+      ReadRecordCache(vInspectRecno, Buff, Old);
+    end
+  else if Old then
+    Buff := GetOldBuffer
+  else
+    Buff := GetActiveBuf;
+  if Buff = nil then
+    Exit;
+  try
+    if PRecordData(Buff)^.rdFields[Field.FieldNo].fdIsNull then
+      Exit;
+    Data := Buff + fi^.fdDataOfs;
+    if fi^.fdDataType = SQL_TIME_TZ_EX then
+      begin
+        ZoneID := PISC_TIME_TZ_EX(Data)^.time_zone;
+        ExtOffset := PISC_TIME_TZ_EX(Data)^.ext_offset;
+      end
+    else
+      begin
+        ZoneID := PISC_TIMESTAMP_TZ_EX(Data)^.time_zone;
+        ExtOffset := PISC_TIMESTAMP_TZ_EX(Data)^.ext_offset;
+      end;
+    Result := True;
+  finally
+    if Allocated then
+      FreeRecordBuffer(Buff);
+  end;
+end;
+
+function TFIBCustomDataSet.TimeZoneFieldLiteralZone(Field: TField; Old: Boolean): string;
+var
+  ZoneID: Word;
+  ExtOffset: Smallint;
+begin
+  Result := '';
+  if not TimeZoneFieldZone(Field, Old, ZoneID, ExtOffset) or (ZoneID = FBSessionZoneID) then
+    Exit;
+  Result := FBTimeZoneName(ZoneID);
+  if Result = '' then
+    // a region unknown to the built-in table: its offset keeps the moment of a fetched value
+    if ExtOffset <> FBUnresolvedOffset then
+      Result := FBFormatZoneOffset(ExtOffset)
+    else
+      FIBError(feInvalidDataConversion, [nil]);
 end;
 
 {$IFDEF D_XE4}
