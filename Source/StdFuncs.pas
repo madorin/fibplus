@@ -110,7 +110,12 @@ procedure StreamToVariantArray(Stream: TMemoryStream; var Value: variant);
 function VariantToStream(Value: variant; Stream: TStream): Integer;
 { Length of Blob }
 
-function StringIsDateTimeDefValue(const S: string): Boolean; {$IFDEF D2005+} inline; {$ENDIF}
+// S uppercased and trimmed: fractional digits kept by a CURRENT_TIME[(n)], CURRENT_TIMESTAMP[(n)],
+// LOCALTIME[(n)] or LOCALTIMESTAMP[(n)] default (server defaults 0 and 3, at most 3), -1 for other values
+function DateTimeDefFunctionPrecision(const S: string): Integer;
+// Precision 0..2 cuts the milliseconds to that many fractional digits
+function TruncateDateTimePrecision(Value: TDateTime; Precision: Integer): TDateTime;
+function StringIsDateTimeDefValue(const S: string): Boolean;
 
 var
   TempPath: PAnsiChar;
@@ -184,16 +189,65 @@ begin
   end;
 end;
 
+function DateTimeDefFunctionPrecision(const S: string): Integer;
+var
+  p, i: Integer;
+  Name, Digits: string;
+begin
+  Result := -1;
+  p := Pos('(', S);
+  if p = 0 then
+    Name := S
+  else
+    Name := Trim(Copy(S, 1, p - 1));
+  if (Name = 'CURRENT_TIME') or (Name = 'LOCALTIME') then
+    Result := 0
+  else if (Name = 'CURRENT_TIMESTAMP') or (Name = 'LOCALTIMESTAMP') then
+    Result := 3
+  else
+    Exit;
+  if p = 0 then
+    Exit;
+  Result := -1;
+  if S[Length(S)] <> ')' then
+    Exit;
+  Digits := Trim(Copy(S, p + 1, Length(S) - p - 1));
+  if Digits = '' then
+    Exit;
+  for i := 1 to Length(Digits) do
+    if (Digits[i] < '0') or (Digits[i] > '9') then
+      Exit;
+  Result := StrToIntDef(Digits, 3);
+  // the value of the client keeps milliseconds
+  if Result > 3 then
+    Result := 3;
+end;
+
+function TruncateDateTimePrecision(Value: TDateTime; Precision: Integer): TDateTime;
+const
+  Divisors: array [0 .. 2] of Integer = (1000, 100, 10);
+var
+  Stamp: TTimeStamp;
+begin
+  if (Precision < 0) or (Precision > 2) then
+  begin
+    Result := Value;
+    Exit;
+  end;
+  Stamp := DateTimeToTimeStamp(Value);
+  Stamp.Time := Stamp.Time - Stamp.Time mod Divisors[Precision];
+  Result := TimeStampToDateTime(Stamp);
+end;
+
 function StringIsDateTimeDefValue(const S: string): Boolean;
 begin
-  Result := False;
-  if Length(S) > 0 then
+  Result := DateTimeDefFunctionPrecision(S) >= 0;
+  if not Result and (Length(S) > 0) then
     case S[1] of
-      'C': Result := (S = 'CURRENT_TIME') or (S = 'CURRENT_TIMESTAMP') or (S = 'CURRENT_DATE');
-      'L': Result := (S = 'LOCALTIME') or (S = 'LOCALTIMESTAMP');
+      'C': Result := S = 'CURRENT_DATE';
       'N': Result := (S = 'NULL') or (S = 'NOW');
       'T': Result := (S = 'TODAY') or (S = 'TOMORROW');
-      'Y': Result := (S = 'YESTERDAY');
+      'Y': Result := S = 'YESTERDAY';
     end;
 end;
 

@@ -141,6 +141,11 @@ Firebird 4+ statement and idle timeouts; details in `Docs/guide/timeouts.md`.
   `TStmtType` value `sSetSession`.
 - `Locate` with a Currency key on NUMERIC(10..18) columns with a scale did not
   find values above 2^53 (e.g. 12345678901234.5678).
+- `pfImportDefaultValues`: `CURRENT_TIME(n)`, `CURRENT_TIMESTAMP(n)`,
+  `LOCALTIME(n)` and `LOCALTIMESTAMP(n)` defaults failed with a conversion error
+  on insert. The value keeps the fractional digits of the default, as the
+  server does: `CURRENT_TIME` and `LOCALTIME` without a precision no longer get
+  milliseconds.
 
 ## [7.9.0] - 2026-10-01
 

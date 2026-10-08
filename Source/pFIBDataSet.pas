@@ -1158,6 +1158,7 @@ var
   PAR: TFIBXSQLVAR;
   DefValueApplied: boolean;
   GuidValue: TGUID;
+  Precision: integer;
 begin
   if (FAutoUpdateOptions.WhenGetGenID = wgOnNewRecord) then
     IncGenerator
@@ -1211,8 +1212,11 @@ begin
                 if de <> 'NULL' then
                   if Fields[i] is TDateTimeField then
                   begin
-                    if StringInArray(de, ['NOW', 'CURRENT_TIME',
-                      'CURRENT_TIMESTAMP', 'LOCALTIME', 'LOCALTIMESTAMP']) then
+                    Precision := DateTimeDefFunctionPrecision(de);
+                    if Precision >= 0 then
+                      // the fractional digits the server default would keep
+                      asDateTime := TruncateDateTimePrecision(Now - vDifferenceTime, Precision)
+                    else if de = 'NOW' then
                       asDateTime := Now - vDifferenceTime
                     else if StringInArray(de, ['TODAY', 'CURRENT_DATE']) then
                       asDateTime := Trunc(Now - vDifferenceTime)
