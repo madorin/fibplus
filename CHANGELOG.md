@@ -285,6 +285,10 @@ server limits them with `MaxParallelWorkers` in `firebird.conf` (default 1).
 - `TpFIBScripter` with `UseExecBlockForDML`: a statement too long for a block
   was dropped; `EXECUTE BLOCK` and `EXECUTE PROCEDURE` statements were nested
   into a block.
+- `TpFIBClientDataSet.TransactionIsActive` always raised "Invalid argument":
+  `TpFIBDataSet` did not return the transaction state to the client. After a
+  failed `Commit` or `RollBack`, the next execute without a command text ran
+  the commit or rollback again instead of the dataset's SQL.
 
 ## [7.9.0] - 2026-10-01
 

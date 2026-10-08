@@ -73,6 +73,8 @@ type
 
     FMidasCommandText: Widestring;
     FMidasOutParams: TParams;
+    FMidasOutParamsPending: Boolean;
+    procedure ClearMidasCommand;
     procedure SetContainer(Value: TDataSetsContainer);
 {$IFDEF USE_DEPRECATE_METHODS2}
     procedure SetReceiveEvents(Value: TStrings);
@@ -414,6 +416,7 @@ begin
     FExecBlockStatement.Free;
   if Assigned(FParams) then
     FParams.Free;
+  FMidasOutParams.Free;
   if FGeneratorBeUsed then
     FreeHandleCachedQuery(Database, 'select gen_id(' + FAutoUpdateOptions.GeneratorName + ', ' +
       IntToStr(FAutoUpdateOptions.GeneratorStep) + ') from RDB$DATABASE');
@@ -3954,18 +3957,12 @@ procedure TpFIBDataSet.PSSetCommandText(const CommandText: Widestring);
 procedure TpFIBDataSet.PSSetCommandText(const CommandText: string);
 {$ENDIF}
 begin
-  FMidasCommandText := '';
-  if CommandText <> '' then
-  begin
-    if CommandText = 'FIB$COMMIT' then
-      FMidasCommandText := CommandText
-    else if CommandText = 'FIB$ROLLBACK' then
-      FMidasCommandText := CommandText
-    else if CommandText = 'FIB$GET_INTRANSACTION' then
-      FMidasCommandText := CommandText
-    else
-      SelectSQL.Text := CommandText;
-  end
+  ClearMidasCommand;
+  if (CommandText = FIBCommitCommand) or (CommandText = FIBRollbackCommand) or
+    (CommandText = FIBInTransactionCommand) then
+    FMidasCommandText := CommandText
+  else if CommandText <> '' then
+    SelectSQL.Text := CommandText;
 end;
 
 {$IFDEF TWideDataSet}
@@ -4276,9 +4273,16 @@ begin
 
 end;
 
+procedure TpFIBDataSet.ClearMidasCommand;
+begin
+  FMidasCommandText := '';
+  FMidasOutParamsPending := False;
+end;
+
 procedure TpFIBDataSet.PSReset;
 begin
   inherited PSReset;
+  ClearMidasCommand;
   if Active then
   begin
     CloseOpen(False)
@@ -4286,15 +4290,29 @@ begin
 end;
 
 procedure TpFIBDataSet.PSExecute;
+var
+  Command: WideString;
 begin
-  if FMidasCommandText = 'FIB$COMMIT' then
-    UpdateTransaction.Commit
-  else if FMidasCommandText = 'FIB$ROLLBACK' then
-    UpdateTransaction.RollBack
-  else if FMidasCommandText = 'FIB$GET_INTRANSACTION' then
-    //
+  if FMidasCommandText = '' then
+  begin
+    QSelect.ExecQuery;
+    Exit;
+  end;
+  // cleared first, so a failed command is not run again by the next empty command text
+  Command := FMidasCommandText;
+  ClearMidasCommand;
+  if FMidasOutParams = nil then
+    FMidasOutParams := TParams.Create
   else
-    QSelect.ExecQuery
+    FMidasOutParams.Clear;
+  if Command = FIBCommitCommand then
+    UpdateTransaction.Commit
+  else if Command = FIBRollbackCommand then
+    UpdateTransaction.RollBack
+  else
+    FMidasOutParams.CreateParam(ftBoolean, FIBInTransactionParam, ptOutput).AsBoolean :=
+      UpdateTransaction.InTransaction;
+  FMidasOutParamsPending := True;
 end;
 
 function TpFIBDataSet.PSGetParams: TParams;
@@ -4305,20 +4323,14 @@ var
 begin
   if FMidasCommandText <> '' then
   begin
-    if (FMidasOutParams = nil) then
-      FMidasOutParams := TParams.Create
-    else
-      FMidasOutParams.Clear;
-
+    Result := nil;
+    Exit;
+  end;
+  if FMidasOutParamsPending then
+  begin
+    // the provider reads the output of a command once, right after PSExecute
+    FMidasOutParamsPending := False;
     Result := FMidasOutParams;
-
-    if FMidasCommandText = 'GET_INTRANSACTION' then
-    begin
-      CurParam := FMidasOutParams.CreateParam(ftBoolean, 'Active', ptOutput);
-      CurParam.AsBoolean := UpdateTransaction.InTransaction
-    end;
-
-    FMidasCommandText := '';
     Exit;
   end;
 

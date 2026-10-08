@@ -31,6 +31,7 @@ type
 
   TpFIBClientDataSet = class(TClientDataSet, ISQLObject)
   protected
+    function ExecuteServerCommand(const Command: string): OleVariant;
     function GetFieldClass(FieldType: TFieldType): TFieldClass; override;
     procedure DataConvert(Field: TField; Source, Dest: Pointer; ToNative: Boolean); override;
     // ISQLObject
@@ -118,38 +119,39 @@ type
 
   { TpFIBClientDataSet }
 
-procedure TpFIBClientDataSet.Commit;
+function TpFIBClientDataSet.ExecuteServerCommand(const Command: string): OleVariant;
 var
   DummyOwnerData: OleVariant;
-  DummyParams: OleVariant;
 begin
+  Result := Unassigned;
   if Assigned(AppServer) then
-    AppServer.AS_Execute(ProviderName, 'FIB$COMMIT', DummyParams, DummyOwnerData);
+    AppServer.AS_Execute(ProviderName, Command, Result, DummyOwnerData);
+end;
+
+procedure TpFIBClientDataSet.Commit;
+begin
+  ExecuteServerCommand(FIBCommitCommand);
 end;
 
 procedure TpFIBClientDataSet.RollBack;
-var
-  DummyOwnerData: OleVariant;
-  DummyParams: OleVariant;
 begin
-  if Assigned(AppServer) then
-    AppServer.AS_Execute(ProviderName, 'FIB$ROLLBACK', DummyParams, DummyOwnerData);
+  ExecuteServerCommand(FIBRollbackCommand);
 end;
 
 function TpFIBClientDataSet.TransactionIsActive: Boolean;
 var
-  DummyOwnerData: OleVariant;
-  Params: OleVariant;
-  v: variant;
+  OutParams: TParams;
 begin
-  if Assigned(AppServer) then
-  begin
-    AppServer.AS_Execute(ProviderName, 'FIB$GET_INTRANSACTION', Params, DummyOwnerData);
-    v := Params[0];
-    Result := v[1];
-  end
-  else
-    Result := False
+  Result := False;
+  if not Assigned(AppServer) then
+    Exit;
+  OutParams := TParams.Create;
+  try
+    UnpackParams(ExecuteServerCommand(FIBInTransactionCommand), OutParams);
+    Result := OutParams.ParamByName(FIBInTransactionParam).AsBoolean;
+  finally
+    OutParams.Free;
+  end;
 end;
 
 procedure TpFIBClientDataSet.DataConvert(Field: TField; Source, Dest: Pointer; ToNative: Boolean);

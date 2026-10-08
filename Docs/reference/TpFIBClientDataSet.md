@@ -37,9 +37,9 @@ Guides: [Datasets and caching](../guide/datasets-and-caching.md).
 | `OpenWP(ParamValues)` | Assigns `ParamValues` to `Params` in order, then calls `Open`. Extra values are ignored; parameters without a value keep theirs. |
 | `Commit` | Asks the application server to commit the transaction of the provider's dataset. Does nothing when `AppServer` is not assigned. |
 | `RollBack` | Asks the application server to roll that transaction back. Does nothing when `AppServer` is not assigned. |
-| `TransactionIsActive` | Calls the application server with the command `FIB$GET_INTRANSACTION` and returns the result. Returns `False` when `AppServer` is not assigned. |
+| `TransactionIsActive` | Calls the application server with the command `FIB$GET_INTRANSACTION` and returns whether the update transaction of the provider's dataset is active (the output parameter `Active`). Returns `False` when `AppServer` is not assigned; raises an error when the provider returns no `Active` parameter (a dataset that is not a `TpFIBDataSet`). |
 
-`Commit` and `RollBack` call `AppServer.AS_Execute` with the command text `FIB$COMMIT` or `FIB$ROLLBACK` and the current `ProviderName`. The provider's dataset must be a `TpFIBDataSet`: it recognizes these commands and runs `UpdateTransaction.Commit` or `UpdateTransaction.RollBack`.
+`Commit` and `RollBack` call `AppServer.AS_Execute` with the command text `FIB$COMMIT` or `FIB$ROLLBACK` and the current `ProviderName`. The provider's dataset must be a `TpFIBDataSet`: it recognizes these commands and runs `UpdateTransaction.Commit` or `UpdateTransaction.RollBack`. The command texts are the constants `FIBCommitCommand`, `FIBRollbackCommand` and `FIBInTransactionCommand` of `pFIBInterfaces`.
 
 The three transaction methods send a command text to the provider. The standard `TDataSetProvider` accepts a command text from a client only when `poAllowCommandText` is in the provider's `Options`; otherwise it raises an error. This rule comes from the standard provider, not from FibPlus.
 

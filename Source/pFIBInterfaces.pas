@@ -22,6 +22,13 @@ interface
 uses
   Types, Classes, DB, StrUtil;
 
+const
+  // Command texts of TpFIBClientDataSet, run by TpFIBDataSet on the application server
+  FIBCommitCommand = 'FIB$COMMIT';
+  FIBRollbackCommand = 'FIB$ROLLBACK';
+  FIBInTransactionCommand = 'FIB$GET_INTRANSACTION';
+  FIBInTransactionParam = 'Active';
+
 type
 
   ISQLObject = interface
