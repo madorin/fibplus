@@ -120,7 +120,7 @@ Destroying a component that is attached detaches it.
 
 ### Login
 
-When `LoginPrompt` is `True`, `Attach` calls `OnLogin` if it is assigned. Otherwise it calls the login dialog registered in `pFIBLoginDialog` (set up by the login dialog units) with the `user_name`, `password`, and `sql_role_name` entries of `Params`, and writes the result back. The lookup of these entries in `Params` is case-sensitive, so an entry such as `User_Name=` is not found and the dialog path adds a second `user_name=` line. When neither is available, the login counts as cancelled and `Attach` raises `feOperationCancelled`. Set `LoginPrompt := False` and fill `Params` to attach without a dialog.
+When `LoginPrompt` is `True`, `Attach` calls `OnLogin` if it is assigned. Otherwise it calls the login dialog registered in `pFIBLoginDialog` (set up by the login dialog units) with the `user_name`, `password`, and `sql_role_name` entries of `Params`, and writes the result back. These entries are found as `Attach` reads them: case-insensitive, with or without the `isc_spb_` prefix. When neither is available, the login counts as cancelled and `Attach` raises `feOperationCancelled`. Set `LoginPrompt := False` and fill `Params` to attach without a dialog.
 
 ### Protected members
 
@@ -325,7 +325,7 @@ Backs up a database with the server's backup service.
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | `DatabaseName` | `string` | | Database to back up. Required; `ServiceStart` raises `feStartParamsError` when empty. |
-| `BackupFile` | `TStrings` | | Backup files, one per line. A line is a file name. A line `name=length` also sends a file length, but the code reads only as many characters of the length as the file name has, so use it only with names at least as long as the number. Empty lines are skipped. |
+| `BackupFile` | `TStrings` | | Backup files, one per line. A line is a file name. A line `name=length` also sends a file length. Empty lines are skipped. |
 | `BlockingFactor` | `Integer` | | Blocking factor. Sent only when greater than `0`. |
 | `Options` | `TBackupOptions` | | Backup flags, see below. |
 | `ParallelWorkers` | `Integer` | `0` | *Firebird 5+*. Parallel workers for the backup. Sent only when greater than `0`; the server limits it to `MaxParallelWorkers`. |
@@ -423,7 +423,7 @@ Restores a database from incremental backup files. The source comment marks this
 
 | Name | Description |
 |------|-------------|
-| `Restore(aBackUpFiles, DbName)` | Set `DatabaseName` and `BackupFiles`, attach, start, and detach again. Do not use it: its loop runs one element past the end of `aBackUpFiles`. Set `DatabaseName` and `BackupFiles` and call `ServiceStart` instead. |
+| `Restore(aBackUpFiles, DbName)` | Set `DatabaseName` and `BackupFiles`, attach, start, and detach again. |
 
 ## TpFIBValidationService
 
@@ -460,10 +460,10 @@ Validates and repairs a database, sweeps it, and lists or resolves limbo transac
 
 | Name | Type | Description |
 |------|------|-------------|
-| `LimboTransactionInfo[Index]` | `TLimboTransactionInfo` | One limbo transaction. `nil` when `Index` is past the end. |
-| `LimboTransactionInfoCount` | `Integer` | Number of entries read by `FetchLimboTransactionInfo`; `-1` when none were read. |
-| `FetchLimboTransactionInfo` | method | Read the limbo transactions from the server. |
-| `FixLimboTransactionErrors` | method | Start a repair that commits or rolls back the listed transactions. With `NoGlobalAction`, each entry uses its own `Action`. With `CommitGlobal`, all are committed; with any other value, all are rolled back. After `FetchLimboTransactionInfo` returned entries, the loop reads one nil entry past the last one and fails with an access violation; do not call it after a fetch. |
+| `LimboTransactionInfo[Index]` | `TLimboTransactionInfo` | One limbo transaction. An `Index` out of range raises `EListError`. |
+| `LimboTransactionInfoCount` | `Integer` | Number of entries read by `FetchLimboTransactionInfo`. |
+| `FetchLimboTransactionInfo` | method | Read the limbo transactions from the server. When the reply can't be parsed, it raises and the list is left empty. |
+| `FixLimboTransactionErrors` | method | Start a repair of the listed transactions. With `NoGlobalAction`, each entry uses its own `Action`. `CommitGlobal` commits all, `RollbackGlobal` rolls back all, and `RecoverTwoPhaseGlobal` sends them to two-phase recovery (`isc_spb_rpr_recover_two_phase`). |
 
 `TLimboTransactionInfo` fields: `MultiDatabase`, `Id`, `HostSite`, `RemoteSite`, `RemoteDatabasePath`, `State` (`LimboState`, `CommitState`, `RollbackState`, `UnknownState`), `Advise` (`CommitAdvise`, `RollbackAdvise`, `UnknownAdvise`), and `Action` (`CommitAction`, `RollbackAction`). `HostSite`, `RemoteSite`, `RemoteDatabasePath`, `State`, and `Advise` are filled only for multi-database transactions. Without an advice, `Action` is `CommitAction`.
 
@@ -496,15 +496,15 @@ end;
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `SecurityAction` | `TSecurityAction` | | `ActionAddUser`, `ActionDeleteUser`, `ActionModifyUser`, or `ActionDisplayUser`. The methods below set it. Setting `ActionDeleteUser` clears `FirstName`, `MiddleName`, `LastName`, `UserID`, `GroupID`, and `Password`. |
+| `SecurityAction` | `TSecurityAction` | | `ActionAddUser`, `ActionDeleteUser`, `ActionModifyUser`, or `ActionDisplayUser`. The methods below set it. Setting `ActionDeleteUser` clears `FirstName`, `MiddleName`, `LastName`, `UserID`, `GroupID`, `Password`, and `SecAdmin`. |
 | `UserName` | `string` | | User to add, delete, or modify. Required for those actions. A name with a space is rejected when adding. |
 | `SQlRole` | `string` | | SQL role sent with the action. Also the role for `DisplayUsers`. |
 | `FirstName`, `MiddleName`, `LastName` | `string` | | Name parts. |
 | `UserID`, `GroupID` | `Integer` | | Numeric user and group IDs. |
 | `Password` | `string` | | Password. |
-| `SecAdmin` | `Boolean` | `False` | Marks the user as a security administrator. |
+| `SecAdmin` | `Boolean` | `False` | Marks the user as a security administrator. Sent only when set since the last action, also to `False` to revoke the rights. |
 
-Text values are sent UTF-8 encoded. When modifying, only the properties set since the last action are sent. `UserID` and `GroupID` are always sent when adding. When `ServiceStart` runs (also through `AddUser`, `ModifyUser`, and `DeleteUser`), and when the component finishes loading, `FirstName`, `MiddleName`, `LastName`, `UserID`, `GroupID`, and `Password` are cleared; `UserName`, `SQlRole`, and `SecAdmin` are kept.
+Text values are sent UTF-8 encoded. When modifying, only the properties set since the last action are sent. `UserID` and `GroupID` are always sent when adding. After a successful `ServiceStart` (also through `AddUser`, `ModifyUser`, and `DeleteUser`), and when the component finishes loading, `FirstName`, `MiddleName`, `LastName`, `UserID`, `GroupID`, `Password`, and `SecAdmin` are cleared; `UserName` and `SQlRole` are kept. When the call fails they are kept, so it can be retried; a server error detaches the service, so call `Attach` again first.
 
 ### Run-time properties and methods
 
@@ -515,8 +515,8 @@ Text values are sent UTF-8 encoded. When modifying, only the properties set sinc
 | `DeleteUser` | method | Delete the user `UserName`. |
 | `DisplayUsers` | method | Read all users into `UserInfo`. Uses `SQlRole`. |
 | `DisplayUser(UserName)` | method | Read one user into `UserInfo`. |
-| `UserInfo[Index]` | `TUserInfo` | One user: `UserName`, `FirstName`, `MiddleName`, `LastName`, `GroupID`, `UserID`. `nil` when `Index` is past the end. |
-| `UserInfoCount` | `Integer` | Number of users read; `-1` when none were read. |
+| `UserInfo[Index]` | `TUserInfo` | One user: `UserName`, `FirstName`, `MiddleName`, `LastName`, `GroupID`, `UserID`. An `Index` out of range raises `EListError`. |
+| `UserInfoCount` | `Integer` | Number of users read. |
 
 ## Install API header
 

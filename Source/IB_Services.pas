@@ -234,6 +234,7 @@ type
     procedure SetServiceStartOptions; virtual;
     procedure ServiceStartAddParam(Value: AnsiString; param: Integer); overload;
     procedure ServiceStartAddParam(Value: Integer; param: Integer); overload;
+    procedure ServiceStartAddFiles(Files: TStrings; FileParam, LengthParam: Integer);
     procedure InternalServiceStart;
 
   public
@@ -496,7 +497,8 @@ type
     FLimboTransactionInfo: array of TLimboTransactionInfo;
     FGlobalAction: TTransactionGlobalAction;
     procedure SetDatabaseName(const Value: string);
-    function GetLimboTransactionInfo(index: Integer): TLimboTransactionInfo;
+    procedure ClearLimboTransactionInfo;
+    function GetLimboTransactionInfo(Index: Integer): TLimboTransactionInfo;
     function GetLimboTransactionInfoCount: Integer;
 
   protected
@@ -563,7 +565,8 @@ type
     procedure SetGroupId(Value: Integer);
     procedure SetSecAdmin(Value: Boolean);
     procedure FetchUserInfo;
-    function GetUserInfo(index: Integer): TUserInfo;
+    procedure ClearUserInfo;
+    function GetUserInfo(Index: Integer): TUserInfo;
     function GetUserInfoCount: Integer;
 
   protected
@@ -576,6 +579,7 @@ type
     procedure AddUser;
     procedure DeleteUser;
     procedure ModifyUser;
+    procedure ServiceStart; override;
     property UserInfo[Index: Integer]: TUserInfo read GetUserInfo;
     property UserInfoCount: Integer read GetUserInfoCount;
 
@@ -599,11 +603,19 @@ implementation
 {$IFDEF  INC_SERVICE_SUPPORT}
 
 uses
-  StrUtil,
+  RTLConsts, StrUtil,
 {$IFNDEF NO_MONITOR}
   FIBSQLMonitor,
 {$ENDIF}
   fib;
+
+// Lower case, without the 'isc_spb_' prefix, as in SPBConstantNames
+function NormalizeSPBName(const Name: String): String;
+begin
+  Result := LowerCase(Name);
+  if Pos(SPBPrefix, Result) = 1 then
+    Delete(Result, 1, Length(SPBPrefix));
+end;
 
 { TpFIBCustomService }
 
@@ -920,18 +932,15 @@ end;
 
 function TpFIBCustomService.IndexOfSPBConst(st: String): Integer;
 var
-  i, pos_of_str: Integer;
+  i: Integer;
 begin
-  result := -1;
   for i := 0 to Params.Count - 1 do
-  begin
-    pos_of_str := Pos(st, Params[i]); { mbcs ok }
-    if (pos_of_str = 1) or (pos_of_str = Length(SPBPrefix) + 1) then
+    if NormalizeSPBName(Params.Names[i]) = st then
     begin
-      result := i;
-      break;
+      Result := i;
+      Exit;
     end;
-  end;
+  Result := -1;
 end;
 
 procedure TpFIBCustomService.ParamsChange(Sender: TObject);
@@ -1013,10 +1022,8 @@ begin
       no leading 'isc_spb_' prefix }
     if (Trim(sl.Names[i]) = '') then
       continue;
-    param_name := LowerCase(sl.Names[i]); { mbcs ok }
+    param_name := NormalizeSPBName(sl.Names[i]);
     param_value := Copy(sl[i], Pos('=', sl[i]) + 1, Length(sl[i])); { mbcs ok }
-    if (Pos(SPBPrefix, param_name) = 1) then { mbcs ok }
-      Delete(param_name, 1, Length(SPBPrefix));
     { We want to translate the parameter name to some integer
       value. We do this by scanning through a list of known
       service parameter names (SPBConstantNames, defined above). }
@@ -1344,6 +1351,28 @@ begin
     PAnsiChar(@Value)[1] + PAnsiChar(@Value)[2] + PAnsiChar(@Value)[3];
 end;
 
+// Each line is a file name, or name=length for a multi-file backup or database
+procedure TpFIBControlService.ServiceStartAddFiles(Files: TStrings; FileParam, LengthParam: Integer);
+var
+  i, EqualsPos: Integer;
+  Line: String;
+begin
+  for i := 0 to Files.Count - 1 do
+  begin
+    Line := Files[i];
+    if Trim(Line) = '' then
+      Continue;
+    EqualsPos := Pos('=', Line);
+    if EqualsPos = 0 then
+      ServiceStartAddParam(Line, FileParam)
+    else
+    begin
+      ServiceStartAddParam(Trim(Copy(Line, 1, EqualsPos - 1)), FileParam);
+      ServiceStartAddParam(StrToInt(Trim(Copy(Line, EqualsPos + 1, MaxInt))), LengthParam);
+    end;
+  end;
+end;
+
 procedure TpFIBControlService.InternalServiceStart;
 begin
   FStartSPBLength := Length(FStartParams);
@@ -1552,50 +1581,36 @@ end;
 { TpFIBBackupService }
 procedure TpFIBBackupService.SetServiceStartOptions;
 var
-  param, i: Integer;
-  Value: String;
+  Param: Integer;
 begin
   if FDatabaseName = '' then
     FIBError(feStartParamsError, [nil]);
-  param := 0;
+  Param := 0;
   if (IgnoreChecksums in Options) then
-    param := param or isc_spb_bkp_ignore_checksums;
+    Param := Param or isc_spb_bkp_ignore_checksums;
   if (IgnoreLimbo in Options) then
-    param := param or isc_spb_bkp_ignore_limbo;
+    Param := Param or isc_spb_bkp_ignore_limbo;
   if (MetadataOnly in Options) then
-    param := param or isc_spb_bkp_metadata_only;
+    Param := Param or isc_spb_bkp_metadata_only;
   if (NoGarbageCollection in Options) then
-    param := param or isc_spb_bkp_no_garbage_collect;
+    Param := Param or isc_spb_bkp_no_garbage_collect;
   if (OldMetadataDesc in Options) then
-    param := param or isc_spb_bkp_old_descriptions;
+    Param := Param or isc_spb_bkp_old_descriptions;
   if (NonTransportable in Options) then
-    param := param or isc_spb_bkp_non_transportable;
+    Param := Param or isc_spb_bkp_non_transportable;
   if (ConvertExtTables in Options) then
-    param := param or isc_spb_bkp_convert;
+    Param := Param or isc_spb_bkp_convert;
   Action := isc_action_svc_backup;
   ServiceStartParams := AnsiChar(isc_action_svc_backup);
   ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
-  ServiceStartAddParam(param, SPBConstantValues[isc_spb_options]);
+  ServiceStartAddParam(Param, SPBConstantValues[isc_spb_options]);
   if Verbose then
     ServiceStartParams := ServiceStartParams + AnsiChar(SPBConstantValues[isc_spb_verbose]);
   if FBlockingFactor > 0 then
     ServiceStartAddParam(FBlockingFactor, isc_spb_bkp_factor);
   if ParallelWorkers > 0 then
     ServiceStartAddParam(ParallelWorkers, isc_spb_bkp_parallel_workers);
-  for i := 0 to FBackupFile.Count - 1 do
-  begin
-    if (Trim(FBackupFile[i]) = '') then
-      continue;
-    if (Pos('=', FBackupFile[i]) <> 0) then
-    begin { mbcs ok }
-      ServiceStartAddParam(FBackupFile.Names[i], isc_spb_bkp_file);
-      Value := Copy(FBackupFile[i], Pos('=', FBackupFile[i]) + 1, Length(FBackupFile.Names[i])); { mbcs ok }
-      param := StrToInt(Value);
-      ServiceStartAddParam(param, isc_spb_bkp_length);
-    end
-    else
-      ServiceStartAddParam(FBackupFile[i], isc_spb_bkp_file);
-  end;
+  ServiceStartAddFiles(FBackupFile, isc_spb_bkp_file, isc_spb_bkp_length);
 end;
 
 constructor TpFIBBackupService.Create(AOwner: TComponent);
@@ -1619,32 +1634,31 @@ end;
 
 procedure TpFIBRestoreService.SetServiceStartOptions;
 var
-  param, i: Integer;
-  Value: String;
+  Param: Integer;
 begin
-  param := 0;
+  Param := 0;
   if (DeactivateIndexes in Options) then
-    param := param or isc_spb_res_deactivate_idx;
+    Param := Param or isc_spb_res_deactivate_idx;
   if (NoShadow in Options) then
-    param := param or isc_spb_res_no_shadow;
+    Param := Param or isc_spb_res_no_shadow;
   if (NoValidityCheck in Options) then
-    param := param or isc_spb_res_no_validity;
+    Param := Param or isc_spb_res_no_validity;
   if (OneRelationAtATime in Options) then
-    param := param or isc_spb_res_one_at_a_time;
+    Param := Param or isc_spb_res_one_at_a_time;
   if (Replace in Options) then
-    param := param or isc_spb_res_replace;
+    Param := Param or isc_spb_res_replace;
   if (CreateNewDB in Options) then
-    param := param or isc_spb_res_create;
+    Param := Param or isc_spb_res_create;
   if (UseAllSpace in Options) then
-    param := param or isc_spb_res_use_all_space;
+    Param := Param or isc_spb_res_use_all_space;
   if (ValidationCheck in Options) then
-    param := param or isc_spb_res_validate;
+    Param := Param or isc_spb_res_validate;
   if (OnlyMetadata in Options) then
-    param := param or isc_spb_bkp_metadata_only;
+    Param := Param or isc_spb_bkp_metadata_only;
 
   Action := isc_action_svc_restore;
   ServiceStartParams := AnsiChar(isc_action_svc_restore);
-  ServiceStartAddParam(param, SPBConstantValues[isc_spb_options]);
+  ServiceStartAddParam(Param, SPBConstantValues[isc_spb_options]);
   if Verbose then
     ServiceStartParams := ServiceStartParams + AnsiChar(SPBConstantValues[isc_spb_verbose]);
 
@@ -1662,34 +1676,8 @@ begin
     ServiceStartAddParam(FPageBuffers, isc_spb_res_buffers);
   if ParallelWorkers > 0 then
     ServiceStartAddParam(ParallelWorkers, isc_spb_res_parallel_workers);
-  for i := 0 to FBackupFile.Count - 1 do
-  begin
-    if (Trim(FBackupFile[i]) = '') then
-      continue;
-    if (Pos('=', FBackupFile[i]) <> 0) then { mbcs ok }
-    begin
-      ServiceStartAddParam(FBackupFile.Names[i], isc_spb_bkp_file);
-      Value := Copy(FBackupFile[i], Pos('=', FBackupFile[i]) + 1, Length(FBackupFile.Names[i])); { mbcs ok }
-      param := StrToInt(Value);
-      ServiceStartAddParam(param, isc_spb_bkp_length);
-    end
-    else
-      ServiceStartAddParam(FBackupFile[i], isc_spb_bkp_file);
-  end;
-  for i := 0 to FDatabaseName.Count - 1 do
-  begin
-    if (Trim(FDatabaseName[i]) = '') then
-      continue;
-    if (Pos('=', FDatabaseName[i]) <> 0) then { mbcs ok }
-    begin
-      ServiceStartAddParam(FDatabaseName.Names[i], SPBConstantValues[isc_spb_dbname]);
-      Value := Copy(FDatabaseName[i], Pos('=', FDatabaseName[i]) + 1, Length(FDatabaseName[i])); { mbcs ok }
-      param := StrToInt(Value);
-      ServiceStartAddParam(param, isc_spb_res_length);
-    end
-    else
-      ServiceStartAddParam(FDatabaseName[i], SPBConstantValues[isc_spb_dbname]);
-  end;
+  ServiceStartAddFiles(FBackupFile, isc_spb_bkp_file, isc_spb_bkp_length);
+  ServiceStartAddFiles(FDatabaseName, SPBConstantValues[isc_spb_dbname], isc_spb_res_length);
 end;
 
 constructor TpFIBRestoreService.Create(AOwner: TComponent);
@@ -1789,7 +1777,7 @@ var
 begin
   DatabaseName := DbName;
   BackupFiles.Clear;
-  for i := 0 to Length(aBackUpFiles) do
+  for i := 0 to High(aBackUpFiles) do
     BackupFiles.Add(aBackUpFiles[i]);
 
   try
@@ -1808,13 +1796,18 @@ begin
 end;
 
 destructor TpFIBValidationService.Destroy;
+begin
+  ClearLimboTransactionInfo;
+  inherited Destroy;
+end;
+
+procedure TpFIBValidationService.ClearLimboTransactionInfo;
 var
   i: Integer;
 begin
   for i := 0 to High(FLimboTransactionInfo) do
     FLimboTransactionInfo[i].Free;
   FLimboTransactionInfo := nil;
-  inherited Destroy;
 end;
 
 procedure TpFIBValidationService.FetchLimboTransactionInfo;
@@ -1828,124 +1821,113 @@ begin
   if (OutputBuffer[RunLen] <> AnsiChar(isc_info_svc_limbo_trans)) then
     FIBError(feOutputParsingError, [nil]);
   Inc(RunLen, 3);
-  for i := 0 to High(FLimboTransactionInfo) do
-    FLimboTransactionInfo[i].Free;
-  FLimboTransactionInfo := nil;
+  ClearLimboTransactionInfo;
   i := 0;
-  while (OutputBuffer[RunLen] <> AnsiChar(isc_info_end)) do
-  begin
-    if (i >= Length(FLimboTransactionInfo)) then
-      SetLength(FLimboTransactionInfo, i + 10);
-    if FLimboTransactionInfo[i] = nil then
-      FLimboTransactionInfo[i] := TLimboTransactionInfo.Create;
-    with FLimboTransactionInfo[i] do
+  try
+    while (OutputBuffer[RunLen] <> AnsiChar(isc_info_end)) do
     begin
-      if (OutputBuffer[RunLen] = AnsiChar(isc_spb_single_tra_id)) then
+      if (i >= Length(FLimboTransactionInfo)) then
+        SetLength(FLimboTransactionInfo, i + 10);
+      FLimboTransactionInfo[i] := TLimboTransactionInfo.Create;
+      with FLimboTransactionInfo[i] do
       begin
-        Inc(RunLen);
-        MultiDatabase := False;
-        Id := ParseInteger(RunLen);
+        if (OutputBuffer[RunLen] = AnsiChar(isc_spb_single_tra_id)) then
+        begin
+          Inc(RunLen);
+          MultiDatabase := False;
+          Id := ParseInteger(RunLen);
 
-        { HostSite := ParseString(RunLen);
+          { HostSite := ParseString(RunLen);
+            if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_tra_state)) then
+            FIBError(feOutputParsingError, [nil]); }
+
+        end
+        else
+        begin
+          Inc(RunLen);
+          MultiDatabase := True;
+          Id := ParseInteger(RunLen);
+          HostSite := ParseString(RunLen);
           if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_tra_state)) then
-          FIBError(feOutputParsingError, [nil]); }
-
-      end
-      else
-      begin
-        Inc(RunLen);
-        MultiDatabase := True;
-        Id := ParseInteger(RunLen);
-        HostSite := ParseString(RunLen);
-        if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_tra_state)) then
-          FIBError(feOutputParsingError, [nil]);
-        Inc(RunLen);
-        Value := OutputBuffer[RunLen];
-        Inc(RunLen);
-        if (Value = AnsiChar(isc_spb_tra_state_limbo)) then
-          State := LimboState
-        else if (Value = AnsiChar(isc_spb_tra_state_commit)) then
-          State := CommitState
-        else if (Value = AnsiChar(isc_spb_tra_state_rollback)) then
-          State := RollbackState
-        else
-          State := UnknownState;
-        RemoteSite := ParseString(RunLen);
-        RemoteDatabasePath := ParseString(RunLen);
-        Value := OutputBuffer[RunLen];
-        Inc(RunLen);
-        if (Value = AnsiChar(isc_spb_tra_advise_commit)) then
-        begin
-          Advise := CommitAdvise;
-          Action := CommitAction;
-        end
-        else if (Value = AnsiChar(isc_spb_tra_advise_rollback)) then
-        begin
-          Advise := RollbackAdvise;
-          Action := RollbackAction;
-        end
-        else
-        begin
-          { if no advice commit as default }
-          Advise := UnknownAdvise;
-          Action := CommitAction;
+            FIBError(feOutputParsingError, [nil]);
+          Inc(RunLen);
+          Value := OutputBuffer[RunLen];
+          Inc(RunLen);
+          if (Value = AnsiChar(isc_spb_tra_state_limbo)) then
+            State := LimboState
+          else if (Value = AnsiChar(isc_spb_tra_state_commit)) then
+            State := CommitState
+          else if (Value = AnsiChar(isc_spb_tra_state_rollback)) then
+            State := RollbackState
+          else
+            State := UnknownState;
+          RemoteSite := ParseString(RunLen);
+          RemoteDatabasePath := ParseString(RunLen);
+          Value := OutputBuffer[RunLen];
+          Inc(RunLen);
+          if (Value = AnsiChar(isc_spb_tra_advise_commit)) then
+          begin
+            Advise := CommitAdvise;
+            Action := CommitAction;
+          end
+          else if (Value = AnsiChar(isc_spb_tra_advise_rollback)) then
+          begin
+            Advise := RollbackAdvise;
+            Action := RollbackAction;
+          end
+          else
+          begin
+            { if no advice commit as default }
+            Advise := UnknownAdvise;
+            Action := CommitAction;
+          end;
         end;
+        Inc(i);
       end;
-      Inc(i);
     end;
+  except
+    ClearLimboTransactionInfo;
+    raise;
   end;
-  if (i > 0) then
-    SetLength(FLimboTransactionInfo, i + 1);
+  SetLength(FLimboTransactionInfo, i);
 end;
 
 procedure TpFIBValidationService.FixLimboTransactionErrors;
 var
-  i: Integer;
+  i, RepairParam: Integer;
 begin
   ServiceStartParams := AnsiChar(isc_action_svc_repair);
   ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
-  if (FGlobalAction = NoGlobalAction) then
+  for i := 0 to High(FLimboTransactionInfo) do
   begin
-    i := 0;
-    while (i < Length(FLimboTransactionInfo)) and (FLimboTransactionInfo[i].Id <> 0) do
-    begin
-      if (FLimboTransactionInfo[i].Action = CommitAction) then
-        ServiceStartAddParam(FLimboTransactionInfo[i].Id, isc_spb_rpr_commit_trans)
-      else
-        ServiceStartAddParam(FLimboTransactionInfo[i].Id, isc_spb_rpr_rollback_trans);
-      Inc(i);
-    end;
-  end
-  else
-  begin
-    i := 0;
-    if (FGlobalAction = CommitGlobal) then
-      while (i < Length(FLimboTransactionInfo)) and (FLimboTransactionInfo[i].Id <> 0) do
-      begin
-        ServiceStartAddParam(FLimboTransactionInfo[i].Id, isc_spb_rpr_commit_trans);
-        Inc(i);
-      end
+    case FGlobalAction of
+      CommitGlobal:
+        RepairParam := isc_spb_rpr_commit_trans;
+      RollbackGlobal:
+        RepairParam := isc_spb_rpr_rollback_trans;
+      RecoverTwoPhaseGlobal:
+        RepairParam := isc_spb_rpr_recover_two_phase;
     else
-      while (i < Length(FLimboTransactionInfo)) and (FLimboTransactionInfo[i].Id <> 0) do
-      begin
-        ServiceStartAddParam(FLimboTransactionInfo[i].Id, isc_spb_rpr_rollback_trans);
-        Inc(i);
-      end;
+      if FLimboTransactionInfo[i].Action = CommitAction then
+        RepairParam := isc_spb_rpr_commit_trans
+      else
+        RepairParam := isc_spb_rpr_rollback_trans;
+    end;
+    ServiceStartAddParam(FLimboTransactionInfo[i].Id, RepairParam);
   end;
   InternalServiceStart;
 end;
 
-function TpFIBValidationService.GetLimboTransactionInfo(index: Integer): TLimboTransactionInfo;
+function TpFIBValidationService.GetLimboTransactionInfo(Index: Integer): TLimboTransactionInfo;
 begin
-  if index <= High(FLimboTransactionInfo) then
-    result := FLimboTransactionInfo[index]
-  else
-    result := nil;
+  if (Index < 0) or (Index > High(FLimboTransactionInfo)) then
+    raise EListError.CreateFmt(SListIndexError, [Index]);
+  Result := FLimboTransactionInfo[Index];
 end;
 
 function TpFIBValidationService.GetLimboTransactionInfoCount: Integer;
 begin
-  result := High(FLimboTransactionInfo);
+  Result := Length(FLimboTransactionInfo);
 end;
 
 procedure TpFIBValidationService.SetDatabaseName(const Value: string);
@@ -1994,13 +1976,18 @@ end;
 
 { TpFIBSecurityService }
 destructor TpFIBSecurityService.Destroy;
+begin
+  ClearUserInfo;
+  inherited Destroy;
+end;
+
+procedure TpFIBSecurityService.ClearUserInfo;
 var
   i: Integer;
 begin
   for i := 0 to High(FUserInfo) do
     FUserInfo[i].Free;
   FUserInfo := nil;
-  inherited Destroy;
 end;
 
 procedure TpFIBSecurityService.FetchUserInfo;
@@ -2013,62 +2000,62 @@ begin
   if (OutputBuffer[RunLen] <> AnsiChar(isc_info_svc_get_users)) then
     FIBError(feOutputParsingError, [nil]);
   Inc(RunLen);
-  for i := 0 to High(FUserInfo) do
-    FUserInfo[i].Free;
-  FUserInfo := nil;
+  ClearUserInfo;
   i := 0;
   { Don't have any use for the combined length
     so increment past by 2 }
   Inc(RunLen, 2);
-  while (OutputBuffer[RunLen] <> AnsiChar(isc_info_end)) do
-  begin
-    if (i >= Length(FUserInfo)) then
-      SetLength(FUserInfo, i + 10);
-    if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_sec_username)) then
-      FIBError(feOutputParsingError, [nil]);
-    Inc(RunLen);
-    if FUserInfo[i] = nil then
+  try
+    while (OutputBuffer[RunLen] <> AnsiChar(isc_info_end)) do
+    begin
+      if (i >= Length(FUserInfo)) then
+        SetLength(FUserInfo, i + 10);
+      if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_sec_username)) then
+        FIBError(feOutputParsingError, [nil]);
+      Inc(RunLen);
       FUserInfo[i] := TUserInfo.Create;
-    FUserInfo[i].UserName := ParseString(RunLen);
-    if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_sec_firstname)) then
-      FIBError(feOutputParsingError, [nil]);
-    Inc(RunLen);
-    FUserInfo[i].FirstName := ParseString(RunLen);
-    if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_sec_middlename)) then
-      FIBError(feOutputParsingError, [nil]);
-    Inc(RunLen);
-    FUserInfo[i].MiddleName := ParseString(RunLen);
-    if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_sec_lastname)) then
-      FIBError(feOutputParsingError, [nil]);
-    Inc(RunLen);
-    FUserInfo[i].LastName := ParseString(RunLen);
-    if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_sec_userId)) then
-      FIBError(feOutputParsingError, [nil]);
-    Inc(RunLen);
-    FUserInfo[i].UserID := ParseInteger(RunLen);
+      FUserInfo[i].UserName := ParseString(RunLen);
+      if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_sec_firstname)) then
+        FIBError(feOutputParsingError, [nil]);
+      Inc(RunLen);
+      FUserInfo[i].FirstName := ParseString(RunLen);
+      if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_sec_middlename)) then
+        FIBError(feOutputParsingError, [nil]);
+      Inc(RunLen);
+      FUserInfo[i].MiddleName := ParseString(RunLen);
+      if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_sec_lastname)) then
+        FIBError(feOutputParsingError, [nil]);
+      Inc(RunLen);
+      FUserInfo[i].LastName := ParseString(RunLen);
+      if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_sec_userId)) then
+        FIBError(feOutputParsingError, [nil]);
+      Inc(RunLen);
+      FUserInfo[i].UserID := ParseInteger(RunLen);
 
-    if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_sec_groupid)) then
-      FIBError(feOutputParsingError, [nil]);
-    Inc(RunLen);
-    FUserInfo[i].GroupID := ParseInteger(RunLen);
+      if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_sec_groupid)) then
+        FIBError(feOutputParsingError, [nil]);
+      Inc(RunLen);
+      FUserInfo[i].GroupID := ParseInteger(RunLen);
 
-    Inc(i);
+      Inc(i);
+    end;
+  except
+    ClearUserInfo;
+    raise;
   end;
-  if (i > 0) then
-    SetLength(FUserInfo, i + 1);
+  SetLength(FUserInfo, i);
 end;
 
-function TpFIBSecurityService.GetUserInfo(index: Integer): TUserInfo;
+function TpFIBSecurityService.GetUserInfo(Index: Integer): TUserInfo;
 begin
-  if Index <= High(FUserInfo) then
-    result := FUserInfo[Index]
-  else
-    result := nil;
+  if (Index < 0) or (Index > High(FUserInfo)) then
+    raise EListError.CreateFmt(SListIndexError, [Index]);
+  Result := FUserInfo[Index];
 end;
 
 function TpFIBSecurityService.GetUserInfoCount: Integer;
 begin
-  result := High(FUserInfo);
+  Result := Length(FUserInfo);
 end;
 
 procedure TpFIBSecurityService.AddUser;
@@ -2123,6 +2110,7 @@ begin
   FGroupID := 0;
   FUserID := 0;
   FPassword := '';
+  FSecAdmin := False;
 end;
 
 procedure TpFIBSecurityService.SetFirstName(Value: String);
@@ -2163,11 +2151,8 @@ end;
 
 procedure TpFIBSecurityService.SetSecAdmin(Value: Boolean);
 begin
-  if FSecAdmin <> Value then
-  begin
-    Include(FModifyParams, ModifySecAdmin);
-    FSecAdmin := Value;
-  end;
+  FSecAdmin := Value;
+  Include(FModifyParams, ModifySecAdmin);
 end;
 
 procedure TpFIBSecurityService.Loaded;
@@ -2244,6 +2229,12 @@ begin
         ServiceStartAddParam(UTF8Encode(FSQLRole), SPBConstantValues[isc_spb_sql_role_name]);
       end;
   end;
+end;
+
+// Each add or modify starts from cleared params; a failed call keeps them for a retry
+procedure TpFIBSecurityService.ServiceStart;
+begin
+  inherited ServiceStart;
   ClearParams;
 end;
 

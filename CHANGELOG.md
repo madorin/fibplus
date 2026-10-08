@@ -214,6 +214,24 @@ server limits them with `MaxParallelWorkers` in `firebird.conf` (default 1).
   until code assigned the property; the default 30000 now applies. Forms
   saved by earlier versions without a value set store
   `WaitForRestoreConnect = 0`, which keeps the timer off.
+- `TpFIBNRestoreService.Restore` read one element past the end of the file
+  array.
+- `TpFIBBackupService` and `TpFIBRestoreService`: a `name=length` line sent a
+  length cut to as many digits as the name has characters.
+- Service `Params` entries (`ServiceParamBySPB`, login dialog) were looked up
+  case-sensitively, and `password` also matched `password_enc`.
+- `FixLimboTransactionErrors` raised an access violation after
+  `FetchLimboTransactionInfo` returned entries. `LimboTransactionInfoCount`
+  and `UserInfoCount` returned -1 for an empty list; `LimboTransactionInfo`
+  and `UserInfo` raise `EListError` for an index out of range instead of
+  returning `nil`.
+- `FixLimboTransactionErrors` rolled back the transactions with
+  `RecoverTwoPhaseGlobal`; it now sends them to two-phase recovery.
+- `TpFIBSecurityService`: `SecAdmin` was sent only when its value changed, so
+  setting it again on the next `AddUser` or `ModifyUser` had no effect, and a
+  failed call cleared the properties. Setting `SecAdmin` is now always sent;
+  the properties, `SecAdmin` included, are cleared only after a successful
+  call.
 
 ## [7.9.0] - 2026-10-01
 
