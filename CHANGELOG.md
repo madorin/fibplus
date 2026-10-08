@@ -139,6 +139,8 @@ Firebird 4+ statement and idle timeouts; details in `Docs/guide/timeouts.md`.
   ROLE`, `OPTIMIZE`, `SEARCH_PATH`) without an error; it now sends them to the
   server, so an old script that contains them now runs them. They have the new
   `TStmtType` value `sSetSession`.
+- `Locate` with a Currency key on NUMERIC(10..18) columns with a scale did not
+  find values above 2^53 (e.g. 12345678901234.5678).
 
 ## [7.9.0] - 2026-10-01
 

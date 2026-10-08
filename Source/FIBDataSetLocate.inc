@@ -306,6 +306,9 @@ var
       i:integer;
       CalcSize:integer;
       fdt  :TFieldType ;
+      CurrencyKey: Currency;
+      ScaledKey: Int64;
+      Scale: integer;
 begin
   CalcSize:=0;
   SetLength(CodePages, fl.Count);
@@ -377,6 +380,24 @@ begin
       end;
       ftLargeint   : KeyValues[i]:=VarAsType(KeyValues[i],varInt64);
       ftBCD        :
+        if VarType(KeyValues[i]) = varCurrency then
+        begin
+          // Currency is an Int64 scaled by 10^4, a Double loses digits above 2^53
+          CurrencyKey := KeyValues[i];
+          ScaledKey := PInt64(@CurrencyKey)^;
+          Scale := TField(fl.List^[i]).Size;
+          if Scale < 4 then
+          begin
+            if ScaledKey >= 0 then
+              ScaledKey := (ScaledKey + IE10[4 - Scale] div 2) div IE10[4 - Scale]
+            else
+              ScaledKey := (ScaledKey - IE10[4 - Scale] div 2) div IE10[4 - Scale];
+          end
+          else
+            ScaledKey := ScaledKey * IE10[Scale - 4];
+          KeyValues[i] := ScaledKey;
+        end
+        else
         if TField(fl.List^[i]).Size=0 then
          KeyValues[i]:=VarAsType(KeyValues[i],varInt64)
         else
