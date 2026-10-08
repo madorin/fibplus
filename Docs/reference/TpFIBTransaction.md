@@ -39,7 +39,7 @@ Events are listed in [Events](#events).
 
 | Type | Definition |
 |------|------------|
-| `TTPBMode` | `tpbDefault`, `tpbReadCommitted`, `tpbRepeatableRead` |
+| `TTPBMode` | `tpbDefault`, `tpbReadCommitted`, `tpbRepeatableRead`, `tpbReadConsistency` |
 | `TOnSQLExecute` | `procedure(Query: TFIBQuery; SQLType: TFIBSQLTypes) of object` |
 
 `TEndTrEvent` and `TTransactionAction` are described in [TFIBTransaction](TFIBTransaction.md#types).
@@ -53,8 +53,11 @@ Events are listed in [Events](#events).
 | `tpbDefault` | Used unchanged. |
 | `tpbReadCommitted` | Replaced by `write`, `isc_tpb_nowait`, `read_committed`, `rec_version`. |
 | `tpbRepeatableRead` | Replaced by `write`, `isc_tpb_nowait`, `concurrency`. |
+| `tpbReadConsistency` | Replaced by `write`, `isc_tpb_nowait`, `read_committed`, `read_consistency`. *Firebird 4+*: on an older server `StartTransaction` raises `EFIBClientError`. |
 
-In the last two modes `TRParams` is cleared and filled again on every start, so added lines are lost. To use custom parameters, set `TPBMode` to `tpbDefault`. See [Transaction parameters](TFIBTransaction.md#transaction-parameters) for the names.
+In the other modes `TRParams` is cleared and filled again on every start, so added lines are lost. To use custom parameters, set `TPBMode` to `tpbDefault`. See [Transaction parameters](TFIBTransaction.md#transaction-parameters) for the names.
+
+On *Firebird 4+* with the default server setting `ReadConsistency = 1`, every read committed transaction runs in read consistency mode, so `tpbReadCommitted` behaves like `tpbReadConsistency` there. The two differ only when the database has `ReadConsistency = 0`.
 
 ## Transaction kinds
 

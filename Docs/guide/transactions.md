@@ -47,6 +47,7 @@ The isolation level, the access mode, and the lock behavior are lines in `TRPara
 |------|------------|
 | Read the latest committed data, wait for locks | `read_committed`, `rec_version`, `wait` |
 | Read the latest committed data, fail on a conflict | `read_committed`, `rec_version`, `nowait` |
+| Each statement reads one consistent snapshot, *Firebird 4+* | `read_committed`, `read_consistency` |
 | A stable snapshot for the whole transaction | `concurrency` |
 | Table stability | `consistency` |
 | Read only (reports, lookups) | add `read` |
@@ -67,7 +68,7 @@ This sample is for a `TFIBTransaction`. A `TpFIBTransaction` replaces these line
 
 ### TpFIBTransaction and TPBMode
 
-`TpFIBTransaction` has a `TPBMode` property, and its default is `tpbReadCommitted`. In that mode, and in `tpbRepeatableRead`, every `StartTransaction` clears `TRParams` and writes its own lines. The lines for each mode are in [Transaction mode](../reference/TpFIBTransaction.md#transaction-mode).
+`TpFIBTransaction` has a `TPBMode` property, and its default is `tpbReadCommitted`. In that mode, and in `tpbRepeatableRead` and `tpbReadConsistency`, every `StartTransaction` clears `TRParams` and writes its own lines. The lines for each mode are in [Transaction mode](../reference/TpFIBTransaction.md#transaction-mode).
 
 Set `TPBMode` to `tpbDefault` before you set `TRParams`, otherwise your lines are lost at the first start:
 

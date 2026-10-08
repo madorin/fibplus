@@ -1004,7 +1004,7 @@ begin
           isc_tpb_concurrency, isc_tpb_shared, isc_tpb_wait, isc_tpb_nowait,
           isc_tpb_read, isc_tpb_write, isc_tpb_ignore_limbo,
           isc_tpb_read_committed, isc_tpb_rec_version, isc_tpb_no_rec_version,
-          isc_tpb_no_auto_undo { ,isc_tpb_no_savepoint } :
+          isc_tpb_read_consistency, isc_tpb_no_auto_undo { ,isc_tpb_no_savepoint } :
           TPB := TPB + AnsiChar(TPBVal);
         isc_tpb_lock_read, isc_tpb_lock_write:
           begin
@@ -1078,6 +1078,7 @@ begin
         AddObject(TPBConstantNames[i], TObject(i));
 
       AddObject('lock_timeout', TObject(isc_tpb_lock_timeout));
+      AddObject('read_consistency', TObject(isc_tpb_read_consistency));
       Sorted := true;
     end;
 end;

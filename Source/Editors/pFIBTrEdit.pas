@@ -156,6 +156,13 @@ begin
             Add('rec_version');
             Add('read_committed');
           end;
+        4:
+          begin
+            Add('write');
+            Add('nowait');
+            Add('read_committed');
+            Add('read_consistency');
+          end;
       end;
 end;
 
@@ -208,20 +215,23 @@ end;
 procedure TfrmTransEdit.ReadUsersKinds;
 var
   v, v1: Variant;
-  i: integer;
+  i, KindIndex: integer;
 begin
 {$IFNDEF NO_REGISTRY}
   v := DefAllSubKey(['Software', RegFIBRoot, RegFIBTrKinds]);
   if (VarType(v) <> varBoolean) then
     for i := 0 to VarArrayHighBound(v, 1) do
     begin
-      v1 := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBTrKinds, IntToStr(v[i])], ['Name']);
+      // The key is the combo index; a saved kind replaces the predefined one at that index
+      KindIndex := StrToIntDef(VarToStr(v[i]), 0);
+      if KindIndex <= 0 then
+        Continue;
+      v1 := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBTrKinds, IntToStr(KindIndex)], ['Name']);
       if VarType(v1) = varBoolean then
         Continue;
-      if (v[i] < cmbProps.Items.Count) and (i > 0) then
-        cmbProps.Items[i] := v1[0, 0]
-      else
-        cmbProps.Items.Add(v1[0, 0])
+      while cmbProps.Items.Count <= KindIndex do
+        cmbProps.Items.Add('');
+      cmbProps.Items[KindIndex] := v1[0, 0];
     end;
 {$ENDIF}
 end;

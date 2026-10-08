@@ -127,6 +127,7 @@ Available in the Object Inspector. When the component is dropped on a form at de
 | `CodePage` | `Word` | Code page of the SQL text and of text values in the attachment character set. |
 | `MaxIdentifierLength` | `Integer` | Characters allowed in a metadata name: `63` on *Firebird 4+*, otherwise `31`. `0` when not connected. |
 | `MetadataCodePage` | `Word` | Code page of DDL and of the names the server sends. UTF-8 when metadata is sent in UTF-8 (a `NONE` or Unicode attachment on *Firebird 2.1+* with ODS 11.1 or later); otherwise `CodePage`. |
+| `ReadConsistency` | `Boolean` | `True` on a *Firebird 4+* server: `TpFIBTransaction.TPBMode` `tpbReadConsistency` and `read_consistency` in `TRParams` work. |
 | `SessionTimeouts` | `Boolean` | `True` on a *Firebird 4+* server: `Session.StatementTimeout` and `Session.IdleTimeout` work. |
 | `StatementTimeout` | `Boolean` | `True` when `SessionTimeouts` is `True` and the client library supports per-statement timeouts (`fbclient` 4+): `TFIBQuery.StatementTimeout` and `TpFIBDataSet.StatementTimeout` work. |
 | `TextCodePage(CharSetID)` | `Word` | Code page of a text value whose character set ID is `CharSetID` (the `sqlsubtype` of the column). The system code page for `NONE` and `OCTETS`; the attachment code page when the server converts the text; otherwise the code page of the column character set. |
@@ -287,6 +288,7 @@ Write-ahead log values (`LogFile`, `CurLogFileName`, `CurLogPartitionOffset`, `N
 | `AddEvent(Event, EventType)`, `RemoveEvent(Event, EventType)` | Add or remove a handler in the list for `detOnConnect`, `detBeforeDisconnect`, or `detBeforeDestroy`. Several handlers can share a list. |
 | `Call(ErrCode, RaiseError)` | Wrapper for client library calls: restarts the `Timeout` timer and raises the server error when `RaiseError` is `True`. For code that calls the API directly. |
 | `RequireSessionTimeouts(PropName, Value)`, `RequireStatementTimeout(PropName, Value)` | Raise `EFIBClientError` (`feFeatureNotSupported`) for a non-zero `Value` that the server or the client library cannot apply; `0` never raises. `RequireStatementTimeout` also never raises for `FIBNoStatementTimeout` when `Capabilities.SessionTimeouts` is `False`. `Session` calls `RequireSessionTimeouts`; `TFIBQuery` and `TFIBDataSet` call `RequireStatementTimeout`. |
+| `RequireReadConsistency(PropName)` | Raises `EFIBClientError` (`feFeatureNotSupported`) when `Capabilities.ReadConsistency` is `False`. `TpFIBTransaction` calls it for `tpbReadConsistency`. |
 
 ### Deprecated
 

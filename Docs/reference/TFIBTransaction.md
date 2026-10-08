@@ -51,9 +51,10 @@ Each line is split at the first `=` without trimming the name, so no spaces are 
 |-----------|-------|---------|
 | `concurrency` | Isolation | Snapshot isolation. |
 | `consistency` | Isolation | Table stability. |
-| `read_committed` | Isolation | Read committed. Combine with `rec_version` or `no_rec_version`. |
+| `read_committed` | Isolation | Read committed. Combine with `rec_version`, `no_rec_version`, or `read_consistency`. |
 | `rec_version` | Record version | With `read_committed`: read the latest committed version of a record that has a pending change. |
 | `no_rec_version` | Record version | With `read_committed`: wait for, or fail on, a record that has a pending change. |
+| `read_consistency` | Record version | Read committed where every statement reads one snapshot taken at its start. Implies `read_committed`; cannot be combined with `rec_version` or `no_rec_version`. *Firebird 4+*: an older server rejects the buffer, and on InterBase the code (22) means another parameter. |
 | `read` | Access mode | Read-only transaction. |
 | `write` | Access mode | Read-write transaction. |
 | `wait` | Lock resolution | Wait for a conflicting transaction to end. |
@@ -169,7 +170,7 @@ Before the end, the transaction calls the `OnTransactionEnding` hook of every at
 | `CheckInTransaction` | Ensure the transaction is active. At design time it starts the transaction. At run time it starts it only when every database has `AutoReconnect` set to `True`; otherwise it raises. |
 | `CheckNotInTransaction` | Raise if the transaction is active. |
 | `IsReadOnly` | `True` if `TRParams` contains `read`. |
-| `IsReadCommitedTransaction` | `True` if `TRParams` contains `read_committed`. |
+| `IsReadCommitedTransaction` | `True` if `TRParams` contains `read_committed` or `read_consistency`. |
 | `CloseAllQueryHandles` | Release the statement handle of every attached `TFIBQuery`. |
 | `OnDatabaseDisconnecting(Db)` | Called by the database before it disconnects. Ends an active transaction with `TimeoutAction`, forced; a retaining action is replaced by its plain variant. |
 

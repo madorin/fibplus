@@ -537,7 +537,8 @@ object frmFIBPreferences: TfrmFIBPreferences
         Items.Strings = (
           'tpbDefault'
           'tpbReadCommitted'
-          'tpbRepeatableRead')
+          'tpbRepeatableRead'
+          'tpbReadConsistency')
       end
     end
     object TabSheet3: TTabSheet

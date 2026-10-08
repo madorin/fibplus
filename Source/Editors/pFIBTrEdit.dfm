@@ -64,7 +64,8 @@ object frmTransEdit: TfrmTransEdit
       'Current parameters '
       'ReadCommitted'
       'RepeatableRead'
-      'ReadOnly ReadCommitted')
+      'ReadOnly ReadCommitted'
+      'ReadConsistency')
   end
   object memParams: TMemo
     Left = 8

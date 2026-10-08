@@ -340,7 +340,8 @@ type
   end;
 
   TTransactionAction1 = (TARollback1, TARollbackRetaining1, TACommit1, TACommitRetaining1);
-  TTPBMode = (tpbDefault, tpbReadCommitted, tpbRepeatableRead);
+  // tpbReadConsistency needs Firebird 4+, older servers raise EFIBClientError at StartTransaction
+  TTPBMode = (tpbDefault, tpbReadCommitted, tpbRepeatableRead, tpbReadConsistency);
 
   TBlobSwapSupport = class(TPersistent)
   private

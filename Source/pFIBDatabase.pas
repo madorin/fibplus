@@ -809,11 +809,17 @@ begin
 end;
 
 procedure TpFIBTransaction.StartTransaction; // override;
+var
+  I: Integer;
 begin
   if InTransaction then
     Exit;
+  if FTPBMode = tpbReadConsistency then
+    for I := 0 to DatabaseCount - 1 do
+      if Databases[I].Connected then
+        Databases[I].RequireReadConsistency('TPBMode tpbReadConsistency');
   with TRParams do
-    if FTPBMode in [tpbReadCommitted, tpbRepeatableRead] then
+    if FTPBMode in [tpbReadCommitted, tpbRepeatableRead, tpbReadConsistency] then
     begin
       Clear;
       Add('write');
@@ -825,6 +831,11 @@ begin
             Add('rec_version');
           end;
         tpbRepeatableRead: Add('concurrency');
+        tpbReadConsistency:
+          begin
+            Add('read_committed');
+            Add('read_consistency');
+          end;
       end
     end;
   if (DefaultDataBase is TpFIBDatabase) and Assigned(TpFIBDatabase(DefaultDataBase).FBeforeStartTr) then

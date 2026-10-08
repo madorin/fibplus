@@ -4,7 +4,7 @@ FibPlus connects to Firebird and InterBase servers of several generations. Some 
 
 | Version | Features in FibPlus |
 |---------|---------------------|
-| [Firebird 4.0](#firebird-40) | Session timeouts, statement timeout, long identifiers, `INT128`, `DECFLOAT`, time zones |
+| [Firebird 4.0](#firebird-40) | Session timeouts, statement timeout, long identifiers, read consistency, `INT128`, `DECFLOAT`, time zones |
 | [Firebird 3.0](#firebird-30) | `BOOLEAN`, encrypted databases, `config=` lines in `DBParams` |
 | [Firebird 2.1](#firebird-21) | Server-side conversion of text BLOBs, metadata in UTF-8 |
 | [Firebird 2.0](#firebird-20) | Default values of stored procedure input parameters |
@@ -71,6 +71,13 @@ Points that matter when you move to a *Firebird 4+* server:
 - A client library before *Firebird 4* returns names longer than 31 bytes empty, and a newer one cuts them. FibPlus reads the full names with an additional describe request: with a client before *Firebird 4* on a *Firebird 4+* server for every statement that has columns or parameters, and with a newer client only when a name was cut. Preparing a query therefore costs one more round trip with a *Firebird 3 or older* client.
 
 See also [Upgrading](upgrading.md).
+
+### Read consistency
+
+- **Server:** *Firebird 4+*. **Client library:** any.
+- **In FibPlus:** `TPBMode` `tpbReadConsistency` of `TpFIBTransaction`, or `read_consistency` in `TRParams`. Check `Capabilities.ReadConsistency`; on an older server `tpbReadConsistency` raises `EFIBClientError` at `StartTransaction`.
+- With the default server setting `ReadConsistency = 1`, every read committed transaction already runs in this mode; `rec_version` and `no_rec_version` are ignored.
+- **Reference:** [Transaction mode](../reference/TpFIBTransaction.md#transaction-mode), [Transaction parameters](../reference/TFIBTransaction.md#transaction-parameters).
 
 ### New data types
 

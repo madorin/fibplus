@@ -71,6 +71,7 @@ type
   private
     FMaxIdentifierLength: Integer;
     FSessionTimeouts: Boolean;
+    FReadConsistency: Boolean;
     FStatementTimeout: Boolean;
     FAttachmentCharSetID: Integer;
     FFirebird: Boolean;
@@ -93,6 +94,8 @@ type
     property MaxIdentifierLength: Integer read FMaxIdentifierLength;
     // Firebird 4+ server: Session.StatementTimeout and Session.IdleTimeout
     property SessionTimeouts: Boolean read FSessionTimeouts;
+    // Firebird 4+ server: read_consistency in the TPB, TPBMode tpbReadConsistency
+    property ReadConsistency: Boolean read FReadConsistency;
     // also fb_dsql_set_timeout in the client (fbclient 4+): TFIBQuery and TpFIBDataSet.StatementTimeout
     property StatementTimeout: Boolean read FStatementTimeout;
     // -1 when unknown (InterBase), 0 is NONE
@@ -452,6 +455,7 @@ type
     procedure RequireSessionTimeouts(const PropName: string; Value: Cardinal);
     // FIBNoStatementTimeout never raises without SessionTimeouts: there is no attachment value then
     procedure RequireStatementTimeout(const PropName: string; Value: Cardinal);
+    procedure RequireReadConsistency(const PropName: string);
 
     function IsUnicodeConnect: Boolean;
     function IsIB2007Connect: Boolean;
@@ -1072,20 +1076,23 @@ procedure TFIBDatabaseCapabilities.Clear;
 begin
   FMaxIdentifierLength := 0;
   FSessionTimeouts := False;
+  FReadConsistency := False;
   FStatementTimeout := False;
   FAttachmentCharSetID := -1;
 end;
 
 procedure TFIBDatabaseCapabilities.Update(Database: TFIBDatabase);
 var
-  Success: Boolean;
+  Success, Firebird4: Boolean;
 begin
+  Firebird4 := Database.IsFirebirdConnect and (Database.ServerMajorVersion >= 4);
   // Firebird 4+ opens only ODS 13+
-  if Database.IsFirebirdConnect and (Database.ServerMajorVersion >= 4) then
+  if Firebird4 then
     FMaxIdentifierLength := 63
   else
     FMaxIdentifierLength := 31;
-  FSessionTimeouts := Database.IsFirebirdConnect and (Database.ServerMajorVersion >= 4);
+  FSessionTimeouts := Firebird4;
+  FReadConsistency := Firebird4;
   FStatementTimeout := FSessionTimeouts and Database.ClientLibrary.HasStatementTimeout;
   FAttachmentCharSetID := -1;
   if Database.IsFirebirdConnect then
@@ -2720,6 +2727,12 @@ begin
   end
   else
     RaiseFeatureNotSupported(PropName, True);
+end;
+
+procedure TFIBDatabase.RequireReadConsistency(const PropName: string);
+begin
+  if not FCapabilities.ReadConsistency then
+    RaiseFeatureNotSupported(PropName, False);
 end;
 
 function TFIBDatabase.IsIB2007Connect: Boolean;
@@ -4721,7 +4734,9 @@ end;
 
 function TFIBTransaction.IsReadCommitedTransaction: Boolean;
 begin
-  Result := (FTRParams.IndexOf('read_committed') > -1) or (FTRParams.IndexOf(TPBPrefix + 'read_committed') > -1)
+  // read_consistency alone also starts a read committed transaction
+  Result := (FTRParams.IndexOf('read_committed') > -1) or (FTRParams.IndexOf(TPBPrefix + 'read_committed') > -1) or
+    (FTRParams.IndexOf('read_consistency') > -1) or (FTRParams.IndexOf(TPBPrefix + 'read_consistency') > -1)
 end;
 
 function TFIBTransaction.IsReadOnly: Boolean;

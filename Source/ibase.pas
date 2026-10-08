@@ -1113,6 +1113,7 @@ const
   isc_tpb_no_auto_undo      = 20;
   isc_tpb_no_savepoint      = 21;                   // IB 7.5
   isc_tpb_lock_timeout      = 21;                   // FB 2.1
+  isc_tpb_read_consistency  = 22;                   // FB 4
   isc_tpb_last_tpb_constant = isc_tpb_no_savepoint;
 
   // Blob Parameter Block
