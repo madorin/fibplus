@@ -28,6 +28,7 @@ Find the version you use now, then read every section above it, from the one jus
 | `FIBBuildDate` | `FIBVersionDate` | Rename. The value is an ISO date. |
 | `IBASE_DLL` (`ibase`) | `CLIENT_DLL` | Rename. The default value is `fbclient.dll`, see [Client library](#client-library). |
 | `v`-prefixed protected fields of `TFIBDatabase` and `TFIBTransaction`: `vInternalTransaction` and the other event list and TPB fields | `F` prefix: `FInternalTransaction`, `FAfterConnectEvents`, `FBeforeDisconnectEvents`, `FBeforeDestroyEvents`, `FBeforeStartTransactionEvents`, `FAfterStartTransactionEvents`, `FBeforeEndTransactionEvents`, `FAfterEndTransactionEvents`, `FDatabaseTRParams`, `FDatabaseTPBs` | Rename in descendants of these classes that use the fields. |
+| `TpFIBDatabase.CreateRCTimer` (protected) | `CreateRestoreConnectTimer` | Rename in descendants that call it. |
 | `SUPPORT_KOI8_CHARSET`, `StdFuncs.ConvertToCodePage`, `StdFuncs.ConvertFromCodePage` | Removed | Use `FIBCharSets` (`DecodeString`, `EncodeString`). Affects only code that defined the symbol (it was off by default) or calls the functions. |
 | `SqlTxtRtns.IBStdCharacterSets`, `IBStdCharSetsCount`, `IBStdCollationsCount` | Removed | Use `FIBCharSets.FirebirdCharSetName`. |
 
@@ -61,6 +62,8 @@ When `LibraryName` is `fbclient.dll` without a path and that library cannot be l
 - An `fbclient.dll` that Windows finds first (in `System32` or in `PATH`) is loaded instead of the `gds32.dll` next to the program. Ship `fbclient.dll` next to the program, or set `LibraryName` to the full path of the library you ship.
 - The plugins of the *Firebird 3+* client, for example `ChaCha` for wire encryption, need a library with the name `fbclient.dll`. A client renamed to `gds32.dll` cannot load them.
 - A name with a path, or another name, is never replaced by `gds32.dll`. To keep the old library on purpose, set `LibraryName` to `gds32.dll`, or `CLIENT_DLL := 'gds32.dll'` at startup before any component is created.
+
+`TpFIBDatabase.AliasName` now reads `CLIENT_LIB` of the alias into `LibraryName`. Aliases written by earlier versions (`SaveAliasParamsAfterConnect` is `True` by default) usually hold `gds32.dll`, which then replaces the new default and gets no fallback to `fbclient.dll`. Save the alias again with the right `LibraryName`, or delete its `CLIENT_LIB` value.
 
 `TpFIBScripter` no longer changes `LibraryName` of its database on `CONNECT`, `CREATE DATABASE`, and `DROP DATABASE`; only `SET CLIENTLIB` changes it. A script without `SET CLIENTLIB` that relied on the default library now uses the `LibraryName` set on the database.
 
@@ -105,6 +108,10 @@ Text goes through the code page of its column's character set. These changes can
 
 - `ISO8859_1` and `ISO8859_9` use code pages 1252 and 1254, so the range `0x80..0x9F` shows `€ “ ” …` instead of control characters. `ASCII` uses the system code page.
 - `TFIBStringField.AsAnsiString` (*Delphi 2009+*) returns the column bytes with their code page set. Calculated and lookup `ftString` fields use the system code page.
+
+#### Restoring a lost connection
+
+`TpFIBDatabase.WaitForRestoreConnect` reads its default `30000`; it read `0` until code assigned it. A database created in code whose `OnLostConnect` chooses `laWaitRestore` now tries to connect again every 30 seconds; before, it only closed the connection. A form that never had a value set in the Object Inspector stores `WaitForRestoreConnect = 0` and keeps the old behaviour; remove the line to use the default.
 
 #### Scripter
 

@@ -36,7 +36,7 @@ Only the properties that `TpFIBDatabase` adds. The published properties of `TFIB
 | `AliasName` | `AnsiString` | | Name of a connection alias. Setting a non-empty name reads the alias, see [Aliases](#aliases). Raises while connected, except while the form loads. |
 | `CacheSchemaOptions` | `TCacheSchemaOptions` | | Loading and saving of the schema cache file, see [Schema cache](#schema-cache). |
 | `SaveAliasParamsAfterConnect` | `Boolean` | `True` | After a successful `Open`, write the connection parameters to the alias, if `AliasName` is not empty. |
-| `WaitForRestoreConnect` | `Cardinal` | `30000` declared, `0` effective | Interval in milliseconds of the timer that tries to restore a lost connection, see [Lost connection](#lost-connection). Reading returns `0` while there is no timer, so a new component reads `0`. Assigning a value above `0` creates the timer; assigning `0` frees it. |
+| `WaitForRestoreConnect` | `Cardinal` | `30000` | Interval in milliseconds of the timer that tries to restore a lost connection, see [Lost connection](#lost-connection). The timer is created when the first wait starts. `0` turns the restore timer off and stops a wait in progress. Forms saved by versions before 7.9.1 without a value set in the Object Inspector store `WaitForRestoreConnect = 0`, which keeps the timer off; remove the line to use the default. |
 | `About` | `string` | | Library version text. Read-only in effect: writing is ignored and the value is not stored. |
 
 Events are listed in [Events](#events).
@@ -62,8 +62,9 @@ An alias keeps `DBName`, the user name, the character set, the role, and the SQL
 | `lc_ctype` | `ConnectParams.CharSet` |
 | `sql_role_name` | `ConnectParams.RoleName` |
 | `SQL_DIALECT` | `SQLDialect` |
+| `CLIENT_LIB` | `LibraryName` |
 
-Writing an alias (`SaveAlias`) also stores `CLIENT_LIB` from `LibraryName`. The password is not stored. `ReadParamsFromAlias` does not read `CLIENT_LIB`.
+The password is not stored.
 
 ## Schema cache
 
@@ -73,7 +74,7 @@ Writing an alias (`SaveAlias`) also stores `CLIENT_LIB` from `LibraryName`. The 
 |------|------|---------|-------------|
 | `LocalCacheFile` | `string` | | Path of the cache file. |
 | `AutoLoadFromFile` | `Boolean` | `False` | After connecting, load the cache from `LocalCacheFile` when the file exists. Not done at design time. |
-| `AutoSaveToFile` | `Boolean` | `False` | Save the cache to `LocalCacheFile` before the connection closes. Not done at design time. |
+| `AutoSaveToFile` | `Boolean` | `False` | Save the cache to `LocalCacheFile` before the connection closes. Not done at design time, nor when the database is not connected. |
 | `ValidateAfterLoad` | `Boolean` | `True` | Check loaded entries against the server before use. |
 
 `OnAcceptCacheSchema` replaces the built-in check of table entries after loading. It runs once per cached table of this database, with `ObjName` set to the table name. An entry stays in the cache only when the handler sets `Accept` to `True`; `Accept` is `False` on entry, so a handler that does nothing drops every entry. The event is used only when `AutoLoadFromFile` and `ValidateAfterLoad` are `True`. When the handler is used, the cache is saved to the file again after the check.
@@ -94,16 +95,17 @@ When the server drops the attachment (network failure, server shutdown), `TpFIBD
 | `laTerminateApp` | As `laCloseConnect`, then terminate the application. |
 | `laIgnore` | Do nothing. |
 
-`ExTestConnected` raises the error again when the handler sets `DoRaise` to `True`; it starts as `False` there. `WaitForRestoreConnect` must be greater than `0` for `laWaitRestore` to start anything; without the timer the call does nothing.
+`ExTestConnected` raises the error again when the handler sets `DoRaise` to `True`; it starts as `False` there. With `WaitForRestoreConnect` set to `0`, `laWaitRestore` does no more than `laCloseConnect`.
 
-Each timer tick calls `RestoreConnect`: it stops the timer, sets `Connected` to `True`, and calls `AfterRestoreConnect`. When connecting fails with an `EFIBError`, `OnErrorRestoreConnect` is called. `Actions` starts as `laWaitRestore` when the call came from the timer, else as `laIgnore`. Set it to `laWaitRestore` to wait for another interval or to `laTerminateApp` to terminate; any other value stops the attempts.
+Each timer tick calls `RestoreConnect`: it stops the timer, sets `Connected` to `True`, and calls `AfterRestoreConnect`. A successful `Open` also stops the timer. When connecting fails with an `EFIBError`, `OnErrorRestoreConnect` is called. `Actions` starts as `laWaitRestore` when the timer was running, else as `laIgnore`. Set it to `laWaitRestore` to wait for another interval or to `laTerminateApp` to terminate; any other value stops the attempts. `DoRaise` starts as `False` and is not used.
+
 ## Run-time properties
 
 | Name | Type | Description |
 |------|------|-------------|
 | `FIBDataSets[Index]` | `TFIBCustomDataSet` | Dataset that uses this database, by index. Each dataset is counted once. |
 | `FIBQueries[Index]` | `TFIBQuery` | Query that uses this database and does not belong to a dataset, by index. |
-| `InRestoreConnect` | `Boolean` | Set by `WaitRestoreConnect` and `RestoreConnect`; cleared by `StopWaitRestoreConnect` and by `RestoreConnect` when connecting fails. |
+| `InRestoreConnect` | `Boolean` | `True` while the restore timer waits and during a `RestoreConnect` attempt. Cleared by `StopWaitRestoreConnect` and when the attempt ends, unless `OnErrorRestoreConnect` chose `laWaitRestore`. |
 | `SaveDBParams` | `Boolean` | The same as `SaveAliasParamsAfterConnect`. Forms saved by older versions store this name; they still load. |
 
 ## Methods
@@ -121,9 +123,9 @@ Each timer tick calls `RestoreConnect`: it stops the timer, sets `Connected` to 
 | Name | Description |
 |------|-------------|
 | `ExTestConnected(Actions)` | Read the base level from the server. Returns `False` when the database is not connected or the call fails. On failure `OnLostConnect` runs, and the error is raised again if the handler sets `DoRaise` to `True`. |
-| `WaitRestoreConnect` | Start the restore timer. Does nothing when `WaitForRestoreConnect` is `0`. |
+| `WaitRestoreConnect` | Start the restore timer, creating it on first use. Does nothing when `WaitForRestoreConnect` is `0`. |
 | `StopWaitRestoreConnect` | Stop the restore timer. |
-| `RestoreConnect(Sender)` | Try to connect now. This is the timer handler and can also be called directly. Does nothing when connected. |
+| `RestoreConnect(Sender)` | Try to connect now. This is the timer handler and can also be called directly. When connected, only stops the restore timer. |
 | `ForceCloseTransactions` | End every transaction of this database with its `TimeoutAction`, forced, ignoring errors. See `TFIBTransaction.OnDatabaseDisconnecting`. |
 
 ### Datasets and queries
@@ -132,7 +134,7 @@ Each timer tick calls `RestoreConnect`: it stops the timer, sets `Connected` to 
 |------|-------------|
 | `CloseDataSets` | Close every `TFIBDataSet` that uses this database. |
 | `FIBDataSetsCount`, `FIBQueryCount` | Number of entries of `FIBDataSets` and `FIBQueries`. |
-| `ApplyUpdates(DataSets)` | Apply cached updates of several datasets in one transaction. Each dataset must use this database and the same update transaction (`TFIBCustomDataSet.UpdateTransaction`), else an error is raised. The method calls `ApplyUpdToBase` of each `TpFIBDataSet`, then commits the update transaction (`CommitRetaining` when its `TimeoutAction` is `TACommitRetaining`, else `Commit`), then calls `CommitUpdToCach` on the datasets that are open. |
+| `ApplyUpdates(DataSets)` | Apply cached updates of several datasets in one transaction. Each dataset must be a `TFIBCustomDataSet` that uses this database and the same update transaction (`TFIBCustomDataSet.UpdateTransaction`), else an error is raised. An empty array does nothing. The method calls `ApplyUpdToBase` of each `TpFIBDataSet`, then commits the update transaction (`CommitRetaining` when its `TimeoutAction` is `TACommitRetaining`, else `Commit`), then calls `CommitUpdToCach` on the datasets that are open. |
 
 ### Metadata
 
@@ -149,12 +151,12 @@ For descendant authors.
 
 | Name | Description |
 |------|-------------|
-| `InternalClose(Force, DBinShutDown)` | Override. Saves the schema cache when `AutoSaveToFile` is set, then closes as `TFIBDatabase` does if the database is connected. |
+| `InternalClose(Force, DBinShutDown)` | Override. Does nothing when the database is not connected. Saves the schema cache when `AutoSaveToFile` is set, then closes as `TFIBDatabase` does. |
 | `DoOnLostConnect(Database, E, Actions, DoRaise)` | Dynamic. Calls `OnLostConnect` and then acts on `Actions`. |
-| `DoOnErrorRestoreConnect(Database, E, Actions)` | Dynamic. Calls `OnErrorRestoreConnect`; the `DoRaise` value it returns is not used. |
+| `DoOnErrorRestoreConnect(Database, E, Actions)` | Dynamic. Calls `OnErrorRestoreConnect` with `DoRaise` set to `False`; the value it returns is not used. |
 | `DoAfterRestoreConnect` | Dynamic. Calls `AfterRestoreConnect`. |
 | `CloseLostConnect` | Drop the handle and end the transactions without calling the server. Does nothing when not connected. |
-| `CreateRCTimer` | Create the restore timer with an interval of 30000 ms. |
+| `CreateRestoreConnectTimer` | Create the restore timer, disabled, with the interval of `WaitForRestoreConnect`. Does nothing when it exists. |
 
 ## Events
 

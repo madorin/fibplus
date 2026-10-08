@@ -181,7 +181,7 @@ Set `Actions` in the event. `laCloseConnect` is the value when you do not change
 - `laIgnore` does nothing.
 - `laTerminateApp` closes the connection and terminates the application.
 
-The timer needs `WaitForRestoreConnect` to be greater than `0`. A new component reads `0`, so set it, or `laWaitRestore` does nothing more than `laCloseConnect`. The details of each action are in [Lost connection](../reference/TpFIBDatabase.md#lost-connection).
+The timer interval is `WaitForRestoreConnect`, `30000` ms by default. With `0`, as stored by forms saved before 7.9.1, `laWaitRestore` does nothing more than `laCloseConnect`. The details of each action are in [Lost connection](../reference/TpFIBDatabase.md#lost-connection).
 
 ```delphi
 procedure TMainForm.DatabaseLostConnect(ADatabase: TFIBDatabase; E: EFIBError;

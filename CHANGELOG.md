@@ -95,6 +95,8 @@ server limits them with `MaxParallelWorkers` in `firebird.conf` (default 1).
   `FBeforeStartTransactionEvents`, `FAfterStartTransactionEvents`,
   `FBeforeEndTransactionEvents`, `FAfterEndTransactionEvents`,
   `FDatabaseTRParams`, `FDatabaseTPBs`.
+- The protected `TpFIBDatabase.CreateRCTimer` is renamed to
+  `CreateRestoreConnectTimer`.
 - A character the target code page can't hold raises "Cannot transliterate
   character between character sets" (values and SQL text) instead of being
   sent as `?` or a look-alike, e.g. `ș`/`ț` with comma (Romanian Standard
@@ -195,6 +197,23 @@ server limits them with `MaxParallelWorkers` in `firebird.conf` (default 1).
   kind when a predefined kind was added.
 - `DBParamByDPB` with a code above 83 (such as `isc_dpb_config`) read an empty
   value and wrote a parameter with a name out of the table range.
+- `TpFIBDatabase`: an alias did not read back its `CLIENT_LIB` into
+  `LibraryName`. Aliases saved by earlier versions usually hold `gds32.dll`,
+  see the upgrading guide.
+- `TpFIBDatabase.OnErrorRestoreConnect` got an uninitialized `DoRaise`.
+- `TpFIBDatabase.InRestoreConnect` stayed `True` after a successful restore or
+  a reconnect during the wait, and `TransactionID` returned 0 for transactions
+  started after it. It was cleared while the timer waited again after a failed
+  attempt, and the timer kept running when `OnErrorRestoreConnect` chose to
+  stop.
+- `TpFIBDatabase.ApplyUpdates` raised an access violation for an empty array
+  and read invalid memory for a dataset that is not a `TFIBCustomDataSet`.
+- `TpFIBDatabase` saved the schema cache (`AutoSaveToFile`) on `ForceClose`
+  when not connected.
+- `TpFIBDatabase.WaitForRestoreConnect` read 0 and `laWaitRestore` did nothing
+  until code assigned the property; the default 30000 now applies. Forms
+  saved by earlier versions without a value set store
+  `WaitForRestoreConnect = 0`, which keeps the timer off.
 
 ## [7.9.0] - 2026-10-01
 

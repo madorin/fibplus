@@ -152,7 +152,7 @@ begin
 end;
 ```
 
-Set `WaitForRestoreConnect` in code to the retry interval in milliseconds. The timer is created only when the property is assigned a value above `0`, and the default `30000` is not stored in the form, so the assignment never happens at load. The events, the actions, and the rules for the retries are in the reference: [TpFIBDatabase, Lost connection](../reference/TpFIBDatabase.md#lost-connection). A server idle timeout arrives as a lost connection and is handled in the same way; see [Timeouts](timeouts.md#idle-timeout).
+`WaitForRestoreConnect` is the retry interval in milliseconds, `30000` by default; `0` turns the retries off. The events, the actions, and the rules for the retries are in the reference: [TpFIBDatabase, Lost connection](../reference/TpFIBDatabase.md#lost-connection). A server idle timeout arrives as a lost connection and is handled in the same way; see [Timeouts](timeouts.md#idle-timeout).
 
 ## Connect at design time
 
@@ -251,7 +251,7 @@ A non-zero timeout stored in a form makes the connect fail on a server without t
 - **A stored `Connected = True`.** The form connects while it loads. If the server is not reachable, the program raises an error at start-up. Turn off `ddoStoreConnected` for forms that must start without the server.
 - **Login prompt without a dialog unit.** `UseLoginPrompt` needs `FIBDBLoginDlg`, `FIB_FMX_DBLoginDlg`, or your own `pFIBLoginDialog`.
 - **Opening twice.** `Open` on a connected `TFIBDatabase` raises; check `Connected` first.
-- **Restore timer.** `laWaitRestore` does nothing until `WaitForRestoreConnect` is assigned a value above `0` in code.
+- **Restore timer in old forms.** Forms saved by versions before 7.9.1 without a value set in the Object Inspector store `WaitForRestoreConnect = 0`, so `laWaitRestore` does nothing more than `laCloseConnect`. Remove the line or set the interval.
 - **Lost connection without an error handler.** `OnLostConnect` does not fire without a `TpFibErrorHandler` or a call to `ExTestConnected`.
 - **Idle timeouts.** A server idle timeout and the client-side `Timeout` both close the connection; they are different settings (see [Timeouts](timeouts.md)).
 

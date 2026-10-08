@@ -38,7 +38,8 @@ type
 
   TpFIBDatabase = class(TFIBDatabase)
   private
-    vTimer: TFIBTimer;
+    FRestoreConnectTimer: TFIBTimer;
+    FWaitForRestoreConnect: Cardinal;
     FAliasName: Ansistring;
     FRewriteAlias: boolean;
     FBeforeConnect: TFIBLoginEvent;
@@ -52,8 +53,7 @@ type
     FCacheSchemaOptions: TCacheSchemaOptions;
     FOnAcceptCacheSchema: TpFIBAcceptCacheSchema;
     procedure SetAliasName(const Value: Ansistring);
-    function GetWaitRC: Cardinal;
-    procedure SetWaitRC(Value: Cardinal);
+    procedure SetWaitForRestoreConnect(Value: Cardinal);
     function GetFIBDataSet(Index: integer): TFIBCustomDataSet;
     function GetFIBQuery(Index: integer): TFIBQuery;
     function GetFIBVersion: string;
@@ -67,7 +67,7 @@ type
     procedure DoAfterRestoreConnect; dynamic;
     function GetAfterConnect: TNotifyEvent;
     procedure SetAfterConnect(Method: TNotifyEvent);
-    procedure CreateRCTimer;
+    procedure CreateRestoreConnectTimer;
 
     procedure ReadSaveDBParams(Reader: TReader);
     procedure DefineProperties(Filer: TFiler); override;
@@ -97,7 +97,7 @@ type
   published
     property CacheSchemaOptions: TCacheSchemaOptions read FCacheSchemaOptions write FCacheSchemaOptions;
     property AliasName: Ansistring read FAliasName write SetAliasName;
-    property WaitForRestoreConnect: Cardinal read GetWaitRC write SetWaitRC default 30000;
+    property WaitForRestoreConnect: Cardinal read FWaitForRestoreConnect write SetWaitForRestoreConnect default 30000;
     property SaveAliasParamsAfterConnect: boolean read FRewriteAlias write FRewriteAlias default True;
     property BeforeConnect: TFIBLoginEvent read FBeforeConnect write FBeforeConnect;
     property AfterConnect: TNotifyEvent read GetAfterConnect write SetAfterConnect;
@@ -329,6 +329,7 @@ constructor TpFIBDatabase.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FRewriteAlias := True;
+  FWaitForRestoreConnect := 30000;
   FCacheSchemaOptions := TCacheSchemaOptions.Create;
 end;
 
@@ -338,14 +339,14 @@ begin
   FCacheSchemaOptions.Free;
 end;
 
-procedure TpFIBDatabase.CreateRCTimer;
+procedure TpFIBDatabase.CreateRestoreConnectTimer;
 begin
-  if not Assigned(vTimer) then
+  if not Assigned(FRestoreConnectTimer) then
   begin
-    vTimer := TFIBTimer.Create(Self);
-    vTimer.Enabled := False;
-    vTimer.Interval := 30000;
-    vTimer.OnTimer := RestoreConnect;
+    FRestoreConnectTimer := TFIBTimer.Create(Self);
+    FRestoreConnectTimer.Enabled := False;
+    FRestoreConnectTimer.Interval := FWaitForRestoreConnect;
+    FRestoreConnectTimer.OnTimer := RestoreConnect;
   end;
 end;
 
@@ -368,26 +369,15 @@ begin
     ReadParamsFromAlias
 end;
 
-function TpFIBDatabase.GetWaitRC: Cardinal;
+procedure TpFIBDatabase.SetWaitForRestoreConnect(Value: Cardinal);
 begin
-  if Assigned(vTimer) then
-    Result := vTimer.Interval
+  FWaitForRestoreConnect := Value;
+  if not Assigned(FRestoreConnectTimer) then
+    Exit;
+  if Value = 0 then
+    StopWaitRestoreConnect
   else
-    Result := 0;
-end;
-
-procedure TpFIBDatabase.SetWaitRC(Value: Cardinal);
-begin
-  if Value > 0 then
-  begin
-    CreateRCTimer;
-    vTimer.Interval := Value
-  end
-  else if Assigned(vTimer) then
-  begin
-    vTimer.Free;
-    vTimer := nil;
-  end;
+    FRestoreConnectTimer.Interval := Value;
 end;
 
 // Alias Works
@@ -404,7 +394,7 @@ begin
   Result := VarType(Values) <> varBoolean;
   if not Result then
     Exit; // Don't exist
-  for i := 0 to 4 do
+  for i := 0 to 5 do
   begin
     if Values[1, i] then
       case i of
@@ -476,6 +466,7 @@ begin
   inherited Open(RaiseExcept);
   if Connected then
   begin
+    StopWaitRestoreConnect;
     if FCacheSchemaOptions.AutoLoadFromFile and not(csDesigning in ComponentState) and
       FileExists(FCacheSchemaOptions.LocalCacheFile) then
       if Assigned(FOnAcceptCacheSchema) and FCacheSchemaOptions.ValidateAfterLoad then
@@ -498,15 +489,12 @@ end;
 // Lost Connection works
 
 procedure TpFIBDatabase.InternalClose(Force: boolean; DBinShutDown: boolean);
-// override;
-// var Actions:TOnLostConnectActions;
 begin
+  if not Connected then
+    Exit;
   if FCacheSchemaOptions.AutoSaveToFile and not(csDesigning in ComponentState) then
     SaveSchemaToFile(FCacheSchemaOptions.LocalCacheFile);
-  // Actions:=laCloseConnect;
-  if Connected then
-    // if DBinShutDown or ExTestConnected(Actions)  then
-    inherited InternalClose(Force, DBinShutDown);
+  inherited InternalClose(Force, DBinShutDown);
 end;
 
 function TpFIBDatabase.ExTestConnected(Actions: TOnLostConnectActions): boolean;
@@ -550,10 +538,11 @@ end;
 
 procedure TpFIBDatabase.DoOnErrorRestoreConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TOnLostConnectActions); // dynamic;
 var
-  b: boolean;
+  DoRaise: boolean;
 begin
+  DoRaise := False;
   if Assigned(FOnErrorRestoreConnect) then
-    FOnErrorRestoreConnect(Self, E, Actions, b);
+    FOnErrorRestoreConnect(Self, E, Actions, DoRaise);
 end;
 
 procedure TpFIBDatabase.DoAfterRestoreConnect; // dynamic;
@@ -580,54 +569,62 @@ end;
 procedure TpFIBDatabase.RestoreConnect(Sender: TObject);
 var
   Actions: TOnLostConnectActions;
-  vIsTimer: boolean;
+  Restored: boolean;
 begin
   if Connected then
+  begin
+    StopWaitRestoreConnect;
     Exit;
+  end;
+  if Assigned(FRestoreConnectTimer) and FRestoreConnectTimer.Enabled then
+  begin
+    FRestoreConnectTimer.Enabled := False;
+    Actions := laWaitRestore
+  end
+  else
+    Actions := laIgnore;
+  Restored := False;
   Include(FDatabaseRunState, drsInRestoreLostConnect);
   try
-    vIsTimer := Assigned(vTimer) and vTimer.Enabled;
-    if vIsTimer then
-    begin
-      vTimer.Enabled := False;
-      Actions := laWaitRestore
-    end
-    else
-      Actions := laIgnore;
-    Connected := True;
-    DoAfterRestoreConnect;
-  except
-    On E: EFIBError do
-    begin
-      DoOnErrorRestoreConnect(Self, E, Actions);
-      if (Actions = laWaitRestore) then
-        WaitRestoreConnect;
-      Exclude(FDatabaseRunState, drsInRestoreLostConnect);
-      if Actions = laTerminateApp then
-      begin
-        if CallTerminateProcs then
-          TerminateApplication
-      end;
-    end
+    try
+      Connected := True;
+      // BeforeConnect can cancel the connect without an error
+      Restored := Connected;
+    except
+      on E: EFIBError do
+        DoOnErrorRestoreConnect(Self, E, Actions);
+    end;
+  finally
+    Exclude(FDatabaseRunState, drsInRestoreLostConnect);
   end;
+  if Restored then
+    DoAfterRestoreConnect
+  else
+    case Actions of
+      laWaitRestore:
+        WaitRestoreConnect;
+    else
+      // OnLostConnect may have restarted the timer during the attempt
+      StopWaitRestoreConnect;
+      if (Actions = laTerminateApp) and CallTerminateProcs then
+        TerminateApplication;
+    end;
 end;
 
 procedure TpFIBDatabase.WaitRestoreConnect;
 begin
-  if Assigned(vTimer) then
-  begin
-    Include(FDatabaseRunState, drsInRestoreLostConnect);
-    vTimer.Enabled := True;
-  end
+  if FWaitForRestoreConnect = 0 then
+    Exit;
+  CreateRestoreConnectTimer;
+  Include(FDatabaseRunState, drsInRestoreLostConnect);
+  FRestoreConnectTimer.Enabled := True;
 end;
 
 procedure TpFIBDatabase.StopWaitRestoreConnect;
 begin
-  if Assigned(vTimer) then
-  begin
-    Exclude(FDatabaseRunState, drsInRestoreLostConnect);
-    vTimer.Enabled := False;
-  end
+  Exclude(FDatabaseRunState, drsInRestoreLostConnect);
+  if Assigned(FRestoreConnectTimer) then
+    FRestoreConnectTimer.Enabled := False;
 end;
 
 function TpFIBDatabase.GetFIBDataSet(Index: integer): TFIBCustomDataSet;
@@ -747,16 +744,20 @@ var
   DS: TFIBCustomDataSet;
   TR: TFIBTransaction;
 begin
+  if Length(DataSets) = 0 then
+    Exit;
   TR := nil;
   for i := 0 to High(DataSets) do
   begin
+    if not (DataSets[i] is TFIBCustomDataSet) then
+      FIBError(feUpdateWrongDB, [CmpFullName(DataSets[i])]);
     DS := TFIBCustomDataSet(DataSets[i]);
     if DS.Database <> Self then
-      FIBError(feUpdateWrongDB, [CmpFullName(TFIBCustomDataSet(DataSets[i]))]);
-    if TR = nil then
+      FIBError(feUpdateWrongDB, [CmpFullName(DS)]);
+    if i = 0 then
       TR := DS.UpdateTransaction;
-    if (DS.UpdateTransaction <> TR) or (TR = nil) then
-      FIBError(feUpdateWrongTR, [CmpFullName(TFIBCustomDataSet(DataSets[i]))]);
+    if (TR = nil) or (DS.UpdateTransaction <> TR) then
+      FIBError(feUpdateWrongTR, [CmpFullName(DS)]);
   end;
   TR.CheckInTransaction;
   for i := 0 to High(DataSets) do
