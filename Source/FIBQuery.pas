@@ -147,6 +147,8 @@ type
 
     procedure SetAsLong(aValue: Long);
     procedure SetAsQuad(aValue: TISC_QUAD);
+    // keeps the long value which the BLOB ID was written from
+    procedure SetQuadValue(const aValue: TISC_QUAD);
     procedure SetAsShort(aValue: Short);
     procedure InternalSetAsString(aValue: Pointer; IsWide: boolean; AdjustDeffered: boolean = False);
     procedure SetAsString(const aValue: string);
@@ -2251,6 +2253,17 @@ begin
 end;
 
 procedure TFIBXSQLVAR.SetAsQuad(aValue: TISC_QUAD);
+begin
+  // the last assignment wins, a kept long value would replace the BLOB ID at the execute
+  if FStreamValue <> nil then
+  begin
+    FreeAndNil(FStreamValue);
+    FWideTempValue := '';
+  end;
+  SetQuadValue(aValue);
+end;
+
+procedure TFIBXSQLVAR.SetQuadValue(const aValue: TISC_QUAD);
 var
   vSQLType: integer;
 begin
@@ -6093,9 +6106,9 @@ begin
                 Transaction.StartTransaction;
           end;
           bs.Finalize;
-          AsQuad := bs.BlobID;
+          SetQuadValue(bs.BlobID);
           if toParams <> FUserSQLParams then
-            FUserSQLParams.ByName[toParams[i].Name].AsQuad := AsQuad
+            FUserSQLParams.ByName[toParams[i].Name].SetQuadValue(AsQuad)
         end
   finally
     bs.Free;

@@ -148,6 +148,8 @@ Firebird 4+ statement and idle timeouts; details in `Docs/guide/timeouts.md`.
   milliseconds.
 - A BOOLEAN parameter set with `AsString := 'true'` / `'false'` before `Prepare`
   raised "Invalid data conversion".
+- `AsQuad` assigned after a long `AsString` was replaced by the string at the
+  execute.
 
 ## [7.9.0] - 2026-10-01
 
