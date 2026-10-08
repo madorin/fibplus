@@ -6154,7 +6154,7 @@ procedure TFIBQuery.ApplyStatementTimeout(Value: Cardinal);
 begin
   if (FHandle = nil) or not TimeoutApplies then
     Exit;
-  Database.RequireStatementTimeout(CmpFullName(Self) + '.StatementTimeout', Value);
+  Database.RequireStatementTimeout(CmpPropPath(Self, 'StatementTimeout'), Value);
   if Database.Capabilities.StatementTimeout then
     Call(Database.ClientLibrary.fb_dsql_set_timeout(StatusVector, @FHandle, Value), True);
 end;

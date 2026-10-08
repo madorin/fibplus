@@ -81,6 +81,7 @@ function FormatNumericString(const Format, Source: string; OneSectionFormat: Boo
 
 function TimeStamp(const aDate, aTime: Integer): TTimeStamp;
 function CmpFullName(cmp: TComponent): string;
+function CmpPropPath(Cmp: TComponent; const PropName: string): string;
 function CmpInLoadedState(cmp: TComponent): Boolean; {$IFDEF D2005+} inline; {$ENDIF}
 procedure FullClearStrings(aStrings: TStrings);
 
@@ -390,6 +391,16 @@ begin
           Result := Name + '.' + Result;
       cmp := Owner;
     end;
+end;
+
+// PropName prefixed with the component path, without a leading dot for an unnamed component
+function CmpPropPath(Cmp: TComponent; const PropName: string): string;
+begin
+  Result := CmpFullName(Cmp);
+  if Result = '' then
+    Result := PropName
+  else
+    Result := Result + '.' + PropName;
 end;
 
 function CmpInLoadedState(cmp: TComponent): Boolean;

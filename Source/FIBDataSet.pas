@@ -3797,7 +3797,7 @@ begin
     Exit;
   // checked here, so the loop never stops halfway; a query checks only while prepared
   if Assigned(Database) and Database.Connected and not (csLoading in ComponentState) then
-    Database.RequireStatementTimeout(CmpFullName(Self) + '.StatementTimeout', Value);
+    Database.RequireStatementTimeout(CmpPropPath(Self, 'StatementTimeout'), Value);
   for i := 0 to ComponentCount - 1 do
     if Components[i] is TFIBQuery then
       TFIBQuery(Components[i]).StatementTimeout := Value;

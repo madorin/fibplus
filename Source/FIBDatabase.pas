@@ -1198,14 +1198,14 @@ end;
 // Raises before the caller stores the value; sends only when the server supports it
 procedure TFIBSession.SendStatementTimeout(Value: Cardinal);
 begin
-  FDatabase.RequireSessionTimeouts('Session.StatementTimeout', Value);
+  FDatabase.RequireSessionTimeouts(CmpPropPath(FDatabase, 'Session.StatementTimeout'), Value);
   if FDatabase.Capabilities.SessionTimeouts then
     Execute('SET STATEMENT TIMEOUT ' + AnsiString(IntToStr(Int64(Value))) + ' MILLISECOND');
 end;
 
 procedure TFIBSession.SendIdleTimeout(Value: Cardinal);
 begin
-  FDatabase.RequireSessionTimeouts('Session.IdleTimeout', Value);
+  FDatabase.RequireSessionTimeouts(CmpPropPath(FDatabase, 'Session.IdleTimeout'), Value);
   // the server would close the IDE's attachment; like TFIBDatabase.Timeout
   if csDesigning in FDatabase.ComponentState then
     Exit;
