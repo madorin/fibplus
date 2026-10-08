@@ -3075,6 +3075,8 @@ begin
 
       case sSQLType of
         SQL_BOOLEAN:
+          // text is converted by the server, as after Prepare
+          if (uSQLType <> SQL_TEXT) and (uSQLType <> SQL_VARYING) then
           begin
             B := FXSQLVARs^[i].AsBoolean;
             FXSQLVARs^[i].SetValue(SQL_BOOLEAN, SizeOf(boolean), tspValue, B);

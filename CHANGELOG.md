@@ -146,6 +146,8 @@ Firebird 4+ statement and idle timeouts; details in `Docs/guide/timeouts.md`.
   on insert. The value keeps the fractional digits of the default, as the
   server does: `CURRENT_TIME` and `LOCALTIME` without a precision no longer get
   milliseconds.
+- A BOOLEAN parameter set with `AsString := 'true'` / `'false'` before `Prepare`
+  raised "Invalid data conversion".
 
 ## [7.9.0] - 2026-10-01
 
