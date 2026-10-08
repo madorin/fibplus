@@ -1261,7 +1261,7 @@ end;
 constructor TFIBDatabase.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
-  FLibraryName := IBASE_DLL;
+  FLibraryName := CLIENT_DLL;
   FFIBBases := TList.Create;
   FTransactions := TList.Create;
   FDBParams := TDBParams.Create(Self);
@@ -1291,7 +1291,7 @@ begin
   else
     begin
       FSynchronizeTime := True;
-      FSQLDialect := 1;
+      FSQLDialect := 3;
       FDesignDBOptions := [ddoStoreConnected]
     end;
 
@@ -1411,7 +1411,7 @@ end;
 
 function TFIBDatabase.StoredLibraryName: Boolean;
 begin
-  Result := FLibraryName <> IBASE_DLL
+  Result := FLibraryName <> CLIENT_DLL
 end;
 
 procedure TFIBDatabase.SetGenerators(Value: TGeneratorsCache);

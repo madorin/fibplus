@@ -34,7 +34,7 @@ Available in the Object Inspector. When the component is dropped on a form at de
 | `ConnectParams` | `TConnectParams` | | Typed access to common `DBParams` entries, see [ConnectParams](#connectparams). |
 | `DBName` | `string` | | Database name as passed to the client library, for example `server:C:\Data\Sales.fdb`. When the value changes, it raises while connected at run time; at design time it closes the connection. `DatabaseName` is the same property under another name. |
 | `DBParams` | `TDBParams` | | Database parameters, one `Name=Value` per line, see [DBParams](#dbparams). Changing them at run time while connected raises. |
-| `LibraryName` | `string` | `gds32.dll` (`libfbclient.dylib` on macOS) | Client library to load. Raises while connected. Stored in the form only when it differs from the default. |
+| `LibraryName` | `string` | `fbclient.dll` (`libfbclient.dylib` on macOS) | Client library to load. Raises while connected. Stored in the form only when it differs from the default. On Windows, `fbclient.dll` without a path falls back to `gds32.dll` when it cannot be loaded. |
 | `LibraryName64` | `string` | | Client library for 64-bit Windows. Used instead of `LibraryName` when it is not empty. *Delphi XE2+* |
 | `OnCryptKeyRequest` | `TFIBCryptKeyRequestEvent` | | Called during connect when the server asks for a key of an encrypted database. `Key` starts as `CryptKey`. Runs in the connecting thread, inside the global connect lock. |
 | `UseLoginPrompt` | `Boolean` | `False` | Show the login dialog before connecting. Needs a login dialog unit in the application, for example `FIBDBLoginDlg`. |
@@ -44,7 +44,7 @@ Available in the Object Inspector. When the component is dropped on a form at de
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | `Session` | `TFIBSession` | | Statement and idle timeouts sent to the server, see [TFIBSession](TFIBSession.md). |
-| `SQLDialect` | `Integer` | `1` | SQL dialect of the connection. Values below `1` raise. While connected the value cannot exceed the dialect of the database. After connecting, a value above the database dialect is lowered to it. |
+| `SQLDialect` | `Integer` | `3` | SQL dialect of the connection. Values below `1` raise. While connected the value cannot exceed the dialect of the database. After connecting, a value above the database dialect is lowered to it. |
 | `SynchronizeTime` | `Boolean` | `True` | At connect, measure the difference between the client clock and the server time into `DifferenceTime`. Not done at design time. |
 | `UpperOldNames` | `Boolean` | `False` | Name conventions of InterBase 4 and 5. Together with `SQLDialect` below `3` it decides the result of `EasyFormatsStr`. |
 

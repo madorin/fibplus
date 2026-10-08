@@ -226,7 +226,7 @@ begin
   end
   else
   begin
-    Dialect := 1;
+    Dialect := 3;
     Panel6.Visible := False;
     Splitter2.Visible := False;
     btnCheck.Enabled := False;

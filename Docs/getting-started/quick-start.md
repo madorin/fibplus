@@ -5,7 +5,7 @@ Connect to a database, run a first query, and show data in a grid. The steps use
 You need:
 
 - FibPlus installed in the IDE, see [Installation](../../README.md#-installation). The components are on the **FIBPlus** page of the Tool Palette.
-- A running Firebird server and its client library. FibPlus loads `gds32.dll` by default on Windows. For a Firebird client, set `LibraryName` to `fbclient.dll` (step 1).
+- A running Firebird server and its client library. FibPlus loads `fbclient.dll` by default on Windows; put it next to the program or set `LibraryName` to its path.
 - A VCL application with an empty form.
 
 ## 1. Connect
@@ -27,7 +27,6 @@ You need:
    ```delphi
    procedure TForm1.FormCreate(Sender: TObject);
    begin
-     Database.LibraryName := 'fbclient.dll'; // skip when gds32.dll is the Firebird client
      Database.Connected := True;
    end;
    ```
@@ -94,7 +93,6 @@ end;
    ```delphi
    procedure TForm1.FormCreate(Sender: TObject);
    begin
-     Database.LibraryName := 'fbclient.dll';
      Database.Connected := True;
      DataSet.Open;
    end;

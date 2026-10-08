@@ -736,7 +736,7 @@ end;
 constructor TpFIBCustomService.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
-  FLibraryName := IBASE_DLL;
+  FLibraryName := CLIENT_DLL;
   // FGDSLibrary := GetGDSLibrary;
   // FGDSLibrary.CheckIBLoaded;
   FIBLoaded := True;
@@ -1063,7 +1063,7 @@ end;
 
 function TpFIBCustomService.StoredLibraryName: Boolean;
 begin
-  result := FLibraryName <> IBASE_DLL;
+  Result := FLibraryName <> CLIENT_DLL;
 end;
 
 { TpFIBServerProperties }

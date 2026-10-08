@@ -103,7 +103,7 @@ A statement is handled by the scripter or sent to the server, depending on its f
 | `SET AUTODDL ON \| OFF` | Sets `AutoDDL`. |
 | `SET SQL DIALECT n` | Sets the dialect used by the next `CONNECT` or `CREATE DATABASE`. |
 | `SET NAMES cs` | Sets the character set used by the next `CONNECT`. |
-| `SET CLIENTLIB 'lib'` | Sets the client library used by the next `CONNECT`, `CREATE DATABASE`, or `DROP DATABASE`. `Parse` resets it to `gds32.dll`. |
+| `SET CLIENTLIB 'lib'` | Sets the client library used by the next `CONNECT`, `CREATE DATABASE`, or `DROP DATABASE`. Without it, the database keeps its `LibraryName`. `Parse` clears it. |
 | `SET BLOBFILE 'file'` | Sets the file that supplies BLOB parameters, see [BLOB files](#blob-files). |
 | `{$...}` | A directive, see [Directives](#directives). |
 

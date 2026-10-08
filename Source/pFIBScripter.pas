@@ -1088,7 +1088,8 @@ begin
             vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
             CopyFragment(vToken, Stmt.smdEnd, FDatabase.DBParams);
             FDatabase.SQLDialect := FSQLDialect;
-            FDatabase.LibraryName := FLibraryName;
+            if FLibraryName <> '' then
+              FDatabase.LibraryName := FLibraryName;
 {$IFNDEF BEZBAZY}
             try
               FDatabase.CreateDatabase;
@@ -1128,7 +1129,8 @@ begin
             vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
             if FDatabase.Connected then
               FDatabase.Close;
-            FDatabase.LibraryName := FLibraryName;
+            if FLibraryName <> '' then
+              FDatabase.LibraryName := FLibraryName;
             FDatabase.DBName := FParser.GetToken(vToken);
             vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
             tmpStr := FParser.GetToken(vToken);
@@ -1625,7 +1627,7 @@ begin
   FMakeConnectInScript := False;
   FHaveDMLStatements := False;
   FHaveUnknownStatements := False;
-  FLibraryName := 'gds32.dll';
+  FLibraryName := '';
   FParser.ParseScript(FScript, Terminator, FScriptMap, Directives);
   FPrepared := True;
 

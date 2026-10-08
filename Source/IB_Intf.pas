@@ -1883,6 +1883,10 @@ var
   VersionBuffer: array [0 .. 255] of Ansichar;
 begin
   FLibraryHandle := LoadLibrary(PChar(FLibraryName));
+{$IFDEF WINDOWS}
+  if (FLibraryHandle <= HINSTANCE_ERROR) and SameText(FLibraryName, FBCLIENT_DLL) then
+    FLibraryHandle := LoadLibrary(GDS32_DLL);
+{$ENDIF}
   if (FLibraryHandle > HINSTANCE_ERROR) then
   begin
     FBLOB_get := GetProcAddr('BLOB_get');

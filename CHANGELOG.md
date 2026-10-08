@@ -84,6 +84,17 @@ Firebird 4+ statement and idle timeouts; details in `Docs/guide/timeouts.md`.
 - `TFIBDatabase.FBAttachCharsetID` is a deprecated function, use
   `Capabilities.AttachmentCharSetID` (read once at connect, -1 when not
   connected or on InterBase); `IsKOI8Connect` is deprecated.
+- The default client library is `fbclient.dll` instead of `gds32.dll`
+  (`TFIBDatabase.LibraryName`, `TpFIBServices.LibraryName`). The global
+  `IBASE_DLL` is renamed to `CLIENT_DLL`. When `fbclient.dll` without a path
+  can't be loaded, `gds32.dll` is loaded, so applications shipped with
+  `gds32.dll` keep working. Forms saved with the old default don't store
+  `LibraryName` and get the new one.
+- The default `SQLDialect` is 3 instead of 1: in `TFIBDatabase` created in code,
+  for new components dropped at design time (`DefSQLDialect`; a value saved in
+  the preferences is kept), and in the SQL editor without a database. Forms
+  always store `SQLDialect`, so they keep their value. On a dialect 1 database
+  the dialect is lowered to 1 at connect, as before.
 - The packages for Delphi 2007 and later write DCU files to
   `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)` instead of
   `.\$(Platform)\$(Config)`: the folder next to the packages was shared by all
@@ -104,6 +115,9 @@ Firebird 4+ statement and idle timeouts; details in `Docs/guide/timeouts.md`.
   when a statement fails, instead of committing the rows inserted before it
   or leaving the transaction active.
 - Array fields kept the descriptor of a previous connection.
+- `TpFIBScripter`: `CONNECT`, `CREATE DATABASE` and `DROP DATABASE` replaced
+  the `LibraryName` of the database with the default library. It is changed
+  only by `SET CLIENTLIB`.
 - Locate, filters, sorting and bookmarks on string fields of a non-system code
   page; lookup fields with a Unicode result field.
 - `UseExecuteBlock`: apostrophes in literals not doubled, non-ASCII text sent

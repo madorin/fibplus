@@ -4,7 +4,7 @@ A connection to a Firebird or InterBase database is a `TFIBDatabase` (or its des
 
 ## Requirements
 
-- A Firebird or InterBase client library on the machine of the application. By default FibPlus loads `gds32.dll` (`libfbclient.dylib` on macOS); see [Client library](#client-library).
+- A Firebird or InterBase client library on the machine of the application. By default FibPlus loads `fbclient.dll` (`libfbclient.dylib` on macOS); see [Client library](#client-library).
 - Features that depend on the server or client version are listed in [Capabilities](#capabilities) and in [Firebird versions](firebird-versions.md).
 
 The examples use the components `Database` (`TFIBDatabase` or `TpFIBDatabase`) and `Transaction` (`TFIBTransaction`).
@@ -37,7 +37,7 @@ if not Database.Connected then
 
 The attach, including the login dialog, runs inside a global lock, so connects started in other threads wait for it.
 
-`SQLDialect` is `1` unless you set it. When the database has a lower dialect than `SQLDialect`, `SQLDialect` is lowered to the database dialect after the attach. While connected, a dialect above the database dialect raises.
+`SQLDialect` is `3` unless you set it. When the database has a lower dialect than `SQLDialect`, `SQLDialect` is lowered to the database dialect after the attach. While connected, a dialect above the database dialect raises.
 
 ## Connection parameters
 
@@ -208,7 +208,7 @@ On a `NONE` connection to *Firebird 2.1+* with ODS 11.1 or later, DDL and the na
 
 ## Client library
 
-`LibraryName` is the file name or the path of the client library. The default is `gds32.dll` (`libfbclient.dylib` on macOS). To use another library, set the property before connecting:
+`LibraryName` is the file name or the path of the client library. The default is `fbclient.dll` (`libfbclient.dylib` on macOS). To use another library, set the property before connecting:
 
 ```delphi
 Database.LibraryName := 'C:\Firebird\fbclient.dll';
@@ -219,6 +219,7 @@ Database.Open;
 - You can change `LibraryName` only while the database is closed.
 - `LibraryName64` is the library for 64-bit Windows. In a 64-bit Windows program it is used instead of `LibraryName` when it is not empty. *Delphi XE2+*
 - All databases that one transaction spans must use the same `LibraryName`; otherwise adding a database to the transaction raises an error.
+- On Windows, when `LibraryName` is `fbclient.dll` without a path and it cannot be loaded, `gds32.dll` is loaded instead. A name with a path or another name is not replaced.
 - If the library cannot be loaded, the connect raises an operating system error.
 
 Check what was loaded:

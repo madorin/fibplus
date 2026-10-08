@@ -468,21 +468,21 @@ const
   DefaultDetailConditions: TDetailConditions = [];
 
   // DataBase Defaults
-  DefStoreConnected: boolean = True;
-  DefSynchronizeTime: boolean = True;
-  DefUpperOldNames: boolean = False;
-  DefUseLoginPrompt: boolean = False;
+  DefStoreConnected: Boolean = True;
+  DefSynchronizeTime: Boolean = True;
+  DefUpperOldNames: Boolean = False;
+  DefUseLoginPrompt: Boolean = False;
   DefCharSet: string = '';
-  DefSQLDialect: integer = 1;
+  DefSQLDialect: Integer = 3;
 
   // Transaction Defaults
   DefTimeOutAction: TTransactionAction1 = TARollback1;
-  DefTimeOut: integer = 0;
+  DefTimeOut: Integer = 0;
   DefTPBMode: TTPBMode = tpbReadCommitted;
 
   // FIBQuery Defaults
-  DefParamCheck: boolean = True;
-  DefGoToFirstRecordOnExecute: boolean = True;
+  DefParamCheck: Boolean = True;
+  DefGoToFirstRecordOnExecute: Boolean = True;
   DefQueryOptions: TpFIBQueryOptions = [];
   // Registry Keys
   RegFIBRoot     = 'FIBC_Software';
@@ -491,9 +491,9 @@ const
   RegRepository  = 'Repository';
   DefPrefixGenName: string = 'GEN_';
   DefSufixGenName: string = '_ID';
-  DefEmptyStrToNull: boolean = True;
+  DefEmptyStrToNull: Boolean = True;
   // FormatFields Defaults
-  FF_UseRuntimeDefaults: boolean = False;
+  FF_UseRuntimeDefaults: Boolean = False;
   RDefDateFormat: string = 'dd.mm.yyyy';
   RDefTimeFormat: string = 'hh:nn';
   RDefDisplayFormatNum: string = '#,##0.';

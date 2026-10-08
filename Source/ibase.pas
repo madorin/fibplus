@@ -29,12 +29,17 @@ const
   DSQL_drop   = 2;
   DSQL_cancel = 4;
 
-{$J+}
 {$IFDEF MACOS}
-  IBASE_DLL: string = 'libfbclient.dylib';
+  FBCLIENT_DLL = 'libfbclient.dylib';
 {$ELSE}
-  IBASE_DLL: string = 'gds32.dll'; { do not localize }
+  FBCLIENT_DLL = 'fbclient.dll'; { do not localize }
 {$ENDIF}
+  // Loaded when FBCLIENT_DLL without a path is not found; the default before 7.9.1
+  GDS32_DLL = 'gds32.dll'; { do not localize }
+
+{$J+}
+  // Initial LibraryName of new components
+  CLIENT_DLL: string = FBCLIENT_DLL;
 {$J-}
 
 const

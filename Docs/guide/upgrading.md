@@ -26,6 +26,7 @@ Find the version you use now, then read every section above it, from the one jus
 |-----|-----|------------|
 | `FIBRelease` | `FIBPatchVersion` | Rename. |
 | `FIBBuildDate` | `FIBVersionDate` | Rename. The value is an ISO date. |
+| `IBASE_DLL` (`ibase`) | `CLIENT_DLL` | Rename. The default value is `fbclient.dll`, see [Client library](#client-library). |
 | `v`-prefixed protected fields of `TFIBDatabase` and `TFIBTransaction`: `vInternalTransaction` and the other event list and TPB fields | `F` prefix: `FInternalTransaction`, `FAfterConnectEvents`, `FBeforeDisconnectEvents`, `FBeforeDestroyEvents`, `FBeforeStartTransactionEvents`, `FAfterStartTransactionEvents`, `FBeforeEndTransactionEvents`, `FAfterEndTransactionEvents`, `FDatabaseTRParams`, `FDatabaseTPBs` | Rename in descendants of these classes that use the fields. |
 | `SUPPORT_KOI8_CHARSET`, `StdFuncs.ConvertToCodePage`, `StdFuncs.ConvertFromCodePage` | Removed | Use `FIBCharSets` (`DecodeString`, `EncodeString`). Affects only code that defined the symbol (it was off by default) or calls the functions. |
 | `SqlTxtRtns.IBStdCharacterSets`, `IBStdCharSetsCount`, `IBStdCollationsCount` | Removed | Use `FIBCharSets.FirebirdCharSetName`. |
@@ -50,6 +51,27 @@ These members still compile.
 `Capabilities.AttachmentCharSetID` is read once at connect. It is `-1` when the database is not connected and on InterBase. See [TFIBDatabase](../reference/TFIBDatabase.md).
 
 ### Changed behavior
+
+#### Client library
+
+The default `LibraryName` is `fbclient.dll` (Windows); it was `gds32.dll`. This applies to `TFIBDatabase` and `TpFIBServices`, and comes from the global `CLIENT_DLL`. A form saved with the old default does not store `LibraryName`, so it gets the new one.
+
+When `LibraryName` is `fbclient.dll` without a path and that library cannot be loaded, FibPlus loads `gds32.dll`. An application that ships the Firebird client renamed to `gds32.dll` keeps working, but:
+
+- An `fbclient.dll` that Windows finds first (in `System32` or in `PATH`) is loaded instead of the `gds32.dll` next to the program. Ship `fbclient.dll` next to the program, or set `LibraryName` to the full path of the library you ship.
+- The plugins of the *Firebird 3+* client, for example `ChaCha` for wire encryption, need a library with the name `fbclient.dll`. A client renamed to `gds32.dll` cannot load them.
+- A name with a path, or another name, is never replaced by `gds32.dll`. To keep the old library on purpose, set `LibraryName` to `gds32.dll`, or `CLIENT_DLL := 'gds32.dll'` at startup before any component is created.
+
+`TpFIBScripter` no longer changes `LibraryName` of its database on `CONNECT`, `CREATE DATABASE`, and `DROP DATABASE`; only `SET CLIENTLIB` changes it. A script without `SET CLIENTLIB` that relied on the default library now uses the `LibraryName` set on the database.
+
+#### SQL dialect
+
+The default `SQLDialect` is `3`; it was `1`. It changes:
+
+- `TFIBDatabase` and `TpFIBDatabase` created in code.
+- Components dropped on a form at design time, through `DefSQLDialect`. A dialect saved in the FIBPlus preferences is kept.
+
+Forms always store `SQLDialect`, so they keep their value. On a dialect 1 database, `SQLDialect` is lowered to `1` at connect, as before. Code that creates a database in code, connects to a dialect 3 database, and relies on dialect 1 must set `SQLDialect := 1`. Dialect 1 treats text in double quotes as a string literal and `DATE` as a timestamp.
 
 #### `AttachmentID`
 
