@@ -268,12 +268,17 @@ type
   private
     // AutoExecBlock support
     FUseExecBlockForDML: boolean;
-    vBlockContextCount: Integer;
-    vBlockSize: Integer;
+    FBlockStatementCount: Integer;
+    FBlockSize: Integer;
     FExecBlockStatement: TStrings;
+    // the last statement added to the block, reported when the block runs
+    FBlockLastStmt: TStatementDesc;
+    FBlockLastStmtNo: Integer;
+    FBlockLastLine: Integer;
     procedure RestartBlock;
-    procedure CloseBlock;
-    function AddStatementToExecuteBlock(Stmt: TStrings): boolean;
+    function CanGroupInExecuteBlock(const Stmt: TStatementDesc): Boolean;
+    function AddStatementToExecuteBlock(const Stmt: TStatementDesc; StmtNo, Line: Integer; SQLText: TStrings): Boolean;
+    function FlushExecBlock: Boolean;
   private
     FOnExecuteError: TOnSQLScriptExecError;
     FBeforeStatementExecute: TOnStatementExecute;
@@ -285,11 +290,12 @@ type
     procedure SetConnectParams(StartToken: TStmtCoord; EndCoord: TStmtCoord);
     procedure TryFillBlobParams;
     function PrepareReinsert(const InsTxt, ReInsTxt: string): string;
-    procedure BeginRun;
+    procedure BeginRun(Resume: Boolean);
     procedure EndRun;
-    procedure RunStatement(Stmt: PStatementDesc; StmtNo: Integer; StmtTxt: TStrings);
+    function HandleExecuteError(E: EFIBError; const Stmt: TStatementDesc; StmtNo: Integer; SQLText: TStrings): Boolean;
+    procedure ApplyCommand(const Stmt: TStatementDesc; StmtNo, Line: Integer; StmtTxt, SQLText: TStrings);
+    function RunStatement(Stmt: PStatementDesc; StmtNo: Integer; StmtTxt: TStrings): Boolean;
     function ExecuteParsed(var StmtNo: Integer; StmtTxt: TStrings): boolean;
-    procedure FlushExecBlock;
   private
     // IB2007
     FInBatchCollect: boolean;
@@ -302,7 +308,7 @@ type
     FDirectiveConsts: TStrings;
     procedure SetScript(const Value: TStrings);
     procedure SetDefines(const Value: TStrings);
-    function DirectiveForbid(DirNum: Integer; InElse: boolean): boolean;
+    function DirectiveAllows(DirNum: Integer; InElse: Boolean): Boolean;
     function CalcDirective(Directive: TDirectiveDesc): TDirectiveState;
     function CalcExists(Condition: TStrings): TDirectiveState;
     function CalcIF(Condition: TStrings): TDirectiveState;
@@ -318,7 +324,8 @@ type
     procedure Parse(Terminator: string = ';');
     procedure ExecuteScript(FromStmt: Integer = 1);
     procedure ExecuteFromFile(const FileName: string; Terminator: string = ';');
-    procedure ExecuteStatement(StmtTxt: TStrings; Stmt: PStatementDesc; StmtNo: Integer; TmpSQL: TStrings = nil; LineInFile: Integer = -1);
+    function ExecuteStatement(StmtTxt: TStrings; Stmt: PStatementDesc; StmtNo: Integer;
+      TmpSQL: TStrings = nil; LineInFile: Integer = -1): Boolean;
     procedure ClearPrepared;
     function StatementsCount: Integer;
     function GetStatement(StmtNo: Integer; Text: TStrings): PStatementDesc;
@@ -501,6 +508,7 @@ begin
   FDefines := TStringList.Create;
   FDirectiveConsts := TStringList.Create;
   // FDirectiveConsts.Add('A= 11');
+  FExecBlockStatement := TStringList.Create;
   FTransaction := TpFIBTransaction.Create(Self);
   FQuery := TpFIBQuery.Create(Self);
   FQuery.Transaction := FTransaction;
@@ -524,8 +532,7 @@ begin
   FDefines.Free;
   FDirectiveConsts.Free;
   SetLength(FScriptMap, 0);
-  if Assigned(FExecBlockStatement) then
-    FExecBlockStatement.Free;
+  FExecBlockStatement.Free;
   if Assigned(FBlobFileStream) then
     FBlobFileStream.Free;
   inherited;
@@ -916,7 +923,7 @@ begin
   end;
 end;
 
-function TpFIBScripter.DirectiveForbid(DirNum: Integer; InElse: boolean): boolean;
+function TpFIBScripter.DirectiveAllows(DirNum: Integer; InElse: Boolean): Boolean;
 var
   Directives: TDirectivesMap; // of the script being executed
   NeedCalc: PDirectivesMap;
@@ -974,68 +981,60 @@ begin
     Result := True
 end;
 
-procedure TpFIBScripter.ExecuteStatement(StmtTxt: TStrings;
+// False when there is no OnExecuteError handler and the error must propagate
+function TpFIBScripter.HandleExecuteError(E: EFIBError; const Stmt: TStatementDesc;
+  StmtNo: Integer; SQLText: TStrings): Boolean;
+var
+  DoRollBack: Boolean;
+begin
+  Result := Assigned(FOnExecuteError);
+  if not Result then
+    Exit;
+  FPaused := True;
+  DoRollBack := True;
+  FOnExecuteError(Self, StmtNo + 1, Stmt.smdBegin.Y + 1, SQLText, E.SQLCode, E.Message, DoRollBack, FPaused);
+  if DoRollBack and GetTransaction.InTransaction then
+    GetTransaction.Rollback;
+end;
+
+// Runs FQuery.SQL
+procedure TpFIBScripter.ApplyCommand(const Stmt: TStatementDesc; StmtNo, Line: Integer; StmtTxt, SQLText: TStrings);
+begin
+  try
+{$IFNDEF BEZBAZY}
+    if not GetTransaction.InTransaction then
+      GetTransaction.StartTransaction;
+    if (Length(FBlobFile) > 0) and (FQuery.ParamCount > 0) then
+      TryFillBlobParams;
+    FQuery.ExecQuery;
+    if Assigned(FInternalOnStatementExec) then
+      FInternalOnStatementExec(Line, StmtNo + 1);
+    if Assigned(FAfterStatementExecute) then
+      FAfterStatementExecute(Self, Line, StmtNo + 1, Stmt, StmtTxt);
+    if FAutoDDL and (FQuery.SQLKind = skDDL) then
+      FQuery.Transaction.Commit;
+{$ENDIF}
+  except
+    on E: EFIBError do
+      if not HandleExecuteError(E, Stmt, StmtNo, SQLText) then
+        raise;
+  end;
+end;
+
+// False when the pending EXECUTE BLOCK, run first, paused the run, so the statement did not run
+function TpFIBScripter.ExecuteStatement(StmtTxt: TStrings;
   Stmt: PStatementDesc; StmtNo: Integer; TmpSQL: TStrings = nil;
-  LineInFile: Integer = -1);
+  LineInFile: Integer = -1): Boolean;
 var
   vToken: TStmtCoord;
   tmpStr, tmpStr1: string;
-  vIsInternalTmpSQL: boolean;
-  doRollBack: boolean;
-  MayBeInBlock: boolean;
-  skip: boolean;
+  vIsInternalTmpSQL: Boolean;
+  CanGroup: Boolean;
+  WasPaused: Boolean;
+  Line: Integer;
   i: Integer;
-
-  procedure ApplyCommand;
-  begin
-    try
-{$IFNDEF BEZBAZY}
-      if not GetTransaction.InTransaction then
-        GetTransaction.StartTransaction;
-      if Length(FBlobFile) > 0 then
-        if (FQuery.ParamCount > 0) then
-          TryFillBlobParams;
-      FQuery.ExecQuery;
-      if Assigned(FInternalOnStatementExec) then
-      begin
-        if LineInFile = -1 then
-          FInternalOnStatementExec(Stmt.smdBegin.Y + 1, StmtNo + 1)
-        else
-        begin
-          FInternalOnStatementExec(LineInFile, StmtNo + 1);
-        end;
-      end;
-
-      if Assigned(FAfterStatementExecute) then
-      begin
-        if LineInFile = -1 then
-          FAfterStatementExecute(Self, Stmt.smdBegin.Y + 1, StmtNo + 1, Stmt^, StmtTxt)
-        else
-        begin
-          FAfterStatementExecute(Self, LineInFile, StmtNo + 1, Stmt^, StmtTxt);
-        end;
-      end;
-      if FAutoDDL and (FQuery.SQLKind = skDDL) then
-        FQuery.Transaction.Commit;
-{$ENDIF}
-    except
-      on E: EFIBError do
-      begin
-        if Assigned(FOnExecuteError) then
-        begin
-          FPaused := True;
-          doRollBack := True;
-          FOnExecuteError(Self, StmtNo + 1, Stmt.smdBegin.Y + 1, TmpSQL, E.SQLCode, E.Message, doRollBack, FPaused);
-          if doRollBack then
-            GetTransaction.Rollback;
-        end
-        else
-          raise;
-      end
-    end;
-  end;
-
 begin
+  Result := True;
   if Stmt <> nil then
   begin
     if FQuery.Open then
@@ -1048,32 +1047,23 @@ begin
     else
       vIsInternalTmpSQL := False;
     try
-      if Stmt.DirectiveNum >= 0 then
-      begin
-        SkipStatement := not DirectiveForbid(Stmt.DirectiveNum, Stmt.DirectiveElse);
-      end
-      else
-        SkipStatement := False;
-      if not SkipStatement then
-        if Assigned(FBeforeStatementExecute) then
-          if LineInFile = -1 then
-            FBeforeStatementExecute(Self, Stmt.smdBegin.Y + 1, StmtNo + 1, Stmt^, StmtTxt)
-          else
-          begin
-            FBeforeStatementExecute(Self, LineInFile, StmtNo + 1, Stmt^, StmtTxt);
-          end;
+      SkipStatement := (Stmt.DirectiveNum >= 0) and not DirectiveAllows(Stmt.DirectiveNum, Stmt.DirectiveElse);
       if SkipStatement then
         Exit;
-      MayBeInBlock := FUseExecBlockForDML and (Stmt.smtType in [sReinsert, sInsert, sDML]);
-
-      if FUseExecBlockForDML and not MayBeInBlock then
-        if Assigned(FExecBlockStatement) and (vBlockSize > 0) then
-        begin
-          CloseBlock;
-          FQuery.SQL := FExecBlockStatement; // SQL statement
-          RestartBlock;
-          ApplyCommand;
-        end;
+      CanGroup := CanGroupInExecuteBlock(Stmt^);
+      if not CanGroup and not FlushExecBlock then
+      begin
+        Result := False;
+        Exit;
+      end;
+      if LineInFile = -1 then
+        Line := Stmt.smdBegin.Y + 1
+      else
+        Line := LineInFile;
+      if Assigned(FBeforeStatementExecute) then
+        FBeforeStatementExecute(Self, Line, StmtNo + 1, Stmt^, StmtTxt);
+      if SkipStatement then
+        Exit;
 
       case Stmt.smtType of
         sCreateDatabase:
@@ -1109,16 +1099,8 @@ begin
               end;
             except
               on E: EFIBError do
-              begin
-                if Assigned(FOnExecuteError) then
-                begin
-                  FPaused := True;
-                  FOnExecuteError(Self, StmtNo + 1, Stmt.smdBegin.Y + 1, TmpSQL,
-                    E.SQLCode, E.Message, doRollBack, FPaused);
-                end
-                else
+                if not HandleExecuteError(E, Stmt^, StmtNo, TmpSQL) then
                   raise;
-              end;
             end
 {$ENDIF}
           end;
@@ -1162,8 +1144,14 @@ begin
               FDatabase.ConnectParams.Password := tmpStr;
             end;
 
-            FDatabase.Connected := True;
-            FDatabase.DropDatabase;
+            try
+              FDatabase.Connected := True;
+              FDatabase.DropDatabase;
+            except
+              on E: EFIBError do
+                if not HandleExecuteError(E, Stmt^, StmtNo, TmpSQL) then
+                  raise;
+            end
           end;
         sDisconnect: FDatabase.Connected := False;
         sConnect:
@@ -1181,16 +1169,8 @@ begin
               PreparePreDefines;
             except
               on E: EFIBError do
-              begin
-                if Assigned(FOnExecuteError) then
-                begin
-                  FPaused := True;
-                  FOnExecuteError(Self, StmtNo + 1, Stmt.smdBegin.Y + 1, TmpSQL,
-                    E.SQLCode, E.Message, doRollBack, FPaused);
-                end
-                else
+                if not HandleExecuteError(E, Stmt^, StmtNo, TmpSQL) then
                   raise;
-              end;
             end
           end;
         sCommit:
@@ -1199,18 +1179,8 @@ begin
               GetTransaction.Commit;
             except
               on E: EFIBError do
-              begin
-                if Assigned(FOnExecuteError) then
-                begin
-                  FPaused := True;
-                  FOnExecuteError(Self, StmtNo + 1, Stmt.smdBegin.Y + 1, TmpSQL,
-                    E.SQLCode, E.Message, doRollBack, FPaused);
-                  if GetTransaction.InTransaction then
-                    GetTransaction.Rollback
-                end
-                else
+                if not HandleExecuteError(E, Stmt^, StmtNo, TmpSQL) then
                   raise;
-              end;
             end;
         sDirective:
           begin
@@ -1427,7 +1397,9 @@ begin
             vToken := FParser.NextTokenPos(Stmt.smdBegin, Stmt.smdEnd);
             // FileName
             tmpStr := FParser.GetToken(vToken); // FileName
-            ExecuteFromFile(tmpStr)
+            WasPaused := FPaused; // BeginRun of the file clears it
+            ExecuteFromFile(tmpStr);
+            FPaused := FPaused or WasPaused;
           end;
       else
         case Stmt.smtType of
@@ -1439,33 +1411,23 @@ begin
           sReinsert: TmpSQL.Text := PrepareReinsert(vLastInsertStmt, TmpSQL.Text);
         end;
 
-        FQuery.SQL := TmpSQL; // SQL statement
-        skip := False;
-
-        if FUseExecBlockForDML and MayBeInBlock then
-          if ((Length(FBlobFile) = 0) or (FQuery.ParamCount = 0)) then
-          begin
-            skip := AddStatementToExecuteBlock(TmpSQL);
-            if not skip then
-            begin
-              FQuery.SQL := FExecBlockStatement; // Force exec block
-              RestartBlock;
-              AddStatementToExecuteBlock(TmpSQL);
-            end
-          end
-          else // DML with params
-            if Assigned(FExecBlockStatement) and (vBlockSize > 0) then
-            begin
-              CloseBlock;
-              FQuery.SQL := FExecBlockStatement; // Force exec block
-              RestartBlock;
-              ApplyCommand;
-              FQuery.SQL := TmpSQL; // Current SQL statement
-            end;
-
-        if not skip then
-          ApplyCommand
-          //
+        if CanGroup and (Length(FBlobFile) > 0) then
+        begin
+          FQuery.SQL := TmpSQL;
+          CanGroup := FQuery.ParamCount = 0; // BLOB file parameters are filled per statement
+        end;
+        if CanGroup and AddStatementToExecuteBlock(Stmt^, StmtNo, Line, TmpSQL) then
+          Exit;
+        // the block is full, or the statement runs alone
+        if not FlushExecBlock then
+        begin
+          Result := False;
+          Exit;
+        end;
+        if CanGroup and AddStatementToExecuteBlock(Stmt^, StmtNo, Line, TmpSQL) then
+          Exit;
+        FQuery.SQL := TmpSQL;
+        ApplyCommand(Stmt^, StmtNo, Line, StmtTxt, TmpSQL);
       end;
     finally
       if vIsInternalTmpSQL then
@@ -1474,17 +1436,23 @@ begin
   end;
 end;
 
-// Called in a try block with EndRun in finally, so FRunDepth stays balanced
-procedure TpFIBScripter.BeginRun;
+// Called in a try block with EndRun in finally, so FRunDepth stays balanced.
+// A resumed run keeps the state set by the script (INSERT for REINSERT, dialect, names).
+procedure TpFIBScripter.BeginRun(Resume: Boolean);
 begin
   FPaused := False;
   Inc(FRunDepth);
   if FRunDepth = 1 then
   begin
-    vLastInsertStmt := '';
-    vReinsPrepared := False;
-    FSQLDialect := 3;
-    FCharSet := '';
+    RestartBlock;
+    FStopStatementNo := 0;
+    if not Resume then
+    begin
+      vLastInsertStmt := '';
+      vReinsPrepared := False;
+      FSQLDialect := 3;
+      FCharSet := '';
+    end;
     PreparePreDefines;
   end;
 end;
@@ -1519,8 +1487,10 @@ begin
   end;
 end;
 
-procedure TpFIBScripter.RunStatement(Stmt: PStatementDesc; StmtNo: Integer; StmtTxt: TStrings);
+// False when the run paused before the statement, see ExecuteStatement
+function TpFIBScripter.RunStatement(Stmt: PStatementDesc; StmtNo: Integer; StmtTxt: TStrings): Boolean;
 begin
+  Result := True;
   case Stmt.smtType of
     sBatchStart:
       begin
@@ -1543,7 +1513,7 @@ begin
       end;
   else
     if not FInBatchCollect then
-      ExecuteStatement(StmtTxt, Stmt, StmtNo, StmtTxt)
+      Result := ExecuteStatement(StmtTxt, Stmt, StmtNo, StmtTxt)
     else
     begin
       SetLength(FBatchSQLs, Length(FBatchSQLs) + 1);
@@ -1552,17 +1522,23 @@ begin
   end;
 end;
 
-procedure TpFIBScripter.FlushExecBlock;
+// Runs the pending EXECUTE BLOCK; False when the block paused the run (the error handler
+// left Stop as True, or an event handler of the block set Paused)
+function TpFIBScripter.FlushExecBlock: Boolean;
+var
+  WasPaused: Boolean;
 begin
-  if FUseExecBlockForDML and Assigned(FExecBlockStatement) and (vBlockSize > 0) then
-  begin
-    CloseBlock;
-    FQuery.SQL := FExecBlockStatement; // Force execute block
-    RestartBlock;
-    if not GetTransaction.InTransaction then
-      GetTransaction.StartTransaction;
-    FQuery.ExecQuery;
-  end;
+  Result := True;
+  if FBlockStatementCount = 0 then
+    Exit;
+  WasPaused := FPaused; // set by an event handler before the block
+  FPaused := False;
+  FExecBlockStatement.Add('END');
+  FQuery.SQL := FExecBlockStatement;
+  RestartBlock;
+  ApplyCommand(FBlockLastStmt, FBlockLastStmtNo, FBlockLastLine, FQuery.SQL, FQuery.SQL);
+  Result := not FPaused;
+  FPaused := FPaused or WasPaused;
 end;
 
 procedure TpFIBScripter.ExecuteScript(FromStmt: Integer = 1);
@@ -1570,27 +1546,27 @@ var
   i: Integer;
   TmpSQL: TStrings;
 begin
+  if FromStmt < 1 then
+    FromStmt := 1;
   if not FPrepared then
     Parse
-  else if FromStmt <= 1 then
+  else if FromStmt = 1 then
   // conditions are evaluated again, a resumed run keeps them
     for i := 0 to FParser.FDirectiveCount - 1 do
       FParser.FDirectives[i].dState := dsUnknown;
 
   TmpSQL := TStringList.Create;
   try
-    BeginRun;
-    for i := FromStmt - 1 to StatementsCount - 1 do
-    begin
-      if FPaused then
-      begin
-        FStopStatementNo := i + 1;
-        Exit;
-      end;
-      RunStatement(GetStatement(i + 1, TmpSQL), i, TmpSQL);
-    end;
+    BeginRun(FromStmt > 1);
+    i := FromStmt - 1;
+    while not FPaused and (i < StatementsCount) do
+      if RunStatement(GetStatement(i + 1, TmpSQL), i, TmpSQL) then
+        Inc(i);
+    // also after a pause: the statements of the block are before StopStatementNo
     if FRunDepth = 1 then
       FlushExecBlock;
+    if FPaused then
+      FStopStatementNo := i + 1;
   finally
     try
       EndRun;
@@ -1622,7 +1598,7 @@ end;
 
 procedure TpFIBScripter.Parse(Terminator: string = ';');
 var
-  Directives: TDirectivesMap; // the parser keeps them for DirectiveForbid
+  Directives: TDirectivesMap; // the parser keeps them for DirectiveAllows
 begin
   FMakeConnectInScript := False;
   FHaveDMLStatements := False;
@@ -1805,19 +1781,13 @@ function TpFIBScripter.ExecuteParsed(var StmtNo: Integer; StmtTxt: TStrings): bo
 var
   Stmt: PStatementDesc;
 begin
-  Result := True;
-  while FParser.NextStatement(Stmt) do
+  while not FPaused and FParser.NextStatement(Stmt) do
   begin
-    if FPaused then
-    begin
-      FStopStatementNo := StmtNo + 1;
-      Result := False;
-      Exit;
-    end;
     FParser.CopyFragment(Stmt.smdBegin, Stmt.smdEnd, StmtTxt);
-    RunStatement(Stmt, StmtNo, StmtTxt);
-    Inc(StmtNo);
+    if RunStatement(Stmt, StmtNo, StmtTxt) then
+      Inc(StmtNo);
   end;
+  Result := not FPaused;
 end;
 
 // The file is parsed while it is read and every statement is executed as soon
@@ -1838,21 +1808,26 @@ begin
   SavedParser := FParser;
   FParser := TpFIBScriptParser.Create;
   try
-    BeginRun;
+    BeginRun(False);
     FParser.BeginParse(Lines, Terminator);
     StmtNo := 0;
-    while not Eof(F) do
+    while not FPaused and not Eof(F) do
     begin
       ReadLn(F, S);
       Lines.Add(S);
       FParser.Scan;
-      if not ExecuteParsed(StmtNo, TmpSQL) then
-        Exit;
-      FParser.DiscardParsed;
+      if ExecuteParsed(StmtNo, TmpSQL) then
+        FParser.DiscardParsed;
     end;
-    FParser.EndParse(True);
-    if ExecuteParsed(StmtNo, TmpSQL) and (FRunDepth = 1) then
+    if not FPaused then
+    begin
+      FParser.EndParse(True);
+      ExecuteParsed(StmtNo, TmpSQL);
+    end;
+    if FRunDepth = 1 then
       FlushExecBlock;
+    if FPaused then
+      FStopStatementNo := StmtNo + 1;
   finally
     try
       EndRun;
@@ -3129,48 +3104,48 @@ end;
 // AutoExecBlock support
 procedure TpFIBScripter.RestartBlock;
 begin
-  vBlockContextCount := 0;
-  vBlockSize := 0;
+  FBlockStatementCount := 0;
+  FBlockSize := 0;
   FExecBlockStatement.Clear;
 end;
 
-procedure TpFIBScripter.CloseBlock;
+// Only inside a run, which flushes the block at its end. A user EXECUTE BLOCK or
+// EXECUTE PROCEDURE is not nested into a block.
+function TpFIBScripter.CanGroupInExecuteBlock(const Stmt: TStatementDesc): Boolean;
 begin
-  FExecBlockStatement.Add('END');
+  Result := FUseExecBlockForDML and (FRunDepth > 0) and (Stmt.smtType in [sInsert, sReinsert, sDML]) and
+    not IsClause('EXECUTE', FParser.GetToken(Stmt.smdBegin), 1);
 end;
 
-function TpFIBScripter.AddStatementToExecuteBlock(Stmt: TStrings): boolean;
+// False when the statement does not fit into the pending block
+function TpFIBScripter.AddStatementToExecuteBlock(const Stmt: TStatementDesc;
+  StmtNo, Line: Integer; SQLText: TStrings): Boolean;
+const
+  cHeader = 'EXECUTE BLOCK AS BEGIN';
+  cMaxStatements = 255;
+  cMaxSize = High(Word) - Length('END') - 2;
 var
-  i, L: Integer;
+  i, Size, L: Integer;
 begin
-  if not Assigned(FExecBlockStatement) then
-    FExecBlockStatement := TStringList.Create;
-  Result := vBlockContextCount < 255;
+  Size := FBlockSize;
+  if FBlockStatementCount = 0 then
+    Size := Length(cHeader) + 2;
+  L := 1; // ';'
+  for i := 0 to SQLText.Count - 1 do
+    Inc(L, Length(SQLText[i]) + 2);
+  Result := (FBlockStatementCount < cMaxStatements) and (Size + L <= cMaxSize);
   if not Result then
-  begin
-    FExecBlockStatement.Add('END');
     Exit;
-  end;
-  if FExecBlockStatement.Count = 0 then
-  begin
-    vBlockContextCount := 0;
-    FExecBlockStatement.Add('EXECUTE BLOCK AS BEGIN');
-    vBlockSize := Length(FExecBlockStatement[0]) + 2;
-  end;
-  L := 0;
-  for i := 0 to Stmt.Count - 1 do
-    Inc(L, Length(Stmt[i]) + 2);
-  Result := (vBlockSize + L + 2 + 1) < High(Word) - 3; // 3 for 'END'
-  if Result then
-  begin
-    FExecBlockStatement.AddStrings(Stmt);
-    FExecBlockStatement[FExecBlockStatement.Count - 1] := FExecBlockStatement
-      [FExecBlockStatement.Count - 1] + ';';
-    Inc(vBlockSize, L);
-    Inc(vBlockContextCount);
-  end
-  else
-    FExecBlockStatement.Add('END');
+  if FBlockStatementCount = 0 then
+    FExecBlockStatement.Add(cHeader);
+  FExecBlockStatement.AddStrings(SQLText);
+  i := FExecBlockStatement.Count - 1;
+  FExecBlockStatement[i] := FExecBlockStatement[i] + ';';
+  FBlockSize := Size + L;
+  Inc(FBlockStatementCount);
+  FBlockLastStmt := Stmt;
+  FBlockLastStmtNo := StmtNo;
+  FBlockLastLine := Line;
 end;
 
 end.

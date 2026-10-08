@@ -264,6 +264,27 @@ server limits them with `MaxParallelWorkers` in `firebird.conf` (default 1).
   still collected; moving a logger to another database left it on the first.
 - `TSIBfibEventAlerter`: the error for too long event names said they were
   truncated; they are not.
+- `TpFIBScripter`: `StopStatementNo` was not set by a pause at the last
+  statement and kept the value of an earlier run; `ExecuteScript(0)` raised an
+  access violation.
+- `TpFIBScripter`: `OnExecuteError` got an undefined `DoRollBack` for
+  `CONNECT`, `CREATE DATABASE` and `COMMIT`, and was not called for
+  `DROP DATABASE`; a failed `COMMIT` is kept when the handler sets `DoRollBack`
+  to `False`.
+- `TpFIBScripter`: a resumed run lost the `INSERT` used by `REINSERT`,
+  `SET SQL DIALECT` and `SET NAMES`; a pause set before `INPUT` was ignored.
+- `TpFIBScripter` with `UseExecBlockForDML`: an error in the last
+  `EXECUTE BLOCK` always propagated, without `OnExecuteError`.
+- `TpFIBScripter` with `UseExecBlockForDML`: `OnExecuteError` and
+  `AfterStatementExecute` of a block reported the statement after the block,
+  which ran even when `Stop` was set; they report the last statement of the
+  block, and `AfterStatementExecute` is called once per block.
+- `TpFIBScripter` with `UseExecBlockForDML`: after a pause, and after
+  `ExecuteStatement` outside a run, the pending block was sent only by the next
+  run, even of another script.
+- `TpFIBScripter` with `UseExecBlockForDML`: a statement too long for a block
+  was dropped; `EXECUTE BLOCK` and `EXECUTE PROCEDURE` statements were nested
+  into a block.
 
 ## [7.9.0] - 2026-10-01
 

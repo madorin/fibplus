@@ -34,7 +34,7 @@ Guides: [Scripting](../guide/scripting.md).
 | `Transaction` | `TpFIBTransaction` | | Transaction for the statements. When it is `nil`, the scripter uses an internal transaction on `Database`. Statements start the transaction when it is not active. |
 | `Script` | `TStrings` | | Script text. Changing it discards the parsed script (`Prepared` becomes `False`). |
 | `AutoDDL` | `Boolean` | `True` | Commit the transaction after each DDL statement. A `SET AUTODDL` command in the script changes this property and the change stays after the run. |
-| `UseExecBlockForDML` | `Boolean` | `False` | Group consecutive `INSERT`, `REINSERT`, `UPDATE`, `DELETE`, `MERGE`, and `EXECUTE` statements into `EXECUTE BLOCK` statements, see [Grouping DML statements](#grouping-dml-statements). The `{$EXECUTE_BLOCK ON}` and `{$EXECUTE_BLOCK OFF}` directives change this property. |
+| `UseExecBlockForDML` | `Boolean` | `False` | Group consecutive `INSERT`, `REINSERT`, `UPDATE`, `DELETE`, and `MERGE` statements into `EXECUTE BLOCK` statements, see [Grouping DML statements](#grouping-dml-statements). The `{$EXECUTE_BLOCK ON}` and `{$EXECUTE_BLOCK OFF}` directives change this property. |
 
 ## Run-time properties
 
@@ -43,7 +43,7 @@ Guides: [Scripting](../guide/scripting.md).
 | `Prepared` | `Boolean` | `True` after `Parse`, until `Script` changes or `ClearPrepared` is called. Read only. |
 | `Paused` | `Boolean` | `True` when the run is stopped. Set it to `True` in an event handler to stop before the next statement. |
 | `SkipStatement` | `Boolean` | Set it to `True` in `BeforeStatementExecute` to skip the statement about to run. |
-| `StopStatementNo` | `Integer` | Number of the statement at which a paused `ExecuteScript` stopped; pass it to `ExecuteScript` to resume. Set only when another statement follows the pause, see [Pausing and resuming](#pausing-and-resuming). Read only. |
+| `StopStatementNo` | `Integer` | Number of the first statement that a paused run did not run; pass it to `ExecuteScript` to resume. `0` when the last run was not paused. See [Pausing and resuming](#pausing-and-resuming). Read only. |
 | `MakeConnectInScript` | `Boolean` | `True` when the parsed script contains `CONNECT` or `CREATE DATABASE`. Read only; valid after `Parse`. |
 | `Query` | `TpFIBQuery` | The internal query that runs the statements. Read only. |
 | `Defines` | `TStrings` | Names defined for `{$IFDEF}`. Assigning a list copies it in upper case. |
@@ -54,9 +54,9 @@ Guides: [Scripting](../guide/scripting.md).
 
 | Name | Description |
 |------|-------------|
-| `ExecuteScript(FromStmt)` | Run the statements of `Script` from statement number `FromStmt` (1-based, default `1`). Calls `Parse` first when the script is not prepared. See [Pausing and resuming](#pausing-and-resuming). |
+| `ExecuteScript(FromStmt)` | Run the statements of `Script` from statement number `FromStmt` (1-based, default `1`; a smaller value means `1`). Calls `Parse` first when the script is not prepared. See [Pausing and resuming](#pausing-and-resuming). |
 | `ExecuteFromFile(FileName, Terminator)` | Run a script file without loading it into `Script`. The file is parsed while it is read, so only the current statement is kept in memory. The default terminator is `;`. A run from a file cannot be resumed. |
-| `ExecuteStatement(StmtTxt, Stmt, StmtNo, TmpSQL, LineInFile)` | Run one parsed statement; does nothing when `Stmt` is `nil`. `StmtNo` is 0-based; the events receive `StmtNo + 1`. `ExecuteScript` calls it with the statement text as both `StmtTxt` and `TmpSQL`; `TmpSQL` is the text that is run. A `LineInFile` other than `-1` replaces the line number passed to `BeforeStatementExecute` and `AfterStatementExecute`; `OnExecuteError` always receives the parsed line. |
+| `ExecuteStatement(StmtTxt, Stmt, StmtNo, TmpSQL, LineInFile)` | Run one parsed statement; does nothing when `Stmt` is `nil`. Returns `False` when the statement did not run because the pending `EXECUTE BLOCK`, run first, paused the run (the error handler left `Stop` as `True`, or an event handler set `Paused`). Outside `ExecuteScript` and `ExecuteFromFile`, statements are not grouped. `StmtNo` is 0-based; the events receive `StmtNo + 1`. `ExecuteScript` calls it with the statement text as both `StmtTxt` and `TmpSQL`; `TmpSQL` is the text that is run. A `LineInFile` other than `-1` replaces the line number passed to `BeforeStatementExecute` and `AfterStatementExecute`; `OnExecuteError` always receives the parsed line. |
 
 ### Parsing
 
@@ -81,7 +81,7 @@ Guides: [Scripting](../guide/scripting.md).
 |------|------|-------------|
 | `BeforeStatementExecute` | `TOnStatementExecute` | Before a statement runs. Not called for statements skipped by a directive. Set `SkipStatement` to skip the statement. |
 | `AfterStatementExecute` | `TOnStatementExecute` | After a statement that was sent to the server ran without an error. Not called for the commands that the scripter handles itself. |
-| `OnExecuteError` | `TOnSQLScriptExecError` | An `EFIBError` was raised by `CONNECT`, `CREATE DATABASE`, `COMMIT`, or a statement sent to the server. See [Error handling](#error-handling). |
+| `OnExecuteError` | `TOnSQLScriptExecError` | An `EFIBError` was raised by `CONNECT`, `CREATE DATABASE`, `DROP DATABASE`, `COMMIT`, or a statement sent to the server. See [Error handling](#error-handling). |
 
 ## Statement handling
 
@@ -176,18 +176,18 @@ SET STATEMENT TIMEOUT 10000;
 
 ## Error handling
 
-`OnExecuteError` receives the number of the statement (`StatementNo`, 1-based), the line where it starts (`Line`), its text, and the SQL code and message of the `EFIBError`. Without a handler the exception propagates. Other exceptions, such as parse errors, always propagate. So does an `EFIBError` from `DROP DATABASE`, `DESCRIBE`, `RECONNECT`, `DISCONNECT`, an `{$IFEXISTS}` query, and the last `EXECUTE BLOCK` of [Grouping DML statements](#grouping-dml-statements).
+`OnExecuteError` receives the number of the statement (`StatementNo`, 1-based), the line where it starts (`Line`), its text, and the SQL code and message of the `EFIBError`. Without a handler the exception propagates. Other exceptions, such as parse errors, always propagate. So does an `EFIBError` from `DESCRIBE`, `RECONNECT`, `DISCONNECT`, and an `{$IFEXISTS}` query.
 
 | Parameter | Effect |
 |-----------|--------|
-| `DoRollBack` | `True` on entry for a statement sent to the server; the scripter rolls the transaction back after the handler returns when it is still `True`. The value is not set for `CONNECT`, `CREATE DATABASE`, and `COMMIT`, and is not used there. |
+| `DoRollBack` | `True` on entry. When it is still `True` after the handler returns, the scripter rolls back its active transaction. Set it to `False` to keep the transaction, for example to retry a failed `COMMIT`. |
 | `Stop` | `True` on entry. Leave it `True` to stop the run; set it to `False` to continue with the next statement. |
 
-A failed `COMMIT` is rolled back after the handler returns.
+After a failed `COMMIT`, the transaction is rolled back unless the handler set `DoRollBack` to `False`.
 
 ## Pausing and resuming
 
-`ExecuteScript` returns without an error when `Paused` is `True` before a statement: an error handler left `Stop` as `True`, or an event handler set `Paused`. `StopStatementNo` holds the number of the statement that did not run. After an error, that is the statement after the failed one. The value is set only when a statement follows: if the last statement fails or the last event pauses the run, `Paused` stays `True` but `StopStatementNo` is not updated, so do not resume from it. To resume, fix the cause and call `ExecuteScript(StopStatementNo)`. Conditions are not evaluated again when the start statement is greater than 1.
+`ExecuteScript` returns without an error when `Paused` is `True` before a statement: an error handler left `Stop` as `True`, or an event handler set `Paused`. `StopStatementNo` holds the number of the first statement that did not run. After an error, that is the statement after the failed one; after the last statement, it is the statement count plus 1. Each run sets it to `0` at the start. A resumed run keeps the state set by the script: the `INSERT` used by `REINSERT`, `SET SQL DIALECT`, and `SET NAMES`. To resume, fix the cause and call `ExecuteScript(StopStatementNo)`. Conditions are not evaluated again when the start statement is greater than 1.
 
 ## BLOB files
 
@@ -195,12 +195,9 @@ After `SET BLOBFILE 'file'`, a statement parameter named `H<offset>_<length>`, w
 
 ## Grouping DML statements
 
-With `UseExecBlockForDML`, consecutive `INSERT`, `REINSERT`, `UPDATE`, `DELETE`, `MERGE`, and `EXECUTE` statements are collected into one `EXECUTE BLOCK`. A block holds at most 255 statements and about 64 K characters. Any other statement, such as `SELECT`, or a statement with BLOB file parameters, ends the block and runs it first. The last block runs at the end of the top-level run.
+With `UseExecBlockForDML`, consecutive `INSERT`, `REINSERT`, `UPDATE`, `DELETE`, and `MERGE` statements are collected into one `EXECUTE BLOCK`. A block holds at most 255 statements and about 64 K characters. Any other statement, such as `SELECT`, `EXECUTE BLOCK`, or `EXECUTE PROCEDURE`, or a statement with BLOB file parameters, ends the block and runs it first. A statement that does not fit into an empty block runs alone. The last block runs at the end of the top-level run, also when the run is paused, so `StopStatementNo` is after the statements of the block.
 
-- A grouped statement raises no `AfterStatementExecute` event.
-- A block runs when the next statement or the size limit closes it. `AfterStatementExecute` and `OnExecuteError` then report the statement that triggered the run, not the statement that failed.
-- An error in the last block always propagates, and it raises no `AfterStatementExecute` event and does not apply `AutoDDL`.
-- A statement longer than the block limit is not run correctly; do not group scripts with such statements.
+A block runs as one statement: `AfterStatementExecute` and `OnExecuteError` report its last statement, with the block text; the other statements of the block raise no `AfterStatementExecute`. `Stop` stops the run before the statement that closed the block, so `StopStatementNo` is the statement after the block. When that statement is a DML statement that did not fit into the block or has BLOB file parameters, its `BeforeStatementExecute` already ran and runs again when the run is resumed.
 
 ## Types
 

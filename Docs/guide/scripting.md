@@ -122,9 +122,9 @@ Pitfalls with directives:
 
 `BeforeStatementExecute` and `AfterStatementExecute` report each statement with its number and starting line, both counted from 1. `BeforeStatementExecute` is not called for a statement that a directive excludes. In its handler, set `Scripter.SkipStatement := True` to skip the statement. `AfterStatementExecute` is called only after a statement that was run through `Query`.
 
-Without `OnExecuteError`, an `EFIBError` propagates out of `ExecuteScript`. With a handler, the scripter calls it when a statement sent to the server fails, and when `CONNECT`, `CREATE DATABASE`, or `COMMIT` fails. An `EFIBError` from other statements, for example `DESCRIBE`, `RECONNECT`, `DROP DATABASE`, or the query of an `{$IFEXISTS}` condition, still propagates.
+Without `OnExecuteError`, an `EFIBError` propagates out of `ExecuteScript`. With a handler, the scripter calls it when a statement sent to the server fails, and when `CONNECT`, `CREATE DATABASE`, `DROP DATABASE`, or `COMMIT` fails. An `EFIBError` from other statements, for example `DESCRIBE`, `RECONNECT`, or the query of an `{$IFEXISTS}` condition, still propagates.
 
-For a statement sent to the server, the handler sets two parameters. `DoRollBack` starts as `True` and rolls back the scripter's transaction, so earlier uncommitted statements of that transaction are lost too. `Stop` starts as `True` and stops the run; set it to `False` to go on with the next statement.
+The handler sets two parameters. `DoRollBack` starts as `True` and rolls back the scripter's transaction, so earlier uncommitted statements of that transaction are lost too. `Stop` starts as `True` and stops the run; set it to `False` to go on with the next statement.
 
 ```delphi
 procedure TMainForm.ScripterExecuteError(Sender: TObject; StatementNo, Line: Integer;
@@ -136,15 +136,15 @@ begin
 end;
 ```
 
-After a stop, `Paused` is `True`. Fix the problem and continue with `ExecuteScript(Scripter.StopStatementNo)`, which is the number of the statement after the one that failed. This works only when another statement follows the failed one: when the failing statement is the last one, `StopStatementNo` is not updated. `ExecuteFromFile` cannot be continued; after a stop, the file is closed and the call returns.
+After a stop, `Paused` is `True`. Fix the problem and continue with `ExecuteScript(Scripter.StopStatementNo)`, which is the number of the statement after the one that failed. `ExecuteFromFile` cannot be continued; after a stop, the file is closed and the call returns.
 
 Syntax errors in the script (`SET TERM` without a terminator, an unknown directive, an unclosed `{$IF}`) raise ordinary exceptions, not through `OnExecuteError`.
 
 ## Many INSERT statements
 
-Set `UseExecBlockForDML` to `True`, or put `{$EXECUTE_BLOCK ON}` in the script, to send consecutive `INSERT` and other DML statements to the server in `EXECUTE BLOCK` groups. A group holds at most 255 statements and about 64 KB of text. A group is sent when it is full, when a statement of another kind follows, and at the end of the run. See [Grouping DML statements](../reference/TpFIBScripter.md#grouping-dml-statements).
+Set `UseExecBlockForDML` to `True`, or put `{$EXECUTE_BLOCK ON}` in the script, to send consecutive `INSERT` and other DML statements to the server in `EXECUTE BLOCK` groups. A group holds at most 255 statements and about 64 KB of text. A group is sent when it is full, when a statement of another kind follows, and at the end of the run. `EXECUTE BLOCK` and `EXECUTE PROCEDURE` statements are not grouped. See [Grouping DML statements](../reference/TpFIBScripter.md#grouping-dml-statements).
 
-`BeforeStatementExecute` is still called for every statement, but `AfterStatementExecute` is not called for statements that were added to a group.
+`BeforeStatementExecute` is still called for every statement, but `AfterStatementExecute` is called once per group, with the number of its last statement.
 
 ## Inspecting a script
 
