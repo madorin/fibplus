@@ -8,8 +8,11 @@ Find the version you use now, then read every section above it, from the one jus
 
 | Version | Status | Notes |
 |---------|--------|-------|
+| [8.0.0](#800) | Unreleased | |
 | [7.9.1](#791) | 2026-10-09 | Text in the code page of each column's character set, *Firebird 4+* statement and idle timeouts and read consistency, *Firebird 5+* parallel workers, an FMX login dialog package, and many bug fixes. |
 | [7.9.0](#790) | 2026-10-01 | First release of the community maintained FibPlus. Based on the FIBPlus 7 sources of build 632 (2014-02-17). |
+
+## 8.0.0
 
 ## 7.9.1
 

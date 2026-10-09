@@ -13,9 +13,9 @@
 {  Please see the file License.txt for full license information }
 {***************************************************************}
 
-FIBMajorVersion = 7;
-FIBMinorVersion = 9;
-FIBPatchVersion = 1;
-FIBVersionNote  = 'Release';
-FIBVersionDate  = '2026-10-09';
+FIBMajorVersion = 8;
+FIBMinorVersion = 0;
+FIBPatchVersion = 0;
+FIBVersionNote  = 'Beta 1';
+FIBVersionDate  = '';
 FIBPalette      = 'FIBPlus';
