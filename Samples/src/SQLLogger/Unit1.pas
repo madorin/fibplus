@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
+  Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase, pFIBDatabase,
   ExtCtrls, StdCtrls, Grids, DBGrids, DBCtrls, FIBQuery,
   pFIBSQLLog, Shellapi;
 
@@ -13,7 +13,7 @@ type
     StatusBar1: TStatusBar;
     DB: TpFIBDatabase;
     tr: TpFIBTransaction;
-    dt: TpFIBDataSet;
+    dt: TFIBDataSet;
     ds: TDataSource;
     Panel1: TPanel;
     Label1: TLabel;
@@ -27,7 +27,7 @@ type
     DBMemo2: TDBMemo;
     Button1: TButton;
     Query1: TFIBQuery;
-    pFIBDataSet1: TpFIBDataSet;
+    DataSet1: TFIBDataSet;
     FIBSQLLogger1: TFIBSQLLogger;
     dtID: TFIBIntegerField;
     dtAPP_ID: TFIBStringField;
@@ -118,8 +118,8 @@ begin
   begin
     x := RandomRange(1, 10);
     sqltxt := sqltexts[x];
-    if pFIBDataSet1.Active then
-      pFIBDataSet1.Close;
+    if DataSet1.Active then
+      DataSet1.Close;
     if pos('update', sqltxt) > 0 then
     begin
       Query1.SQL.Text := sqltxt;
@@ -127,8 +127,8 @@ begin
     end
     else
     begin
-      pFIBDataSet1.SelectSQL.Text := sqltxt;
-      pFIBDataSet1.Open;
+      DataSet1.SelectSQL.Text := sqltxt;
+      DataSet1.Open;
     end;
   end;
   FIBSQLLogger1.ActiveStatistics := False;

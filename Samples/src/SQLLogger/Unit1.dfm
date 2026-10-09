@@ -257,7 +257,7 @@ object Form1: TForm1
     Left = 616
     Top = 8
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE EMPLOYEE'
       'SET '
@@ -409,7 +409,7 @@ object Form1: TForm1
     qoAutoCommit = True
     qoStartTransaction = True
   end
-  object pFIBDataSet1: TpFIBDataSet
+  object DataSet1: TFIBDataSet
     Transaction = tr
     Database = db
     Left = 680

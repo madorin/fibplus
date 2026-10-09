@@ -20,7 +20,7 @@ interface
 {$I FIBPlus.inc}
 
 uses
-  SysUtils, Classes, DB, pFIBDataInfo, FIBDataSet;
+  SysUtils, Classes, DB, pFIBProps;
 
 type
 

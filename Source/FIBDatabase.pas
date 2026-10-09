@@ -96,7 +96,7 @@ type
     property SessionTimeouts: Boolean read FSessionTimeouts;
     // Firebird 4+ server: read_consistency in the TPB, TPBMode tpbReadConsistency
     property ReadConsistency: Boolean read FReadConsistency;
-    // also fb_dsql_set_timeout in the client (fbclient 4+): TFIBQuery and TpFIBDataSet.StatementTimeout
+    // also fb_dsql_set_timeout in the client (fbclient 4+): TFIBQuery and TFIBDataSet.StatementTimeout
     property StatementTimeout: Boolean read FStatementTimeout;
     // -1 when unknown (InterBase), 0 is NONE
     property AttachmentCharSetID: Integer read FAttachmentCharSetID;

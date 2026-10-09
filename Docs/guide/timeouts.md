@@ -4,7 +4,7 @@ FibPlus has two kinds of timeouts that are easy to confuse:
 
 | Kind | Where it runs | Properties |
 |------|---------------|------------|
-| **Server-side** (*Firebird 4+*) | The server cancels a statement or closes an attachment | `Session.StatementTimeout`, `Session.IdleTimeout`, `TFIBQuery.StatementTimeout`, `TpFIBDataSet.StatementTimeout` |
+| **Server-side** (*Firebird 4+*) | The server cancels a statement or closes an attachment | `Session.StatementTimeout`, `Session.IdleTimeout`, `TFIBQuery.StatementTimeout`, `TFIBDataSet.StatementTimeout` |
 | **Client-side** | A timer in your application closes a connection or ends a transaction | `TFIBDatabase.Timeout`, `TFIBTransaction.Timeout` |
 
 This article covers the server-side timeouts first, then the client-side ones.
@@ -14,7 +14,7 @@ This article covers the server-side timeouts first, then the client-side ones.
 | Feature | Needs |
 |---------|-------|
 | `Session.StatementTimeout`, `Session.IdleTimeout` | *Firebird 4+* |
-| `TFIBQuery.StatementTimeout`, `TpFIBDataSet.StatementTimeout` | *Firebird 4+* **and** a `fbclient` 4+ library (`fb_dsql_set_timeout`) |
+| `TFIBQuery.StatementTimeout`, `TFIBDataSet.StatementTimeout` | *Firebird 4+* **and** a `fbclient` 4+ library (`fb_dsql_set_timeout`) |
 
 The samples use `Database` (a `TpFIBDatabase`) and `Query` and `Report` (two `TFIBQuery` components), with `Database` and a transaction assigned.
 
@@ -44,7 +44,7 @@ Database.Connected := True;
 
 ### For one query or dataset
 
-`TFIBQuery.StatementTimeout` and `TpFIBDataSet.StatementTimeout` (milliseconds) replace the session value for that statement. The value is applied after the statement is prepared.
+`TFIBQuery.StatementTimeout` and `TFIBDataSet.StatementTimeout` (milliseconds) replace the session value for that statement. The value is applied after the statement is prepared.
 
 | Value | Meaning |
 |-------|---------|
@@ -59,7 +59,7 @@ Report.StatementTimeout := FIBNoStatementTimeout;    // this one: never times ou
 
 `FIBNoStatementTimeout` ignores the session value only. A limit set in `firebird.conf` still applies.
 
-On a `TpFIBDataSet` the value is also passed to its internal queries (refresh and similar). Statements that come from the shared query cache keep the session value, so a dataset's timeout does not leak to other users of the cache.
+On a `TFIBDataSet` the value is also passed to its internal queries (refresh and similar). Statements that come from the shared query cache keep the session value, so a dataset's timeout does not leak to other users of the cache.
 
 Only DML is timed: `SELECT`, `INSERT`, `UPDATE`, `DELETE`, and `EXECUTE PROCEDURE`. DDL statements ignore the setting.
 

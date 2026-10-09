@@ -62,7 +62,7 @@ object Form1: TForm1
       Height = 49
       AutoSize = False
       Caption = 
-        'This Example demonstrate using TpFIBPlusDataSet DoSortEx methods' +
+        'This Example demonstrate using TFIBDataSet DoSortEx methods' +
         ' for local sorting'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
@@ -172,7 +172,7 @@ object Form1: TForm1
     Left = 360
     Top = 104
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE EMPLOYEE'
       'SET '

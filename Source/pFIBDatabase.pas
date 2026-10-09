@@ -163,7 +163,7 @@ implementation
 
 uses
 {$IFNDEF NO_REGISTRY} RegUtils, {$ENDIF}
-  StrUtil, pFIBCacheQueries, pFIBDataSet, pFIBDataInfo;
+  StrUtil, pFIBCacheQueries, pFIBDataInfo;
 
 function GetQueriesCount(ForObj: TComponent): integer;
 var
@@ -761,15 +761,15 @@ begin
   end;
   TR.CheckInTransaction;
   for i := 0 to High(DataSets) do
-    if DataSets[i] is TpFIBDataSet then
-      TpFIBDataSet(DataSets[i]).ApplyUpdToBase;
+    if DataSets[i] is TFIBCustomDataSet then
+      TFIBCustomDataSet(DataSets[i]).ApplyUpdToBase;
   if TR.TimeoutAction = TACommitRetaining then
     TR.CommitRetaining
   else
     TR.Commit;
   for i := 0 to High(DataSets) do
-    if (DataSets[i] is TpFIBDataSet) and (DataSets[i].Active) then
-      TpFIBDataSet(DataSets[i]).CommitUpdToCach;
+    if (DataSets[i] is TFIBCustomDataSet) and (DataSets[i].Active) then
+      TFIBCustomDataSet(DataSets[i]).CommitUpdToCach;
 end;
 
 function TpFIBDatabase.GetFIBVersion: string;

@@ -60,7 +60,7 @@ object Form1: TForm1
       Height = 41
       AutoSize = False
       Caption = 
-        'This Example demonstrate using TpFIBDataSet LocalFiltering using' +
+        'This Example demonstrate using TFIBDataSet LocalFiltering using' +
         ' Property '#39'Filter'#39' and Event '#39'OnFilterRecord'#39
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
@@ -209,7 +209,7 @@ object Form1: TForm1
     Left = 536
     Top = 8
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE CUSTOMER'
       'SET '

@@ -6,7 +6,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  Grids, DBGrids, Db, FIBDatabase, pFIBDatabase, FIBDataSet, pFIBDataSet,
+  Grids, DBGrids, Db, FIBDatabase, pFIBDatabase, FIBDataSet,
   StdCtrls, ComCtrls, ExtCtrls;
 
 type
@@ -29,7 +29,7 @@ type
     Db: TpFIBDatabase;
     tr: TpFIBTransaction;
     ds: TDataSource;
-    dt: TpFIBDataSet;
+    dt: TFIBDataSet;
     Button2: TButton;
     RadioButton1: TRadioButton;
     RadioButton2: TRadioButton;

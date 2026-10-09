@@ -25,6 +25,8 @@ uses
 
 type
 
+  TOnBlobFieldProcessing = procedure(Field: TBlobField; BlobSize: Integer; Progress: Integer; var Stop: Boolean) of object;
+
   TKindOnOperation = (koBefore, koAfter, koAfterFirstFetch, koOther);
   TpFIBExistObject = (eoYes, eoNo, eoUnknown);
 
@@ -460,6 +462,55 @@ type
     property Subtypes: string read FSubTypesStr write SetSubTypes;
   end;
 
+  TExtBoolean = (eFalse, eTrue, eUnknown);
+
+  TpFIBFieldInfo = class
+  protected
+    FIsComputed: boolean;
+    FDefaultValue: Ansistring;
+    FCanIncToWhereClause: boolean;
+    FDomainName: Ansistring;
+    FDefaultValueEmptyString: boolean;
+    // Info from FIB$FIELDS_INFO
+    FWithAdditionalInfo: boolean;
+    FDisplayLabel: Ansistring;
+    FVisible: boolean;
+    FEditFormat: Ansistring;
+    FDisplayFormat: Ansistring;
+    FIsTriggered: boolean;
+    FOtherInfo: TStrings;
+    FDisplayWidth: integer;
+    FCanBeBoolean: TExtBoolean;
+    FCanBeGUID: TExtBoolean;
+    FCharSet: integer;
+    function GetCanBeBoolean: boolean;
+    function GetCanBeGUID: boolean;
+    function GetCharSet: string;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure SaveToStream(Stream: TStream);
+    procedure LoadFromStream(Stream: TStream; FromBegin: boolean);
+    property IsComputed: boolean read FIsComputed;
+    property DefaultValue: Ansistring read FDefaultValue;
+    property DomainName: Ansistring read FDomainName;
+    property CanIncToWhereClause: boolean read FCanIncToWhereClause;
+    // Info from FIB$FIELDS_INFO
+    property WithAdditionalInfo: boolean read FWithAdditionalInfo;
+    property DisplayLabel: Ansistring read FDisplayLabel;
+    property Visible: boolean read FVisible;
+    property EditFormat: Ansistring read FEditFormat;
+    property DisplayFormat: Ansistring read FDisplayFormat;
+    property IsTriggered: boolean read FIsTriggered;
+    property OtherInfo: TStrings read FOtherInfo;
+    property DisplayWidth: integer read FDisplayWidth;
+    property DefaultValueEmptyString: boolean read FDefaultValueEmptyString;
+    property CanBeBoolean: boolean read GetCanBeBoolean;
+    property CanBeGuid: boolean read GetCanBeGUID;
+    property CharSetID: integer read FCharSet;
+    property CharSet: string read GetCharSet;
+  end;
+
   // DataSet defaults
 const
   StatDefPrepareOptions = [pfImportDefaultValues, psGetOrderInfo,
@@ -512,10 +563,14 @@ const
   dDefDisplayFormatNum: string = '#,##0.';
   dDefEditFormatNum: string = '0.';
 
+procedure WriteStrToStream(const s: Ansistring; Stream: TStream);
+procedure ReadStrFromStream(const Stream: TStream; var ResStr: Ansistring);
+
+
 implementation
 
 uses
-  FIBDatabase, FIBDataSet, FIBQuery, fib, ibase, StrUtil, StdFuncs, SqlTxtRtns;
+  FIBDatabase, FIBDataSet, FIBQuery, fib, ibase, StrUtil, StdFuncs, SqlTxtRtns, FIBCharSets, FIBConsts;
 
 constructor TAutoUpdateOptions.Create;
 begin
@@ -2028,5 +2083,129 @@ begin
   end;
   SetLength(FSubTypesStr, Length(FSubTypesStr) - 1)
 end;
+
+// StreamRtn
+procedure WriteStrToStream(const s: Ansistring; Stream: TStream);
+var
+  L: integer;
+begin
+  L := Length(s);
+  with Stream do
+  begin
+    WriteBuffer(L, SizeOf(integer));
+    if L > 0 then
+      WriteBuffer(s[1], L);
+  end;
+end;
+
+procedure ReadStrFromStream(const Stream: TStream; var ResStr: Ansistring);
+var
+  L: integer;
+begin
+  with Stream do
+  begin
+    ReadBuffer(L, SizeOf(integer));
+    SetLength(ResStr, L);
+    if L > 0 then
+      ReadBuffer(ResStr[1], L);
+  end;
+end;
+
+constructor TpFIBFieldInfo.Create;
+begin
+  inherited Create;
+  FOtherInfo := TStringList.Create;
+  FCanBeBoolean := eUnknown;
+  FCanBeGUID := eUnknown;
+end;
+
+destructor TpFIBFieldInfo.Destroy;
+begin
+  FOtherInfo.Free;
+  inherited Destroy;
+end;
+
+function TpFIBFieldInfo.GetCanBeBoolean: boolean;
+begin
+  case FCanBeBoolean of
+    eTrue: Result := True;
+    eFalse: Result := False;
+  else
+    Result := PosCI('BOOLEAN', DomainName) > 0;
+    FCanBeBoolean := TExtBoolean(Result);
+  end;
+end;
+
+function TpFIBFieldInfo.GetCanBeGUID: boolean;
+begin
+  case FCanBeGUID of
+    eTrue: Result := True;
+    eFalse: Result := False;
+  else
+    Result := PosCI('GUID', DomainName) > 0;
+    FCanBeGUID := TExtBoolean(Result);
+  end;
+end;
+
+function TpFIBFieldInfo.GetCharSet: string;
+begin
+  Result := FirebirdCharSetName(FCharSet);
+  if Result = '' then
+    Result := UnknownStr;
+end;
+
+procedure TpFIBFieldInfo.SaveToStream(Stream: TStream);
+begin
+  with Stream do
+  begin
+    WriteBuffer(FIsComputed, SizeOf(boolean));
+    WriteBuffer(FCanIncToWhereClause, SizeOf(boolean));
+    WriteBuffer(FDefaultValueEmptyString, SizeOf(boolean));
+    WriteBuffer(FWithAdditionalInfo, SizeOf(boolean));
+    WriteBuffer(FVisible, SizeOf(boolean));
+    WriteBuffer(FIsTriggered, SizeOf(boolean));
+    WriteBuffer(FDisplayWidth, SizeOf(integer));
+    WriteBuffer(FCharSet, SizeOf(integer));
+    WriteStrToStream(FDefaultValue, Stream);
+    WriteStrToStream(FDomainName, Stream);
+    WriteStrToStream(FDisplayLabel, Stream);
+    WriteStrToStream(FEditFormat, Stream);
+    WriteStrToStream(FDisplayFormat, Stream);
+    WriteStrToStream(FOtherInfo.Text, Stream);
+  end;
+end;
+
+procedure TpFIBFieldInfo.LoadFromStream(Stream: TStream; FromBegin: boolean);
+var
+  st: Ansistring;
+  procedure RaizeErrStream;
+  begin
+    raise Exception.Create(SCompEditFieldInfoLoadError);
+  end;
+
+begin
+  with Stream do
+  begin
+    if FromBegin then
+      Seek(0, soFromBeginning);
+    ReadBuffer(FIsComputed, SizeOf(boolean));
+    ReadBuffer(FCanIncToWhereClause, SizeOf(boolean));
+    ReadBuffer(FDefaultValueEmptyString, SizeOf(boolean));
+    ReadBuffer(FWithAdditionalInfo, SizeOf(boolean));
+    ReadBuffer(FVisible, SizeOf(boolean));
+    ReadBuffer(FIsTriggered, SizeOf(boolean));
+    ReadBuffer(FDisplayWidth, SizeOf(integer));
+    ReadBuffer(FCharSet, SizeOf(integer));
+
+    ReadStrFromStream(Stream, FDefaultValue);
+    ReadStrFromStream(Stream, FDomainName);
+    ReadStrFromStream(Stream, FDisplayLabel);
+    ReadStrFromStream(Stream, FEditFormat);
+    ReadStrFromStream(Stream, FDisplayFormat);
+    ReadStrFromStream(Stream, st);
+    FOtherInfo.Text := st;
+  end
+end;
+
 
 end.

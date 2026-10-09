@@ -1,21 +1,21 @@
 unit pFIBQuery;
 
-{$MESSAGE WARN 'Unit pFIBQuery is deprecated, use FIBQuery (TFIBQuery) and FIBUpdateObject (TFIBUpdateObject)'}
+{$MESSAGE WARN 'Unit pFIBQuery is deprecated, use FIBQuery (TFIBQuery) and FIBDataSet (TFIBUpdateObject)'}
 
 interface
 
 uses
-  FIBQuery, FIBUpdateObject;
+  FIBQuery, FIBDataSet;
 
 type
   TpFIBQuery = TFIBQuery deprecated 'Use TFIBQuery';
   TpFIBUpdateObject = TFIBUpdateObject deprecated 'Use TFIBUpdateObject';
-  TFIBOrderExecUO = FIBUpdateObject.TFIBOrderExecUO;
+  TFIBOrderExecUO = FIBDataSet.TFIBOrderExecUO;
   TFIBQueryErrorEvent = FIBQuery.TFIBQueryErrorEvent;
 
 const
-  oeBeforeDefault = FIBUpdateObject.oeBeforeDefault;
-  oeAfterDefault = FIBUpdateObject.oeAfterDefault;
+  oeBeforeDefault = FIBDataSet.oeBeforeDefault;
+  oeAfterDefault = FIBDataSet.oeAfterDefault;
 
 implementation
 

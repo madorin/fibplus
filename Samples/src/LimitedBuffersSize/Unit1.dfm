@@ -59,7 +59,7 @@ object Form1: TForm1
       Height = 41
       AutoSize = False
       Caption = 
-        'This Example demonstrate simple using TpFIBDataSet LimitedBuffer' +
+        'This Example demonstrate simple using TFIBDataSet LimitedBuffer' +
         'sSize. Press button "Prepare large table" '
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
@@ -161,7 +161,7 @@ object Form1: TForm1
     Left = 488
     Top = 8
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     SelectSQL.Strings = (
       'SELECT'
       '    M.ID,'
@@ -187,7 +187,7 @@ object Form1: TForm1
     Left = 488
     Top = 40
   end
-  object dtLim: TpFIBDataSet
+  object dtLim: TFIBDataSet
     SelectSQL.Strings = (
       'SELECT'
       '    M.ID,'

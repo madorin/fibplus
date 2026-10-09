@@ -138,7 +138,7 @@ object Form1: TForm1
     Left = 536
     Top = 8
   end
-  object dtOrgChart: TpFIBDataSet
+  object dtOrgChart: TFIBDataSet
     SelectSQL.Strings = (
       'SELECT'
       '    HEAD_DEPT,'
@@ -163,7 +163,7 @@ object Form1: TForm1
     Left = 536
     Top = 40
   end
-  object dtDept: TpFIBDataSet
+  object dtDept: TFIBDataSet
     SelectSQL.Strings = (
       'SELECT'
       '    DEPT_NO,'

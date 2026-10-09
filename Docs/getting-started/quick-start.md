@@ -1,6 +1,6 @@
 # Quick start
 
-Connect to a database, run a first query, and show data in a grid. The steps use the `EMPLOYEE` demo database that ships with Firebird and the components `TpFIBDatabase`, `TpFIBTransaction`, `TFIBQuery`, and `TpFIBDataSet`.
+Connect to a database, run a first query, and show data in a grid. The steps use the `EMPLOYEE` demo database that ships with Firebird and the components `TpFIBDatabase`, `TpFIBTransaction`, `TFIBQuery`, and `TFIBDataSet`.
 
 You need:
 
@@ -75,7 +75,7 @@ end;
 
 ## 3. Show data in a dataset
 
-1. Drop a `TpFIBDataSet` (`DataSet`), a `TDataSource`, and a `TDBGrid` on the form.
+1. Drop a `TFIBDataSet` (`DataSet`), a `TDataSource`, and a `TDBGrid` on the form.
 2. Set the properties of `DataSet`:
 
    | Property | Value |
@@ -97,7 +97,7 @@ end;
 
    `poStartTransaction` is in `Options` by default, so the dataset starts `Transaction` when it opens. Change `Options` in the Object Inspector to turn it off.
 
-The grid shows the rows. The grid is read-only until the dataset has `InsertSQL`, `UpdateSQL`, and `DeleteSQL`. Fill them in the Object Inspector, or set `AutoUpdateOptions.UpdateTableName`, `AutoUpdateOptions.KeyFields`, and `AutoUpdateOptions.AutoReWriteSqls` to `True` so that the dataset generates them when it opens, see [TpFIBDataSet](../reference/TpFIBDataSet.md#autoupdateoptions). The `DataSetBasic` sample in `Samples\src` shows a dataset with all four statements filled in.
+The grid shows the rows. The grid is read-only until the dataset has `InsertSQL`, `UpdateSQL`, and `DeleteSQL`. Fill them in the Object Inspector, or set `AutoUpdateOptions.UpdateTableName`, `AutoUpdateOptions.KeyFields`, and `AutoUpdateOptions.AutoReWriteSqls` to `True` so that the dataset generates them when it opens, see [TFIBDataSet](../reference/TFIBDataSet.md#autoupdateoptions). The `DataSetBasic` sample in `Samples\src` shows a dataset with all four statements filled in.
 
 The dataset sends changes to the server with `UpdateTransaction`. They become permanent only when that transaction is committed. Either commit it in your code or set `AutoCommit` to `True`:
 
@@ -105,7 +105,7 @@ The dataset sends changes to the server with `UpdateTransaction`. They become pe
 DataSet.AutoCommit := True;
 ```
 
-See [TFIBDataSet](../reference/TFIBDataSet.md) and [TpFIBDataSet](../reference/TpFIBDataSet.md) for the members, and [Datasets and caching](../guide/datasets-and-caching.md) for editing scenarios.
+See [TFIBDataSet](../reference/TFIBDataSet.md) for the members, and [Datasets and caching](../guide/datasets-and-caching.md) for editing scenarios.
 
 ## Next steps
 

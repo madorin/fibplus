@@ -70,8 +70,6 @@ resourcestring
   SFIBErrorEOFInString                  = 'EOF in string detected';
   SFIBErrorParamNameExpected            = 'Parameter name expected';
   SFIBErrorInvalidComp                  = 'Invalid comp value';
-  SFIBErrorNotDataSet                   = '%s is not TpFIBDataSet';
-  SFIBErrorNotDataSetDetail             = 'Unable to apply %s because %s is not TpFIBDataSet';
   SFIBErrorNotifyEvent                  = 'Unable to add NotifyEvent';
   SFIBErrorNotifyEventIndexOut          = 'EventList: Index out of range';
   SFIBErrorNotifyEventInvalid           = 'EventList: Invalid typecast';

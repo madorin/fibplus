@@ -17,7 +17,7 @@
   change `uses` clauses and class names to the new ones. See
   [Upgrading](Docs/guide/upgrading.md).
 - `TpFIBQuery` and `TpFIBUpdateObject` are merged into `TFIBQuery` (unit
-  `FIBQuery`) and `TFIBUpdateObject` (unit `FIBUpdateObject`). `TFIBQuery` has
+  `FIBQuery`) and `TFIBUpdateObject` (unit `FIBDataSet`). `TFIBQuery` has
   now `Description`, `OnExecuteError`, `About`, `ExecProc`, `ExecProcedure`,
   `BlobToStrings`, `BlobAsString` and `FieldIsNull`, and publishes `BeforeExecute`
   and `AfterExecute`. The unit `pFIBQuery` and the old names stay as deprecated
@@ -28,6 +28,30 @@
   `TFIBQueryEditor`. The old option type names stay as deprecated aliases. The
   IDE preferences of the query are stored under the registry key `FIBQuery`
   instead of `pFIBQuery`: set them again once in the FIBPlus preferences.
+- `TpFIBDataSet` is merged into `TFIBDataSet` (unit `FIBDataSet`): its code is
+  now in `TFIBCustomDataSet`, and `TFIBDataSet` publishes the properties and
+  events of both classes. `TFIBDataSet` is the dataset on the component palette.
+  `TFIBUpdateObject` and `TFIBOrderExecUO`,
+  `TLockStatus`, `TLockErrorEvent`, `TCachRefreshKind`, `TOnGetSQLTextProc`,
+  `TIncludeFieldsToSQL` and `FieldInArray` are now in `FIBDataSet`.
+  `TpFIBFieldInfo` and `TOnBlobFieldProcessing` moved to `pFIBProps`, so that
+  `DSContainer` no longer uses `FIBDataSet`; `pFIBDataInfo` keeps an alias of
+  `TpFIBFieldInfo`. The unit `pFIBDataSet` and the name `TpFIBDataSet` stay as
+  deprecated aliases and old DFM files still load.
+- `TFIBDataSet`, which had no SQL generation, update objects, cached updates
+  routines, record locking or visible record numbers, now behaves like
+  `TpFIBDataSet` did: `CanEdit`, `CanInsert` and `CanDelete` are also true when an
+  update object is active or SQL generation is on, `Post` and `Delete` run update
+  objects and generated statements, `PrepareOptions` and `DataSet_ID` load field
+  properties and the repository, and the events go to `Container`.
+  `Prepare` no longer prepares `RefreshSQL` at design time.
+- `TFIBUpdateObject.DataSet` has the type `TFIBCustomDataSet` and accepts any
+  FibPlus dataset; the messages `SFIBErrorNotDataSet` and
+  `SFIBErrorNotDataSetDetail` are removed.
+- The design-time editor `TpFIBDataSetOptionsEditor` is now
+  `TFIBDataSetOptionsEditor`. The IDE preferences of the dataset are stored
+  under the registry key `FIBDataSet` instead of `pFIBDataSet`: set them again
+  once in the FIBPlus preferences.
 
 ## [7.9.1] - 2026-10-09
 

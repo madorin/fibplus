@@ -149,9 +149,9 @@ procedure Register;
       RegisterPropertyEditor(pi.PropType^, nil, 'Conditions', TFIBConditionsEditor);
 
       pi := GetPropInfo(DatasetClass, 'Options');
-      RegisterPropertyEditor(pi.PropType^, nil, 'Options', TpFIBDataSetOptionsEditor);
+      RegisterPropertyEditor(pi.PropType^, nil, 'Options', TFIBDataSetOptionsEditor);
       pi := GetPropInfo(DatasetClass, 'PrepareOptions');
-      RegisterPropertyEditor(pi.PropType^, nil, 'PrepareOptions', TpFIBDataSetOptionsEditor);
+      RegisterPropertyEditor(pi.PropType^, nil, 'PrepareOptions', TFIBDataSetOptionsEditor);
       pi := GetPropInfo(DatasetClass, 'AutoUpdateOptions');
       RegisterPropertyEditor(pi.PropType^, DatasetClass, 'AutoUpdateOptions', TpFIBAutoUpdateOptionsEditor);
 

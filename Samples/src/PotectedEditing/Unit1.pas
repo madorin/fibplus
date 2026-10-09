@@ -4,16 +4,15 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
-  ExtCtrls, StdCtrls, Grids, DBGrids, pFIBProps, FIBQuery,
-  DBClient, pFIBClientDataSet, Provider, IBDatabase, ibase;
+  Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase, pFIBDatabase,
+  ExtCtrls, StdCtrls, Grids, DBGrids, pFIBProps, FIBQuery;
 
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
     DB: TpFIBDatabase;
     tr: TpFIBTransaction;
-    dt: TpFIBDataSet;
+    dt: TFIBDataSet;
     ds: TDataSource;
     Panel1: TPanel;
     Label1: TLabel;
@@ -22,7 +21,7 @@ type
     Label3: TLabel;
     DBGrid2: TDBGrid;
     dbOther: TpFIBDatabase;
-    dtOther: TpFIBDataSet;
+    dtOther: TFIBDataSet;
     dsOther: TDataSource;
     trOther: TpFIBTransaction;
     Button1: TButton;
@@ -104,14 +103,14 @@ end;
 
 procedure TForm1.ProtectedDatasetAfterCancel(DataSet: TDataSet);
 begin
-  if TpFIBDataSet(DataSet).UpdateTransaction.InTransaction then
-    TpFIBDataSet(DataSet).UpdateTransaction.Rollback;
+  if TFIBDataSet(DataSet).UpdateTransaction.InTransaction then
+    TFIBDataSet(DataSet).UpdateTransaction.Rollback;
 end;
 
 procedure TForm1.ProtectedDataSetAfterPost(DataSet: TDataSet);
 begin
-  if TpFIBDataSet(DataSet).UpdateTransaction.InTransaction then
-    TpFIBDataSet(DataSet).UpdateTransaction.Commit;
+  if TFIBDataSet(DataSet).UpdateTransaction.InTransaction then
+    TFIBDataSet(DataSet).UpdateTransaction.Commit;
 end;
 
 end.

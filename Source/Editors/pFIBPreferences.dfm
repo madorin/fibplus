@@ -25,7 +25,7 @@ object frmFIBPreferences: TfrmFIBPreferences
     ActivePage = TabSheet4
     TabOrder = 0
     object TabSheet4: TTabSheet
-      Caption = 'TpFIBDataSet'
+      Caption = 'TFIBDataSet'
       object Label4: TLabel
         Left = 8
         Top = 328

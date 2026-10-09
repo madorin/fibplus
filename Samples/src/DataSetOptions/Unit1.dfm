@@ -41,8 +41,8 @@ object Form1: TForm1
       Height = 41
       AutoSize = False
       Caption = 
-        'This Example demonstrate using TpFIBPlusDataSet.Options and TpFI' +
-        'BDataSet.PrepareOptions  for tuning work of pFIBDataSet. '
+        'This Example demonstrate using TFIBDataSet.Options and TpFI' +
+        'BDataSet.PrepareOptions  for tuning work of TFIBDataSet. '
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
       Font.Height = -11
@@ -127,7 +127,7 @@ object Form1: TForm1
     Left = 368
     Top = 16
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE EMPLOYEE'
       'SET '

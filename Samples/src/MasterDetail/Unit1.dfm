@@ -112,7 +112,7 @@ object Form1: TForm1
       Height = 41
       AutoSize = False
       Caption = 
-        'This Example demonstrate using TpFIBDataSet Master-Detail. See D' +
+        'This Example demonstrate using TFIBDataSet Master-Detail. See D' +
         'etailConditions Properties for details'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
@@ -186,7 +186,7 @@ object Form1: TForm1
     Left = 536
     Top = 8
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE CUSTOMER'
       'SET '
@@ -302,7 +302,7 @@ object Form1: TForm1
     Left = 472
     Top = 40
   end
-  object dtDetail: TpFIBDataSet
+  object dtDetail: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE SALES'
       'SET '

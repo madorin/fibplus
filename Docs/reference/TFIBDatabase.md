@@ -130,7 +130,7 @@ Available in the Object Inspector. When the component is dropped on a form at de
 | `MetadataCodePage` | `Word` | Code page of DDL and of the names the server sends. UTF-8 when metadata is sent in UTF-8 (a `NONE` or Unicode attachment on *Firebird 2.1+* with ODS 11.1 or later); otherwise `CodePage`. |
 | `ReadConsistency` | `Boolean` | `True` on a *Firebird 4+* server: `TpFIBTransaction.TPBMode` `tpbReadConsistency` and `read_consistency` in `TRParams` work. |
 | `SessionTimeouts` | `Boolean` | `True` on a *Firebird 4+* server: `Session.StatementTimeout` and `Session.IdleTimeout` work. |
-| `StatementTimeout` | `Boolean` | `True` when `SessionTimeouts` is `True` and the client library supports per-statement timeouts (`fbclient` 4+): `TFIBQuery.StatementTimeout` and `TpFIBDataSet.StatementTimeout` work. |
+| `StatementTimeout` | `Boolean` | `True` when `SessionTimeouts` is `True` and the client library supports per-statement timeouts (`fbclient` 4+): `TFIBQuery.StatementTimeout` and `TFIBDataSet.StatementTimeout` work. |
 | `TextCodePage(CharSetID)` | `Word` | Code page of a text value whose character set ID is `CharSetID` (the `sqlsubtype` of the column). The system code page for `NONE` and `OCTETS`; the attachment code page when the server converts the text; otherwise the code page of the column character set. |
 
 ```delphi

@@ -60,7 +60,7 @@ object Form1: TForm1
       Height = 41
       AutoSize = False
       Caption = 
-        'This Example demonstrate simple using TpFIBPlusDataSet for data ' +
+        'This Example demonstrate simple using TFIBDataSet for data ' +
         #13#10'manipulation'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
@@ -109,7 +109,7 @@ object Form1: TForm1
     Left = 536
     Top = 8
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE EMPLOYEE'
       'SET '

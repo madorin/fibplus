@@ -192,7 +192,7 @@ object Form1: TForm1
     Left = 536
     Top = 8
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     CachedUpdates = True
     UpdateSQL.Strings = (
       'UPDATE UNICODE_TABLE'

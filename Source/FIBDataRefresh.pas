@@ -20,7 +20,7 @@ interface
 {$I FIBPlus.inc}
 
 uses
-  SysUtils, Classes, pFIBDataSet, FIBDataSet, DB, FIBQuery, FIBDatabase;
+  SysUtils, Classes, FIBDataSet, DB, FIBQuery, FIBDatabase;
 
 type
   TChangesCount = packed record
@@ -46,11 +46,11 @@ type
     FReceivedChanges: TChangesCount;
     FTableName: string;
 
-    FQryNonCommitedDelta: TpFIBDataSet;
-    FQryNonCommitedDeletes: TpFIBDataSet;
+    FQryNonCommitedDelta: TFIBDataSet;
+    FQryNonCommitedDeletes: TFIBDataSet;
 
-    FQryCommitedDelta: TpFIBDataSet;
-    FQryCommitedDeletes: TpFIBDataSet;
+    FQryCommitedDelta: TFIBDataSet;
+    FQryCommitedDeletes: TFIBDataSet;
     FBeforeEndTransaction: TEndTrEvent;
     FAfterEndTransaction: TEndTrEvent;
   private
@@ -61,7 +61,7 @@ type
     function GetAllChangesCount: integer;
 
     procedure SetTransaction(const Value: TFIBTransaction);
-    procedure AdjustDataSetProperties(ADataSet: TpFIBDataSet);
+    procedure AdjustDataSetProperties(ADataSet: TFIBDataSet);
     procedure SetTableName(const Value: string);
     procedure CheckTransaction;
     procedure DoBeforeEndTransaction(EndingTR: TFIBTransaction; Action: TTransactionAction; Force: boolean);
@@ -78,13 +78,13 @@ type
     procedure ResetStartParams;
     function GetActualCommitNo: Int64;
     procedure ReceiveDelta(OnlyCurTransactionChanges: boolean = False);
-    procedure ApplyDelta(ToDataSet: TpFIBDataSet; const KeyFields: string);
+    procedure ApplyDelta(ToDataSet: TFIBDataSet; const KeyFields: string);
     property ReceivedChanges: TChangesCount read FReceivedChanges;
     property ChangesCount: integer read GetAllChangesCount;
-    property CommitedDelta: TpFIBDataSet read FQryCommitedDelta;
-    property CommitedDeltaDel: TpFIBDataSet read FQryCommitedDeletes;
-    property NonCommitedDelta: TpFIBDataSet read FQryNonCommitedDelta;
-    property NonCommitedDeltaDel: TpFIBDataSet read FQryNonCommitedDeletes;
+    property CommitedDelta: TFIBDataSet read FQryCommitedDelta;
+    property CommitedDeltaDel: TFIBDataSet read FQryCommitedDeletes;
+    property NonCommitedDelta: TFIBDataSet read FQryNonCommitedDelta;
+    property NonCommitedDeltaDel: TFIBDataSet read FQryNonCommitedDeletes;
     property ExistNonCommitedChanges: boolean read FExistNonCommitedChanges;
     // Start Params
     property StartCommitNo: Int64 read FCommitOrder write FCommitOrder;
@@ -223,7 +223,7 @@ uses
 type
   TFriendDataSet = class(TFIBDataSet);
 
-procedure TFIBTableChangesReader.AdjustDataSetProperties (ADataSet: TpFIBDataSet);
+procedure TFIBTableChangesReader.AdjustDataSetProperties (ADataSet: TFIBDataSet);
 begin
   with ADataSet do
   begin
@@ -238,7 +238,7 @@ begin
   end;
 end;
 
-procedure TFIBTableChangesReader.ApplyDelta(ToDataSet: TpFIBDataSet; const KeyFields: string);
+procedure TFIBTableChangesReader.ApplyDelta(ToDataSet: TFIBDataSet; const KeyFields: string);
 begin
   if ReceivedChanges.cChangesCount > 0 then
     ToDataSet.RefreshFromDataSet(CommitedDelta, KeyFields);
@@ -270,11 +270,11 @@ constructor TFIBTableChangesReader.Create(AOwner: TComponent);
 begin
   inherited;
 
-  FQryNonCommitedDelta := TpFIBDataSet.Create(Self);
-  FQryNonCommitedDeletes := TpFIBDataSet.Create(Self);
+  FQryNonCommitedDelta := TFIBDataSet.Create(Self);
+  FQryNonCommitedDeletes := TFIBDataSet.Create(Self);
 
-  FQryCommitedDelta := TpFIBDataSet.Create(Self);
-  FQryCommitedDeletes := TpFIBDataSet.Create(Self);
+  FQryCommitedDelta := TFIBDataSet.Create(Self);
+  FQryCommitedDeletes := TFIBDataSet.Create(Self);
 
 end;
 

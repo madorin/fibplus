@@ -50,7 +50,7 @@ type
     procedure Edit; override;
   end;
 
-  TpFIBDataSetOptionsEditor = class(TSetProperty)
+  TFIBDataSetOptionsEditor = class(TSetProperty)
   public
     function GetAttributes: TPropertyAttributes; override;
     procedure Edit; override;
@@ -429,9 +429,9 @@ begin
   Result := 1;
 end;
 
-{ TpFIBDataSetOptionsEditor }
+{ TFIBDataSetOptionsEditor }
 
-procedure TpFIBDataSetOptionsEditor.Edit;
+procedure TFIBDataSetOptionsEditor.Edit;
 var
   pName: string;
   DataSets: array of TDataSet;
@@ -452,7 +452,7 @@ begin
     Modified;
 end;
 
-function TpFIBDataSetOptionsEditor.GetAttributes: TPropertyAttributes;
+function TFIBDataSetOptionsEditor.GetAttributes: TPropertyAttributes;
 begin
   Result := inherited GetAttributes + [paDialog];
 end;
@@ -595,8 +595,8 @@ begin
     Trans.free;
   end;
 
-  (* {  if not (TAutoUpdateOptions(GetComponent(0)).Owner is TpFIBDataSet) then Exit;
-    Dset:= (TAutoUpdateOptions(GetComponent(0)).Owner as TpFIBDataSet);}
+  (* {  if not (TAutoUpdateOptions(GetComponent(0)).Owner is TFIBDataSet) then Exit;
+    Dset:= (TAutoUpdateOptions(GetComponent(0)).Owner as TFIBDataSet);}
     if not Assigned(Dset.Database) then Exit;
     Qry := nil; Trans := nil;
     try
@@ -968,8 +968,8 @@ begin
         2:
           begin
             // try to connect
-            (* if (not Assigned(TpFibDataSet(Component).DataBase)) or
-              (not TpFibDataSet(Component).DataBase.Connected) then
+            (* if (not Assigned(TFIBDataSet(Component).DataBase)) or
+              (not TFIBDataSet(Component).DataBase.Connected) then
             *)
             curObj := GetObjectProp(Component, 'Database');
             if not Assigned(curObj) or not GetPropValue(curObj, 'Connected') then

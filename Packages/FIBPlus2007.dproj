@@ -79,7 +79,6 @@
     <DCCReference Include="..\Source\pFIBLists.pas" />
     <DCCReference Include="..\Source\pFIBMetaData.pas" />
     <DCCReference Include="..\Source\pFIBProps.pas" />
-    <DCCReference Include="..\Source\FIBUpdateObject.pas" />
     <DCCReference Include="..\Source\pFIBQuery.pas" />
     <DCCReference Include="..\Source\FIBScripter.pas" />
     <DCCReference Include="..\Source\pFIBScripter.pas" />

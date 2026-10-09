@@ -129,7 +129,7 @@ object ThreadSQLForm: TThreadSQLForm
     Left = 232
     Top = 16
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     Transaction = tra
     Database = dba
     DefaultFormats.DateTimeDisplayFormat = 'dd.mm.yyyy'

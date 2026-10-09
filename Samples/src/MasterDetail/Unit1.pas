@@ -6,7 +6,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
+  Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase, pFIBDatabase,
   ExtCtrls, StdCtrls, Grids, DBGrids, DBCtrls, fib, FIBQuery;
 
 type
@@ -14,13 +14,13 @@ type
     StatusBar1: TStatusBar;
     DB: TpFIBDatabase;
     tr: TpFIBTransaction;
-    dt: TpFIBDataSet;
+    dt: TFIBDataSet;
     ds: TDataSource;
     Panel1: TPanel;
     Label1: TLabel;
     Label2: TLabel;
     DBGrid1: TDBGrid;
-    dtDetail: TpFIBDataSet;
+    dtDetail: TFIBDataSet;
     dsDetail: TDataSource;
     Label3: TLabel;
     DBGrid2: TDBGrid;

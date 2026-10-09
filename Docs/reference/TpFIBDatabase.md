@@ -134,7 +134,7 @@ Each timer tick calls `RestoreConnect`: it stops the timer, sets `Connected` to 
 |------|-------------|
 | `CloseDataSets` | Close every `TFIBDataSet` that uses this database. |
 | `FIBDataSetsCount`, `FIBQueryCount` | Number of entries of `FIBDataSets` and `FIBQueries`. |
-| `ApplyUpdates(DataSets)` | Apply cached updates of several datasets in one transaction. Each dataset must be a `TFIBCustomDataSet` that uses this database and the same update transaction (`TFIBCustomDataSet.UpdateTransaction`), else an error is raised. An empty array does nothing. The method calls `ApplyUpdToBase` of each `TpFIBDataSet`, then commits the update transaction (`CommitRetaining` when its `TimeoutAction` is `TACommitRetaining`, else `Commit`), then calls `CommitUpdToCach` on the datasets that are open. |
+| `ApplyUpdates(DataSets)` | Apply cached updates of several datasets in one transaction. Each dataset must be a `TFIBCustomDataSet` that uses this database and the same update transaction (`TFIBCustomDataSet.UpdateTransaction`), else an error is raised. An empty array does nothing. The method calls `ApplyUpdToBase` of each dataset, then commits the update transaction (`CommitRetaining` when its `TimeoutAction` is `TACommitRetaining`, else `Commit`), then calls `CommitUpdToCach` on the datasets that are open. |
 
 ### Metadata
 

@@ -8,7 +8,7 @@ Find the version you use now, then read every section above it, from the one jus
 
 | Version | Status | Notes |
 |---------|--------|-------|
-| [8.0.0](#800) | Unreleased | Query, update object, scripter, stored procedure, error handler, table changes reader and schema extract classes renamed from `TpFIB...` to `TFIB...`. |
+| [8.0.0](#800) | Unreleased | Dataset, query, update object, scripter, stored procedure, error handler, table changes reader and schema extract classes renamed from `TpFIB...` to `TFIB...`. |
 | [7.9.1](#791) | 2026-10-09 | Text in the code page of each column's character set, *Firebird 4+* statement and idle timeouts and read consistency, *Firebird 5+* parallel workers, an FMX login dialog package, and many bug fixes. |
 | [7.9.0](#790) | 2026-10-01 | First release of the community maintained FibPlus. Based on the FIBPlus 7 sources of build 632 (2014-02-17). |
 
@@ -28,14 +28,39 @@ Find the version you use now, then read every section above it, from the one jus
 | Unit `pFIBDataRefresh` | `FIBDataRefresh` | Change the `uses` clause. The old unit still compiles and gives a warning. |
 | `TpFIBTableChangesReader` | `TFIBTableChangesReader` | Rename. The old name is a deprecated alias of the same class. |
 | `TpFIBDBSchemaExtract` (unit `pFIBMetaData`) | `TFIBDBSchemaExtract` | Rename. The old name is a deprecated alias of the same class. The unit keeps its name. |
-| Unit `pFIBQuery` | `FIBQuery`, `FIBUpdateObject` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| Unit `pFIBQuery` | `FIBQuery`, `FIBDataSet` | Change the `uses` clause. The old unit still compiles and gives a warning. |
 | `TpFIBQuery` | `TFIBQuery` | Rename. The old name is a deprecated alias of the same class. |
-| `TpFIBUpdateObject` | `TFIBUpdateObject` (unit `FIBUpdateObject`) | Rename. The old name is a deprecated alias of the same class. |
+| `TpFIBUpdateObject` | `TFIBUpdateObject` (unit `FIBDataSet`) | Rename. The old name is a deprecated alias of the same class. |
 | `TpFIBQueryOption`, `TpFIBQueryOptions` | `TFIBQueryOption`, `TFIBQueryOptions` | Rename. The old names are deprecated aliases of the same types. |
 | `TFIBQuery.FN` (missing column returned `nil`) | `TFIBQuery.FindField` | `FN` now raises for a missing column, as `TpFIBQuery.FN` did. Replace `FN` with `FindField` where you test the result for `nil`. |
 | IDE preferences of the query (registry key `pFIBQuery`) | registry key `FIBQuery` | The saved design-time defaults for new queries (`ParamCheck`, `GoToFirstRecordOnExecute`, `Options`) are not read from the old key. Set them again once in the FIBPlus preferences. |
+| Unit `pFIBDataSet` | `FIBDataSet` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| `TpFIBDataSet` | `TFIBDataSet` | Rename. The old name is a deprecated alias of the same class. |
+| `TLockStatus`, `TLockErrorEvent`, `TCachRefreshKind`, `TOnGetSQLTextProc`, `TIncludeFieldsToSQL`, `FieldInArray` (unit `pFIBDataSet`) | The same names in `FIBDataSet` | Change the `uses` clause. The old unit exports them as aliases. |
+| `TFIBUpdateObject.DataSet: TFIBDataSet` | `TFIBCustomDataSet` | Any FibPlus dataset is accepted. Code that reads the property needs a cast to `TFIBDataSet` to use the published members, and `QSelect`, `Params`, `Prepared` and similar are protected in `TFIBCustomDataSet`. |
+| `TpFIBFieldInfo`, `TOnBlobFieldProcessing` (units `pFIBDataInfo`, `FIBDataSet`) | Declared in `pFIBProps` | The old units keep the names, so code that uses them compiles without a change. |
+| `TExtBoolean` (`pFIBDataInfo`) | Declared in `pFIBProps` | Internal type; `pFIBDataInfo` has no alias for it. The `pFIBDataInfo` routines that took `TFIBDataSet` now take `TFIBCustomDataSet`. |
+| `SFIBErrorNotDataSet`, `SFIBErrorNotDataSetDetail` (`FIBConsts`) | Removed | Nothing raises them any more. |
+| `TpFIBDataSetOptionsEditor` | `TFIBDataSetOptionsEditor` | Rename in design-time code that registers it. |
+| IDE preferences of the dataset (registry key `pFIBDataSet`) | registry key `FIBDataSet` | The saved design-time defaults for new datasets (`Options`, `PrepareOptions`, `DetailConditions`, default formats, generator name prefix and suffix) are not read from the old key. Set them again once in the FIBPlus preferences. |
 
-Forms that contain one of the old component classes still load. The next time you save the form, the IDE writes the new class name. The old unit and names are removed in a later major version.
+Forms that contain one of the old component classes still load. The class `TpFIBDataSet` is registered by the unit `pFIBDataSet`, so keep it linked (in a `uses` clause) until the form is saved again. The next time you save the form, the IDE writes the new class name. The old unit and names are removed in a later major version.
+
+### Changed behavior
+
+#### `TFIBDataSet` is the former `TpFIBDataSet`
+
+The component on the palette was `TpFIBDataSet`. Its code is now in `TFIBCustomDataSet`, and `TFIBDataSet` (which had no code of its own) publishes the same properties as `TpFIBDataSet`, in the same order. A form that holds `TpFIBDataSet` loads as `TFIBDataSet` and nothing changes for it. You only notice the change when the code creates a `TFIBDataSet` or derives from `TFIBDataSet` or `TFIBCustomDataSet` directly: it now gets what the palette dataset always had.
+
+- `CanEdit`, `CanInsert`, and `CanDelete` are also `True` when an update object of that kind is active, when SQL generation is on (`UpdateOnlyModifiedFields`, `AutoReWriteSqls`, `CanChangeSQLs`, `KeyFields`, and `UpdateTableName` all set), or with `CachedUpdates` and an `OnUpdateRecord` handler. Before, only a non-empty `InsertSQL`, `UpdateSQL`, or `DeleteSQL` allowed the change.
+- `Post` and `Delete` run the update objects and the statements generated from `AutoUpdateOptions`. `ApplyUpdates`, `RefreshFromQuery`, `LockRecord`, `SaveToFile`, `OpenWP`, and the other members of `TpFIBDataSet` are available.
+- `RecNo`, `RecordCount`, and `IsSequenced` follow `poVisibleRecno` and `psAskRecordCount`.
+- Opening loads the repository settings of `DataSet_ID` (`psApplyRepositary`) and applies the field formats of `DefaultFormats`, and the events are sent to `Container` and to the global container.
+- `ParamByName` and `FindParam` of the dataset exist; `FindParam` starts the transaction.
+- `Prepare` no longer prepares `RefreshSQL` at design time.
+- Each dataset creates two internal queries (record count and lock) and four lists. No server round trip is added.
+
+A class that derives from `TpFIBDataSet` and overrides its virtual methods (`AddedFilterRecord`, `UpdateFieldsProps`, `IncGenerator`, `RecordCountFromSrv`, `DoOnApplyDefaultValue`) keeps working; the methods have the same signatures.
 
 ## 7.9.1
 

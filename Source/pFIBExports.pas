@@ -6,7 +6,7 @@ interface
 
 uses
   SysUtils, FIBPlatforms, Classes,
-  pFIBInterfaces, FIBDatabase, FIBQuery, FIBDataSet, pFIBDataSet,
+  pFIBInterfaces, FIBDatabase, FIBQuery, FIBDataSet,
   StrUtil, pFIBDatabase, SqlTxtRtns, pFIBMetaData;
 
 type

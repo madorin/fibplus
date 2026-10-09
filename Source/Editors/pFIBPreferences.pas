@@ -355,7 +355,7 @@ end;
 
 procedure TfrmFIBPreferences.SaveToReg;
 begin
-  DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'pFIBDataSet',
+  DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBDataSet',
     'Options'], ['PersistentSorting', 'KeepSorting', 'ProtectedEdit',
     'AutoFormatFields', 'StartTransaction', 'RefreshDeletedRecord',
     'RefreshAfterPost', 'TrimCharFields', 'VisibleRecno', 'FetchAll',
@@ -365,7 +365,7 @@ begin
     chRefreshAfterPost.Checked, chTrimCharFields.Checked,
     chVisibleRecno.Checked, chFetchAll.Checked, chCacheCalcFields.Checked]);
 
-  DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'pFIBDataSet',
+  DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBDataSet',
     'PrepareOptions'], ['AskRecordCount', 'GetOrderInfo', 'ApplyRepositary',
     'UseBooleanField', 'ImportDefaultValues', 'SetReadOnlyFields',
     'RequiredFields', 'SQLINT64ToBCD', 'UseGuidField', 'SetEmptyStrToNull',
@@ -376,19 +376,19 @@ begin
     chUseGuidField.Checked, chEmptyStrToNull.Checked,
     chUseLargeIntField.Checked]);
 
-  DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'pFIBDataSet',
+  DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBDataSet',
     'DetailConditions'], ['WaitEndMasterScroll', 'ForceMasterRefresh',
     'ForceOpen', 'IgnoreMasterClose'], [chWaitEndMasterScroll.Checked,
     chForceMasterRefresh.Checked, chForceOpen.Checked,
     chIgnoreMasterClose.Checked]);
 
-  DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'pFIBDataSet',
+  DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBDataSet',
     'DefFormatFields'], ['DateFormat', 'TimeFormat', 'NumericDisplayFormat',
     'NumericEditFormat', 'DateTimeFormat'],
     [edDateFormat.Text, edTimeFormat.Text, edDisplayNumFormat.Text,
     edEditNumFormat.Text, edDateTimeDisplay.Text]);
 
-  DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'pFIBDataSet',
+  DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBDataSet',
     'Other'], ['DefPrefixGenName', 'DefSufixGenName'], [EdPrefixGen.Text, EdSufixGen.Text]);
 
   DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'pFIBDataBase'],
@@ -413,7 +413,7 @@ var
   Values: Variant;
 begin
   Values := DefReadFromRegistry(['Software', RegFIBRoot, RegPreferences,
-    'pFIBDataSet', 'Options'], ['PersistentSorting', 'KeepSorting',
+    'FIBDataSet', 'Options'], ['PersistentSorting', 'KeepSorting',
     'ProtectedEdit', 'AutoFormatFields', 'StartTransaction',
     'RefreshDeletedRecord', 'RefreshAfterPost', 'TrimCharFields',
     'VisibleRecno', 'FetchAll', 'CacheCalcFields']);
@@ -488,7 +488,7 @@ begin
   end;
 
   Values := DefReadFromRegistry(['Software', RegFIBRoot, RegPreferences,
-    'pFIBDataSet', 'DefFormatFields'], ['DateFormat', 'TimeFormat',
+    'FIBDataSet', 'DefFormatFields'], ['DateFormat', 'TimeFormat',
     'NumericDisplayFormat', 'NumericEditFormat', 'DateTimeFormat']);
 
   if VarType(Values) <> varBoolean then
@@ -508,7 +508,7 @@ begin
   end;
 
   Values := DefReadFromRegistry(['Software', RegFIBRoot, RegPreferences,
-    'pFIBDataSet', 'DetailConditions'], ['WaitEndMasterScroll',
+    'FIBDataSet', 'DetailConditions'], ['WaitEndMasterScroll',
     'ForceMasterRefresh', 'ForceOpen', 'IgnoreMasterClose']);
 
   if VarType(Values) <> varBoolean then
@@ -539,7 +539,7 @@ begin
   end;
 
   Values := DefReadFromRegistry(['Software', RegFIBRoot, RegPreferences,
-    'pFIBDataSet', 'PrepareOptions'], ['AskRecordCount', 'GetOrderInfo',
+    'FIBDataSet', 'PrepareOptions'], ['AskRecordCount', 'GetOrderInfo',
     'ApplyRepositary', 'UseBooleanField', 'ImportDefaultValues',
     'SetReadOnlyFields', 'RequiredFields', 'SQLINT64ToBCD', 'UseGuidField',
     'SetEmptyStrToNull', 'UseLargeIntField']);
@@ -614,7 +614,7 @@ begin
   end;
 
   Values := DefReadFromRegistry(['Software', RegFIBRoot, RegPreferences,
-    'pFIBDataSet', 'Other'], ['DefPrefixGenName', 'DefSufixGenName']);
+    'FIBDataSet', 'Other'], ['DefPrefixGenName', 'DefSufixGenName']);
 
   if VarType(Values) <> varBoolean then
   begin

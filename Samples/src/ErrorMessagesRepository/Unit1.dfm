@@ -126,7 +126,7 @@ object Form1: TForm1
     Left = 512
     Top = 40
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE EMPLOYEE'
       'SET '

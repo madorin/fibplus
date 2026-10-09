@@ -154,9 +154,9 @@ DataSet.AutoCommit := True;
 DataSet.Open;
 ```
 
-The components in the sample are `ReadTransaction`, `WriteTransaction`, and a `TpFIBDataSet` named `DataSet`; set `TPBMode` to `tpbDefault` on both if they are `TpFIBTransaction` components. The statement that refreshes a row after `Post` runs in `Transaction` by default. `RefreshTransactionKind` set to `tkUpdateTransaction` runs it in `UpdateTransaction`, which sees the changes the dataset has made even before they are committed.
+The components in the sample are `ReadTransaction`, `WriteTransaction`, and a `TFIBDataSet` named `DataSet`; set `TPBMode` to `tpbDefault` on both if they are `TpFIBTransaction` components. The statement that refreshes a row after `Post` runs in `Transaction` by default. `RefreshTransactionKind` set to `tkUpdateTransaction` runs it in `UpdateTransaction`, which sees the changes the dataset has made even before they are committed.
 
-`TpFIBDataSet.HasUncommitedChanges` is `True` after the dataset sent a change to the server and stays so until `UpdateTransaction` is committed or rolled back, including the retaining variants. `HaveRollbackedChanges` records that such changes were rolled back; it is cleared when the dataset closes or its SQL changes.
+`TFIBDataSet.HasUncommitedChanges` is `True` after the dataset sent a change to the server and stays so until `UpdateTransaction` is committed or rolled back, including the retaining variants. `HaveRollbackedChanges` records that such changes were rolled back; it is cleared when the dataset closes or its SQL changes.
 
 ## Open cursors and the end of a transaction
 
@@ -172,7 +172,7 @@ A cursor is the open result set of a `SELECT`. The server closes the cursors of 
 | `TFIBDataSet` | The dataset closes (`Active` becomes `False`). A grid on it goes empty. |
 | `TFIBDataSet` with `poDontCloseAfterEndTransaction` in `Options`, or with `CachedUpdates` | The dataset fetches all remaining rows, closes only the cursor, and stays open on the rows it holds. |
 
-The second row of the dataset case has a price. `FetchAll` reads the whole result into memory before the transaction ends, so use it only for result sets that fit. At design time the dataset always closes. See [Options](../reference/TpFIBDataSet.md#options) for `poDontCloseAfterEndTransaction`.
+The second row of the dataset case has a price. `FetchAll` reads the whole result into memory before the transaction ends, so use it only for result sets that fit. At design time the dataset always closes. See [Options](../reference/TFIBDataSet.md#options) for `poDontCloseAfterEndTransaction`.
 
 A plain `TFIBQuery` has no setting to keep its cursor. Read the rows before you end the transaction.
 

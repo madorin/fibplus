@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
+  Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase, pFIBDatabase,
   ExtCtrls, StdCtrls, Grids, DBGrids, FIBQuery, FIBStoredProc;
 
 type
@@ -12,7 +12,7 @@ type
     StatusBar1: TStatusBar;
     DB: TpFIBDatabase;
     tr: TpFIBTransaction;
-    dtOrgChart: TpFIBDataSet;
+    dtOrgChart: TFIBDataSet;
     dsOrgChart: TDataSource;
     Panel1: TPanel;
     Label1: TLabel;
@@ -20,7 +20,7 @@ type
     TabSheet1: TTabSheet;
     TabSheet2: TTabSheet;
     DBGrid1: TDBGrid;
-    dtDept: TpFIBDataSet;
+    dtDept: TFIBDataSet;
     spSubTotalBudget: TFIBStoredProc;
     DBGrid2: TDBGrid;
     dsDept: TDataSource;

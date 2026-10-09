@@ -748,7 +748,7 @@ uses
   , FIBSQLMonitor
 {$ENDIF}
 {$IFDEF CSMonitor}
-  , FIBDataSet, pFIBDataSet
+  , FIBDataSet
 {$ENDIF}
   ;
 
@@ -6721,15 +6721,10 @@ begin
   if IsEmptyStr(sDs_pl_name) then
     sDs_pl_name := 'Query_0x' + IntToHex(integer(Self), 8);
   if Assigned(Owner) then
-    if Owner is TFIBDataSet then
+    if Owner is TFIBCustomDataSet then
     begin
-      if Owner is TpFIBDataSet then
-      begin
-        if (not IsEmptyStr((Owner as TpFIBDataSet).Description)) and bIncludeDSDesc then
-          sDs_pl_name := Owner.Name + ':[' + trim((Owner as TpFIBDataSet).Description) + '].' + sDs_pl_name
-        else
-          sDs_pl_name := Owner.Name + '.' + sDs_pl_name;
-      end
+      if (not IsEmptyStr(TFIBCustomDataSet(Owner).Description)) and bIncludeDSDesc then
+        sDs_pl_name := Owner.Name + ':[' + trim(TFIBCustomDataSet(Owner).Description) + '].' + sDs_pl_name
       else
         sDs_pl_name := Owner.Name + '.' + sDs_pl_name;
       if Assigned(Owner.Owner) then

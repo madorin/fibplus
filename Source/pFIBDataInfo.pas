@@ -27,54 +27,7 @@ uses
   FIBQuery, pFIBDataBase, pFIBProps;
 
 type
-  TExtBoolean = (eFalse, eTrue, eUnknown);
-
-  TpFIBFieldInfo = class
-  private
-    FIsComputed: boolean;
-    FDefaultValue: Ansistring;
-    FCanIncToWhereClause: boolean;
-    FDomainName: Ansistring;
-    FDefaultValueEmptyString: boolean;
-    // Info from FIB$FIELDS_INFO
-    FWithAdditionalInfo: boolean;
-    FDisplayLabel: Ansistring;
-    FVisible: boolean;
-    FEditFormat: Ansistring;
-    FDisplayFormat: Ansistring;
-    FIsTriggered: boolean;
-    FOtherInfo: TStrings;
-    FDisplayWidth: integer;
-    FCanBeBoolean: TExtBoolean;
-    FCanBeGUID: TExtBoolean;
-    FCharSet: integer;
-    function GetCanBeBoolean: boolean;
-    function GetCanBeGUID: boolean;
-    function GetCharSet: string;
-  public
-    constructor Create;
-    destructor Destroy; override;
-    procedure SaveToStream(Stream: TStream);
-    procedure LoadFromStream(Stream: TStream; FromBegin: boolean);
-    property IsComputed: boolean read FIsComputed;
-    property DefaultValue: Ansistring read FDefaultValue;
-    property DomainName: Ansistring read FDomainName;
-    property CanIncToWhereClause: boolean read FCanIncToWhereClause;
-    // Info from FIB$FIELDS_INFO
-    property WithAdditionalInfo: boolean read FWithAdditionalInfo;
-    property DisplayLabel: Ansistring read FDisplayLabel;
-    property Visible: boolean read FVisible;
-    property EditFormat: Ansistring read FEditFormat;
-    property DisplayFormat: Ansistring read FDisplayFormat;
-    property IsTriggered: boolean read FIsTriggered;
-    property OtherInfo: TStrings read FOtherInfo;
-    property DisplayWidth: integer read FDisplayWidth;
-    property DefaultValueEmptyString: boolean read FDefaultValueEmptyString;
-    property CanBeBoolean: boolean read GetCanBeBoolean;
-    property CanBeGuid: boolean read GetCanBeGUID;
-    property CharSetID: integer read FCharSet;
-    property CharSet: string read GetCharSet;
-  end;
+  TpFIBFieldInfo = pFIBProps.TpFIBFieldInfo;
 
   TpFIBTableInfoCollect = class;
 
@@ -94,7 +47,7 @@ type
     procedure GetInfoFields(const TableName: string; aTransaction: TFIBTransaction);
     procedure GetRepositaryFieldInfos(const TableName: string; aTransaction: TFIBTransaction);
     procedure ClearFieldList;
-    procedure GetAdditionalInfo(FromQuery: TFIBDataset; const aFieldName: string; ToFieldInfo: TpFIBFieldInfo);
+    procedure GetAdditionalInfo(FromQuery: TFIBCustomDataSet; const aFieldName: string; ToFieldInfo: TpFIBFieldInfo);
     procedure FillInfo(DB: TFIBDataBase; Tr: TFIBTransaction; const ATableName: string);
     function IsActualInfo(DB: TFIBDataBase): boolean;
     function GetPrimaryKeyFields(DB: TFIBDataBase): string;
@@ -163,7 +116,7 @@ type
     FNonValidated: boolean;
 
   public
-    constructor Create(DataSet: TFIBDataset); overload;
+    constructor Create(DataSet: TFIBCustomDataSet); overload;
     constructor Create; overload;
     destructor Destroy; override;
 
@@ -177,16 +130,16 @@ type
     FListDataSetInfo: TStringList;
     FLock: TCriticalSection;
     FNeedValidate: boolean;
-    function ActualVersionDSInfo(DataSet: TFIBDataset): integer;
+    function ActualVersionDSInfo(DataSet: TFIBCustomDataSet): integer;
   public
     constructor Create;
     destructor Destroy; override;
-    function FindDataSetInfo(DataSet: TFIBDataset; var Index: integer): TpDataSetInfo; overload;
+    function FindDataSetInfo(DataSet: TFIBCustomDataSet; var Index: integer): TpDataSetInfo; overload;
     function FindDataSetInfo(const DBName: string; DS_ID: integer; var Index: integer): TpDataSetInfo; overload;
-    function GetDataSetInfo(DataSet: TFIBDataset): TpDataSetInfo;
-    function LoadDataSetInfo(DataSet: TFIBDataset): boolean;
+    function GetDataSetInfo(DataSet: TFIBCustomDataSet): TpDataSetInfo;
+    function LoadDataSetInfo(DataSet: TFIBCustomDataSet): boolean;
     procedure Clear;
-    procedure ClearDSInfo(DataSet: TFIBDataset); overload;
+    procedure ClearDSInfo(DataSet: TFIBCustomDataSet); overload;
     procedure ClearDSInfo(DS_ID: integer); overload;
 
     procedure SaveToStream(Stream: TStream);
@@ -260,7 +213,7 @@ function ExistDRepositaryTable(DB: TFIBDataBase): boolean;
 function ExistERepositaryTable(DB: TFIBDataBase): boolean;
 function ExistBooleanDomain(DB: TFIBDataBase): boolean;
 
-function SaveFIBDataSetInfo(DataSet: TFIBDataset; const Name: string): boolean;
+function SaveFIBDataSetInfo(DataSet: TFIBCustomDataSet; const Name: string): boolean;
 
 // Routine function
 
@@ -274,7 +227,7 @@ function DBPrimaryKeyFields(const TableName: string; aTransaction: TFIBTransacti
 implementation
 
 uses
-  pFIBDataSet, StrUtil, FIBConsts, pFIBCacheQueries, ibase, SqlTxtRtns, fib,
+  StrUtil, FIBConsts, pFIBCacheQueries, ibase, SqlTxtRtns, fib,
   StdFuncs, FIBCharSets
 {$IFDEF D_XE3}
 {$IFDEF MACOS}
@@ -285,6 +238,8 @@ uses
 
 type
   TFriendDatabase = class(TFIBDataBase);
+  TFriendFieldInfo = class(TpFIBFieldInfo);
+  TFriendDataSet = class(TFIBCustomDataSet);
 
 var
   DatabaseRepositories: TStringList;
@@ -870,18 +825,18 @@ begin
   DoCreateRepositaryTable(DB, 3)
 end;
 
-function ExchangeDataSetInfo(DataSet: TFIBDataset; DS_Info: TpDataSetInfo; aDescription: string = ''): boolean;
+function ExchangeDataSetInfo(DataSet: TFIBCustomDataSet; DS_Info: TpDataSetInfo; aDescription: string = ''): boolean;
 var
   vTransaction: TFIBTransaction;
-  DI: TpFIBDataset;
+  DI: TFIBDataSet;
   vDescription: string;
   tf1: TFIBXSQLVAR;
   q: TFIBQuery;
 
 begin
   Result := True;
-  if DataSet is TpFIBDataset then
-    with TpFIBDataset(DataSet) do
+  if DataSet <> nil then
+    with TFriendDataSet(DataSet) do
     begin
       if DataSet_ID = 0 then
         raise Exception.Create(Name + SCompEditDataSet_ID);
@@ -895,7 +850,7 @@ begin
       // before the cached query below: its prepared statement would block the DDL
       if (DS_Info = nil) and (Length(AutoUpdateOptions.KeyFields) > 68) then
         WidenRepositoryColumns(DataSet.Database, DataSetsInfoKeyFieldUpgrade, 'FIB$DATASETS_INFO', ['KEY_FIELD'], 1024);
-      DI := TpFIBDataset.Create(nil);
+      DI := TFIBDataSet.Create(nil);
       vTransaction := TFIBTransaction.Create(nil);
       vTransaction.DefaultDatabase := DataSet.Database;
       q := GetQueryForUse(vTransaction, 'SELECT * FROM FIB$DATASETS_INFO WHERE DS_ID=:DS_ID');
@@ -977,11 +932,11 @@ begin
             if not InputQuery(SCompEditSaveDataSetProperty, SCompEditDataSetDesc, vDescription
             ) then Exit; }
           DI.Edit;
-          DI.FieldByName('SELECT_SQL').asString := DataSet.SelectSQL.Text;
-          DI.FieldByName('INSERT_SQL').asString := DataSet.InsertSQL.Text;
-          DI.FieldByName('DELETE_SQL').asString := DataSet.DeleteSQL.Text;
-          DI.FieldByName('UPDATE_SQL').asString := DataSet.UpdateSQL.Text;
-          DI.FieldByName('REFRESH_SQL').asString := DataSet.RefreshSQL.Text;
+          DI.FieldByName('SELECT_SQL').asString := SelectSQL.Text;
+          DI.FieldByName('INSERT_SQL').asString := InsertSQL.Text;
+          DI.FieldByName('DELETE_SQL').asString := DeleteSQL.Text;
+          DI.FieldByName('UPDATE_SQL').asString := UpdateSQL.Text;
+          DI.FieldByName('REFRESH_SQL').asString := RefreshSQL.Text;
           DI.FieldByName('KEY_FIELD').asString := AutoUpdateOptions.KeyFields;
           DI.FieldByName('NAME_GENERATOR').asString := AutoUpdateOptions.GeneratorName;
           DI.FieldByName('DESCRIPTION').asString := vDescription;
@@ -1000,7 +955,7 @@ begin
     end;
 end;
 
-function SaveFIBDataSetInfo(DataSet: TFIBDataset; const Name: string): boolean;
+function SaveFIBDataSetInfo(DataSet: TFIBCustomDataSet; const Name: string): boolean;
 begin
   Result := ExchangeDataSetInfo(DataSet, nil, Name);
 end;
@@ -1076,129 +1031,6 @@ begin
     finally
       FreeQueryForUse(q);
     end
-end;
-
-// StreamRtn
-procedure WriteStrToStream(const s: Ansistring; Stream: TStream);
-var
-  L: integer;
-begin
-  L := Length(s);
-  with Stream do
-  begin
-    WriteBuffer(L, SizeOf(integer));
-    if L > 0 then
-      WriteBuffer(s[1], L);
-  end;
-end;
-
-procedure ReadStrFromStream(const Stream: TStream; var ResStr: Ansistring);
-var
-  L: integer;
-begin
-  with Stream do
-  begin
-    ReadBuffer(L, SizeOf(integer));
-    SetLength(ResStr, L);
-    if L > 0 then
-      ReadBuffer(ResStr[1], L);
-  end;
-end;
-
-constructor TpFIBFieldInfo.Create;
-begin
-  inherited Create;
-  FOtherInfo := TStringList.Create;
-  FCanBeBoolean := eUnknown;
-  FCanBeGUID := eUnknown;
-end;
-
-destructor TpFIBFieldInfo.Destroy;
-begin
-  FOtherInfo.Free;
-  inherited Destroy;
-end;
-
-function TpFIBFieldInfo.GetCanBeBoolean: boolean;
-begin
-  case FCanBeBoolean of
-    eTrue: Result := True;
-    eFalse: Result := False;
-  else
-    Result := PosCI('BOOLEAN', DomainName) > 0;
-    FCanBeBoolean := TExtBoolean(Result);
-  end;
-end;
-
-function TpFIBFieldInfo.GetCanBeGUID: boolean;
-begin
-  case FCanBeGUID of
-    eTrue: Result := True;
-    eFalse: Result := False;
-  else
-    Result := PosCI('GUID', DomainName) > 0;
-    FCanBeGUID := TExtBoolean(Result);
-  end;
-end;
-
-function TpFIBFieldInfo.GetCharSet: string;
-begin
-  Result := FirebirdCharSetName(FCharSet);
-  if Result = '' then
-    Result := UnknownStr;
-end;
-
-procedure TpFIBFieldInfo.SaveToStream(Stream: TStream);
-begin
-  with Stream do
-  begin
-    WriteBuffer(FIsComputed, SizeOf(boolean));
-    WriteBuffer(FCanIncToWhereClause, SizeOf(boolean));
-    WriteBuffer(FDefaultValueEmptyString, SizeOf(boolean));
-    WriteBuffer(FWithAdditionalInfo, SizeOf(boolean));
-    WriteBuffer(FVisible, SizeOf(boolean));
-    WriteBuffer(FIsTriggered, SizeOf(boolean));
-    WriteBuffer(FDisplayWidth, SizeOf(integer));
-    WriteBuffer(FCharSet, SizeOf(integer));
-    WriteStrToStream(FDefaultValue, Stream);
-    WriteStrToStream(FDomainName, Stream);
-    WriteStrToStream(FDisplayLabel, Stream);
-    WriteStrToStream(FEditFormat, Stream);
-    WriteStrToStream(FDisplayFormat, Stream);
-    WriteStrToStream(FOtherInfo.Text, Stream);
-  end;
-end;
-
-procedure TpFIBFieldInfo.LoadFromStream(Stream: TStream; FromBegin: boolean);
-var
-  st: Ansistring;
-  procedure RaizeErrStream;
-  begin
-    raise Exception.Create(SCompEditFieldInfoLoadError);
-  end;
-
-begin
-  with Stream do
-  begin
-    if FromBegin then
-      Seek(0, soFromBeginning);
-    ReadBuffer(FIsComputed, SizeOf(boolean));
-    ReadBuffer(FCanIncToWhereClause, SizeOf(boolean));
-    ReadBuffer(FDefaultValueEmptyString, SizeOf(boolean));
-    ReadBuffer(FWithAdditionalInfo, SizeOf(boolean));
-    ReadBuffer(FVisible, SizeOf(boolean));
-    ReadBuffer(FIsTriggered, SizeOf(boolean));
-    ReadBuffer(FDisplayWidth, SizeOf(integer));
-    ReadBuffer(FCharSet, SizeOf(integer));
-
-    ReadStrFromStream(Stream, FDefaultValue);
-    ReadStrFromStream(Stream, FDomainName);
-    ReadStrFromStream(Stream, FDisplayLabel);
-    ReadStrFromStream(Stream, FEditFormat);
-    ReadStrFromStream(Stream, FDisplayFormat);
-    ReadStrFromStream(Stream, st);
-    FOtherInfo.Text := st;
-  end
 end;
 
 // TpFIBTableInfo
@@ -1364,12 +1196,12 @@ begin
   FFieldList.Clear;
 end;
 
-procedure TpFIBTableInfo.GetAdditionalInfo(FromQuery: TFIBDataset; const aFieldName: string; ToFieldInfo: TpFIBFieldInfo);
+procedure TpFIBTableInfo.GetAdditionalInfo(FromQuery: TFIBCustomDataSet; const aFieldName: string; ToFieldInfo: TpFIBFieldInfo);
 var
   i: integer;
 begin
   try
-    with FromQuery, ToFieldInfo do //
+    with FromQuery, TFriendFieldInfo(ToFieldInfo) do //
       if (fn('FIELD_NAME').asString = aFieldName) or Locate('FIELD_NAME', TrimRight(aFieldName), []) then
       begin
         FWithAdditionalInfo := True;
@@ -1499,7 +1331,7 @@ var
   q: TFIBQuery;
   fi: TpFIBFieldInfo;
   ExistAdInfo: boolean;
-  d: TpFIBDataset;
+  d: TFIBDataSet;
   i: integer;
   vUpdateRepository: boolean;
 begin
@@ -1528,7 +1360,7 @@ begin
       if vUpdateRepository then
         Update1RepositaryTable(aTransaction);
 
-      d := TpFIBDataset.Create(nil);
+      d := TFIBDataSet.Create(nil);
       d.PrepareOptions := [];
       d.Database := aTransaction.DefaultDatabase;
       d.Transaction := aTransaction;
@@ -1577,7 +1409,7 @@ var
   q: TFIBQuery;
   fi: TpFIBFieldInfo;
   ExistAdInfo: boolean;
-  d: TpFIBDataset;
+  d: TFIBDataSet;
   p: integer;
   vQuoteExist: boolean;
   vUpdateRepository: boolean;
@@ -1608,7 +1440,7 @@ begin
       if vUpdateRepository then
         Update1RepositaryTable(aTransaction);
 
-      d := TpFIBDataset.Create(nil);
+      d := TFIBDataSet.Create(nil);
       d.PrepareOptions := [];
       d.Database := aTransaction.DefaultDatabase;
       d.Transaction := aTransaction;
@@ -1683,7 +1515,7 @@ begin
         while not Eof do
         begin
           fi := TpFIBFieldInfo.Create;
-          with fi do
+          with TFriendFieldInfo(fi) do
           begin
             FDomainName := Fields[1].asString;
             FIsComputed := (Fields[2].SQLType = SQL_BLOB) and not Fields[2].IsNull;
@@ -1901,7 +1733,7 @@ const
 var
   i: integer;
   DelCache, rt: boolean;
-  FiDs, TfDs: TpFIBDataset;
+  FiDs, TfDs: TFIBDataSet;
   vTr: TFIBTransaction;
   DBCount: integer;
   BulkCheck: boolean;
@@ -1924,7 +1756,7 @@ begin
       rt := False
     else
     begin
-      TfDs := TpFIBDataset.Create(nil);
+      TfDs := TFIBDataSet.Create(nil);
       with TfDs do
       begin
         Database := aDataBase;
@@ -1937,7 +1769,7 @@ begin
       rt := TfDs.ExtLocate('RDB$RELATION_NAME', 'FIB$FIELDS_INFO', [eloInSortedDS]);
       if rt then
       begin
-        FiDs := TpFIBDataset.Create(nil);
+        FiDs := TFIBDataSet.Create(nil);
         with FiDs do
         begin
           Database := aDataBase;
@@ -2154,12 +1986,12 @@ begin
   FRefreshSQL := TStringList.Create;
 end;
 
-constructor TpDataSetInfo.Create(DataSet: TFIBDataset);
+constructor TpDataSetInfo.Create(DataSet: TFIBCustomDataSet);
 begin
-  if not(DataSet is TpFIBDataset) then
+  if DataSet = nil then
     Exit
   else if (DataSet = nil) or (DataSet.Database = nil) or (DataSet.Database.DBName = '') then
-    Raise Exception.Create(SCantGetInfo + IntToStr(TpFIBDataset(DataSet).DataSet_ID) + CLRF + SDataBaseNotAssigned);
+    Raise Exception.Create(SCantGetInfo + IntToStr(DataSet.DataSet_ID) + CLRF + SDataBaseNotAssigned);
   inherited Create;
   FDBName := DataSet.Database.DBName;
   FSelectSQL := TStringList.Create;
@@ -2213,16 +2045,16 @@ begin
   end;
 end;
 
-function TpDataSetInfoCollect.ActualVersionDSInfo(DataSet: TFIBDataset): integer;
+function TpDataSetInfoCollect.ActualVersionDSInfo(DataSet: TFIBCustomDataSet): integer;
 var
   q: TFIBQuery;
 begin
   Result := 0;
-  if not(DataSet is TpFIBDataset) then
+  if DataSet = nil then
     Exit;
   q := GetQueryForUse(DataSet.Transaction, 'SELECT FIB$VERSION FROM FIB$DATASETS_INFO WHERE DS_ID=:DS_ID');
   try
-    q.Params[0].asInteger := TpFIBDataset(DataSet).DataSet_ID;
+    q.Params[0].asInteger := DataSet.DataSet_ID;
     q.ExecQuery;
     if not q.Eof then
       Result := q.Fields[0].asInteger
@@ -2232,14 +2064,14 @@ begin
   end;
 end;
 
-function TpDataSetInfoCollect.FindDataSetInfo(DataSet: TFIBDataset; var Index: integer): TpDataSetInfo;
+function TpDataSetInfoCollect.FindDataSetInfo(DataSet: TFIBCustomDataSet; var Index: integer): TpDataSetInfo;
 begin
   Result := nil;
-  if not(DataSet is TpFIBDataset) or not Assigned(DataSet.Database) then
+  if (DataSet = nil) or not Assigned(DataSet.Database) then
     Exit;
-  if (DataSet = nil) or (TpFIBDataset(DataSet).DataSet_ID = 0) then
+  if (DataSet = nil) or (DataSet.DataSet_ID = 0) then
     Exit;
-  Result := FindDataSetInfo(DataSet.Database.DBName, TpFIBDataset(DataSet).DataSet_ID, Index)
+  Result := FindDataSetInfo(DataSet.Database.DBName, DataSet.DataSet_ID, Index)
 end;
 
 function TpDataSetInfoCollect.FindDataSetInfo(const DBName: string; DS_ID: integer; var Index: integer): TpDataSetInfo;
@@ -2267,16 +2099,13 @@ begin
       end;
 end;
 
-function TpDataSetInfoCollect.GetDataSetInfo(DataSet: TFIBDataset): TpDataSetInfo;
+function TpDataSetInfoCollect.GetDataSetInfo(DataSet: TFIBCustomDataSet): TpDataSetInfo;
 var
   Index: integer;
 begin
   Result := nil;
 
-  if not(DataSet is TpFIBDataset) then
-    Exit;
-
-  if (DataSet = nil) or (DataSet.Database = nil) or (TpFIBDataset(DataSet).DataSet_ID = 0) then
+  if (DataSet = nil) or (DataSet.Database = nil) or (DataSet.DataSet_ID = 0) then
     Exit;
   Result := FindDataSetInfo(DataSet, Index);
   if Result <> nil then
@@ -2297,16 +2126,16 @@ begin
     Result := TpDataSetInfo.Create(DataSet);
     ExchangeDataSetInfo(DataSet, Result);
     FListDataSetInfo.AddObject
-      (IntToStr(TpFIBDataset(DataSet).DataSet_ID), Result);
+      (IntToStr(DataSet.DataSet_ID), Result);
   end;
 end;
 
-function TpDataSetInfoCollect.LoadDataSetInfo(DataSet: TFIBDataset): boolean;
+function TpDataSetInfoCollect.LoadDataSetInfo(DataSet: TFIBCustomDataSet): boolean;
 var
   DSI: TpDataSetInfo;
 begin
   Result := False;
-  if not(DataSet is TpFIBDataset) then
+  if DataSet = nil then
     Exit;
   FLock.Acquire;
   try
@@ -2315,7 +2144,7 @@ begin
     DSI := GetDataSetInfo(DataSet);
     if DSI = nil then
       Exit;
-    with TpFIBDataset(DataSet) do
+    with TFriendDataSet(DataSet) do
     begin
       if (DSI.FSelectSQL.Count > 0) and (not SelectSQL.Equals(DSI.FSelectSQL)) then
       begin
@@ -2346,18 +2175,18 @@ begin
   end;
 end;
 
-procedure TpDataSetInfoCollect.ClearDSInfo(DataSet: TFIBDataset);
+procedure TpDataSetInfoCollect.ClearDSInfo(DataSet: TFIBCustomDataSet);
 var
   ID_Str: string;
   Index: integer;
 begin
-  if not(DataSet is TpFIBDataset) then
+  if DataSet = nil then
     Exit;
   FLock.Acquire;
   try
-    if (DataSet = nil) or (TpFIBDataset(DataSet).DataSet_ID = 0) then
+    if DataSet.DataSet_ID = 0 then
       Exit;
-    ID_Str := IntToStr(TpFIBDataset(DataSet).DataSet_ID);
+    ID_Str := IntToStr(DataSet.DataSet_ID);
     with FListDataSetInfo do
       if Find(ID_Str, Index) then
         if DataSet.Database.DBName = TpDataSetInfo(Objects[Index]).FDBName then
@@ -2640,13 +2469,13 @@ end;
 
 function GetFieldInfos(Field: TField; RepositaryInfo: boolean): TpFIBFieldInfo;
 var
-  d: TpFIBDataset;
+  d: TFIBCustomDataSet;
   RelTable, RelField: string;
 begin
   Result := nil;
-  if not(Field.DataSet is TpFIBDataset) then
+  if not(Field.DataSet is TFIBCustomDataSet) then
     Exit;
-  d := TpFIBDataset(Field.DataSet);
+  d := TFIBCustomDataSet(Field.DataSet);
   with d do
   begin
     RelTable := GetRelationTableName(Field);
@@ -2670,7 +2499,7 @@ begin
   vFI := GetFieldInfos(Field, True);
   if vFI = nil then
     Exit;
-  Result := vFI.FOtherInfo.Values[InfoName]
+  Result := vFI.OtherInfo.Values[InfoName]
 end;
 
 { TpErrorMessage }
