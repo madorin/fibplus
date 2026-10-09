@@ -17,12 +17,10 @@ You need:
    |----------|-------|
    | `DBName` | `localhost:C:\Data\EMPLOYEE.FDB`, the server and the path of the database file on the server |
    | `DBParams` | `user_name=SYSDBA`, `password=masterkey` and `lc_ctype=UTF8`, one per line |
-   | `SQLDialect` | `3` |
    | `DefaultTransaction` | `Transaction` |
-   | `DefaultUpdateTransaction` | `Transaction` |
 
-3. Set `Transaction.DefaultDatabase` to `Database`.
-4. Connect from code, for example in `OnCreate` of the form:
+   `Transaction.DefaultDatabase` becomes `Database` at the same time.
+3. Connect from code, for example in `OnCreate` of the form:
 
    ```delphi
    procedure TForm1.FormCreate(Sender: TObject);
@@ -46,7 +44,7 @@ You need:
 
 ## 2. Run a query
 
-Drop a `TpFIBQuery` (`Query`) and a `TMemo` (`Memo1`) on the form and set its `Database` to `Database` and its `Transaction` to `Transaction`.
+Drop a `TpFIBQuery` (`Query`) and a `TMemo` (`Memo1`) on the form and set its `Database` to `Database`. Its `Transaction` becomes `Transaction`, the `DefaultTransaction` of the database; set it yourself only when it stays empty or you want another transaction.
 
 A query does not start its transaction unless `qoStartTransaction` is in its `Options`, so start it yourself:
 
@@ -83,10 +81,9 @@ end;
    | Property | Value |
    |----------|-------|
    | `Database` | `Database` |
-   | `Transaction` | `Transaction` |
-   | `UpdateTransaction` | `Transaction` |
    | `SelectSQL` | `SELECT EMP_NO, FIRST_NAME, LAST_NAME, SALARY FROM EMPLOYEE ORDER BY LAST_NAME` |
 
+   Setting `Database` also sets `Transaction` and `UpdateTransaction` to `Transaction`. Set them yourself only when they stay empty or you want other transactions.
 3. Set `DataSource.DataSet` to `DataSet` and `DBGrid.DataSource` to `DataSource`.
 4. Open the dataset after connecting. Add `DataSet.Open;` to `FormCreate` from step 1:
 

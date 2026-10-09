@@ -1,6 +1,6 @@
 # Upgrading
 
-This article lists what an existing application must know or do when it moves to a newer FibPlus version: breaking changes, changed behavior, renamed or removed identifiers, deprecated members, and build changes. It does not list bug fixes or new features. For the complete list, see `CHANGELOG.md` in the repository root.
+This article lists what an existing application must know or do when it moves to a newer FibPlus version: breaking changes, changed behavior, renamed or removed identifiers, deprecated members, and build changes. It does not list bug fixes or new features. For the complete list, see [CHANGELOG.md](../../CHANGELOG.md) in the repository root.
 
 ## How to use this page
 
@@ -175,7 +175,7 @@ The script parser was rewritten. It accepts several statements on a line, `EXECU
 
 ## See also
 
-- `CHANGELOG.md` in the repository root, for the complete list including bug fixes
+- [CHANGELOG.md](../../CHANGELOG.md) in the repository root, for the complete list including bug fixes
 - [Connections](connections.md)
 - [Firebird versions](firebird-versions.md)
 - [Timeouts](timeouts.md)

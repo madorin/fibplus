@@ -18,7 +18,6 @@ Database.DBName := 'localhost:C:\Data\Sales.fdb';
 Database.ConnectParams.UserName := 'SYSDBA';
 Database.ConnectParams.Password := 'masterkey';
 Database.ConnectParams.CharSet := 'UTF8';
-Database.SQLDialect := 3;
 Database.DefaultTransaction := Transaction;
 Database.Open;
 ```

@@ -10,7 +10,7 @@
 ## Where do I start?
 
 - New to FibPlus: [Installation](../README.md#-installation), then the [Quick start](getting-started/quick-start.md).
-- Coming from FIBPlus 7: [Upgrading](guide/upgrading.md) lists the renames and behavior changes.
+- Upgrading from an older version: [Upgrading](guide/upgrading.md) lists the renames and behavior changes of each version.
 - Know FibPlus and need a feature: pick an article in the [Guide](guide/).
 - Need exact members of a class: open the [Reference index](reference/README.md).
 
