@@ -8,7 +8,7 @@ Find the version you use now, then read every section above it, from the one jus
 
 | Version | Status | Notes |
 |---------|--------|-------|
-| [7.9.1](#791) | Unreleased | |
+| [7.9.1](#791) | 2026-10-09 | |
 | [7.9.0](#790) | 2026-10-01 | First release of the community maintained FibPlus. Based on the FIBPlus 7 sources of build 632 (2014-02-17). |
 
 ## 7.9.1
