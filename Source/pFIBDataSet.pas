@@ -23,7 +23,7 @@ uses
   SysUtils, Classes, StdFuncs, DB, Ibase, IB_Intf, IB_Externals,
   FIBPlatforms, Fib, FIBMiscellaneous, pFIBDatabase, FIBDataBase, FIBDataSet,
   FIBQuery,
-  pFIBLists, pFIBQuery, DSContainer, pFIBProps, IB_ErrorCodes, pFIBInterfaces,
+  pFIBLists, FIBUpdateObject, DSContainer, pFIBProps, IB_ErrorCodes, pFIBInterfaces,
   pFIBDataInfo {, FIBSaveDataSetToXml} , FMTBcd, Variants;
 
 type
@@ -64,7 +64,7 @@ type
     FOnAskRecordCount: TOnGetSQLTextProc;
     FOnApplyDefaultValue: TOnApplyDefaultValue;
     FSQLTextChanges: integer;
-    FBlobsUpdate: TpFIBUpdateObject;
+    FBlobsUpdate: TFIBUpdateObject;
     FOnApplyFieldRepository: TOnApplyFieldRepository;
     FContainer: TDataSetsContainer;
     FDefaultsInited: boolean;
@@ -207,8 +207,8 @@ type
     function ExistActiveUO(KindUpdate: TUpdateKind): boolean;
     // Exist active Update objects
 
-    function AddUpdateObject(Value: TpFIBUpdateObject): integer;
-    procedure RemoveUpdateObject(Value: TpFIBUpdateObject);
+    function AddUpdateObject(Value: TFIBUpdateObject): Integer;
+    procedure RemoveUpdateObject(Value: TFIBUpdateObject);
 
     function ParamByName(const ParamName: string): TFIBXSQLVAR;
     function FindParam(const ParamName: string): TFIBXSQLVAR;
@@ -625,7 +625,7 @@ begin
   lc := Pred(List.Count);
   for i := 0 to lc do
   begin
-    Result := TpFIBUpdateObject(List[i]).Active;
+    Result := TFIBUpdateObject(List[i]).Active;
     if Result then
       Exit;
   end;
@@ -639,11 +639,11 @@ begin
   with List do
     for i := 0 to lc do
     begin
-      TpFIBUpdateObject(List[i]).ChangeOrderInList(i);
+      TFIBUpdateObject(List[i]).ChangeOrderInList(i);
     end;
 end;
 
-function TpFIBDataSet.AddUpdateObject(Value: TpFIBUpdateObject): integer;
+function TpFIBDataSet.AddUpdateObject(Value: TFIBUpdateObject): Integer;
 var
   List: TList;
   OldPos: integer;
@@ -676,7 +676,7 @@ begin
   Result := List.IndexOf(Value)
 end;
 
-procedure TpFIBDataSet.RemoveUpdateObject(Value: TpFIBUpdateObject);
+procedure TpFIBDataSet.RemoveUpdateObject(Value: TFIBUpdateObject);
 var
   List: TList;
 begin
@@ -701,17 +701,17 @@ begin
   if List.Count > 0 then
   begin
     for i := 0 to Pred(List.Count) do
-      with TpFIBUpdateObject(List[i]) do
+      with TFIBUpdateObject(List[i]) do
         if Active and (ExecuteOrder = aExecuteOrder) and (not EmptyStrings(SQL)) and (SQL[0] <> SNoAction) then
         begin
           AutoStartUpdateTransaction;
-          SetQueryParams(TpFIBUpdateObject(List[i]), Buff);
+          SetQueryParams(TFIBUpdateObject(List[i]), Buff);
           ExecQuery;
 
           if SQLType in [SQLSelect, SQLExecProcedure, SQLSelectForUpdate] then
           begin
             WriteRecordCache(PRecordData(Buff)^.rdRecordNumber, Buff);
-            InternalRefreshRow(TpFIBUpdateObject(List[i]), Buff);
+            InternalRefreshRow(TFIBUpdateObject(List[i]), Buff);
           end;
 
           FHaveUncommitedChanges := True;
@@ -3480,7 +3480,7 @@ begin
     if SeparateBlobUpdate and (BlobFieldCount > 0) then
     begin
       if FBlobsUpdate = nil then
-        FBlobsUpdate := TpFIBUpdateObject.Create(Self);
+        FBlobsUpdate := TFIBUpdateObject.Create(Self);
       with FBlobsUpdate do
       begin
         Database := Self.Database;
@@ -4164,10 +4164,10 @@ begin
     Result := False;
     ListUO := ListForUO(UpdateKind);
     for j := 0 to Pred(ListUO.Count) do
-      with TpFIBUpdateObject(ListUO[j]) do
+      with TFIBUpdateObject(ListUO[j]) do
         if Active and (ExecuteOrder = oeBeforeDefault) and (not EmptyStrings(SQL)) then
         begin
-          UpdQry := TpFIBUpdateObject(ListUO[j]);
+          UpdQry := TFIBUpdateObject(ListUO[j]);
           ExecUpdate;
           Result := True;
         end;
@@ -4181,10 +4181,10 @@ begin
     if (not EmptyStrings(UpdQry.SQL)) then
       ExecUpdate;
     for j := 0 to Pred(ListUO.Count) do
-      with TpFIBUpdateObject(ListUO[j]) do
+      with TFIBUpdateObject(ListUO[j]) do
         if Active and (ExecuteOrder = oeAfterDefault) and (not EmptyStrings(SQL)) then
         begin
-          UpdQry := TpFIBUpdateObject(ListUO[j]);
+          UpdQry := TFIBUpdateObject(ListUO[j]);
           ExecUpdate;
           Result := True;
         end;

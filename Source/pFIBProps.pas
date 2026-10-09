@@ -56,8 +56,10 @@ type
     poDontCloseAfterEndTransaction);
   TpFIBDsOptions = set of TpFIBDsOption;
 
-  TpFIBQueryOption = (qoStartTransaction, qoAutoCommit, qoTrimCharFields, qoNoForceIsNull, qoFreeHandleAfterExecute);
-  TpFIBQueryOptions = set of TpFIBQueryOption;
+  TFIBQueryOption = (qoStartTransaction, qoAutoCommit, qoTrimCharFields, qoNoForceIsNull, qoFreeHandleAfterExecute);
+  TFIBQueryOptions = set of TFIBQueryOption;
+  TpFIBQueryOption = TFIBQueryOption deprecated 'Use TFIBQueryOption';
+  TpFIBQueryOptions = TFIBQueryOptions deprecated 'Use TFIBQueryOptions';
 
   TDetailCondition = (dcForceOpen, dcIgnoreMasterClose, dcForceMasterRefresh, dcWaitEndMasterScroll);
 
@@ -488,7 +490,7 @@ const
   // FIBQuery Defaults
   DefParamCheck: Boolean = True;
   DefGoToFirstRecordOnExecute: Boolean = True;
-  DefQueryOptions: TpFIBQueryOptions = [];
+  DefQueryOptions: TFIBQueryOptions = [];
   // Registry Keys
   RegFIBRoot     = 'FIBC_Software';
   RegFIBTrKinds  = 'Transation Kinds';

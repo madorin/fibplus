@@ -16,7 +16,7 @@ This article covers the server-side timeouts first, then the client-side ones.
 | `Session.StatementTimeout`, `Session.IdleTimeout` | *Firebird 4+* |
 | `TFIBQuery.StatementTimeout`, `TpFIBDataSet.StatementTimeout` | *Firebird 4+* **and** a `fbclient` 4+ library (`fb_dsql_set_timeout`) |
 
-The samples use `Database` (a `TpFIBDatabase`) and `Query` and `Report` (two `TpFIBQuery` components), with `Database` and a transaction assigned.
+The samples use `Database` (a `TpFIBDatabase`) and `Query` and `Report` (two `TFIBQuery` components), with `Database` and a transaction assigned.
 
 Check what is available at run time:
 

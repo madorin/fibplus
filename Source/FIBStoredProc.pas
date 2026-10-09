@@ -22,10 +22,10 @@ interface
 {$I FIBPlus.inc}
 
 uses
-  pFIBQuery, FIBDatabase;
+  FIBQuery, FIBDatabase;
 
 type
-  TFIBStoredProc = class(TpFIBQuery)
+  TFIBStoredProc = class(TFIBQuery)
   private
     FStoredProcName: string;
     // SQL is built from metadata, deferred until the database is connected

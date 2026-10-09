@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
-  ExtCtrls, StdCtrls, Grids, DBGrids, FIBQuery, pFIBQuery, SIBEABase,
+  ExtCtrls, StdCtrls, Grids, DBGrids, FIBQuery, SIBEABase,
   SIBFIBEA;
 
 type
@@ -20,7 +20,7 @@ type
     Label2: TLabel;
     DBGrid1: TDBGrid;
     Button1: TButton;
-    qryInsertSale: TpFIBQuery;
+    qryInsertSale: TFIBQuery;
     trInsertSale: TpFIBTransaction;
     SIBfibEventAlerter1: TSIBfibEventAlerter;
     procedure FormCreate(Sender: TObject);

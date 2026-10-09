@@ -108,7 +108,7 @@ type
     procedure Edit; override;
   end;
 
-  TpFIBQueryEditor = class(TComponentEditor)
+  TFIBQueryEditor = class(TComponentEditor)
     procedure ExecuteVerb(Index: Integer); override;
     function GetVerb(Index: Integer): string; override;
     function GetVerbCount: Integer; override;
@@ -601,7 +601,7 @@ begin
     Qry := nil; Trans := nil;
     try
     Trans := TpFIBTransaction.Create(nil);
-    Qry := TpFIBQuery.Create(nil);
+    Qry := TFIBQuery.Create(nil);
     Qry.ParamCheck:=false;
     Qry.Database := Dset.Database;
     Trans.DefaultDatabase := Dset.Database;
@@ -675,9 +675,9 @@ begin
   Result := '(TTRParams)'
 end;
 
-{ TpFIBQueryEditor }
+{ TFIBQueryEditor }
 
-procedure TpFIBQueryEditor.ExecuteVerb(Index: Integer);
+procedure TFIBQueryEditor.ExecuteVerb(Index: Integer);
 begin
   case Index of
     0:
@@ -689,14 +689,14 @@ begin
       end;
     1:
       begin
-        // TpFIBQuery(Component).CheckValidStatement;
+        // TFIBQuery(Component).CheckValidStatement;
         ShowMessage(SNoErrors);
       end;
   end;
 
 end;
 
-function TpFIBQueryEditor.GetVerb(Index: Integer): string;
+function TFIBQueryEditor.GetVerb(Index: Integer): string;
 begin
   case Index of
     0: Result := SEditSQL;
@@ -704,7 +704,7 @@ begin
   end;
 end;
 
-function TpFIBQueryEditor.GetVerbCount: Integer;
+function TFIBQueryEditor.GetVerbCount: Integer;
 begin
   Result := 2;
 end;
@@ -1232,7 +1232,7 @@ end;
 
 procedure TpFIBSQLPropEdit.Edit;
 begin
-  // if GetComponent(0) is TpFIBQuery then
+  // if GetComponent(0) is TFIBQuery then
   begin
     if not FindPropInCode(TComponent(GetComponent(0)), 'SQL') then
       if ShowSQLEdit(TComponent(GetComponent(0))) then

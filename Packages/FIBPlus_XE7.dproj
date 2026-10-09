@@ -167,6 +167,7 @@
         <DCCReference Include="..\Source\SqlTxtRtns.pas"/>
         <DCCReference Include="..\Source\DBParsers.pas"/>
         <DCCReference Include="..\Source\pFIBMetaData.pas"/>
+        <DCCReference Include="..\Source\FIBUpdateObject.pas"/>
         <DCCReference Include="..\Source\pFIBQuery.pas"/>
         <DCCReference Include="..\Source\FIBConsts.pas"/>
         <DCCReference Include="..\Source\FIBScripter.pas"/>

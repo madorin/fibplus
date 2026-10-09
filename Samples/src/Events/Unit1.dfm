@@ -91,7 +91,7 @@ object Form1: TForm1
     Width = 275
     Height = 25
     Anchors = [akTop, akRight]
-    Caption = 'Insert Sale with pFIBQuery'
+    Caption = 'Insert Sale with TFIBQuery'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -11
@@ -211,7 +211,7 @@ object Form1: TForm1
     Left = 536
     Top = 40
   end
-  object qryInsertSale: TpFIBQuery
+  object qryInsertSale: TFIBQuery
     Transaction = trInsertSale
     Database = db
     SQL.Strings = (

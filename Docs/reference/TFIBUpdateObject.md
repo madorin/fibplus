@@ -1,15 +1,15 @@
-# TpFIBUpdateObject
+# TFIBUpdateObject
 
 An extra statement that a [TpFIBDataSet](TpFIBDataSet.md) runs when it posts an insert, an update, or a delete. Use it to change other tables or call a procedure in the same step as the dataset's own statement. An update object has an `SQL` text like any query and is attached to one dataset.
 
 | | |
 |---|---|
-| Unit | `pFIBQuery` |
-| Inherits from | [TpFIBQuery](TpFIBQuery.md) |
+| Unit | `FIBUpdateObject` |
+| Inherits from | [TFIBQuery](TFIBQuery.md) |
 
-This page lists only what `TpFIBUpdateObject` adds or changes. The other members are described in [TpFIBQuery](TpFIBQuery.md) and [TFIBQuery](TFIBQuery.md).
+This page lists only what `TFIBUpdateObject` adds or changes. The other members are described in [TFIBQuery](TFIBQuery.md).
 
-The example writes an audit row after every update of `DataSet`. It uses the components `DataSet` (a `TpFIBDataSet`) and `AuditObject` (a `TpFIBUpdateObject`). `AuditObject` takes `Database` and `Transaction` from `DataSet` when `DataSet` is assigned. The parameters `OLD_ID` and `NEW_NAME` are filled from the record, see [Parameters](#parameters).
+The example writes an audit row after every update of `DataSet`. It uses the components `DataSet` (a `TpFIBDataSet`) and `AuditObject` (a `TFIBUpdateObject`). `AuditObject` takes `Database` and `Transaction` from `DataSet` when `DataSet` is assigned. The parameters `OLD_ID` and `NEW_NAME` are filled from the record, see [Parameters](#parameters).
 
 ```delphi
 AuditObject.SQL.Text :=
@@ -23,7 +23,7 @@ Guides: [Datasets and caching](../guide/datasets-and-caching.md).
 
 ## Published properties
 
-`TpFIBUpdateObject` publishes everything that [TpFIBQuery](TpFIBQuery.md#published-properties) publishes, and these:
+`TFIBUpdateObject` publishes everything that [TFIBQuery](TFIBQuery.md#published-properties) publishes, and these:
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
@@ -88,6 +88,6 @@ The prefixes are case-insensitive.
 
 ## See also
 
-- [TpFIBQuery](TpFIBQuery.md), [TFIBQuery](TFIBQuery.md)
+- [TFIBQuery](TFIBQuery.md)
 - [TpFIBDataSet](TpFIBDataSet.md), [TFIBDataSet](TFIBDataSet.md)
 - [Datasets and caching](../guide/datasets-and-caching.md)

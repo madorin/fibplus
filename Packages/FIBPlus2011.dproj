@@ -90,6 +90,7 @@
 			<DCCReference Include="..\Source\pFIBInterfaces.pas"/>
 			<DCCReference Include="..\Source\pFIBLists.pas"/>
 			<DCCReference Include="..\Source\pFIBProps.pas"/>
+			<DCCReference Include="..\Source\FIBUpdateObject.pas"/>
 			<DCCReference Include="..\Source\pFIBQuery.pas"/>
 			<DCCReference Include="..\Source\pFIBSQLLog.pas"/>
 			<DCCReference Include="..\Source\FIBStoredProc.pas"/>

@@ -66,6 +66,7 @@ contains
   pFIBInterfaces in '..\Source\pFIBInterfaces.pas',
   pFIBLists in '..\Source\pFIBLists.pas',
   pFIBProps in '..\Source\pFIBProps.pas',
+  FIBUpdateObject in '..\Source\FIBUpdateObject.pas',
   pFIBQuery in '..\Source\pFIBQuery.pas',
   pFIBSQLLog in '..\Source\pFIBSQLLog.pas',
   FIBStoredProc in '..\Source\FIBStoredProc.pas',

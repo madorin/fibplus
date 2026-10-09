@@ -142,7 +142,7 @@ procedure Register;
 
       RegisterComponentEditor(TComponentClass(DatabaseClass), TpFIBDatabaseEditor);
       RegisterComponentEditor(TComponentClass(TransactionClass), TpFIBTransactionEditor);
-      RegisterComponentEditor(TComponentClass(QueryClass), TpFIBQueryEditor);
+      RegisterComponentEditor(TComponentClass(QueryClass), TFIBQueryEditor);
       RegisterComponentEditor(TComponentClass(DatasetClass), TFIBGenSQlEd);
 
       pi := GetPropInfo(QueryClass, 'Conditions');

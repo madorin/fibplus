@@ -102,7 +102,7 @@ UpdateTransaction.Commit;
 
 ### Update objects
 
-A `TpFIBUpdateObject` runs an extra statement when a row is inserted, updated, or deleted. Its `ExecuteOrder` is `oeBeforeDefault` or `oeAfterDefault`: it runs before or after the statement of the dataset. See [TpFIBUpdateObject](../reference/TpFIBUpdateObject.md).
+A `TFIBUpdateObject` runs an extra statement when a row is inserted, updated, or deleted. Its `ExecuteOrder` is `oeBeforeDefault` or `oeAfterDefault`: it runs before or after the statement of the dataset. See [TFIBUpdateObject](../reference/TFIBUpdateObject.md).
 
 ### Errors while posting
 
@@ -298,7 +298,7 @@ When `OnAcceptCacheSchema` is assigned and `ValidateAfterLoad` is `True`, the lo
 
 - [TFIBDataSet reference](../reference/TFIBDataSet.md)
 - [TpFIBDataSet reference](../reference/TpFIBDataSet.md)
-- [TpFIBUpdateObject reference](../reference/TpFIBUpdateObject.md)
+- [TFIBUpdateObject reference](../reference/TFIBUpdateObject.md)
 - [TpFIBDatabase reference](../reference/TpFIBDatabase.md)
 - [Queries and parameters](queries-and-parameters.md)
 - [Transactions](transactions.md)

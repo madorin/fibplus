@@ -98,7 +98,7 @@ procedure TFIBQuery.DefineProperties(Filer: TFiler);
 var
   IsWriteProcess: boolean;
 
-  function DoSave(Option: TpFIBQueryOption): boolean;
+  function DoSave(Option: TFIBQueryOption): Boolean;
   begin
     if Filer.Ancestor <> nil then
       Result := ([Option] * TFIBQuery(Filer.Ancestor).Options) <> ([Option] * Options)

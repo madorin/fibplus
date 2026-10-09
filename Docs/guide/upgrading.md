@@ -8,7 +8,7 @@ Find the version you use now, then read every section above it, from the one jus
 
 | Version | Status | Notes |
 |---------|--------|-------|
-| [8.0.0](#800) | Unreleased | Scripter, stored procedure, error handler, table changes reader and schema extract classes renamed from `TpFIB...` to `TFIB...`. |
+| [8.0.0](#800) | Unreleased | Query, update object, scripter, stored procedure, error handler, table changes reader and schema extract classes renamed from `TpFIB...` to `TFIB...`. |
 | [7.9.1](#791) | 2026-10-09 | Text in the code page of each column's character set, *Firebird 4+* statement and idle timeouts and read consistency, *Firebird 5+* parallel workers, an FMX login dialog package, and many bug fixes. |
 | [7.9.0](#790) | 2026-10-01 | First release of the community maintained FibPlus. Based on the FIBPlus 7 sources of build 632 (2014-02-17). |
 
@@ -28,6 +28,12 @@ Find the version you use now, then read every section above it, from the one jus
 | Unit `pFIBDataRefresh` | `FIBDataRefresh` | Change the `uses` clause. The old unit still compiles and gives a warning. |
 | `TpFIBTableChangesReader` | `TFIBTableChangesReader` | Rename. The old name is a deprecated alias of the same class. |
 | `TpFIBDBSchemaExtract` (unit `pFIBMetaData`) | `TFIBDBSchemaExtract` | Rename. The old name is a deprecated alias of the same class. The unit keeps its name. |
+| Unit `pFIBQuery` | `FIBQuery`, `FIBUpdateObject` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| `TpFIBQuery` | `TFIBQuery` | Rename. The old name is a deprecated alias of the same class. |
+| `TpFIBUpdateObject` | `TFIBUpdateObject` (unit `FIBUpdateObject`) | Rename. The old name is a deprecated alias of the same class. |
+| `TpFIBQueryOption`, `TpFIBQueryOptions` | `TFIBQueryOption`, `TFIBQueryOptions` | Rename. The old names are deprecated aliases of the same types. |
+| `TFIBQuery.FN` (missing column returned `nil`) | `TFIBQuery.FindField` | `FN` now raises for a missing column, as `TpFIBQuery.FN` did. Replace `FN` with `FindField` where you test the result for `nil`. |
+| IDE preferences of the query (registry key `pFIBQuery`) | registry key `FIBQuery` | The saved design-time defaults for new queries (`ParamCheck`, `GoToFirstRecordOnExecute`, `Options`) are not read from the old key. Set them again once in the FIBPlus preferences. |
 
 Forms that contain one of the old component classes still load. The next time you save the form, the IDE writes the new class name. The old unit and names are removed in a later major version.
 

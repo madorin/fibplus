@@ -1,6 +1,6 @@
 # Quick start
 
-Connect to a database, run a first query, and show data in a grid. The steps use the `EMPLOYEE` demo database that ships with Firebird and the components `TpFIBDatabase`, `TpFIBTransaction`, `TpFIBQuery`, and `TpFIBDataSet`.
+Connect to a database, run a first query, and show data in a grid. The steps use the `EMPLOYEE` demo database that ships with Firebird and the components `TpFIBDatabase`, `TpFIBTransaction`, `TFIBQuery`, and `TpFIBDataSet`.
 
 You need:
 
@@ -44,7 +44,7 @@ You need:
 
 ## 2. Run a query
 
-Drop a `TpFIBQuery` (`Query`) and a `TMemo` (`Memo1`) on the form and set its `Database` to `Database`. Its `Transaction` becomes `Transaction`, the `DefaultTransaction` of the database; set it yourself only when it stays empty or you want another transaction.
+Drop a `TFIBQuery` (`Query`) and a `TMemo` (`Memo1`) on the form and set its `Database` to `Database`. Its `Transaction` becomes `Transaction`, the `DefaultTransaction` of the database; set it yourself only when it stays empty or you want another transaction.
 
 A query does not start its transaction unless `qoStartTransaction` is in its `Options`, so start it yourself:
 

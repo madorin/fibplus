@@ -19,7 +19,7 @@ interface
 
 uses
   SysUtils, Classes,
-  pTestInfo, pFIBInterfaces, FIBDatabase, pFIBProps, fib, StdFuncs, pFIBQuery,
+  pTestInfo, pFIBInterfaces, FIBDatabase, pFIBProps, fib, StdFuncs,
   FIBQuery, pFIBCacheQueries, FIBPlatforms;
 
 type
@@ -152,12 +152,12 @@ end;
 
 procedure TFIBSQLLogger.CreateStatisticsTable;
 var
-  q: TpFIBQuery;
+  q: TFIBQuery;
 begin
   if not ExistStatisticsTable then
   begin
     tr.DefaultDatabase := FDatabase;
-    q := TpFIBQuery.Create(Self);
+    q := TFIBQuery.Create(Self);
     q.Database := FDatabase;
     q.Transaction := tr;
     q.ParamCheck := False;

@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
   ExtCtrls, StdCtrls, Grids, DBGrids, DBCtrls, FIBQuery,
-  pFIBQuery, pFIBSQLLog, Shellapi;
+  pFIBSQLLog, Shellapi;
 
 type
   TForm1 = class(TForm)
@@ -26,7 +26,7 @@ type
     DBMemo1: TDBMemo;
     DBMemo2: TDBMemo;
     Button1: TButton;
-    pFIBQuery1: TpFIBQuery;
+    Query1: TFIBQuery;
     pFIBDataSet1: TpFIBDataSet;
     FIBSQLLogger1: TFIBSQLLogger;
     dtID: TFIBIntegerField;
@@ -122,8 +122,8 @@ begin
       pFIBDataSet1.Close;
     if pos('update', sqltxt) > 0 then
     begin
-      pFIBQuery1.SQL.Text := sqltxt;
-      pFIBQuery1.ExecQuery;
+      Query1.SQL.Text := sqltxt;
+      Query1.ExecQuery;
     end
     else
     begin

@@ -70,6 +70,7 @@ contains
   SqlTxtRtns in '..\Source\SqlTxtRtns.pas',
   DBParsers in '..\Source\DBParsers.pas',
   pFIBMetaData in '..\Source\pFIBMetaData.pas',
+  FIBUpdateObject in '..\Source\FIBUpdateObject.pas',
   pFIBQuery in '..\Source\pFIBQuery.pas',
   FIBConsts in '..\Source\FIBConsts.pas',
   FIBScripter in '..\Source\FIBScripter.pas',

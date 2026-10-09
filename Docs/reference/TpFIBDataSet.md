@@ -198,7 +198,7 @@ The row is read through the database component: `UseRepositories` of the databas
 
 ## Update objects
 
-An update object (`TpFIBUpdateObject`) is a query that runs together with the dataset's own statement for one kind of change. It is linked to the dataset through its `DataSet` property, which calls `AddUpdateObject`. `TpFIBDataSet` has no property that lists them. The update object has `KindUpdate` (`ukModify`, `ukInsert`, or `ukDelete`), `ExecuteOrder` (`oeBeforeDefault` or `oeAfterDefault`), `OrderInList`, and `Active`; see [TpFIBUpdateObject](TpFIBUpdateObject.md).
+An update object (`TFIBUpdateObject`) is a query that runs together with the dataset's own statement for one kind of change. It is linked to the dataset through its `DataSet` property, which calls `AddUpdateObject`. `TpFIBDataSet` has no property that lists them. The update object has `KindUpdate` (`ukModify`, `ukInsert`, or `ukDelete`), `ExecuteOrder` (`oeBeforeDefault` or `oeAfterDefault`), `OrderInList`, and `Active`; see [TFIBUpdateObject](TFIBUpdateObject.md).
 
 When a row is posted or deleted, the dataset runs, for that kind of change:
 
@@ -404,7 +404,7 @@ Protected, for descendants:
 | `TAutoUpdateOptions` | Class, see [AutoUpdateOptions](#autoupdateoptions) |
 | `TCachRefreshKind` | `frkEdit`, `frkInsert` |
 | `TDetailCondition`, `TDetailConditions` | See [Detail conditions](#detail-conditions); set of `TDetailCondition` |
-| `TFIBOrderExecUO` | `oeBeforeDefault`, `oeAfterDefault` (unit `pFIBQuery`) |
+| `TFIBOrderExecUO` | `oeBeforeDefault`, `oeAfterDefault` (unit `FIBUpdateObject`) |
 | `TFormatFields` | Class, see [Default formats](#default-formats) |
 | `TIncludeFieldsToSQL` | `ifsAllFields`, `ifsNoBlob`, `ifsOnlyBlob` |
 | `TLockErrorEvent` | `procedure(DataSet: TDataSet; LockError: TLockStatus; var ErrorMessage: string; var Action: TDataAction) of object` |
@@ -422,7 +422,7 @@ Protected, for descendants:
 ## See also
 
 - [TFIBDataSet](TFIBDataSet.md), [TFIBQuery](TFIBQuery.md), [TFIBTransaction](TFIBTransaction.md)
-- [TpFIBUpdateObject](TpFIBUpdateObject.md), [TpFIBQuery](TpFIBQuery.md)
+- [TFIBUpdateObject](TFIBUpdateObject.md)
 - [TpFIBClientDataSet](TpFIBClientDataSet.md), which uses the provider support of this class
 - [Datasets and caching](../guide/datasets-and-caching.md)
 - [Timeouts](../guide/timeouts.md)

@@ -57,6 +57,7 @@ contains
   FIBErrorHandler in '..\Source\FIBErrorHandler.pas',
   pFIBErrorHandler in '..\Source\pFIBErrorHandler.pas',
   pFIBProps in '..\Source\pFIBProps.pas',
+  FIBUpdateObject in '..\Source\FIBUpdateObject.pas',
   pFIBQuery in '..\Source\pFIBQuery.pas',
   RegUtils in '..\Source\RegUtils.pas',
   SqlTxtRtns in '..\Source\SqlTxtRtns.pas',

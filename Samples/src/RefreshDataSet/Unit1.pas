@@ -7,7 +7,7 @@ uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
   ExtCtrls, StdCtrls, Grids, DBGrids, FIBErrorHandler, pFIBSQLLog,
-  FIBQuery, pFIBQuery;
+  FIBQuery;
 
 type
   TForm1 = class(TForm)
@@ -22,7 +22,7 @@ type
     Panel2: TPanel;
     Button2: TButton;
     cmbKindRefresh: TComboBox;
-    qryExactRefresh: TpFIBQuery;
+    qryExactRefresh: TFIBQuery;
     procedure FormCreate(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure Button2Click(Sender: TObject);

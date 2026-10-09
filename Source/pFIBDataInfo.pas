@@ -24,7 +24,7 @@ uses
   Windows, // for inline functions
 {$ENDIF}
   SyncObjs, SysUtils, Classes, DB, FIBPlatforms, FIBDataSet, FIBDataBase,
-  FIBQuery, pFIBQuery, pFIBDataBase, pFIBProps;
+  FIBQuery, pFIBDataBase, pFIBProps;
 
 type
   TExtBoolean = (eFalse, eTrue, eUnknown);

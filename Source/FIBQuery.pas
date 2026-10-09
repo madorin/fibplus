@@ -406,8 +406,12 @@ type
   TQueryRunStateValues = (qrsInPrepare, qrsInExecute, qrsInClose);
   TQueryRunState = set of TQueryRunStateValues;
 
+  TFIBQueryErrorEvent = procedure(Sender: TFIBQuery; E: EFIBError; var Action: TDataAction) of object;
+
   TFIBQuery = class(TComponent, ISQLObject, IFIBQuery)
   private
+    FDescription: string;
+    FOnExecuteError: TFIBQueryErrorEvent;
     FOnBatching: TOnBatching;
     FDoParamCheck: boolean;
     FParser: TSQLParser;
@@ -450,7 +454,7 @@ type
     vUserParamsCreated: boolean;
     FCountLockSQL: integer;
     FModifyTable: string;
-    FOptions: TpFIBQueryOptions;
+    FOptions: TFIBQueryOptions;
     vDiffParams: boolean;
     FOnlySrvParams: TStringList;
     FCallTime: Cardinal;
@@ -567,6 +571,12 @@ type
     procedure Close; // close the query.
     function Current: TFIBXSQLDA;
     procedure ExecQuery; virtual; // ExecQuery the query.
+    procedure ExecProc;
+    procedure ExecProcedure(const ProcName: string; const InputParams: array of Variant); overload;
+    procedure ExecProcedure(const ProcName: string); overload;
+    function BlobToStrings(const BlobFieldName: string; Destination: TStrings): Boolean;
+    function BlobAsString(const BlobFieldName: string): string;
+    function FieldIsNull(Field: TFIBXSQLVAR): Boolean;
     procedure ExecuteImmediate;
     // procedure CancelQuery;  // Only For IB
 {$IFDEF SUPPORT_IB2007}
@@ -656,6 +666,9 @@ type
     function ReadySQLText(ForChangeExecSQL: boolean = True): string;
     property SQLTextChangeCount: integer read FSQLTextChangeCount;
   private
+    function GetAbout: string;
+    procedure SetAbout(const Value: string);
+    procedure InternalExecQuery;
     procedure SetPlanClause(const Value: string);
     function GetPlanClause: string;
   public
@@ -674,8 +687,6 @@ type
     property CallTime: Cardinal read FCallTime;
     property MacroChanged: boolean read FMacroChanged;
     property SQLKind: TSQLKind read GetSQLKind;
-    property BeforeExecute: TNotifyEvent read FBeforeExecute write FBeforeExecute;
-    property AfterExecute: TNotifyEvent read FAfterExecute write FAfterExecute;
 
   published
     property Transaction: TFIBTransaction read GetTransaction write SetTransaction;
@@ -689,7 +700,7 @@ type
     property SQL: TStrings read FSQL write SetSQL;
 
     property OnSQLChanging: TNotifyEvent read FOnSQLChanging write FOnSQLChanging;
-    property Options: TpFIBQueryOptions read FOptions write FOptions stored False;
+    property Options: TFIBQueryOptions read FOptions write FOptions stored False;
     property OnBatching: TOnBatching read FOnBatching write FOnBatching;
     property OnBatchError: TOnBatchError read FOnBatchError write FOnBatchError;
     property TransactionEnding: TNotifyEvent read FTransactionEnding write FTransactionEnding;
@@ -698,6 +709,11 @@ type
 {$IFDEF CSMonitor}
     property CSMonitorSupport: TCSMonitorSupport read FCSMonitorSupport write SetMonitorSupport;
 {$ENDIF}
+    property BeforeExecute: TNotifyEvent read FBeforeExecute write FBeforeExecute;
+    property AfterExecute: TNotifyEvent read FAfterExecute write FAfterExecute;
+    property Description: string read FDescription write FDescription;
+    property OnExecuteError: TFIBQueryErrorEvent read FOnExecuteError write FOnExecuteError;
+    property About: string read GetAbout write SetAbout stored False;
   end;
 
 procedure BlobToStream(ModelVar: TFIBXSQLVAR; BlobID: TISC_QUAD; Stream: TStream);
@@ -4390,7 +4406,7 @@ begin
 end;
 {$ENDIF}
 
-procedure TFIBQuery.ExecQuery;
+procedure TFIBQuery.InternalExecQuery;
 var
   fetch_res: ISC_STATUS;
   pc: integer;
@@ -4623,7 +4639,131 @@ end;
 
 function TFIBQuery.FN(const FieldName: string): TFIBXSQLVAR;
 begin
-  Result := FSQLRecord.ByName[FieldName];
+  Result := FieldByName(FieldName);
+end;
+
+function TFIBQuery.FieldIsNull(Field: TFIBXSQLVAR): Boolean;
+begin
+  Result := Field.IsNull;
+end;
+
+procedure TFIBQuery.ExecQuery;
+var
+  Action: TDataAction;
+begin
+  if not Assigned(FOnExecuteError) then
+  begin
+    InternalExecQuery;
+    Exit;
+  end;
+  Action := daRetry;
+  while Action = daRetry do
+    try
+      Action := daFail;
+      InternalExecQuery;
+    except
+      on E: EFIBError do
+        if Assigned(FOnExecuteError) then
+        begin
+          FOnExecuteError(Self, E, Action);
+          case Action of
+            daFail: raise;
+            daAbort: Abort;
+          end;
+        end
+        else
+          raise
+    end;
+end;
+
+procedure TFIBQuery.ExecProc;
+begin
+  if IsProc then
+    ExecQuery;
+end;
+
+procedure TFIBQuery.ExecProcedure(const ProcName: string);
+begin
+  ExecProcedure(ProcName, []);
+end;
+
+procedure TFIBQuery.ExecProcedure(const ProcName: string; const InputParams: array of Variant);
+var
+  i: Integer;
+  SQLText: string;
+begin
+  SQLText := ExecProcPrefix + 'PROCEDURE ' + ProcName;
+  if Length(InputParams) > 0 then
+  begin
+    SQLText := SQLText + '(?P0';
+    for i := 1 to High(InputParams) do
+      SQLText := SQLText + ',?P' + IntToStr(i);
+    SQLText := SQLText + ')';
+  end;
+  if SQL.Text <> SQLText + CLRF then
+    SQL.Text := SQLText;
+  if not Prepared then
+    Prepare;
+  for i := 0 to High(InputParams) do
+    Params[i].AsVariant := InputParams[i];
+  ExecProc;
+end;
+
+function TFIBQuery.BlobToStrings(const BlobFieldName: string; Destination: TStrings): Boolean;
+var
+  bs: TFIBBlobStream;
+  fld: TFIBXSQLVAR;
+begin
+  Result := False;
+  if not Open or (Destination = nil) then
+    Exit;
+  fld := FindField(BlobFieldName);
+  if fld = nil then
+    Exit;
+  if (fld.data.sqltype and (not 1) <> SQL_BLOB) then
+    Exit;
+  if (fld.data.sqlsubtype <> isc_blob_text) then
+    Exit;
+
+  bs := TFIBBlobStream.Create;
+  try
+    try
+      bs.Mode := bmRead;
+      bs.Database := Database;
+      bs.Transaction := Transaction;
+      bs.BlobID := fld.AsQuad;
+      bs.Seek(0, soBeginning);
+      Destination.LoadFromStream(bs);
+      Result := True;
+    except
+      Result := False;
+    end;
+  finally
+    bs.Free;
+  end;
+end;
+
+function TFIBQuery.BlobAsString(const BlobFieldName: string): string;
+var
+  ts: TStrings;
+begin
+  Result := '';
+  ts := TStringList.Create;
+  try
+    if BlobToStrings(BlobFieldName, ts) then
+      Result := ts.Text;
+  finally
+    ts.Free;
+  end;
+end;
+
+function TFIBQuery.GetAbout: string;
+begin
+  Result := FIBVersionString;
+end;
+
+procedure TFIBQuery.SetAbout(const Value: string);
+begin
 end;
 
 function TFIBQuery.FieldByOrigin(const TableName, FieldName: string): TFIBXSQLVAR;
@@ -4662,7 +4802,7 @@ var
 begin
   if not Prepared then
     Prepare;
-  tf := FN(aFieldName);
+  tf := FindField(aFieldName);
   if not Assigned(tf) then
     Result := ''
   else
@@ -5018,7 +5158,7 @@ function TFIBQuery.TableAliasForFieldByName(const aFieldName: string): string;
 var
   tf: TFIBXSQLVAR;
 begin
-  tf := FN(aFieldName);
+  tf := FindField(aFieldName);
   if not Assigned(tf) then
     Result := ''
   else

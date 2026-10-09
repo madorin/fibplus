@@ -397,7 +397,7 @@ begin
     [DialectC.ItemIndex + 1, CharSetC.Text, chUseLoginPrompt.Checked,
     chUpperOldNames.Checked, chSynchronizeTime.Checked, chStoreConnected.Checked, chCloseDsgnConnect.Checked]);
 
-  DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'pFIBQuery'],
+  DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBQuery'],
     ['GoToFirstRecordOnExecute', 'ParamCheck', 'AutoStartTransaction',
     'AutoCommitTransaction'], [ChGo1.Checked, ChParamCheck.Checked,
     chAutoStartTransaction.Checked, chAutoCommitTransaction.Checked]);
@@ -648,7 +648,7 @@ begin
   end;
 
   Values := DefReadFromRegistry(['Software', RegFIBRoot, RegPreferences,
-    'pFIBQuery'], ['GoToFirstRecordOnExecute', 'ParamCheck',
+    'FIBQuery'], ['GoToFirstRecordOnExecute', 'ParamCheck',
     'AutoStartTransaction', 'AutoCommitTransaction']);
   if VarType(Values) <> varBoolean then
   begin

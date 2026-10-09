@@ -21,7 +21,7 @@ interface
 {$A2}
 
 uses
-  SysUtils, Classes, Types, FIBPlatforms, pFIBDatabase, pFIBQuery, FIBQuery,
+  SysUtils, Classes, Types, FIBPlatforms, pFIBDatabase, FIBQuery,
   fib, pFIBInterfaces;
 
 // {$DEFINE BEZBAZY}
@@ -248,7 +248,7 @@ type
   private
     FDatabase: TpFIBDatabase;
     FTransaction: TpFIBTransaction;
-    FQuery: TpFIBQuery;
+    FQuery: TFIBQuery;
     FPaused: boolean;
     FSkipStatement: boolean;
     FStopStatementNo: Integer;
@@ -336,7 +336,7 @@ type
     procedure PreparePreDefines;
     property Prepared: boolean read FPrepared;
     property StopStatementNo: Integer read FStopStatementNo;
-    property Query: TpFIBQuery read FQuery;
+    property Query: TFIBQuery read FQuery;
     property MakeConnectInScript: boolean read FMakeConnectInScript;
     property SkipStatement: boolean read FSkipStatement write FSkipStatement;
     property Paused: boolean read FPaused write FPaused;
@@ -510,7 +510,7 @@ begin
   // FDirectiveConsts.Add('A= 11');
   FExecBlockStatement := TStringList.Create;
   FTransaction := TpFIBTransaction.Create(Self);
-  FQuery := TpFIBQuery.Create(Self);
+  FQuery := TFIBQuery.Create(Self);
   FQuery.Transaction := FTransaction;
   FSQLDialect := 3;
   FAutoDDL := True;

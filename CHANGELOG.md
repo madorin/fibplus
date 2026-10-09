@@ -16,6 +16,18 @@
   files still load, but they will be removed in a later major version: please
   change `uses` clauses and class names to the new ones. See
   [Upgrading](Docs/guide/upgrading.md).
+- `TpFIBQuery` and `TpFIBUpdateObject` are merged into `TFIBQuery` (unit
+  `FIBQuery`) and `TFIBUpdateObject` (unit `FIBUpdateObject`). `TFIBQuery` has
+  now `Description`, `OnExecuteError`, `About`, `ExecProc`, `ExecProcedure`,
+  `BlobToStrings`, `BlobAsString` and `FieldIsNull`, and publishes `BeforeExecute`
+  and `AfterExecute`. The unit `pFIBQuery` and the old names stay as deprecated
+  aliases. `TFIBQuery.FN` raises for a missing column like `FieldByName` (it
+  returned `nil`); use `FindField` to get `nil`.
+- `TpFIBQueryOption` and `TpFIBQueryOptions` are now `TFIBQueryOption` and
+  `TFIBQueryOptions`, and the design-time editor `TpFIBQueryEditor` is now
+  `TFIBQueryEditor`. The old option type names stay as deprecated aliases. The
+  IDE preferences of the query are stored under the registry key `FIBQuery`
+  instead of `pFIBQuery`: set them again once in the FIBPlus preferences.
 
 ## [7.9.1] - 2026-10-09
 

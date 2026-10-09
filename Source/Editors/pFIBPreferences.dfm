@@ -542,7 +542,7 @@ object frmFIBPreferences: TfrmFIBPreferences
       end
     end
     object TabSheet3: TTabSheet
-      Caption = 'TpFIBQuery'
+      Caption = 'TFIBQuery'
       object ChGo1: TCheckBox
         Left = 14
         Top = 23

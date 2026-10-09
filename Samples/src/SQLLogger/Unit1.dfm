@@ -401,7 +401,7 @@ object Form1: TForm1
     Left = 616
     Top = 40
   end
-  object pFIBQuery1: TpFIBQuery
+  object Query1: TFIBQuery
     Transaction = tr
     Database = db
     Left = 648

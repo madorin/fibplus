@@ -163,7 +163,7 @@ implementation
 
 uses
 {$IFNDEF NO_REGISTRY} RegUtils, {$ENDIF}
-  StrUtil, pFIBCacheQueries, pFIBQuery, pFIBDataSet, pFIBDataInfo;
+  StrUtil, pFIBCacheQueries, pFIBDataSet, pFIBDataInfo;
 
 function GetQueriesCount(ForObj: TComponent): integer;
 var

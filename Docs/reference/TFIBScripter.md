@@ -1,6 +1,6 @@
 # TFIBScripter
 
-Splits an SQL script into statements and runs them one by one on a database. It understands the `SET TERM` command, conditional directives, and client commands such as `CONNECT` and `INPUT`, and sends all other statements, including session `SET` statements, to the server. Use it for DDL scripts and data scripts. To run a single statement from code, use [TpFIBQuery](TpFIBQuery.md).
+Splits an SQL script into statements and runs them one by one on a database. It understands the `SET TERM` command, conditional directives, and client commands such as `CONNECT` and `INPUT`, and sends all other statements, including session `SET` statements, to the server. Use it for DDL scripts and data scripts. To run a single statement from code, use [TFIBQuery](TFIBQuery.md).
 
 | | |
 |---|---|
@@ -45,7 +45,7 @@ Guides: [Scripting](../guide/scripting.md).
 | `SkipStatement` | `Boolean` | Set it to `True` in `BeforeStatementExecute` to skip the statement about to run. |
 | `StopStatementNo` | `Integer` | Number of the first statement that a paused run did not run; pass it to `ExecuteScript` to resume. `0` when the last run was not paused. See [Pausing and resuming](#pausing-and-resuming). Read only. |
 | `MakeConnectInScript` | `Boolean` | `True` when the parsed script contains `CONNECT` or `CREATE DATABASE`. Read only; valid after `Parse`. |
-| `Query` | `TpFIBQuery` | The internal query that runs the statements. Read only. |
+| `Query` | `TFIBQuery` | The internal query that runs the statements. Read only. |
 | `Defines` | `TStrings` | Names defined for `{$IFDEF}`. Assigning a list copies it in upper case. |
 
 ## Methods
@@ -214,6 +214,6 @@ A block runs as one statement: `AfterStatementExecute` and `OnExecuteError` repo
 
 ## See also
 
-- [TpFIBQuery](TpFIBQuery.md), [TpFIBDatabase](TpFIBDatabase.md), [TpFIBTransaction](TpFIBTransaction.md)
+- [TFIBQuery](TFIBQuery.md), [TpFIBDatabase](TpFIBDatabase.md), [TpFIBTransaction](TpFIBTransaction.md)
 - [Scripting](../guide/scripting.md)
 - [Timeouts](../guide/timeouts.md)

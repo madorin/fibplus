@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
-  ExtCtrls, StdCtrls, Grids, DBGrids, pFIBProps, FIBQuery, pFIBQuery,
+  ExtCtrls, StdCtrls, Grids, DBGrids, pFIBProps, FIBQuery,
   DBClient, pFIBClientDataSet, Provider, IBDatabase, ibase;
 
 type

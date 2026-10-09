@@ -198,7 +198,7 @@ object Form1: TForm1
     Left = 536
     Top = 40
   end
-  object qryExactRefresh: TpFIBQuery
+  object qryExactRefresh: TFIBQuery
     Transaction = tr
     Database = db
     SQL.Strings = (
