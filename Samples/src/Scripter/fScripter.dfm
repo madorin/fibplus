@@ -173,9 +173,9 @@ object Form3: TForm3
       'Memo2')
     TabOrder = 6
   end
-  object pFIBScripter1: TpFIBScripter
-    OnExecuteError = pFIBScripter1ExecuteError
-    BeforeStatementExecute = pFIBScripter1BeforeStatementExecute
+  object FIBScripter1: TFIBScripter
+    OnExecuteError = FIBScripter1ExecuteError
+    BeforeStatementExecute = FIBScripter1BeforeStatementExecute
     Left = 360
     Top = 112
   end

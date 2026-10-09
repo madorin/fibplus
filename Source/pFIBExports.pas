@@ -34,7 +34,7 @@ type
 
   end;
 
-  TMetaDataExtractor = class(TpFIBDBSchemaExtract, IFIBMetaDataExtractor)
+  TMetaDataExtractor = class(TFIBDBSchemaExtract, IFIBMetaDataExtractor)
   private
     function DBPrimaryKeys(const TableName: string; Transaction: TObject): string;
     function IsCalculatedField(const TableName, FieldName: string; Transaction: TObject): boolean;
@@ -285,12 +285,12 @@ end;
 
 function TMetaDataExtractor.ObjectDDLTxt(Transaction: TObject; ObjectType: Integer; const ObjectName: string; ForceLoad: boolean): string;
 var
-  Extractor: TpFIBDBSchemaExtract;
+  Extractor: TFIBDBSchemaExtract;
 begin
   Result := '';
   if (Transaction = nil) or (TFIBTransaction(Transaction).DefaultDatabase = nil) then
     Exit;
-  Extractor := TpFIBDBSchemaExtract.Create(nil);
+  Extractor := TFIBDBSchemaExtract.Create(nil);
   try
     Extractor.Database := TFIBTransaction(Transaction).DefaultDatabase;
     Result := Extractor.GetObjectDDL(TDBObjectType(ObjectType), ObjectName, ForceLoad);

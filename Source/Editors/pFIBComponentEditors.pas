@@ -74,7 +74,7 @@ type
     procedure GetValues(Proc: TGetStrProc); override;
   end;
 
-  TpFIBStoredProcProperty = class(TStringProperty)
+  TFIBStoredProcProperty = class(TStringProperty)
   public
     function GetAttributes: TPropertyAttributes; override;
     procedure GetValues(Proc: TGetStrProc); override;
@@ -470,14 +470,14 @@ begin
   Result := inherited GetAttributes + [paDialog, paSubProperties];
 end;
 
-{ TpFIBStoredProcProperty }
+{ TFIBStoredProcProperty }
 
-function TpFIBStoredProcProperty.GetAttributes: TPropertyAttributes;
+function TFIBStoredProcProperty.GetAttributes: TPropertyAttributes;
 begin
   Result := [paValueList, paSortList];
 end;
 
-procedure TpFIBStoredProcProperty.GetValues(Proc: TGetStrProc);
+procedure TFIBStoredProcProperty.GetValues(Proc: TGetStrProc);
 var
   StoredProc: TPersistent;
   DB: TObject;

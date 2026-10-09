@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
-  ExtCtrls, StdCtrls, Grids, DBGrids, FIBQuery, pFIBQuery, pFIBStoredProc;
+  ExtCtrls, StdCtrls, Grids, DBGrids, FIBQuery, pFIBQuery, FIBStoredProc;
 
 type
   TForm1 = class(TForm)
@@ -21,7 +21,7 @@ type
     TabSheet2: TTabSheet;
     DBGrid1: TDBGrid;
     dtDept: TpFIBDataSet;
-    spSubTotalBudget: TpFIBStoredProc;
+    spSubTotalBudget: TFIBStoredProc;
     DBGrid2: TDBGrid;
     dsDept: TDataSource;
     Button1: TButton;

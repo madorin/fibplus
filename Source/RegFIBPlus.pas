@@ -21,9 +21,9 @@ interface
 
 uses
   Classes, Sysutils, DB, pFIBDataSet, pFIBDatabase, pFIBQuery, DSContainer,
-  pFIBSQLLog, SIBFIBEA, pFIBMetadata, pFIBDataRefresh, pFIBExports,
-{$IFNDEF NO_MONITOR} FIBSQLMonitor, {$ENDIF} pFIBErrorHandler,
-  pFIBStoredProc, pFIBProps, pFIBClientDataSet {$IFDEF INC_SERVICE_SUPPORT},
+  pFIBSQLLog, SIBFIBEA, pFIBMetadata, FIBDataRefresh, pFIBExports,
+{$IFNDEF NO_MONITOR} FIBSQLMonitor, {$ENDIF} FIBErrorHandler,
+  FIBStoredProc, pFIBProps, pFIBClientDataSet {$IFDEF INC_SERVICE_SUPPORT},
   IB_Services {$ENDIF}
 {$IFDEF IBINSTALL_SUPPORT}, IB_Install{$ENDIF};
 
@@ -33,7 +33,7 @@ implementation
 
 uses
 {$IFNDEF NO_REGISTRY} RegUtils, {$ENDIF} FIBDataSet, FIBQuery, FIBDatabase,
-  SqlTxtRtns, StrUtil, PFIBDataInfo, PFIBScripter;
+  SqlTxtRtns, StrUtil, PFIBDataInfo, FIBScripter;
 
 const
   pnFIBPlus         = 'FIBPlus';
@@ -56,8 +56,8 @@ begin
     TFIBDateField, TFIBTimeField, TFIBDateTimeField, TFIBWideStringField]);
 
   RegisterComponents(pnFIBPlus, [TpFIBDatabase, TpFIBDataSet, TpFIBTransaction,
-    TpFIBQuery, TpFIBStoredProc, TpFIBUpdateObject, TDataSetsContainer,
-    TpFibErrorHandler, TpFIBScripter, TpFIBDBSchemaExtract, TpFIBTableChangesReader, TFIBSQLLogger, TSIBfibEventAlerter,
+    TpFIBQuery, TFIBStoredProc, TpFIBUpdateObject, TDataSetsContainer,
+    TFIBErrorHandler, TFIBScripter, TFIBDBSchemaExtract, TFIBTableChangesReader, TFIBSQLLogger, TSIBfibEventAlerter,
     TpFIBClientDataSet, TpFIBDataSetProvider
 {$IFNDEF NO_MONITOR}, TFIBSQLMonitor{$ENDIF}]);
 

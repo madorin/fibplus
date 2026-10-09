@@ -177,7 +177,7 @@ procedure Register;
 
       RegisterPropertyEditor(pi.PropType^, DatasetClass, '', TFIBSQLsProperties);
 
-      RegisterPropertyEditor(TypeInfo(string), QueryClass, 'StoredProcName', TpFIBStoredProcProperty);
+      RegisterPropertyEditor(TypeInfo(string), QueryClass, 'StoredProcName', TFIBStoredProcProperty);
 
       RegisterPropertyEditor(TypeInfo(TStrings), QueryClass, 'SQL', TpFIBSQLPropEdit);
 

@@ -6,7 +6,7 @@ Executes an SQL statement on a Firebird or InterBase database and gives access t
 |---|---|
 | Unit | `FIBQuery` |
 | Inherits from | `TComponent`; implements `ISQLObject` and `IFIBQuery` |
-| Descendants | `TpFIBQuery`, which adds more options and error handling; `TpFIBStoredProc`; `TpFIBUpdateObject` |
+| Descendants | `TpFIBQuery`, which adds more options and error handling; `TFIBStoredProc`; `TpFIBUpdateObject` |
 
 `Query` is a `TFIBQuery` with `Database` and `Transaction` assigned.
 

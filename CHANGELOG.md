@@ -2,6 +2,21 @@
 
 ## [8.0.0] - Unreleased
 
+### Changed
+
+- Renamed classes and units:
+  `TpFIBScripter` is now `TFIBScripter` (unit `FIBScripter`, parser
+  `TpFIBScriptParser` is now `TFIBScriptParser`), `TpFIBStoredProc` is now
+  `TFIBStoredProc` (unit `FIBStoredProc`), `TpFibErrorHandler` is now
+  `TFIBErrorHandler` (unit `FIBErrorHandler`), `TpFIBTableChangesReader` is now
+  `TFIBTableChangesReader` (unit `FIBDataRefresh`) and `TpFIBDBSchemaExtract` is
+  now `TFIBDBSchemaExtract` (unit `pFIBMetaData`). The old units `pFIBScripter`,
+  `pFIBStoredProc`, `pFIBErrorHandler` and `pFIBDataRefresh`, and the old class
+  names, still work as deprecated aliases (with a compiler warning) and old DFM
+  files still load, but they will be removed in a later major version: please
+  change `uses` clauses and class names to the new ones. See
+  [Upgrading](Docs/guide/upgrading.md).
+
 ## [7.9.1] - 2026-10-09
 
 ### Added

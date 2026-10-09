@@ -174,13 +174,17 @@
         <DCCReference Include="..\Source\pFIBMetaData.pas"/>
         <DCCReference Include="..\Source\pFIBQuery.pas"/>
         <DCCReference Include="..\Source\FIBConsts.pas"/>
+        <DCCReference Include="..\Source\FIBScripter.pas"/>
         <DCCReference Include="..\Source\pFIBScripter.pas"/>
         <DCCReference Include="..\Source\pFIBProps.pas"/>
         <DCCReference Include="..\Source\pFIBClientDataSet.pas"/>
+        <DCCReference Include="..\Source\FIBErrorHandler.pas"/>
         <DCCReference Include="..\Source\pFIBErrorHandler.pas"/>
+        <DCCReference Include="..\Source\FIBDataRefresh.pas"/>
         <DCCReference Include="..\Source\pFIBDataRefresh.pas"/>
         <DCCReference Include="..\Source\pFIBArray.pas"/>
         <DCCReference Include="..\Source\pFIBLists.pas"/>
+        <DCCReference Include="..\Source\FIBStoredProc.pas"/>
         <DCCReference Include="..\Source\pFIBStoredProc.pas"/>
         <DCCReference Include="..\Source\IB_ErrorCodes.pas"/>
         <DCCReference Include="..\Source\FIBCloneComponents.pas"/>

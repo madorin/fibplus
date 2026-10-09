@@ -780,7 +780,7 @@ type
     property OnLoadMetaData: TNotifyLoadMetaData read FOnLoadMetaData write FOnLoadMetaData;
   end;
 
-  TpFIBDBSchemaExtract = class;
+  TFIBDBSchemaExtract = class;
 
   TLoadOptions = class(TPersistent)
   private
@@ -797,7 +797,7 @@ type
     property TableInfo: TTableChildTypes read FLoadTableChilds write FLoadTableChilds default DefTableChilds;
   end;
 
-  TpFIBDBSchemaExtract = class(TComponent)
+  TFIBDBSchemaExtract = class(TComponent)
 
   protected
     FDatabase: TFIBDatabase;
@@ -881,6 +881,8 @@ type
     property LoadOptions: TLoadOptions read FLoadOptions write SetLoadOptions;
     property OnLoadMetaData: TNotifyLoadMetaData read FOnLoadMetaData write FOnLoadMetaData;
   end;
+
+  TpFIBDBSchemaExtract = TFIBDBSchemaExtract deprecated 'Use TFIBDBSchemaExtract';
 
 procedure FullExtractDDL(DB: TFIBDatabase; Dest: TStrings);
 
@@ -4236,14 +4238,14 @@ begin
   SetLength(FUserList, Size);
 end;
 
-{ TpFIBDBSchemaExtract }
+{ TFIBDBSchemaExtract }
 
-procedure TpFIBDBSchemaExtract.Clear;
+procedure TFIBDBSchemaExtract.Clear;
 begin
   FMetaDatabase.Clear;
 end;
 
-constructor TpFIBDBSchemaExtract.Create(AOwner: TComponent);
+constructor TFIBDBSchemaExtract.Create(AOwner: TComponent);
 begin
   inherited;
   FMetaDatabase := TMetaDataBase.Create(nil);
@@ -4252,24 +4254,24 @@ begin
 
 end;
 
-destructor TpFIBDBSchemaExtract.Destroy;
+destructor TFIBDBSchemaExtract.Destroy;
 begin
   FLoadOptions.Free;
   FMetaDatabase.Free;
   inherited;
 end;
 
-procedure TpFIBDBSchemaExtract.SetLoadOptions(const Value: TLoadOptions);
+procedure TFIBDBSchemaExtract.SetLoadOptions(const Value: TLoadOptions);
 begin
   FLoadOptions.Assign(Value);
 end;
 
-function TpFIBDBSchemaExtract.ObjectByName(ObjectType: TDBObjectType; const ObjectName: string; ForceLoad: boolean): TCustomMetaObject;
+function TFIBDBSchemaExtract.ObjectByName(ObjectType: TDBObjectType; const ObjectName: string; ForceLoad: boolean): TCustomMetaObject;
 begin
   Result := FMetaDatabase.GetDBObject(Database, ObjectType, ObjectName, ForceLoad)
 end;
 
-function TpFIBDBSchemaExtract.GetObjectDDL(ObjectType: TDBObjectType; const ObjectName: string; ForceLoad: boolean = True): string;
+function TFIBDBSchemaExtract.GetObjectDDL(ObjectType: TDBObjectType; const ObjectName: string; ForceLoad: boolean = True): string;
 var
   N: TCustomMetaObject;
 begin
@@ -4280,13 +4282,13 @@ begin
     Result := ''
 end;
 
-procedure TpFIBDBSchemaExtract.DoOnLoadMetaData(Sender: TObject; const Message: string; var Stop: boolean);
+procedure TFIBDBSchemaExtract.DoOnLoadMetaData(Sender: TObject; const Message: string; var Stop: boolean);
 begin
   if Assigned(FOnLoadMetaData) then
     FOnLoadMetaData(Sender, Message, Stop)
 end;
 
-function TpFIBDBSchemaExtract.GetDDLText: string;
+function TFIBDBSchemaExtract.GetDDLText: string;
 begin
   if not FFullLoaded then
   begin
@@ -4296,102 +4298,102 @@ begin
   Result := FMetaDatabase.AsDDL;
 end;
 
-function TpFIBDBSchemaExtract.GetDomains(const Index: Integer): TMetaDomain;
+function TFIBDBSchemaExtract.GetDomains(const Index: Integer): TMetaDomain;
 begin
   Result := FMetaDatabase.GetDomains(Index)
 end;
 
-function TpFIBDBSchemaExtract.GetDomainsCount: Integer;
+function TFIBDBSchemaExtract.GetDomainsCount: Integer;
 begin
   Result := FMetaDatabase.GetDomainsCount
 end;
 
-function TpFIBDBSchemaExtract.GetExceptions(const Index: Integer): TMetaException;
+function TFIBDBSchemaExtract.GetExceptions(const Index: Integer): TMetaException;
 begin
   Result := FMetaDatabase.GetExceptions(Index)
 end;
 
-function TpFIBDBSchemaExtract.GetExceptionsCount: Integer;
+function TFIBDBSchemaExtract.GetExceptionsCount: Integer;
 begin
   Result := FMetaDatabase.GetExceptionsCount
 end;
 
-function TpFIBDBSchemaExtract.GetGenerators(const Index: Integer): TMetaGenerator;
+function TFIBDBSchemaExtract.GetGenerators(const Index: Integer): TMetaGenerator;
 begin
   Result := FMetaDatabase.GetGenerators(Index)
 end;
 
-function TpFIBDBSchemaExtract.GetGeneratorsCount: Integer;
+function TFIBDBSchemaExtract.GetGeneratorsCount: Integer;
 begin
   Result := FMetaDatabase.GetGeneratorsCount
 end;
 
-function TpFIBDBSchemaExtract.GetPackageCount: Integer;
+function TFIBDBSchemaExtract.GetPackageCount: Integer;
 begin
   Result := FMetaDatabase.GetPackageCount
 end;
 
-function TpFIBDBSchemaExtract.GetPackages(const Index: Integer): TMetaPackage;
+function TFIBDBSchemaExtract.GetPackages(const Index: Integer): TMetaPackage;
 begin
   Result := FMetaDatabase.GetPackages(Index)
 end;
 
-function TpFIBDBSchemaExtract.GetProcedures(const Index: Integer): TMetaProcedure;
+function TFIBDBSchemaExtract.GetProcedures(const Index: Integer): TMetaProcedure;
 begin
   Result := FMetaDatabase.GetProcedures(Index)
 end;
 
-function TpFIBDBSchemaExtract.GetProceduresCount: Integer;
+function TFIBDBSchemaExtract.GetProceduresCount: Integer;
 begin
   Result := FMetaDatabase.GetProceduresCount
 end;
 
-function TpFIBDBSchemaExtract.GetFunctions(const Index: Integer): TMetaStoredFunc;
+function TFIBDBSchemaExtract.GetFunctions(const Index: Integer): TMetaStoredFunc;
 begin
   Result := FMetaDatabase.GetFunctions(Index)
 end;
 
-function TpFIBDBSchemaExtract.GetFunctionsCount: Integer;
+function TFIBDBSchemaExtract.GetFunctionsCount: Integer;
 begin
   Result := FMetaDatabase.GetFunctionsCount
 end;
 
-function TpFIBDBSchemaExtract.GetTables(const Index: Integer): TMetaTable;
+function TFIBDBSchemaExtract.GetTables(const Index: Integer): TMetaTable;
 begin
   Result := FMetaDatabase.GetTables(Index)
 end;
 
-function TpFIBDBSchemaExtract.GetTablesCount: Integer;
+function TFIBDBSchemaExtract.GetTablesCount: Integer;
 begin
   Result := FMetaDatabase.GetTablesCount
 end;
 
-function TpFIBDBSchemaExtract.GetUDFS(const Index: Integer): TMetaUDF;
+function TFIBDBSchemaExtract.GetUDFS(const Index: Integer): TMetaUDF;
 begin
   Result := FMetaDatabase.GetUDFS(Index)
 end;
 
-function TpFIBDBSchemaExtract.GetUDFSCount: Integer;
+function TFIBDBSchemaExtract.GetUDFSCount: Integer;
 begin
   Result := FMetaDatabase.GetUDFSCount
 end;
 
-function TpFIBDBSchemaExtract.GetViews(const Index: Integer): TMetaView;
+function TFIBDBSchemaExtract.GetViews(const Index: Integer): TMetaView;
 begin
   Result := FMetaDatabase.GetViews(Index)
 end;
 
-function TpFIBDBSchemaExtract.GetViewsCount: Integer;
+function TFIBDBSchemaExtract.GetViewsCount: Integer;
 begin
   Result := FMetaDatabase.GetViewsCount
 end;
 
-procedure TpFIBDBSchemaExtract.LoadObjectNames;
+procedure TFIBDBSchemaExtract.LoadObjectNames;
 begin
   LoadMetaData(True)
 end;
 
-procedure TpFIBDBSchemaExtract.LoadMetaData(OnlyNames: boolean = False);
+procedure TFIBDBSchemaExtract.LoadMetaData(OnlyNames: boolean = False);
 begin
   if Assigned(FDatabase) then
   begin
@@ -4408,12 +4410,12 @@ begin
     FIBErrorEx('%s:Can''t load metadata.', [CmpFullName(Self)]);
 end;
 
-function TpFIBDBSchemaExtract.GetMetaDataBase: TMetaDataBase;
+function TFIBDBSchemaExtract.GetMetaDataBase: TMetaDataBase;
 begin
   Result := FMetaDatabase
 end;
 
-procedure TpFIBDBSchemaExtract.Notification(AComponent: TComponent; Operation: TOperation);
+procedure TFIBDBSchemaExtract.Notification(AComponent: TComponent; Operation: TOperation);
 begin
   if (Operation = opRemove) and (AComponent = FDatabase) then
   begin
@@ -4424,7 +4426,7 @@ begin
 
 end;
 
-procedure TpFIBDBSchemaExtract.SetDatabase(const Value: TFIBDatabase);
+procedure TFIBDBSchemaExtract.SetDatabase(const Value: TFIBDatabase);
 begin
   if FDatabase <> Value then
   begin
@@ -4446,7 +4448,7 @@ begin
 
 end;
 
-function TpFIBDBSchemaExtract.GetNamesLoaded: boolean;
+function TFIBDBSchemaExtract.GetNamesLoaded: boolean;
 begin
   Result := FMetaDatabase.FNamesLoaded
 end;
@@ -4610,5 +4612,8 @@ begin
   Stream.WriteString(Format('CREATE PACKAGE %s AS ' + CLRF, [FormatName]));
   Stream.WriteString(FSpec);
 end;
+
+initialization
+  RegisterClassAlias(TFIBDBSchemaExtract, 'TpFIBDBSchemaExtract');
 
 end.

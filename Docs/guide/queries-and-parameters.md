@@ -2,7 +2,7 @@
 
 `TFIBQuery` runs one SQL statement and gives you its parameters and result rows without a `TDataSet`. This article shows how to prepare and execute statements, pass parameters, use macros and conditions, call stored procedures, and move many rows with the batch methods. For data-aware controls use a dataset instead, see [Datasets and caching](datasets-and-caching.md).
 
-The samples use these components: `Database` (`TpFIBDatabase`), `Transaction` (`TpFIBTransaction`), and `Query`, `SourceQuery`, `TargetQuery` (all `TpFIBQuery`), with `Database` and `Transaction` assigned to each query. `StoredProc` is a `TpFIBStoredProc` and `NewId` is an `Integer` variable. The samples assume that the connection is open and that `Transaction` is started, unless a sample starts it itself; see [The transaction](#the-transaction). Members of `TFIBQuery` are listed in the [reference](../reference/TFIBQuery.md).
+The samples use these components: `Database` (`TpFIBDatabase`), `Transaction` (`TpFIBTransaction`), and `Query`, `SourceQuery`, `TargetQuery` (all `TpFIBQuery`), with `Database` and `Transaction` assigned to each query. `StoredProc` is a `TFIBStoredProc` and `NewId` is an `Integer` variable. The samples assume that the connection is open and that `Transaction` is started, unless a sample starts it itself; see [The transaction](#the-transaction). Members of `TFIBQuery` are listed in the [reference](../reference/TFIBQuery.md).
 
 ## Running a statement
 
@@ -174,11 +174,11 @@ Three ways to call a procedure:
 
 | Way | When |
 |-----|------|
-| `TpFIBStoredProc` | A procedure you call often. Set `StoredProcName`; the component builds the `EXECUTE PROCEDURE` text from the metadata. |
+| `TFIBStoredProc` | A procedure you call often. Set `StoredProcName`; the component builds the `EXECUTE PROCEDURE` text from the metadata. |
 | `TpFIBQuery.ExecProcedure` | A one-off call by name from code. |
 | A `SELECT` statement | A selectable procedure that returns rows. |
 
-### TpFIBStoredProc
+### TFIBStoredProc
 
 ```delphi
 StoredProc.StoredProcName := 'ADD_CUSTOMER';
@@ -187,7 +187,7 @@ StoredProc.ExecProc;
 NewId := StoredProc.FN('NEW_ID').AsInteger;
 ```
 
-`StoredProcName` builds the statement text when the database is connected. If the database is not connected yet, the text is built when it first is needed. `ExecProc` runs the statement. See [TpFIBStoredProc](../reference/TpFIBStoredProc.md) for the members this class adds.
+`StoredProcName` builds the statement text when the database is connected. If the database is not connected yet, the text is built when it first is needed. `ExecProc` runs the statement. See [TFIBStoredProc](../reference/TFIBStoredProc.md) for the members this class adds.
 
 Output parameters are read as columns of the query (`FN`, `FieldByName`, `Fields`) after execution. `ParamByName` also finds an output parameter of a procedure call when no input parameter has that name.
 
@@ -283,7 +283,7 @@ end;
 ## See also
 
 - [TFIBQuery reference](../reference/TFIBQuery.md)
-- [TpFIBQuery](../reference/TpFIBQuery.md), [TpFIBStoredProc](../reference/TpFIBStoredProc.md)
+- [TpFIBQuery](../reference/TpFIBQuery.md), [TFIBStoredProc](../reference/TFIBStoredProc.md)
 - [Transactions](transactions.md)
 - [BLOBs and arrays](blobs-and-arrays.md)
 - [Datasets and caching](datasets-and-caching.md)

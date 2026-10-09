@@ -6,7 +6,7 @@ Query component for the component palette. It adds an error event, procedure cal
 |---|---|
 | Unit | `pFIBQuery` |
 | Inherits from | [TFIBQuery](TFIBQuery.md) |
-| Descendants | [TpFIBStoredProc](TpFIBStoredProc.md), [TpFIBUpdateObject](TpFIBUpdateObject.md) |
+| Descendants | [TFIBStoredProc](TFIBStoredProc.md), [TpFIBUpdateObject](TpFIBUpdateObject.md) |
 
 This page lists only what `TpFIBQuery` adds or changes. Preparing, executing, parameters, `Options`, and the other members are described in [TFIBQuery](TFIBQuery.md).
 
@@ -43,7 +43,7 @@ Guides: [Queries and parameters](../guide/queries-and-parameters.md).
 | `ExecProcedure(ProcName)` | Sets `SQL` to `EXECUTE PROCEDURE ProcName` and runs it. The text is not changed when it is already set. |
 | `ExecProcedure(ProcName, InputParams)` | Sets `SQL` to `EXECUTE PROCEDURE ProcName(?P0, ?P1, ...)` with one parameter for each element of `InputParams`, prepares the statement, assigns the values in order with `AsVariant`, and runs it. Read output values with `FN` or `Fields`. |
 
-`ProcName` is inserted into the text as given. It is not quoted or formatted. For a procedure whose parameters come from the database metadata, use [TpFIBStoredProc](TpFIBStoredProc.md).
+`ProcName` is inserted into the text as given. It is not quoted or formatted. For a procedure whose parameters come from the database metadata, use [TFIBStoredProc](TFIBStoredProc.md).
 
 `IsProc` (a public virtual method of `TFIBQuery`) is `True` when the left-trimmed `SQL` text begins with `EXECUTE` and a space, in any case. An `EXECUTE BLOCK` statement also counts as a procedure call.
 
@@ -92,5 +92,5 @@ end;
 ## See also
 
 - [TFIBQuery](TFIBQuery.md)
-- [TpFIBStoredProc](TpFIBStoredProc.md), [TpFIBUpdateObject](TpFIBUpdateObject.md)
+- [TFIBStoredProc](TFIBStoredProc.md), [TpFIBUpdateObject](TpFIBUpdateObject.md)
 - [Queries and parameters](../guide/queries-and-parameters.md)

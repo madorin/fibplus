@@ -344,10 +344,10 @@ var
 implementation
 
 uses
-  IB_ErrorCodes, pFIBErrorHandler, StdFuncs, StrUtil;
+  IB_ErrorCodes, FIBErrorHandler, StdFuncs, StrUtil;
 
 var
-  IBErrorHandler: TpFibErrorHandler;
+  IBErrorHandler: TFIBErrorHandler;
   TPBConstants: TStringList;
   DPBConstants: TStringList;
 
@@ -372,8 +372,8 @@ end;
 
 procedure RegisterErrorHandler(aErrorHandler: TComponent);
 begin
-  if aErrorHandler is TpFibErrorHandler then
-    IBErrorHandler := TpFibErrorHandler(aErrorHandler)
+  if aErrorHandler is TFIBErrorHandler then
+    IBErrorHandler := TFIBErrorHandler(aErrorHandler)
 end;
 
 procedure UnRegisterErrorHandler;

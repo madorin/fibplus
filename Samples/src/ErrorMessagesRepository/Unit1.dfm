@@ -214,7 +214,7 @@ object Form1: TForm1
     Left = 512
     Top = 72
   end
-  object pFibErrorHandler1: TpFibErrorHandler
+  object FIBErrorHandler1: TFIBErrorHandler
     Options = [oeException, oeForeignKey, oeLostConnect, oeCheck, oeUniqueViolation]
     Left = 544
     Top = 72

@@ -6,7 +6,7 @@ uses
   fib,
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
-  ExtCtrls, StdCtrls, Grids, DBGrids, pFIBErrorHandler, pFIBSQLLog,
+  ExtCtrls, StdCtrls, Grids, DBGrids, FIBErrorHandler, pFIBSQLLog,
   FIBQuery, pFIBQuery;
 
 type

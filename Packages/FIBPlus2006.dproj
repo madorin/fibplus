@@ -103,6 +103,7 @@
     <DCCReference Include="..\Source\pFIBDatabase.pas" />
     <DCCReference Include="..\Source\pFIBDataInfo.pas" />
     <DCCReference Include="..\Source\pFIBDataSet.pas" />
+    <DCCReference Include="..\Source\FIBErrorHandler.pas" />
     <DCCReference Include="..\Source\pFIBErrorHandler.pas" />
     <DCCReference Include="..\Source\pFIBEventLists.pas" />
     <DCCReference Include="..\Source\pFIBFieldsDescr.pas" />
@@ -111,6 +112,7 @@
     <DCCReference Include="..\Source\pFIBProps.pas" />
     <DCCReference Include="..\Source\pFIBQuery.pas" />
     <DCCReference Include="..\Source\pFIBSQLLog.pas" />
+    <DCCReference Include="..\Source\FIBStoredProc.pas" />
     <DCCReference Include="..\Source\pFIBStoredProc.pas" />
     <DCCReference Include="..\Source\pTestInfo.pas" />
     <DCCReference Include="..\Source\RegFIBPlus.pas" />
@@ -130,4 +132,4 @@
     <DCCReference Include="vcldb.dcp" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" />
-</Project>
+</Project>

@@ -175,7 +175,7 @@ The code page of text is chosen from the character set of the attachment and of 
 
 FibPlus reads the default values of the input parameters of a stored procedure with a query that depends on the ODS version. ODS 11 (*Firebird 2.0*) stores the default with the parameter; ODS 12 (*Firebird 3.0*) adds packages, and the parameters of package procedures are not read. On older ODS versions the default comes from the domain of the parameter.
 
-**Guide:** [TpFIBStoredProc](../reference/TpFIBStoredProc.md).
+**Guide:** [TFIBStoredProc](../reference/TFIBStoredProc.md).
 
 ## InterBase
 

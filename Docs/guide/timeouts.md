@@ -112,7 +112,7 @@ end;
 | `EFIBError.HasErrorCode(Code)` | `True` if the status vector contains that code |
 | `EFIBError.ErrorCodes` | Every code of the status vector; set for server errors only |
 
-If you use `TpFibErrorHandler`, `keStatementTimeout` and `keCancelled` identify these cases in `TKindIBError`.
+If you use `TFIBErrorHandler`, `keStatementTimeout` and `keCancelled` identify these cases in `TKindIBError`.
 
 ## Firebird 3 and older
 

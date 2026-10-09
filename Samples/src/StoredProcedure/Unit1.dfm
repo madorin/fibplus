@@ -40,7 +40,7 @@ object Form1: TForm1
       Width = 609
       Height = 41
       AutoSize = False
-      Caption = 'This Example demonstrate simple using TpFIBStoredProcedure. '
+      Caption = 'This Example demonstrate simple using TFIBStoredProc. '
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
       Font.Height = -11
@@ -180,7 +180,7 @@ object Form1: TForm1
     Left = 504
     Top = 72
   end
-  object spSubTotalBudget: TpFIBStoredProc
+  object spSubTotalBudget: TFIBStoredProc
     Transaction = pFIBTransaction1
     Database = db
     SQL.Strings = (

@@ -1,14 +1,14 @@
-# TpFIBScripter
+# TFIBScripter
 
 Splits an SQL script into statements and runs them one by one on a database. It understands the `SET TERM` command, conditional directives, and client commands such as `CONNECT` and `INPUT`, and sends all other statements, including session `SET` statements, to the server. Use it for DDL scripts and data scripts. To run a single statement from code, use [TpFIBQuery](TpFIBQuery.md).
 
 | | |
 |---|---|
-| Unit | `pFIBScripter` |
+| Unit | `FIBScripter` |
 | Inherits from | `TComponent` |
 | Implements | `IFIBScripter` |
 
-The example uses the components `Database` (`TpFIBDatabase`), `Scripter` (`TpFIBScripter`, with `Scripter.Database` set to `Database`), and `LogMemo` (`TMemo`).
+The example uses the components `Database` (`TpFIBDatabase`), `Scripter` (`TFIBScripter`, with `Scripter.Database` set to `Database`), and `LogMemo` (`TMemo`).
 
 ```delphi
 procedure TMainForm.ScripterExecuteError(Sender: TObject; StatementNo, Line: Integer;

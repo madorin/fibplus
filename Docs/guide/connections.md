@@ -140,7 +140,7 @@ if not Database.TestConnected then
 
 ### Lost connection
 
-`TpFIBDatabase` can handle a dropped connection: it closes the connection without calling the server, calls `OnLostConnect`, and retries with a timer. It does not detect the loss by itself. A `TpFibErrorHandler` component with `oeLostConnect` in `Options` (the default) must exist in the application, or you call `ExTestConnected`; both raise the event. In the handler you choose the action:
+`TpFIBDatabase` can handle a dropped connection: it closes the connection without calling the server, calls `OnLostConnect`, and retries with a timer. It does not detect the loss by itself. A `TFIBErrorHandler` component with `oeLostConnect` in `Options` (the default) must exist in the application, or you call `ExTestConnected`; both raise the event. In the handler you choose the action:
 
 ```delphi
 procedure TMainForm.DatabaseLostConnect(Database: TFIBDatabase; E: EFIBError;
@@ -251,7 +251,7 @@ A non-zero timeout stored in a form makes the connect fail on a server without t
 - **Login prompt without a dialog unit.** `UseLoginPrompt` needs `FIBDBLoginDlg`, `FIB_FMX_DBLoginDlg`, or your own `pFIBLoginDialog`.
 - **Opening twice.** `Open` on a connected `TFIBDatabase` raises; check `Connected` first.
 - **Restore timer in old forms.** Forms saved by versions before 7.9.1 without a value set in the Object Inspector store `WaitForRestoreConnect = 0`, so `laWaitRestore` does nothing more than `laCloseConnect`. Remove the line or set the interval.
-- **Lost connection without an error handler.** `OnLostConnect` does not fire without a `TpFibErrorHandler` or a call to `ExTestConnected`.
+- **Lost connection without an error handler.** `OnLostConnect` does not fire without a `TFIBErrorHandler` or a call to `ExTestConnected`.
 - **Idle timeouts.** A server idle timeout and the client-side `Timeout` both close the connection; they are different settings (see [Timeouts](timeouts.md)).
 
 ## See also

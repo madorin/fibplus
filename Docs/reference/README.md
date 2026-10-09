@@ -13,10 +13,10 @@ For task-oriented explanations, see the [Guide](../guide/).
 | [TpFIBDatabase](TpFIBDatabase.md) | `pFIBDatabase` | Database component with aliases, lost-connection handling, and the schema cache. |
 | [TpFIBTransaction](TpFIBTransaction.md) | `pFIBDatabase` | Transaction component with transaction modes and events. |
 | [TpFIBQuery](TpFIBQuery.md) | `pFIBQuery` | Query component with error handling for execution. |
-| [TpFIBStoredProc](TpFIBStoredProc.md) | `pFIBStoredProc` | Calls stored procedures. |
+| [TFIBStoredProc](TFIBStoredProc.md) | `FIBStoredProc` | Calls stored procedures. |
 | [TpFIBUpdateObject](TpFIBUpdateObject.md) | `pFIBQuery` | Custom statements for dataset insert, update, delete. |
 | [TpFIBDataSet](TpFIBDataSet.md) | `pFIBDataSet` | Dataset with generated SQL, options, update objects, and cached updates. |
-| [TpFIBScripter](TpFIBScripter.md) | `pFIBScripter` | Runs SQL scripts, including `SET` statements and terminators. |
+| [TFIBScripter](TFIBScripter.md) | `FIBScripter` | Runs SQL scripts, including `SET` statements and terminators. |
 | [TFIBSQLMonitor](TFIBSQLMonitor.md) | `FIBSQLMonitor` | Traces SQL activity of the library. |
 | [TpFIBClientDataSet](TpFIBClientDataSet.md) | `pFIBClientDataSet` | Client dataset and provider for multi-tier applications. |
 | [IB_Services components](TpFIBServices.md) | `IB_Services` | Service API components: backup, restore, validation, users, statistics. |

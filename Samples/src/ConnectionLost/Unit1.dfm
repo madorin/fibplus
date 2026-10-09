@@ -349,8 +349,8 @@ object Form1: TForm1
     Left = 536
     Top = 40
   end
-  object pFibErrorHandler1: TpFibErrorHandler
-    OnFIBErrorEvent = pFibErrorHandler1FIBErrorEvent
+  object FIBErrorHandler1: TFIBErrorHandler
+    OnFIBErrorEvent = FIBErrorHandler1FIBErrorEvent
     Left = 568
     Top = 40
   end

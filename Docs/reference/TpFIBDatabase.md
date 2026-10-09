@@ -83,10 +83,10 @@ The password is not stored.
 
 When the server drops the attachment (network failure, server shutdown), `TpFIBDatabase` can close the connection without calling the server, raise an event, and try to connect again. The event `OnLostConnect` is called by:
 
-- `TpFibErrorHandler`, when it recognizes a lost connection and its `oeLostConnect` option is set (the default);
+- `TFIBErrorHandler`, when it recognizes a lost connection and its `oeLostConnect` option is set (the default);
 - `ExTestConnected`.
 
-`TpFibErrorHandler` passes `laCloseConnect` as the initial `Actions`; `ExTestConnected` passes the value of its parameter. When the handler cannot tell which database is affected, it calls `OnLostConnect` of every `TpFIBDatabase` in the application. In `OnLostConnect` the handler chooses `Actions`; the component then acts on the value after the event returns:
+`TFIBErrorHandler` passes `laCloseConnect` as the initial `Actions`; `ExTestConnected` passes the value of its parameter. When the handler cannot tell which database is affected, it calls `OnLostConnect` of every `TpFIBDatabase` in the application. In `OnLostConnect` the handler chooses `Actions`; the component then acts on the value after the event returns:
 
 | Action | Effect |
 |--------|--------|

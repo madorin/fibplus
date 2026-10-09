@@ -5,7 +5,7 @@ FibPlus has four tools that tell your application, or you, what is going on:
 | Tool | Component | Use it to |
 |------|-----------|-----------|
 | Database events | `TSIBfibEventAlerter` | React to events that the server posts with `POST_EVENT` |
-| Error handling | `TpFibErrorHandler` | Classify server errors, replace messages, handle a lost connection |
+| Error handling | `TFIBErrorHandler` | Classify server errors, replace messages, handle a lost connection |
 | SQL monitor | `TFIBSQLMonitor` | Watch the statements that the library sends, live |
 | SQL log and statistics | `TFIBSQLLogger` | Write the statements to a file and measure how long they take |
 
@@ -14,7 +14,7 @@ The sections below follow this order.
 ## Requirements
 
 - `TSIBfibEventAlerter` needs a connected `TFIBDatabase`.
-- Only one `TpFibErrorHandler` can exist in an application at run time. Creating a second one raises an exception.
+- Only one `TFIBErrorHandler` can exist in an application at run time. Creating a second one raises an exception.
 - `TFIBSQLMonitor` works only in Windows builds. The unit is not compiled when `NO_MONITOR` is defined; see [TFIBSQLMonitor](../reference/TFIBSQLMonitor.md).
 - `TFIBSQLLogger` has no platform limit.
 
@@ -88,13 +88,13 @@ The first notification after a registration only initializes the event buffers. 
 
 ## Error handling
 
-Without an error handler, a server error raises `EFIBError` in the calling code. When a `TpFibErrorHandler` exists, the library passes every server error to it first. The handler:
+Without an error handler, a server error raises `EFIBError` in the calling code. When a `TFIBErrorHandler` exists, the library passes every server error to it first. The handler:
 
 1. sets `LastError` (a `TKindIBError`) and extracts details, depending on `Options`;
 2. calls `OnFIBErrorEvent`, where you can change the message or suppress the exception;
 3. lets the library raise the exception when `DoRaise` is still `True`.
 
-The unit is `pFIBErrorHandler`. Drop one `TpFibErrorHandler` on a data module or the main form. It registers itself; there are no properties to link.
+The unit is `FIBErrorHandler`. Drop one `TFIBErrorHandler` on a data module or the main form. It registers itself; there are no properties to link.
 
 ### Error kinds
 
@@ -127,7 +127,7 @@ The unit is `pFIBErrorHandler`. Drop one `TpFibErrorHandler` on a data module or
 
 ### Handle errors by kind
 
-The sample uses a `TpFibErrorHandler` named `ErrorHandler`.
+The sample uses a `TFIBErrorHandler` named `ErrorHandler`.
 
 ```delphi
 procedure TMainForm.ErrorHandlerFIBErrorEvent(Sender: TObject; ErrorValue: EFIBError;

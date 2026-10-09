@@ -81,6 +81,7 @@
 			<DCCReference Include="..\Source\pFIBDatabase.pas"/>
 			<DCCReference Include="..\Source\pFIBDataInfo.pas"/>
 			<DCCReference Include="..\Source\pFIBDataSet.pas"/>
+			<DCCReference Include="..\Source\FIBErrorHandler.pas"/>
 			<DCCReference Include="..\Source\pFIBErrorHandler.pas"/>
 			<DCCReference Include="..\Source\pFIBEventLists.pas"/>
 			<DCCReference Include="..\Source\pFIBFieldsDescr.pas"/>
@@ -89,6 +90,7 @@
 			<DCCReference Include="..\Source\pFIBProps.pas"/>
 			<DCCReference Include="..\Source\pFIBQuery.pas"/>
 			<DCCReference Include="..\Source\pFIBSQLLog.pas"/>
+			<DCCReference Include="..\Source\FIBStoredProc.pas"/>
 			<DCCReference Include="..\Source\pFIBStoredProc.pas"/>
 			<DCCReference Include="..\Source\pTestInfo.pas"/>
 			<DCCReference Include="..\Source\RegUtils.pas"/>
@@ -101,10 +103,12 @@
 			<DCCReference Include="..\Source\FIBTypes.pas"/>
 			<DCCReference Include="..\Source\FIBCharSets.pas"/>
 			<DCCReference Include="..\Source\VariantRtn.pas"/>
+			<DCCReference Include="..\Source\FIBScripter.pas"/>
 			<DCCReference Include="..\Source\pFIBScripter.pas"/>
 			<DCCReference Include="..\Source\StrUtil.pas"/>
 			<DCCReference Include="..\Source\FIBSafeTimer.pas"/>
 			<DCCReference Include="..\Source\pFIBMetaData.pas"/>
+			<DCCReference Include="..\Source\FIBDataRefresh.pas"/>
 			<DCCReference Include="..\Source\pFIBDataRefresh.pas"/>
 			<DCCReference Include="..\Source\pFIBExports.pas"/>
 			<DCCReference Include="..\Source\pFIBClientDataSet.pas"/>
