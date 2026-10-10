@@ -100,8 +100,8 @@ type
 implementation
 
 uses
-  Variants, pFIBProps;
-{ TpFIBRefresher }
+  Variants, FIBProps;
+{ TFIBTableChangesReader }
 
 (* DBSchema
 

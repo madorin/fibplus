@@ -21,30 +21,30 @@ interface
 
 uses
   SysUtils, Classes, ibase, IB_Intf, IB_Externals, FIBPlatforms,
-  DB, fib, FIBDatabase, StdFuncs, IB_ErrorCodes, SqlTxtRtns, pFIBProps,
-  pFIBInterfaces
+  DB, fib, FIBDatabase, StdFuncs, IB_ErrorCodes, SqlTxtRtns, FIBProps,
+  FIBInterfaces
 {$IFDEF SUPPORT_ARRAY_FIELD}, pFIBArray {$ENDIF}
   , FMTBcd, Variants, FIBTypes;
 
 type
-  TFIBSQLTypes = pFIBProps.TFIBSQLTypes;
+  TFIBSQLTypes = FIBProps.TFIBSQLTypes;
 
 const
-  SQLUnknown = pFIBProps.SQLUnknown;
-  SQLSelect = pFIBProps.SQLSelect;
-  SQLInsert = pFIBProps.SQLInsert;
-  SQLUpdate = pFIBProps.SQLUpdate;
-  SQLDelete = pFIBProps.SQLDelete;
-  SQLDDL = pFIBProps.SQLDDL;
-  SQLGetSegment = pFIBProps.SQLGetSegment;
-  SQLPutSegment = pFIBProps.SQLPutSegment;
-  SQLExecProcedure = pFIBProps.SQLExecProcedure;
-  SQLStartTransaction = pFIBProps.SQLStartTransaction;
-  SQLCommit = pFIBProps.SQLCommit;
-  SQLRollback = pFIBProps.SQLRollback;
-  SQLSelectForUpdate = pFIBProps.SQLSelectForUpdate;
-  SQLSetGenerator = pFIBProps.SQLSetGenerator;
-  SQLSavePointOperation = pFIBProps.SQLSavePointOperation;
+  SQLUnknown = FIBProps.SQLUnknown;
+  SQLSelect = FIBProps.SQLSelect;
+  SQLInsert = FIBProps.SQLInsert;
+  SQLUpdate = FIBProps.SQLUpdate;
+  SQLDelete = FIBProps.SQLDelete;
+  SQLDDL = FIBProps.SQLDDL;
+  SQLGetSegment = FIBProps.SQLGetSegment;
+  SQLPutSegment = FIBProps.SQLPutSegment;
+  SQLExecProcedure = FIBProps.SQLExecProcedure;
+  SQLStartTransaction = FIBProps.SQLStartTransaction;
+  SQLCommit = FIBProps.SQLCommit;
+  SQLRollback = FIBProps.SQLRollback;
+  SQLSelectForUpdate = FIBProps.SQLSelectForUpdate;
+  SQLSetGenerator = FIBProps.SQLSetGenerator;
+  SQLSavePointOperation = FIBProps.SQLSavePointOperation;
 
 type
   // Stream Events

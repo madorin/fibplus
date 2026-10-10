@@ -41,7 +41,7 @@ Guides: [Connections](../guide/connections.md), [Transactions](../guide/transact
 
 ## Published properties
 
-Available in the Object Inspector. When the component is dropped on a form at design time, `SynchronizeTime`, `UpperOldNames`, `UseLoginPrompt`, `SQLDialect`, `ConnectParams.CharSet`, and `DesignDBOptions` take their initial values from the design-time default settings (`Def*` variables of `pFIBProps`).
+Available in the Object Inspector. When the component is dropped on a form at design time, `SynchronizeTime`, `UpperOldNames`, `UseLoginPrompt`, `SQLDialect`, `ConnectParams.CharSet`, and `DesignDBOptions` take their initial values from the design-time default settings (`Def*` variables of `FIBProps`).
 
 ### Connection
 
@@ -124,7 +124,7 @@ Events are listed in [Events](#events).
 | `TDesignDBOptions` | Set of `ddoIsDefaultDatabase` (this database is the default for components created at design time; only one database can have it), `ddoStoreConnected` (store `Connected = True` in the form), `ddoNotSavePassword` (leave the password out of `DBParams` when the form is saved). |
 | `TFIBUseRepositories` | Set of `urFieldsInfo` (`FIB$FIELDS_INFO`), `urDataSetInfo` (`FIB$DATASETS_INFO`), `urErrorMessagesInfo` (`FIB$ERROR_MESSAGES`). |
 | `TFBContextSpace` | `csSystem`, `csSession`, `csTransaction`: the `SYSTEM`, `USER_SESSION`, and `USER_TRANSACTION` namespaces. |
-| `TpFIBDBEventType` | `detOnConnect`, `detBeforeDisconnect`, `detBeforeDestroy`: the lists used by `AddEvent` and `RemoveEvent`. |
+| `TFIBDatabaseEventType` | `detOnConnect`, `detBeforeDisconnect`, `detBeforeDestroy`: the lists used by `AddEvent` and `RemoveEvent`. |
 | `TActionOnIdle` | `aiCloseConnect`, `aiKeepLiveConnect`: the answer of `OnIdleConnect`. |
 | `TIBCharSets` | `set of Byte` of character set IDs. |
 | `TOnLostConnectActions` | `laTerminateApp`, `laCloseConnect`, `laIgnore`, `laWaitRestore`: what to do about a lost connection, see [Lost connection](#lost-connection). |

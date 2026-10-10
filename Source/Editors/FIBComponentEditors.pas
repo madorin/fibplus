@@ -1,4 +1,4 @@
-unit pFIBComponentEditors;
+unit FIBComponentEditors;
 
 interface
 
@@ -38,7 +38,7 @@ type
     function GetVerbCount: Integer; override;
   end;
 
-  TpFIBDeltaReceiverEditor = class(TComponentEditor)
+  TFIBDeltaReceiverEditor = class(TComponentEditor)
     procedure ExecuteVerb(Index: Integer); override;
     function GetVerb(Index: Integer): string; override;
     function GetVerbCount: Integer; override;
@@ -56,7 +56,7 @@ type
     procedure Edit; override;
   end;
 
-  TpFIBAutoUpdateOptionsEditor = class(TClassProperty)
+  TFIBAutoUpdateOptionsEditor = class(TClassProperty)
   public
     function GetAttributes: TPropertyAttributes; override;
     procedure Edit; override;
@@ -145,13 +145,13 @@ type
     procedure SaveDataSetInfo;
   end;
 
-  TpFIBSQLPropEdit = class(TClassProperty)
+  TFIBSQLPropEdit = class(TClassProperty)
   public
     function GetAttributes: TPropertyAttributes; override;
     procedure Edit; override;
   end;
 
-  TpFIBGeneratorsProperty = class(TPropertyEditor { TClassProperty } )
+  TFIBGeneratorsProperty = class(TPropertyEditor { TClassProperty } )
     function GetAttributes: TPropertyAttributes; override;
     function GetValue: string; override;
     procedure Edit; override;
@@ -160,9 +160,9 @@ type
 implementation
 
 uses
-  RegistryUtils, pFIBEditorsConsts, pFIBDBEdit, pFIBInterfaces, pFIBRepositoryOperations, EdFieldInfo, EdErrorInfo,
-  pFIBConditionsEdit, EdDataSetInfo, pFIBTrEdit, pFIBDataSetOptions,
-  pFIBAutoUpdEditor, RegFIBPlusEditors, RTTIRoutines, FIBSQLEditor,
+  RegistryUtils, FIBEditorsConsts, FIBDBEdit, FIBInterfaces, FIBRepositoryOperations, EdFieldInfo, EdErrorInfo,
+  FIBConditionsEdit, EdDataSetInfo, FIBTrEdit, FIBDataSetOptions,
+  FIBAutoUpdEditor, RegFIBPlusEditors, RTTIRoutines, FIBSQLEditor,
   EdParamToFields, FIBDataSQLEditor, uFIBScriptForm;
 
 { TFIBAliasEdit }
@@ -457,15 +457,15 @@ begin
   Result := inherited GetAttributes + [paDialog];
 end;
 
-{ TpFIBAutoUpdateOptionsEditor }
+{ TFIBAutoUpdateOptionsEditor }
 
-procedure TpFIBAutoUpdateOptionsEditor.Edit;
+procedure TFIBAutoUpdateOptionsEditor.Edit;
 begin
   if EditAutoUpdateOptions(GetComponent(0) as TDataSet) then
     Modified
 end;
 
-function TpFIBAutoUpdateOptionsEditor.GetAttributes: TPropertyAttributes;
+function TFIBAutoUpdateOptionsEditor.GetAttributes: TPropertyAttributes;
 begin
   Result := inherited GetAttributes + [paDialog, paSubProperties];
 end;
@@ -1228,9 +1228,9 @@ begin
   Result := SCompEditSQLText;
 end;
 
-{ TpFIBSQLPropEdit }
+{ TFIBSQLPropEdit }
 
-procedure TpFIBSQLPropEdit.Edit;
+procedure TFIBSQLPropEdit.Edit;
 begin
   // if GetComponent(0) is TFIBQuery then
   begin
@@ -1241,7 +1241,7 @@ begin
   end;
 end;
 
-function TpFIBSQLPropEdit.GetAttributes: TPropertyAttributes;
+function TFIBSQLPropEdit.GetAttributes: TPropertyAttributes;
 begin
   Result := inherited GetAttributes + [paDialog] - [paSubProperties];
 end;
@@ -1309,9 +1309,9 @@ begin
 
 end;
 
-{ TpFIBDeltaReceiverEditor }
+{ TFIBDeltaReceiverEditor }
 
-procedure TpFIBDeltaReceiverEditor.ExecuteVerb(Index: Integer);
+procedure TFIBDeltaReceiverEditor.ExecuteVerb(Index: Integer);
 var
   TableName: string;
   DelTableName, TriggerName: string;
@@ -1505,7 +1505,7 @@ begin
   end
 end;
 
-function TpFIBDeltaReceiverEditor.GetVerb(Index: Integer): string;
+function TFIBDeltaReceiverEditor.GetVerb(Index: Integer): string;
 var
   TableName: string;
 begin
@@ -1519,17 +1519,17 @@ begin
   end;
 end;
 
-function TpFIBDeltaReceiverEditor.GetVerbCount: Integer;
+function TFIBDeltaReceiverEditor.GetVerbCount: Integer;
 begin
   Result := 2;
 end;
 
-{ TpFIBGeneratorsProperty }
+{ TFIBGeneratorsProperty }
 
 type
   TPersistentCracker = class(TPersistent);
 
-procedure TpFIBGeneratorsProperty.Edit;
+procedure TFIBGeneratorsProperty.Edit;
 var
   Obj: TPersistent;
 begin
@@ -1540,12 +1540,12 @@ begin
     TCollection(GetOrdValue), 'GeneratorList', [coAdd, coDelete, coMove]);
 end;
 
-function TpFIBGeneratorsProperty.GetAttributes: TPropertyAttributes;
+function TFIBGeneratorsProperty.GetAttributes: TPropertyAttributes;
 begin
   Result := [paDialog, paReadOnly];
 end;
 
-function TpFIBGeneratorsProperty.GetValue: string;
+function TFIBGeneratorsProperty.GetValue: string;
 begin
   // FmtStr(Result, '(%s)', [GetPropType^.Name]);
   Result := 'TGeneratorList'

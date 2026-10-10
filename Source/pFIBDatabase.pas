@@ -11,7 +11,9 @@ type
   TpFIBDatabase = FIBDatabase.TFIBDatabase deprecated 'Use TFIBDatabase';
   TpFIBTransaction = FIBDatabase.TFIBTransaction deprecated 'Use TFIBTransaction';
   TFIBLoginEvent = FIBDatabase.TFIBLoginEvent;
-  TpFIBAcceptCacheSchema = FIBDatabase.TFIBAcceptCacheSchemaEvent;
+  TpFIBAcceptCacheSchema = FIBDatabase.TFIBAcceptCacheSchemaEvent deprecated 'Use TFIBAcceptCacheSchemaEvent';
+  TpFIBDBEventType = FIBDatabase.TFIBDatabaseEventType deprecated 'Use TFIBDatabaseEventType';
+  TpFIBTrEventType = FIBDatabase.TFIBTransactionEventType deprecated 'Use TFIBTransactionEventType';
   TOnLostConnectActions = FIBDatabase.TOnLostConnectActions;
   TFIBLostConnectEvent = FIBDatabase.TFIBLostConnectEvent;
   TFIBRestoreConnectEvent = FIBDatabase.TFIBRestoreConnectEvent;

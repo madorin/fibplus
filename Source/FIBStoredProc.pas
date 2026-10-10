@@ -50,7 +50,7 @@ type
 implementation
 
 uses
-  Classes, SysUtils, StrUtil, pFIBDataInfo;
+  Classes, SysUtils, StrUtil, FIBDataInfo;
 
 procedure TFIBStoredProc.SetStoredProcName(const Value: string);
 begin

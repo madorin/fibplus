@@ -61,8 +61,8 @@ type
 implementation
 
 uses
-  TypInfo, pFIBEditorsConsts, RTTIRoutines, RegFIBPlusEditors,
-  pFIBInterfaces, Variants;
+  TypInfo, FIBEditorsConsts, RTTIRoutines, RegFIBPlusEditors,
+  FIBInterfaces, Variants;
 
 {$R *.dfm}
 

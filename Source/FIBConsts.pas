@@ -73,7 +73,7 @@ resourcestring
   SFIBErrorNotifyEvent                  = 'Unable to add NotifyEvent';
   SFIBErrorNotifyEventIndexOut          = 'EventList: Index out of range';
   SFIBErrorNotifyEventInvalid           = 'EventList: Invalid typecast';
-  SFIBErrorHandlerExists                = 'Instance of TpFIBErroHandler already exists';
+  SFIBErrorHandlerExists                = 'Instance of TFIBErrorHandler already exists';
   SFIBErrorUnableStreamLoad             = '%s: unable to load from stream';
   SFIBErrorAbortUpdates                 = 'User abort apply updates for %s %s';
   SFIBErrorUnableGetRecordCount         = '%s unable to get number of records';

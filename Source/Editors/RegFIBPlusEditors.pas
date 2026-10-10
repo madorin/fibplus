@@ -11,7 +11,7 @@ uses
 {$ELSE}
   StdCtrls, Forms, ExtCtrls, Dialogs,
 {$ENDIF}
-  SysUtils, pFIBInterfaces, TypInfo, FIBDatabase,
+  SysUtils, FIBInterfaces, TypInfo, FIBDatabase,
   DesignEditors, DesignIntf, Variants // ,Types
 
   ;
@@ -68,7 +68,7 @@ procedure Register;
 implementation
 
 uses
-  pFIBComponentEditors, ToolsAPI, RegSynEditAlt {, FIBSplash};
+  FIBComponentEditors, ToolsAPI, RegSynEditAlt {, FIBSplash};
 
 var
   vSQLTextEditorClass: TClass;
@@ -153,7 +153,7 @@ procedure Register;
       pi := GetPropInfo(DatasetClass, 'PrepareOptions');
       RegisterPropertyEditor(pi.PropType^, nil, 'PrepareOptions', TFIBDataSetOptionsEditor);
       pi := GetPropInfo(DatasetClass, 'AutoUpdateOptions');
-      RegisterPropertyEditor(pi.PropType^, DatasetClass, 'AutoUpdateOptions', TpFIBAutoUpdateOptionsEditor);
+      RegisterPropertyEditor(pi.PropType^, DatasetClass, 'AutoUpdateOptions', TFIBAutoUpdateOptionsEditor);
 
       auClass := GetTypeData(pi^.PropType^).ClassType;
       RegisterPropertyEditor(TypeInfo(TStrings), auClass, 'ParamsToFieldsLinks', TEdParamToFields);
@@ -179,18 +179,18 @@ procedure Register;
 
       RegisterPropertyEditor(TypeInfo(string), QueryClass, 'StoredProcName', TFIBStoredProcProperty);
 
-      RegisterPropertyEditor(TypeInfo(TStrings), QueryClass, 'SQL', TpFIBSQLPropEdit);
+      RegisterPropertyEditor(TypeInfo(TStrings), QueryClass, 'SQL', TFIBSQLPropEdit);
 
       RegisterPropertyEditor(TypeInfo(string), TransactionClass, 'UserKindTransaction', TFIBTrKindEdit);
 
       pi := GetPropInfo(DatabaseClass, 'GeneratorsCache');
       auClass := GetTypeData(pi^.PropType^).ClassType;
-      RegisterPropertyEditor(TypeInfo(TOwnedCollection), auClass, 'GeneratorList', TpFIBGeneratorsProperty);
+      RegisterPropertyEditor(TypeInfo(TOwnedCollection), auClass, 'GeneratorList', TFIBGeneratorsProperty);
 
       RegisterPropertyEditor(TypeInfo(string), auClass, 'CacheFileName', TFileNameProperty);
 
       { RegisterPropertyEditor(TypeInfo(TOwnedCollection),TGeneratorsCache,
-        'Generators',   TpFIBGeneratorsProperty
+        'Generators',   TFIBGeneratorsProperty
         );
         {  RegisterPropertyEditor(TypeInfo(TCollection), TCustomDBGridEh, 'Columns', TDBGridEhColumnsProperty);
       }
@@ -201,7 +201,7 @@ procedure Register;
 
       RegisterPropertyEditor(TypeInfo(string), DeltaReceiver, 'TableName', TTableNameEditDR);
 
-      RegisterComponentEditor(TComponentClass(DeltaReceiver), TpFIBDeltaReceiverEditor);
+      RegisterComponentEditor(TComponentClass(DeltaReceiver), TFIBDeltaReceiverEditor);
 
       RegisterPropertiesInCategory('Transactions', ['*Transaction*']);
     except

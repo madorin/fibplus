@@ -703,55 +703,55 @@ end;
 {$ENDIF}
 {$DEFINE FP_STDCALL}
 
-function isc_install_clear_options_stub(hOption: POPTIONS_HANDLE): MSG_NO; {$I pFIBMacroComp.inc}
+function isc_install_clear_options_stub(hOption: POPTIONS_HANDLE): MSG_NO; {$I FIBMacroComp.inc}
 begin
   raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_install_clear_options', IB_INSTALL_DLL]));
 end;
 
 function isc_install_execute_stub(hOption: OPTIONS_HANDLE; src_dir: TEXT; dest_dir: TEXT; status_func: FP_STATUS; status_data: Pointer;
-  error_func: FP_ERROR; error_data: Pointer; uninstal_file_name: TEXT): MSG_NO; {$I pFIBMacroComp.inc}
+  error_func: FP_ERROR; error_data: Pointer; uninstal_file_name: TEXT): MSG_NO; {$I FIBMacroComp.inc}
 begin
   raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_install_execute_stub', IB_INSTALL_DLL]));
 end;
 
-function isc_install_get_info_stub(info_type: Integer; option: OPT; info_buffer: Pointer; buf_len: Cardinal): MSG_NO; {$I pFIBMacroComp.inc}
+function isc_install_get_info_stub(info_type: Integer; option: OPT; info_buffer: Pointer; buf_len: Cardinal): MSG_NO; {$I FIBMacroComp.inc}
 begin
   raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_install_get', IB_INSTALL_DLL]));
 end;
 
 function isc_install_get_message_stub(hOption: OPTIONS_HANDLE; message_no: MSG_NO; message_txt: Pointer;
-  message_len: Cardinal): MSG_NO; {$I pFIBMacroComp.inc}
+  message_len: Cardinal): MSG_NO; {$I FIBMacroComp.inc}
 begin
   raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_install_get_message', IB_INSTALL_DLL]));
 end;
 
-function isc_install_load_external_text_stub(msg_file_name: TEXT): MSG_NO; {$I pFIBMacroComp.inc}
+function isc_install_load_external_text_stub(msg_file_name: TEXT): MSG_NO; {$I FIBMacroComp.inc}
 begin
   raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_install_load_external_text', IB_INSTALL_DLL]));
 end;
 
-function isc_install_precheck_stub(hOption: OPTIONS_HANDLE; src_dir: TEXT; dest_dir: TEXT): MSG_NO; {$I pFIBMacroComp.inc}
+function isc_install_precheck_stub(hOption: OPTIONS_HANDLE; src_dir: TEXT; dest_dir: TEXT): MSG_NO; {$I FIBMacroComp.inc}
 begin
   raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_install_precheck', IB_INSTALL_DLL]));
 end;
 
-function isc_install_set_option_stub(hOption: POPTIONS_HANDLE; option: OPT): MSG_NO; {$I pFIBMacroComp.inc}
+function isc_install_set_option_stub(hOption: POPTIONS_HANDLE; option: OPT): MSG_NO; {$I FIBMacroComp.inc}
 begin
   raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_install_set_option', IB_INSTALL_DLL]));
 end;
 
 function isc_uninstall_execute_stub(uninstall_file_name: TEXT; status_func: FP_STATUS; status_data: Pointer; error_func: FP_ERROR;
-  error_data: Pointer): MSG_NO; {$I pFIBMacroComp.inc}
+  error_data: Pointer): MSG_NO; {$I FIBMacroComp.inc}
 begin
   raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_uninstall_execute', IB_INSTALL_DLL]));
 end;
 
-function isc_uninstall_precheck_stub(uninstall_file_name: TEXT): MSG_NO; {$I pFIBMacroComp.inc}
+function isc_uninstall_precheck_stub(uninstall_file_name: TEXT): MSG_NO; {$I FIBMacroComp.inc}
 begin
   raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_uninstall_precheck', IB_INSTALL_DLL]));
 end;
 
-function isc_install_unset_option_stub(hOption: POPTIONS_HANDLE; option: OPT): MSG_NO; {$I pFIBMacroComp.inc}
+function isc_install_unset_option_stub(hOption: POPTIONS_HANDLE; option: OPT): MSG_NO; {$I FIBMacroComp.inc}
 begin
   raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_install_unset_option', IB_INSTALL_DLL]));
 end;

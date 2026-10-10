@@ -79,7 +79,7 @@ procedure ShowErrorInfo(aDataBase: TComponent);
 implementation
 
 uses
-  pFIBInterfaces, RTTIRoutines, RegFIBPlusEditors;
+  FIBInterfaces, RTTIRoutines, RegFIBPlusEditors;
 
 {$R *.dfm}
 

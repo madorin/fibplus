@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase,
-  ExtCtrls, StdCtrls, Grids, DBGrids, pFIBProps, FIBQuery;
+  ExtCtrls, StdCtrls, Grids, DBGrids, FIBProps, FIBQuery;
 
 type
   TForm1 = class(TForm)

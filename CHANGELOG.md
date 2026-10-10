@@ -10,7 +10,7 @@
   `TFIBStoredProc` (unit `FIBStoredProc`), `TpFibErrorHandler` is now
   `TFIBErrorHandler` (unit `FIBErrorHandler`), `TpFIBTableChangesReader` is now
   `TFIBTableChangesReader` (unit `FIBDataRefresh`) and `TpFIBDBSchemaExtract` is
-  now `TFIBDBSchemaExtract` (unit `pFIBMetaData`). The old units `pFIBScripter`,
+  now `TFIBDBSchemaExtract` (unit `FIBMetaData`). The old units `pFIBScripter`,
   `pFIBStoredProc`, `pFIBErrorHandler` and `pFIBDataRefresh`, and the old class
   names, still work as deprecated aliases (with a compiler warning) and old DFM
   files still load, but they will be removed in a later major version: please
@@ -34,10 +34,10 @@
   `TFIBUpdateObject` and `TFIBOrderExecUO`,
   `TLockStatus`, `TLockErrorEvent`, `TCachRefreshKind`, `TOnGetSQLTextProc`,
   `TIncludeFieldsToSQL` and `FieldInArray` are now in `FIBDataSet`.
-  `TpFIBFieldInfo` and `TOnBlobFieldProcessing` moved to `pFIBProps`, so that
-  `DSContainer` no longer uses `FIBDataSet`; `pFIBDataInfo` keeps an alias of
-  `TpFIBFieldInfo`. The unit `pFIBDataSet` and the name `TpFIBDataSet` stay as
-  deprecated aliases and old DFM files still load.
+  `TFIBFieldInfo` (was `TpFIBFieldInfo`) and `TOnBlobFieldProcessing` moved to
+  `FIBProps`, so that `DSContainer` no longer uses `FIBDataSet`. The unit
+  `pFIBDataSet` and the name `TpFIBDataSet` stay as deprecated aliases and old
+  DFM files still load.
 - `TFIBDataSet`, which had no SQL generation, update objects, cached updates
   routines, record locking or visible record numbers, now behaves like
   `TpFIBDataSet` did: `CanEdit`, `CanInsert` and `CanDelete` are also true when an
@@ -57,9 +57,42 @@
   events of both classes. `TFIBLoginEvent`, `TOnLostConnectActions`,
   `TFIBLostConnectEvent`, `TFIBRestoreConnectEvent`, `TOnSQLExecute` and
   `WriteDBParamsToAlias` are now in `FIBDatabase`; `TpFIBAcceptCacheSchema` is
-  now `TFIBAcceptCacheSchemaEvent`. `TFIBSQLTypes` moved to `pFIBProps`;
+  now `TFIBAcceptCacheSchemaEvent`. `TFIBSQLTypes` moved to `FIBProps`;
   `FIBQuery` still exports it. The unit `pFIBDatabase` and the old names stay as
   deprecated aliases and old DFM files still load.
+- The units `pFIBProps`, `pFIBMetaData`, `pFIBSQLLog` and `pFIBDataInfo` are now
+  `FIBProps`, `FIBMetaData`, `FIBSQLLog` and `FIBDataInfo`. `pFIBProps`,
+  `pFIBMetaData` and `pFIBSQLLog` stay as deprecated units that export the
+  types, the values of the enumerated types and the constants of the new units;
+  the writable defaults of `FIBProps` (`DefaultOptions`, `DefaultPrepareOptions`,
+  `DefTPBMode` and the others) are only in `FIBProps`. `pFIBDataInfo` stops the
+  compilation with a message that names the new unit.
+- More types lost the `p` in their names: `TpFIBDsOption(s)` is now
+  `TFIBDataSetOption(s)`, `TpPrepareOption(s)` is now `TFIBPrepareOption(s)`,
+  `TpFIBFieldInfo` is now `TFIBFieldInfo`, `TpFIBExistObject` is now
+  `TFIBExistObject`, `TpFIBDBEventType` is now `TFIBDatabaseEventType`,
+  `TpFIBTrEventType` is now `TFIBTransactionEventType` and `TpSQLKind` is now
+  `TFIBSQLKind`. The old names are deprecated aliases in the deprecated units
+  (`pFIBProps`, `pFIBDatabase`, `pFIBDataSet`), together with
+  `TpFIBQueryOption(s)`, `TpFIBDBSchemaExtract` (`pFIBMetaData`) and
+  `TpFIBStatistics` (`pFIBSQLLog`). The repository cache classes are now
+  `TFIBTableInfo`, `TFIBTableInfoCache`, `TFIBDataSetInfo`,
+  `TFIBDataSetInfoCache`, `TFIBErrorMessage` and `TFIBErrorMessageCache` (were
+  `TpFIBTableInfo`, `TpFIBTableInfoCollect`, `TpDataSetInfo`,
+  `TpDataSetInfoCollect`, `TpErrorMessage`, `TpErrorMessagesCollect`), without
+  aliases. The design-time units `pFIBComponentEditors` and `pFIBAutoUpdEditor`
+  are now `FIBComponentEditors` and `FIBAutoUpdEditor`, and the editors
+  `TpFIBSQLPropEdit`, `TpFIBAutoUpdateOptionsEditor`, `TpFIBGeneratorsProperty`
+  and `TpFIBDeltaReceiverEditor` lost the `p` too.
+- The helper units `pFIBLists`, `pFIBCacheQueries`, `pFIBEventLists`,
+  `pFIBFieldsDescr`, `pFIBExports`, `pFIBInterfaces` and `pTestInfo` are now
+  `FIBLists`, `FIBCacheQueries`, `FIBEventLists`, `FIBFieldsDescr`,
+  `FIBExports`, `FIBInterfaces` and `FIBTestInfo`, and the include file
+  `pFIBMacroComp.inc` is now `FIBMacroComp.inc`. The old units stop the
+  compilation with a message that names the new unit. The design-time units
+  `pFIBConditionsEdit`, `pFIBDBEdit`, `pFIBDataSetOptions`, `pFIBEditorsConsts`,
+  `pFIBPreferences`, `pFIBRepositoryOperations`, `pFIBSyntaxMemo` and
+  `pFIBTrEdit` lost the `p` too.
 - `TOnSQLExecute` has the parameter `Query: TComponent` (it was `TFIBQuery`),
   and `FIBDataSets[Index]` and `FIBQueries[Index]` of the database and the
   transaction return `TDataSet` and `TComponent`.

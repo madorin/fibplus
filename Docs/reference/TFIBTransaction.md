@@ -48,10 +48,10 @@ Available in the Object Inspector.
 | `DefaultDatabase` | `TFIBDatabase` | | Main database of the transaction. Raises if the transaction is active. |
 | `TRParams` | `TStrings` | lines of `tpbReadCommitted` | Transaction parameters, one per line, exactly as they are sent. See [Transaction parameters](#transaction-parameters) and [Transaction mode](#transaction-mode). Stored in the form only when `TPBMode` is `tpbDefault`. |
 | `Timeout` | `Cardinal` | `0` | Client-side inactivity time in milliseconds. `0` disables it. See [Timeout](#timeout). |
-| `TimeoutAction` | `TTransactionAction` | `TARollback` | How the transaction ends on `Timeout`. Also used when the database disconnects and when the component is destroyed. The design-time default comes from `DefTimeOutAction` in `pFIBProps`. See [Types](#types). |
+| `TimeoutAction` | `TTransactionAction` | `TARollback` | How the transaction ends on `Timeout`. Also used when the database disconnects and when the component is destroyed. The design-time default comes from `DefTimeOutAction` in `FIBProps`. See [Types](#types). |
 | `WatchUncommitedUpdates` | `Boolean` | `False` | Track whether the transaction has uncommitted changes, see `HasUncommitedUpdates`. |
 | `CSMonitorSupport` | `TCSMonitorSupport` | | Monitoring support. Only when compiled with `CSMonitor`. |
-| `TPBMode` | `TTPBMode` | `tpbReadCommitted` | Chooses the lines of `TRParams`, see [Transaction mode](#transaction-mode). At design time the initial value of a component dropped on a form comes from `DefTPBMode` in `pFIBProps`. |
+| `TPBMode` | `TTPBMode` | `tpbReadCommitted` | Chooses the lines of `TRParams`, see [Transaction mode](#transaction-mode). At design time the initial value of a component dropped on a form comes from `DefTPBMode` in `FIBProps`. |
 | `UserKindTransaction` | `string` | `NoUserKind` | Name of a transaction kind, see [Transaction kinds](#transaction-kinds). Stored in the form only when it is not `NoUserKind`. |
 | `About` | `string` | | Library version text. Writing is ignored and the value is not stored. |
 
@@ -162,7 +162,7 @@ Do not change `TRParams` in `BeforeStart` or in `BeforeStartTransaction` of the 
 | `TOnSQLExecute` | `procedure(Query: TComponent; SQLType: TFIBSQLTypes) of object` |
 | `TTransactionAction` | `TARollback`, `TARollbackRetaining`, `TACommit`, `TACommitRetaining` |
 | `TTransactionState` | `tsActive`, `tsClosed`, `tsDoRollback`, `tsDoRollbackRetaining`, `tsDoCommit`, `tsDoCommitRetaining`; the `tsDo...` values are set while the transaction is ending |
-| `TpFIBTrEventType` | `tetBeforeStartTransaction`, `tetAfterStartTransaction`, `tetBeforeEndTransaction`, `tetAfterEndTransaction`, `tetBeforeDestroy`; selects the list for `AddEvent` and `AddEndEvent` |
+| `TFIBTransactionEventType` | `tetBeforeStartTransaction`, `tetAfterStartTransaction`, `tetBeforeEndTransaction`, `tetAfterEndTransaction`, `tetBeforeDestroy`; selects the list for `AddEvent` and `AddEndEvent` |
 | `TEndTrEvent` | `procedure(EndingTR: TFIBTransaction; Action: TTransactionAction; Force: Boolean) of object`; `Force` is `True` when the end cannot be refused (timeout, disconnect, destroy) |
 
 ## Transaction kinds

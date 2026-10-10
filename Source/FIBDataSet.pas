@@ -22,12 +22,12 @@ interface
 uses
   SysUtils, ibase, IB_Intf, ib_externals, fib,
   FIBPlatforms,
-  pFIBProps, pFIBFieldsDescr, DB, FIBCacheManage,
+  FIBProps, FIBFieldsDescr, DB, FIBCacheManage,
   DBCommon, DbConsts, DBParsers,
-  FIBDatabase, FIBQuery, FIBMiscellaneous, SqlTxtRtns, pFIBLists,
+  FIBDatabase, FIBQuery, FIBMiscellaneous, SqlTxtRtns, FIBLists,
   FIBCloneComponents,
 {$IFDEF SUPPORT_ARRAY_FIELD}pFIBArray, {$ENDIF}
-  pFIBInterfaces, pFIBEventLists, DSContainer,
+  FIBInterfaces, FIBEventLists, DSContainer,
   Classes, StdFuncs
 {$IFNDEF NO_GUI}
 {$IFDEF D_XE2}
@@ -520,7 +520,7 @@ type
   TFIBUpdateRecordTypes = set of TCachedUpdateStatus;
   TOnFetchRecord = procedure(FromQuery: TFIBQuery; RecordNumber: Integer; var StopFetching: Boolean) of object;
 
-  TpSQLKind = (skModify, skInsert, skDelete, skRefresh, skMerge);
+  TFIBSQLKind = (skModify, skInsert, skDelete, skRefresh, skMerge);
   TDispositionFieldType = (dfNormal, dfRRecNumber);
   TExtLocateOption = (eloCaseInsensitive, eloPartialKey, eloWildCards, eloInSortedDS, eloNearest, eloInFetchedRecords);
 
@@ -596,7 +596,7 @@ type
 
   TUpdateFieldStreams = (ufsCheckIsNull, ufsPost, ufsCancel, ufsClearOldValue, ufsRefresh);
   TOnFillClientBlob = procedure(DataSet: TFIBCustomDataSet; Field: TFIBBlobField; Stream: TFIBBlobStream) of object;
-  TOnBlobFieldProcessing = pFIBProps.TOnBlobFieldProcessing;
+  TOnBlobFieldProcessing = FIBProps.TOnBlobFieldProcessing;
 
   TDataSetRunStateValue = (
     drsInCacheRefresh,
@@ -689,7 +689,7 @@ type
     FUpdateRecordTypes: TFIBUpdateRecordTypes;
     FUniDirectional: Boolean;
     FOnGetRecordError: TDataSetErrorEvent;
-    FOptions: TpFIBDsOptions;
+    FOptions: TFIBDataSetOptions;
     FDetailConditions: TDetailConditions;
     vInspectRecno: Integer;
     vTypeDispositionField: TDispositionFieldType;
@@ -702,7 +702,7 @@ type
     vScrollTimer: TFIBTimer;
     FDisableCOCount: Integer;
     FDisableCalcFieldsCount: Integer;
-    FPrepareOptions: TpPrepareOptions;
+    FPrepareOptions: TFIBPrepareOptions;
     vSelectSQLTextChanged: Boolean;
     FRefreshTransactionKind: TTransactionKind;
     FAutoCommit: Boolean;
@@ -885,7 +885,7 @@ type
 
     procedure SetUpdateRecordTypes(Value: TFIBUpdateRecordTypes);
     procedure SetUniDirectional(Value: Boolean);
-    procedure SetPrepareOptions(Value: TpPrepareOptions); virtual;
+    procedure SetPrepareOptions(Value: TFIBPrepareOptions); virtual;
     procedure SetRefreshTransactionKind(const Value: TTransactionKind);
     procedure SourceChanged;
     procedure SourceDisabled;
@@ -966,7 +966,7 @@ type
 {$ENDIF}
   protected
 
-    procedure PrepareQuery(KindQuery: TpSQLKind);
+    procedure PrepareQuery(KindQuery: TFIBSQLKind);
     procedure PrepareBookMarkSize;
     procedure ClearCalcFields(Buffer: TRecordBuffer); override;
     procedure GetCalcFields(Buffer: TRecordBuffer); override;
@@ -1005,7 +1005,7 @@ type
 {$ENDIF}
     procedure SetCachedUpdates(Value: Boolean);
     procedure SetDataSource(Value: TDataSource);
-    procedure SetOptions(Value: TpFIBDsOptions);
+    procedure SetOptions(Value: TFIBDataSetOptions);
     procedure SetFieldData(Field: TField; Buffer: Pointer); override; // abstract
 
     procedure SetRealRecNo(Value: Integer; ToCenter: Boolean = false);
@@ -1154,7 +1154,7 @@ type
 
     procedure CloseOpen(const DoFetchAll: Boolean);
     procedure StartTransaction;
-    procedure BatchInput(InputObject: TFIBBatchInputStream; SQLKind: TpSQLKind = skInsert);
+    procedure BatchInput(InputObject: TFIBBatchInputStream; SQLKind: TFIBSQLKind = skInsert);
     procedure BatchOutput(OutputObject: TFIBBatchOutputStream);
     function CachedUpdateStatus: TCachedUpdateStatus;
     procedure CancelUpdates; virtual;
@@ -1351,7 +1351,7 @@ type
     property BeforeFetchRecord: TOnFetchRecord read FBeforeFetchRecord write SetBeforeFetchRecord;
     property AfterFetchRecord: TOnFetchRecord read FAfterFetchRecord write FAfterFetchRecord;
     property OnGetRecordError: TDataSetErrorEvent read FOnGetRecordError write FOnGetRecordError;
-    property Options: TpFIBDsOptions read FOptions write SetOptions
+    property Options: TFIBDataSetOptions read FOptions write SetOptions
 {$IFDEF DFM_VERSION1}
     default [poTrimCharFields, poStartTransaction, poAutoFormatFields,
       poRefreshAfterPost];
@@ -1363,7 +1363,7 @@ type
     property DetailConditions: TDetailConditions read GetDetailConditions write SetDetailConditions stored false;
 
     property UpdateTransaction: TFIBTransaction read GetUpdateTransaction write SetUpdateTransaction stored StoreUpdTransaction;
-    property PrepareOptions: TpPrepareOptions read FPrepareOptions write SetPrepareOptions stored false;
+    property PrepareOptions: TFIBPrepareOptions read FPrepareOptions write SetPrepareOptions stored false;
     property AutoCommit: Boolean read FAutoCommit write FAutoCommit default false;
     property OnFieldChange: TFieldNotifyEvent read FOnFieldChange write FOnFieldChange;
     property OnEnableControls: TDataSetNotifyEvent read FOnEnableControls write FOnEnableControls;
@@ -1450,7 +1450,7 @@ type
     function GetFIBVersion: string;
     procedure SetFIBVersion(const vs: string);
     // =Succes add to execblock
-    function AddStatementToExecuteBlock(SK: TpSQLKind): Boolean;
+    function AddStatementToExecuteBlock(SK: TFIBSQLKind): Boolean;
   protected
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     function GetVisibleRecno: Integer;
@@ -1553,13 +1553,13 @@ type
     procedure AutoGenerateSQLText(ForState: TDataSetState);
 
     function GenerateSQLText(const TableName, KeyFieldNames: string;
-      SK: TpSQLKind; IncludeFields: TIncludeFieldsToSQL = ifsAllFields;
+      SK: TFIBSQLKind; IncludeFields: TIncludeFieldsToSQL = ifsAllFields;
       ReturningFields: TSetReturningFields = []): string;
 
-    function GenerateSQLTextNoParams(const TableName, KeyFieldNames: string; SK: TpSQLKind): string;
+    function GenerateSQLTextNoParams(const TableName, KeyFieldNames: string; SK: TFIBSQLKind): string;
 
     // Where All
-    function GenerateSQLTextWA(const TableName: string; SK: TpSQLKind; IncludeFields: TIncludeFieldsToSQL = ifsAllFields): string;
+    function GenerateSQLTextWA(const TableName: string; SK: TFIBSQLKind; IncludeFields: TIncludeFieldsToSQL = ifsAllFields): string;
     procedure GenerateUpdateBlobsSQL;
     procedure GenerateSQLs;
     function CanGenerateSQLs: Boolean;
@@ -1835,8 +1835,8 @@ uses
 {$IFDEF D_XE3}
   System.Types, // for inline funcs
 {$ENDIF}
-  StrUtil, FIBConsts, pFIBDataInfo, VariantRtn, IB_ErrorCodes,
-  pFIBCacheQueries, FIBTypes, FIBCharSets;
+  StrUtil, FIBConsts, FIBDataInfo, VariantRtn, IB_ErrorCodes,
+  FIBCacheQueries, FIBTypes, FIBCharSets;
 
 const
   DiffSizesRecData = SizeOf(TRecordData) - SizeOf(TSavedRecordData);
@@ -4965,7 +4965,7 @@ begin
   Result := QSelect.Eof
 end;
 
-procedure TFIBCustomDataSet.BatchInput(InputObject: TFIBBatchInputStream; SQLKind: TpSQLKind);
+procedure TFIBCustomDataSet.BatchInput(InputObject: TFIBBatchInputStream; SQLKind: TFIBSQLKind);
 begin
   case SQLKind of
     skInsert: FQInsert.BatchInput(InputObject);
@@ -6901,7 +6901,7 @@ begin
   end;
 end;
 
-procedure TFIBCustomDataSet.SetPrepareOptions(Value: TpPrepareOptions);
+procedure TFIBCustomDataSet.SetPrepareOptions(Value: TFIBPrepareOptions);
 var
   NeedUpdateFieldsProps: Boolean;
 begin
@@ -7327,7 +7327,7 @@ function TFIBCustomDataSet.IsComputedField(Fld: Variant): Boolean;
 var
   Field: TObject;
   t: Integer;
-  fi: TpFIBFieldInfo;
+  fi: TFIBFieldInfo;
 begin
   Result := false;
   Field := nil;
@@ -7354,7 +7354,7 @@ function TFIBCustomDataSet.DomainForField(Fld: Variant): string;
 var
   Field: TObject;
   t: Integer;
-  fi: TpFIBFieldInfo;
+  fi: TFIBFieldInfo;
 begin
   Result := '';
   Field := nil;
@@ -8950,7 +8950,7 @@ begin
   Buffer := nil;
 end;
 
-procedure TFIBCustomDataSet.PrepareQuery(KindQuery: TpSQLKind);
+procedure TFIBCustomDataSet.PrepareQuery(KindQuery: TFIBSQLKind);
 var
   Qry: TFIBQuery;
   OldUpdateTransaction: TFIBTransaction;
@@ -11051,7 +11051,7 @@ var
   vPrecision: Integer;
 
   RelFieldName, RelTabName: string;
-  fi: TpFIBFieldInfo;
+  fi: TFIBFieldInfo;
   tf: TField;
 begin
   if drsInClone in FRunState then
@@ -12073,7 +12073,7 @@ begin
     FSourceLink.DataSource := Value;
 end;
 
-procedure TFIBCustomDataSet.SetOptions(Value: TpFIBDsOptions);
+procedure TFIBCustomDataSet.SetOptions(Value: TFIBDataSetOptions);
 begin
   FOptions := Value;
 {$IFDEF OBSOLETE_PROPS}
@@ -12287,7 +12287,7 @@ procedure TFIBCustomDataSet.SetFieldData(Field: TField; Buffer: Pointer);
 var
   Buff, TmpBuff: TRecordBuffer;
   BoolValue, L: Integer;
-  vfi: TpFIBFieldInfo;
+  vfi: TFIBFieldInfo;
   sp: Boolean;
   fi: PFIBFieldDescr;
   ValueCopy: TDataBuffer;
@@ -13517,7 +13517,7 @@ end;
 {$ENDIF}
 
 const
-  SQLKindNames: array [TpSQLKind] of string = (
+  SQLKindNames: array [TFIBSQLKind] of string = (
     'UpdateSQL',
     'InsertSQL',
     'DeleteSQL',
@@ -14391,7 +14391,7 @@ var
     SetLength(RecordsInExecBlock, 0);
   end;
 
-  procedure AddRecordToExecuteBlock(Kind: TpSQLKind);
+  procedure AddRecordToExecuteBlock(Kind: TFIBSQLKind);
   begin
     if not AddStatementToExecuteBlock(Kind) then
     begin
@@ -14590,7 +14590,7 @@ procedure TFIBCustomDataSet.UpdateFieldsProps;
 var
   i: integer;
   Scale: Short;
-  vFiAlias, vFi: TpFIBFieldInfo;
+  vFiAlias, vFi: TFIBFieldInfo;
   RelTable, RelField: string;
   vModifyTable: string;
   vModifyTableAlias: string;
@@ -15218,7 +15218,7 @@ begin
 end;
 {$ENDIF}
 
-function TFIBCustomDataSet.AddStatementToExecuteBlock(SK: TpSQLKind): boolean;
+function TFIBCustomDataSet.AddStatementToExecuteBlock(SK: TFIBSQLKind): boolean;
 var
   s: string;
   Size: Integer;
@@ -15287,7 +15287,7 @@ begin
   GenerateUpdateBlobsSQL;
 end;
 
-function TFIBCustomDataSet.GenerateSQLTextNoParams(const TableName, KeyFieldNames: string; SK: TpSQLKind): string;
+function TFIBCustomDataSet.GenerateSQLTextNoParams(const TableName, KeyFieldNames: string; SK: TFIBSQLKind): string;
 const
   Indent = ' ';
 var
@@ -15300,8 +15300,8 @@ var
   KeyFieldList: TList;
   FormatTableName: string;
   RelTableName: string;
-  vpFIBTableInfo: TpFIBTableInfo;
-  vFi: TpFIBFieldInfo;
+  vpFIBTableInfo: TFIBTableInfo;
+  vFi: TFIBFieldInfo;
   vFieldName: string;
   vAliasTableName: string;
   fc: integer;
@@ -15615,7 +15615,7 @@ begin
 end;
 
 function TFIBCustomDataSet.GenerateSQLText(const TableName, KeyFieldNames: string;
-  SK: TpSQLKind; IncludeFields: TIncludeFieldsToSQL = ifsAllFields;
+  SK: TFIBSQLKind; IncludeFields: TIncludeFieldsToSQL = ifsAllFields;
   ReturningFields: TSetReturningFields = []): string;
 const
   Indent = '     ';
@@ -15629,8 +15629,8 @@ var
   KeyFieldList: TList;
   FormatTableName: string;
   RelTableName: string;
-  vpFIBTableInfo: TpFIBTableInfo;
-  vFi: TpFIBFieldInfo;
+  vpFIBTableInfo: TFIBTableInfo;
+  vFi: TFIBFieldInfo;
   vFieldName: string;
   vAliasTableName: string;
   fc: integer;
@@ -15917,7 +15917,7 @@ begin
     Result := Result + CLRF + ' ROWS 1'
 end;
 
-function TFIBCustomDataSet.GenerateSQLTextWA(const TableName: string; SK: TpSQLKind;
+function TFIBCustomDataSet.GenerateSQLTextWA(const TableName: string; SK: TFIBSQLKind;
   IncludeFields: TIncludeFieldsToSQL = ifsAllFields): string; // Where All
 begin
   Result := GenerateSQLText(TableName, AllKeyFields(TableName), SK, IncludeFields)

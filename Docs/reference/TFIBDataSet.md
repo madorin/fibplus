@@ -83,8 +83,8 @@ Available in the Object Inspector. Besides the properties below, `TFIBDataSet` p
 | `DataSource` | `TDataSource` | | Master dataset source. Parameters of `SelectSQL` named like master fields are filled from it. A circular reference raises an error. |
 | `DetailConditions` | `TDetailConditions` | `[]` | How a detail dataset follows its master, see [Master-detail](#master-detail). Saved in the DFM as individual boolean entries. |
 | `FieldOriginRule` | `TFieldOriginRule` | `forTableAndFieldName` | How `Field.Origin` is filled when the dataset opens. `forNoRule` leaves it empty. |
-| `Options` | `TpFIBDsOptions` | `[poTrimCharFields, poStartTransaction, poAutoFormatFields, poRefreshAfterPost]` | Behavior flags, see [Options](#options). The default is `DefaultOptions` for a component dropped at design time and `StatDefDataSetOptions` at run time (unit `pFIBProps`). Saved in the DFM as individual boolean entries. |
-| `PrepareOptions` | `TpPrepareOptions` | `[pfImportDefaultValues, psGetOrderInfo, psUseBooleanField, psSetEmptyStrToNull]` | What the dataset reads from the metadata when it prepares, such as required fields and `BOOLEAN` and GUID mapping. The initial value is `DefaultPrepareOptions` for a component dropped at design time and `StatDefPrepareOptions` otherwise. See [Prepare options](#prepare-options). Saved in the DFM as individual boolean entries. |
+| `Options` | `TFIBDataSetOptions` | `[poTrimCharFields, poStartTransaction, poAutoFormatFields, poRefreshAfterPost]` | Behavior flags, see [Options](#options). The default is `DefaultOptions` for a component dropped at design time and `StatDefDataSetOptions` at run time (unit `FIBProps`). Saved in the DFM as individual boolean entries. |
+| `PrepareOptions` | `TFIBPrepareOptions` | `[pfImportDefaultValues, psGetOrderInfo, psUseBooleanField, psSetEmptyStrToNull]` | What the dataset reads from the metadata when it prepares, such as required fields and `BOOLEAN` and GUID mapping. The initial value is `DefaultPrepareOptions` for a component dropped at design time and `StatDefPrepareOptions` otherwise. See [Prepare options](#prepare-options). Saved in the DFM as individual boolean entries. |
 | `SQLScreenCursor` | `TCursor` | `crDefault` | Screen cursor shown during long operations: prepare, open, fetch, `FetchAll`, `Clone`, and the refresh in `cmkLimitedBufferSize`. From Delphi XE2 the change goes through `Database.DoChangeScreenCursor` and does nothing when that is not assigned. Not available when compiled with `NO_GUI`. |
 | `StatementTimeout` | `Cardinal` | `0` | Statement time limit in milliseconds, *Firebird 4+*. See [Statement timeout](#statement-timeout). |
 | `UniDirectional` | `Boolean` | `False` | Read forward only. The cache keeps a window of `BufferChunks` records instead of all rows. Can be changed only while the dataset is closed. `ReopenLocate` and `FullRefresh` (standard cache) raise. |
@@ -102,7 +102,7 @@ Available in the Object Inspector. Besides the properties below, `TFIBDataSet` p
 
 ### Default formats
 
-`TFormatFields` has five string properties. The values below are the defaults for a dataset created at run time or loaded from a form; the design-time defaults of a new component and the run-time defaults selected by `FF_UseRuntimeDefaults` come from typed constants in `pFIBProps` that have the same values.
+`TFormatFields` has five string properties. The values below are the defaults for a dataset created at run time or loaded from a form; the design-time defaults of a new component and the run-time defaults selected by `FF_UseRuntimeDefaults` come from typed constants in `FIBProps` that have the same values.
 
 | Name | Default | Applied to |
 |------|---------|------------|
@@ -116,13 +116,13 @@ The formats are used when the dataset opens, only for a field whose own `Display
 
 ## Options
 
-`Options`, `PrepareOptions`, `DetailConditions`, and `AutoUpdateOptions` are published properties; their values are defined in unit `pFIBProps`.
+`Options`, `PrepareOptions`, `DetailConditions`, and `AutoUpdateOptions` are published properties; their values are defined in unit `FIBProps`.
 
 Each flag of `Options`, `PrepareOptions`, and `DetailConditions` is stored in the form file as its own boolean entry. The entry is written only when the value differs from the standard default (or from the ancestor form, in an inherited form). The *DFM entry* column gives the name of the entry; it differs from the enumeration name for some flags.
 
 ### Dataset options
 
-`Options` is a set of `TpFIBDsOption`. The standard default is `[poTrimCharFields, poStartTransaction, poAutoFormatFields, poRefreshAfterPost]`, see [Defaults](#defaults).
+`Options` is a set of `TFIBDataSetOption`. The standard default is `[poTrimCharFields, poStartTransaction, poAutoFormatFields, poRefreshAfterPost]`, see [Defaults](#defaults).
 
 | Value | DFM entry | Effect |
 |-------|-----------|--------|
@@ -145,7 +145,7 @@ Each flag of `Options`, `PrepareOptions`, and `DetailConditions` is stored in th
 
 ### Prepare options
 
-`PrepareOptions` is a set of `TpPrepareOption`. It tells the dataset what to read from the metadata. The standard default is `[pfImportDefaultValues, psGetOrderInfo, psUseBooleanField, psSetEmptyStrToNull]`.
+`PrepareOptions` is a set of `TFIBPrepareOption`. It tells the dataset what to read from the metadata. The standard default is `[pfImportDefaultValues, psGetOrderInfo, psUseBooleanField, psSetEmptyStrToNull]`.
 
 Changing `psUseBooleanField`, `psSQLINT64ToBCD`, or `psUseLargeIntField` needs a closed dataset; when the dataset is already prepared, its field definitions are read again.
 
@@ -182,7 +182,7 @@ A key field that is filled from a generator (`WhenGetGenID`) is skipped.
 
 ### Defaults
 
-The standard defaults are the constants `StatDefDataSetOptions` and `StatDefPrepareOptions` in `pFIBProps`. The writable typed constants `DefaultOptions`, `DefaultPrepareOptions`, and `DefaultDetailConditions` start with the same values.
+The standard defaults are the constants `StatDefDataSetOptions` and `StatDefPrepareOptions` in `FIBProps`. The writable typed constants `DefaultOptions`, `DefaultPrepareOptions`, and `DefaultDetailConditions` start with the same values.
 
 | Dataset created | `Options`, `PrepareOptions` | `DetailConditions` |
 |-----------------|-----------------------------|--------------------|
@@ -191,7 +191,7 @@ The standard defaults are the constants `StatDefDataSetOptions` and `StatDefPrep
 
 `DefaultOptions`, `DefaultPrepareOptions`, and `DefaultDetailConditions` are changed by the design-time preferences, so they set the starting values of new components in the IDE only. Changing them in an application has no effect on datasets created at run time.
 
-Other writable typed constants in `pFIBProps` that affect `TFIBDataSet`:
+Other writable typed constants in `FIBProps` that affect `TFIBDataSet`:
 
 | Constant | Default | Used for |
 |----------|---------|----------|
@@ -202,7 +202,7 @@ Other writable typed constants in `pFIBProps` that affect `TFIBDataSet`:
 
 ### AutoUpdateOptions
 
-`AutoUpdateOptions` is a `TAutoUpdateOptions` object (unit `pFIBProps`). It controls generated statements, key generators, and the link between parameters and fields. All members in the first table are published.
+`AutoUpdateOptions` is a `TAutoUpdateOptions` object (unit `FIBProps`). It controls generated statements, key generators, and the link between parameters and fields. All members in the first table are published.
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
@@ -382,14 +382,14 @@ With `AutoCommit` and `CachedUpdates`, each `Post` and `Delete` runs `ApplyUpdTo
 | `TLockErrorEvent` | `procedure(DataSet: TDataSet; LockError: TLockStatus; var ErrorMessage: string; var Action: TDataAction) of object` |
 | `TLockStatus` | `lsSuccess`, `lsDeadLock`, `lsNotExist`, `lsMultiply`, `lsUnknownError` |
 | `TOnApplyDefaultValue` | `procedure(DataSet: TDataSet; Field: TField; var Applied: Boolean) of object` (unit `DSContainer`) |
-| `TOnApplyFieldRepository` | `procedure(DataSet: TDataSet; Field: TField; FieldInfo: TpFIBFieldInfo) of object` (unit `DSContainer`) |
-| `TOnBlobFieldProcessing` | `procedure(Field: TBlobField; BlobSize: Integer; Progress: Integer; var Stop: Boolean) of object` (unit `pFIBProps`) |
+| `TOnApplyFieldRepository` | `procedure(DataSet: TDataSet; Field: TField; FieldInfo: TFIBFieldInfo) of object` (unit `DSContainer`) |
+| `TOnBlobFieldProcessing` | `procedure(Field: TBlobField; BlobSize: Integer; Progress: Integer; var Stop: Boolean) of object` (unit `FIBProps`) |
 | `TOnFetchRecord` | `procedure(FromQuery: TFIBQuery; RecordNumber: Integer; var StopFetching: Boolean) of object` |
 | `TOnFillClientBlob` | `procedure(DataSet: TFIBCustomDataSet; Field: TFIBBlobField; Stream: TFIBBlobStream) of object` |
 | `TOnGetSQLTextProc` | `procedure(DataSet: TFIBDataSet; var SQLText: string) of object` |
-| `TpFIBDsOption`, `TpFIBDsOptions` | See [Dataset options](#dataset-options); set of `TpFIBDsOption` |
-| `TpPrepareOption`, `TpPrepareOptions` | See [Prepare options](#prepare-options); set of `TpPrepareOption` |
-| `TpSQLKind` | `skModify`, `skInsert`, `skDelete`, `skRefresh`, `skMerge` |
+| `TFIBDataSetOption`, `TFIBDataSetOptions` | See [Dataset options](#dataset-options); set of `TFIBDataSetOption` |
+| `TFIBPrepareOption`, `TFIBPrepareOptions` | See [Prepare options](#prepare-options); set of `TFIBPrepareOption` |
+| `TFIBSQLKind` | `skModify`, `skInsert`, `skDelete`, `skRefresh`, `skMerge` |
 | `TReturningFields`, `TSetReturningFields` | `rfAll`, `rfKeyFields`, `rfBlobFields`; set of `TReturningFields` |
 | `TSortFieldInfo` | Record: `FieldName`, `InDataSetIndex`, `InOrderIndex`, `Asc`, `NullsFirst` |
 | `TTransactionKind` | `tkReadTransaction`, `tkUpdateTransaction` |
@@ -618,7 +618,7 @@ Available when array support is compiled in.
 | `AutoGenerateSQLText(ForState)` | Generate `UpdateSQL` (`dsEdit`) or `InsertSQL` (`dsInsert`) from the changed fields, when `UpdateOnlyModifiedFields`, `KeyFields`, and `UpdateTableName` are set; then update the BLOB update object. Called before a post. |
 | `CanGenerateSQLs` | `True` when `UpdateTableName` is not empty. |
 | `GenerateSQLs` | Generate `DeleteSQL`, `UpdateSQL`, `InsertSQL`, and `RefreshSQL` from `UpdateTableName` and `KeyFields`. Fills `KeyFields` first when empty. Does nothing when no key field is found. See `CanChangeSQLs`. |
-| `GenerateSQLText(TableName, KeyFieldNames, SK, IncludeFields, ReturningFields)` | Statement text for one table and kind (`TpSQLKind`, see [Types](#types)); the code handles `skModify`, `skInsert`, `skDelete`, and `skRefresh`. `IncludeFields` is `ifsAllFields` (default), `ifsNoBlob`, or `ifsOnlyBlob`. Returns an empty string when the table is not known or `KeyFieldNames` has no field, and `No Action` when no field qualifies. Raises when no key field of the table remains. |
+| `GenerateSQLText(TableName, KeyFieldNames, SK, IncludeFields, ReturningFields)` | Statement text for one table and kind (`TFIBSQLKind`, see [Types](#types)); the code handles `skModify`, `skInsert`, `skDelete`, and `skRefresh`. `IncludeFields` is `ifsAllFields` (default), `ifsNoBlob`, or `ifsOnlyBlob`. Returns an empty string when the table is not known or `KeyFieldNames` has no field, and `No Action` when no field qualifies. Raises when no key field of the table remains. |
 | `GenerateSQLTextNoParams(TableName, KeyFieldNames, SK)` | The same for `skModify`, `skInsert`, `skDelete`, and `skRefresh`, with the current and old values written as literals. Returns an empty string when no field qualifies. |
 | `GenerateSQLTextWA(TableName, SK, IncludeFields)` | `GenerateSQLText` with `AllKeyFields(TableName)` as the key, so the `WHERE` clause compares all fields. |
 | `GenerateUpdateBlobsSQL` | With `SeparateBlobUpdate` and BLOB fields, create or update the internal update object that writes them. |
@@ -724,7 +724,7 @@ Events of `TDataSet` (`BeforeOpen`, `AfterPost`, `OnNewRecord`, and so on) are p
 | Name | Description |
 |------|-------------|
 | `OnApplyDefaultValue` | A new row gets the value of a field from its `DefaultExpression`. Set `Applied` to `True` when the handler supplies the value. See [New row defaults](#new-row-defaults). |
-| `OnApplyFieldRepository` | After the settings of `FIB$FIELDS_INFO` are applied to a field (`psApplyRepositary`). `FieldInfo` is the `TpFIBFieldInfo` of the column. |
+| `OnApplyFieldRepository` | After the settings of `FIB$FIELDS_INFO` are applied to a field (`psApplyRepositary`). `FieldInfo` is the `TFIBFieldInfo` of the column. |
 | `OnAskRecordCount` | `psAskRecordCount` needs the count query. Set `SQLText` to a query that returns the number of rows; leave it empty for the default. Its parameters are filled from the parameters of `SelectSQL` by name. |
 | `OnDeleteError`, `OnPostError` | Same as the `TDataSet` events. The handlers of the global container and the dataset's container run before them. |
 | `OnFilterRecord` | `TDataSet` event, published. Runs after the text `Filter` accepts the row, only when `Filtered` is `True`. |

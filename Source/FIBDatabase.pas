@@ -25,8 +25,8 @@ interface
 
 uses
   SysUtils, SyncObjs, Classes, DB, ibase, IB_Intf, IB_Externals,
-  pFIBProps, IBBlobFilter, Fib, pFIBEventLists, StdFuncs,
-  pFIBInterfaces, FIBPlatforms, Variants
+  FIBProps, IBBlobFilter, Fib, FIBEventLists, StdFuncs,
+  FIBInterfaces, FIBPlatforms, Variants
 {$IFDEF D_XE2}
   , System.UITypes
 {$ENDIF}
@@ -43,7 +43,7 @@ type
   TDesignDBOption = (ddoIsDefaultDatabase, ddoStoreConnected, ddoNotSavePassword);
   TDesignDBOptions = set of TDesignDBOption;
 
-  TpFIBDBEventType = (detOnConnect, detBeforeDisconnect, detBeforeDestroy);
+  TFIBDatabaseEventType = (detOnConnect, detBeforeDisconnect, detBeforeDestroy);
   TFIBUseRepository = (urFieldsInfo, urDataSetInfo, urErrorMessagesInfo);
   TFIBUseRepositories = set of TFIBUseRepository;
   TFBContextSpace = (csSystem, csSession, csTransaction);
@@ -403,7 +403,7 @@ type
     function GetServerRelease: Integer;
     function GetServerBuild: Integer;
   protected
-    function GetInternalTransaction: TFIBTransaction; // friend for pFIBDataInfo
+    function GetInternalTransaction: TFIBTransaction; // friend for FIBDataInfo
     property StreammedConnectFail: Boolean read FStreammedConnectFail;
 
   protected
@@ -456,8 +456,8 @@ type
     procedure DefineProperties(Filer: TFiler); override;
 
   public
-    procedure AddEvent(Event: TNotifyEvent; EventType: TpFIBDBEventType);
-    procedure RemoveEvent(Event: TNotifyEvent; EventType: TpFIBDBEventType);
+    procedure AddEvent(Event: TNotifyEvent; EventType: TFIBDatabaseEventType);
+    procedure RemoveEvent(Event: TNotifyEvent; EventType: TFIBDatabaseEventType);
 
     procedure RegisterBlobFilter(BlobSubType: Integer; EncodeProc, DecodeProc: PIBBlobFilterProc);
     procedure RemoveBlobFilter(BlobSubType: Integer);
@@ -777,7 +777,7 @@ type
   TTransactionRunState = (trsInLoaded);
   TTransactionRunStates = set of TTransactionRunState;
 
-  TpFIBTrEventType = (
+  TFIBTransactionEventType = (
     tetBeforeStartTransaction,
     tetAfterStartTransaction,
     tetBeforeEndTransaction,
@@ -885,11 +885,11 @@ type
 
     function MainDatabase: TFIBDatabase;
     function FindDatabase(db: TFIBDatabase): Integer;
-    procedure AddEvent(Event: TNotifyEvent; EventType: TpFIBTrEventType);
-    procedure RemoveEvent(Event: TNotifyEvent; EventType: TpFIBTrEventType);
+    procedure AddEvent(Event: TNotifyEvent; EventType: TFIBTransactionEventType);
+    procedure RemoveEvent(Event: TNotifyEvent; EventType: TFIBTransactionEventType);
 
-    procedure AddEndEvent(Event: TEndTrEvent; EventType: TpFIBTrEventType);
-    procedure RemoveEndEvent(Event: TEndTrEvent; EventType: TpFIBTrEventType);
+    procedure AddEndEvent(Event: TEndTrEvent; EventType: TFIBTransactionEventType);
+    procedure RemoveEndEvent(Event: TEndTrEvent; EventType: TFIBTransactionEventType);
 
     procedure DoOnSQLExec(Query: TComponent; Kind: TKindOnOperation); virtual;
 
@@ -1060,7 +1060,7 @@ uses
 {$IFNDEF NO_REGISTRY}
   RegUtils,
 {$ENDIF}
-  FIBMiscellaneous, pFIBDataInfo, FIBQuery, FIBDataSet, StrUtil, pFIBCacheQueries,
+  FIBMiscellaneous, FIBDataInfo, FIBQuery, FIBDataSet, StrUtil, FIBCacheQueries,
   FIBConsts, FIBTypes, FIBCharSets;
 
 type
@@ -2344,7 +2344,7 @@ begin
     FBlobFilters.IBFilterBuffer(BlobBuffer, BlobSize, BlobSubType, ForEncode);
 end;
 
-procedure TFIBDatabase.RemoveEvent(Event: TNotifyEvent; EventType: TpFIBDBEventType);
+procedure TFIBDatabase.RemoveEvent(Event: TNotifyEvent; EventType: TFIBDatabaseEventType);
 begin
   case EventType of
     detOnConnect: FAfterConnectEvents.Remove(Event);
@@ -2353,7 +2353,7 @@ begin
   end;
 end;
 
-procedure TFIBDatabase.AddEvent(Event: TNotifyEvent; EventType: TpFIBDBEventType);
+procedure TFIBDatabase.AddEvent(Event: TNotifyEvent; EventType: TFIBDatabaseEventType);
 begin
   case EventType of
     detOnConnect: FAfterConnectEvents.Add(Event);
@@ -4584,7 +4584,7 @@ end;
 
 procedure TFIBDatabase.ClearQueryCacheList;
 begin
-  pFIBCacheQueries.ClearQueryCacheList(Self)
+  FIBCacheQueries.ClearQueryCacheList(Self)
 end;
 
 procedure TFIBDatabase.CreateGUIDDomain;
@@ -4950,7 +4950,7 @@ begin
     FIBError(feNoDatabasesInTransaction, [CmpFullName(Self)]);
 end;
 
-procedure TFIBTransaction.AddEvent(Event: TNotifyEvent; EventType: TpFIBTrEventType);
+procedure TFIBTransaction.AddEvent(Event: TNotifyEvent; EventType: TFIBTransactionEventType);
 begin
   case EventType of
     tetBeforeStartTransaction: FBeforeStartTransactionEvents.Add(Event);
@@ -4961,7 +4961,7 @@ begin
   end;
 end;
 
-procedure TFIBTransaction.RemoveEvent(Event: TNotifyEvent; EventType: TpFIBTrEventType);
+procedure TFIBTransaction.RemoveEvent(Event: TNotifyEvent; EventType: TFIBTransactionEventType);
 begin
   case EventType of
     tetBeforeStartTransaction: FBeforeStartTransactionEvents.Remove(Event);
@@ -4972,7 +4972,7 @@ begin
   end;
 end;
 
-procedure TFIBTransaction.AddEndEvent(Event: TEndTrEvent; EventType: TpFIBTrEventType);
+procedure TFIBTransaction.AddEndEvent(Event: TEndTrEvent; EventType: TFIBTransactionEventType);
 begin
   case EventType of
     tetBeforeEndTransaction: FBeforeEndTransactionEvents.RegisterCallBack(TMethod(Event));
@@ -4982,7 +4982,7 @@ begin
   end;
 end;
 
-procedure TFIBTransaction.RemoveEndEvent(Event: TEndTrEvent; EventType: TpFIBTrEventType);
+procedure TFIBTransaction.RemoveEndEvent(Event: TEndTrEvent; EventType: TFIBTransactionEventType);
 begin
   case EventType of
     tetBeforeEndTransaction: FBeforeEndTransactionEvents.UnRegisterCallBack(TMethod(Event));

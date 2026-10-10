@@ -11,7 +11,7 @@ uses
 {$ELSE}
   Graphics, Controls, Forms, ComCtrls, StdCtrls, Dialogs
 {$ENDIF},
-  pFIBSyntaxMemo, uFIBEditorForm;
+  FIBSyntaxMemo, uFIBEditorForm;
 
 type
   TfrmFontEditor = class(TFIBEditorCustomForm)

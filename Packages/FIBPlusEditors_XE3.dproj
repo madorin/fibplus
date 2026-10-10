@@ -102,19 +102,19 @@
         <DCCReference Include="EdDataSetInfo.pas">
             <Form>frmEdDataSetInfo</Form>
         </DCCReference>
-        <DCCReference Include="pFIBDBEdit.pas">
+        <DCCReference Include="FIBDBEdit.pas">
             <Form>DBEditForm</Form>
         </DCCReference>
-        <DCCReference Include="pFIBTrEdit.pas">
+        <DCCReference Include="FIBTrEdit.pas">
             <Form>frmTransEdit</Form>
         </DCCReference>
-        <DCCReference Include="pFIBConditionsEdit.pas">
+        <DCCReference Include="FIBConditionsEdit.pas">
             <Form>frmEditCheckStrings</Form>
         </DCCReference>
-        <DCCReference Include="pFIBAutoUpdEditor.pas">
-            <Form>pFIBAutoUpdateOptionForm</Form>
+        <DCCReference Include="FIBAutoUpdEditor.pas">
+            <Form>FIBAutoUpdateOptionForm</Form>
         </DCCReference>
-        <DCCReference Include="pFIBDataSetOptions.pas">
+        <DCCReference Include="FIBDataSetOptions.pas">
             <Form>FPDataSetOptionsForm</Form>
         </DCCReference>
         <DCCReference Include="EdParamToFields.pas">
@@ -148,9 +148,9 @@
         <DCCReference Include="ToCodeEditor.pas"/>
         <DCCReference Include="ToCodeEditorIntfs.pas"/>
         <DCCReference Include="RTTIRoutines.pas"/>
-        <DCCReference Include="pFIBComponentEditors.pas"/>
-        <DCCReference Include="pFIBEditorsConsts.pas"/>
-        <DCCReference Include="pFIBRepositoryOperations.pas"/>
+        <DCCReference Include="FIBComponentEditors.pas"/>
+        <DCCReference Include="FIBEditorsConsts.pas"/>
+        <DCCReference Include="FIBRepositoryOperations.pas"/>
         <DCCReference Include="RegistryUtils.pas"/>
         <DCCReference Include="RegSynEditAlt.pas"/>
         <DCCReference Include="uFIBScriptForm.pas">
@@ -158,7 +158,7 @@
         </DCCReference>
         <DCCReference Include="IBSQLSyn.pas"/>
         <DCCReference Include="FindCmp.pas"/>
-        <DCCReference Include="pFIBPreferences.pas">
+        <DCCReference Include="FIBPreferences.pas">
             <Form>frmFIBPreferences</Form>
         </DCCReference>
         <DCCReference Include="uFrmSearchResult.pas">

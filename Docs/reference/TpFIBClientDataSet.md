@@ -28,7 +28,7 @@ Guides: [Datasets and caching](../guide/datasets-and-caching.md).
 
 ## Run-time properties
 
-`TpFIBClientDataSet` adds none. It implements the `ISQLObject` interface of the library (`pFIBInterfaces`), so another FibPlus object can take parameter values from it, as it does from a dataset. The interface methods are protected.
+`TpFIBClientDataSet` adds none. It implements the `ISQLObject` interface of the library (`FIBInterfaces`), so another FibPlus object can take parameter values from it, as it does from a dataset. The interface methods are protected.
 
 ## Methods
 
@@ -39,7 +39,7 @@ Guides: [Datasets and caching](../guide/datasets-and-caching.md).
 | `RollBack` | Asks the application server to roll that transaction back. Does nothing when `AppServer` is not assigned. |
 | `TransactionIsActive` | Calls the application server with the command `FIB$GET_INTRANSACTION` and returns whether the update transaction of the provider's dataset is active (the output parameter `Active`). Returns `False` when `AppServer` is not assigned; raises an error when the provider returns no `Active` parameter (a dataset that is not a `TFIBDataSet`). |
 
-`Commit` and `RollBack` call `AppServer.AS_Execute` with the command text `FIB$COMMIT` or `FIB$ROLLBACK` and the current `ProviderName`. The provider's dataset must be a `TFIBDataSet`: it recognizes these commands and runs `UpdateTransaction.Commit` or `UpdateTransaction.RollBack`. The command texts are the constants `FIBCommitCommand`, `FIBRollbackCommand` and `FIBInTransactionCommand` of `pFIBInterfaces`.
+`Commit` and `RollBack` call `AppServer.AS_Execute` with the command text `FIB$COMMIT` or `FIB$ROLLBACK` and the current `ProviderName`. The provider's dataset must be a `TFIBDataSet`: it recognizes these commands and runs `UpdateTransaction.Commit` or `UpdateTransaction.RollBack`. The command texts are the constants `FIBCommitCommand`, `FIBRollbackCommand` and `FIBInTransactionCommand` of `FIBInterfaces`.
 
 The three transaction methods send a command text to the provider. The standard `TDataSetProvider` accepts a command text from a client only when `poAllowCommandText` is in the provider's `Options`; otherwise it raises an error. This rule comes from the standard provider, not from FibPlus.
 

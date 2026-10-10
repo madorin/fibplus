@@ -9,6 +9,7 @@ uses
 
 type
   TpFIBDataSet = TFIBDataSet deprecated 'Use TFIBDataSet';
+  TpSQLKind = FIBDataSet.TFIBSQLKind deprecated 'Use TFIBSQLKind';
   TLockStatus = FIBDataSet.TLockStatus;
   TLockErrorEvent = FIBDataSet.TLockErrorEvent;
   TCachRefreshKind = FIBDataSet.TCachRefreshKind;

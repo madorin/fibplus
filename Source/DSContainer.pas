@@ -20,7 +20,7 @@ interface
 {$I FIBPlus.inc}
 
 uses
-  SysUtils, Classes, DB, pFIBProps;
+  SysUtils, Classes, DB, FIBProps;
 
 type
 
@@ -50,7 +50,7 @@ type
   TKindDataSetError = (deOnEditError, deOnPostError, deOnDeleteError);
 
   TOnApplyDefaultValue = procedure(DataSet: TDataSet; Field: TField; var Applied: Boolean) of object;
-  TOnApplyFieldRepository = procedure(DataSet: TDataSet; Field: TField; FieldInfo: TpFIBFieldInfo) of object;
+  TOnApplyFieldRepository = procedure(DataSet: TDataSet; Field: TField; FieldInfo: TFIBFieldInfo) of object;
 
   TOnDataSetEvent = procedure(DataSet: TDataSet; Event: TKindDataSetEvent) of object;
   TOnDataSetError = procedure(DataSet: TDataSet; Event: TKindDataSetError; E: EDatabaseError; var Action: TDataAction) of object;
@@ -94,7 +94,7 @@ type
 {$ENDIF}
     procedure DataSetEvent(DataSet: TDataSet; Event: TKindDataSetEvent);
     procedure DoOnApplyDefaultValue(DataSet: TDataSet; Field: TField; var Applied: Boolean);
-    procedure DoOnApplyFieldRepository(DataSet: TDataSet; Field: TField; FieldInfo: TpFIBFieldInfo);
+    procedure DoOnApplyFieldRepository(DataSet: TDataSet; Field: TField; FieldInfo: TFIBFieldInfo);
     procedure DataSetError(DataSet: TDataSet; Event: TKindDataSetError; E: EDatabaseError; var Action: TDataAction);
     function DataSetCompareFieldValues(DataSet: TDataSet; Field: TField; const S1, S2: variant; var Res: Integer): Boolean;
     procedure DoOnReadBlobField(Field: TBlobField; BlobSize: Integer; Progress: Integer; var Stop: Boolean);
@@ -270,8 +270,8 @@ begin
       if (UDA = '') or WildStringCompare
         (FastUpperCase(TDataSet(vDataSetsList[i]).Owner.Name + '.' +
           TDataSet(vDataSetsList[i]).Name), FastUpperCase(UDA)) then
-        if (TDataSet(vDataSetsList[i]) is TpFibDataSet) then
-          with TpFibDataSet(vDataSetsList[i]) do
+        if (TDataSet(vDataSetsList[i]) is TFIBDataSet) then
+          with TFIBDataSet(vDataSetsList[i]) do
             if (ReceiveEvents.Count = 0) or (WldIndexOf(ReceiveEvents, UDE, false) <> -1) then
               DoUserEvent(Sender, UDE, Info)
     end;
@@ -315,7 +315,7 @@ begin
     end;
 end;
 
-procedure TDataSetsContainer.DoOnApplyFieldRepository(DataSet: TDataSet; Field: TField; FieldInfo: TpFIBFieldInfo);
+procedure TDataSetsContainer.DoOnApplyFieldRepository(DataSet: TDataSet; Field: TField; FieldInfo: TFIBFieldInfo);
 begin
   if Assigned(FMasterContainer) then
     FMasterContainer.DoOnApplyFieldRepository(DataSet, Field, FieldInfo);

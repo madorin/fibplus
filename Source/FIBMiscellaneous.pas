@@ -300,7 +300,7 @@ uses
 {$IFDEF MACOS}
     , Posix.Unistd
 {$ENDIF}
-    , Variants, pFIBProps;
+    , Variants, FIBProps;
 
 function EquelQUADs(const Value1, Value2: TISC_QUAD): Boolean;
 begin

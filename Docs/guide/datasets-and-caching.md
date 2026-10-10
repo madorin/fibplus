@@ -175,7 +175,7 @@ begin
 end;
 ```
 
-`GeneratorStep` is the increment, `1` by default. When you set `UpdateTableName` while `GeneratorName` is empty and `WhenGetGenID` is not `wgNever`, the dataset sets `GeneratorName` to `GEN_` plus the table name plus `_ID`. The prefix and suffix are the variables `DefPrefixGenName` and `DefSufixGenName` in the unit `pFIBProps`.
+`GeneratorStep` is the increment, `1` by default. When you set `UpdateTableName` while `GeneratorName` is empty and `WhenGetGenID` is not `wgNever`, the dataset sets `GeneratorName` to `GEN_` plus the table name plus `_ID`. The prefix and suffix are the variables `DefPrefixGenName` and `DefSufixGenName` in the unit `FIBProps`.
 
 ## Cached updates
 
@@ -242,7 +242,7 @@ FibPlus runs many small internal statements: reading metadata, `GEN_ID`, and the
 CustomerName := Database.QueryValue('SELECT NAME FROM CUSTOMER WHERE ID = :ID', 0, [42]);
 ```
 
-The unit `pFIBCacheQueries` exports `GetQueryForUse` and `FreeQueryForUse` for your own code. `GetQueryForUse` returns `nil` when the transaction is `nil`, or when it has no default database and not exactly one database. The datasets do not use the cache for their own five queries; each dataset owns them.
+The unit `FIBCacheQueries` exports `GetQueryForUse` and `FreeQueryForUse` for your own code. `GetQueryForUse` returns `nil` when the transaction is `nil`, or when it has no default database and not exactly one database. The datasets do not use the cache for their own five queries; each dataset owns them.
 
 ### Clearing the query cache
 
@@ -255,7 +255,7 @@ Generated SQL and the `PrepareOptions` that read the field definitions (for exam
 - At design time the cache is not used: the entry is read again each time, so the IDE sees your changes.
 - At run time an entry stays until you clear it. **A table that you alter while the application runs is not read again.**
 
-The cache is in the unit `pFIBDataInfo`:
+The cache is in the unit `FIBDataInfo`:
 
 ```delphi
 ListTableInfo.ClearForTable('CUSTOMER');

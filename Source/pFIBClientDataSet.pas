@@ -20,7 +20,7 @@ interface
 {$I FIBPlus.inc}
 
 uses
-  pFIBInterfaces, SysUtils, Classes,
+  FIBInterfaces, SysUtils, Classes,
   Db, DbConsts, DBClient, Provider, DSIntf, MidConst, FMTBcd, Variants;
 
 {$T-,H+,X+}

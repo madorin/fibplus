@@ -12,7 +12,7 @@
 {  Please see the file License.txt for full license information }
 {***************************************************************}
 
-unit pFIBTrEdit;
+unit FIBTrEdit;
 {$I ..\FIBPlus.inc}
 
 interface
@@ -69,7 +69,7 @@ implementation
 
 uses
   Variants,
-  TypInfo, RegistryUtils, pFIBEditorsConsts, RTTIRoutines;
+  TypInfo, RegistryUtils, FIBEditorsConsts, RTTIRoutines;
 
 function EditFIBTrParams(Transaction: TComponent): boolean;
 var

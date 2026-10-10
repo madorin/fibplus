@@ -22,7 +22,7 @@ interface
 
 uses
   SysUtils, Classes, Types, FIBPlatforms, FIBDatabase, FIBQuery,
-  fib, pFIBInterfaces;
+  fib, FIBInterfaces;
 
 // {$DEFINE BEZBAZY}
 type

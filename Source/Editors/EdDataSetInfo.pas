@@ -94,7 +94,7 @@ procedure EditDSInfo(aDatabase: TComponent);
 implementation
 
 uses
-  TypInfo, RTTIRoutines, pFIBEditorsConsts, pFIBInterfaces, RegFIBPlusEditors,
+  TypInfo, RTTIRoutines, FIBEditorsConsts, FIBInterfaces, RegFIBPlusEditors,
   RegistryUtils
 {$IFDEF USE_SYN_EDIT}
     SynEdit, SynDBEdit, SynHighlighterSQL

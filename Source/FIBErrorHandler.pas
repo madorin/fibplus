@@ -21,7 +21,7 @@ interface
 
 uses
   SysUtils, Classes, fib, FIBDatabase, IB_ErrorCodes,
-  ibase, IB_Intf, IB_Externals, DB, pFIBDataInfo, FIBQuery;
+  ibase, IB_Intf, IB_Externals, DB, FIBDataInfo, FIBQuery;
 
 type
 

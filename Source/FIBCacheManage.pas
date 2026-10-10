@@ -18,7 +18,7 @@ unit FIBCacheManage;
 interface
 
 uses
-  SysUtils, pFIBLists, Classes, FIBPlatforms;
+  SysUtils, FIBLists, Classes, FIBPlatforms;
 
 {$I FIBPlus.inc}
 

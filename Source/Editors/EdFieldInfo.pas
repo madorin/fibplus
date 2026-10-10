@@ -28,7 +28,7 @@ uses
   Graphics, Controls, Forms, Dialogs, Grids, DBGrids,
   ExtCtrls, StdCtrls, DBCtrls, Buttons, Menus,
 {$ENDIF}
-  Db, pFIBInterfaces, uFIBEditorForm,
+  Db, FIBInterfaces, uFIBEditorForm,
   RegistryUtils, Variants;
 {$ENDIF}
 
@@ -90,8 +90,8 @@ procedure ShowFieldInfo(aDataBase: TComponent);
 implementation
 
 uses
-  pFIBEditorsConsts, RegFIBPlusEditors, TypInfo, RTTIRoutines,
-  pFIBRepositoryOperations;
+  FIBEditorsConsts, RegFIBPlusEditors, TypInfo, RTTIRoutines,
+  FIBRepositoryOperations;
 
 {$R *.dfm}
 

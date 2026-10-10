@@ -14,7 +14,7 @@ uses
 {$ELSE}
   Graphics, Controls, Forms, Dialogs, ComCtrls, ExtCtrls, StdCtrls, Buttons,
 {$ENDIF}
-  pFIBInterfaces, RegFIBPlusEditors, uFIBEditorForm;
+  FIBInterfaces, RegFIBPlusEditors, uFIBEditorForm;
 
 type
   TfrmScript = class(TFIBEditorCustomForm)

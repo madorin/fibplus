@@ -13,8 +13,8 @@
 {  Please see the file License.txt for full license information }
 {***************************************************************}
 {$IFDEF FIB_INTERFACE}
- FCurOption:TpFIBDsOption;
- FCurPrepareOption:TpPrepareOption;
+ FCurOption:TFIBDataSetOption;
+ FCurPrepareOption:TFIBPrepareOption;
  FCurDetailCondition :TDetailCondition;
  FLoadingPrepared    :boolean;
 

@@ -1,4 +1,4 @@
-object pFIBAutoUpdateOptionForm: TpFIBAutoUpdateOptionForm
+object FIBAutoUpdateOptionForm: TFIBAutoUpdateOptionForm
   Left = 291
   Top = 241
   BorderStyle = bsDialog

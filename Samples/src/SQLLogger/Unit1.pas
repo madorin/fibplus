@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase,
   ExtCtrls, StdCtrls, Grids, DBGrids, DBCtrls, FIBQuery,
-  pFIBSQLLog, Shellapi;
+  FIBSQLLog, Shellapi;
 
 type
   TForm1 = class(TForm)

@@ -1,4 +1,4 @@
-unit pFIBPreferences;
+unit FIBPreferences;
 
 interface
 
@@ -14,7 +14,7 @@ uses
 {$ELSE}
   Graphics, Controls, Forms, Dialogs, ComCtrls, ExtCtrls, StdCtrls,
 {$ENDIF}
-  pFIBProps, uFIBEditorForm, Variants;
+  FIBProps, uFIBEditorForm, Variants;
 
 type
   TfrmFIBPreferences = class(TFIBEditorCustomForm)

@@ -288,7 +288,7 @@ MonitorHook.SendMisc('Import started');
 
 ### Write a log
 
-Attach the logger with `Database.SQLLogger`, then switch logging on. `ActiveLogging` is `False` by default, so nothing is logged until you set it. The unit is `pFIBSQLLog`. The sample uses a `TFIBSQLLogger` named `Logger` and a `TFIBDatabase` named `Database`.
+Attach the logger with `Database.SQLLogger`, then switch logging on. `ActiveLogging` is `False` by default, so nothing is logged until you set it. The unit is `FIBSQLLog`. The sample uses a `TFIBSQLLogger` named `Logger` and a `TFIBDatabase` named `Database`.
 
 ```delphi
 Logger.ApplicationID := 'ORDERS';

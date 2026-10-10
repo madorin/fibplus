@@ -21,9 +21,9 @@ interface
 
 uses
   Classes, Sysutils, DB, DSContainer,
-  pFIBSQLLog, SIBFIBEA, pFIBMetadata, FIBDataRefresh, pFIBExports,
+  FIBSQLLog, SIBFIBEA, FIBMetadata, FIBDataRefresh, FIBExports,
 {$IFNDEF NO_MONITOR} FIBSQLMonitor, {$ENDIF} FIBErrorHandler,
-  FIBStoredProc, pFIBProps, pFIBClientDataSet {$IFDEF INC_SERVICE_SUPPORT},
+  FIBStoredProc, FIBProps, pFIBClientDataSet {$IFDEF INC_SERVICE_SUPPORT},
   IB_Services {$ENDIF}
 {$IFDEF IBINSTALL_SUPPORT}, IB_Install{$ENDIF};
 
@@ -33,7 +33,7 @@ implementation
 
 uses
 {$IFNDEF NO_REGISTRY} RegUtils, {$ENDIF} FIBDataSet, FIBQuery, FIBDatabase,
-  SqlTxtRtns, StrUtil, PFIBDataInfo, FIBScripter;
+  SqlTxtRtns, StrUtil, FIBDataInfo, FIBScripter;
 
 const
   pnFIBPlus         = 'FIBPlus';

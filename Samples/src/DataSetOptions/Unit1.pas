@@ -38,7 +38,7 @@ var
 implementation
 
 uses
-  pFIBDataSetOptions;
+  FIBDataSetOptions;
 
 {$R *.dfm}
 {$I FIBExamples.inc}

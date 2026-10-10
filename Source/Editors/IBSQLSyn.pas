@@ -3,7 +3,7 @@ unit IBSQLSyn;
 interface
 
 uses
-  SysUtils, Classes, pFIBSyntaxMemo;
+  SysUtils, Classes, FIBSyntaxMemo;
 
 {
   procedure   FIBSQLTokens(Sender: TObject;
