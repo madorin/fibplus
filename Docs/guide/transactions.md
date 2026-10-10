@@ -2,7 +2,7 @@
 
 Every statement of a Firebird or InterBase database runs inside a transaction. In FibPlus a `TFIBTransaction` component holds the transaction parameters, starts and ends the transaction, and is assigned to the queries and datasets that run in it. This article shows how to choose the isolation level, how to commit and roll back, how queries and datasets start transactions on their own, and what happens to open cursors when a transaction ends.
 
-For the members of the classes see [TFIBTransaction](../reference/TFIBTransaction.md) and [TpFIBTransaction](../reference/TpFIBTransaction.md).
+For the members of the class see [TFIBTransaction](../reference/TFIBTransaction.md).
 
 ## Requirements
 
@@ -37,11 +37,13 @@ or let the queries and datasets start it when they need it:
 
 With the option on, `ExecQuery` (and `Open` of a dataset) starts `Transaction` when it is not active. With the option off, running a statement in an inactive transaction raises `EFIBClientError`, unless every database of the transaction has `AutoReconnect` set to `True`; then the transaction is started for you. The same option starts the dataset's `UpdateTransaction` before a change is sent to the server.
 
-`TFIBTransaction.StartTransaction` raises when the transaction is already active. `TpFIBTransaction.StartTransaction` does nothing in that case.
+`StartTransaction` raises `EFIBClientError` (`feInTransaction`) when the transaction is already active, before any event runs. `Active := True` on an active transaction does nothing.
 
 ## Choosing the isolation level
 
-The isolation level, the access mode, and the lock behavior are lines in `TRParams`, one parameter per line. Names are case-insensitive, and the `isc_tpb_` prefix is optional. Write no spaces around `=`.
+The isolation level, the access mode, and the lock behavior are lines in `TRParams`, one parameter per line. Names are case-insensitive, and the `isc_tpb_` prefix is optional. Write no spaces around `=`. `TRParams` is always exactly what is sent to the server.
+
+A new transaction has `TPBMode` `tpbReadCommitted`, and `TRParams` holds the lines of that preset: `write`, `isc_tpb_nowait`, `read_committed`, `rec_version`. Without a change, the transaction starts read committed with `nowait`. See [TPBMode and TRParams](#tpbmode-and-trparams).
 
 | Need | `TRParams` |
 |------|------------|
@@ -50,8 +52,8 @@ The isolation level, the access mode, and the lock behavior are lines in `TRPara
 | Each statement reads one consistent snapshot, *Firebird 4+* | `read_committed`, `read_consistency` |
 | A stable snapshot for the whole transaction | `concurrency` |
 | Table stability | `consistency` |
-| Read only (reports, lookups) | add `read` |
-| Wait for a lock at most 5 seconds, *Firebird 2.1+* | add `lock_timeout=5` |
+| Read only (reports, lookups) | `read` with the isolation lines |
+| Wait for a lock at most 5 seconds, *Firebird 2.1+* | `lock_timeout=5` instead of `wait` or `nowait` |
 
 The full list, including table reservation, is in [Transaction parameters](../reference/TFIBTransaction.md#transaction-parameters). For what each isolation level means on the server, see the Firebird documentation.
 
@@ -62,20 +64,46 @@ Transaction.TRParams.Add('rec_version');
 Transaction.TRParams.Add('read');
 ```
 
-This sample is for a `TFIBTransaction`. A `TpFIBTransaction` replaces these lines at every start unless `TPBMode` is `tpbDefault`, see below.
+The first line you add (`read_committed`, `rec_version`, `read` above) replaces the preset lines; `Clear` is not needed on a new transaction but does no harm.
 
 `TRParams` cannot change while the transaction is active. The parameters are converted when the transaction starts, so a change takes effect with the next start.
 
-### TpFIBTransaction and TPBMode
+### TPBMode and TRParams
 
-`TpFIBTransaction` has a `TPBMode` property, and its default is `tpbReadCommitted`. In that mode, and in `tpbRepeatableRead` and `tpbReadConsistency`, every `StartTransaction` clears `TRParams` and writes its own lines. The lines for each mode are in [Transaction mode](../reference/TpFIBTransaction.md#transaction-mode).
-
-Set `TPBMode` to `tpbDefault` before you set `TRParams`, otherwise your lines are lost at the first start:
+`TPBMode` chooses a preset of `TRParams`. The presets are in [Transaction mode](../reference/TFIBTransaction.md#transaction-mode): `tpbReadCommitted` (the default), `tpbRepeatableRead`, and `tpbReadConsistency`; `tpbDefault` means your own lines.
 
 ```delphi
-Transaction.TPBMode := tpbDefault;
-Transaction.TRParams.Text := 'read_committed'#13#10'rec_version'#13#10'wait';
+Transaction.TPBMode := tpbRepeatableRead;
 ```
+
+A preset writes its lines into `TRParams`. `TPBMode` stays a preset exactly while the lines are untouched. Any change of `TRParams` makes `TPBMode` `tpbDefault`, and from then on the list is an ordinary list that no start changes. What the first change does:
+
+- `Clear`, `Text :=`, `Assign`, or `TRParams := ...` replaces the list with the new content.
+- `Add` (also `Insert`, `AddObject`, `AddStrings`) of a line that sets the access mode, the isolation level, or the lock wait (`read`, `write`, `read_committed`, `rec_version`, `no_rec_version`, `read_consistency`, `concurrency`, `consistency`, `wait`, `nowait`, `lock_timeout`) means that you write your own parameters: the preset lines are removed and the line is added.
+- `Add` of any other line, such as `no_auto_undo` or `ignore_limbo`, extends the preset.
+
+```delphi
+Transaction.TRParams.Add('no_auto_undo');
+// write, nowait, read_committed, rec_version, no_auto_undo
+```
+
+After an extra line the list is an ordinary list, so a line added later is added to the preset lines and can conflict with them. To change the access mode, the isolation level, or the wait, write those lines first, or use `Text :=`. FibPlus does not check the lines against each other; the server refuses a list that contradicts itself and `StartTransaction` raises.
+
+Every preset writes `write` and `nowait`. `lock_timeout` is refused by *Firebird 3+* together with `nowait`, so `Add('lock_timeout=5')` on a preset leaves only that line. Write read committed with a lock timeout in full:
+
+```delphi
+Transaction.TRParams.Text := 'write'#13#10'read_committed'#13#10'rec_version'#13#10'lock_timeout=5';
+```
+
+For a read-only transaction put `read` in the list, because the presets write `write`:
+
+```delphi
+Transaction.TRParams.Text := 'read'#13#10'read_committed'#13#10'rec_version';
+```
+
+Add lines with `Add` or `Text :=`. `Values['name'] := ...` for a name that is not in the list adds an empty line first, so it always extends the preset. `TPBMode := tpbDefault` on an untouched preset empties `TRParams`, which gives the server default (`concurrency`, `wait`, `write`); lines added afterwards stay as written. Setting a preset again writes its lines and drops your own.
+
+`TPBMode` and `TRParams` cannot change while the transaction is active (`feInTransaction`). Do not change `TRParams` in `BeforeStart` or in `BeforeStartTransaction` of the database: the list is not reset at each start, so a line added there is added again at the next start, and the server refuses the duplicate.
 
 ## Commit and rollback
 
@@ -154,7 +182,7 @@ DataSet.AutoCommit := True;
 DataSet.Open;
 ```
 
-The components in the sample are `ReadTransaction`, `WriteTransaction`, and a `TFIBDataSet` named `DataSet`; set `TPBMode` to `tpbDefault` on both if they are `TpFIBTransaction` components. The statement that refreshes a row after `Post` runs in `Transaction` by default. `RefreshTransactionKind` set to `tkUpdateTransaction` runs it in `UpdateTransaction`, which sees the changes the dataset has made even before they are committed.
+The components in the sample are `ReadTransaction`, `WriteTransaction`, and a `TFIBDataSet` named `DataSet`; `Text :=` gives both a list of their own. The statement that refreshes a row after `Post` runs in `Transaction` by default. `RefreshTransactionKind` set to `tkUpdateTransaction` runs it in `UpdateTransaction`, which sees the changes the dataset has made even before they are committed.
 
 `TFIBDataSet.HasUncommitedChanges` is `True` after the dataset sent a change to the server and stays so until `UpdateTransaction` is committed or rolled back, including the retaining variants. `HaveRollbackedChanges` records that such changes were rolled back; it is cleared when the dataset closes or its SQL changes.
 
@@ -201,7 +229,9 @@ The default is `TARollback`. Choose `TACommit` when the work in the transaction 
 - **A grid goes empty after `Commit`.** The dataset closed with its transaction. Use `CommitRetaining`, a separate `UpdateTransaction` with `AutoCommit`, or `poDontCloseAfterEndTransaction`.
 - **`qoAutoCommit` closes other cursors.** It commits the whole transaction. Give such a query its own transaction.
 - **A query is closed after the last row.** With `qoAutoCommit` or `qoFreeHandleAfterExecute`, `Next` closes the cursor when it passes the last row, so `Open` is `False` and `Eof` is `True` afterwards.
-- **Lost `TRParams` lines.** `TpFIBTransaction` with `TPBMode` other than `tpbDefault` replaces them at every start.
+- **Contradicting `TRParams` lines.** A line added after an extra line (for example `read` after `no_auto_undo`) is added to the preset lines, and `write` and `read` together make the server refuse the start. Use `Text :=`, or put the access, isolation, and wait lines first.
+- **`lock_timeout` on a preset.** `Add('lock_timeout=5')` leaves only that line; write the whole list.
+- **`TRParams` changed in `BeforeStart`.** A line added there is added again at every start. Set `TRParams` once, before the start.
 - **Spaces in `TRParams`.** `lock_timeout = 5` raises `EFIBClientError`; write `lock_timeout=5`.
 - **`no_savepoint`.** It shares its code with `lock_timeout`. A bare `no_savepoint` is sent as `lock_timeout=10` on *Firebird 2.1+*; do not use it for another purpose.
 - **Inactive transaction.** Without `qoStartTransaction` or `poStartTransaction`, a statement raises `EFIBClientError` ("Transaction is not active"). Start the transaction first, or set the option.
@@ -211,7 +241,6 @@ The default is `TARollback`. Choose `TACommit` when the work in the transaction 
 ## See also
 
 - [TFIBTransaction reference](../reference/TFIBTransaction.md)
-- [TpFIBTransaction reference](../reference/TpFIBTransaction.md)
 - [TFIBQuery reference](../reference/TFIBQuery.md#options)
 - [TFIBDataSet reference](../reference/TFIBDataSet.md)
 - [Timeouts](timeouts.md)

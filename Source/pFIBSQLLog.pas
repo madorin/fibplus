@@ -136,7 +136,7 @@ begin
   FLogList := TStringList.Create;
   FLogFlags := [lfQPrepare, lfQExecute, lfConnect, lfTransact];
   FExistStatTable := eoUnknown;
-  tr := TFIBTransaction.Create(Self);
+  tr := CreateInternalTransaction(nil, False, Self);
 end;
 
 destructor TFIBSQLLogger.Destroy;

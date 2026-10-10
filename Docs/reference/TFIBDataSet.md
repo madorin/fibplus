@@ -174,7 +174,7 @@ When a new row is created, each field gets its value in this order:
 3. For a `TFIBGuidField`, a new GUID.
 4. When `DefaultExpression` is not empty, `OnApplyDefaultValue` is called. If it leaves `Applied` as `False`, the value comes from the expression:
    - the text `NULL` leaves the field empty;
-   - for date and time fields, `NOW`, `CURRENT_TIME`, `CURRENT_TIMESTAMP`, `LOCALTIME`, and `LOCALTIMESTAMP` give the client time, `TODAY` and `CURRENT_DATE` the client date, and `TOMORROW` and `YESTERDAY` the next and previous date; when the database is a `TpFIBDatabase`, its `DifferenceTime` is subtracted first;
+   - for date and time fields, `NOW`, `CURRENT_TIME`, `CURRENT_TIMESTAMP`, `LOCALTIME`, and `LOCALTIMESTAMP` give the client time, `TODAY` and `CURRENT_DATE` the client date, and `TOMORROW` and `YESTERDAY` the next and previous date; the `DifferenceTime` of the database is subtracted first;
    - for string fields, `USER` and `CURRENT_USER` give the user name of the connection, `ROLE` and `CURRENT_ROLE` its role, and a quoted text gives the text without quotes;
    - any other expression is assigned as text.
 
@@ -313,7 +313,7 @@ DataSet.ApplyUpdates;
 Transaction.Commit;
 ```
 
-In both samples `DataSet` is a `TFIBDataSet`, `Database` a `TpFIBDatabase`, and `Transaction` a `TpFIBTransaction`. The second sample assumes that `UpdateSQL` is set or generated (see [AutoUpdateOptions](#autoupdateoptions)) and that `Transaction` is also the update transaction of the dataset.
+In both samples `DataSet` is a `TFIBDataSet`, `Database` a `TFIBDatabase`, and `Transaction` a `TFIBTransaction`. The second sample assumes that `UpdateSQL` is set or generated (see [AutoUpdateOptions](#autoupdateoptions)) and that `Transaction` is also the update transaction of the dataset.
 
 `ApplyUpdates` posts a pending edit, starts `UpdateTransaction` when `poStartTransaction` is set, and visits the rows from the first. For each row with a cached status of modified, inserted, or deleted it does the following:
 

@@ -2,7 +2,7 @@
 
 A FibPlus dataset reads rows from the server on demand and keeps them in a record cache, so you can scroll in both directions without another round trip. This article shows how rows are fetched, how to refresh and change them, how `TFIBDataSet` generates its own SQL, and how the query cache and the metadata cache work.
 
-The samples use these components: `Database` (`TpFIBDatabase`), `Transaction` and `UpdateTransaction` (`TFIBTransaction`), `DataSet` (`TFIBDataSet`), and in the master-detail sample `MasterDS` and `DetailDS` (`TFIBDataSet`) and `MasterSource` (`TDataSource`). Fetching, refresh, generated SQL, update objects, and `ApplyUpdates` are all members of [TFIBDataSet](../reference/TFIBDataSet.md).
+The samples use these components: `Database` (`TFIBDatabase`), `Transaction` and `UpdateTransaction` (`TFIBTransaction`), `DataSet` (`TFIBDataSet`), and in the master-detail sample `MasterDS` and `DetailDS` (`TFIBDataSet`) and `MasterSource` (`TDataSource`). Fetching, refresh, generated SQL, update objects, and `ApplyUpdates` are all members of [TFIBDataSet](../reference/TFIBDataSet.md).
 
 ## Open and fetch
 
@@ -267,7 +267,7 @@ Clearing does not change datasets that are open. The next use of the table reads
 
 ### Save the metadata to a file
 
-Reading the metadata of many tables takes time at startup. `TpFIBDatabase.CacheSchemaOptions` saves the cache to a file and loads it on the next start:
+Reading the metadata of many tables takes time at startup. `TFIBDatabase.CacheSchemaOptions` saves the cache to a file and loads it on the next start:
 
 ```delphi
 Database.CacheSchemaOptions.LocalCacheFile := 'schema.cache';
@@ -298,7 +298,7 @@ When `OnAcceptCacheSchema` is assigned and `ValidateAfterLoad` is `True`, the lo
 
 - [TFIBDataSet reference](../reference/TFIBDataSet.md)
 - [TFIBUpdateObject reference](../reference/TFIBUpdateObject.md)
-- [TpFIBDatabase reference](../reference/TpFIBDatabase.md)
+- [TFIBDatabase reference](../reference/TFIBDatabase.md)
 - [Queries and parameters](queries-and-parameters.md)
 - [Transactions](transactions.md)
 - [Timeouts](timeouts.md)

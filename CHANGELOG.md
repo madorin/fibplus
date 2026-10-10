@@ -52,6 +52,57 @@
   `TFIBDataSetOptionsEditor`. The IDE preferences of the dataset are stored
   under the registry key `FIBDataSet` instead of `pFIBDataSet`: set them again
   once in the FIBPlus preferences.
+- `TpFIBDatabase` and `TpFIBTransaction` are merged into `TFIBDatabase` and
+  `TFIBTransaction` (unit `FIBDatabase`), which publish the properties and
+  events of both classes. `TFIBLoginEvent`, `TOnLostConnectActions`,
+  `TFIBLostConnectEvent`, `TFIBRestoreConnectEvent`, `TOnSQLExecute` and
+  `WriteDBParamsToAlias` are now in `FIBDatabase`; `TpFIBAcceptCacheSchema` is
+  now `TFIBAcceptCacheSchemaEvent`. `TFIBSQLTypes` moved to `pFIBProps`;
+  `FIBQuery` still exports it. The unit `pFIBDatabase` and the old names stay as
+  deprecated aliases and old DFM files still load.
+- `TOnSQLExecute` has the parameter `Query: TComponent` (it was `TFIBQuery`),
+  and `FIBDataSets[Index]` and `FIBQueries[Index]` of the database and the
+  transaction return `TDataSet` and `TComponent`.
+- `TFIBDatabase` and `TFIBTransaction`, which had no aliases, schema cache,
+  lost-connection restore, connect and transaction events, now behave like the
+  palette classes did. `Open` on a connected database and `ForceClose` on a
+  closed one do nothing. `StartTransaction` on an active transaction raises
+  `feInTransaction` for every transaction, before any event
+  (`TpFIBTransaction` did nothing); `Active := True` still does nothing.
+  `AfterStart` and `AfterStartTransaction` are raised only when the transaction
+  started, not when the start was skipped without an error.
+  `BeforeConnect`, the schema cache and the alias work for every connection,
+  `DifferenceTime` is used for every database, and `CacheSchemaOptions :=` in
+  code copies the values.
+- `TPBMode` writes the lines of its preset into `TRParams`, and `TRParams` is
+  always exactly what is sent; any change of `TRParams` sets `TPBMode` to
+  `tpbDefault`. A new transaction has the lines of `tpbReadCommitted` instead of
+  an empty list, so a `TFIBTransaction` with untouched `TRParams` starts read
+  committed with `nowait` instead of `concurrency` and `wait`. A preset whose
+  `TRParams` were changed in code is no longer reset at the start. Adding a
+  line of access, isolation or wait (`read`, `write`, `read_committed`,
+  `rec_version`, `no_rec_version`, `read_consistency`, `concurrency`,
+  `consistency`, `wait`, `nowait`, `lock_timeout`) to a preset replaces the
+  preset lines; any other line extends them. `lock_timeout` needs the full
+  list, because *Firebird 3+* refuses it with `nowait`. `TPBMode` and `TRParams`
+  cannot change on an active transaction (`feInTransaction`), and `TRParams`
+  must not be changed in `BeforeStart`. See [Upgrading](Docs/guide/upgrading.md).
+- `TFIBTransaction.Internal` is new. The database events
+  `BeforeStartTransaction`, `AfterStartTransaction`, `BeforeEndTransaction` and
+  `AfterEndTransaction` are raised for every transaction of the database (they
+  were raised only for `TpFIBTransaction`), except those with `Internal` set to
+  `True`, which the library sets on its own transactions.
+- `TFIBErrorHandler` runs the lost-connection action on the database of the
+  failing object (a database, a query, a transaction or a BLOB stream) for every
+  `TFIBDatabase`. Without a database it pings each connected database and acts
+  only on those that report a lost connection, instead of on every database of
+  the process; a lost service connection closes no database.
+- The design-time editors `TpFIBDatabaseEditor`, `TpFIBTransactionEditor` and
+  `TpFIBTRParamsEditor` are now `TFIBDatabaseEditor`, `TFIBTransactionEditor`
+  and `TFIBTRParamsEditor`. The IDE preferences of the database and the
+  transaction are stored under the registry keys `FIBDatabase` and
+  `FIBTransaction` instead of `pFIBDataBase` and `pFIBTransaction`: set them
+  again once in the FIBPlus preferences.
 
 ## [7.9.1] - 2026-10-09
 

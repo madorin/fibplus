@@ -20,7 +20,7 @@ interface
 {$I FIBPlus.inc}
 
 uses
-  SysUtils, Classes, fib, FIBDatabase, pFIBDatabase, IB_ErrorCodes,
+  SysUtils, Classes, fib, FIBDatabase, IB_ErrorCodes,
   ibase, IB_Intf, IB_Externals, DB, pFIBDataInfo, FIBQuery;
 
 type
@@ -96,7 +96,7 @@ function IsConnectionLost(const IBErrorCode: integer): boolean;
 implementation
 
 uses
-  FIBConsts, StrUtil;
+  FIBConsts, FIBMiscellaneous, StrUtil;
 
 constructor TFIBErrorHandler.Create(AOwner: TComponent);
 begin
@@ -140,6 +140,8 @@ begin
     Result := THackDatabase(TFIBQuery(Sender).DataBase)
   else if Sender is TFIBTransaction then
     Result := THackDatabase(TFIBTransaction(Sender).MainDatabase)
+  else if Sender is TFIBFieldStream then
+    Result := THackDatabase(TFIBFieldStream(Sender).Database)
   else
     Result := nil;
 end;
@@ -343,36 +345,48 @@ begin
     Result := nil;
 end;
 
-type
-  THackpFIBDatabase = class(TpFIBDatabase);
-
 procedure TFIBErrorHandler.DoOnLostConnect(DataBase: TFIBDatabase; ErrorValue: EFIBError; var DoRaise: boolean);
 var
   i: integer;
   Actions: TOnLostConnectActions;
+  Databases: TList;
+  LostDatabase: THackDatabase;
+  Listed: boolean;
 begin
-  if DataBase = nil then
-    with DatabaseList.LockList do
+  if DataBase <> nil then
+  begin
+    Actions := laCloseConnect;
+    THackDatabase(DataBase).DoOnLostConnect(DataBase, ErrorValue, Actions, DoRaise);
+    Exit;
+  end;
+  // a copy: the ping and the handlers run without the list lock
+  Databases := TList.Create;
+  try
+    try
+      Databases.Assign(DatabaseList.LockList);
+    finally
+      DatabaseList.UnlockList;
+    end;
+    for i := 0 to Databases.Count - 1 do
+    begin
+      // a handler may have freed it
       try
-        for i := 0 to Pred(Count) do
-          if TFIBDatabase(Items[i]) is TpFIBDatabase then
-            with THackpFIBDatabase(Items[i]) do
-            begin
-              { if not Connected then
-                Continue; }
-              Actions := laCloseConnect;
-              DoOnLostConnect(TFIBDatabase(Items[i]), ErrorValue, Actions, DoRaise);
-            end;
+        Listed := DatabaseList.LockList.IndexOf(Databases[i]) >= 0;
       finally
         DatabaseList.UnlockList;
-      end
-  else
-    // if Database.Connected then
-    if DataBase is TpFIBDatabase then
-    begin
-      Actions := laCloseConnect;
-      THackpFIBDatabase(DataBase).DoOnLostConnect(DataBase, ErrorValue, Actions, DoRaise)
+      end;
+      if not Listed then
+        Continue;
+      LostDatabase := THackDatabase(Databases[i]);
+      if LostDatabase.Connected and IsConnectionLost(LostDatabase.PingAttachment) then
+      begin
+        Actions := laCloseConnect;
+        LostDatabase.DoOnLostConnect(LostDatabase, ErrorValue, Actions, DoRaise);
+      end;
     end;
+  finally
+    Databases.Free;
+  end;
 end;
 
 procedure TFIBErrorHandler.DoOnErrorEvent(Sender: TObject; ErrorValue: EFIBError; var DoRaise: boolean);
@@ -386,7 +400,7 @@ begin
     if (LastError = keLostConnect) and (not DoRaise) then
     begin
       vDB := FindDatabaseForObject(Sender);
-      if not(Assigned(vDB) and (vDB is TpFIBDatabase) and TpFIBDatabase(vDB).InRestoreConnect) then
+      if not(Assigned(vDB) and vDB.InRestoreConnect) then
         Abort;
     end;
   end;

@@ -16,7 +16,7 @@ This article covers the server-side timeouts first, then the client-side ones.
 | `Session.StatementTimeout`, `Session.IdleTimeout` | *Firebird 4+* |
 | `TFIBQuery.StatementTimeout`, `TFIBDataSet.StatementTimeout` | *Firebird 4+* **and** a `fbclient` 4+ library (`fb_dsql_set_timeout`) |
 
-The samples use `Database` (a `TpFIBDatabase`) and `Query` and `Report` (two `TFIBQuery` components), with `Database` and a transaction assigned.
+The samples use `Database` (a `TFIBDatabase`) and `Query` and `Report` (two `TFIBQuery` components), with `Database` and a transaction assigned.
 
 Check what is available at run time:
 
@@ -81,7 +81,7 @@ Database.Session.IdleTimeout := 600; // close after 10 minutes without activity
 ```
 
 - The value is **not** sent at design time, so the IDE connection is not closed under you.
-- When the server closes the attachment, your application sees a lost connection. `TpFIBDatabase` does not detect it by itself; see [Lost connection](connections.md#lost-connection) for the handler it needs.
+- When the server closes the attachment, your application sees a lost connection. `TFIBDatabase` does not detect it by itself; see [Lost connection](connections.md#lost-connection) for the handler it needs.
 - This is separate from the client-side [`TFIBDatabase.Timeout`](#client-side-timeouts).
 
 ## Reading and re-applying session values

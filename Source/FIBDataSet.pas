@@ -1836,7 +1836,7 @@ uses
   System.Types, // for inline funcs
 {$ENDIF}
   StrUtil, FIBConsts, pFIBDataInfo, VariantRtn, IB_ErrorCodes,
-  pFIBCacheQueries, FIBTypes, FIBCharSets, pFIBDatabase;
+  pFIBCacheQueries, FIBTypes, FIBCharSets;
 
 const
   DiffSizesRecData = SizeOf(TRecordData) - SizeOf(TSavedRecordData);
@@ -2916,8 +2916,7 @@ begin
       if not TR.Active then
         begin
           ForceTR := True;
-          TR := TFIBTransaction.Create(Self);
-          TR.DefaultDatabase := DB;
+          TR := CreateInternalTransaction(DB, True, Self);
           TR.StartTransaction
         end
       else
@@ -3076,8 +3075,7 @@ begin
       if not TR.Active then
         begin
           ForceTR := True;
-          TR := TFIBTransaction.Create(Self);
-          TR.DefaultDatabase := DB;
+          TR := CreateInternalTransaction(DB, True, Self);
           TR.StartTransaction
         end
       else
@@ -13878,8 +13876,8 @@ begin
     IncGenerator
   else if (FAutoUpdateOptions.WhenGetGenID = wgBeforePost) and (KeyField <> nil) then
     KeyField.Required := False;
-  if Database is TpFIBDataBase then
-    vDifferenceTime := TpFIBDataBase(Database).DifferenceTime
+  if Database <> nil then
+    vDifferenceTime := Database.DifferenceTime
   else
     vDifferenceTime := 0;
   for i := 0 to Pred(FieldCount) do

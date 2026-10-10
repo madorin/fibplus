@@ -2,7 +2,7 @@
 
 `TFIBQuery` runs one SQL statement and gives you its parameters and result rows without a `TDataSet`. This article shows how to prepare and execute statements, pass parameters, use macros and conditions, call stored procedures, and move many rows with the batch methods. For data-aware controls use a dataset instead, see [Datasets and caching](datasets-and-caching.md).
 
-The samples use these components: `Database` (`TpFIBDatabase`), `Transaction` (`TpFIBTransaction`), and `Query`, `SourceQuery`, `TargetQuery` (all `TFIBQuery`), with `Database` and `Transaction` assigned to each query. `StoredProc` is a `TFIBStoredProc` and `NewId` is an `Integer` variable. The samples assume that the connection is open and that `Transaction` is started, unless a sample starts it itself; see [The transaction](#the-transaction). Members of `TFIBQuery` are listed in the [reference](../reference/TFIBQuery.md).
+The samples use these components: `Database` (`TFIBDatabase`), `Transaction` (`TFIBTransaction`), and `Query`, `SourceQuery`, `TargetQuery` (all `TFIBQuery`), with `Database` and `Transaction` assigned to each query. `StoredProc` is a `TFIBStoredProc` and `NewId` is an `Integer` variable. The samples assume that the connection is open and that `Transaction` is started, unless a sample starts it itself; see [The transaction](#the-transaction). Members of `TFIBQuery` are listed in the [reference](../reference/TFIBQuery.md).
 
 ## Running a statement
 

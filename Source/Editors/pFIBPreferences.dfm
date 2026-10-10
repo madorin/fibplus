@@ -374,7 +374,7 @@ object frmFIBPreferences: TfrmFIBPreferences
       end
     end
     object TabSheet1: TTabSheet
-      Caption = 'TpFIBDatabase'
+      Caption = 'TFIBDatabase'
       object Label6: TLabel
         Left = 12
         Top = 116
@@ -479,7 +479,7 @@ object frmFIBPreferences: TfrmFIBPreferences
       end
     end
     object TabSheet2: TTabSheet
-      Caption = 'TpFIBTransaction'
+      Caption = 'TFIBTransaction'
       object Label1: TLabel
         Left = 7
         Top = 20

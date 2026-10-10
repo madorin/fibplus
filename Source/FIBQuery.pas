@@ -27,6 +27,26 @@ uses
   , FMTBcd, Variants, FIBTypes;
 
 type
+  TFIBSQLTypes = pFIBProps.TFIBSQLTypes;
+
+const
+  SQLUnknown = pFIBProps.SQLUnknown;
+  SQLSelect = pFIBProps.SQLSelect;
+  SQLInsert = pFIBProps.SQLInsert;
+  SQLUpdate = pFIBProps.SQLUpdate;
+  SQLDelete = pFIBProps.SQLDelete;
+  SQLDDL = pFIBProps.SQLDDL;
+  SQLGetSegment = pFIBProps.SQLGetSegment;
+  SQLPutSegment = pFIBProps.SQLPutSegment;
+  SQLExecProcedure = pFIBProps.SQLExecProcedure;
+  SQLStartTransaction = pFIBProps.SQLStartTransaction;
+  SQLCommit = pFIBProps.SQLCommit;
+  SQLRollback = pFIBProps.SQLRollback;
+  SQLSelectForUpdate = pFIBProps.SQLSelectForUpdate;
+  SQLSetGenerator = pFIBProps.SQLSetGenerator;
+  SQLSavePointOperation = pFIBProps.SQLSavePointOperation;
+
+type
   // Stream Events
   TCallBackBlobReadWrite = procedure(BlobSize: integer; BytesProcessing: integer; var Stop: boolean) of object;
 
@@ -369,23 +389,6 @@ type
   TFIBBatchOutputStreamClass = class of TFIBBatchOutputStream;
 
   // TFIBQuery
-  TFIBSQLTypes = (
-    SQLUnknown,
-    SQLSelect,
-    SQLInsert,
-    SQLUpdate,
-    SQLDelete,
-    SQLDDL,
-    SQLGetSegment,
-    SQLPutSegment,
-    SQLExecProcedure,
-    SQLStartTransaction,
-    SQLCommit,
-    SQLRollback,
-    SQLSelectForUpdate,
-    SQLSetGenerator,
-    SQLSavePointOperation
-  );
 
   TOnSQLFetch = procedure(RecordNumber: integer; var StopFetching: boolean) of object;
 

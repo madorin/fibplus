@@ -140,8 +140,8 @@ procedure Register;
       if pi <> nil then
         RegisterPropertyEditor(pi.PropType^, DatabaseClass, 'OnLogin', nil);
 
-      RegisterComponentEditor(TComponentClass(DatabaseClass), TpFIBDatabaseEditor);
-      RegisterComponentEditor(TComponentClass(TransactionClass), TpFIBTransactionEditor);
+      RegisterComponentEditor(TComponentClass(DatabaseClass), TFIBDatabaseEditor);
+      RegisterComponentEditor(TComponentClass(TransactionClass), TFIBTransactionEditor);
       RegisterComponentEditor(TComponentClass(QueryClass), TFIBQueryEditor);
       RegisterComponentEditor(TComponentClass(DatasetClass), TFIBGenSQlEd);
 
@@ -194,7 +194,7 @@ procedure Register;
         );
         {  RegisterPropertyEditor(TypeInfo(TCollection), TCustomDBGridEh, 'Columns', TDBGridEhColumnsProperty);
       }
-      RegisterPropertyEditor(TypeInfo(TStrings), TransactionClass, 'TRParams', TpFIBTRParamsEditor);
+      RegisterPropertyEditor(TypeInfo(TStrings), TransactionClass, 'TRParams', TFIBTRParamsEditor);
 
       if Assigned(expServicesClass) then
         RegisterPropertyEditor(TypeInfo(string), expServicesClass, 'LibraryName', TFileNameProperty);

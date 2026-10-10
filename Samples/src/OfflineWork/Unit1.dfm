@@ -114,7 +114,7 @@ object Form1: TForm1
       OnClick = Button2Click
     end
   end
-  object db: TpFIBDatabase
+  object db: TFIBDatabase
     AutoReconnect = True
     DBName = 
       'localhost:D:\serge\Plus_demos\Voinov\FIBPlusExamples\db\EMPLOYEE' +
@@ -136,7 +136,7 @@ object Form1: TForm1
     Left = 504
     Top = 8
   end
-  object tr: TpFIBTransaction
+  object tr: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 536

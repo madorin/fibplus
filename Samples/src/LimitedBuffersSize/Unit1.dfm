@@ -137,7 +137,7 @@ object Form1: TForm1
     TabOrder = 3
     OnClick = Button1Click
   end
-  object db: TpFIBDatabase
+  object db: TFIBDatabase
     DBName = 
       'localhost:E:\nv\documents\0000\devrace\FIBPlusExamples\db\EMPLOY' +
       'EE.FDB'
@@ -155,7 +155,7 @@ object Form1: TForm1
     Left = 456
     Top = 8
   end
-  object tr: TpFIBTransaction
+  object tr: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 488

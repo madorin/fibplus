@@ -65,7 +65,7 @@ type
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCreate(Sender: TObject);
   private
-    pFIBTransaction1: TComponent;
+    InfoTransaction: TComponent;
     qryAllErrors, qryConstraints, qryUniqueIndices, qryErrorMessages: TDataSet;
   public
     { Public declarations }
@@ -102,19 +102,19 @@ begin
   ts := TStringList.Create;
   with frmErrors do
     try
-      pFIBTransaction1 := expTransactionClass.Create(frmErrors);
-      SetObjectProp(pFIBTransaction1, 'DefaultDataBase', aDataBase);
-      SetEnumProp(pFIBTransaction1, 'TimeoutAction', 'TACommitRetaining');
+      InfoTransaction := expTransactionClass.Create(frmErrors);
+      SetObjectProp(InfoTransaction, 'DefaultDataBase', aDataBase);
+      SetEnumProp(InfoTransaction, 'TimeoutAction', 'TACommitRetaining');
 
       qryAllErrors := TDataSet(expDatasetClass.Create(frmErrors));
       qryConstraints := TDataSet(expDatasetClass.Create(frmErrors));
       qryUniqueIndices := TDataSet(expDatasetClass.Create(frmErrors));
       qryErrorMessages := TDataSet(expDatasetClass.Create(frmErrors));
 
-      PrepareDataSetProps(qryAllErrors, aDataBase, pFIBTransaction1);
-      PrepareDataSetProps(qryConstraints, aDataBase, pFIBTransaction1);
-      PrepareDataSetProps(qryUniqueIndices, aDataBase, pFIBTransaction1);
-      PrepareDataSetProps(qryErrorMessages, aDataBase, pFIBTransaction1);
+      PrepareDataSetProps(qryAllErrors, aDataBase, InfoTransaction);
+      PrepareDataSetProps(qryConstraints, aDataBase, InfoTransaction);
+      PrepareDataSetProps(qryUniqueIndices, aDataBase, InfoTransaction);
+      PrepareDataSetProps(qryErrorMessages, aDataBase, InfoTransaction);
 
       qryErrorMessages.OnFilterRecord := qryErrorMessagesFilterRecord;
       qryConstraints.OnFilterRecord := qryConstraintsFilterRecord;

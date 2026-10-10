@@ -422,16 +422,8 @@ begin
     // Connected:=True;
   end;
 
-  FTransaction := TFIBTransaction.Create(nil);
-  with FTransaction do
-  begin
-    DefaultDatabase := FDatabase;
-    Name := 'trValidateBlobCache';
-    TRParams.Add('read');
-    TRParams.Add('isc_tpb_nowait');
-    TRParams.Add('read_committed');
-    TRParams.Add('rec_version');
-  end;
+  FTransaction := CreateInternalTransaction(FDatabase, True);
+  FTransaction.Name := 'trValidateBlobCache';
   FCacheDir := Database.BlobSwapSupport.SwapDirectory;
   FreeOnTerminate := True;
   inherited Create(False);

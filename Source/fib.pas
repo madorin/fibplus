@@ -976,6 +976,7 @@ procedure GenerateTPB(sl: TStrings; var TPB: AnsiString; var TPBLength: Short; I
 var
   i, j, TPBVal, ParamLength: Integer;
   param_name, param_value: AnsiString;
+  Line: string;
   LT: Word;
 begin
   TPB := '';
@@ -988,13 +989,13 @@ begin
     end;
   for i := 0 to sl.Count - 1 do
     begin
-      sl[i] := FastTrim(sl[i]);
-      if sl[i] = '' then
+      Line := FastTrim(sl[i]);
+      if Line = '' then
         begin
           Dec(TPBLength);
           Continue;
         end;
-      GetNameAndValue(sl[i], param_name, param_value);
+      GetNameAndValue(Line, param_name, param_value);
       DoLowerCase(param_name);
 
       if (Pos(TPBPrefix, param_name) = 1) then

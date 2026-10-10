@@ -391,7 +391,7 @@ begin
   DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBDataSet',
     'Other'], ['DefPrefixGenName', 'DefSufixGenName'], [EdPrefixGen.Text, EdSufixGen.Text]);
 
-  DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'pFIBDataBase'],
+  DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBDatabase'],
     ['DialectC', 'CharSetC', 'UseLoginPrompt', 'UpperOldNames',
     'SynchronizeTime', 'StoreConnected', 'CloseDesignConnectAfterRun'],
     [DialectC.ItemIndex + 1, CharSetC.Text, chUseLoginPrompt.Checked,
@@ -403,7 +403,7 @@ begin
     chAutoStartTransaction.Checked, chAutoCommitTransaction.Checked]);
 
   DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences,
-    'pFIBTransaction'], ['TimeOutAction', 'TimeOut', 'TPBMode'],
+    'FIBTransaction'], ['TimeOutAction', 'TimeOut', 'TPBMode'],
     [cmbTimeOutAction.ItemIndex, edTimeout.Text, cmbTPBMode.ItemIndex]);
 
 end;
@@ -625,7 +625,7 @@ begin
   end;
 
   Values := DefReadFromRegistry(['Software', RegFIBRoot, RegPreferences,
-    'pFIBDataBase'], ['DialectC', 'CharSetC', 'UseLoginPrompt', 'UpperOldNames',
+    'FIBDatabase'], ['DialectC', 'CharSetC', 'UseLoginPrompt', 'UpperOldNames',
     'SynchronizeTime', 'StoreConnected', 'CloseDesignConnectAfterRun']);
 
   if VarType(Values) <> varBoolean then
@@ -665,7 +665,7 @@ begin
   end;
 
   Values := DefReadFromRegistry(['Software', RegFIBRoot, RegPreferences,
-    'pFIBTransaction'], ['TimeOutAction', 'TimeOut', 'TPBMode']);
+    'FIBTransaction'], ['TimeOutAction', 'TimeOut', 'TPBMode']);
   if VarType(Values) <> varBoolean then
   begin
     if Values[1, 0] then

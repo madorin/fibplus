@@ -24,7 +24,7 @@ uses
   Windows, // for inline functions
 {$ENDIF}
   SyncObjs, SysUtils, Classes, DB, FIBPlatforms, FIBDataSet, FIBDataBase,
-  FIBQuery, pFIBDataBase, pFIBProps;
+  FIBQuery, pFIBProps;
 
 type
   TpFIBFieldInfo = pFIBProps.TpFIBFieldInfo;
@@ -85,7 +85,7 @@ type
 
     procedure SaveToFile(const FileName: string);
     function LoadFromFile(const FileName: string; DB: TFIBDataBase = nil): boolean;
-    procedure ValidateSchema(aDataBase: TFIBDataBase; Proc: TpFIBAcceptCacheSchema);
+    procedure ValidateSchema(aDataBase: TFIBDataBase; Proc: TFIBAcceptCacheSchemaEvent);
 
     function FindTableInfo(const ADBName, ATableName: string): TpFIBTableInfo;
     function GetTableInfo(aDataBase: TFIBDataBase; const ATableName: string; WithRepositaryInfo: boolean): TpFIBTableInfo;
@@ -318,9 +318,8 @@ begin
     else
       s := DatabaseRepositories[Index];
 
-    aTransaction := TFIBTransaction.Create(nil);
+    aTransaction := CreateInternalTransaction(DB, True);
     aTransaction.TimeoutAction := TACommit;
-    aTransaction.DefaultDatabase := DB;
     qry := TFIBQuery.Create(nil);
     with qry do
       try
@@ -372,9 +371,8 @@ var
   qry: TFIBQuery;
 begin
   qry := TFIBQuery.Create(nil);
-  Transaction := TFIBTransaction.Create(nil);
+  Transaction := CreateInternalTransaction(DB, True);
   try
-    Transaction.DefaultDatabase := DB;
     qry.Transaction := Transaction;
     with qry, qry.SQL do
     begin
@@ -508,13 +506,12 @@ var
 begin
   if FailedUpgrades.Contains(DB, Upgrade) then
     Exit;
-  Transaction := TFIBTransaction.Create(nil);
+  Transaction := CreateInternalTransaction(DB, False);
   qry := TFIBQuery.Create(nil);
   Narrow := TStringList.Create;
   KeyColumns := TStringList.Create;
   try
     try
-      Transaction.DefaultDatabase := DB;
       qry.Database := DB;
       qry.Transaction := Transaction;
       Transaction.StartTransaction;
@@ -714,9 +711,8 @@ var
   qry: TFIBQuery;
 begin
   qry := TFIBQuery.Create(nil);
-  Transaction := TFIBTransaction.Create(nil);
+  Transaction := CreateInternalTransaction(DB, False);
   try
-    Transaction.DefaultDatabase := DB;
     qry.Database := DB;
     qry.Transaction := Transaction;
     qry.ParamCheck := False;
@@ -851,8 +847,7 @@ begin
       if (DS_Info = nil) and (Length(AutoUpdateOptions.KeyFields) > 68) then
         WidenRepositoryColumns(DataSet.Database, DataSetsInfoKeyFieldUpgrade, 'FIB$DATASETS_INFO', ['KEY_FIELD'], 1024);
       DI := TFIBDataSet.Create(nil);
-      vTransaction := TFIBTransaction.Create(nil);
-      vTransaction.DefaultDatabase := DataSet.Database;
+      vTransaction := CreateInternalTransaction(DataSet.Database, False);
       q := GetQueryForUse(vTransaction, 'SELECT * FROM FIB$DATASETS_INFO WHERE DS_ID=:DS_ID');
       try
         vTransaction.StartTransaction;
@@ -1727,7 +1722,7 @@ begin
   end;
 end;
 
-procedure TpFIBTableInfoCollect.ValidateSchema(aDataBase: TFIBDataBase; Proc: TpFIBAcceptCacheSchema);
+procedure TpFIBTableInfoCollect.ValidateSchema(aDataBase: TFIBDataBase; Proc: TFIBAcceptCacheSchemaEvent);
 const
   MaxCountSeparate = 10;
 var
@@ -2286,12 +2281,10 @@ begin
     FIBError(feDatabaseClosed, [CmpFullName(DB)]);
 
   Result := TFIBStoredProcMetadata.Create;
-  Transaction := TFIBTransaction.Create(nil);
+  Transaction := CreateInternalTransaction(DB, True);
   Query := TFIBQuery.Create(nil);
   try
     try
-      Transaction.DefaultDatabase := DB;
-      Transaction.TRParams.Text := 'read' + CLRF + 'isc_tpb_nowait' + CLRF + 'read_committed' + CLRF + 'rec_version';
       Query.Database := DB;
       Query.Transaction := Transaction;
       Query.ParamCheck := True;

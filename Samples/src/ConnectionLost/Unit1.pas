@@ -5,14 +5,14 @@ interface
 uses
   fib,
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase, pFIBDatabase,
+  Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase,
   ExtCtrls, StdCtrls, Grids, DBGrids, FIBErrorHandler, pFIBSQLLog;
 
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    DB: TpFIBDatabase;
-    tr: TpFIBTransaction;
+    DB: TFIBDatabase;
+    tr: TFIBTransaction;
     dt: TFIBDataSet;
     ds: TDataSource;
     Panel1: TPanel;
@@ -98,7 +98,7 @@ begin
     0:
       begin
         Actions := laCloseConnect;
-        MessageDlg('Connection lost. TpFIBDatabase will be closed!', mtInformation, [mbOk], 0);
+        MessageDlg('Connection lost. TFIBDatabase will be closed!', mtInformation, [mbOk], 0);
       end;
     1:
       begin

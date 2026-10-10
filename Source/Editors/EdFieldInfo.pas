@@ -67,7 +67,7 @@ type
     procedure qrySPFieldsBeforeOpen(DataSet: TDataSet);
   private
     FFieldLength: string;
-    pFIBTransaction1: TComponent;
+    InfoTransaction: TComponent;
     qryFL: TDataSet;
     qrySPs: TDataSet;
     qryTabFields: TDataSet;
@@ -117,23 +117,23 @@ begin
   ts := TStringList.Create;
   with frmFields do
     try
-      pFIBTransaction1 := expTransactionClass.Create(frmFields);
-      if ObjSupports(pFIBTransaction1, IFIBTransaction, iTr) and ObjSupports(aDataBase, IFIBConnect, iDB) then
+      InfoTransaction := expTransactionClass.Create(frmFields);
+      if ObjSupports(InfoTransaction, IFIBTransaction, iTr) and ObjSupports(aDataBase, IFIBConnect, iDB) then
       begin
         FFieldLength := IntToStr(ColumnLength(iDB, 'RDB$RELATIONS', 'RDB$RELATION_NAME'));
-        SetObjectProp(pFIBTransaction1, 'DefaultDataBase', aDataBase);
-        SetEnumProp(pFIBTransaction1, 'TimeoutAction', 'TACommitRetaining');
+        SetObjectProp(InfoTransaction, 'DefaultDataBase', aDataBase);
+        SetEnumProp(InfoTransaction, 'TimeoutAction', 'TACommitRetaining');
         qryFL := TDataSet(expDatasetClass.Create(frmFields));
         qrySPs := TDataSet(expDatasetClass.Create(frmFields));
         qrySPFields := TDataSet(expDatasetClass.Create(frmFields));
         qryTabs := TDataSet(expDatasetClass.Create(frmFields));
         qryTabFields := TDataSet(expDatasetClass.Create(frmFields));
 
-        PrepareDataSetProps(qryFL, aDataBase, pFIBTransaction1);
-        PrepareDataSetProps(qrySPs, aDataBase, pFIBTransaction1);
-        PrepareDataSetProps(qrySPFields, aDataBase, pFIBTransaction1);
-        PrepareDataSetProps(qryTabs, aDataBase, pFIBTransaction1);
-        PrepareDataSetProps(qryTabFields, aDataBase, pFIBTransaction1);
+        PrepareDataSetProps(qryFL, aDataBase, InfoTransaction);
+        PrepareDataSetProps(qrySPs, aDataBase, InfoTransaction);
+        PrepareDataSetProps(qrySPFields, aDataBase, InfoTransaction);
+        PrepareDataSetProps(qryTabs, aDataBase, InfoTransaction);
+        PrepareDataSetProps(qryTabFields, aDataBase, InfoTransaction);
 
         { m.Data:=frmFields;
           m.Code:=MethodAddress('qrySPsFilterRecord');

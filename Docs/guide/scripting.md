@@ -2,7 +2,7 @@
 
 `TFIBScripter` runs an SQL script statement by statement. It splits the text into statements, handles `SET TERM`, executes the statements on the server, and reports errors through events. Use it for database creation and update scripts, and for scripts exported by other tools.
 
-The examples use a `TpFIBDatabase` named `Database`, a `TpFIBTransaction` named `Transaction`, a `TFIBScripter` named `Scripter`, and a `TMemo` named `LogMemo` on a form `TMainForm`. Member details are in the [TFIBScripter reference](../reference/TFIBScripter.md).
+The examples use a `TFIBDatabase` named `Database`, a `TFIBTransaction` named `Transaction`, a `TFIBScripter` named `Scripter`, and a `TMemo` named `LogMemo` on a form `TMainForm`. Member details are in the [TFIBScripter reference](../reference/TFIBScripter.md).
 
 ## Running a script
 
@@ -173,6 +173,6 @@ end;
 ## See also
 
 - [TFIBScripter reference](../reference/TFIBScripter.md)
-- [TpFIBDatabase](../reference/TpFIBDatabase.md), [TpFIBTransaction](../reference/TpFIBTransaction.md)
+- [TFIBDatabase](../reference/TFIBDatabase.md), [TFIBTransaction](../reference/TFIBTransaction.md)
 - [Timeouts](timeouts.md)
 - [Transactions](transactions.md)

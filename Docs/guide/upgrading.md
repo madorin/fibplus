@@ -8,7 +8,7 @@ Find the version you use now, then read every section above it, from the one jus
 
 | Version | Status | Notes |
 |---------|--------|-------|
-| [8.0.0](#800) | Unreleased | Dataset, query, update object, scripter, stored procedure, error handler, table changes reader and schema extract classes renamed from `TpFIB...` to `TFIB...`. |
+| [8.0.0](#800) | Unreleased | Dataset, database, transaction, query, update object, scripter, stored procedure, error handler, table changes reader and schema extract classes renamed from `TpFIB...` to `TFIB...`. |
 | [7.9.1](#791) | 2026-10-09 | Text in the code page of each column's character set, *Firebird 4+* statement and idle timeouts and read consistency, *Firebird 5+* parallel workers, an FMX login dialog package, and many bug fixes. |
 | [7.9.0](#790) | 2026-10-01 | First release of the community maintained FibPlus. Based on the FIBPlus 7 sources of build 632 (2014-02-17). |
 
@@ -43,8 +43,18 @@ Find the version you use now, then read every section above it, from the one jus
 | `SFIBErrorNotDataSet`, `SFIBErrorNotDataSetDetail` (`FIBConsts`) | Removed | Nothing raises them any more. |
 | `TpFIBDataSetOptionsEditor` | `TFIBDataSetOptionsEditor` | Rename in design-time code that registers it. |
 | IDE preferences of the dataset (registry key `pFIBDataSet`) | registry key `FIBDataSet` | The saved design-time defaults for new datasets (`Options`, `PrepareOptions`, `DetailConditions`, default formats, generator name prefix and suffix) are not read from the old key. Set them again once in the FIBPlus preferences. |
+| Unit `pFIBDatabase` | `FIBDatabase` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| `TpFIBDatabase` | `TFIBDatabase` | Rename. The old name is a deprecated alias of the same class. |
+| `TpFIBTransaction` | `TFIBTransaction` | Rename. The old name is a deprecated alias of the same class. |
+| `TFIBLoginEvent`, `TOnLostConnectActions` (`laTerminateApp`, `laCloseConnect`, `laIgnore`, `laWaitRestore`), `TFIBLostConnectEvent`, `TFIBRestoreConnectEvent`, `TOnSQLExecute`, `WriteDBParamsToAlias` (unit `pFIBDatabase`) | The same names in `FIBDatabase` | Change the `uses` clause. The old unit exports them as aliases. |
+| `TpFIBAcceptCacheSchema` | `TFIBAcceptCacheSchemaEvent` (unit `FIBDatabase`) | Rename. The old unit keeps the old name as an alias. |
+| `TOnSQLExecute = procedure(Query: TFIBQuery; SQLType: TFIBSQLTypes) of object` | `procedure(Query: TComponent; SQLType: TFIBSQLTypes) of object` | Change the parameter type of the handlers you assign in code (`BeforeSQLExecute`, `AfterSQLExecute`, `AfterFirstFetch`). A handler bound in a form keeps working at run time; the IDE reports it as incompatible until you change it. |
+| `FIBDataSets[Index]: TFIBCustomDataSet`, `FIBQueries[Index]: TFIBQuery` (of `TpFIBDatabase` and `TpFIBTransaction`) | `FIBDataSets[Index]: TDataSet`, `FIBQueries[Index]: TComponent` | Cast the result to `TFIBCustomDataSet` or `TFIBQuery`. The items and their order are the same. |
+| `TFIBSQLTypes` and its 15 values (`SQLUnknown` ...) in `FIBQuery` | Declared in `pFIBProps` | `FIBQuery` exports the type and the values, so code that uses only `FIBQuery` compiles without a change. |
+| `TpFIBDatabaseEditor`, `TpFIBTransactionEditor`, `TpFIBTRParamsEditor` | `TFIBDatabaseEditor`, `TFIBTransactionEditor`, `TFIBTRParamsEditor` | Rename in design-time code that registers them. |
+| IDE preferences of the database and the transaction (registry keys `pFIBDataBase`, `pFIBTransaction`) | registry keys `FIBDatabase`, `FIBTransaction` | The saved design-time defaults for new databases and transactions are not read from the old keys. Set them again once in the FIBPlus preferences. |
 
-Forms that contain one of the old component classes still load. The class `TpFIBDataSet` is registered by the unit `pFIBDataSet`, so keep it linked (in a `uses` clause) until the form is saved again. The next time you save the form, the IDE writes the new class name. The old unit and names are removed in a later major version.
+Forms that contain one of the old component classes still load. The classes `TpFIBDataSet`, `TpFIBDatabase`, and `TpFIBTransaction` are registered by the units `pFIBDataSet` and `pFIBDatabase`, so keep them linked (in a `uses` clause) until the form is saved again. The next time you save the form, the IDE writes the new class name. The old unit and names are removed in a later major version.
 
 ### Changed behavior
 
@@ -61,6 +71,41 @@ The component on the palette was `TpFIBDataSet`. Its code is now in `TFIBCustomD
 - Each dataset creates two internal queries (record count and lock) and four lists. No server round trip is added.
 
 A class that derives from `TpFIBDataSet` and overrides its virtual methods (`AddedFilterRecord`, `UpdateFieldsProps`, `IncGenerator`, `RecordCountFromSrv`, `DoOnApplyDefaultValue`) keeps working; the methods have the same signatures.
+
+#### `TFIBDatabase` and `TFIBTransaction` are the former `TpFIBDatabase` and `TpFIBTransaction`
+
+The components on the palette were `TpFIBDatabase` and `TpFIBTransaction`. Their code is now in `TFIBDatabase` and `TFIBTransaction`, which publish the same properties and events as the old classes, in the same order. A form that holds the old classes loads as the new ones, and `SaveDBParams` and `OnLogin` still load. You only notice the change when the code creates a `TFIBDatabase` or a `TFIBTransaction` directly or derives from them: they now get what the palette classes always had. The changes in behavior are these.
+
+- `Open` on a connected database does nothing; it raised. `ForceClose` on a closed database does nothing; it raised.
+- `StartTransaction` on an active transaction raises `EFIBClientError` (`feInTransaction`) for every transaction, before any event runs. `TpFIBTransaction` did nothing. `Active := True` on an active transaction still does nothing. Check `InTransaction` before `StartTransaction` where the transaction may be active.
+- `AfterStart` and `AfterStartTransaction` run only when the transaction started. `TpFIBTransaction` also raised them when the start was skipped without an error (a database that could not be connected with `AutoReconnect`); `BeforeStart` still runs in that case.
+- `BeforeConnect` (and `OnLogin`), the schema cache, and the alias on `Open` work for every connection. Nothing runs unless it is set: `CacheSchemaOptions` is off and `AliasName` is empty.
+- `DifferenceTime` is used for every database when a new row gets a client time as its default value.
+- Lost-connection handling by `TFIBErrorHandler` applies to every connection, see below.
+- `CacheSchemaOptions := Value` in code copies the values into the existing object. It replaced the object before.
+
+#### `TPBMode` and `TRParams`
+
+A preset now writes its lines into `TRParams`, and `TRParams` is always exactly what is sent. The old `TpFIBTransaction` replaced `TRParams` at every start in a preset mode, and `TFIBTransaction` never did. The rule is in [Transaction mode](../reference/TFIBTransaction.md#transaction-mode).
+
+- A new transaction has the lines of `tpbReadCommitted` in `TRParams` instead of an empty list. A `TFIBTransaction` created in code with untouched `TRParams` starts read committed with `nowait`, where it started with `concurrency` and `wait` (the server default of an empty list).
+- A `TpFIBTransaction` with a preset whose `TRParams` were changed in code: the change was dropped at the start. Now it is used, and `TPBMode` reads `tpbDefault`.
+- Write the access, isolation, and wait lines first, or use `Text :=`. After an extra line such as `no_auto_undo` the list is an ordinary list, and a later `read` or `nowait` conflicts with the preset lines: the server refuses the start.
+- `lock_timeout` needs the full list, because *Firebird 3+* refuses it together with `nowait`, which every preset writes. `Add('lock_timeout=5')` on a preset leaves only that line. For a read-only transaction put `read` in `TRParams`; all presets write `write`.
+- `TPBMode` cannot be set on an active transaction (`feInTransaction`). It was accepted and used at the next start. The same holds for `TRParams`.
+- Do not change `TRParams` in `BeforeStart` or `BeforeStartTransaction`. The list is not reset at each start, so a line added there is added again at the next start, and the server refuses the duplicate. Set `TRParams` once, before the start.
+- A form of an old `TFIBTransaction` with stored `TRParams.Strings` loads with those lines and `TPBMode` `tpbDefault`. Forms are saved in the same format as before.
+- When the list sent to a database holds `read_consistency` and the server does not support it, `StartTransaction` raises `EFIBClientError` before the start. The list of a database is its own text from `AddDatabase(Db, TRParams)` when that is not empty, else `TRParams`.
+
+#### Internal transactions
+
+`TFIBTransaction.Internal` is new: public, not published, `False` by default. The events of the database (`BeforeStartTransaction`, `AfterStartTransaction`, `BeforeEndTransaction`, `AfterEndTransaction`) were raised only for `TpFIBTransaction`. Now they are raised for every transaction whose `DefaultDatabase` is the database, except for a transaction with `Internal` set to `True`. The library sets `Internal` on the transactions it creates for its own work (metadata, BLOB information, the internal transaction of the database, the SQL logger). A handler of these events now also sees a `TFIBTransaction` created in code. The transaction of `TFIBScripter` is not internal.
+
+The transaction of the SQL logger uses `nowait` and no longer the server default `wait`: a lock conflict on its insert raises.
+
+#### Lost connection
+
+`TFIBErrorHandler` runs the lost-connection action (`OnLostConnect`, default `laCloseConnect`) on the database of the failing object: a database, a query, a transaction, or a BLOB stream. When the object gives no database (BLOB routines called without a sender, service components), the handler no longer acts on every database of the process. It pings each connected database and acts on those that report a lost connection. A lost service connection closes no database. This also changes applications with several `TpFIBDatabase` connections: only the database that was lost is closed and gets `OnLostConnect`. Every `TFIBDatabase` is handled now, not only `TpFIBDatabase`.
 
 ## 7.9.1
 

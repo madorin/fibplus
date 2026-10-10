@@ -302,13 +302,13 @@ var
 implementation
 
 uses
-  FIBDataSet, FIBQuery, pFIBDatabase, IB_Services, FIBDataRefresh,
+  FIBDataSet, FIBQuery, FIBDatabase, IB_Services, FIBDataRefresh,
   FIBScripter;
 
 initialization
 
-expDatabaseClass := TpFIBDatabase;
-expTransactionClass := TpFIBTransaction;
+expDatabaseClass := TFIBDatabase;
+expTransactionClass := TFIBTransaction;
 expDatasetClass := TFIBDataSet;
 expQueryClass := TFIBQuery;
 expServicesClass := TpFIBCustomService;

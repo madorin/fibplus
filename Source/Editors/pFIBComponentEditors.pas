@@ -26,13 +26,13 @@ type
     function GetAttributes: TPropertyAttributes; override;
   end;
 
-  TpFIBDatabaseEditor = class(TComponentEditor)
+  TFIBDatabaseEditor = class(TComponentEditor)
     procedure ExecuteVerb(Index: Integer); override;
     function GetVerb(Index: Integer): string; override;
     function GetVerbCount: Integer; override;
   end;
 
-  TpFIBTransactionEditor = class(TComponentEditor)
+  TFIBTransactionEditor = class(TComponentEditor)
     procedure ExecuteVerb(Index: Integer); override;
     function GetVerb(Index: Integer): string; override;
     function GetVerbCount: Integer; override;
@@ -101,7 +101,7 @@ type
     procedure GetValues(Proc: TGetStrProc); override;
   end;
 
-  TpFIBTRParamsEditor = class(TClassProperty)
+  TFIBTRParamsEditor = class(TClassProperty)
   public
     function GetAttributes: TPropertyAttributes; override;
     function GetValue: string; override;
@@ -238,9 +238,9 @@ begin
   Result := [paDialog, paRevertable];
 end;
 
-{ TpFIBDatabaseEditor }
+{ TFIBDatabaseEditor }
 
-procedure TpFIBDatabaseEditor.ExecuteVerb(Index: Integer);
+procedure TFIBDatabaseEditor.ExecuteVerb(Index: Integer);
 var
   DB: IFIBConnect;
   Script: TStrings;
@@ -372,7 +372,7 @@ begin
     end;
 end;
 
-function TpFIBDatabaseEditor.GetVerb(Index: Integer): string;
+function TFIBDatabaseEditor.GetVerb(Index: Integer): string;
 begin
   case Index of
     0: Result := SCompEditDBEditor;
@@ -383,7 +383,7 @@ begin
   end;
 end;
 
-function TpFIBDatabaseEditor.GetVerbCount: Integer;
+function TFIBDatabaseEditor.GetVerbCount: Integer;
 begin
   Result := 5
 end;
@@ -405,9 +405,9 @@ begin
   Result := inherited GetAttributes + [paDialog] - [paSubProperties];
 end;
 
-{ TpFIBTransactionEditor }
+{ TFIBTransactionEditor }
 
-procedure TpFIBTransactionEditor.ExecuteVerb(Index: Integer);
+procedure TFIBTransactionEditor.ExecuteVerb(Index: Integer);
 begin
   case Index of
     0:
@@ -417,14 +417,14 @@ begin
 
 end;
 
-function TpFIBTransactionEditor.GetVerb(Index: Integer): string;
+function TFIBTransactionEditor.GetVerb(Index: Integer): string;
 begin
   case Index of
     0: Result := SCompEditEditTransaction;
   end;
 end;
 
-function TpFIBTransactionEditor.GetVerbCount: Integer;
+function TFIBTransactionEditor.GetVerbCount: Integer;
 begin
   Result := 1;
 end;
@@ -600,7 +600,7 @@ begin
     if not Assigned(Dset.Database) then Exit;
     Qry := nil; Trans := nil;
     try
-    Trans := TpFIBTransaction.Create(nil);
+    Trans := TFIBTransaction.Create(nil);
     Qry := TFIBQuery.Create(nil);
     Qry.ParamCheck:=false;
     Qry.Database := Dset.Database;
@@ -657,20 +657,20 @@ begin
   end;
 end;
 
-{ TpFIBTRParamsEditor }
+{ TFIBTRParamsEditor }
 
-procedure TpFIBTRParamsEditor.Edit;
+procedure TFIBTRParamsEditor.Edit;
 begin
   if EditFIBTrParams(TComponent(GetComponent(0))) then
     Modified
 end;
 
-function TpFIBTRParamsEditor.GetAttributes: TPropertyAttributes;
+function TFIBTRParamsEditor.GetAttributes: TPropertyAttributes;
 begin
   Result := inherited GetAttributes + [paDialog] - [paSubProperties];
 end;
 
-function TpFIBTRParamsEditor.GetValue: string;
+function TFIBTRParamsEditor.GetValue: string;
 begin
   Result := '(TTRParams)'
 end;

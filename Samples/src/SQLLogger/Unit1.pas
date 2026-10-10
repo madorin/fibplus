@@ -4,15 +4,15 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase, pFIBDatabase,
+  Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase,
   ExtCtrls, StdCtrls, Grids, DBGrids, DBCtrls, FIBQuery,
   pFIBSQLLog, Shellapi;
 
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    DB: TpFIBDatabase;
-    tr: TpFIBTransaction;
+    DB: TFIBDatabase;
+    tr: TFIBTransaction;
     dt: TFIBDataSet;
     ds: TDataSource;
     Panel1: TPanel;

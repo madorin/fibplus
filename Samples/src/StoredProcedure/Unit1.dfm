@@ -116,7 +116,7 @@ object Form1: TForm1
       end
     end
   end
-  object db: TpFIBDatabase
+  object db: TFIBDatabase
     DBName = 'localhost:D:\home\devrace\FIBPlusExamples\db\EMPLOYEE.FDB'
     DBParams.Strings = (
       'lc_ctype=NONE'
@@ -132,7 +132,7 @@ object Form1: TForm1
     Left = 504
     Top = 8
   end
-  object tr: TpFIBTransaction
+  object tr: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 536
@@ -181,7 +181,7 @@ object Form1: TForm1
     Top = 72
   end
   object spSubTotalBudget: TFIBStoredProc
-    Transaction = pFIBTransaction1
+    Transaction = Transaction1
     Database = db
     SQL.Strings = (
       'EXECUTE PROCEDURE SUB_TOT_BUDGET (?HEAD_DEPT)')
@@ -196,7 +196,7 @@ object Form1: TForm1
     Left = 536
     Top = 72
   end
-  object pFIBTransaction1: TpFIBTransaction
+  object Transaction1: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 536

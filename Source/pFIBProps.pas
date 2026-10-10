@@ -28,6 +28,25 @@ type
   TOnBlobFieldProcessing = procedure(Field: TBlobField; BlobSize: Integer; Progress: Integer; var Stop: Boolean) of object;
 
   TKindOnOperation = (koBefore, koAfter, koAfterFirstFetch, koOther);
+
+  TFIBSQLTypes = (
+    SQLUnknown,
+    SQLSelect,
+    SQLInsert,
+    SQLUpdate,
+    SQLDelete,
+    SQLDDL,
+    SQLGetSegment,
+    SQLPutSegment,
+    SQLExecProcedure,
+    SQLStartTransaction,
+    SQLCommit,
+    SQLRollback,
+    SQLSelectForUpdate,
+    SQLSetGenerator,
+    SQLSavePointOperation
+  );
+
   TpFIBExistObject = (eoYes, eoNo, eoUnknown);
 
   TpPrepareOption = (
@@ -328,6 +347,7 @@ type
     FValidateAfterLoad: boolean;
   public
     constructor Create;
+    procedure Assign(Source: TPersistent); override;
   published
     property LocalCacheFile: string read FLocalCacheFile write FLocalCacheFile;
     property AutoSaveToFile: boolean read FAutoSaveToFile write FAutoSaveToFile default False;
@@ -1022,6 +1042,19 @@ constructor TCacheSchemaOptions.Create;
 begin
   inherited Create;
   FValidateAfterLoad := True;
+end;
+
+procedure TCacheSchemaOptions.Assign(Source: TPersistent);
+begin
+  if Source is TCacheSchemaOptions then
+  begin
+    FLocalCacheFile := TCacheSchemaOptions(Source).LocalCacheFile;
+    FAutoSaveToFile := TCacheSchemaOptions(Source).AutoSaveToFile;
+    FAutoLoadFromFile := TCacheSchemaOptions(Source).AutoLoadFromFile;
+    FValidateAfterLoad := TCacheSchemaOptions(Source).ValidateAfterLoad;
+  end
+  else
+    inherited Assign(Source);
 end;
 
 { TDBParams }

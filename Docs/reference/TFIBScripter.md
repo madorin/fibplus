@@ -8,7 +8,7 @@ Splits an SQL script into statements and runs them one by one on a database. It 
 | Inherits from | `TComponent` |
 | Implements | `IFIBScripter` |
 
-The example uses the components `Database` (`TpFIBDatabase`), `Scripter` (`TFIBScripter`, with `Scripter.Database` set to `Database`), and `LogMemo` (`TMemo`).
+The example uses the components `Database` (`TFIBDatabase`), `Scripter` (`TFIBScripter`, with `Scripter.Database` set to `Database`), and `LogMemo` (`TMemo`).
 
 ```delphi
 procedure TMainForm.ScripterExecuteError(Sender: TObject; StatementNo, Line: Integer;
@@ -30,8 +30,8 @@ Guides: [Scripting](../guide/scripting.md).
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `Database` | `TpFIBDatabase` | | Database the script runs on. Assigning it commits an active transaction of the scripter first. Without a database, a `CONNECT`, `CREATE DATABASE`, or `DROP DATABASE` statement creates a temporary one; the scripter commits and releases it at the end of the top-level run. |
-| `Transaction` | `TpFIBTransaction` | | Transaction for the statements. When it is `nil`, the scripter uses an internal transaction on `Database`. Statements start the transaction when it is not active. |
+| `Database` | `TFIBDatabase` | | Database the script runs on. Assigning it commits an active transaction of the scripter first. Without a database, a `CONNECT`, `CREATE DATABASE`, or `DROP DATABASE` statement creates a temporary one; the scripter commits and releases it at the end of the top-level run. |
+| `Transaction` | `TFIBTransaction` | | Transaction for the statements. When it is `nil`, the scripter uses an internal transaction on `Database`. Statements start the transaction when it is not active. |
 | `Script` | `TStrings` | | Script text. Changing it discards the parsed script (`Prepared` becomes `False`). |
 | `AutoDDL` | `Boolean` | `True` | Commit the transaction after each DDL statement. A `SET AUTODDL` command in the script changes this property and the change stays after the run. |
 | `UseExecBlockForDML` | `Boolean` | `False` | Group consecutive `INSERT`, `REINSERT`, `UPDATE`, `DELETE`, and `MERGE` statements into `EXECUTE BLOCK` statements, see [Grouping DML statements](#grouping-dml-statements). The `{$EXECUTE_BLOCK ON}` and `{$EXECUTE_BLOCK OFF}` directives change this property. |
@@ -214,6 +214,6 @@ A block runs as one statement: `AfterStatementExecute` and `OnExecuteError` repo
 
 ## See also
 
-- [TFIBQuery](TFIBQuery.md), [TpFIBDatabase](TpFIBDatabase.md), [TpFIBTransaction](TpFIBTransaction.md)
+- [TFIBQuery](TFIBQuery.md), [TFIBDatabase](TFIBDatabase.md), [TFIBTransaction](TFIBTransaction.md)
 - [Scripting](../guide/scripting.md)
 - [Timeouts](../guide/timeouts.md)

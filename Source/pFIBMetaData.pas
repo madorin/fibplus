@@ -1914,6 +1914,8 @@ constructor TMetaDataBase.Create(AOwner: TCustomMetaObject; aName: string = '');
 begin
   inherited Create(nil);
   FInternalTransaction := TFIBTransaction.Create(nil);
+  FInternalTransaction.Internal := True;
+  FInternalTransaction.TPBMode := tpbDefault;
   FInternalTransaction.TRParams.Add('read');
   FInternalTransaction.TRParams.Add('nowait');
   FInternalTransaction.TRParams.Add('concurrency');

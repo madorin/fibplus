@@ -7,7 +7,7 @@ interface
 uses
   SysUtils, FIBPlatforms, Classes,
   pFIBInterfaces, FIBDatabase, FIBQuery, FIBDataSet,
-  StrUtil, pFIBDatabase, SqlTxtRtns, pFIBMetaData;
+  StrUtil, SqlTxtRtns, pFIBMetaData;
 
 type
 

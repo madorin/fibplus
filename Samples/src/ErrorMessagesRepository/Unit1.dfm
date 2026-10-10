@@ -104,7 +104,7 @@ object Form1: TForm1
     TabOrder = 4
     OnClick = Button1Click
   end
-  object db: TpFIBDatabase
+  object db: TFIBDatabase
     DBName = 'localhost:D:\home\devrace\FIBPlusExamples\db\EMPLOYEE.FDB'
     DBParams.Strings = (
       'lc_ctype=NONE'
@@ -120,7 +120,7 @@ object Form1: TForm1
     Left = 480
     Top = 40
   end
-  object tr: TpFIBTransaction
+  object tr: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 512

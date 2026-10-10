@@ -4,14 +4,14 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase, pFIBDatabase,
+  Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase,
   ExtCtrls, StdCtrls, Grids, DBGrids, pFIBProps, FIBQuery;
 
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    DB: TpFIBDatabase;
-    tr: TpFIBTransaction;
+    DB: TFIBDatabase;
+    tr: TFIBTransaction;
     dt: TFIBDataSet;
     ds: TDataSource;
     Panel1: TPanel;
@@ -20,14 +20,14 @@ type
     DBGrid1: TDBGrid;
     Label3: TLabel;
     DBGrid2: TDBGrid;
-    dbOther: TpFIBDatabase;
+    dbOther: TFIBDatabase;
     dtOther: TFIBDataSet;
     dsOther: TDataSource;
-    trOther: TpFIBTransaction;
+    trOther: TFIBTransaction;
     Button1: TButton;
     Button2: TButton;
-    trwrite: TpFIBTransaction;
-    trwriteOther: TpFIBTransaction;
+    trwrite: TFIBTransaction;
+    trwriteOther: TFIBTransaction;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);

@@ -21,7 +21,7 @@ interface
 {$A2}
 
 uses
-  SysUtils, Classes, Types, FIBPlatforms, pFIBDatabase, FIBQuery,
+  SysUtils, Classes, Types, FIBPlatforms, FIBDatabase, FIBQuery,
   fib, pFIBInterfaces;
 
 // {$DEFINE BEZBAZY}
@@ -246,8 +246,8 @@ type
     FRunDepth: Integer; // nesting of ExecuteScript and ExecuteFromFile (INPUT)
     procedure DoOnChangeScript(Sender: TObject);
   private
-    FDatabase: TpFIBDatabase;
-    FTransaction: TpFIBTransaction;
+    FDatabase: TFIBDatabase;
+    FTransaction: TFIBTransaction;
     FQuery: TFIBQuery;
     FPaused: boolean;
     FSkipStatement: boolean;
@@ -259,7 +259,7 @@ type
     FBlobFile: string;
     FBlobFileStream: TFileStream;
     vInternalDatabase: boolean;
-    FExternalTransaction: TpFIBTransaction;
+    FExternalTransaction: TFIBTransaction;
     FHaveDMLStatements: boolean;
     FHaveUnknownStatements: boolean;
     FNeedRestoreForceWrite: boolean;
@@ -283,9 +283,9 @@ type
     FOnExecuteError: TOnSQLScriptExecError;
     FBeforeStatementExecute: TOnStatementExecute;
     FAfterStatementExecute: TOnStatementExecute;
-    procedure SetDatabase(const Value: TpFIBDatabase);
-    procedure SetTransaction(const Value: TpFIBTransaction);
-    function GetTransaction: TpFIBTransaction;
+    procedure SetDatabase(const Value: TFIBDatabase);
+    procedure SetTransaction(const Value: TFIBTransaction);
+    function GetTransaction: TFIBTransaction;
     procedure DoReconnect;
     procedure SetConnectParams(StartToken: TStmtCoord; EndCoord: TStmtCoord);
     procedure TryFillBlobParams;
@@ -343,8 +343,8 @@ type
     property Defines: TStrings read FDefines write SetDefines;
   published
     property Script: TStrings read FScript write SetScript;
-    property Database: TpFIBDatabase read FDatabase write SetDatabase;
-    property Transaction: TpFIBTransaction read FExternalTransaction write SetTransaction;
+    property Database: TFIBDatabase read FDatabase write SetDatabase;
+    property Transaction: TFIBTransaction read FExternalTransaction write SetTransaction;
     property OnExecuteError: TOnSQLScriptExecError read FOnExecuteError write FOnExecuteError;
     property AutoDDL: boolean read FAutoDDL write FAutoDDL default True;
     property BeforeStatementExecute: TOnStatementExecute read FBeforeStatementExecute write FBeforeStatementExecute;
@@ -509,7 +509,7 @@ begin
   FDirectiveConsts := TStringList.Create;
   // FDirectiveConsts.Add('A= 11');
   FExecBlockStatement := TStringList.Create;
-  FTransaction := TpFIBTransaction.Create(Self);
+  FTransaction := TFIBTransaction.Create(Self);
   FQuery := TFIBQuery.Create(Self);
   FQuery.Transaction := FTransaction;
   FSQLDialect := 3;
@@ -520,7 +520,7 @@ procedure TFIBScripter.CreateInternalDatabase;
 begin
   if not Assigned(FDatabase) then
   begin
-    Database := TpFIBDatabase.Create(Self);
+    Database := TFIBDatabase.Create(Self);
     vInternalDatabase := True
   end
 end;
@@ -1612,7 +1612,7 @@ begin
   FHaveUnknownStatements := FParser.FHaveUnknownStatements;
 end;
 
-procedure TFIBScripter.SetDatabase(const Value: TpFIBDatabase);
+procedure TFIBScripter.SetDatabase(const Value: TFIBDatabase);
 begin
   if GetTransaction.InTransaction then
     GetTransaction.Commit;
@@ -1841,7 +1841,7 @@ begin
   end;
 end;
 
-procedure TFIBScripter.SetTransaction(const Value: TpFIBTransaction);
+procedure TFIBScripter.SetTransaction(const Value: TFIBTransaction);
 begin
   FExternalTransaction := Value;
   if Value <> nil then
@@ -1854,7 +1854,7 @@ begin
     FQuery.Transaction := FTransaction;
 end;
 
-function TFIBScripter.GetTransaction: TpFIBTransaction;
+function TFIBScripter.GetTransaction: TFIBTransaction;
 begin
   if Assigned(FExternalTransaction) then
     Result := FExternalTransaction

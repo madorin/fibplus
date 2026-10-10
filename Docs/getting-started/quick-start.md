@@ -1,6 +1,6 @@
 # Quick start
 
-Connect to a database, run a first query, and show data in a grid. The steps use the `EMPLOYEE` demo database that ships with Firebird and the components `TpFIBDatabase`, `TpFIBTransaction`, `TFIBQuery`, and `TFIBDataSet`.
+Connect to a database, run a first query, and show data in a grid. The steps use the `EMPLOYEE` demo database that ships with Firebird and the components `TFIBDatabase`, `TFIBTransaction`, `TFIBQuery`, and `TFIBDataSet`.
 
 You need:
 
@@ -10,7 +10,7 @@ You need:
 
 ## 1. Connect
 
-1. Drop a `TpFIBDatabase` and a `TpFIBTransaction` on the form. The names below are `Database` and `Transaction`.
+1. Drop a `TFIBDatabase` and a `TFIBTransaction` on the form. The names below are `Database` and `Transaction`.
 2. Set the properties of `Database`:
 
    | Property | Value |

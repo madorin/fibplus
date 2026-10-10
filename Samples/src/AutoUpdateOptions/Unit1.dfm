@@ -96,7 +96,7 @@ object Form1: TForm1
     TitleFont.Name = 'MS Sans Serif'
     TitleFont.Style = []
   end
-  object db: TpFIBDatabase
+  object db: TFIBDatabase
     DBName = 
       'localhost:D:\serge\Plus_demos\Voinov\FIBPlusExamples\db\EMPLOYEE' +
       '.FDB'
@@ -114,7 +114,7 @@ object Form1: TForm1
     Left = 504
     Top = 8
   end
-  object tr: TpFIBTransaction
+  object tr: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 536

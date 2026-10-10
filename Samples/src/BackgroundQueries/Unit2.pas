@@ -6,8 +6,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ExtCtrls, Buttons, StdCtrls, Grids, DBGrids, DB, FIBDatabase,
-  pFIBDatabase, FIBDataSet;
+  Dialogs, ExtCtrls, Buttons, StdCtrls, Grids, DBGrids, DB, FIBDatabase, FIBDataSet;
 
 type
   TThreadStatus = (tsWorking, tsEndSuccess, tsEndError);
@@ -19,9 +18,9 @@ type
     BitBtn1: TBitBtn;
     DBGrid1: TDBGrid;
     ds: TDataSource;
-    dba: TpFIBDatabase;
+    dba: TFIBDatabase;
     dt: TFIBDataSet;
-    tra: TpFIBTransaction;
+    tra: TFIBTransaction;
     memSQL: TMemo;
     Label1: TLabel;
     Timer1: TTimer;

@@ -100,9 +100,9 @@ See also [Upgrading](upgrading.md).
 ### Read consistency
 
 - **Server:** *Firebird 4+*. **Client library:** any.
-- **In FibPlus:** `TPBMode` `tpbReadConsistency` of `TpFIBTransaction`, or `read_consistency` in `TRParams`. Check `Capabilities.ReadConsistency`; on an older server `tpbReadConsistency` raises `EFIBClientError` at `StartTransaction`.
+- **In FibPlus:** `TPBMode` `tpbReadConsistency` of `TFIBTransaction`, or `read_consistency` in `TRParams`. Check `Capabilities.ReadConsistency`; on an older server `StartTransaction` raises `EFIBClientError` before the start when the list sent to the database holds `read_consistency`.
 - With the default server setting `ReadConsistency = 1`, every read committed transaction already runs in this mode; `rec_version` and `no_rec_version` are ignored.
-- **Reference:** [Transaction mode](../reference/TpFIBTransaction.md#transaction-mode), [Transaction parameters](../reference/TFIBTransaction.md#transaction-parameters).
+- **Reference:** [Transaction mode](../reference/TFIBTransaction.md#transaction-mode), [Transaction parameters](../reference/TFIBTransaction.md#transaction-parameters).
 
 ### New data types
 
