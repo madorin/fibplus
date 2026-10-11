@@ -8,7 +8,7 @@ Find the version you use now, then read every section above it, from the one jus
 
 | Version | Status | Notes |
 |---------|--------|-------|
-| [8.0.0](#800) | Unreleased | Dataset, database, transaction, query, update object, scripter, stored procedure, error handler, table changes reader and schema extract classes renamed from `TpFIB...` to `TFIB...`. |
+| [8.0.0](#800) | Unreleased | Dataset, client dataset, database, transaction, query, service components, array, update object, scripter, stored procedure, error handler, table changes reader and schema extract classes renamed from `TpFIB...` to `TFIB...`. |
 | [7.9.1](#791) | 2026-10-09 | Text in the code page of each column's character set, *Firebird 4+* statement and idle timeouts and read consistency, *Firebird 5+* parallel workers, an FMX login dialog package, and many bug fixes. |
 | [7.9.0](#790) | 2026-10-01 | First release of the community maintained FibPlus. Based on the FIBPlus 7 sources of build 632 (2014-02-17). |
 
@@ -71,8 +71,19 @@ Find the version you use now, then read every section above it, from the one jus
 | Units `pFIBLists`, `pFIBCacheQueries`, `pFIBEventLists`, `pFIBFieldsDescr`, `pFIBExports`, `pFIBInterfaces`, `pTestInfo` | `FIBLists`, `FIBCacheQueries`, `FIBEventLists`, `FIBFieldsDescr`, `FIBExports`, `FIBInterfaces`, `FIBTestInfo` | Change the `uses` clause. The old units stop the compilation with a message that names the new unit. The names inside the units are the same. |
 | Include file `pFIBMacroComp.inc` | `FIBMacroComp.inc` | Only for code that includes it. |
 | Design-time units `pFIBConditionsEdit`, `pFIBDBEdit`, `pFIBDataSetOptions`, `pFIBEditorsConsts`, `pFIBPreferences`, `pFIBRepositoryOperations`, `pFIBSyntaxMemo`, `pFIBTrEdit` | The same names without `p` | Change the `uses` clause of design-time code. There are no old units. |
+| Unit `pFIBClientDataSet` | `FIBClientDataSet` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| `TpFIBClientDataSet`, `TpFIBDataSetProvider`, `TpFIBClientBCDField` | `TFIBClientDataSet`, `TFIBDataSetProvider`, `TFIBClientBCDField` | Rename. The old names are deprecated aliases of the same classes in `pFIBClientDataSet`. |
+| Unit `IB_Services` | `FIBServices` | Change the `uses` clause. The old unit still compiles, gives a warning, and exports the types, the values of the enumerated types (`IgnoreLimbo`, `SweepDB`, `ActionAddUser` ...), `DefaultBufferSize` and `SPBPrefix`. |
+| `TpFIBCustomService`, `TpFIBServerProperties`, `TpFIBControlService`, `TpFIBControlAndQueryService`, `TpFIBConfigService`, `TpFIBLicensingService`, `TpFIBLogService`, `TpFIBStatisticalService`, `TpFIBBackupRestoreService`, `TpFIBBackupService`, `TpFIBRestoreService`, `TpFIBNBackupService`, `TpFIBNRestoreService`, `TpFIBValidationService`, `TpFIBSecurityService` | The same names with `TFIB` instead of `TpFIB` | Rename. The old names are deprecated aliases of the same classes in `IB_Services`. |
+| `SPBConstantNames`, `SPBConstantValues` (`IB_Services`) | The same names, only in `FIBServices` | Add `FIBServices` to the `uses` clause of code that reads them. The old unit cannot export a typed constant. |
+| `TFIBSQLMonitorHook.ServiceAttach`, `ServiceDetach`, `ServiceQuery`, `ServiceStart` (parameter `TpFIBCustomService`) | Parameter `TFIBCustomService` | The same class; rename in descendants that override them. |
+| Unit `pFIBArray` | `FIBArray` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| `TpFIBArray` | `TFIBArray` | Rename. The old name is a deprecated alias of the same class in `pFIBArray`. |
+| `TFIBXSQLVAR.FIBArray`, `TFIBArrayStream.FIBArray` | `ArrayInfo` | Rename. The property had the name of the new unit `FIBArray`. There is no old name. |
+| Variable `pFIBLoginDialog`, type `TpFIBLoginDialog` (unit `fib`) | `FIBLoginDialog`, `TFIBLoginDialogFunc` | Rename in code that installs its own login dialog (`pFIBLoginDialog := MyLoginDialog`) or tests the variable. There are no old names: a variable cannot have a deprecated alias, so the old code does not compile. |
+| `pFIBLoginDialogEx` (`FIBDBLoginDlg`), `pFIBLoginDialogFMX` (`FIB_FMX_DBLoginDlg`) | `FIBLoginDialogEx`, `FIBLoginDialogFMX` | Rename in code that calls them. There are no old names. |
 
-Forms that contain one of the old component classes still load. The classes `TpFIBDataSet`, `TpFIBDatabase`, and `TpFIBTransaction` are registered by the units `pFIBDataSet` and `pFIBDatabase`, so keep them linked (in a `uses` clause) until the form is saved again. The next time you save the form, the IDE writes the new class name. The old unit and names are removed in a later major version.
+Forms that contain one of the old component classes still load. The classes `TpFIBDataSet`, `TpFIBDatabase`, `TpFIBTransaction`, `TpFIBClientDataSet`, `TpFIBDataSetProvider`, the field class `TpFIBClientBCDField`, `TpFIBDBSchemaExtract` and the service components are registered by the units `pFIBDataSet`, `pFIBDatabase`, `pFIBClientDataSet`, `pFIBMetaData` and `IB_Services`, so keep them linked (in a `uses` clause) until the form is saved again. The next time you save the form, the IDE writes the new class name. The old unit and names are removed in a later major version.
 
 ### Changed behavior
 

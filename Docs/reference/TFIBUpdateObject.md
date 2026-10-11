@@ -75,7 +75,7 @@ The prefixes are case-insensitive.
 
 ### Provider path
 
-`TFIBDataSet.PSUpdateRecord`, used when the dataset serves a [TpFIBDataSetProvider](TpFIBClientDataSet.md#tpfibdatasetprovider), also runs update objects, with these differences:
+`TFIBDataSet.PSUpdateRecord`, used when the dataset serves a [TFIBDataSetProvider](TFIBClientDataSet.md#tfibdatasetprovider), also runs update objects, with these differences:
 
 - An object runs when it is `Active`, its `ExecuteOrder` matches, and its `SQL` is not empty. The text `No Action` is not tested.
 - Only the parameters `Field`, `NEW_Field`, and `OLD_Field` are filled. `MAS_Field` is not supported.

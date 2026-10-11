@@ -144,6 +144,7 @@
         <DCCReference Include="..\Source\StdFuncs.pas"/>
         <DCCReference Include="..\Source\FIBTypes.pas"/>
         <DCCReference Include="..\Source\FIBCharSets.pas"/>
+        <DCCReference Include="..\Source\FIBServices.pas"/>
         <DCCReference Include="..\Source\IB_Services.pas"/>
         <DCCReference Include="..\Source\ibase.pas"/>
         <DCCReference Include="..\Source\FIBDatabase.pas"/>
@@ -185,11 +186,13 @@
         <DCCReference Include="..\Source\pFIBScripter.pas"/>
         <DCCReference Include="..\Source\FIBProps.pas"/>
         <DCCReference Include="..\Source\pFIBProps.pas"/>
+        <DCCReference Include="..\Source\FIBClientDataSet.pas"/>
         <DCCReference Include="..\Source\pFIBClientDataSet.pas"/>
         <DCCReference Include="..\Source\FIBErrorHandler.pas"/>
         <DCCReference Include="..\Source\pFIBErrorHandler.pas"/>
         <DCCReference Include="..\Source\FIBDataRefresh.pas"/>
         <DCCReference Include="..\Source\pFIBDataRefresh.pas"/>
+        <DCCReference Include="..\Source\FIBArray.pas"/>
         <DCCReference Include="..\Source\pFIBArray.pas"/>
         <DCCReference Include="..\Source\FIBLists.pas"/>
         <DCCReference Include="..\Source\FIBStoredProc.pas"/>

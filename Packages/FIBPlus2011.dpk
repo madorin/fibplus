@@ -24,6 +24,7 @@ package FIBPlus2011;
 {$IMAGEBASE $400000}
 {$DESCRIPTION 'FIBPlus'}
 {$IMPLICITBUILD OFF}
+{$WARN UNIT_DEPRECATED OFF}
 
 requires
   rtl,
@@ -51,9 +52,11 @@ contains
   IB_Install in '..\Source\IB_Install.pas',
   IB_InstallHeader in '..\Source\IB_InstallHeader.pas',
   IB_Intf in '..\Source\IB_Intf.pas',
+  FIBServices in '..\Source\FIBServices.pas',
   IB_Services in '..\Source\IB_Services.pas',
   ibase in '..\Source\ibase.pas',
   IBBlobFilter in '..\Source\IBBlobFilter.pas',
+  FIBArray in '..\Source\FIBArray.pas',
   pFIBArray in '..\Source\pFIBArray.pas',
   FIBCacheQueries in '..\Source\FIBCacheQueries.pas',
   pFIBDatabase in '..\Source\pFIBDatabase.pas',
@@ -92,6 +95,7 @@ contains
   FIBDataRefresh in '..\Source\FIBDataRefresh.pas',
   pFIBDataRefresh in '..\Source\pFIBDataRefresh.pas',
   FIBExports in '..\Source\FIBExports.pas',
+  FIBClientDataSet in '..\Source\FIBClientDataSet.pas',
   pFIBClientDataSet in '..\Source\pFIBClientDataSet.pas';
 
 end.

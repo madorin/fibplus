@@ -50,10 +50,10 @@ Writeln(Database.ClientLibrary.Version.Major);
 *Firebird 5* can use several worker threads for sweep, `CREATE INDEX` and `ALTER INDEX ... ACTIVE`, backup, and restore.
 
 - **Server:** *Firebird 5+*. **Client library:** any.
-- **In FibPlus:** `ConnectParams.ParallelWorkers` of `TFIBDatabase` (the `parallel_workers` entry of `DBParams`) for the work done in the attachment; `ParallelWorkers` of `TpFIBBackupService`, `TpFIBRestoreService`, and `TpFIBValidationService` for the services. The value is sent only when it is greater than `0`, so nothing changes for existing code. FibPlus does not check the server version or the range of the value.
+- **In FibPlus:** `ConnectParams.ParallelWorkers` of `TFIBDatabase` (the `parallel_workers` entry of `DBParams`) for the work done in the attachment; `ParallelWorkers` of `TFIBBackupService`, `TFIBRestoreService`, and `TFIBValidationService` for the services. The value is sent only when it is greater than `0`, so nothing changes for existing code. FibPlus does not check the server version or the range of the value.
 - **Server settings:** `MaxParallelWorkers` in `firebird.conf` (default `1`) is the upper limit for every request. `ParallelWorkers` (default `1`) is used when the attachment did not ask for a value. With the defaults nothing runs in parallel, whatever the client sends.
 - A value above `MaxParallelWorkers`, or below `0`, is not an error: the server posts a warning and uses the limit (or `1`).
-- On `TpFIBValidationService` the value is used for the sweep only, so it is sent only with `SweepDB` in `Options`.
+- On `TFIBValidationService` the value is used for the sweep only, so it is sent only with `SweepDB` in `Options`.
 
 ```delphi
 Database.ConnectParams.ParallelWorkers := 4;

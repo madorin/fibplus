@@ -1,6 +1,4 @@
-unit pFIBScripter;
-
-{$MESSAGE WARN 'Unit pFIBScripter is deprecated, use FIBScripter (TFIBScripter)'}
+unit pFIBScripter deprecated 'Use FIBScripter (TFIBScripter)';
 
 interface
 

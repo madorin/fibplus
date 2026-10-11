@@ -1,6 +1,4 @@
-unit pFIBDatabase;
-
-{$MESSAGE WARN 'Unit pFIBDatabase is deprecated, use FIBDatabase (TFIBDatabase, TFIBTransaction)'}
+unit pFIBDatabase deprecated 'Use FIBDatabase (TFIBDatabase, TFIBTransaction)';
 
 interface
 

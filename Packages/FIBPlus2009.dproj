@@ -73,9 +73,11 @@
 			<DCCReference Include="..\Source\IB_Install.pas"/>
 			<DCCReference Include="..\Source\IB_InstallHeader.pas"/>
 			<DCCReference Include="..\Source\IB_Intf.pas"/>
+			<DCCReference Include="..\Source\FIBServices.pas"/>
 			<DCCReference Include="..\Source\IB_Services.pas"/>
 			<DCCReference Include="..\Source\ibase.pas"/>
 			<DCCReference Include="..\Source\IBBlobFilter.pas"/>
+			<DCCReference Include="..\Source\FIBArray.pas"/>
 			<DCCReference Include="..\Source\pFIBArray.pas"/>
 			<DCCReference Include="..\Source\FIBCacheQueries.pas"/>
 			<DCCReference Include="..\Source\pFIBDatabase.pas"/>
@@ -114,6 +116,7 @@
 			<DCCReference Include="..\Source\FIBExports.pas"/>
 			<DCCReference Include="..\Source\FIBDataRefresh.pas"/>
 			<DCCReference Include="..\Source\pFIBDataRefresh.pas"/>
+			<DCCReference Include="..\Source\FIBClientDataSet.pas"/>
 			<DCCReference Include="..\Source\pFIBClientDataSet.pas"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>

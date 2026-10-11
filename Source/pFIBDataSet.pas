@@ -1,6 +1,4 @@
-unit pFIBDataSet;
-
-{$MESSAGE WARN 'Unit pFIBDataSet is deprecated, use FIBDataSet (TFIBDataSet)'}
+unit pFIBDataSet deprecated 'Use FIBDataSet (TFIBDataSet)';
 
 interface
 

@@ -2888,9 +2888,9 @@ var
   Username, Password, RoleName: string;
   XDBName: string;
 begin
-  if not Assigned(pFIBLoginDialog) then
+  if not Assigned(FIBLoginDialog) then
     begin
-      if not Assigned(pFIBLoginDialog) then
+      if not Assigned(FIBLoginDialog) then
         if csDesigning in ComponentState then
           raise Exception.Create(SFIBErrorNoDBLoginDialog + SFIBErrorInstallPropertyEditorPackage)
         else
@@ -2909,7 +2909,7 @@ begin
     RoleName := FastCopy(DBParams[IndexOfRole], PosCh('=', DBParams[IndexOfRole]) + 1, Length(DBParams[IndexOfRole]));
   XDBName := DBName;
 
-  Result := pFIBLoginDialog(XDBName, Username, Password, RoleName);
+  Result := FIBLoginDialog(XDBName, Username, Password, RoleName);
   if Result then
     begin
       if IndexOfUser = -1 then

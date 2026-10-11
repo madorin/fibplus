@@ -23,7 +23,7 @@ uses
   Types, Classes, DB, StrUtil;
 
 const
-  // Command texts of TpFIBClientDataSet, run by TFIBDataSet on the application server
+  // Command texts of TFIBClientDataSet, run by TFIBDataSet on the application server
   FIBCommitCommand = 'FIB$COMMIT';
   FIBRollbackCommand = 'FIB$ROLLBACK';
   FIBInTransactionCommand = 'FIB$GET_INTRANSACTION';
@@ -302,7 +302,7 @@ var
 implementation
 
 uses
-  FIBDataSet, FIBQuery, FIBDatabase, IB_Services, FIBDataRefresh,
+  FIBDataSet, FIBQuery, FIBDatabase, FIBServices, FIBDataRefresh,
   FIBScripter;
 
 initialization
@@ -311,7 +311,7 @@ expDatabaseClass := TFIBDatabase;
 expTransactionClass := TFIBTransaction;
 expDatasetClass := TFIBDataSet;
 expQueryClass := TFIBQuery;
-expServicesClass := TpFIBCustomService;
+expServicesClass := TFIBCustomService;
 expDeltaReceiverClass := TFIBTableChangesReader;
 expScripter := TFIBScripter
 

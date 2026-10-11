@@ -1,16 +1,16 @@
-# IB_Services components
+# FIBServices components
 
 Service components for the Firebird and InterBase Services API (`service_mgr`): back up and restore a database, change database properties, validate and repair, manage users, read statistics and the server log, and query server information. They connect to the server's service manager, not to a database, so they need no `TFIBDatabase`.
 
 | | |
 |---|---|
-| Unit | `IB_Services` |
-| Inherits from | `TpFIBCustomService`, which inherits from `TComponent` |
+| Unit | `FIBServices` |
+| Inherits from | `TFIBCustomService`, which inherits from `TComponent` |
 | Palette page | `FIBPlusServices` |
 
 The components exist only when `INC_SERVICE_SUPPORT` is defined, which `FIBPlus.inc` does by default.
 
-Eleven classes are registered on the palette page: `TpFIBServerProperties`, `TpFIBConfigService`, `TpFIBLicensingService`, `TpFIBLogService`, `TpFIBStatisticalService`, `TpFIBBackupService`, `TpFIBRestoreService`, `TpFIBValidationService`, `TpFIBSecurityService`, `TpFIBNBackupService`, and `TpFIBNRestoreService`. The base classes are not registered. `RegFIBPlus.pas` also registers `TpFIBInstall` and `TpFIBUnInstall` on this page under `IBINSTALL_SUPPORT`, which `FIBPlus.inc` leaves commented out.
+Eleven classes are registered on the palette page: `TFIBServerProperties`, `TFIBConfigService`, `TFIBLicensingService`, `TFIBLogService`, `TFIBStatisticalService`, `TFIBBackupService`, `TFIBRestoreService`, `TFIBValidationService`, `TFIBSecurityService`, `TFIBNBackupService`, and `TFIBNRestoreService`. The base classes are not registered. `RegFIBPlus.pas` also registers `TpFIBInstall` and `TpFIBUnInstall` on this page under `IBINSTALL_SUPPORT`, which `FIBPlus.inc` leaves commented out.
 
 ```delphi
 Backup.ServerName := 'localhost';
@@ -33,28 +33,28 @@ finally
 end;
 ```
 
-`Backup` is a `TpFIBBackupService` and `Line` is a `string`. This sample was not run against a server.
+`Backup` is a `TFIBBackupService` and `Line` is a `string`. This sample was not run against a server.
 
 ## Class overview
 
 | Class | Purpose |
 |-------|---------|
-| [TpFIBCustomService](#tpfibcustomservice) | Base class: attach to the service manager and detach |
-| [TpFIBServerProperties](#tpfibserverproperties) | Read database list, license, configuration, and version of the server |
-| [TpFIBControlService](#tpfibcontrolservice) | Base class for services that are started with `ServiceStart` |
-| [TpFIBControlAndQueryService](#tpfibcontrolandqueryservice) | Base class for started services that return text output |
-| [TpFIBConfigService](#tpfibconfigservice) | Change database properties, shut down, bring online |
-| [TpFIBLicensingService](#tpfiblicensingservice) | Add or remove a license key |
-| [TpFIBLogService](#tpfiblogservice) | Read the server log |
-| [TpFIBStatisticalService](#tpfibstatisticalservice) | Database statistics |
-| [TpFIBBackupService](#tpfibbackupservice) | Back up a database |
-| [TpFIBRestoreService](#tpfibrestoreservice) | Restore a database from a backup |
-| [TpFIBNBackupService](#tpfibnbackupservice) | Incremental backup |
-| [TpFIBNRestoreService](#tpfibnrestoreservice) | Restore from incremental backup files |
-| [TpFIBValidationService](#tpfibvalidationservice) | Validate, sweep, and repair; handle limbo transactions |
-| [TpFIBSecurityService](#tpfibsecurityservice) | Manage users |
+| [TFIBCustomService](#tfibcustomservice) | Base class: attach to the service manager and detach |
+| [TFIBServerProperties](#tfibserverproperties) | Read database list, license, configuration, and version of the server |
+| [TFIBControlService](#tfibcontrolservice) | Base class for services that are started with `ServiceStart` |
+| [TFIBControlAndQueryService](#tfibcontrolandqueryservice) | Base class for started services that return text output |
+| [TFIBConfigService](#tfibconfigservice) | Change database properties, shut down, bring online |
+| [TFIBLicensingService](#tfiblicensingservice) | Add or remove a license key |
+| [TFIBLogService](#tfiblogservice) | Read the server log |
+| [TFIBStatisticalService](#tfibstatisticalservice) | Database statistics |
+| [TFIBBackupService](#tfibbackupservice) | Back up a database |
+| [TFIBRestoreService](#tfibrestoreservice) | Restore a database from a backup |
+| [TFIBNBackupService](#tfibnbackupservice) | Incremental backup |
+| [TFIBNRestoreService](#tfibnrestoreservice) | Restore from incremental backup files |
+| [TFIBValidationService](#tfibvalidationservice) | Validate, sweep, and repair; handle limbo transactions |
+| [TFIBSecurityService](#tfibsecurityservice) | Manage users |
 
-`TpFIBBackupRestoreService` sits between `TpFIBControlAndQueryService` and the backup and restore classes. It adds the published `ParallelWorkers`, `Verbose` and `OnTextNotify`.
+`TFIBBackupRestoreService` sits between `TFIBControlAndQueryService` and the backup and restore classes. It adds the published `ParallelWorkers`, `Verbose` and `OnTextNotify`.
 
 The calls of every service are reported to the SQL monitor, unless the library is compiled with `NO_MONITOR`. See [TFIBSQLMonitor](TFIBSQLMonitor.md).
 
@@ -66,9 +66,9 @@ The calls of every service are reported to the SQL monitor, unless the library i
 4. For a service that returns text, read the output with `GetNextLine` until `Eof`, or set `OnTextNotify`.
 5. Set `Active := False`, or call `Detach`.
 
-`ServiceStart` raises an error when the component is not attached. Most of the service-specific methods (for example the `Set...` methods of `TpFIBConfigService`) start the service directly.
+`ServiceStart` raises an error when the component is not attached. Most of the service-specific methods (for example the `Set...` methods of `TFIBConfigService`) start the service directly.
 
-## TpFIBCustomService
+## TFIBCustomService
 
 Common base class. It owns the connection to the service manager. It does not start any action.
 
@@ -85,7 +85,7 @@ Common base class. It owns the connection to the service manager. It does not st
 | `OnAttach` | `TNotifyEvent` | | After a successful `Attach`. |
 | `OnLogin` | `TLoginEvent` | | Called before `Attach` when `LoginPrompt` is `True`. Receives a copy of `Params` that the handler can change. |
 
-`TLoginEvent` is `procedure(Database: TpFIBCustomService; LoginParams: TStrings) of object`.
+`TLoginEvent` is `procedure(Database: TFIBCustomService; LoginParams: TStrings) of object`.
 
 ### Run-time properties
 
@@ -120,7 +120,7 @@ Destroying a component that is attached detaches it.
 
 ### Login
 
-When `LoginPrompt` is `True`, `Attach` calls `OnLogin` if it is assigned. Otherwise it calls the login dialog registered in `pFIBLoginDialog` (set up by the login dialog units) with the `user_name`, `password`, and `sql_role_name` entries of `Params`, and writes the result back. These entries are found as `Attach` reads them: case-insensitive, with or without the `isc_spb_` prefix. When neither is available, the login counts as cancelled and `Attach` raises `feOperationCancelled`. Set `LoginPrompt := False` and fill `Params` to attach without a dialog.
+When `LoginPrompt` is `True`, `Attach` calls `OnLogin` if it is assigned. Otherwise it calls the login dialog registered in `FIBLoginDialog` (set up by the login dialog units) with the `user_name`, `password`, and `sql_role_name` entries of `Params`, and writes the result back. These entries are found as `Attach` reads them: case-insensitive, with or without the `isc_spb_` prefix. When neither is available, the login counts as cancelled and `Attach` raises `feOperationCancelled`. Set `LoginPrompt := False` and fill `Params` to attach without a dialog.
 
 ### Protected members
 
@@ -128,19 +128,19 @@ For authors of descendants.
 
 | Name | Description |
 |------|-------------|
-| `BufferSize` | Size of the output buffer in bytes, default `DefaultBufferSize` (32000). Published in `TpFIBControlAndQueryService`. |
+| `BufferSize` | Size of the output buffer in bytes, default `DefaultBufferSize` (32000). Published in `TFIBControlAndQueryService`. |
 | `OutputBuffer`, `OutputBufferOption` | The buffer and a `ByLine` or `ByChunk` flag. |
 | `ServiceQueryParams`, `InternalServiceQuery` | Set the query items and run `isc_service_query`. |
 | `CheckActive`, `CheckInactive` | Raise when not attached, or attached. |
 | `Login` | The login step described above. |
 
-## TpFIBServerProperties
+## TFIBServerProperties
 
 Reads information about the server through service queries.
 
 | | |
 |---|---|
-| Inherits from | `TpFIBCustomService` |
+| Inherits from | `TFIBCustomService` |
 
 ### Published properties
 
@@ -169,13 +169,13 @@ Filled by the `Fetch...` methods.
 
 An unexpected reply raises `feOutputParsingError`.
 
-## TpFIBControlService
+## TFIBControlService
 
 Base class of services that start an action on the server.
 
 | | |
 |---|---|
-| Inherits from | `TpFIBCustomService` |
+| Inherits from | `TFIBCustomService` |
 
 | Name | Type | Description |
 |------|------|-------------|
@@ -184,13 +184,13 @@ Base class of services that start an action on the server.
 
 Descendants override the protected `SetServiceStartOptions`, which fills `ServiceStartParams` (`ServiceStartAddParam` appends one item), and call `InternalServiceStart`. An empty start parameter list raises `feStartParamsError`.
 
-## TpFIBControlAndQueryService
+## TFIBControlAndQueryService
 
 Base class of services that return text, such as backup, restore, statistics, and the log.
 
 | | |
 |---|---|
-| Inherits from | `TpFIBControlService` |
+| Inherits from | `TFIBControlService` |
 
 ### Published properties
 
@@ -218,13 +218,13 @@ Calling `GetNextLine`, `GetNextChunk`, or `GetNextBuf` before an action was star
 |------|-------------|
 | `OnTextNotify` | `procedure(Sender: TObject; const Text: string) of object`. One call for each output line during `ServiceStart`, followed by one call with an empty string at the end of the output. |
 
-## TpFIBConfigService
+## TFIBConfigService
 
 Changes database properties. There is no `ServiceStart` for this class; it raises `feUseSpecificProcedures`. Each method below starts one action on `DatabaseName`.
 
 | | |
 |---|---|
-| Inherits from | `TpFIBControlService` |
+| Inherits from | `TFIBControlService` |
 
 ### Published properties
 
@@ -246,13 +246,13 @@ Changes database properties. There is no `ServiceStart` for this class; it raise
 | `SetAsyncMode(Value)` | `True` sets asynchronous write mode; `False` sets synchronous. |
 | `SetReadOnly(Value)` | `True` sets read-only access mode; `False` sets read-write. |
 
-## TpFIBLicensingService
+## TFIBLicensingService
 
 Adds or removes a license key. For servers that use license keys.
 
 | | |
 |---|---|
-| Inherits from | `TpFIBControlService` |
+| Inherits from | `TFIBControlService` |
 
 ### Published properties
 
@@ -269,27 +269,27 @@ Adds or removes a license key. For servers that use license keys.
 | `AddLicense` | Set `Action` to `LicenseAdd` and start. |
 | `RemoveLicense` | Set `Action` to `LicenseRemove` and start. |
 
-## TpFIBLogService
+## TFIBLogService
 
 Reads the server log. Call `ServiceStart`, then read the lines.
 
 | | |
 |---|---|
-| Inherits from | `TpFIBControlAndQueryService` |
+| Inherits from | `TFIBControlAndQueryService` |
 
 ### Published properties
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `OnTextNotify` | `TServiceGetTextNotify` | | See [TpFIBControlAndQueryService](#tpfibcontrolandqueryservice). |
+| `OnTextNotify` | `TServiceGetTextNotify` | | See [TFIBControlAndQueryService](#tfibcontrolandqueryservice). |
 
-## TpFIBStatisticalService
+## TFIBStatisticalService
 
 Returns database statistics as text.
 
 | | |
 |---|---|
-| Inherits from | `TpFIBControlAndQueryService` |
+| Inherits from | `TFIBControlAndQueryService` |
 
 ### Published properties
 
@@ -298,7 +298,7 @@ Returns database statistics as text.
 | `DatabaseName` | `string` | | Database to analyze. Required; `ServiceStart` raises `feStartParamsError` when empty. |
 | `Options` | `TStatOptions` | | What to report, see below. |
 | `TableNames` | `String` | | Table names, sent only when `StatTables` is in `Options`. |
-| `OnTextNotify` | `TServiceGetTextNotify` | | See [TpFIBControlAndQueryService](#tpfibcontrolandqueryservice). |
+| `OnTextNotify` | `TServiceGetTextNotify` | | See [TFIBControlAndQueryService](#tfibcontrolandqueryservice). |
 
 `TStatOption` values and the server flag each one sets:
 
@@ -312,13 +312,13 @@ Returns database statistics as text.
 | `RecordVersions` | `isc_spb_sts_record_versions` |
 | `StatTables` | `isc_spb_sts_table` |
 
-## TpFIBBackupService
+## TFIBBackupService
 
 Backs up a database with the server's backup service.
 
 | | |
 |---|---|
-| Inherits from | `TpFIBBackupRestoreService` |
+| Inherits from | `TFIBBackupRestoreService` |
 
 ### Published properties
 
@@ -330,7 +330,7 @@ Backs up a database with the server's backup service.
 | `Options` | `TBackupOptions` | | Backup flags, see below. |
 | `ParallelWorkers` | `Integer` | `0` | *Firebird 5+*. Parallel workers for the backup. Sent only when greater than `0`; the server limits it to `MaxParallelWorkers`. |
 | `Verbose` | `Boolean` | `False` | Ask the server to list each step in the output. |
-| `OnTextNotify` | `TServiceGetTextNotify` | | See [TpFIBControlAndQueryService](#tpfibcontrolandqueryservice). |
+| `OnTextNotify` | `TServiceGetTextNotify` | | See [TFIBControlAndQueryService](#tfibcontrolandqueryservice). |
 
 `TBackupOption` values and the server flag each one sets:
 
@@ -344,19 +344,19 @@ Backs up a database with the server's backup service.
 | `NonTransportable` | `isc_spb_bkp_non_transportable` |
 | `ConvertExtTables` | `isc_spb_bkp_convert` |
 
-## TpFIBRestoreService
+## TFIBRestoreService
 
 Restores a database from a backup with the server's restore service.
 
 | | |
 |---|---|
-| Inherits from | `TpFIBBackupRestoreService` |
+| Inherits from | `TFIBBackupRestoreService` |
 
 ### Published properties
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `BackupFile` | `TStrings` | | Backup files to read, one per line, as in [TpFIBBackupService](#tpfibbackupservice). |
+| `BackupFile` | `TStrings` | | Backup files to read, one per line, as in [TFIBBackupService](#tfibbackupservice). |
 | `DatabaseName` | `TStrings` | | Database files to create, one per line: a file name, or `name=length`. Empty lines are skipped. |
 | `PageSize` | `Integer` | `4096` | Page size of the new database. Sent only when greater than `0`. |
 | `PageBuffers` | `Integer` | | Page buffers. Sent only when greater than `0`. |
@@ -364,7 +364,7 @@ Restores a database from a backup with the server's restore service.
 | `Options` | `TRestoreOptions` | `[CreateNewDB]` | Restore flags, see below. |
 | `ParallelWorkers` | `Integer` | `0` | *Firebird 5+*. Parallel workers for the restore. Sent only when greater than `0`; the server limits it to `MaxParallelWorkers`. |
 | `Verbose` | `Boolean` | `False` | Ask the server to list each step in the output. |
-| `OnTextNotify` | `TServiceGetTextNotify` | | See [TpFIBControlAndQueryService](#tpfibcontrolandqueryservice). |
+| `OnTextNotify` | `TServiceGetTextNotify` | | See [TFIBControlAndQueryService](#tfibcontrolandqueryservice). |
 
 `TRestoreOption` values and the server flag each one sets:
 
@@ -382,13 +382,13 @@ Restores a database from a backup with the server's restore service.
 | `FixFssMetadata` | `isc_spb_res_fix_fss_metadata`, with `FixCharset` |
 | `FixFssData` | `isc_spb_res_fix_fss_data`, with `FixCharset` |
 
-## TpFIBNBackupService
+## TFIBNBackupService
 
 Incremental backup. The source comment marks this class as *Firebird 2.5 only*; this was not checked against newer servers.
 
 | | |
 |---|---|
-| Inherits from | `TpFIBControlAndQueryService` |
+| Inherits from | `TFIBControlAndQueryService` |
 
 ### Published properties
 
@@ -404,13 +404,13 @@ Incremental backup. The source comment marks this class as *Firebird 2.5 only*; 
 |------|-------------|
 | `BackUp(DbName, BackupName, aLevel)` | Set the three properties, attach, start, and detach again. |
 
-## TpFIBNRestoreService
+## TFIBNRestoreService
 
 Restores a database from incremental backup files. The source comment marks this class as *Firebird 2.5 only*; this was not checked against newer servers.
 
 | | |
 |---|---|
-| Inherits from | `TpFIBControlAndQueryService` |
+| Inherits from | `TFIBControlAndQueryService` |
 
 ### Published properties
 
@@ -425,13 +425,13 @@ Restores a database from incremental backup files. The source comment marks this
 |------|-------------|
 | `Restore(aBackUpFiles, DbName)` | Set `DatabaseName` and `BackupFiles`, attach, start, and detach again. |
 
-## TpFIBValidationService
+## TFIBValidationService
 
 Validates and repairs a database, sweeps it, and lists or resolves limbo transactions.
 
 | | |
 |---|---|
-| Inherits from | `TpFIBControlAndQueryService` |
+| Inherits from | `TFIBControlAndQueryService` |
 
 ### Published properties
 
@@ -441,7 +441,7 @@ Validates and repairs a database, sweeps it, and lists or resolves limbo transac
 | `Options` | `TValidateOptions` | | Validation flags, see below. |
 | `ParallelWorkers` | `Integer` | `0` | *Firebird 5+*. Parallel workers for the sweep. Sent only when greater than `0` and `SweepDB` is in `Options`; the server limits it to `MaxParallelWorkers`. |
 | `GlobalAction` | `TTransactionGlobalAction` | | How `FixLimboTransactionErrors` treats the listed transactions: `CommitGlobal`, `RollbackGlobal`, `RecoverTwoPhaseGlobal`, or `NoGlobalAction`. |
-| `OnTextNotify` | `TServiceGetTextNotify` | | See [TpFIBControlAndQueryService](#tpfibcontrolandqueryservice). |
+| `OnTextNotify` | `TServiceGetTextNotify` | | See [TFIBControlAndQueryService](#tfibcontrolandqueryservice). |
 
 `TValidateOption` values and the server flag each one sets:
 
@@ -467,13 +467,13 @@ Validates and repairs a database, sweeps it, and lists or resolves limbo transac
 
 `TLimboTransactionInfo` fields: `MultiDatabase`, `Id`, `HostSite`, `RemoteSite`, `RemoteDatabasePath`, `State` (`LimboState`, `CommitState`, `RollbackState`, `UnknownState`), `Advise` (`CommitAdvise`, `RollbackAdvise`, `UnknownAdvise`), and `Action` (`CommitAction`, `RollbackAction`). `HostSite`, `RemoteSite`, `RemoteDatabasePath`, `State`, and `Advise` are filled only for multi-database transactions. Without an advice, `Action` is `CommitAction`.
 
-## TpFIBSecurityService
+## TFIBSecurityService
 
 Manages users in the security database.
 
 | | |
 |---|---|
-| Inherits from | `TpFIBControlAndQueryService` |
+| Inherits from | `TFIBControlAndQueryService` |
 
 ```delphi
 Security.Active := True;
@@ -490,7 +490,7 @@ finally
 end;
 ```
 
-`Security` is a `TpFIBSecurityService` with its connection parameters set as in the first example, and `I` is an `Integer`. This sample was not run against a server.
+`Security` is a `TFIBSecurityService` with its connection parameters set as in the first example, and `I` is an `Integer`. This sample was not run against a server.
 
 ### Published properties
 

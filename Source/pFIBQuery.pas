@@ -1,6 +1,4 @@
-unit pFIBQuery;
-
-{$MESSAGE WARN 'Unit pFIBQuery is deprecated, use FIBQuery (TFIBQuery) and FIBDataSet (TFIBUpdateObject)'}
+unit pFIBQuery deprecated 'Use FIBQuery (TFIBQuery) and FIBDataSet (TFIBUpdateObject)';
 
 interface
 

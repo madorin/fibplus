@@ -1,6 +1,4 @@
-unit pFIBMetaData;
-
-{$MESSAGE WARN 'Unit pFIBMetaData is deprecated, use FIBMetaData (TFIBDBSchemaExtract)'}
+unit pFIBMetaData deprecated 'Use FIBMetaData (TFIBDBSchemaExtract)';
 
 interface
 
@@ -163,5 +161,8 @@ procedure FullExtractDDL(DB: TFIBDatabase; Dest: TStrings);
 begin
   FIBMetaData.FullExtractDDL(DB, Dest);
 end;
+
+initialization
+  RegisterClassAlias(TFIBDBSchemaExtract, 'TpFIBDBSchemaExtract');
 
 end.

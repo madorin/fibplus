@@ -23,8 +23,8 @@ uses
   Classes, Sysutils, DB, DSContainer,
   FIBSQLLog, SIBFIBEA, FIBMetadata, FIBDataRefresh, FIBExports,
 {$IFNDEF NO_MONITOR} FIBSQLMonitor, {$ENDIF} FIBErrorHandler,
-  FIBStoredProc, FIBProps, pFIBClientDataSet {$IFDEF INC_SERVICE_SUPPORT},
-  IB_Services {$ENDIF}
+  FIBStoredProc, FIBProps, FIBClientDataSet {$IFDEF INC_SERVICE_SUPPORT},
+  FIBServices {$ENDIF}
 {$IFDEF IBINSTALL_SUPPORT}, IB_Install{$ENDIF};
 
 procedure Register;
@@ -49,7 +49,7 @@ begin
     TFIBBCDField, TFIBFMTBCDField, TFIBFloatField, TFIBBooleanField,
     TFIBDateTimeField, TFIBDateField, TFIBTimeField, TFIBGuidField,
     TFIBStringField, TFIBWideStringField, TFIBBlobField, TFIBMemoField
-{$IFDEF SUPPORT_ARRAY_FIELD}, TFIBArrayField{$ENDIF}, TpFIBClientBCDField]);
+{$IFDEF SUPPORT_ARRAY_FIELD}, TFIBArrayField{$ENDIF}, TFIBClientBCDField]);
 
   RegisterFields([TFIBStringField, TFIBIntegerField, TFIBSmallIntField,
     TFIBFloatField, TFIBBCDField, TFIBFMTBCDField, TFIBBooleanField,
@@ -58,14 +58,14 @@ begin
   RegisterComponents(pnFIBPlus, [TFIBDatabase, TFIBDataSet, TFIBTransaction,
     TFIBQuery, TFIBStoredProc, TFIBUpdateObject, TDataSetsContainer,
     TFIBErrorHandler, TFIBScripter, TFIBDBSchemaExtract, TFIBTableChangesReader, TFIBSQLLogger, TSIBfibEventAlerter,
-    TpFIBClientDataSet, TpFIBDataSetProvider
+    TFIBClientDataSet, TFIBDataSetProvider
 {$IFNDEF NO_MONITOR}, TFIBSQLMonitor{$ENDIF}]);
 
 {$IFDEF INC_SERVICE_SUPPORT}
-  RegisterComponents(pnFIBPlusServices, [TpFIBServerProperties,
-    TpFIBConfigService, TpFIBLicensingService, TpFIBLogService,
-    TpFIBStatisticalService, TpFIBBackupService, TpFIBRestoreService,
-    TpFIBValidationService, TpFIBSecurityService, TpFIBNBackupService, TpFIBNRestoreService]);
+  RegisterComponents(pnFIBPlusServices, [TFIBServerProperties,
+    TFIBConfigService, TFIBLicensingService, TFIBLogService,
+    TFIBStatisticalService, TFIBBackupService, TFIBRestoreService,
+    TFIBValidationService, TFIBSecurityService, TFIBNBackupService, TFIBNRestoreService]);
 {$ENDIF}
 {$IFDEF IBINSTALL_SUPPORT}
   RegisterComponents(pnFIBPlusServices, [TpFIBInstall, TpFIBUnInstall]);

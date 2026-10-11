@@ -61,7 +61,7 @@ object Form1: TForm1
       Caption = 
         'This Example demonstrate using IB/FB BlobFilers. Using DIPUCL li' +
         'brary for compresing data with UCL algoritm from "http://www.yun' +
-        'qa.de/delphi/". Also demonstrated using TpFIBGUIDField'
+        'qa.de/delphi/". Also demonstrated using TFIBGuidField'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
       Font.Height = -11

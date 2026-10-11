@@ -1,6 +1,4 @@
-unit pFIBErrorHandler;
-
-{$MESSAGE WARN 'Unit pFIBErrorHandler is deprecated, use FIBErrorHandler (TFIBErrorHandler)'}
+unit pFIBErrorHandler deprecated 'Use FIBErrorHandler (TFIBErrorHandler)';
 
 interface
 

@@ -97,7 +97,9 @@
     <DCCReference Include="..\Source\IB_Install.pas" />
     <DCCReference Include="..\Source\IB_InstallHeader.pas" />
     <DCCReference Include="..\Source\IB_Intf.pas" />
+    <DCCReference Include="..\Source\FIBServices.pas" />
     <DCCReference Include="..\Source\IB_Services.pas" />
+    <DCCReference Include="..\Source\FIBArray.pas" />
     <DCCReference Include="..\Source\pFIBArray.pas" />
     <DCCReference Include="..\Source\FIBCacheQueries.pas" />
     <DCCReference Include="..\Source\pFIBDatabase.pas" />

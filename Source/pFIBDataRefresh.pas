@@ -1,6 +1,4 @@
-unit pFIBDataRefresh;
-
-{$MESSAGE WARN 'Unit pFIBDataRefresh is deprecated, use FIBDataRefresh (TFIBTableChangesReader)'}
+unit pFIBDataRefresh deprecated 'Use FIBDataRefresh (TFIBTableChangesReader)';
 
 interface
 

@@ -25,6 +25,7 @@ package FIBPlus6;
 {$DESCRIPTION 'FIBPlus'}
 {$DESIGNONLY}
 {$IMPLICITBUILD OFF}
+{$WARN UNIT_DEPRECATED OFF}
 
 requires
   vcl,
@@ -46,8 +47,10 @@ contains
   IB_Install in '..\Source\IB_Install.pas',
   IB_InstallHeader in '..\Source\IB_InstallHeader.pas',
   IB_Intf in '..\Source\IB_Intf.pas',
+  FIBServices in '..\Source\FIBServices.pas',
   IB_Services in '..\Source\IB_Services.pas',
   ibase in '..\Source\ibase.pas',
+  FIBArray in '..\Source\FIBArray.pas',
   pFIBArray in '..\Source\pFIBArray.pas',
   pFIBDatabase in '..\Source\pFIBDatabase.pas',
   FIBDataInfo in '..\Source\FIBDataInfo.pas',
@@ -91,6 +94,7 @@ contains
   FIBExports in '..\Source\FIBExports.pas',
   FIBDataRefresh in '..\Source\FIBDataRefresh.pas',
   pFIBDataRefresh in '..\Source\pFIBDataRefresh.pas',
+  FIBClientDataSet in '..\Source\FIBClientDataSet.pas',
   pFIBClientDataSet in '..\Source\pFIBClientDataSet.pas';
 
 end.

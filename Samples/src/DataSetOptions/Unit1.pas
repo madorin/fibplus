@@ -8,7 +8,7 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase,
   ExtCtrls, StdCtrls, Grids, DBGrids, FIBSQLMonitor, DBClient, Provider,
-  pFIBClientDataSet;
+  FIBClientDataSet;
 
 type
   TForm1 = class(TForm)

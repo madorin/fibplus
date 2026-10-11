@@ -1,6 +1,4 @@
-unit pFIBSQLLog;
-
-{$MESSAGE WARN 'Unit pFIBSQLLog is deprecated, use FIBSQLLog (TFIBSQLLogger)'}
+unit pFIBSQLLog deprecated 'Use FIBSQLLog (TFIBSQLLogger)';
 
 interface
 

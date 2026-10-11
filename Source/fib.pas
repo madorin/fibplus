@@ -293,7 +293,7 @@ const
   );
 
 type
-  TpFIBLoginDialog = function(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
+  TFIBLoginDialogFunc = function(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
 
 const
   SQLDecimalSeparator = '.';
@@ -305,7 +305,7 @@ resourcestring
 var
   FIBCS: TCriticalSection;
   // hFIBTLGlobals: DWord_;
-  pFIBLoginDialog: TpFIBLoginDialog;
+  FIBLoginDialog: TFIBLoginDialogFunc;
 
   (* FIBAlloc acts like Realloc, except that it guarantees that
     the "newly" allocated memory is initialized to 0's *)

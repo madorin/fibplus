@@ -89,7 +89,7 @@ type
 implementation
 
 uses
-  FIBDataInfo, FIBProps, IB_Services;
+  FIBDataInfo, FIBProps, FIBServices;
 
 var
   vFIBClassesExporter: TFIBClassesExporter;

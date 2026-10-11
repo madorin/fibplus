@@ -14,8 +14,8 @@ For task-oriented explanations, see the [Guide](../guide/).
 | [TFIBUpdateObject](TFIBUpdateObject.md) | `FIBDataSet` | Custom statements for dataset insert, update, delete. |
 | [TFIBScripter](TFIBScripter.md) | `FIBScripter` | Runs SQL scripts, including `SET` statements and terminators. |
 | [TFIBSQLMonitor](TFIBSQLMonitor.md) | `FIBSQLMonitor` | Traces SQL activity of the library. |
-| [TpFIBClientDataSet](TpFIBClientDataSet.md) | `pFIBClientDataSet` | Client dataset and provider for multi-tier applications. |
-| [IB_Services components](TpFIBServices.md) | `IB_Services` | Service API components: backup, restore, validation, users, statistics. |
+| [TFIBClientDataSet](TFIBClientDataSet.md) | `FIBClientDataSet` | Client dataset and provider for multi-tier applications. |
+| [FIBServices components](TFIBServices.md) | `FIBServices` | Service API components: backup, restore, validation, users, statistics. |
 
 ## Page template
 

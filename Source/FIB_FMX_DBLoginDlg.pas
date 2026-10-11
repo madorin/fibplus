@@ -28,7 +28,7 @@ type
     { Public declarations }
   end;
 
-function pFIBLoginDialogFMX(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
+function FIBLoginDialogFMX(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
 
 implementation
 
@@ -37,7 +37,7 @@ uses
 
 {$R *.fmx}
 
-function pFIBLoginDialogFMX(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
+function FIBLoginDialogFMX(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
 var
   frmFIBDBLoginDlg: TfmxFIBDBLoginDlg;
 begin
@@ -76,10 +76,10 @@ end;
 
 initialization
 
-pFIBLoginDialog := pFIBLoginDialogFMX;
+FIBLoginDialog := FIBLoginDialogFMX;
 
 finalization
 
-pFIBLoginDialog := nil
+FIBLoginDialog := nil
 
 end.

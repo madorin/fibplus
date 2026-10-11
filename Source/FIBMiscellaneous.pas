@@ -25,7 +25,7 @@ uses
 {$ENDIF}
   SysUtils, SyncObjs, Classes, ibase, IB_Intf, IB_Externals,
   DB, fib, FIBDatabase, FIBQuery, StdFuncs, IB_ErrorCodes, FIBPlatforms
-{$IFDEF SUPPORT_ARRAY_FIELD}, pFIBArray{$ENDIF};
+{$IFDEF SUPPORT_ARRAY_FIELD}, FIBArray{$ENDIF};
 
 const
   DefaultBlobSegmentSize = High(Word);
@@ -168,16 +168,16 @@ type
 
 {$IFDEF SUPPORT_ARRAY_FIELD}
 
-  // The whole ARRAY value, with the layout of the slice calls (see TpFIBArray)
+  // The whole ARRAY value, with the layout of the slice calls (see TFIBArray)
   TFIBArrayStream = class(TFIBFieldStream)
   private
-    FArray: TpFIBArray;
+    FArrayInfo: TFIBArray;
   protected
     procedure Load(CallBack: TCallBackBlobReadWrite); override;
     procedure Store(CallBack: TCallBackBlobReadWrite); override;
   public
-    constructor CreateNew(AFieldNo: Integer; AStreamList: TList; AArray: TpFIBArray); reintroduce;
-    property FIBArray: TpFIBArray read FArray;
+    constructor CreateNew(AFieldNo: Integer; AStreamList: TList; AArray: TFIBArray); reintroduce;
+    property ArrayInfo: TFIBArray read FArrayInfo;
   end;
 {$ENDIF}
 
@@ -1632,18 +1632,18 @@ end;
 
 {$IFDEF SUPPORT_ARRAY_FIELD}
 
-constructor TFIBArrayStream.CreateNew(AFieldNo: Integer; AStreamList: TList; AArray: TpFIBArray);
+constructor TFIBArrayStream.CreateNew(AFieldNo: Integer; AStreamList: TList; AArray: TFIBArray);
 begin
   inherited CreateNew(AFieldNo, AStreamList);
-  FArray := AArray;
+  FArrayInfo := AArray;
 end;
 
 procedure TFIBArrayStream.Load(CallBack: TCallBackBlobReadWrite);
 begin
   CheckReadable;
   CheckHandles;
-  SetSize(FArray.ArraySize);
-  if FArray.GetSlice(@FBlobID, FBuffer, DBHandle, TRHandle) = 0 then
+  SetSize(FArrayInfo.ArraySize);
+  if FArrayInfo.GetSlice(@FBlobID, FBuffer, DBHandle, TRHandle) = 0 then
     SetSize(0);
 end;
 
@@ -1655,11 +1655,11 @@ begin
     FBlobID.gds_quad_high := 0;
     FBlobID.gds_quad_low := 0;
   end
-  else if FDataSize <> FArray.ArraySize then
+  else if FDataSize <> FArrayInfo.ArraySize then
     FIBErrorEx('Array %s.%s: the value has %d bytes instead of %d',
-      [FArray.TableName, FArray.FieldName, FDataSize, FArray.ArraySize])
+      [FArrayInfo.TableName, FArrayInfo.FieldName, FDataSize, FArrayInfo.ArraySize])
   else
-    FArray.PutSlice(FBuffer, FBlobID, DBHandle, UpdateTRHandle);
+    FArrayInfo.PutSlice(FBuffer, FBlobID, DBHandle, UpdateTRHandle);
 end;
 {$ENDIF}
 (*

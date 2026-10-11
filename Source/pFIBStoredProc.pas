@@ -1,6 +1,4 @@
-unit pFIBStoredProc;
-
-{$MESSAGE WARN 'Unit pFIBStoredProc is deprecated, use FIBStoredProc (TFIBStoredProc)'}
+unit pFIBStoredProc deprecated 'Use FIBStoredProc (TFIBStoredProc)';
 
 interface
 

@@ -26,7 +26,7 @@ uses
   DBCommon, DbConsts, DBParsers,
   FIBDatabase, FIBQuery, FIBMiscellaneous, SqlTxtRtns, FIBLists,
   FIBCloneComponents,
-{$IFDEF SUPPORT_ARRAY_FIELD}pFIBArray, {$ENDIF}
+{$IFDEF SUPPORT_ARRAY_FIELD}FIBArray, {$ENDIF}
   FIBInterfaces, FIBEventLists, DSContainer,
   Classes, StdFuncs
 {$IFNDEF NO_GUI}
@@ -805,7 +805,7 @@ type
     function FieldStreamIndex(Field: TField): Integer;
 {$IFDEF SUPPORT_ARRAY_FIELD}
     procedure PrepareStreamFields;
-    function GetFieldArray(Field: TField): TpFIBArray;
+    function GetFieldArray(Field: TField): TFIBArray;
     function ReadArrayBuffer(Field: TField; Buffer: PAnsiChar): Boolean;
     procedure WriteArrayBuffer(Field: TField; Buffer: PAnsiChar);
 {$ENDIF}
@@ -7690,7 +7690,7 @@ begin
               begin
       {$IFDEF SUPPORT_ARRAY_FIELD}
                 if Field is TFIBArrayField then
-                  fs := TFIBArrayStream.CreateNew(Field.FieldNo, FFieldStreamList, FQSelect[Field.FieldName].FIBArray)
+                  fs := TFIBArrayStream.CreateNew(Field.FieldNo, FFieldStreamList, FQSelect[Field.FieldName].ArrayInfo)
                 else
       {$ENDIF}
                   begin
@@ -12629,9 +12629,9 @@ begin
       end;
 end;
 
-function TFIBCustomDataSet.GetFieldArray(Field: TField): TpFIBArray;
+function TFIBCustomDataSet.GetFieldArray(Field: TField): TFIBArray;
 begin
-  Result := QSelect[Field.FieldName].FIBArray;
+  Result := QSelect[Field.FieldName].ArrayInfo;
   if Result = nil then
     FIBError(feNotIsArrayField, [Field.FieldName]);
 end;
@@ -12672,7 +12672,7 @@ end;
 
 function TFIBCustomDataSet.ArrayFieldValue(Field: TField): Variant;
 var
-  Arr: TpFIBArray;
+  Arr: TFIBArray;
   Buffer: TDataBuffer;
 begin
   Result := Null;
@@ -12714,7 +12714,7 @@ end;
 
 function TFIBCustomDataSet.GetElementFromValue(Field: TField; Indexes: array of Integer): Variant;
 var
-  Arr: TpFIBArray;
+  Arr: TFIBArray;
   Buffer: TDataBuffer;
 begin
   Result := Null;
@@ -12735,7 +12735,7 @@ end;
 
 procedure TFIBCustomDataSet.SetArrayElementValue(Field: TField; Value: Variant; Indexes: array of Integer);
 var
-  Arr: TpFIBArray;
+  Arr: TFIBArray;
   Buffer: TDataBuffer;
 begin
   CheckEditState;

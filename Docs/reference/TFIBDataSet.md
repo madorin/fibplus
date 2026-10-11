@@ -807,6 +807,6 @@ The dataset creates these `TField` descendants for the columns of `SelectSQL`. M
 
 - [TFIBQuery](TFIBQuery.md), [TFIBDatabase](TFIBDatabase.md), [TFIBTransaction](TFIBTransaction.md)
 - [TFIBUpdateObject](TFIBUpdateObject.md)
-- [TpFIBClientDataSet](TpFIBClientDataSet.md), which uses the provider support of this class
+- [TFIBClientDataSet](TFIBClientDataSet.md), which uses the provider support of this class
 - [Datasets and caching](../guide/datasets-and-caching.md)
 - [Timeouts](../guide/timeouts.md)

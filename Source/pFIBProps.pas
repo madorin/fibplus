@@ -1,6 +1,4 @@
-unit pFIBProps;
-
-{$MESSAGE WARN 'Unit pFIBProps is deprecated, use FIBProps'}
+unit pFIBProps deprecated 'Use FIBProps';
 
 interface
 

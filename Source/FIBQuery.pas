@@ -23,7 +23,7 @@ uses
   SysUtils, Classes, ibase, IB_Intf, IB_Externals, FIBPlatforms,
   DB, fib, FIBDatabase, StdFuncs, IB_ErrorCodes, SqlTxtRtns, FIBProps,
   FIBInterfaces
-{$IFDEF SUPPORT_ARRAY_FIELD}, pFIBArray {$ENDIF}
+{$IFDEF SUPPORT_ARRAY_FIELD}, FIBArray {$ENDIF}
   , FMTBcd, Variants, FIBTypes;
 
 type
@@ -93,7 +93,7 @@ type
     FWideTempValue: WideString;
     FParDataIsPrepared: boolean;
 {$IFDEF SUPPORT_ARRAY_FIELD}
-    vFIBArray: TpFIBArray;
+    FArrayInfo: TFIBArray;
     // value of an array parameter, written before the execution (TFIBQuery.PutArrayParams)
     FArrayValue: Variant;
 {$ENDIF}
@@ -299,7 +299,7 @@ type
 
     // Array Support
 {$IFDEF SUPPORT_ARRAY_FIELD}
-    property FIBArray: TpFIBArray read vFIBArray;
+    property ArrayInfo: TFIBArray read FArrayInfo;
     property DimensionCount: integer read GetDimensionCount;
     property Dimension[Index: integer]: TISC_ARRAY_BOUND read GetDimension;
     property ElementType: TFieldType read GetElementType;
@@ -793,8 +793,8 @@ end;
 destructor TFIBXSQLVAR.Destroy; // override;
 begin
 {$IFDEF SUPPORT_ARRAY_FIELD}
-  if Assigned(vFIBArray) then
-    vFIBArray.Free;
+  if Assigned(FArrayInfo) then
+    FArrayInfo.Free;
 {$ENDIF}
   inherited Destroy;
   FreeAndNil(FStreamValue);
@@ -1731,7 +1731,7 @@ end;
 
 procedure TFIBXSQLVAR.CheckArrayType;
 begin
-  if not IsArray or not Assigned(vFIBArray) then
+  if not IsArray or not Assigned(FArrayInfo) then
     if FParent.FIsParams then
       FIBError(feNotIsArrayField, [Name])
     else
@@ -1741,25 +1741,25 @@ end;
 function TFIBXSQLVAR.GetDimensionCount: integer;
 begin
   CheckArrayType;
-  Result := vFIBArray.DimensionCount
+  Result := FArrayInfo.DimensionCount
 end;
 
 function TFIBXSQLVAR.GetElementType: TFieldType;
 begin
   CheckArrayType;
-  Result := vFIBArray.ArrayType
+  Result := FArrayInfo.ArrayType
 end;
 
 function TFIBXSQLVAR.GetDimension(Index: integer): TISC_ARRAY_BOUND;
 begin
   CheckArrayType;
-  Result := vFIBArray.Dimension[Index]
+  Result := FArrayInfo.Dimension[Index]
 end;
 
 function TFIBXSQLVAR.GetSliceSize: integer;
 begin
   CheckArrayType;
-  Result := vFIBArray.ArraySize
+  Result := FArrayInfo.ArraySize
 end;
 
 procedure TFIBXSQLVAR.SetArrayValue(Value: Variant);
@@ -1774,7 +1774,7 @@ begin
     Exit;
   end;
   CheckArrayType;
-  vFIBArray.SetArrayValue(Value, FXSQLVAR^.sqldata, FQuery.DBHandle, FQuery.TRHandle);
+  FArrayInfo.SetArrayValue(Value, FXSQLVAR^.sqldata, FQuery.DBHandle, FQuery.TRHandle);
   AsQuad := PISC_QUAD(FXSQLVAR^.sqldata)^;
 end;
 
@@ -1792,7 +1792,7 @@ begin
   if IsNull then
     Result := NULL
   else
-    Result := vFIBArray.GetArrayValues(FXSQLVAR^.sqldata, FQuery.DBHandle, FQuery.TRHandle);
+    Result := FArrayInfo.GetArrayValues(FXSQLVAR^.sqldata, FQuery.DBHandle, FQuery.TRHandle);
 end;
 
 function TFIBXSQLVAR.GetArrayElement(Indexes: array of integer): Variant;
@@ -1801,13 +1801,13 @@ begin
   if IsNull then
     Result := NULL
   else
-    Result := vFIBArray.GetElement(FXSQLVAR^.sqldata, Indexes, FQuery.DBHandle, FQuery.TRHandle);
+    Result := FArrayInfo.GetElement(FXSQLVAR^.sqldata, Indexes, FQuery.DBHandle, FQuery.TRHandle);
 end;
 
 function TFIBXSQLVAR.GetArraySize: integer;
 begin
   CheckArrayType;
-  Result := vFIBArray.ArraySize
+  Result := FArrayInfo.ArraySize
 end;
 {$ENDIF}
 // End Array Support
@@ -5855,10 +5855,10 @@ end;
 procedure TFIBQuery.PrepareArraySqlVar(SqlVar: TFIBXSQLVAR; const RelName, SqlName: string);
 begin
   // the variables of the query are reused by the next Prepare, also for another statement
-  if (SqlVar.vFIBArray = nil) or not SqlVar.vFIBArray.Matches(Database, RelName, SqlName) then
+  if (SqlVar.FArrayInfo = nil) or not SqlVar.FArrayInfo.Matches(Database, RelName, SqlName) then
   begin
-    FreeAndNil(SqlVar.vFIBArray);
-    SqlVar.vFIBArray := TpFIBArray.Create(Database, Transaction, RelName, SqlName);
+    FreeAndNil(SqlVar.FArrayInfo);
+    SqlVar.FArrayInfo := TFIBArray.Create(Database, Transaction, RelName, SqlName);
   end;
 end;
 
@@ -5905,16 +5905,16 @@ begin
       ReadParamNames;
     ColumnRelation := Srvpar.FRelationName;
     ColumnName := Srvpar.FSqlName;
-    if (Par.vFIBArray = nil) or not Par.vFIBArray.Matches(Database, ColumnRelation, ColumnName) then
+    if (Par.FArrayInfo = nil) or not Par.FArrayInfo.Matches(Database, ColumnRelation, ColumnName) then
     begin
-      FreeAndNil(Par.vFIBArray);
-      Par.vFIBArray := TpFIBArray.Create(Database, Transaction, ColumnRelation, ColumnName);
+      FreeAndNil(Par.FArrayInfo);
+      Par.FArrayInfo := TFIBArray.Create(Database, Transaction, ColumnRelation, ColumnName);
     end;
     buffer := nil;
-    FIBAlloc(buffer, 0, Par.vFIBArray.ArraySize);
+    FIBAlloc(buffer, 0, Par.FArrayInfo.ArraySize);
     try
-      Par.vFIBArray.VariantToBuffer(Par.FArrayValue, PAnsiChar(buffer));
-      Par.vFIBArray.PutSlice(PAnsiChar(buffer), ID, DBHandle, TRHandle);
+      Par.FArrayInfo.VariantToBuffer(Par.FArrayValue, PAnsiChar(buffer));
+      Par.FArrayInfo.PutSlice(PAnsiChar(buffer), ID, DBHandle, TRHandle);
     finally
       FIBAlloc(buffer, 0, 0);
     end;

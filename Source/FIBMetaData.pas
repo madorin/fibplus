@@ -4613,7 +4613,4 @@ begin
   Stream.WriteString(FSpec);
 end;
 
-initialization
-  RegisterClassAlias(TFIBDBSchemaExtract, 'TpFIBDBSchemaExtract');
-
 end.
