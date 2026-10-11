@@ -530,6 +530,7 @@ var
   Bcd: TBcd;
   TS: TTimeStamp;
   SQLType: Integer;
+  D: Double;
 begin
   case FElementType of
     blr_text, blr_varying:
@@ -588,7 +589,11 @@ begin
         else
           Result := FBRawToDouble(SQLType, FElementScale, P);
       end;
-    blr_float: Result := Double(PSingle(P)^);
+    blr_float:
+      begin
+        D := PSingle(P)^;
+        Result := D;
+      end;
     blr_double, blr_d_float: Result := PDouble(P)^;
     blr_sql_date:
       begin
