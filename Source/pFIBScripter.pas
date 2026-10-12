@@ -2227,7 +2227,11 @@ begin
           CloseDirectiveCondition(X, Y);
     else
       if (C = '-') and (X < L) and (S[X + 1] = '-') then
-        Break
+      begin
+        // an item of the script may hold several lines
+        while (X < L) and not CharInSet(S[X + 1], [#10, #13]) do
+          Inc(X);
+      end
       else if (C = '/') and (X < L) and (S[X + 1] = '*') then
       begin
         FState := psInComment;
@@ -2804,7 +2808,9 @@ begin
             ; // skip
           '-':
             if (i < Len) and (CurStr[i + 1] = '-') then
-              Break; // comment up to the end of the line
+              // comment up to the end of the line
+              while (i < Len) and not CharInSet(CurStr[i + 1], [#10, #13]) do
+                Inc(i);
           '/':
             if (i < Len) and (CurStr[i + 1] = '*') then
             begin
