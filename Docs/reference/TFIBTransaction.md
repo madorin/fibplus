@@ -1,12 +1,12 @@
 # TFIBTransaction
 
-Controls one transaction on one or more databases: starts it, ends it, and holds its parameters. Queries and datasets run inside the transaction assigned to them. A transaction can end by itself after a period of inactivity (`Timeout`).
+Controls one transaction on one or more databases: starts it, ends it, and holds its parameters. Queries and datasets run inside the transaction assigned to them. A transaction can end by itself after a period of inactivity (`Timeout`). A transaction mode sets the parameters, named transaction kinds can be saved at design time, and events run around starting and ending the transaction and around the queries that run in it.
 
 | | |
 |---|---|
 | Unit | `FIBDatabase` |
 | Inherits from | `TComponent` |
-| Descendants | `TpFIBTransaction`, which adds events, transaction kinds, and parameter handling |
+| Deprecated alias | `TpFIBTransaction`, in the unit `pFIBDatabase` |
 
 The sample uses the components `Database`, `Transaction`, and `Query`; `Query.Transaction` is set to `Transaction`.
 
@@ -23,7 +23,20 @@ except
 end;
 ```
 
-Guides: [Transactions](../guide/transactions.md), [Timeouts](../guide/timeouts.md).
+A transaction mode chooses the parameters by name. The sample runs a query in a repeatable read transaction.
+
+```delphi
+Transaction.DefaultDatabase := Database;
+Transaction.TPBMode := tpbRepeatableRead;
+Transaction.StartTransaction;
+try
+  Query.ExecQuery;
+finally
+  Transaction.Commit;
+end;
+```
+
+Guides: [Transactions](../guide/transactions.md), [Timeouts](../guide/timeouts.md), [Events and monitoring](../guide/events-and-monitoring.md).
 
 ## Published properties
 
@@ -33,19 +46,24 @@ Available in the Object Inspector.
 |------|------|---------|-------------|
 | `Active` | `Boolean` | | `True` while the transaction is started. Setting `True` calls `StartTransaction`; setting `False` calls `Rollback`. Stored in the form only when `Active` is `True` and the main database has `StoreConnected` set. |
 | `DefaultDatabase` | `TFIBDatabase` | | Main database of the transaction. Raises if the transaction is active. |
-| `TRParams` | `TStrings` | empty | Transaction parameters, one per line. See [Transaction parameters](#transaction-parameters). |
+| `TRParams` | `TStrings` | lines of `tpbReadCommitted` | Transaction parameters, one per line, exactly as they are sent. See [Transaction parameters](#transaction-parameters) and [Transaction mode](#transaction-mode). Stored in the form only when `TPBMode` is `tpbDefault`. |
 | `Timeout` | `Cardinal` | `0` | Client-side inactivity time in milliseconds. `0` disables it. See [Timeout](#timeout). |
-| `TimeoutAction` | `TTransactionAction` | `TARollback` | How the transaction ends on `Timeout`. Also used when the database disconnects and when the component is destroyed. The design-time default comes from `DefTimeOutAction` in `pFIBProps`. See [Types](#types). |
+| `TimeoutAction` | `TTransactionAction` | `TARollback` | How the transaction ends on `Timeout`. Also used when the database disconnects and when the component is destroyed. The design-time default comes from `DefTimeOutAction` in `FIBProps`. See [Types](#types). |
 | `WatchUncommitedUpdates` | `Boolean` | `False` | Track whether the transaction has uncommitted changes, see `HasUncommitedUpdates`. |
 | `CSMonitorSupport` | `TCSMonitorSupport` | | Monitoring support. Only when compiled with `CSMonitor`. |
+| `TPBMode` | `TTPBMode` | `tpbReadCommitted` | Chooses the lines of `TRParams`, see [Transaction mode](#transaction-mode). At design time the initial value of a component dropped on a form comes from `DefTPBMode` in `FIBProps`. |
+| `UserKindTransaction` | `string` | `NoUserKind` | Name of a transaction kind, see [Transaction kinds](#transaction-kinds). Stored in the form only when it is not `NoUserKind`. |
+| `About` | `string` | | Library version text. Writing is ignored and the value is not stored. |
+
+Events are listed in [Events](#events).
 
 ## Transaction parameters
 
-`TRParams` holds one parameter per line. Names are case-insensitive, and the prefix `isc_tpb_` is optional (`read_committed` and `isc_tpb_read_committed` are the same). Blank lines are ignored. The list is converted to a transaction parameter buffer on every start.
+`TRParams` holds one parameter per line. Names are case-insensitive, and the prefix `isc_tpb_` is optional (`read_committed` and `isc_tpb_read_committed` are the same). Blank lines are ignored. The list is converted to a transaction parameter buffer when the transaction starts, and what the list holds is what is sent: see [Transaction mode](#transaction-mode) for the lines a new transaction has.
 
-With an empty list no parameters are sent, and the server uses its defaults. A name that is neither in the table below nor in the list of unsupported names raises `EFIBClientError`. `TRParams` cannot be changed while the transaction is active.
+With an empty list no parameters are sent, and the server uses its defaults (`concurrency`, `wait`, `write`). A name that is neither in the table below nor in the list of unsupported names raises `EFIBClientError`. `TRParams` cannot be changed while the transaction is active.
 
-Each line is split at the first `=` without trimming the name, so no spaces are allowed around `=`: `lock_timeout = 5` raises `EFIBClientError` (unknown parameter). The conversion also rewrites the lines of `TRParams` with leading and trailing blanks removed.
+Each line is split at the first `=` without trimming the name, so no spaces are allowed around `=`: `lock_timeout = 5` raises `EFIBClientError` (unknown parameter).
 
 | Parameter | Group | Meaning |
 |-----------|-------|---------|
@@ -83,14 +101,75 @@ Transaction.TRParams.Add('rec_version');
 Transaction.TRParams.Add('lock_timeout=5');
 ```
 
+## Transaction mode
+
+`TPBMode` chooses a preset. The preset writes its lines into `TRParams`, so the list always shows what is sent.
+
+| `TPBMode` | `TRParams` lines |
+|-----------|------------------|
+| `tpbDefault` | The lines you write. An empty list means the server default (`concurrency`, `wait`, `write`). |
+| `tpbReadCommitted` | `write`, `isc_tpb_nowait`, `read_committed`, `rec_version` |
+| `tpbRepeatableRead` | `write`, `isc_tpb_nowait`, `concurrency` |
+| `tpbReadConsistency` | `write`, `isc_tpb_nowait`, `read_committed`, `read_consistency`. *Firebird 4+*: when the list sent to a database holds `read_consistency` and that server is older, `StartTransaction` raises `EFIBClientError` before the start. |
+
+`tpbReadCommitted` is the default. On *Firebird 4+* with the default server setting `ReadConsistency = 1`, every read committed transaction runs in read consistency mode, so `tpbReadCommitted` behaves like `tpbReadConsistency` there. The two differ only when the database has `ReadConsistency = 0`.
+
+The rule: a preset writes its lines into `TRParams`, and `TRParams` is always exactly what is sent.
+
+- Setting a preset replaces `TRParams` with its lines. This also happens when the component is created and when a form loads.
+- `TPBMode` is a preset exactly while its lines are untouched. Any change of `TRParams` sets `TPBMode` to `tpbDefault`. From then on the list is an ordinary list and no start changes it.
+- Setting `tpbDefault` on an untouched preset empties `TRParams`. Lines you add afterwards stay as written.
+- Setting a preset again after a change drops your own lines and writes the preset lines.
+- `TPBMode` and `TRParams` cannot change while the transaction is active; the attempt raises `EFIBClientError` (`feInTransaction`).
+
+How the first change ends the preset:
+
+| Change | Result |
+|--------|--------|
+| `Clear`, `Text :=`, `Assign`, `TRParams := ...`, `LoadFromFile`, `LoadFromStream` | The list is the new content. |
+| `Add`, `Insert`, `AddObject`, `AddStrings` of a line named `read`, `write`, `read_committed`, `rec_version`, `no_rec_version`, `read_consistency`, `concurrency`, `consistency`, `wait`, `nowait`, or `lock_timeout` | The preset lines are removed, then the line is added: these lines mean your own parameters. |
+| `Add`, `Insert`, `AddObject`, `AddStrings` of any other line (`no_auto_undo`, `ignore_limbo`, `lock_read=T`, `lock_write=T`, `shared`, `protected`, `exclusive`, or an unknown name) | The line extends the preset. |
+| `Delete`, `Strings[i] :=`, `Exchange`, `Move`, `Sort` | Applied to the preset lines as they are. |
+
+The name of a line is the text before `=`, trimmed, in any case, without the prefix `isc_tpb_`. `Values['Name'] := ...` for a name that is not in the list adds an empty line and then changes it, so it always extends the preset; use `Add`. A form of an older version loads in the same way: the lines stored in `TRParams` give `tpbDefault`.
+
+```delphi
+Transaction.TRParams.Add('no_auto_undo');
+// the lines of tpbReadCommitted and no_auto_undo; TPBMode is tpbDefault
+
+Transaction.TPBMode := tpbReadCommitted;
+Transaction.TRParams.Add('read');
+Transaction.TRParams.Add('read_committed');
+Transaction.TRParams.Add('rec_version');
+// only these three lines; TPBMode is tpbDefault
+```
+
+FibPlus does not check the lines against each other. A list that contradicts itself, such as a preset with `read` added after `no_auto_undo`, starts the transaction on the server, which refuses it (`isc_bad_tpb_content`). All presets write `write`, so a read-only transaction needs `read` in its own list, as in the sample above.
+
+`lock_timeout` counts as a wait line because *Firebird 3+* refuses it together with `nowait`, which every preset writes. `Add('lock_timeout=5')` on a preset therefore leaves only that line. Write read committed with a lock timeout in full:
+
+```delphi
+Transaction.TRParams.Text := 'write'#13#10'read_committed'#13#10'rec_version'#13#10'lock_timeout=5';
+```
+
+Do not change `TRParams` in `BeforeStart` or in `BeforeStartTransaction` of the database. The list is no longer reset at each start, so a line added there is added again at the next start, and the server refuses the duplicate.
+
 ## Types
 
 | Type | Values |
 |------|--------|
+| `TTPBMode` | `tpbDefault`, `tpbReadCommitted`, `tpbRepeatableRead`, `tpbReadConsistency` |
+| `TOnSQLExecute` | `procedure(Query: TComponent; SQLType: TFIBSQLTypes) of object` |
 | `TTransactionAction` | `TARollback`, `TARollbackRetaining`, `TACommit`, `TACommitRetaining` |
 | `TTransactionState` | `tsActive`, `tsClosed`, `tsDoRollback`, `tsDoRollbackRetaining`, `tsDoCommit`, `tsDoCommitRetaining`; the `tsDo...` values are set while the transaction is ending |
-| `TpFIBTrEventType` | `tetBeforeStartTransaction`, `tetAfterStartTransaction`, `tetBeforeEndTransaction`, `tetAfterEndTransaction`, `tetBeforeDestroy`; selects the list for `AddEvent` and `AddEndEvent` |
+| `TFIBTransactionEventType` | `tetBeforeStartTransaction`, `tetAfterStartTransaction`, `tetBeforeEndTransaction`, `tetAfterEndTransaction`, `tetBeforeDestroy`; selects the list for `AddEvent` and `AddEndEvent` |
 | `TEndTrEvent` | `procedure(EndingTR: TFIBTransaction; Action: TTransactionAction; Force: Boolean) of object`; `Force` is `True` when the end cannot be refused (timeout, disconnect, destroy) |
+
+## Transaction kinds
+
+A transaction kind is a named set of parameters saved in the Windows registry by the design-time tools, under `HKEY_CURRENT_USER\Software\FIBC_Software\Transation Kinds`. Each entry has a `Name` value and a `Params` value.
+
+Setting `UserKindTransaction` at design time, not while the form loads, looks up the entry with that name. When it exists, `TPBMode` becomes `tpbDefault` and `TRParams` takes the saved `Params` text. At run time, and for the name `NoUserKind`, the setter only stores the name. Without registry support in the build (`NO_REGISTRY`) the setter does nothing.
 
 ## Timeout
 
@@ -124,6 +203,9 @@ Assigning `Handle` attaches the component to a transaction started elsewhere. En
 | `Databases[Index]` | `TFIBDatabase` | Database by index. |
 | `FIBBaseCount` | `Integer` | Number of queries and datasets attached to the transaction. |
 | `FIBBases[Index]` | `TFIBBase` | Attached object by index. |
+| `FIBDataSets[Index]` | `TDataSet` | Dataset attached to this transaction, by index. Each dataset is counted once. |
+| `FIBQueries[Index]` | `TComponent` | Query attached to this transaction that does not belong to a dataset, by index. |
+| `Internal` | `Boolean` | `False` by default. Not published. Cannot change while the transaction is active (`feInTransaction`). With `True` the events of the database (`BeforeStartTransaction`, `AfterStartTransaction`, `BeforeEndTransaction`, `AfterEndTransaction`) are not raised for this transaction; its own events, the SQL monitor, and the SQL logger are not affected. The library sets it on the transactions it creates for its own work. See [Events](#events). |
 
 ## Methods
 
@@ -131,15 +213,16 @@ Assigning `Handle` attaches the component to a transaction started elsewhere. En
 
 | Name | Description |
 |------|-------------|
-| `StartTransaction` | Start the transaction on all its databases with one call. Raises if it is already active (`CheckNotInTransaction`) or has no database. At run time, a database that is not connected raises, unless `AutoReconnect` is `True`. With `AutoReconnect`, the database connects first; if that fails, no error is raised and the transaction stays inactive. |
+| `StartTransaction` | Start the transaction on all its databases with one call. Raises `EFIBClientError` (`feInTransaction`) if it is already active, before any event runs (`Active := True` on an active transaction does nothing). Raises if it has no database. Calls the start events around the start, see [Events](#events). At run time, a database that is not connected raises, unless `AutoReconnect` is `True`. With `AutoReconnect`, the database connects first; if that fails, no error is raised and the transaction stays inactive. |
 | `Commit` | Commit and end. |
 | `CommitRetaining` | Commit and keep the transaction and its cursors open. |
 | `Rollback` | Roll back and end. |
 | `RollbackRetaining` | Roll back and keep the transaction open. |
+| `FIBDataSetsCount`, `FIBQueryCount` | Number of entries of `FIBDataSets` and `FIBQueries`. |
 
 When the transaction is not active, each of these methods first calls `CheckInTransaction`. At run time it raises, unless every database has `AutoReconnect` set to `True`; then a transaction is started and ended at once. At design time a transaction is always started first.
 
-*Protected:* `EndTransaction(Action, Force)` is virtual and does the work of all four methods; `TpFIBTransaction` overrides it. `Force` set to `True` ends the transaction even when the server call fails.
+*Protected:* `EndTransaction(Action, Force)` is virtual and does the work of all four methods. It calls the end events around the end, so they run for `Commit`, `Rollback`, the retaining variants, a timeout, a disconnect, and destroying the component. `Force` set to `True` ends the transaction even when the server call fails.
 
 Before the end, the transaction calls the `OnTransactionEnding` hook of every attached object (`FIBBases`), and after the end the `OnTransactionEnded` hook. A `TFIBQuery` uses the first hook internally to close its open cursor (when its internal auto-close flag is set) when the transaction commits or rolls back (not on a retaining action). `TFIBDataSet` forwards both hooks to its published events `TransactionEnding` and `TransactionEnded`. Handlers registered with `AddEndEvent` are called at the same two points, right after the hooks. Closing a transaction with an open cursor is covered in [Transactions](../guide/transactions.md).
 
@@ -183,11 +266,26 @@ Before the end, the transaction calls the `OnTransactionEnding` hook of every at
 
 Unlike a published event, these lists take any number of handlers. Components that need to react to a transaction use them.
 
+### Query events
+
+| Name | Description |
+|------|-------------|
+| `DoOnSQLExec(Query, Kind)` | Called by a query attached to the transaction; runs the base behavior, then `BeforeSQLExecute`, `AfterSQLExecute`, or `AfterFirstFetch`. `Query` is a `TComponent`; `SQLType` is the statement type of a `TFIBQuery`. |
+
 ## Events
 
 | Name | Description |
 |------|-------------|
 | `OnTimeout` | `Timeout` elapsed and `TimeoutAction` was applied; called after the action. With a retaining action the transaction stays active. |
+| `BeforeStart` | Before the transaction starts. |
+| `AfterStart` | After the transaction started. Does not run when the start was skipped without an error (see `AutoReconnect` in [Starting and ending](#starting-and-ending)); `BeforeStart` has run by then. |
+| `BeforeEnd` | Before the transaction ends. `Action` and `Force` tell how. Runs before the check that the transaction is active, so it also runs for `Commit` or `Rollback` on an inactive transaction. |
+| `AfterEnd` | After the transaction ended. |
+| `BeforeSQLExecute` | A query attached to the transaction is about to run. `SQLType` is the statement type. |
+| `AfterSQLExecute` | The query ran. |
+| `AfterFirstFetch` | The first row of a query cursor was fetched. |
+
+The events of `DefaultDatabase` (`BeforeStartTransaction`, `AfterStartTransaction`, `BeforeEndTransaction`, `AfterEndTransaction`, see [TFIBDatabase](TFIBDatabase.md#events)) run for the transaction too, in addition to its own events, unless `Internal` is `True`. Before a start or end, the database event runs first, then the transaction event. After a start or end, the transaction event runs first, then the database event. `StartTransaction` on an active transaction raises before any of the start events.
 
 ## See also
 

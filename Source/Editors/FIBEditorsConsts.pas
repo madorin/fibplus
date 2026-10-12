@@ -1,4 +1,4 @@
-unit pFIBEditorsConsts;
+unit FIBEditorsConsts;
 
 interface
 

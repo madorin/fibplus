@@ -25,7 +25,7 @@ object frmFIBPreferences: TfrmFIBPreferences
     ActivePage = TabSheet4
     TabOrder = 0
     object TabSheet4: TTabSheet
-      Caption = 'TpFIBDataSet'
+      Caption = 'TFIBDataSet'
       object Label4: TLabel
         Left = 8
         Top = 328
@@ -374,7 +374,7 @@ object frmFIBPreferences: TfrmFIBPreferences
       end
     end
     object TabSheet1: TTabSheet
-      Caption = 'TpFIBDatabase'
+      Caption = 'TFIBDatabase'
       object Label6: TLabel
         Left = 12
         Top = 116
@@ -479,7 +479,7 @@ object frmFIBPreferences: TfrmFIBPreferences
       end
     end
     object TabSheet2: TTabSheet
-      Caption = 'TpFIBTransaction'
+      Caption = 'TFIBTransaction'
       object Label1: TLabel
         Left = 7
         Top = 20
@@ -542,7 +542,7 @@ object frmFIBPreferences: TfrmFIBPreferences
       end
     end
     object TabSheet3: TTabSheet
-      Caption = 'TpFIBQuery'
+      Caption = 'TFIBQuery'
       object ChGo1: TCheckBox
         Left = 14
         Top = 23

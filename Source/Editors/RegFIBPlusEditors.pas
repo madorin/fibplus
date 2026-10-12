@@ -11,7 +11,7 @@ uses
 {$ELSE}
   StdCtrls, Forms, ExtCtrls, Dialogs,
 {$ENDIF}
-  SysUtils, pFIBInterfaces, TypInfo, FIBDatabase,
+  SysUtils, FIBInterfaces, TypInfo, FIBDatabase,
   DesignEditors, DesignIntf, Variants // ,Types
 
   ;
@@ -68,7 +68,7 @@ procedure Register;
 implementation
 
 uses
-  pFIBComponentEditors, ToolsAPI, RegSynEditAlt {, FIBSplash};
+  FIBComponentEditors, ToolsAPI, RegSynEditAlt {, FIBSplash};
 
 var
   vSQLTextEditorClass: TClass;
@@ -140,20 +140,20 @@ procedure Register;
       if pi <> nil then
         RegisterPropertyEditor(pi.PropType^, DatabaseClass, 'OnLogin', nil);
 
-      RegisterComponentEditor(TComponentClass(DatabaseClass), TpFIBDatabaseEditor);
-      RegisterComponentEditor(TComponentClass(TransactionClass), TpFIBTransactionEditor);
-      RegisterComponentEditor(TComponentClass(QueryClass), TpFIBQueryEditor);
+      RegisterComponentEditor(TComponentClass(DatabaseClass), TFIBDatabaseEditor);
+      RegisterComponentEditor(TComponentClass(TransactionClass), TFIBTransactionEditor);
+      RegisterComponentEditor(TComponentClass(QueryClass), TFIBQueryEditor);
       RegisterComponentEditor(TComponentClass(DatasetClass), TFIBGenSQlEd);
 
       pi := GetPropInfo(QueryClass, 'Conditions');
       RegisterPropertyEditor(pi.PropType^, nil, 'Conditions', TFIBConditionsEditor);
 
       pi := GetPropInfo(DatasetClass, 'Options');
-      RegisterPropertyEditor(pi.PropType^, nil, 'Options', TpFIBDataSetOptionsEditor);
+      RegisterPropertyEditor(pi.PropType^, nil, 'Options', TFIBDataSetOptionsEditor);
       pi := GetPropInfo(DatasetClass, 'PrepareOptions');
-      RegisterPropertyEditor(pi.PropType^, nil, 'PrepareOptions', TpFIBDataSetOptionsEditor);
+      RegisterPropertyEditor(pi.PropType^, nil, 'PrepareOptions', TFIBDataSetOptionsEditor);
       pi := GetPropInfo(DatasetClass, 'AutoUpdateOptions');
-      RegisterPropertyEditor(pi.PropType^, DatasetClass, 'AutoUpdateOptions', TpFIBAutoUpdateOptionsEditor);
+      RegisterPropertyEditor(pi.PropType^, DatasetClass, 'AutoUpdateOptions', TFIBAutoUpdateOptionsEditor);
 
       auClass := GetTypeData(pi^.PropType^).ClassType;
       RegisterPropertyEditor(TypeInfo(TStrings), auClass, 'ParamsToFieldsLinks', TEdParamToFields);
@@ -177,31 +177,31 @@ procedure Register;
 
       RegisterPropertyEditor(pi.PropType^, DatasetClass, '', TFIBSQLsProperties);
 
-      RegisterPropertyEditor(TypeInfo(string), QueryClass, 'StoredProcName', TpFIBStoredProcProperty);
+      RegisterPropertyEditor(TypeInfo(string), QueryClass, 'StoredProcName', TFIBStoredProcProperty);
 
-      RegisterPropertyEditor(TypeInfo(TStrings), QueryClass, 'SQL', TpFIBSQLPropEdit);
+      RegisterPropertyEditor(TypeInfo(TStrings), QueryClass, 'SQL', TFIBSQLPropEdit);
 
       RegisterPropertyEditor(TypeInfo(string), TransactionClass, 'UserKindTransaction', TFIBTrKindEdit);
 
       pi := GetPropInfo(DatabaseClass, 'GeneratorsCache');
       auClass := GetTypeData(pi^.PropType^).ClassType;
-      RegisterPropertyEditor(TypeInfo(TOwnedCollection), auClass, 'GeneratorList', TpFIBGeneratorsProperty);
+      RegisterPropertyEditor(TypeInfo(TOwnedCollection), auClass, 'GeneratorList', TFIBGeneratorsProperty);
 
       RegisterPropertyEditor(TypeInfo(string), auClass, 'CacheFileName', TFileNameProperty);
 
       { RegisterPropertyEditor(TypeInfo(TOwnedCollection),TGeneratorsCache,
-        'Generators',   TpFIBGeneratorsProperty
+        'Generators',   TFIBGeneratorsProperty
         );
         {  RegisterPropertyEditor(TypeInfo(TCollection), TCustomDBGridEh, 'Columns', TDBGridEhColumnsProperty);
       }
-      RegisterPropertyEditor(TypeInfo(TStrings), TransactionClass, 'TRParams', TpFIBTRParamsEditor);
+      RegisterPropertyEditor(TypeInfo(TStrings), TransactionClass, 'TRParams', TFIBTRParamsEditor);
 
       if Assigned(expServicesClass) then
         RegisterPropertyEditor(TypeInfo(string), expServicesClass, 'LibraryName', TFileNameProperty);
 
       RegisterPropertyEditor(TypeInfo(string), DeltaReceiver, 'TableName', TTableNameEditDR);
 
-      RegisterComponentEditor(TComponentClass(DeltaReceiver), TpFIBDeltaReceiverEditor);
+      RegisterComponentEditor(TComponentClass(DeltaReceiver), TFIBDeltaReceiverEditor);
 
       RegisterPropertiesInCategory('Transactions', ['*Transaction*']);
     except

@@ -97,8 +97,8 @@ object Form1: TForm1
       Height = 41
       AutoSize = False
       Caption = 
-        'This Example demonstrate simple using TpFIBPlusDataSet Server-si' +
-        'de filtering. For this purpose used TpFIBDataSet property '#39'Condi' +
+        'This Example demonstrate simple using TFIBDataSet Server-si' +
+        'de filtering. For this purpose used TFIBDataSet property '#39'Condi' +
         'tions'#39
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
@@ -160,7 +160,7 @@ object Form1: TForm1
     ScrollBars = ssBoth
     TabOrder = 5
   end
-  object db: TpFIBDatabase
+  object db: TFIBDatabase
     DBName = 'localhost:D:\home\devrace\FIBPlusExamples\db\EMPLOYEE.FDB'
     DBParams.Strings = (
       'lc_ctype=NONE'
@@ -176,13 +176,13 @@ object Form1: TForm1
     Left = 504
     Top = 8
   end
-  object tr: TpFIBTransaction
+  object tr: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 536
     Top = 8
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE EMPLOYEE'
       'SET '
@@ -289,7 +289,7 @@ object Form1: TForm1
     Left = 536
     Top = 40
   end
-  object dtCountry: TpFIBDataSet
+  object dtCountry: TFIBDataSet
     SelectSQL.Strings = (
       'SELECT CAST('#39' --- ALL ---'#39' AS VARCHAR(15))'
       'FROM RDB$DATABASE'
@@ -306,7 +306,7 @@ object Form1: TForm1
     Top = 88
     oFetchAll = True
   end
-  object dtDept: TpFIBDataSet
+  object dtDept: TFIBDataSet
     SelectSQL.Strings = (
       'SELECT '
       '  CAST('#39'---'#39' AS CHAR(3)), '

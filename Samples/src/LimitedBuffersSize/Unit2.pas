@@ -4,12 +4,12 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, DB, FIBDataSet, pFIBDataSet, FIBQuery, ComCtrls;
+  Dialogs, StdCtrls, DB, FIBDataSet, FIBQuery, ComCtrls;
 
 type
   TForm2 = class(TForm)
     Label1: TLabel;
-    dtGenData: TpFIBDataSet;
+    dtGenData: TFIBDataSet;
     lbProgress: TLabel;
     btnStop: TButton;
     ProgressBar1: TProgressBar;

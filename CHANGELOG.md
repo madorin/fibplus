@@ -2,14 +2,113 @@
 
 ## [8.0.0] - Unreleased
 
+### Changed
+
+The lists of old and new names, and what an application has to change, are in
+[Upgrading](Docs/guide/upgrading.md#800).
+
+#### Renamed classes and units
+
+- Classes, types and units lost the `p` of their names: `TpFIBDataSet` in
+  `pFIBDataSet` is now `TFIBDataSet` in `FIBDataSet`, and the same for the
+  database, transaction, query, update object, stored procedure, scripter,
+  error handler, client dataset, array, schema extract and the other classes.
+  The service components are now `TFIB...Service` in `FIBServices` (was
+  `IB_Services`), and `TpFIBStatistics` is now `TFIBSQLLogger`.
+- Most existing code compiles without a change: the old units (`pFIBDataSet`,
+  `pFIBDatabase`, `pFIBQuery`, `pFIBStoredProc`, `pFIBScripter`,
+  `pFIBErrorHandler`, `pFIBDataRefresh`, `pFIBProps`, `pFIBMetaData`,
+  `pFIBSQLLog`, `pFIBClientDataSet`, `pFIBArray`, `IB_Services`) stay as
+  deprecated units, with the old names as deprecated aliases. The compiler
+  warns at the `uses` clause that names an old unit. Forms with the old class
+  names load as long as the old unit is linked, and are saved with the new
+  names. The old units and names will be removed in a later major version.
+- Not covered by the old units, so the code needs a change:
+  - The login dialog hook: the variable `pFIBLoginDialog` (unit `fib`) is now
+    `FIBLoginDialog`, its type is `TFIBLoginDialogFunc`, and the dialog
+    functions are `FIBLoginDialogEx` and `FIBLoginDialogFMX`.
+  - The property `FIBArray` of `TFIBXSQLVAR` and `TFIBArrayStream` is now
+    `ArrayInfo`.
+  - `TpFIBDBEventType`, `TpFIBTrEventType` and `TpSQLKind` were declared in
+    `FIBDatabase` and `FIBDataSet`; the old names are now only in
+    `pFIBDatabase` and `pFIBDataSet`.
+  - The writable defaults of `FIBProps` (`DefaultOptions`, `DefTPBMode` and
+    the others) and the typed constants of `FIBServices` are only in the new
+    units.
+  - The helper units (`pFIBDataInfo`, `pFIBLists`, `pFIBCacheQueries`,
+    `pFIBEventLists`, `pFIBFieldsDescr`, `pFIBExports`, `pFIBInterfaces`,
+    `pTestInfo`) stop the compilation with a message that names the new unit.
+    The repository cache classes of `FIBDataInfo` are renamed without aliases.
+  - The design-time units and editors are renamed without old names.
+- The IDE preferences of the dataset, query, database and transaction are
+  stored under registry keys without the `p` (`FIBDataSet`, `FIBQuery`,
+  `FIBDatabase`, `FIBTransaction`): set them again once in the FIBPlus
+  preferences.
+
+#### Merged components
+
+- `TpFIBDataSet`, `TpFIBQuery`, `TpFIBUpdateObject`, `TpFIBDatabase` and
+  `TpFIBTransaction` are merged into `TFIBDataSet`, `TFIBQuery`,
+  `TFIBUpdateObject`, `TFIBDatabase` and `TFIBTransaction`, which publish the
+  properties and events of both classes. The code of the dataset is in
+  `TFIBCustomDataSet`.
+- `TFIBDataSet` now behaves like `TpFIBDataSet` did: SQL generation, update
+  objects, cached updates routines, record locking, visible record numbers,
+  field properties and repository of `DataSet_ID`, and events sent to
+  `Container`. `Prepare` no longer prepares `RefreshSQL` at design time.
+- `TFIBQuery` has now `Description`, `OnExecuteError`, `About`, `ExecProc`,
+  `ExecProcedure`, `BlobToStrings`, `BlobAsString` and `FieldIsNull`, and
+  publishes `BeforeExecute` and `AfterExecute`. `FN` raises for a missing
+  column like `FieldByName` (it returned `nil`); use `FindField` to get `nil`.
+- `TFIBDatabase` and `TFIBTransaction` now have the aliases, the schema cache,
+  the lost-connection restore and the connect and transaction events for every
+  connection. `Open` on a connected database and `ForceClose` on a closed one
+  do nothing. `StartTransaction` on an active transaction raises
+  `feInTransaction` (`TpFIBTransaction` did nothing); `Active := True` still
+  does nothing. `AfterStart` and `AfterStartTransaction` are raised only when
+  the transaction started. `CacheSchemaOptions :=` in code copies the values.
+- Types that moved with the merge: `TFIBUpdateObject`, `TLockStatus`,
+  `TCachRefreshKind` and the other dataset types are in `FIBDataSet`;
+  `TFIBLoginEvent`, `TOnLostConnectActions`, `TOnSQLExecute` and the other
+  connection types are in `FIBDatabase`; `TFIBFieldInfo`,
+  `TOnBlobFieldProcessing` and `TFIBSQLTypes` are in `FIBProps`.
+- Changed signatures: `TOnSQLExecute` has the parameter `Query: TComponent`
+  (it was `TFIBQuery`); `FIBDataSets[Index]` and `FIBQueries[Index]` of the
+  database and the transaction return `TDataSet` and `TComponent`;
+  `TFIBUpdateObject.DataSet` has the type `TFIBCustomDataSet` and accepts any
+  FibPlus dataset. The messages `SFIBErrorNotDataSet` and
+  `SFIBErrorNotDataSetDetail` are removed.
+
+#### Transactions and lost connection
+
+- `TPBMode` writes the lines of its preset into `TRParams`, and `TRParams` is
+  always exactly what is sent; any change of `TRParams` sets `TPBMode` to
+  `tpbDefault`. A new transaction has the lines of `tpbReadCommitted` instead
+  of an empty list, so a `TFIBTransaction` with untouched `TRParams` starts
+  read committed with `nowait` instead of `concurrency` and `wait`. `TPBMode`
+  and `TRParams` cannot change on an active transaction (`feInTransaction`),
+  and `TRParams` must not be changed in `BeforeStart`. The rules for adding
+  lines to a preset (`lock_timeout` and the others) are in
+  [Upgrading](Docs/guide/upgrading.md#tpbmode-and-trparams).
+- `TFIBTransaction.Internal` is new. The database events
+  `BeforeStartTransaction`, `AfterStartTransaction`, `BeforeEndTransaction` and
+  `AfterEndTransaction` are raised for every transaction of the database (they
+  were raised only for `TpFIBTransaction`), except those with `Internal` set to
+  `True`, which the library sets on its own transactions.
+- `TFIBErrorHandler` runs the lost-connection action on the database of the
+  failing object (a database, a query, a transaction or a BLOB stream) for every
+  `TFIBDatabase`. Without a database it pings each connected database and acts
+  only on those that report a lost connection, instead of on every database of
+  the process; a lost service connection closes no database.
+
 ### Fixed
 
-- `TpFIBScripter` cut a statement at a `--` comment when the script was added
+- `TFIBScripter` cut a statement at a `--` comment when the script was added
   as one item with several lines (e.g. `Script.Add` of a multi-line string):
   the comment ran to the end of the item, not of the line
   ([#95](https://github.com/madorin/fibplus/issues/95); also in 7.9.2).
-- `pFIBArray` did not compile on Delphi 10.1 Berlin: "Invalid typecast" in
-  `TpFIBArray.ReadElement`
+- `FIBArray` did not compile on Delphi 10.1 Berlin: "Invalid typecast" in
+  `TFIBArray.ReadElement`
   ([#94](https://github.com/madorin/fibplus/issues/94); also in 7.9.2).
 
 ## [7.9.1] - 2026-10-09

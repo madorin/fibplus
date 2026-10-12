@@ -15,7 +15,7 @@ uses
   Graphics, Controls, Menus, Forms, Dialogs,
   Buttons, ExtCtrls, StdCtrls, Grids, DBGrids, DB, DBCtrls, Mask, ComCtrls,
 {$ENDIF}
-  pFIBInterfaces, RegFIBPlusEditors, uFIBEditorForm, Variants
+  FIBInterfaces, RegFIBPlusEditors, uFIBEditorForm, Variants
 
     ;
 
@@ -165,9 +165,9 @@ implementation
 {$R *.dfm}
 
 uses
-  TypInfo, RegistryUtils, ToCodeEditorIntfs, pFIBEditorsConsts, RTTIRoutines,
+  TypInfo, RegistryUtils, ToCodeEditorIntfs, FIBEditorsConsts, RTTIRoutines,
   uFIBScriptForm,
-  IBSQLSyn, pFIBSyntaxMemo, uFontEditor;
+  IBSQLSyn, FIBSyntaxMemo, uFontEditor;
 
 const
   RegFIBSQLEdOptions = 'SQLEditorFrame';
@@ -186,7 +186,7 @@ type
     otRole,
     otDBTrigger
   );
-  // must be equal TDBObjectType from pFIBMetaData.pas
+  // must be equal TDBObjectType from FIBMetaData.pas
 
 procedure TfSQLEdit.Panel7Resize(Sender: TObject);
 begin
@@ -1869,7 +1869,7 @@ begin
       ApplyProposal('MAIN')
     else
 
-      if not(CurSections[Length(CurSections) - 1] in [pFIBInterfaces.stComment, pFIBInterfaces.stUnknown]) then
+      if not(CurSections[Length(CurSections) - 1] in [FIBInterfaces.stComment, FIBInterfaces.stUnknown]) then
     begin
       if (Parser.GetPrevWord(Position, c) = '.') or (Parser.GetWord(Position, c) = '.') then
       begin
@@ -1885,11 +1885,11 @@ begin
       end
       else
         case CurSections[Length(CurSections) - 1] of
-          pFIBInterfaces.stFrom:
+          FIBInterfaces.stFrom:
             // if ProposalName<>'MAIN' then
             ApplyProposal('MAIN');
-          pFIBInterfaces.stFields, pFIBInterfaces.stWhere, pFIBInterfaces.stGroupBy, pFIBInterfaces.stHaving,
-            pFIBInterfaces.stOrderBy:
+          FIBInterfaces.stFields, FIBInterfaces.stWhere, FIBInterfaces.stGroupBy, FIBInterfaces.stHaving,
+            FIBInterfaces.stOrderBy:
             begin
               ts := Parser.GetAllTables(True);
               if ts.Count = 0 then

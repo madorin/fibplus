@@ -4,24 +4,24 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
-  ExtCtrls, StdCtrls, Grids, DBGrids, FIBQuery, pFIBQuery, SIBEABase,
+  Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase,
+  ExtCtrls, StdCtrls, Grids, DBGrids, FIBQuery, SIBEABase,
   SIBFIBEA;
 
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    DB: TpFIBDatabase;
-    tr: TpFIBTransaction;
-    dt: TpFIBDataSet;
+    DB: TFIBDatabase;
+    tr: TFIBTransaction;
+    dt: TFIBDataSet;
     ds: TDataSource;
     Panel1: TPanel;
     Label1: TLabel;
     Label2: TLabel;
     DBGrid1: TDBGrid;
     Button1: TButton;
-    qryInsertSale: TpFIBQuery;
-    trInsertSale: TpFIBTransaction;
+    qryInsertSale: TFIBQuery;
+    trInsertSale: TFIBTransaction;
     SIBfibEventAlerter1: TSIBfibEventAlerter;
     procedure FormCreate(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);

@@ -118,7 +118,7 @@ object ThreadSQLForm: TThreadSQLForm
     Left = 328
     Top = 16
   end
-  object dba: TpFIBDatabase
+  object dba: TFIBDatabase
     DBParams.Strings = (
       '')
     DefaultTransaction = tra
@@ -129,7 +129,7 @@ object ThreadSQLForm: TThreadSQLForm
     Left = 232
     Top = 16
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     Transaction = tra
     Database = dba
     DefaultFormats.DateTimeDisplayFormat = 'dd.mm.yyyy'
@@ -139,7 +139,7 @@ object ThreadSQLForm: TThreadSQLForm
     dcForceMasterRefresh = True
     dcForceOpen = True
   end
-  object tra: TpFIBTransaction
+  object tra: TFIBTransaction
     DefaultDatabase = dba
     TimeoutAction = TARollback
     Left = 296

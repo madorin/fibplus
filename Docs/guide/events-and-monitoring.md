@@ -5,7 +5,7 @@ FibPlus has four tools that tell your application, or you, what is going on:
 | Tool | Component | Use it to |
 |------|-----------|-----------|
 | Database events | `TSIBfibEventAlerter` | React to events that the server posts with `POST_EVENT` |
-| Error handling | `TpFibErrorHandler` | Classify server errors, replace messages, handle a lost connection |
+| Error handling | `TFIBErrorHandler` | Classify server errors, replace messages, handle a lost connection |
 | SQL monitor | `TFIBSQLMonitor` | Watch the statements that the library sends, live |
 | SQL log and statistics | `TFIBSQLLogger` | Write the statements to a file and measure how long they take |
 
@@ -14,7 +14,7 @@ The sections below follow this order.
 ## Requirements
 
 - `TSIBfibEventAlerter` needs a connected `TFIBDatabase`.
-- Only one `TpFibErrorHandler` can exist in an application at run time. Creating a second one raises an exception.
+- Only one `TFIBErrorHandler` can exist in an application at run time. Creating a second one raises an exception.
 - `TFIBSQLMonitor` works only in Windows builds. The unit is not compiled when `NO_MONITOR` is defined; see [TFIBSQLMonitor](../reference/TFIBSQLMonitor.md).
 - `TFIBSQLLogger` has no platform limit.
 
@@ -37,7 +37,7 @@ SET TERM ; ^
 
 ### Listen for an event
 
-The unit is `SIBFIBEA` (the base class `TSIBEventAlerter` is in `SIBEABase`). The sample uses a `TSIBfibEventAlerter` named `EventAlerter` and a `TpFIBDatabase` named `Database`.
+The unit is `SIBFIBEA` (the base class `TSIBEventAlerter` is in `SIBEABase`). The sample uses a `TSIBfibEventAlerter` named `EventAlerter` and a `TFIBDatabase` named `Database`.
 
 ```delphi
 procedure TMainForm.FormCreate(Sender: TObject);
@@ -88,13 +88,13 @@ The first notification after a registration only initializes the event buffers. 
 
 ## Error handling
 
-Without an error handler, a server error raises `EFIBError` in the calling code. When a `TpFibErrorHandler` exists, the library passes every server error to it first. The handler:
+Without an error handler, a server error raises `EFIBError` in the calling code. When a `TFIBErrorHandler` exists, the library passes every server error to it first. The handler:
 
 1. sets `LastError` (a `TKindIBError`) and extracts details, depending on `Options`;
 2. calls `OnFIBErrorEvent`, where you can change the message or suppress the exception;
 3. lets the library raise the exception when `DoRaise` is still `True`.
 
-The unit is `pFIBErrorHandler`. Drop one `TpFibErrorHandler` on a data module or the main form. It registers itself; there are no properties to link.
+The unit is `FIBErrorHandler`. Drop one `TFIBErrorHandler` on a data module or the main form. It registers itself; there are no properties to link.
 
 ### Error kinds
 
@@ -121,13 +121,13 @@ The unit is `pFIBErrorHandler`. Drop one `TpFibErrorHandler` on a data module or
 | `oeForeignKey` | Replace the message with the text stored for the constraint, when there is one. Without a stored text the message stays as it is. |
 | `oeCheck` | Set `ConstraintName` and replace the message with the stored text. Without a stored text, the message becomes the server message (`IBMessage`) only. |
 | `oeUniqueViolation` | The same as `oeCheck`, for a unique key violation. |
-| `oeLostConnect` | On a lost connection, call the `OnLostConnect` event of the `TpFIBDatabase` components. See [Lost connection](#lost-connection). |
+| `oeLostConnect` | On a lost connection, call the `OnLostConnect` event of the `TFIBDatabase` components. See [Lost connection](#lost-connection). |
 
 `ConstraintName` is set for a foreign key violation even when `oeForeignKey` is off.
 
 ### Handle errors by kind
 
-The sample uses a `TpFibErrorHandler` named `ErrorHandler`.
+The sample uses a `TFIBErrorHandler` named `ErrorHandler`.
 
 ```delphi
 procedure TMainForm.ErrorHandlerFIBErrorEvent(Sender: TObject; ErrorValue: EFIBError;
@@ -172,7 +172,7 @@ The lookup needs the table to exist and `urErrorMessagesInfo` to be in `TFIBData
 
 ### Lost connection
 
-A lost connection is detected from the server error code. After a failed cursor reopen (a *Firebird 3+* client defers the cursor close) the handler also pings the attachment to find out whether it is lost. With `oeLostConnect`, the handler calls `OnLostConnect` of the `TpFIBDatabase` (unit `pFIBDatabase`) that raised the error. If the error does not belong to a database, it calls the event of every `TpFIBDatabase`.
+A lost connection is detected from the server error code. After a failed cursor reopen (a *Firebird 3+* client defers the cursor close) the handler also pings the attachment to find out whether it is lost. With `oeLostConnect`, the handler calls `OnLostConnect` of the `TFIBDatabase` of the failing object: a database, a query, a transaction, or a BLOB stream. Other databases are not touched. If the object gives no database (BLOB routines called without a sender, service components), the handler pings each connected database and calls the event of those that report a lost connection; a lost service connection closes no database.
 
 Set `Actions` in the event. `laCloseConnect` is the value when you do not change it.
 
@@ -181,7 +181,7 @@ Set `Actions` in the event. `laCloseConnect` is the value when you do not change
 - `laIgnore` does nothing.
 - `laTerminateApp` closes the connection and terminates the application.
 
-The timer interval is `WaitForRestoreConnect`, `30000` ms by default. With `0`, as stored by forms saved before 7.9.1, `laWaitRestore` does nothing more than `laCloseConnect`. The details of each action are in [Lost connection](../reference/TpFIBDatabase.md#lost-connection).
+The timer interval is `WaitForRestoreConnect`, `30000` ms by default. With `0`, as stored by forms saved before 7.9.1, `laWaitRestore` does nothing more than `laCloseConnect`. The details of each action are in [Lost connection](../reference/TFIBDatabase.md#lost-connection).
 
 ```delphi
 procedure TMainForm.DatabaseLostConnect(ADatabase: TFIBDatabase; E: EFIBError;
@@ -197,7 +197,7 @@ begin
 end;
 ```
 
-`OnLostConnect` has its own `DoRaise`. It decides whether the original error is raised, and by default the call that found the lost connection raises. After each connect attempt, `AfterRestoreConnect` runs on success and `OnErrorRestoreConnect` on failure. See [TpFIBDatabase](../reference/TpFIBDatabase.md) and [Connections](connections.md).
+`OnLostConnect` has its own `DoRaise`. It decides whether the original error is raised, and by default the call that found the lost connection raises. After each connect attempt, `AfterRestoreConnect` runs on success and `OnErrorRestoreConnect` on failure. See [TFIBDatabase](../reference/TFIBDatabase.md) and [Connections](connections.md).
 
 ## SQL monitor
 
@@ -288,7 +288,7 @@ MonitorHook.SendMisc('Import started');
 
 ### Write a log
 
-Attach the logger with `Database.SQLLogger`, then switch logging on. `ActiveLogging` is `False` by default, so nothing is logged until you set it. The unit is `pFIBSQLLog`. The sample uses a `TFIBSQLLogger` named `Logger` and a `TpFIBDatabase` named `Database`.
+Attach the logger with `Database.SQLLogger`, then switch logging on. `ActiveLogging` is `False` by default, so nothing is logged until you set it. The unit is `FIBSQLLog`. The sample uses a `TFIBSQLLogger` named `Logger` and a `TFIBDatabase` named `Database`.
 
 ```delphi
 Logger.ApplicationID := 'ORDERS';
@@ -364,5 +364,5 @@ Logger.SaveStatisticsToDB(500);
 ## See also
 
 - [TFIBSQLMonitor](../reference/TFIBSQLMonitor.md)
-- [TpFIBDatabase](../reference/TpFIBDatabase.md), [TFIBDatabase](../reference/TFIBDatabase.md)
+- [TFIBDatabase](../reference/TFIBDatabase.md)
 - [Timeouts](timeouts.md), [Connections](connections.md), [Transactions](transactions.md)

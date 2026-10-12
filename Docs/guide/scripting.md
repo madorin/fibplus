@@ -1,8 +1,8 @@
 # Scripting
 
-`TpFIBScripter` runs an SQL script statement by statement. It splits the text into statements, handles `SET TERM`, executes the statements on the server, and reports errors through events. Use it for database creation and update scripts, and for scripts exported by other tools.
+`TFIBScripter` runs an SQL script statement by statement. It splits the text into statements, handles `SET TERM`, executes the statements on the server, and reports errors through events. Use it for database creation and update scripts, and for scripts exported by other tools.
 
-The examples use a `TpFIBDatabase` named `Database`, a `TpFIBTransaction` named `Transaction`, a `TpFIBScripter` named `Scripter`, and a `TMemo` named `LogMemo` on a form `TMainForm`. Member details are in the [TpFIBScripter reference](../reference/TpFIBScripter.md).
+The examples use a `TFIBDatabase` named `Database`, a `TFIBTransaction` named `Transaction`, a `TFIBScripter` named `Scripter`, and a `TMemo` named `LogMemo` on a form `TMainForm`. Member details are in the [TFIBScripter reference](../reference/TFIBScripter.md).
 
 ## Running a script
 
@@ -60,11 +60,11 @@ Scripter.Parse('^^');
 Scripter.ExecuteScript;
 ```
 
-See [Terminators](../reference/TpFIBScripter.md#terminators) in the reference.
+See [Terminators](../reference/TFIBScripter.md#terminators) in the reference.
 
 ## Statements the scripter handles
 
-The scripter runs script-control statements such as `CONNECT`, `COMMIT`, `INPUT`, and `SET AUTODDL` itself and sends all other statements to the server through `Query`. [Statement handling](../reference/TpFIBScripter.md#statement-handling) in the reference lists which statement is handled how.
+The scripter runs script-control statements such as `CONNECT`, `COMMIT`, `INPUT`, and `SET AUTODDL` itself and sends all other statements to the server through `Query`. [Statement handling](../reference/TFIBScripter.md#statement-handling) in the reference lists which statement is handled how.
 
 A script can connect by itself. Without an assigned `Database`, `CONNECT` creates an internal one:
 
@@ -78,7 +78,7 @@ CONNECT 'localhost:C:\Data\shop.fdb' USER 'SYSDBA' PASSWORD 'masterkey';
 
 ### SET statements that go to the server
 
-Session settings such as timeouts and the time zone are sent to the server, so a script can set up the session it runs in. The reference lists them in [Session SET statements](../reference/TpFIBScripter.md#session-set-statements). Write the unit in timeout statements:
+Session settings such as timeouts and the time zone are sent to the server, so a script can set up the session it runs in. The reference lists them in [Session SET statements](../reference/TFIBScripter.md#session-set-statements). Write the unit in timeout statements:
 
 ```sql
 SET STATEMENT TIMEOUT 60 SECOND;
@@ -90,7 +90,7 @@ A `SET` statement that the scripter does not know is skipped without an error. O
 
 ## Directives
 
-A directive is written in braces, like a statement, and is not sent to the server. Directives let one script serve several databases: `{$DEFINE}`, `{$UNDEF}`, `{$IFDEF}`, `{$IFNDEF}`, `{$SET}`, `{$IF}`, `{$IFEXISTS}`, `{$IFNEXISTS}`, `{$IFNOTEXISTS}`, `{$ELSE}`, `{$ENDIF}`, and `{$EXECUTE_BLOCK}`. Conditions can be nested. The syntax of each one is in [Directives](../reference/TpFIBScripter.md#directives) in the reference.
+A directive is written in braces, like a statement, and is not sent to the server. Directives let one script serve several databases: `{$DEFINE}`, `{$UNDEF}`, `{$IFDEF}`, `{$IFNDEF}`, `{$SET}`, `{$IF}`, `{$IFEXISTS}`, `{$IFNEXISTS}`, `{$IFNOTEXISTS}`, `{$ELSE}`, `{$ENDIF}`, and `{$EXECUTE_BLOCK}`. Conditions can be nested. The syntax of each one is in [Directives](../reference/TFIBScripter.md#directives) in the reference.
 
 ```sql
 {$IFNEXISTS TABLE CUSTOMER}
@@ -142,7 +142,7 @@ Syntax errors in the script (`SET TERM` without a terminator, an unknown directi
 
 ## Many INSERT statements
 
-Set `UseExecBlockForDML` to `True`, or put `{$EXECUTE_BLOCK ON}` in the script, to send consecutive `INSERT` and other DML statements to the server in `EXECUTE BLOCK` groups. A group holds at most 255 statements and about 64 KB of text. A group is sent when it is full, when a statement of another kind follows, and at the end of the run. `EXECUTE BLOCK` and `EXECUTE PROCEDURE` statements are not grouped. See [Grouping DML statements](../reference/TpFIBScripter.md#grouping-dml-statements).
+Set `UseExecBlockForDML` to `True`, or put `{$EXECUTE_BLOCK ON}` in the script, to send consecutive `INSERT` and other DML statements to the server in `EXECUTE BLOCK` groups. A group holds at most 255 statements and about 64 KB of text. A group is sent when it is full, when a statement of another kind follows, and at the end of the run. `EXECUTE BLOCK` and `EXECUTE PROCEDURE` statements are not grouped. See [Grouping DML statements](../reference/TFIBScripter.md#grouping-dml-statements).
 
 `BeforeStatementExecute` is still called for every statement, but `AfterStatementExecute` is called once per group, with the number of its last statement.
 
@@ -172,7 +172,7 @@ end;
 
 ## See also
 
-- [TpFIBScripter reference](../reference/TpFIBScripter.md)
-- [TpFIBDatabase](../reference/TpFIBDatabase.md), [TpFIBTransaction](../reference/TpFIBTransaction.md)
+- [TFIBScripter reference](../reference/TFIBScripter.md)
+- [TFIBDatabase](../reference/TFIBDatabase.md), [TFIBTransaction](../reference/TFIBTransaction.md)
 - [Timeouts](timeouts.md)
 - [Transactions](transactions.md)

@@ -168,7 +168,7 @@ object Form1: TForm1
       OnClick = Button3Click
     end
   end
-  object db: TpFIBDatabase
+  object db: TFIBDatabase
     DBName = 'localhost:I:\Tiburon\FIBPlusExamples\db\EMPLOYEE.FDB'
     DBParams.Strings = (
       'lc_ctype=UNICODE_FSS'
@@ -186,13 +186,13 @@ object Form1: TForm1
     Left = 504
     Top = 8
   end
-  object tr: TpFIBTransaction
+  object tr: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 536
     Top = 8
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     CachedUpdates = True
     UpdateSQL.Strings = (
       'UPDATE UNICODE_TABLE'

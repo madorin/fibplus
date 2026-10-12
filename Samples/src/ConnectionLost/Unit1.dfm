@@ -61,7 +61,7 @@ object Form1: TForm1
       Caption = 
         'This Example demonstrate using LostConnection handing. Start edi' +
         'ting in a grid and shutdown Interbase. Do attempt apply updates.' +
-        '  Application will handle a connection losing and close TpFIBDat' +
+        '  Application will handle a connection losing and close TFIBDat' +
         'abase. '
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
@@ -152,7 +152,7 @@ object Form1: TForm1
       ItemHeight = 13
       TabOrder = 0
       Items.Strings = (
-        'Close pFIBDataBase '
+        'Close FIBDatabase '
         'Terminate application'
         'Restore connect')
     end
@@ -177,7 +177,7 @@ object Form1: TForm1
       OnClick = Button2Click
     end
   end
-  object db: TpFIBDatabase
+  object db: TFIBDatabase
     DBName = 
       'localhost:D:\serge\Plus_demos\Voinov\FIBPlusExamples\db\EMPLOYEE' +
       '21.FDB'
@@ -199,13 +199,13 @@ object Form1: TForm1
     Left = 504
     Top = 8
   end
-  object tr: TpFIBTransaction
+  object tr: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 536
     Top = 8
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     CachedUpdates = True
     UpdateSQL.Strings = (
       'UPDATE EMPLOYEE'
@@ -349,8 +349,8 @@ object Form1: TForm1
     Left = 536
     Top = 40
   end
-  object pFibErrorHandler1: TpFibErrorHandler
-    OnFIBErrorEvent = pFibErrorHandler1FIBErrorEvent
+  object FIBErrorHandler1: TFIBErrorHandler
+    OnFIBErrorEvent = FIBErrorHandler1FIBErrorEvent
     Left = 568
     Top = 40
   end

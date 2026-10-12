@@ -8,11 +8,133 @@ Find the version you use now, then read every section above it, from the one jus
 
 | Version | Status | Notes |
 |---------|--------|-------|
-| [8.0.0](#800) | Unreleased | |
+| [8.0.0](#800) | Unreleased | Dataset, client dataset, database, transaction, query, service components, array, update object, scripter, stored procedure, error handler, table changes reader and schema extract classes renamed from `TpFIB...` to `TFIB...`. |
 | [7.9.1](#791) | 2026-10-09 | Text in the code page of each column's character set, *Firebird 4+* statement and idle timeouts and read consistency, *Firebird 5+* parallel workers, an FMX login dialog package, and many bug fixes. |
 | [7.9.0](#790) | 2026-10-01 | First release of the community maintained FibPlus. Based on the FIBPlus 7 sources of build 632 (2014-02-17). |
 
 ## 8.0.0
+
+### Renamed and removed identifiers
+
+| Old | New | What to do |
+|-----|-----|------------|
+| Unit `pFIBScripter` | `FIBScripter` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| `TpFIBScripter` | `TFIBScripter` | Rename. The old name is a deprecated alias of the same class. |
+| `TpFIBScriptParser` | `TFIBScriptParser` | Rename. The old name is a deprecated alias of the same class. |
+| Unit `pFIBStoredProc` | `FIBStoredProc` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| `TpFIBStoredProc` | `TFIBStoredProc` | Rename. The old name is a deprecated alias of the same class. |
+| Unit `pFIBErrorHandler` | `FIBErrorHandler` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| `TpFibErrorHandler` | `TFIBErrorHandler` | Rename. The old name is a deprecated alias of the same class. |
+| Unit `pFIBDataRefresh` | `FIBDataRefresh` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| `TpFIBTableChangesReader` | `TFIBTableChangesReader` | Rename. The old name is a deprecated alias of the same class. |
+| Unit `pFIBMetaData` | `FIBMetaData` | Change the `uses` clause. The old unit still compiles, gives a warning, and exports the types, the values of the enumerated types, the constants and `FullExtractDDL`. |
+| `TpFIBDBSchemaExtract` | `TFIBDBSchemaExtract` | Rename. The old name is a deprecated alias of the same class in `pFIBMetaData`. |
+| Unit `pFIBQuery` | `FIBQuery`, `FIBDataSet` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| `TpFIBQuery` | `TFIBQuery` | Rename. The old name is a deprecated alias of the same class. |
+| `TpFIBUpdateObject` | `TFIBUpdateObject` (unit `FIBDataSet`) | Rename. The old name is a deprecated alias of the same class. |
+| `TpFIBQueryOption`, `TpFIBQueryOptions` | `TFIBQueryOption`, `TFIBQueryOptions` | Rename. The old names are deprecated aliases of the same types in `pFIBProps`. |
+| `TFIBQuery.FN` (missing column returned `nil`) | `TFIBQuery.FindField` | `FN` now raises for a missing column, as `TpFIBQuery.FN` did. Replace `FN` with `FindField` where you test the result for `nil`. |
+| IDE preferences of the query (registry key `pFIBQuery`) | registry key `FIBQuery` | The saved design-time defaults for new queries (`ParamCheck`, `GoToFirstRecordOnExecute`, `Options`) are not read from the old key. Set them again once in the FIBPlus preferences. |
+| Unit `pFIBDataSet` | `FIBDataSet` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| `TpFIBDataSet` | `TFIBDataSet` | Rename. The old name is a deprecated alias of the same class. |
+| `TLockStatus`, `TLockErrorEvent`, `TCachRefreshKind`, `TOnGetSQLTextProc`, `TIncludeFieldsToSQL`, `FieldInArray` (unit `pFIBDataSet`) | The same names in `FIBDataSet` | Change the `uses` clause. The old unit exports them as aliases. |
+| `TFIBUpdateObject.DataSet: TFIBDataSet` | `TFIBCustomDataSet` | Any FibPlus dataset is accepted. Code that reads the property needs a cast to `TFIBDataSet` to use the published members, and `QSelect`, `Params`, `Prepared` and similar are protected in `TFIBCustomDataSet`. |
+| `TpFIBFieldInfo` (units `pFIBDataInfo`, `FIBDataSet`) | `TFIBFieldInfo` (unit `FIBProps`) | Rename, also in handlers of `TDataSetsContainer.OnApplyFieldRepository`. The old name is a deprecated alias in `pFIBProps`. |
+| `TOnBlobFieldProcessing` (`FIBDataSet`) | Declared in `FIBProps` | `FIBDataSet` exports it, so code that uses it compiles without a change. |
+| `TExtBoolean` (`pFIBDataInfo`) | Declared in `FIBProps` | Internal type. The `FIBDataInfo` routines that took `TFIBDataSet` now take `TFIBCustomDataSet`. |
+| `SFIBErrorNotDataSet`, `SFIBErrorNotDataSetDetail` (`FIBConsts`) | Removed | Nothing raises them any more. |
+| `TpFIBDataSetOptionsEditor` | `TFIBDataSetOptionsEditor` | Rename in design-time code that registers it. |
+| IDE preferences of the dataset (registry key `pFIBDataSet`) | registry key `FIBDataSet` | The saved design-time defaults for new datasets (`Options`, `PrepareOptions`, `DetailConditions`, default formats, generator name prefix and suffix) are not read from the old key. Set them again once in the FIBPlus preferences. |
+| Unit `pFIBDatabase` | `FIBDatabase` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| `TpFIBDatabase` | `TFIBDatabase` | Rename. The old name is a deprecated alias of the same class. |
+| `TpFIBTransaction` | `TFIBTransaction` | Rename. The old name is a deprecated alias of the same class. |
+| `TFIBLoginEvent`, `TOnLostConnectActions` (`laTerminateApp`, `laCloseConnect`, `laIgnore`, `laWaitRestore`), `TFIBLostConnectEvent`, `TFIBRestoreConnectEvent`, `TOnSQLExecute`, `WriteDBParamsToAlias` (unit `pFIBDatabase`) | The same names in `FIBDatabase` | Change the `uses` clause. The old unit exports them as aliases. |
+| `TpFIBAcceptCacheSchema` | `TFIBAcceptCacheSchemaEvent` (unit `FIBDatabase`) | Rename. The old unit keeps the old name as a deprecated alias. |
+| `TOnSQLExecute = procedure(Query: TFIBQuery; SQLType: TFIBSQLTypes) of object` | `procedure(Query: TComponent; SQLType: TFIBSQLTypes) of object` | Change the parameter type of the handlers you assign in code (`BeforeSQLExecute`, `AfterSQLExecute`, `AfterFirstFetch`). A handler bound in a form keeps working at run time; the IDE reports it as incompatible until you change it. |
+| `FIBDataSets[Index]: TFIBCustomDataSet`, `FIBQueries[Index]: TFIBQuery` (of `TpFIBDatabase` and `TpFIBTransaction`) | `FIBDataSets[Index]: TDataSet`, `FIBQueries[Index]: TComponent` | Cast the result to `TFIBCustomDataSet` or `TFIBQuery`. The items and their order are the same. |
+| `TFIBSQLTypes` and its 15 values (`SQLUnknown` ...) in `FIBQuery` | Declared in `FIBProps` | `FIBQuery` exports the type and the values, so code that uses only `FIBQuery` compiles without a change. |
+| `TpFIBDatabaseEditor`, `TpFIBTransactionEditor`, `TpFIBTRParamsEditor` | `TFIBDatabaseEditor`, `TFIBTransactionEditor`, `TFIBTRParamsEditor` | Rename in design-time code that registers them. |
+| IDE preferences of the database and the transaction (registry keys `pFIBDataBase`, `pFIBTransaction`) | registry keys `FIBDatabase`, `FIBTransaction` | The saved design-time defaults for new databases and transactions are not read from the old keys. Set them again once in the FIBPlus preferences. |
+| Unit `pFIBProps` | `FIBProps` | Change the `uses` clause. The old unit still compiles, gives a warning, and exports the types, the values of the enumerated types (`poTrimCharFields`, `qoAutoCommit`, `tpbReadCommitted` ...) and the constants. |
+| Writable defaults in `pFIBProps`: `DefaultOptions`, `DefaultPrepareOptions`, `DefaultDetailConditions`, `DefTPBMode`, `DefTimeOutAction`, `DefQueryOptions`, `DefCharSet`, `DefSQLDialect`, the `RDef...` and `dDef...` formats and the others | The same names, only in `FIBProps` | Add `FIBProps` to the `uses` clause of code that reads or sets them. The old unit cannot export a variable. |
+| `TpFIBDsOption`, `TpFIBDsOptions` | `TFIBDataSetOption`, `TFIBDataSetOptions` | Rename. The old names are deprecated aliases in `pFIBProps`; the values (`poTrimCharFields` ...) are the same. |
+| `TpPrepareOption`, `TpPrepareOptions` | `TFIBPrepareOption`, `TFIBPrepareOptions` | Rename. The old names are deprecated aliases in `pFIBProps`; the values (`pfImportDefaultValues` ...) are the same. |
+| `TpFIBExistObject` | `TFIBExistObject` | Rename. The old name is a deprecated alias in `pFIBProps`. |
+| `TpFIBDBEventType`, `TpFIBTrEventType` (unit `FIBDatabase`) | `TFIBDatabaseEventType`, `TFIBTransactionEventType` | Rename. The old names are deprecated aliases in `pFIBDatabase`, no longer in `FIBDatabase`. Calls like `AddEvent(Handler, detOnConnect)` do not name the type and need no change. |
+| `TpSQLKind` (unit `FIBDataSet`) | `TFIBSQLKind` | Rename. The old name is a deprecated alias in `pFIBDataSet`, no longer in `FIBDataSet`. |
+| Unit `pFIBSQLLog` | `FIBSQLLog` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| `TpFIBStatistics` | `TFIBSQLLogger` | Rename. The old name is a deprecated alias in `pFIBSQLLog`. |
+| Unit `pFIBDataInfo` | `FIBDataInfo` | Change the `uses` clause. The old unit stops the compilation with a message that names the new unit. |
+| `TpFIBTableInfo`, `TpFIBTableInfoCollect`, `TpDataSetInfo`, `TpDataSetInfoCollect`, `TpErrorMessage`, `TpErrorMessagesCollect` (`pFIBDataInfo`) | `TFIBTableInfo`, `TFIBTableInfoCache`, `TFIBDataSetInfo`, `TFIBDataSetInfoCache`, `TFIBErrorMessage`, `TFIBErrorMessageCache` (`FIBDataInfo`) | Rename. No aliases. The variables `ListTableInfo`, `ListDataSetInfo` and `ListErrorMessages` keep their names. |
+| Design-time units `pFIBComponentEditors`, `pFIBAutoUpdEditor` | `FIBComponentEditors`, `FIBAutoUpdEditor` | Change the `uses` clause of design-time code. There are no old units. |
+| `TpFIBSQLPropEdit`, `TpFIBAutoUpdateOptionsEditor`, `TpFIBGeneratorsProperty`, `TpFIBDeltaReceiverEditor` | `TFIBSQLPropEdit`, `TFIBAutoUpdateOptionsEditor`, `TFIBGeneratorsProperty`, `TFIBDeltaReceiverEditor` | Rename in design-time code that registers them. |
+| Units `pFIBLists`, `pFIBCacheQueries`, `pFIBEventLists`, `pFIBFieldsDescr`, `pFIBExports`, `pFIBInterfaces`, `pTestInfo` | `FIBLists`, `FIBCacheQueries`, `FIBEventLists`, `FIBFieldsDescr`, `FIBExports`, `FIBInterfaces`, `FIBTestInfo` | Change the `uses` clause. The old units stop the compilation with a message that names the new unit. The names inside the units are the same. |
+| Include file `pFIBMacroComp.inc` | `FIBMacroComp.inc` | Only for code that includes it. |
+| Design-time units `pFIBConditionsEdit`, `pFIBDBEdit`, `pFIBDataSetOptions`, `pFIBEditorsConsts`, `pFIBPreferences`, `pFIBRepositoryOperations`, `pFIBSyntaxMemo`, `pFIBTrEdit` | The same names without `p` | Change the `uses` clause of design-time code. There are no old units. |
+| Unit `pFIBClientDataSet` | `FIBClientDataSet` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| `TpFIBClientDataSet`, `TpFIBDataSetProvider`, `TpFIBClientBCDField` | `TFIBClientDataSet`, `TFIBDataSetProvider`, `TFIBClientBCDField` | Rename. The old names are deprecated aliases of the same classes in `pFIBClientDataSet`. |
+| Unit `IB_Services` | `FIBServices` | Change the `uses` clause. The old unit still compiles, gives a warning, and exports the types, the values of the enumerated types (`IgnoreLimbo`, `SweepDB`, `ActionAddUser` ...), `DefaultBufferSize` and `SPBPrefix`. |
+| `TpFIBCustomService`, `TpFIBServerProperties`, `TpFIBControlService`, `TpFIBControlAndQueryService`, `TpFIBConfigService`, `TpFIBLicensingService`, `TpFIBLogService`, `TpFIBStatisticalService`, `TpFIBBackupRestoreService`, `TpFIBBackupService`, `TpFIBRestoreService`, `TpFIBNBackupService`, `TpFIBNRestoreService`, `TpFIBValidationService`, `TpFIBSecurityService` | The same names with `TFIB` instead of `TpFIB` | Rename. The old names are deprecated aliases of the same classes in `IB_Services`. |
+| `SPBConstantNames`, `SPBConstantValues` (`IB_Services`) | The same names, only in `FIBServices` | Add `FIBServices` to the `uses` clause of code that reads them. The old unit cannot export a typed constant. |
+| `TFIBSQLMonitorHook.ServiceAttach`, `ServiceDetach`, `ServiceQuery`, `ServiceStart` (parameter `TpFIBCustomService`) | Parameter `TFIBCustomService` | The same class; rename in descendants that override them. |
+| Unit `pFIBArray` | `FIBArray` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| `TpFIBArray` | `TFIBArray` | Rename. The old name is a deprecated alias of the same class in `pFIBArray`. |
+| `TFIBXSQLVAR.FIBArray`, `TFIBArrayStream.FIBArray` | `ArrayInfo` | Rename. The property had the name of the new unit `FIBArray`. There is no old name. |
+| Variable `pFIBLoginDialog`, type `TpFIBLoginDialog` (unit `fib`) | `FIBLoginDialog`, `TFIBLoginDialogFunc` | Rename in code that installs its own login dialog (`pFIBLoginDialog := MyLoginDialog`) or tests the variable. There are no old names: a variable cannot have a deprecated alias, so the old code does not compile. |
+| `pFIBLoginDialogEx` (`FIBDBLoginDlg`), `pFIBLoginDialogFMX` (`FIB_FMX_DBLoginDlg`) | `FIBLoginDialogEx`, `FIBLoginDialogFMX` | Rename in code that calls them. There are no old names. |
+
+Forms that contain one of the old component classes still load. The classes `TpFIBDataSet`, `TpFIBDatabase`, `TpFIBTransaction`, `TpFIBClientDataSet`, `TpFIBDataSetProvider`, the field class `TpFIBClientBCDField`, `TpFIBDBSchemaExtract` and the service components are registered by the units `pFIBDataSet`, `pFIBDatabase`, `pFIBClientDataSet`, `pFIBMetaData` and `IB_Services`, so keep them linked (in a `uses` clause) until the form is saved again. The next time you save the form, the IDE writes the new class name. The old unit and names are removed in a later major version.
+
+### Changed behavior
+
+#### `TFIBDataSet` is the former `TpFIBDataSet`
+
+The component on the palette was `TpFIBDataSet`. Its code is now in `TFIBCustomDataSet`, and `TFIBDataSet` (which had no code of its own) publishes the same properties as `TpFIBDataSet`, in the same order. A form that holds `TpFIBDataSet` loads as `TFIBDataSet` and nothing changes for it. You only notice the change when the code creates a `TFIBDataSet` or derives from `TFIBDataSet` or `TFIBCustomDataSet` directly: it now gets what the palette dataset always had.
+
+- `CanEdit`, `CanInsert`, and `CanDelete` are also `True` when an update object of that kind is active, when SQL generation is on (`UpdateOnlyModifiedFields`, `AutoReWriteSqls`, `CanChangeSQLs`, `KeyFields`, and `UpdateTableName` all set), or with `CachedUpdates` and an `OnUpdateRecord` handler. Before, only a non-empty `InsertSQL`, `UpdateSQL`, or `DeleteSQL` allowed the change.
+- `Post` and `Delete` run the update objects and the statements generated from `AutoUpdateOptions`. `ApplyUpdates`, `RefreshFromQuery`, `LockRecord`, `SaveToFile`, `OpenWP`, and the other members of `TpFIBDataSet` are available.
+- `RecNo`, `RecordCount`, and `IsSequenced` follow `poVisibleRecno` and `psAskRecordCount`.
+- Opening loads the repository settings of `DataSet_ID` (`psApplyRepositary`) and applies the field formats of `DefaultFormats`, and the events are sent to `Container` and to the global container.
+- `ParamByName` and `FindParam` of the dataset exist; `FindParam` starts the transaction.
+- `Prepare` no longer prepares `RefreshSQL` at design time.
+- Each dataset creates two internal queries (record count and lock) and four lists. No server round trip is added.
+
+A class that derives from `TpFIBDataSet` and overrides its virtual methods (`AddedFilterRecord`, `UpdateFieldsProps`, `IncGenerator`, `RecordCountFromSrv`, `DoOnApplyDefaultValue`) keeps working; the methods have the same signatures.
+
+#### `TFIBDatabase` and `TFIBTransaction` are the former `TpFIBDatabase` and `TpFIBTransaction`
+
+The components on the palette were `TpFIBDatabase` and `TpFIBTransaction`. Their code is now in `TFIBDatabase` and `TFIBTransaction`, which publish the same properties and events as the old classes, in the same order. A form that holds the old classes loads as the new ones, and `SaveDBParams` and `OnLogin` still load. You only notice the change when the code creates a `TFIBDatabase` or a `TFIBTransaction` directly or derives from them: they now get what the palette classes always had. The changes in behavior are these.
+
+- `Open` on a connected database does nothing; it raised. `ForceClose` on a closed database does nothing; it raised.
+- `StartTransaction` on an active transaction raises `EFIBClientError` (`feInTransaction`) for every transaction, before any event runs. `TpFIBTransaction` did nothing. `Active := True` on an active transaction still does nothing. Check `InTransaction` before `StartTransaction` where the transaction may be active.
+- `AfterStart` and `AfterStartTransaction` run only when the transaction started. `TpFIBTransaction` also raised them when the start was skipped without an error (a database that could not be connected with `AutoReconnect`); `BeforeStart` still runs in that case.
+- `BeforeConnect` (and `OnLogin`), the schema cache, and the alias on `Open` work for every connection. Nothing runs unless it is set: `CacheSchemaOptions` is off and `AliasName` is empty.
+- `DifferenceTime` is used for every database when a new row gets a client time as its default value.
+- Lost-connection handling by `TFIBErrorHandler` applies to every connection, see below.
+- `CacheSchemaOptions := Value` in code copies the values into the existing object. It replaced the object before.
+
+#### `TPBMode` and `TRParams`
+
+A preset now writes its lines into `TRParams`, and `TRParams` is always exactly what is sent. The old `TpFIBTransaction` replaced `TRParams` at every start in a preset mode, and `TFIBTransaction` never did. The rule is in [Transaction mode](../reference/TFIBTransaction.md#transaction-mode).
+
+- A new transaction has the lines of `tpbReadCommitted` in `TRParams` instead of an empty list. A `TFIBTransaction` created in code with untouched `TRParams` starts read committed with `nowait`, where it started with `concurrency` and `wait` (the server default of an empty list).
+- A `TpFIBTransaction` with a preset whose `TRParams` were changed in code: the change was dropped at the start. Now it is used, and `TPBMode` reads `tpbDefault`.
+- Write the access, isolation, and wait lines first, or use `Text :=`. After an extra line such as `no_auto_undo` the list is an ordinary list, and a later `read` or `nowait` conflicts with the preset lines: the server refuses the start.
+- `lock_timeout` needs the full list, because *Firebird 3+* refuses it together with `nowait`, which every preset writes. `Add('lock_timeout=5')` on a preset leaves only that line. For a read-only transaction put `read` in `TRParams`; all presets write `write`.
+- `TPBMode` cannot be set on an active transaction (`feInTransaction`). It was accepted and used at the next start. The same holds for `TRParams`.
+- Do not change `TRParams` in `BeforeStart` or `BeforeStartTransaction`. The list is not reset at each start, so a line added there is added again at the next start, and the server refuses the duplicate. Set `TRParams` once, before the start.
+- A form of an old `TFIBTransaction` with stored `TRParams.Strings` loads with those lines and `TPBMode` `tpbDefault`. Forms are saved in the same format as before.
+- When the list sent to a database holds `read_consistency` and the server does not support it, `StartTransaction` raises `EFIBClientError` before the start. The list of a database is its own text from `AddDatabase(Db, TRParams)` when that is not empty, else `TRParams`.
+
+#### Internal transactions
+
+`TFIBTransaction.Internal` is new: public, not published, `False` by default. The events of the database (`BeforeStartTransaction`, `AfterStartTransaction`, `BeforeEndTransaction`, `AfterEndTransaction`) were raised only for `TpFIBTransaction`. Now they are raised for every transaction whose `DefaultDatabase` is the database, except for a transaction with `Internal` set to `True`. The library sets `Internal` on the transactions it creates for its own work (metadata, BLOB information, the internal transaction of the database, the SQL logger). A handler of these events now also sees a `TFIBTransaction` created in code. The transaction of `TFIBScripter` is not internal.
+
+The transaction of the SQL logger uses `nowait` and no longer the server default `wait`: a lock conflict on its insert raises.
+
+#### Lost connection
+
+`TFIBErrorHandler` runs the lost-connection action (`OnLostConnect`, default `laCloseConnect`) on the database of the failing object: a database, a query, a transaction, or a BLOB stream. When the object gives no database (BLOB routines called without a sender, service components), the handler no longer acts on every database of the process. It pings each connected database and acts on those that report a lost connection. A lost service connection closes no database. This also changes applications with several `TpFIBDatabase` connections: only the database that was lost is closed and gets `OnLostConnect`. Every `TFIBDatabase` is handled now, not only `TpFIBDatabase`.
 
 ## 7.9.1
 

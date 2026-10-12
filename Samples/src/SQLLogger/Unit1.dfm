@@ -234,7 +234,7 @@ object Form1: TForm1
     ParentFont = False
     TabOrder = 5
   end
-  object db: TpFIBDatabase
+  object db: TFIBDatabase
     DBName = 'localhost:D:\home\devrace\FIBPlusExamples\db\EMPLOYEE.FDB'
     DBParams.Strings = (
       'lc_ctype=NONE'
@@ -251,13 +251,13 @@ object Form1: TForm1
     Left = 584
     Top = 8
   end
-  object tr: TpFIBTransaction
+  object tr: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 616
     Top = 8
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE EMPLOYEE'
       'SET '
@@ -401,7 +401,7 @@ object Form1: TForm1
     Left = 616
     Top = 40
   end
-  object pFIBQuery1: TpFIBQuery
+  object Query1: TFIBQuery
     Transaction = tr
     Database = db
     Left = 648
@@ -409,7 +409,7 @@ object Form1: TForm1
     qoAutoCommit = True
     qoStartTransaction = True
   end
-  object pFIBDataSet1: TpFIBDataSet
+  object DataSet1: TFIBDataSet
     Transaction = tr
     Database = db
     Left = 680

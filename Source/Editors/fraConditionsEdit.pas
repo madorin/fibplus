@@ -78,7 +78,7 @@ type
 implementation
 
 uses
-  pFIBEditorsConsts, pFIBInterfaces, RTTIRoutines;
+  FIBEditorsConsts, FIBInterfaces, RTTIRoutines;
 
 {$R *.dfm}
 

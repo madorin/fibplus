@@ -290,155 +290,155 @@ type
 
 {$DEFINE FP_STDCALL}
   Tisc_attach_database = function(status_vector: PISC_STATUS; db_name_length: short; db_name: PAnsiChar; db_handle: PISC_DB_HANDLE;
-    parm_buffer_length: short; parm_buffer: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    parm_buffer_length: short; parm_buffer: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_array_gen_sdl = function(status_vector: PISC_STATUS; isc_array_desc: PISC_ARRAY_DESC; isc_arg3: PShort; isc_arg4: PAnsiChar;
-    isc_arg5: PShort): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PShort): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_array_get_slice = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; trans_handle: PISC_TR_HANDLE; array_id: PISC_QUAD;
-    descriptor: PISC_ARRAY_DESC; dest_array: PVoid; slice_length: PISC_LONG): ISC_STATUS; {$I pFIBMacroComp.inc}
+    descriptor: PISC_ARRAY_DESC; dest_array: PVoid; slice_length: PISC_LONG): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_array_lookup_bounds = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; trans_handle: PISC_TR_HANDLE;
-    table_name, column_name: PAnsiChar; descriptor: PISC_ARRAY_DESC): ISC_STATUS; {$I pFIBMacroComp.inc}
+    table_name, column_name: PAnsiChar; descriptor: PISC_ARRAY_DESC): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_array_lookup_desc = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; trans_handle: PISC_TR_HANDLE;
-    table_name, column_name: PAnsiChar; descriptor: PISC_ARRAY_DESC): ISC_STATUS; {$I pFIBMacroComp.inc}
+    table_name, column_name: PAnsiChar; descriptor: PISC_ARRAY_DESC): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_array_set_desc = function(status_vector: PISC_STATUS; table_name: PAnsiChar; column_name: PAnsiChar;
-    sql_dtype, sql_length, sql_dimensions: PShort; descriptor: PISC_ARRAY_DESC): ISC_STATUS; {$I pFIBMacroComp.inc}
+    sql_dtype, sql_length, sql_dimensions: PShort; descriptor: PISC_ARRAY_DESC): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_array_put_slice = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; trans_handle: PISC_TR_HANDLE; array_id: PISC_QUAD;
-    descriptor: PISC_ARRAY_DESC; source_array: PVoid; slice_length: PISC_LONG): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_blob_default_desc = procedure(descriptor: PISC_BLOB_DESC; table_name: PUChar; column_name: PUChar); {$I pFIBMacroComp.inc}
+    descriptor: PISC_ARRAY_DESC; source_array: PVoid; slice_length: PISC_LONG): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_blob_default_desc = procedure(descriptor: PISC_BLOB_DESC; table_name: PUChar; column_name: PUChar); {$I FIBMacroComp.inc}
   Tisc_blob_gen_bpb = function(status_vector: PISC_STATUS; to_descriptor, from_descriptor: PISC_BLOB_DESC; bpb_buffer_length: UShort;
-    bpb_buffer: PUChar; bpb_length: PUShort): ISC_STATUS; {$I pFIBMacroComp.inc}
+    bpb_buffer: PUChar; bpb_length: PUShort): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_blob_info = function(status_vector: PISC_STATUS; blob_handle: PISC_BLOB_HANDLE; item_list_buffer_length: short;
-    item_list_buffer: PAnsiChar; result_buffer_length: short; result_buffer: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    item_list_buffer: PAnsiChar; result_buffer_length: short; result_buffer: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_blob_lookup_desc = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; trans_handle: PISC_TR_HANDLE;
-    table_name, column_name: PAnsiChar; descriptor: PISC_BLOB_DESC; global: PUChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    table_name, column_name: PAnsiChar; descriptor: PISC_BLOB_DESC; global: PUChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_blob_set_desc = function(status_vector: PISC_STATUS; table_name, column_name: PAnsiChar; subtype, charset, segment_size: short;
-    descriptor: PISC_BLOB_DESC): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_cancel_blob = function(status_vector: PISC_STATUS; blob_handle: PISC_BLOB_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
+    descriptor: PISC_BLOB_DESC): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_cancel_blob = function(status_vector: PISC_STATUS; blob_handle: PISC_BLOB_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_cancel_events = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE;
-    event_id: PISC_LONG): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_close_blob = function(status_vector: PISC_STATUS; blob_handle: PISC_BLOB_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_commit_retaining = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_commit_transaction = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
+    event_id: PISC_LONG): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_close_blob = function(status_vector: PISC_STATUS; blob_handle: PISC_BLOB_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_commit_retaining = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_commit_transaction = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_create_blob = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
-    blob_handle: PISC_BLOB_HANDLE; blob_id: PISC_QUAD): ISC_STATUS; {$I pFIBMacroComp.inc}
+    blob_handle: PISC_BLOB_HANDLE; blob_id: PISC_QUAD): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_create_blob2 = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
-    blob_handle: PISC_BLOB_HANDLE; blob_id: PISC_QUAD; bpb_length: short; bpb_address: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    blob_handle: PISC_BLOB_HANDLE; blob_id: PISC_QUAD; bpb_length: short; bpb_address: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_create_database = function(status_vector: PISC_STATUS; isc_arg2: short; isc_arg3: PAnsiChar; db_handle: PISC_DB_HANDLE;
-    isc_arg5: short; isc_arg6: PAnsiChar; isc_arg7: short): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: short; isc_arg6: PAnsiChar; isc_arg7: short): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_database_info = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; item_list_buffer_length: short;
-    item_list_buffer: PAnsiChar; result_buffer_length: short; result_buffer: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_decode_date = procedure(ib_date: PISC_QUAD; tm_date: PCTimeStructure); {$I pFIBMacroComp.inc}
-  Tisc_decode_sql_date = procedure(ib_date: PISC_DATE; tm_date: PCTimeStructure); {$I pFIBMacroComp.inc}
-  Tisc_decode_sql_time = procedure(ib_time: PISC_TIME; tm_date: PCTimeStructure); {$I pFIBMacroComp.inc}
-  Tisc_decode_timestamp = procedure(ib_timestamp: PISC_TIMESTAMP; tm_date: PCTimeStructure); {$I pFIBMacroComp.inc}
-  Tisc_detach_database = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_drop_database = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
+    item_list_buffer: PAnsiChar; result_buffer_length: short; result_buffer: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_decode_date = procedure(ib_date: PISC_QUAD; tm_date: PCTimeStructure); {$I FIBMacroComp.inc}
+  Tisc_decode_sql_date = procedure(ib_date: PISC_DATE; tm_date: PCTimeStructure); {$I FIBMacroComp.inc}
+  Tisc_decode_sql_time = procedure(ib_time: PISC_TIME; tm_date: PCTimeStructure); {$I FIBMacroComp.inc}
+  Tisc_decode_timestamp = procedure(ib_timestamp: PISC_TIMESTAMP; tm_date: PCTimeStructure); {$I FIBMacroComp.inc}
+  Tisc_detach_database = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_drop_database = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_allocate_statement = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE;
-    stmt_handle: PISC_STMT_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
+    stmt_handle: PISC_STMT_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_alloc_statement2 = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE;
-    stmt_handle: PISC_STMT_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
+    stmt_handle: PISC_STMT_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_describe = function(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; dialect: UShort;
-    xsqlda: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    xsqlda: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_describe_bind = function(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; dialect: UShort;
-    xsqlda: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    xsqlda: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_exec_immed2 = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE; length: UShort;
-    statement: PAnsiChar; dialect: UShort; in_xsqlda, out_xsqlda: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    statement: PAnsiChar; dialect: UShort; in_xsqlda, out_xsqlda: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_execute = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; stmt_handle: PISC_STMT_HANDLE; dialect: UShort;
-    xsqlda: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    xsqlda: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_execute2 = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; stmt_handle: PISC_STMT_HANDLE; dialect: UShort;
-    in_xsqlda, out_xsqlda: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    in_xsqlda, out_xsqlda: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   // IB2007
 
   Tisc_dsql_batch_execute_immed = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
-    dialect: UShort; no_of_sql: ULong; statement: PPAnsiChar; rows_affected: PULong): ISC_STATUS; {$I pFIBMacroComp.inc}
+    dialect: UShort; no_of_sql: ULong; statement: PPAnsiChar; rows_affected: PULong): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_batch_exec_immed3_m = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
-    isc_var4: UShort; isc_var5: ULong; isc_var6: PAnsiChar; isc_var7: UShort; isc_var8: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_var4: UShort; isc_var5: ULong; isc_var6: PAnsiChar; isc_var7: UShort; isc_var8: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_batch_execute = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; stmt_handle: PISC_STMT_HANDLE;
-    dialect: UShort; insqlda: PXSQLDA; no_of_rows: UShort; batch_vars: PPXSQLVAR; rows_affected: PULong): ISC_STATUS; {$I pFIBMacroComp.inc}
+    dialect: UShort; insqlda: PXSQLDA; no_of_rows: UShort; batch_vars: PPXSQLVAR; rows_affected: PULong): ISC_STATUS; {$I FIBMacroComp.inc}
   // end IB2007
 
   // FB 2.5
 
-  Tfb_cancel_operation = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; option: UShort): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tfb_dsql_set_timeout = function(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; timeout: Cardinal): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tfb_shutdown = function(timeout: Cardinal; reason: Integer): Integer; {$I pFIBMacroComp.inc}
+  Tfb_cancel_operation = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; option: UShort): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tfb_dsql_set_timeout = function(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; timeout: Cardinal): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tfb_shutdown = function(timeout: Cardinal; reason: Integer): Integer; {$I FIBMacroComp.inc}
   // end FB 2.5
 
-  Tfb_database_crypt_callback = function(StatusVector: PISC_STATUS; Callback: Pointer): ISC_STATUS; {$I pFIBMacroComp.inc}
+  Tfb_database_crypt_callback = function(StatusVector: PISC_STATUS; Callback: Pointer): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_execute_immediate = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE; length: UShort;
-    statement: PAnsiChar; dialect: UShort; xsqlda: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    statement: PAnsiChar; dialect: UShort; xsqlda: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_fetch = function(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; dialect: UShort;
-    xsqlda: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    xsqlda: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
 (*$IFDEF SCROLLABLE_CURSORS*)
   Tisc_dsql_fetch2 = function(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; dialect: UShort; xsqlda: PXSQLDA; isc_arg5: UShort;
-    isc_arg6: Long): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg6: Long): ISC_STATUS; {$I FIBMacroComp.inc}
 (*$ENDIF*)
-  Tisc_dsql_finish = function(db_handle: PISC_DB_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
+  Tisc_dsql_finish = function(db_handle: PISC_DB_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_free_statement = function(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE;
-    options: UShort): ISC_STATUS; {$I pFIBMacroComp.inc}
+    options: UShort): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_insert = function(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; arg3: UShort;
-    xsqlda: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    xsqlda: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_prepare = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; stmt_handle: PISC_STMT_HANDLE; length: UShort;
-    statement: PAnsiChar; dialect: UShort; xsqlda: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    statement: PAnsiChar; dialect: UShort; xsqlda: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_set_cursor_name = function(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; cursor_name: PAnsiChar;
-    _type: UShort): ISC_STATUS; {$I pFIBMacroComp.inc}
+    _type: UShort): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_sql_info = function(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; item_length: short; items: PAnsiChar;
-    buffer_length: short; buffer: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_encode_date = procedure(tm_date: PCTimeStructure; ib_date: PISC_QUAD); {$I pFIBMacroComp.inc}
-  Tisc_encode_sql_date = procedure(tm_date: PCTimeStructure; ib_date: PISC_DATE); {$I pFIBMacroComp.inc}
-  Tisc_encode_sql_time = procedure(tm_date: PCTimeStructure; ib_time: PISC_TIME); {$I pFIBMacroComp.inc}
-  Tisc_encode_timestamp = procedure(tm_date: PCTimeStructure; ib_timestamp: PISC_TIMESTAMP); {$I pFIBMacroComp.inc}
+    buffer_length: short; buffer: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_encode_date = procedure(tm_date: PCTimeStructure; ib_date: PISC_QUAD); {$I FIBMacroComp.inc}
+  Tisc_encode_sql_date = procedure(tm_date: PCTimeStructure; ib_date: PISC_DATE); {$I FIBMacroComp.inc}
+  Tisc_encode_sql_time = procedure(tm_date: PCTimeStructure; ib_time: PISC_TIME); {$I FIBMacroComp.inc}
+  Tisc_encode_timestamp = procedure(tm_date: PCTimeStructure; ib_timestamp: PISC_TIMESTAMP); {$I FIBMacroComp.inc}
   Tisc_event_block = function(event_buffer: PPAnsiChar; result_buffer: PPAnsiChar; id_count: UShort;
-    event_list: array of PAnsiChar): ISC_LONG; {$I pFIBMacroComp.inc}
+    event_list: array of PAnsiChar): ISC_LONG; {$I FIBMacroComp.inc}
   Tisc_event_counts = procedure(status_vector: PISC_STATUS; buffer_length: short; event_buffer: PAnsiChar;
-    result_buffer: PAnsiChar); {$I pFIBMacroComp.inc}
-  Tisc_expand_dpb = procedure(dpb: PPAnsiChar; dpb_length: PShort; item_list: array of Pointer); {$I pFIBMacroComp.inc}
+    result_buffer: PAnsiChar); {$I FIBMacroComp.inc}
+  Tisc_expand_dpb = procedure(dpb: PPAnsiChar; dpb_length: PShort; item_list: array of Pointer); {$I FIBMacroComp.inc}
   Tisc_modify_dpb = function(dpb: PPAnsiChar; isc_arg2, isc_arg3: PShort; isc_arg4: UShort; isc_arg5: PAnsiChar;
-    isc_arg6: short): Int; {$I pFIBMacroComp.inc}
-  Tisc_free = function(isc_arg1: PAnsiChar): ISC_LONG; {$I pFIBMacroComp.inc}
+    isc_arg6: short): Int; {$I FIBMacroComp.inc}
+  Tisc_free = function(isc_arg1: PAnsiChar): ISC_LONG; {$I FIBMacroComp.inc}
   Tisc_get_segment = function(status_vector: PISC_STATUS; blob_handle: PISC_BLOB_HANDLE; actual_seg_length: PUShort;
-    seg_buffer_length: UShort; seg_buffer: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    seg_buffer_length: UShort; seg_buffer: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_get_slice = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE; isc_arg4: PISC_QUAD;
     isc_arg5: short; isc_arg6: PAnsiChar; isc_arg7: short; isc_arg8: PISC_LONG; isc_arg9: ISC_LONG; isc_arg10: PVoid;
-    isc_arg11: PISC_LONG): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_interprete = function(buffer: PAnsiChar; status_vector: PPISC_STATUS): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tfb_interpret = function(buffer: PAnsiChar; BufLen: ULong; status_vector: PPISC_STATUS): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg11: PISC_LONG): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_interprete = function(buffer: PAnsiChar; status_vector: PPISC_STATUS): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tfb_interpret = function(buffer: PAnsiChar; BufLen: ULong; status_vector: PPISC_STATUS): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_open_blob = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
-    blob_handle: PISC_BLOB_HANDLE; blob_id: PISC_QUAD): ISC_STATUS; {$I pFIBMacroComp.inc}
+    blob_handle: PISC_BLOB_HANDLE; blob_id: PISC_QUAD): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_open_blob2 = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
-    blob_handle: PISC_BLOB_HANDLE; blob_id: PISC_QUAD; bpb_length: short; bpb_buffer: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    blob_handle: PISC_BLOB_HANDLE; blob_id: PISC_QUAD; bpb_length: short; bpb_buffer: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_prepare_transaction2 = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; msg_length: short;
-    msg: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_print_sqlerror = procedure(sqlcode: short; status_vector: PISC_STATUS); {$I pFIBMacroComp.inc}
-  Tisc_print_status = function(status_vector: PISC_STATUS): ISC_STATUS; {$I pFIBMacroComp.inc}
+    msg: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_print_sqlerror = procedure(sqlcode: short; status_vector: PISC_STATUS); {$I FIBMacroComp.inc}
+  Tisc_print_status = function(status_vector: PISC_STATUS): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_put_segment = function(status_vector: PISC_STATUS; blob_handle: PISC_BLOB_HANDLE; seg_buffer_len: UShort;
-    seg_buffer: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    seg_buffer: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_put_slice = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE; isc_arg4: PISC_QUAD;
     isc_arg5: short; isc_arg6: PAnsiChar; isc_arg7: short; isc_arg8: PISC_LONG; isc_arg9: ISC_LONG;
-    isc_arg10: PVoid): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg10: PVoid): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_que_events = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; event_id: PISC_LONG; length: short;
-    event_buffer: PAnsiChar; event_function: TISC_CALLBACK; event_function_arg: PVoid): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_rollback_retaining = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_rollback_transaction = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
+    event_buffer: PAnsiChar; event_function: TISC_CALLBACK; event_function_arg: PVoid): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_rollback_retaining = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_rollback_transaction = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_start_multiple = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; db_handle_count: short;
-    teb_vector_address: PISC_TEB): ISC_STATUS; {$I pFIBMacroComp.inc}
+    teb_vector_address: PISC_TEB): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_start_transaction = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; db_handle_count: short;
-    db_handle: PISC_DB_HANDLE; tpb_length: UShort; tpb_address: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_sqlcode = function(status_vector: PISC_STATUS): ISC_LONG; {$I pFIBMacroComp.inc}
+    db_handle: PISC_DB_HANDLE; tpb_length: UShort; tpb_address: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_sqlcode = function(status_vector: PISC_STATUS): ISC_LONG; {$I FIBMacroComp.inc}
   // For FB25 Up
 
-  Tfb_sqlstate = procedure(buffer: PAnsiChar; const user_status: PISC_STATUS); {$I pFIBMacroComp.inc}
+  Tfb_sqlstate = procedure(buffer: PAnsiChar; const user_status: PISC_STATUS); {$I FIBMacroComp.inc}
 
-  Tisc_sql_interprete = procedure(sqlcode: short; buffer: PAnsiChar; buffer_length: short); {$I pFIBMacroComp.inc}
+  Tisc_sql_interprete = procedure(sqlcode: short; buffer: PAnsiChar; buffer_length: short); {$I FIBMacroComp.inc}
   Tisc_transaction_info = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; item_list_buffer_length: short;
-    item_list_buffer: PAnsiChar; result_buffer_length: short; result_buffer: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    item_list_buffer: PAnsiChar; result_buffer_length: short; result_buffer: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_transact_request = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE; isc_arg4: UShort;
-    isc_arg5: PAnsiChar; isc_arg6: UShort; isc_arg7: PAnsiChar; isc_arg8: UShort; isc_arg9: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_vax_integer = function(buffer: PAnsiChar; length: short): ISC_LONG; {$I pFIBMacroComp.inc}
-  Tisc_portable_integer = function(buffer: PAnsiChar; length: short): ISC_INT64; {$I pFIBMacroComp.inc}
+    isc_arg5: PAnsiChar; isc_arg6: UShort; isc_arg7: PAnsiChar; isc_arg8: UShort; isc_arg9: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_vax_integer = function(buffer: PAnsiChar; length: short): ISC_LONG; {$I FIBMacroComp.inc}
+  Tisc_portable_integer = function(buffer: PAnsiChar; length: short): ISC_INT64; {$I FIBMacroComp.inc}
   // Client information functions
-  Tisc_get_client_version = procedure(buffer: PAnsiChar); {$I pFIBMacroComp.inc}
-  Tisc_get_client_major_version = function: Integer; {$I pFIBMacroComp.inc}
-  Tisc_get_client_minor_version = function: Integer; {$I pFIBMacroComp.inc}
+  Tisc_get_client_version = procedure(buffer: PAnsiChar); {$I FIBMacroComp.inc}
+  Tisc_get_client_major_version = function: Integer; {$I FIBMacroComp.inc}
+  Tisc_get_client_minor_version = function: Integer; {$I FIBMacroComp.inc}
 // Security Functions and structures
 
 const
@@ -477,183 +477,183 @@ type
 
   PUserSecData = ^TUserSecData;
 
-  Tisc_add_user = function(status_vector: PISC_STATUS; user_sec_data: PUserSecData): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_delete_user = function(status_vector: PISC_STATUS; user_sec_data: PUserSecData): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_modify_user = function(status_vector: PISC_STATUS; user_sec_data: PUserSecData): ISC_STATUS; {$I pFIBMacroComp.inc}
+  Tisc_add_user = function(status_vector: PISC_STATUS; user_sec_data: PUserSecData): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_delete_user = function(status_vector: PISC_STATUS; user_sec_data: PUserSecData): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_modify_user = function(status_vector: PISC_STATUS; user_sec_data: PUserSecData): ISC_STATUS; {$I FIBMacroComp.inc}
   // Other OSRI functions
 
   Tisc_compile_request = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; request_handle: PISC_REQ_HANDLE; isc_arg4: short;
-    isc_arg5: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_compile_request2 = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; request_handle: PISC_REQ_HANDLE; isc_arg4: short;
-    isc_arg5: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_ddl = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE; isc_arg4: short;
-    isc_arg5: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_prepare_transaction = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_prepare_transaction = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_receive = function(status_vector: PISC_STATUS; request_handle: PISC_REQ_HANDLE; isc_arg3, isc_arg4: short; isc_arg5: PVoid;
-    isc_arg6: short): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg6: short): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_receive2 = function(status_vector: PISC_STATUS; request_handle: PISC_REQ_HANDLE; isc_arg3, isc_arg4: short; isc_arg5: PVoid;
-    isc_arg6, isc_arg7: short; isc_arg8: Long): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg6, isc_arg7: short; isc_arg8: Long): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_reconnect_transaction = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE; isc_arg4: short;
-    isc_arg5: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_release_request = function(status_vector: PISC_STATUS; request_handle: PISC_REQ_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_release_request = function(status_vector: PISC_STATUS; request_handle: PISC_REQ_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_request_info = function(status_vector: PISC_STATUS; request_handle: PISC_REQ_HANDLE; isc_arg3: short; isc_arg4: short;
-    isc_arg5: PAnsiChar; isc_arg6: short; isc_arg7: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PAnsiChar; isc_arg6: short; isc_arg7: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_seek_blob = function(status_vector: PISC_STATUS; blob_handle: PISC_BLOB_HANDLE; isc_arg3: short; isc_arg4: ISC_LONG;
-    isc_arg5: PISC_LONG): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PISC_LONG): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_send = function(status_vector: PISC_STATUS; request_handle: PISC_REQ_HANDLE; isc_arg3, isc_arg4: short; isc_arg5: PVoid;
-    isc_arg6: short): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg6: short): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_start_and_send = function(status_vector: PISC_STATUS; request_handle: PISC_REQ_HANDLE; tran_handle: PISC_TR_HANDLE;
-    isc_arg4, isc_arg5: short; isc_arg6: PVoid; isc_arg7: short): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg4, isc_arg5: short; isc_arg6: PVoid; isc_arg7: short): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_start_request = function(status_vector: PISC_STATUS; request_handle: PISC_REQ_HANDLE; tran_handle: PISC_TR_HANDLE;
-    isc_arg4: short): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg4: short): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_unwind_request = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE;
-    isc_arg3: short): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg3: short): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_wait_for_event = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; length: short;
-    event_buffer, result_buffer: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    event_buffer, result_buffer: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   // Other Sql functions
 
-  Tisc_close = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_declare = function(status_vector: PISC_STATUS; isc_arg2, isc_arg3: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_describe = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar; isc_arg3: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_describe_bind = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar; isc_arg3: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+  Tisc_close = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_declare = function(status_vector: PISC_STATUS; isc_arg2, isc_arg3: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_describe = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar; isc_arg3: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_describe_bind = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar; isc_arg3: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_execute = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; isc_arg3: PAnsiChar;
-    isc_arg4: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg4: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_execute_immediate = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE; isc_arg4: PShort;
-    isc_arg5: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_fetch = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar; isc_arg3: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_fetch = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar; isc_arg3: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_open = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; isc_arg3: PAnsiChar;
-    isc_arg4: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg4: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_prepare = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE; isc_arg4: PAnsiChar;
-    isc_arg5: PShort; isc_arg6: PAnsiChar; isc_arg7: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PShort; isc_arg6: PAnsiChar; isc_arg7: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   // Other Dynamic sql functions
 
   Tisc_dsql_execute_m = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; statement_handle: PISC_STMT_HANDLE;
-    isc_arg4: UShort; isc_arg5: PAnsiChar; isc_arg6: UShort; isc_arg7: UShort; isc_arg8: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg4: UShort; isc_arg5: PAnsiChar; isc_arg6: UShort; isc_arg7: UShort; isc_arg8: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_execute2_m = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; statement_handle: PISC_STMT_HANDLE;
     isc_arg4: UShort; isc_arg5: PAnsiChar; isc_arg6: UShort; isc_arg7: UShort; isc_arg8: PAnsiChar; isc_arg9: UShort; isc_arg10: PAnsiChar;
-    isc_arg11: UShort; isc_arg12: UShort; isc_arg13: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg11: UShort; isc_arg12: UShort; isc_arg13: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_execute_immediate_m = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
     isc_arg4: UShort; isc_arg5: PAnsiChar; isc_arg6: UShort; isc_arg7: UShort; isc_arg8: PAnsiChar; isc_arg9: UShort; isc_arg10: UShort;
-    isc_arg11: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg11: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_exec_immed3_m = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE; isc_arg4: UShort;
     isc_arg5: PAnsiChar; isc_arg6: UShort; isc_arg7: UShort; isc_arg8: PAnsiChar; isc_arg9: UShort; isc_arg10: UShort; isc_arg11: PAnsiChar;
-    isc_arg12: UShort; isc_arg13: PAnsiChar; isc_arg14: UShort; isc_arg15: UShort; isc_arg16: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg12: UShort; isc_arg13: PAnsiChar; isc_arg14: UShort; isc_arg15: UShort; isc_arg16: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_fetch_m = function(status_vector: PISC_STATUS; statement_handle: PISC_STMT_HANDLE; isc_arg3: UShort; isc_arg4: PAnsiChar;
-    isc_arg5: UShort; isc_arg6: UShort; isc_arg7: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: UShort; isc_arg6: UShort; isc_arg7: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
 (*$IFDEF SCROLLABLE_CURSORS*)
   Tisc_dsql_fetch2_m = function(status_vector: PISC_STATUS; statement_handle: PISC_STMT_HANDLE; isc_arg3: UShort; isc_arg4: PAnsiChar;
-    isc_arg5: UShort; isc_arg6: UShort; isc_arg7: PAnsiChar; isc_arg8: UShort; isc_arg9: Long): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: UShort; isc_arg6: UShort; isc_arg7: PAnsiChar; isc_arg8: UShort; isc_arg9: Long): ISC_STATUS; {$I FIBMacroComp.inc}
 (*$ENDIF*)
   Tisc_dsql_insert_m = function(status_vector: PISC_STATUS; statement_handle: PISC_STMT_HANDLE; isc_arg3: UShort; isc_arg4: PAnsiChar;
-    isc_arg5: UShort; isc_arg6: UShort; isc_arg7: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: UShort; isc_arg6: UShort; isc_arg7: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_prepare_m = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; statement_handle: PISC_STMT_HANDLE;
     isc_arg4: UShort; isc_arg5: PAnsiChar; isc_arg6: UShort; isc_arg7: UShort; isc_arg8: PAnsiChar; isc_arg9: UShort;
-    isc_arg10: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_dsql_release = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_embed_dsql_close = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg10: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_dsql_release = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_embed_dsql_close = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_embed_dsql_declare = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar;
-    isc_arg3: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg3: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_embed_dsql_describe = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar; isc_arg3: UShort;
-    isc_arg4: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg4: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_embed_dsql_describe_bind = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar; isc_arg3: UShort;
-    isc_arg4: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg4: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_embed_dsql_execute = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; isc_arg3: PAnsiChar; isc_arg4: UShort;
-    isc_arg5: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_embed_dsql_execute2 = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; isc_arg3: PAnsiChar; isc_arg4: UShort;
-    isc_arg5: PXSQLDA; isc_arg6: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PXSQLDA; isc_arg6: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_embed_dsql_execute_immed = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
-    isc_arg4: UShort; isc_arg5: PAnsiChar; isc_arg6: UShort; isc_arg7: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg4: UShort; isc_arg5: PAnsiChar; isc_arg6: UShort; isc_arg7: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_embed_dsql_fetch = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar; isc_arg3: UShort;
-    isc_arg4: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg4: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
 (*$IFDEF SCROLLABLE_CURSORS*)
   Tisc_embed_dsql_fetch2 = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar; isc_arg3: UShort; isc_arg4: PXSQLDA; isc_arg5: UShort;
-    isc_arg6: Long): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg6: Long): ISC_STATUS; {$I FIBMacroComp.inc}
 (*$ENDIF*)
   Tisc_embed_dsql_open = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; isc_arg3: PAnsiChar; isc_arg4: UShort;
-    isc_arg5: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_embed_dsql_open2 = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; isc_arg3: PAnsiChar; isc_arg4: UShort;
-    isc_arg5: PXSQLDA; isc_arg6: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PXSQLDA; isc_arg6: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_embed_dsql_insert = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar; isc_arg3: UShort;
-    isc_arg4: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg4: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_embed_dsql_prepare = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
-    isc_arg4: PAnsiChar; isc_arg5: UShort; isc_arg6: PAnsiChar; isc_arg7: UShort; isc_arg8: PXSQLDA): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_embed_dsql_release = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg4: PAnsiChar; isc_arg5: UShort; isc_arg6: PAnsiChar; isc_arg7: UShort; isc_arg8: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_embed_dsql_release = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   // Other Blob functions
 
-  TBLOB_open = function(blob_handle: TISC_BLOB_HANDLE; isc_arg2: PAnsiChar; isc_arg3: Int): PBSTREAM; {$I pFIBMacroComp.inc}
-  TBLOB_put = function(isc_arg1: AnsiChar; isc_arg2: PBSTREAM): Int; {$I pFIBMacroComp.inc}
-  TBLOB_close = function(isc_arg1: PBSTREAM): Int; {$I pFIBMacroComp.inc}
-  TBLOB_get = function(isc_arg1: PBSTREAM): Int; {$I pFIBMacroComp.inc}
+  TBLOB_open = function(blob_handle: TISC_BLOB_HANDLE; isc_arg2: PAnsiChar; isc_arg3: Int): PBSTREAM; {$I FIBMacroComp.inc}
+  TBLOB_put = function(isc_arg1: AnsiChar; isc_arg2: PBSTREAM): Int; {$I FIBMacroComp.inc}
+  TBLOB_close = function(isc_arg1: PBSTREAM): Int; {$I FIBMacroComp.inc}
+  TBLOB_get = function(isc_arg1: PBSTREAM): Int; {$I FIBMacroComp.inc}
   TBLOB_display = function(isc_arg1: PISC_QUAD; db_handle: TISC_DB_HANDLE; tran_handle: TISC_TR_HANDLE;
-    isc_arg4: PAnsiChar): Int; {$I pFIBMacroComp.inc}
+    isc_arg4: PAnsiChar): Int; {$I FIBMacroComp.inc}
   TBLOB_dump = function(isc_arg1: PISC_QUAD; db_handle: TISC_DB_HANDLE; tran_handle: TISC_TR_HANDLE;
-    isc_arg4: PAnsiChar): Int; {$I pFIBMacroComp.inc}
+    isc_arg4: PAnsiChar): Int; {$I FIBMacroComp.inc}
   TBLOB_edit = function(isc_arg1: PISC_QUAD; db_handle: TISC_DB_HANDLE; tran_handle: TISC_TR_HANDLE;
-    isc_arg4: PAnsiChar): Int; {$I pFIBMacroComp.inc}
+    isc_arg4: PAnsiChar): Int; {$I FIBMacroComp.inc}
   TBLOB_load = function(isc_arg1: PISC_QUAD; db_handle: TISC_DB_HANDLE; tran_handle: TISC_TR_HANDLE;
-    isc_arg4: PAnsiChar): Int; {$I pFIBMacroComp.inc}
+    isc_arg4: PAnsiChar): Int; {$I FIBMacroComp.inc}
   TBLOB_text_dump = function(isc_arg1: PISC_QUAD; db_handle: TISC_DB_HANDLE; tran_handle: TISC_TR_HANDLE;
-    isc_arg4: PAnsiChar): Int; {$I pFIBMacroComp.inc}
+    isc_arg4: PAnsiChar): Int; {$I FIBMacroComp.inc}
   TBLOB_text_load = function(isc_arg1: PISC_QUAD; db_handle: TISC_DB_HANDLE; tran_handle: TISC_TR_HANDLE;
-    isc_arg4: PAnsiChar): Int; {$I pFIBMacroComp.inc}
+    isc_arg4: PAnsiChar): Int; {$I FIBMacroComp.inc}
   TBopen = function(isc_arg1: PISC_QUAD; db_handle: TISC_DB_HANDLE; tran_handle: TISC_TR_HANDLE;
-    isc_arg4: PAnsiChar): Int; {$I pFIBMacroComp.inc}
+    isc_arg4: PAnsiChar): Int; {$I FIBMacroComp.inc}
   TBopen2 = function(isc_arg1: PISC_QUAD; db_handle: TISC_DB_HANDLE; tran_handle: TISC_TR_HANDLE; isc_arg4: PAnsiChar;
-    isc_arg5: UShort): PBSTREAM; {$I pFIBMacroComp.inc}
+    isc_arg5: UShort): PBSTREAM; {$I FIBMacroComp.inc}
 
   // Other Misc functions
 
-  Tisc_ftof = function(isc_arg1: PAnsiChar; isc_arg2: UShort; isc_arg3: PAnsiChar; isc_arg4: UShort): ISC_LONG; {$I pFIBMacroComp.inc}
+  Tisc_ftof = function(isc_arg1: PAnsiChar; isc_arg2: UShort; isc_arg3: PAnsiChar; isc_arg4: UShort): ISC_LONG; {$I FIBMacroComp.inc}
   Tisc_print_blr = function(isc_arg1: PAnsiChar; isc_arg2: TISC_CALLBACK; isc_arg3: PVoid;
-    isc_arg4: short): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_set_debug = procedure(isc_arg1: Int); {$I pFIBMacroComp.inc}
-  Tisc_qtoq = procedure(isc_arg1: PISC_QUAD; isc_arg2: PISC_QUAD); {$I pFIBMacroComp.inc}
-  Tisc_vtof = procedure(isc_arg1: PAnsiChar; isc_arg2: PAnsiChar; isc_arg3: UShort); {$I pFIBMacroComp.inc}
-  Tisc_vtov = procedure(isc_arg1: PAnsiChar; isc_arg2: PAnsiChar; isc_arg3: short); {$I pFIBMacroComp.inc}
-  Tisc_version = function(db_handle: PISC_DB_HANDLE; isc_arg2: TISC_CALLBACK; isc_arg3: PVoid): Int; {$I pFIBMacroComp.inc}
-  Tisc_reset_fpe = function(isc_arg1: UShort): ISC_LONG; {$I pFIBMacroComp.inc}
+    isc_arg4: short): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_set_debug = procedure(isc_arg1: Int); {$I FIBMacroComp.inc}
+  Tisc_qtoq = procedure(isc_arg1: PISC_QUAD; isc_arg2: PISC_QUAD); {$I FIBMacroComp.inc}
+  Tisc_vtof = procedure(isc_arg1: PAnsiChar; isc_arg2: PAnsiChar; isc_arg3: UShort); {$I FIBMacroComp.inc}
+  Tisc_vtov = procedure(isc_arg1: PAnsiChar; isc_arg2: PAnsiChar; isc_arg3: short); {$I FIBMacroComp.inc}
+  Tisc_version = function(db_handle: PISC_DB_HANDLE; isc_arg2: TISC_CALLBACK; isc_arg3: PVoid): Int; {$I FIBMacroComp.inc}
+  Tisc_reset_fpe = function(isc_arg1: UShort): ISC_LONG; {$I FIBMacroComp.inc}
   // Service manager functions
 
   Tisc_service_attach = function(status_vector: PISC_STATUS; isc_arg2: UShort; isc_arg3: PAnsiChar; service_handle: PISC_SVC_HANDLE;
-    isc_arg5: UShort; isc_arg6: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_service_detach = function(status_vector: PISC_STATUS; service_handle: PISC_SVC_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: UShort; isc_arg6: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_service_detach = function(status_vector: PISC_STATUS; service_handle: PISC_SVC_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_service_query = function(status_vector: PISC_STATUS; service_handle: PISC_SVC_HANDLE; recv_handle: PISC_SVC_HANDLE; isc_arg4: UShort;
-    isc_arg5: PAnsiChar; isc_arg6: UShort; isc_arg7: PAnsiChar; isc_arg8: UShort; isc_arg9: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PAnsiChar; isc_arg6: UShort; isc_arg7: PAnsiChar; isc_arg8: UShort; isc_arg9: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_service_start = function(status_vector: PISC_STATUS; service_handle: PISC_SVC_HANDLE; recv_handle: PISC_SVC_HANDLE; isc_arg4: UShort;
-    isc_arg5: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   // Forms functions
 
   Tisc_compile_map = function(status_vector: PISC_STATUS; form_handle: PISC_FORM_HANDLE; request_handle: PISC_REQ_HANDLE; isc_arg4: PShort;
-    isc_arg5: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_compile_menu = function(status_vector: PISC_STATUS; form_handle: PISC_FORM_HANDLE; request_handle: PISC_REQ_HANDLE; isc_arg4: PShort;
-    isc_arg5: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_compile_sub_map = function(status_vector: PISC_STATUS; win_handle: PISC_WIN_HANDLE; request_handle: PISC_REQ_HANDLE;
-    isc_arg4: PShort; isc_arg5: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg4: PShort; isc_arg5: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_create_window = function(status_vector: PISC_STATUS; win_handle: PISC_WIN_HANDLE; isc_arg3: PShort; isc_arg4: PAnsiChar;
-    isc_arg5: PShort; isc_arg6: PShort): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_delete_window = function(status_vector: PISC_STATUS; win_handle: PISC_WIN_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PShort; isc_arg6: PShort): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_delete_window = function(status_vector: PISC_STATUS; win_handle: PISC_WIN_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_drive_form = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
-    win_handle: PISC_WIN_HANDLE; request_handle: PISC_REQ_HANDLE; isc_arg6: PUChar; isc_arg7: PUChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    win_handle: PISC_WIN_HANDLE; request_handle: PISC_REQ_HANDLE; isc_arg6: PUChar; isc_arg7: PUChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_drive_menu = function(status_vector: PISC_STATUS; win_handle: PISC_WIN_HANDLE; request_handle: PISC_REQ_HANDLE; isc_arg4: PShort;
     isc_arg5: PAnsiChar; isc_arg6: PShort; isc_arg7: PAnsiChar; isc_arg8: PShort; isc_arg9: PShort; isc_arg10: PAnsiChar;
-    isc_arg11: PISC_LONG): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_form_delete = function(status_vector: PISC_STATUS; form_handle: PISC_FORM_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg11: PISC_LONG): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_form_delete = function(status_vector: PISC_STATUS; form_handle: PISC_FORM_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_form_fetch = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
-    request_handle: PISC_REQ_HANDLE; isc_arg5: PUChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    request_handle: PISC_REQ_HANDLE; isc_arg5: PUChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_form_insert = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
-    request_handle: PISC_REQ_HANDLE; isc_arg5: PUChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    request_handle: PISC_REQ_HANDLE; isc_arg5: PUChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_get_entree = function(status_vector: PISC_STATUS; request_handle: PISC_REQ_HANDLE; isc_arg3: PShort; isc_arg4: PAnsiChar;
-    isc_arg5: PISC_LONG; isc_arg6: PShort): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_initialize_menu = function(status_vector: PISC_STATUS; request_handle: PISC_REQ_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PISC_LONG; isc_arg6: PShort): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_initialize_menu = function(status_vector: PISC_STATUS; request_handle: PISC_REQ_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_menu = function(status_vector: PISC_STATUS; win_handle: PISC_WIN_HANDLE; request_handle: PISC_REQ_HANDLE; isc_arg4: PShort;
-    isc_arg5: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_load_form = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
-    form_handle: PISC_FORM_HANDLE; isc_arg5: PShort; isc_arg6: PAnsiChar): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_pop_window = function(status_vector: PISC_STATUS; win_handle: PISC_WIN_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
+    form_handle: PISC_FORM_HANDLE; isc_arg5: PShort; isc_arg6: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_pop_window = function(status_vector: PISC_STATUS; win_handle: PISC_WIN_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_put_entree = function(status_vector: PISC_STATUS; request_handle: PISC_REQ_HANDLE; isc_arg3: PShort; isc_arg4: PAnsiChar;
-    isc_arg5: PISC_LONG): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_reset_form = function(status_vector: PISC_STATUS; request_handle: PISC_REQ_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
-  Tisc_suspend_window = function(status_vector: PISC_STATUS; win_handle: PISC_WIN_HANDLE): ISC_STATUS; {$I pFIBMacroComp.inc}
+    isc_arg5: PISC_LONG): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_reset_form = function(status_vector: PISC_STATUS; request_handle: PISC_REQ_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_suspend_window = function(status_vector: PISC_STATUS; win_handle: PISC_WIN_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
 {$UNDEF FP_STDCALL}
 
 // Constants!!!

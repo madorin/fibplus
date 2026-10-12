@@ -79,7 +79,7 @@ object Form1: TForm1
       Height = 41
       AutoSize = False
       Caption = 
-        'This Example demonstrate simple using TpFIBPlusDataSet.Option po' +
+        'This Example demonstrate simple using TFIBDataSet.Option po' +
         'ProtectedEdit. '
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
@@ -154,7 +154,7 @@ object Form1: TForm1
     TabOrder = 5
     OnClick = Button2Click
   end
-  object db: TpFIBDatabase
+  object db: TFIBDatabase
     DBName = 'localhost:D:\home\devrace\FIBPlusExamples\db\EMPLOYEE.FDB'
     DBParams.Strings = (
       'lc_ctype=NONE'
@@ -170,7 +170,7 @@ object Form1: TForm1
     Left = 504
     Top = 8
   end
-  object tr: TpFIBTransaction
+  object tr: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     TRParams.Strings = (
@@ -182,7 +182,7 @@ object Form1: TForm1
     Left = 536
     Top = 8
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE EMPLOYEE'
       'SET '
@@ -282,7 +282,7 @@ object Form1: TForm1
     Left = 536
     Top = 40
   end
-  object dbOther: TpFIBDatabase
+  object dbOther: TFIBDatabase
     DBName = 'localhost:D:\home\devrace\FIBPlusExamples\db\EMPLOYEE.FDB'
     DBParams.Strings = (
       'lc_ctype=NONE'
@@ -298,7 +298,7 @@ object Form1: TForm1
     Left = 504
     Top = 120
   end
-  object dtOther: TpFIBDataSet
+  object dtOther: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE EMPLOYEE'
       'SET '
@@ -398,19 +398,19 @@ object Form1: TForm1
     Left = 536
     Top = 152
   end
-  object trOther: TpFIBTransaction
+  object trOther: TFIBTransaction
     DefaultDatabase = dbOther
     TimeoutAction = TARollback
     Left = 536
     Top = 120
   end
-  object trwrite: TpFIBTransaction
+  object trwrite: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 568
     Top = 8
   end
-  object trwriteOther: TpFIBTransaction
+  object trwriteOther: TFIBTransaction
     DefaultDatabase = dbOther
     TimeoutAction = TARollback
     Left = 568

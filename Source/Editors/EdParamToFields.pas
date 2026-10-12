@@ -51,7 +51,7 @@ function ShowEdParamToFields(DataSet: TDataSet; CurValues: TStrings): boolean;
 implementation
 
 uses
-  pFIBInterfaces, RTTIRoutines;
+  FIBInterfaces, RTTIRoutines;
 
 {$R *.dfm}
 

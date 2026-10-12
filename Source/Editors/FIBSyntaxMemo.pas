@@ -8,7 +8,7 @@
 {                                                                             }
 {*****************************************************************************}
 
-unit pFIBSyntaxMemo;
+unit FIBSyntaxMemo;
 
 interface
 
@@ -964,7 +964,7 @@ const
 
 implementation
 
-{$R pFIBSyntaxMemo.res}
+{$R FIBSyntaxMemo.res}
 
 uses
   Math, StrUtils, Variants;

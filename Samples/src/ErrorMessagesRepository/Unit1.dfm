@@ -104,7 +104,7 @@ object Form1: TForm1
     TabOrder = 4
     OnClick = Button1Click
   end
-  object db: TpFIBDatabase
+  object db: TFIBDatabase
     DBName = 'localhost:D:\home\devrace\FIBPlusExamples\db\EMPLOYEE.FDB'
     DBParams.Strings = (
       'lc_ctype=NONE'
@@ -120,13 +120,13 @@ object Form1: TForm1
     Left = 480
     Top = 40
   end
-  object tr: TpFIBTransaction
+  object tr: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 512
     Top = 40
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE EMPLOYEE'
       'SET '
@@ -214,7 +214,7 @@ object Form1: TForm1
     Left = 512
     Top = 72
   end
-  object pFibErrorHandler1: TpFibErrorHandler
+  object FIBErrorHandler1: TFIBErrorHandler
     Options = [oeException, oeForeignKey, oeLostConnect, oeCheck, oeUniqueViolation]
     Left = 544
     Top = 72

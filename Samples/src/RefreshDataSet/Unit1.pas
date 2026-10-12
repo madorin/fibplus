@@ -5,16 +5,16 @@ interface
 uses
   fib,
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
-  ExtCtrls, StdCtrls, Grids, DBGrids, pFIBErrorHandler, pFIBSQLLog,
-  FIBQuery, pFIBQuery;
+  Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase,
+  ExtCtrls, StdCtrls, Grids, DBGrids, FIBErrorHandler, FIBSQLLog,
+  FIBQuery;
 
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    DB: TpFIBDatabase;
-    tr: TpFIBTransaction;
-    dt: TpFIBDataSet;
+    DB: TFIBDatabase;
+    tr: TFIBTransaction;
+    dt: TFIBDataSet;
     ds: TDataSource;
     Panel1: TPanel;
     Label1: TLabel;
@@ -22,7 +22,7 @@ type
     Panel2: TPanel;
     Button2: TButton;
     cmbKindRefresh: TComboBox;
-    qryExactRefresh: TpFIBQuery;
+    qryExactRefresh: TFIBQuery;
     procedure FormCreate(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure Button2Click(Sender: TObject);

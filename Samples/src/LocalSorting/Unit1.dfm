@@ -62,7 +62,7 @@ object Form1: TForm1
       Height = 49
       AutoSize = False
       Caption = 
-        'This Example demonstrate using TpFIBPlusDataSet DoSortEx methods' +
+        'This Example demonstrate using TFIBDataSet DoSortEx methods' +
         ' for local sorting'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
@@ -145,7 +145,7 @@ object Form1: TForm1
     TabOrder = 4
     OnClick = Button1Click
   end
-  object db: TpFIBDatabase
+  object db: TFIBDatabase
     DBName = 'localhost:D:\home\devrace\FIBPlusExamples\db\EMPLOYEE.FDB'
     DBParams.Strings = (
       'lc_ctype=NONE'
@@ -161,7 +161,7 @@ object Form1: TForm1
     Left = 328
     Top = 72
   end
-  object tr: TpFIBTransaction
+  object tr: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 360
@@ -172,7 +172,7 @@ object Form1: TForm1
     Left = 360
     Top = 104
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE EMPLOYEE'
       'SET '

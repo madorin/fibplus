@@ -50,10 +50,10 @@ Writeln(Database.ClientLibrary.Version.Major);
 *Firebird 5* can use several worker threads for sweep, `CREATE INDEX` and `ALTER INDEX ... ACTIVE`, backup, and restore.
 
 - **Server:** *Firebird 5+*. **Client library:** any.
-- **In FibPlus:** `ConnectParams.ParallelWorkers` of `TFIBDatabase` (the `parallel_workers` entry of `DBParams`) for the work done in the attachment; `ParallelWorkers` of `TpFIBBackupService`, `TpFIBRestoreService`, and `TpFIBValidationService` for the services. The value is sent only when it is greater than `0`, so nothing changes for existing code. FibPlus does not check the server version or the range of the value.
+- **In FibPlus:** `ConnectParams.ParallelWorkers` of `TFIBDatabase` (the `parallel_workers` entry of `DBParams`) for the work done in the attachment; `ParallelWorkers` of `TFIBBackupService`, `TFIBRestoreService`, and `TFIBValidationService` for the services. The value is sent only when it is greater than `0`, so nothing changes for existing code. FibPlus does not check the server version or the range of the value.
 - **Server settings:** `MaxParallelWorkers` in `firebird.conf` (default `1`) is the upper limit for every request. `ParallelWorkers` (default `1`) is used when the attachment did not ask for a value. With the defaults nothing runs in parallel, whatever the client sends.
 - A value above `MaxParallelWorkers`, or below `0`, is not an error: the server posts a warning and uses the limit (or `1`).
-- On `TpFIBValidationService` the value is used for the sweep only, so it is sent only with `SweepDB` in `Options`.
+- On `TFIBValidationService` the value is used for the sweep only, so it is sent only with `SweepDB` in `Options`.
 
 ```delphi
 Database.ConnectParams.ParallelWorkers := 4;
@@ -100,9 +100,9 @@ See also [Upgrading](upgrading.md).
 ### Read consistency
 
 - **Server:** *Firebird 4+*. **Client library:** any.
-- **In FibPlus:** `TPBMode` `tpbReadConsistency` of `TpFIBTransaction`, or `read_consistency` in `TRParams`. Check `Capabilities.ReadConsistency`; on an older server `tpbReadConsistency` raises `EFIBClientError` at `StartTransaction`.
+- **In FibPlus:** `TPBMode` `tpbReadConsistency` of `TFIBTransaction`, or `read_consistency` in `TRParams`. Check `Capabilities.ReadConsistency`; on an older server `StartTransaction` raises `EFIBClientError` before the start when the list sent to the database holds `read_consistency`.
 - With the default server setting `ReadConsistency = 1`, every read committed transaction already runs in this mode; `rec_version` and `no_rec_version` are ignored.
-- **Reference:** [Transaction mode](../reference/TpFIBTransaction.md#transaction-mode), [Transaction parameters](../reference/TFIBTransaction.md#transaction-parameters).
+- **Reference:** [Transaction mode](../reference/TFIBTransaction.md#transaction-mode), [Transaction parameters](../reference/TFIBTransaction.md#transaction-parameters).
 
 ### New data types
 
@@ -175,7 +175,7 @@ The code page of text is chosen from the character set of the attachment and of 
 
 FibPlus reads the default values of the input parameters of a stored procedure with a query that depends on the ODS version. ODS 11 (*Firebird 2.0*) stores the default with the parameter; ODS 12 (*Firebird 3.0*) adds packages, and the parameters of package procedures are not read. On older ODS versions the default comes from the domain of the parameter.
 
-**Guide:** [TpFIBStoredProc](../reference/TpFIBStoredProc.md).
+**Guide:** [TFIBStoredProc](../reference/TFIBStoredProc.md).
 
 ## InterBase
 

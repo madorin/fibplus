@@ -12,17 +12,14 @@
 {  Please see the file License.txt for full license information }
 {***************************************************************}
 
-unit pFIBAutoUpdEditor;
+unit FIBConditionsEdit;
 
 interface
 
 {$I ..\FIBPlus.inc}
 
 uses
-{$IFNDEF LINUX}
-  Windows,
-{$ENDIF}
-  SysUtils, Classes,
+  Windows, Messages, SysUtils, Classes,
 {$IFDEF D_XE2}
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls,
   Vcl.ExtCtrls,
@@ -30,58 +27,56 @@ uses
 {$ELSE}
   Graphics, Controls, Forms, Dialogs, ComCtrls, ExtCtrls, StdCtrls,
 {$ENDIF}
-  Db, fraAutoUpdEditor, uFIBEditorForm;
+  fraConditionsEdit, uFIBEditorForm
+{$IFDEF LINUX}
+    , VKCodes
+{$ENDIF}
+    ;
 
 type
-
-  TpFIBAutoUpdateOptionForm = class(TFIBEditorCustomForm)
-    OkB: TButton;
-    CancelB: TButton;
-    fAutoUpdateOptionForm1: TfAutoUpdateOptionForm;
+  TfrmEditCheckStrings = class(TFIBEditorCustomForm)
+    fraEdConditions1: TfraEdConditions;
     procedure FormCreate(Sender: TObject);
   private
   public
-    { Public declarations }
+
   end;
 
-function EditAutoUpdateOptions(aDataSet: TDataSet): boolean;
+function EditConditions(Value: TStrings): boolean;
 
 implementation
 
 uses
-  pFIBEditorsConsts;
+  FIBEditorsConsts;
 
 {$R *.dfm}
 
-function EditAutoUpdateOptions(aDataSet: TDataSet): boolean;
+function EditConditions(Value: TStrings): boolean;
 var
-  aForm: TpFIBAutoUpdateOptionForm;
+  frm: TfrmEditCheckStrings;
 begin
-  Result := False;
-  if aDataSet = nil then
-    exit;
-
-  aForm := TpFIBAutoUpdateOptionForm.Create(Application);
-  try
-    with aForm, aForm.fAutoUpdateOptionForm1 do
-    begin
-      Caption := Format(Caption, [aDataSet.Name]);
-      FDataSet := aDataSet;
-      PrepareControls;
+  frm := TfrmEditCheckStrings.Create(nil);
+  with frm do
+    try
+      fraEdConditions1.PrepareFrame(Value);
       Result := ShowModal = mrOk;
       if Result then
-        ApplyToDataSet
+      begin
+        fraEdConditions1.ApplyChanges;
+        { Value.Clear;
+          for i:=0 to Pred(ListView1.Items.Count) do
+          begin
+          Value.AddCondition(ListView1.Items[i].Caption,FTexts[i],ListView1.Items[i].Checked)
+          end; }
+      end;
+    finally
+      frm.Free;
     end;
-  finally
-    aForm.Free;
-  end;
 end;
 
-procedure TpFIBAutoUpdateOptionForm.FormCreate(Sender: TObject);
+procedure TfrmEditCheckStrings.FormCreate(Sender: TObject);
 begin
-  Caption := FPAutoOptEditorCaption;
-  OkB.Caption := SOKButton;
-  CancelB.Caption := SCancelButton;
+  Caption := FPConditionsCaption;
 end;
 
 end.

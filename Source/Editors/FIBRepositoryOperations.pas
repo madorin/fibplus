@@ -1,11 +1,11 @@
-unit pFIBRepositoryOperations;
+unit FIBRepositoryOperations;
 
 interface
 
 {$I ..\FIBPlus.inc}
 
 uses
-  pFIBInterfaces;
+  FIBInterfaces;
 
 procedure AdjustFRepositaryTable(DB: IFIBConnect);
 procedure CreateErrorRepositoryTable(DB: IFIBConnect);
@@ -19,7 +19,7 @@ procedure WidenDataSetKeyField(DB: IFIBConnect);
 implementation
 
 uses
-  SysUtils, pFIBEditorsConsts;
+  SysUtils, FIBEditorsConsts;
 
 const
   KeyFieldLength = 1024;

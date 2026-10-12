@@ -216,7 +216,7 @@ object Form2: TForm2
       Width = 609
       Height = 41
       AutoSize = False
-      Caption = 'This Example demonstrate simple using TpFIBSQLMonitor. '
+      Caption = 'This Example demonstrate simple using TFIBSQLMonitor. '
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
       Font.Height = -11

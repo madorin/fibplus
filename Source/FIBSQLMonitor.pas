@@ -25,7 +25,7 @@ uses
   SysUtils, Windows, Messages, Classes, FIBQuery, ibase,
   FIBDataSet, FIBDatabase
 {$IFDEF  INC_SERVICE_SUPPORT}
-    , IB_Services
+    , FIBServices
 {$ENDIF}
     ;
 
@@ -108,10 +108,10 @@ type
     procedure TRRollback(tr: TFIBTransaction); virtual;
     procedure TRRollbackRetaining(tr: TFIBTransaction); virtual;
 {$IFDEF  INC_SERVICE_SUPPORT}
-    procedure ServiceAttach(service: TpFIBCustomService); virtual;
-    procedure ServiceDetach(service: TpFIBCustomService); virtual;
-    procedure ServiceQuery(service: TpFIBCustomService); virtual;
-    procedure ServiceStart(service: TpFIBCustomService); virtual;
+    procedure ServiceAttach(service: TFIBCustomService); virtual;
+    procedure ServiceDetach(service: TFIBCustomService); virtual;
+    procedure ServiceQuery(service: TFIBCustomService); virtual;
+    procedure ServiceStart(service: TFIBCustomService); virtual;
 {$ENDIF}
     procedure SendMisc(Msg: String);
     function GetEnabled: Boolean;
@@ -572,7 +572,7 @@ end;
 
 {$IFDEF  INC_SERVICE_SUPPORT}
 
-procedure TFIBSQLMonitorHook.ServiceAttach(service: TpFIBCustomService);
+procedure TFIBSQLMonitorHook.ServiceAttach(service: TFIBCustomService);
 var
   st: String;
 begin
@@ -583,7 +583,7 @@ begin
   end;
 end;
 
-procedure TFIBSQLMonitorHook.ServiceDetach(service: TpFIBCustomService);
+procedure TFIBSQLMonitorHook.ServiceDetach(service: TFIBCustomService);
 var
   st: String;
 begin
@@ -594,7 +594,7 @@ begin
   end;
 end;
 
-procedure TFIBSQLMonitorHook.ServiceQuery(service: TpFIBCustomService);
+procedure TFIBSQLMonitorHook.ServiceQuery(service: TFIBCustomService);
 var
   st: String;
 begin
@@ -605,7 +605,7 @@ begin
   end;
 end;
 
-procedure TFIBSQLMonitorHook.ServiceStart(service: TpFIBCustomService);
+procedure TFIBSQLMonitorHook.ServiceStart(service: TFIBCustomService);
 var
   st: String;
 begin

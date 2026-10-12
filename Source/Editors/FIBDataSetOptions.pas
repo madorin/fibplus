@@ -12,7 +12,7 @@
 {  Please see the file License.txt for full license information }
 {***************************************************************}
 
-unit pFIBDataSetOptions;
+unit FIBDataSetOptions;
 
 interface
 
@@ -79,7 +79,7 @@ function EditOptions(aDataSets: array of TDataSet; aPageIndex: Integer): boolean
 implementation
 
 uses
-  SysUtils, TypInfo, pFIBEditorsConsts;
+  SysUtils, TypInfo, FIBEditorsConsts;
 
 {$R *.dfm}
 

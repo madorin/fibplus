@@ -4,14 +4,14 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, pFIBScripter, ImgList, ComCtrls, ToolWin,
-  pFIBProps;
+  Dialogs, StdCtrls, ExtCtrls, FIBScripter, ImgList, ComCtrls, ToolWin,
+  FIBProps;
 
 type
   TForm3 = class(TForm)
     Panel1: TPanel;
     Label1: TLabel;
-    pFIBScripter1: TpFIBScripter;
+    FIBScripter1: TFIBScripter;
     StatusBar1: TStatusBar;
     ToolBar1: TToolBar;
     ToolButton1: TToolButton;
@@ -31,8 +31,8 @@ type
     procedure ToolButton1Click(Sender: TObject);
     procedure ToolButton3Click(Sender: TObject);
     procedure ToolButton4Click(Sender: TObject);
-    procedure pFIBScripter1BeforeStatementExecute(Sender: TObject; Line, StatementNo: Integer; Desc: TStatementDesc; Statement: TStrings);
-    procedure pFIBScripter1ExecuteError(Sender: TObject;
+    procedure FIBScripter1BeforeStatementExecute(Sender: TObject; Line, StatementNo: Integer; Desc: TStatementDesc; Statement: TStrings);
+    procedure FIBScripter1ExecuteError(Sender: TObject;
       StatementNo, Line: Integer; Statement: TStrings; SQLCode: Integer;
       const Msg: String; var doRollBack, Stop: Boolean);
     procedure TreeView1MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
@@ -58,8 +58,8 @@ var
   stmt: PStatementDesc;
   NodeObjectTypes: array [0 .. 9] of TTreeNode;
 begin
-  pFIBScripter1.Script := Memo1.Lines;
-  pFIBScripter1.Parse;
+  FIBScripter1.Script := Memo1.Lines;
+  FIBScripter1.Parse;
   TreeView1.Items.BeginUpdate;
   TreeView1.Items.Clear;
   NodeObjectTypes[0] := TreeView1.Items.Add(nil, 'Database');
@@ -73,9 +73,9 @@ begin
   NodeObjectTypes[8] := TreeView1.Items.Add(nil, 'Functions');
   NodeObjectTypes[9] := TreeView1.Items.Add(nil, 'Indexes');
 
-  for i := 1 to pFIBScripter1.StatementsCount do
+  for i := 1 to FIBScripter1.StatementsCount do
   begin
-    stmt := pFIBScripter1.GetStatement(i, nil);
+    stmt := FIBScripter1.GetStatement(i, nil);
     case stmt.objType of
       otDatabase: TreeView1.Items.AddChildObject(NodeObjectTypes[0], stmt.objName, stmt);
 
@@ -109,10 +109,10 @@ begin
   ToolButton4.Enabled := False;
   ToolButton5.Enabled := True;
   try
-    pFIBScripter1.Script := Memo1.Lines;
+    FIBScripter1.Script := Memo1.Lines;
     Panel2.Visible := True;
     RefreshTree;
-    pFIBScripter1.ExecuteScript;
+    FIBScripter1.ExecuteScript;
     Panel2.Visible := False;
     StatusBar1.Panels[0].Text := ''
   finally
@@ -121,16 +121,16 @@ begin
   end
 end;
 
-procedure TForm3.pFIBScripter1BeforeStatementExecute(Sender: TObject;
+procedure TForm3.FIBScripter1BeforeStatementExecute(Sender: TObject;
   Line, StatementNo: Integer; Desc: TStatementDesc; Statement: TStrings);
 begin
   StatusBar1.Panels[0].Text := 'Execute Statement No ' + IntToStr(StatementNo);
-  ProgressBar1.Max := pFIBScripter1.StatementsCount;
+  ProgressBar1.Max := FIBScripter1.StatementsCount;
   ProgressBar1.Position := StatementNo;
   Application.ProcessMessages
 end;
 
-procedure TForm3.pFIBScripter1ExecuteError(Sender: TObject;
+procedure TForm3.FIBScripter1ExecuteError(Sender: TObject;
   StatementNo, Line: Integer; Statement: TStrings; SQLCode: Integer;
   const Msg: String; var doRollBack, Stop: Boolean);
 begin
@@ -176,7 +176,7 @@ end;
 
 procedure TForm3.ToolButton5Click(Sender: TObject);
 begin
-  pFIBScripter1.Paused := True;
+  FIBScripter1.Paused := True;
 end;
 
 procedure TForm3.ToolButton6Click(Sender: TObject);
@@ -184,13 +184,13 @@ var
   i: Integer;
   p: PStatementDesc;
 begin
-  // pFIBScripter1.ExecuteFromFile('D:\Data\333.sql')
-  pFIBScripter1.Script := Memo1.Lines;
-  pFIBScripter1.Parse;
-  for i := 1 to pFIBScripter1.StatementsCount do
+  // FIBScripter1.ExecuteFromFile('D:\Data\333.sql')
+  FIBScripter1.Script := Memo1.Lines;
+  FIBScripter1.Parse;
+  for i := 1 to FIBScripter1.StatementsCount do
   begin
-    p := pFIBScripter1.GetStatement(i, Memo2.Lines);
-    pFIBScripter1.ExecuteStatement(Memo2.Lines, p, i, Memo2.Lines);
+    p := FIBScripter1.GetStatement(i, Memo2.Lines);
+    FIBScripter1.ExecuteStatement(Memo2.Lines, p, i, Memo2.Lines);
   end;
 end;
 

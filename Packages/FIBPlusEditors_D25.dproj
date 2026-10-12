@@ -146,19 +146,19 @@
         <DCCReference Include="..\Source\Editors\EdDataSetInfo.pas">
             <Form>frmEdDataSetInfo</Form>
         </DCCReference>
-        <DCCReference Include="..\Source\Editors\pFIBDBEdit.pas">
+        <DCCReference Include="..\Source\Editors\FIBDBEdit.pas">
             <Form>DBEditForm</Form>
         </DCCReference>
-        <DCCReference Include="..\Source\Editors\pFIBTrEdit.pas">
+        <DCCReference Include="..\Source\Editors\FIBTrEdit.pas">
             <Form>frmTransEdit</Form>
         </DCCReference>
-        <DCCReference Include="..\Source\Editors\pFIBConditionsEdit.pas">
+        <DCCReference Include="..\Source\Editors\FIBConditionsEdit.pas">
             <Form>frmEditCheckStrings</Form>
         </DCCReference>
-        <DCCReference Include="..\Source\Editors\pFIBAutoUpdEditor.pas">
-            <Form>pFIBAutoUpdateOptionForm</Form>
+        <DCCReference Include="..\Source\Editors\FIBAutoUpdEditor.pas">
+            <Form>FIBAutoUpdateOptionForm</Form>
         </DCCReference>
-        <DCCReference Include="..\Source\Editors\pFIBDataSetOptions.pas">
+        <DCCReference Include="..\Source\Editors\FIBDataSetOptions.pas">
             <Form>FPDataSetOptionsForm</Form>
         </DCCReference>
         <DCCReference Include="..\Source\Editors\EdParamToFields.pas">
@@ -192,9 +192,9 @@
         <DCCReference Include="..\Source\Editors\ToCodeEditor.pas"/>
         <DCCReference Include="..\Source\Editors\ToCodeEditorIntfs.pas"/>
         <DCCReference Include="..\Source\Editors\RTTIRoutines.pas"/>
-        <DCCReference Include="..\Source\Editors\pFIBComponentEditors.pas"/>
-        <DCCReference Include="..\Source\Editors\pFIBEditorsConsts.pas"/>
-        <DCCReference Include="..\Source\Editors\pFIBRepositoryOperations.pas"/>
+        <DCCReference Include="..\Source\Editors\FIBComponentEditors.pas"/>
+        <DCCReference Include="..\Source\Editors\FIBEditorsConsts.pas"/>
+        <DCCReference Include="..\Source\Editors\FIBRepositoryOperations.pas"/>
         <DCCReference Include="..\Source\Editors\RegistryUtils.pas"/>
         <DCCReference Include="..\Source\Editors\RegSynEditAlt.pas"/>
         <DCCReference Include="..\Source\Editors\uFIBScriptForm.pas">
@@ -202,14 +202,14 @@
         </DCCReference>
         <DCCReference Include="..\Source\Editors\IBSQLSyn.pas"/>
         <DCCReference Include="..\Source\Editors\FindCmp.pas"/>
-        <DCCReference Include="..\Source\Editors\pFIBPreferences.pas">
+        <DCCReference Include="..\Source\Editors\FIBPreferences.pas">
             <Form>frmFIBPreferences</Form>
         </DCCReference>
         <DCCReference Include="..\Source\Editors\uFrmSearchResult.pas">
             <Form>frmCompSearchResult</Form>
         </DCCReference>
         <DCCReference Include="..\Source\Editors\FIBToolsConsts.pas"/>
-        <DCCReference Include="..\Source\Editors\pFIBSyntaxMemo.pas"/>
+        <DCCReference Include="..\Source\Editors\FIBSyntaxMemo.pas"/>
         <DCCReference Include="..\Source\FIBDBLoginDlg.pas">
             <Form>frmFIBDBLoginDlg</Form>
         </DCCReference>

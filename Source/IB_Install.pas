@@ -206,12 +206,12 @@ begin
   raise EIBInstallerError.Create1(ECode, Format(IBInstallerMessages[ECode], Args));
 end;
 
-function ErrorCallback(IscCode: MSG_NO; UserContext: Pointer; const ActionDescription: TEXT): Integer; {$I pFIBMacroComp.inc}
+function ErrorCallback(IscCode: MSG_NO; UserContext: Pointer; const ActionDescription: TEXT): Integer; {$I FIBMacroComp.inc}
 begin
   Result := TpFIBSetup(UserContext).ErrorInternal(IscCode, ActionDescription);
 end;
 
-function StatusCallback(Status: Integer; UserContext: Pointer; const ActionDescription: TEXT): Integer; {$I pFIBMacroComp.inc}
+function StatusCallback(Status: Integer; UserContext: Pointer; const ActionDescription: TEXT): Integer; {$I FIBMacroComp.inc}
 begin
   Result := TpFIBSetup(UserContext).StatusInternal(Status, ActionDescription);
 end;

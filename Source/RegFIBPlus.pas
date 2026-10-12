@@ -20,11 +20,11 @@ interface
 {$I FIBPlus.inc}
 
 uses
-  Classes, Sysutils, DB, pFIBDataSet, pFIBDatabase, pFIBQuery, DSContainer,
-  pFIBSQLLog, SIBFIBEA, pFIBMetadata, pFIBDataRefresh, pFIBExports,
-{$IFNDEF NO_MONITOR} FIBSQLMonitor, {$ENDIF} pFIBErrorHandler,
-  pFIBStoredProc, pFIBProps, pFIBClientDataSet {$IFDEF INC_SERVICE_SUPPORT},
-  IB_Services {$ENDIF}
+  Classes, Sysutils, DB, DSContainer,
+  FIBSQLLog, SIBFIBEA, FIBMetadata, FIBDataRefresh, FIBExports,
+{$IFNDEF NO_MONITOR} FIBSQLMonitor, {$ENDIF} FIBErrorHandler,
+  FIBStoredProc, FIBProps, FIBClientDataSet {$IFDEF INC_SERVICE_SUPPORT},
+  FIBServices {$ENDIF}
 {$IFDEF IBINSTALL_SUPPORT}, IB_Install{$ENDIF};
 
 procedure Register;
@@ -33,7 +33,7 @@ implementation
 
 uses
 {$IFNDEF NO_REGISTRY} RegUtils, {$ENDIF} FIBDataSet, FIBQuery, FIBDatabase,
-  SqlTxtRtns, StrUtil, PFIBDataInfo, PFIBScripter;
+  SqlTxtRtns, StrUtil, FIBDataInfo, FIBScripter;
 
 const
   pnFIBPlus         = 'FIBPlus';
@@ -49,23 +49,23 @@ begin
     TFIBBCDField, TFIBFMTBCDField, TFIBFloatField, TFIBBooleanField,
     TFIBDateTimeField, TFIBDateField, TFIBTimeField, TFIBGuidField,
     TFIBStringField, TFIBWideStringField, TFIBBlobField, TFIBMemoField
-{$IFDEF SUPPORT_ARRAY_FIELD}, TFIBArrayField{$ENDIF}, TpFIBClientBCDField]);
+{$IFDEF SUPPORT_ARRAY_FIELD}, TFIBArrayField{$ENDIF}, TFIBClientBCDField]);
 
   RegisterFields([TFIBStringField, TFIBIntegerField, TFIBSmallIntField,
     TFIBFloatField, TFIBBCDField, TFIBFMTBCDField, TFIBBooleanField,
     TFIBDateField, TFIBTimeField, TFIBDateTimeField, TFIBWideStringField]);
 
-  RegisterComponents(pnFIBPlus, [TpFIBDatabase, TpFIBDataSet, TpFIBTransaction,
-    TpFIBQuery, TpFIBStoredProc, TpFIBUpdateObject, TDataSetsContainer,
-    TpFibErrorHandler, TpFIBScripter, TpFIBDBSchemaExtract, TpFIBTableChangesReader, TFIBSQLLogger, TSIBfibEventAlerter,
-    TpFIBClientDataSet, TpFIBDataSetProvider
+  RegisterComponents(pnFIBPlus, [TFIBDatabase, TFIBDataSet, TFIBTransaction,
+    TFIBQuery, TFIBStoredProc, TFIBUpdateObject, TDataSetsContainer,
+    TFIBErrorHandler, TFIBScripter, TFIBDBSchemaExtract, TFIBTableChangesReader, TFIBSQLLogger, TSIBfibEventAlerter,
+    TFIBClientDataSet, TFIBDataSetProvider
 {$IFNDEF NO_MONITOR}, TFIBSQLMonitor{$ENDIF}]);
 
 {$IFDEF INC_SERVICE_SUPPORT}
-  RegisterComponents(pnFIBPlusServices, [TpFIBServerProperties,
-    TpFIBConfigService, TpFIBLicensingService, TpFIBLogService,
-    TpFIBStatisticalService, TpFIBBackupService, TpFIBRestoreService,
-    TpFIBValidationService, TpFIBSecurityService, TpFIBNBackupService, TpFIBNRestoreService]);
+  RegisterComponents(pnFIBPlusServices, [TFIBServerProperties,
+    TFIBConfigService, TFIBLicensingService, TFIBLogService,
+    TFIBStatisticalService, TFIBBackupService, TFIBRestoreService,
+    TFIBValidationService, TFIBSecurityService, TFIBNBackupService, TFIBNRestoreService]);
 {$ENDIF}
 {$IFDEF IBINSTALL_SUPPORT}
   RegisterComponents(pnFIBPlusServices, [TpFIBInstall, TpFIBUnInstall]);

@@ -40,7 +40,7 @@ object Form1: TForm1
       Width = 609
       Height = 41
       AutoSize = False
-      Caption = 'This Example demonstrate simple using TpFIBStoredProcedure. '
+      Caption = 'This Example demonstrate simple using TFIBStoredProc. '
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
       Font.Height = -11
@@ -116,7 +116,7 @@ object Form1: TForm1
       end
     end
   end
-  object db: TpFIBDatabase
+  object db: TFIBDatabase
     DBName = 'localhost:D:\home\devrace\FIBPlusExamples\db\EMPLOYEE.FDB'
     DBParams.Strings = (
       'lc_ctype=NONE'
@@ -132,13 +132,13 @@ object Form1: TForm1
     Left = 504
     Top = 8
   end
-  object tr: TpFIBTransaction
+  object tr: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 536
     Top = 8
   end
-  object dtOrgChart: TpFIBDataSet
+  object dtOrgChart: TFIBDataSet
     SelectSQL.Strings = (
       'SELECT'
       '    HEAD_DEPT,'
@@ -163,7 +163,7 @@ object Form1: TForm1
     Left = 536
     Top = 40
   end
-  object dtDept: TpFIBDataSet
+  object dtDept: TFIBDataSet
     SelectSQL.Strings = (
       'SELECT'
       '    DEPT_NO,'
@@ -180,8 +180,8 @@ object Form1: TForm1
     Left = 504
     Top = 72
   end
-  object spSubTotalBudget: TpFIBStoredProc
-    Transaction = pFIBTransaction1
+  object spSubTotalBudget: TFIBStoredProc
+    Transaction = Transaction1
     Database = db
     SQL.Strings = (
       'EXECUTE PROCEDURE SUB_TOT_BUDGET (?HEAD_DEPT)')
@@ -196,7 +196,7 @@ object Form1: TForm1
     Left = 536
     Top = 72
   end
-  object pFIBTransaction1: TpFIBTransaction
+  object Transaction1: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 536

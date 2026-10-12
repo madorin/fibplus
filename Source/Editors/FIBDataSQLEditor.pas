@@ -58,7 +58,7 @@ implementation
 {$R *.dfm}
 
 uses
-  TypInfo, RegistryUtils, RTTIRoutines, pFIBInterfaces;
+  TypInfo, RegistryUtils, RTTIRoutines, FIBInterfaces;
 
 {
   var

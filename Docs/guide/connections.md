@@ -1,13 +1,13 @@
 # Connections
 
-A connection to a Firebird or InterBase database is a `TFIBDatabase` (or its descendant `TpFIBDatabase`). This article shows how to set the connection parameters and connect, how the login dialog works, what happens when the connection closes or is lost, how character sets and the client library are chosen, and how to check what the server supports.
+A connection to a Firebird or InterBase database is a `TFIBDatabase`. This article shows how to set the connection parameters and connect, how the login dialog works, what happens when the connection closes or is lost, how character sets and the client library are chosen, and how to check what the server supports.
 
 ## Requirements
 
 - A Firebird or InterBase client library on the machine of the application. By default FibPlus loads `fbclient.dll` (`libfbclient.dylib` on macOS); see [Client library](#client-library).
 - Features that depend on the server or client version are listed in [Capabilities](#capabilities) and in [Firebird versions](firebird-versions.md).
 
-The examples use the components `Database` (`TFIBDatabase` or `TpFIBDatabase`) and `Transaction` (`TFIBTransaction`).
+The examples use the components `Database` (`TFIBDatabase`) and `Transaction` (`TFIBTransaction`).
 
 ## Connect in code
 
@@ -24,7 +24,7 @@ Database.Open;
 
 `Connected := True` does the same as `Open`. `Close` or `Connected := False` disconnects.
 
-`Open` raises when the attach fails. `Open(False)` returns with `Connected = False` instead, also when the setup of the session after the attach fails. Other errors still raise: a cancelled login dialog, an empty `DBName`, a client library that cannot be loaded, and an already connected database.
+`Open` raises when the attach fails. `Open(False)` returns with `Connected = False` instead, also when the setup of the session after the attach fails. Other errors still raise: a cancelled login dialog, an empty `DBName`, and a client library that cannot be loaded.
 
 ```delphi
 Database.Open(False);
@@ -32,7 +32,7 @@ if not Database.Connected then
   ShowMessage('The database is not available.');
 ```
 
-`Open` on a `TFIBDatabase` that is already connected raises. `TpFIBDatabase.Open` returns without an error in that case.
+`Open` on a database that is already connected does nothing.
 
 The attach, including the login dialog, runs inside a global lock, so connects started in other threads wait for it.
 
@@ -80,7 +80,7 @@ The dialog is not part of `TFIBDatabase`; a dialog unit registers it when the pr
 
 Without such a unit, a connect with `UseLoginPrompt` raises an error that asks you to add `FIBDBLoginDlg` to the `uses` clause.
 
-To show your own dialog, assign a function of type `TpFIBLoginDialog` (unit `fib`) to the global variable `pFIBLoginDialog`. It receives the database name and the current user name, password, and role, and returns `True` to continue.
+To show your own dialog, assign a function of type `TFIBLoginDialogFunc` (unit `fib`) to the global variable `FIBLoginDialog`. It receives the database name and the current user name, password, and role, and returns `True` to continue.
 
 ```delphi
 function MyLoginDialog(const ADatabaseName: string;
@@ -90,14 +90,14 @@ begin
 end;
 
 initialization
-  pFIBLoginDialog := MyLoginDialog;
+  FIBLoginDialog := MyLoginDialog;
 ```
 
-`ShowMyLogin` stands for your own dialog code. The two dialog units set `pFIBLoginDialog` in their `initialization` section and reset it to `nil` in `finalization`. The `IB_Services` components use the same hook (see [IB_Services components](../reference/TpFIBServices.md)).
+`ShowMyLogin` stands for your own dialog code. The two dialog units set `FIBLoginDialog` in their `initialization` section and reset it to `nil` in `finalization`. The `FIBServices` components use the same hook (see [FIBServices components](../reference/TFIBServices.md)).
 
 ### Setting the password in code
 
-`TpFIBDatabase` has the event `BeforeConnect` that runs before every connect, including a restore after a lost connection. `LoginParams` is `DBParams`, and `DoConnect` set to `False` cancels the connect.
+`TFIBDatabase` has the event `BeforeConnect` that runs before every connect, including a restore after a lost connection. It does nothing unless you assign it. `LoginParams` is `DBParams`, and `DoConnect` set to `False` cancels the connect.
 
 ```delphi
 procedure TMainForm.DatabaseBeforeConnect(Database: TFIBDatabase;
@@ -140,7 +140,7 @@ if not Database.TestConnected then
 
 ### Lost connection
 
-`TpFIBDatabase` can handle a dropped connection: it closes the connection without calling the server, calls `OnLostConnect`, and retries with a timer. It does not detect the loss by itself. A `TpFibErrorHandler` component with `oeLostConnect` in `Options` (the default) must exist in the application, or you call `ExTestConnected`; both raise the event. In the handler you choose the action:
+`TFIBDatabase` can handle a dropped connection: it closes the connection without calling the server, calls `OnLostConnect`, and retries with a timer. It does not detect the loss by itself. A `TFIBErrorHandler` component with `oeLostConnect` in `Options` (the default) must exist in the application, or you call `ExTestConnected`; both raise the event. In the handler you choose the action:
 
 ```delphi
 procedure TMainForm.DatabaseLostConnect(Database: TFIBDatabase; E: EFIBError;
@@ -151,7 +151,9 @@ begin
 end;
 ```
 
-`WaitForRestoreConnect` is the retry interval in milliseconds, `30000` by default; `0` turns the retries off. The events, the actions, and the rules for the retries are in the reference: [TpFIBDatabase, Lost connection](../reference/TpFIBDatabase.md#lost-connection). A server idle timeout arrives as a lost connection and is handled in the same way; see [Timeouts](timeouts.md#idle-timeout).
+The error handler runs the action on the database of the failing object only: a database, a query, a transaction, or a BLOB stream. Other connections of the application stay open. When the object gives no database, it pings each connected database and acts on those that report a lost connection.
+
+`WaitForRestoreConnect` is the retry interval in milliseconds, `30000` by default; `0` turns the retries off. The events, the actions, and the rules for the retries are in the reference: [TFIBDatabase, Lost connection](../reference/TFIBDatabase.md#lost-connection). A server idle timeout arrives as a lost connection and is handled in the same way; see [Timeouts](timeouts.md#idle-timeout).
 
 ## Connect at design time
 
@@ -248,16 +250,14 @@ A non-zero timeout stored in a form makes the connect fail on a server without t
 - **Changing parameters while connected.** `DBName` and `DBParams` raise at run time while the database is connected, and `LibraryName` raises at any time. Call `Close` first.
 - **The password in the form.** `DBParams` is stored in the form with the password. Use `ddoNotSavePassword`, or set the password in code.
 - **A stored `Connected = True`.** The form connects while it loads. If the server is not reachable, the program raises an error at start-up. Turn off `ddoStoreConnected` for forms that must start without the server.
-- **Login prompt without a dialog unit.** `UseLoginPrompt` needs `FIBDBLoginDlg`, `FIB_FMX_DBLoginDlg`, or your own `pFIBLoginDialog`.
-- **Opening twice.** `Open` on a connected `TFIBDatabase` raises; check `Connected` first.
+- **Login prompt without a dialog unit.** `UseLoginPrompt` needs `FIBDBLoginDlg`, `FIB_FMX_DBLoginDlg`, or your own `FIBLoginDialog`.
 - **Restore timer in old forms.** Forms saved by versions before 7.9.1 without a value set in the Object Inspector store `WaitForRestoreConnect = 0`, so `laWaitRestore` does nothing more than `laCloseConnect`. Remove the line or set the interval.
-- **Lost connection without an error handler.** `OnLostConnect` does not fire without a `TpFibErrorHandler` or a call to `ExTestConnected`.
+- **Lost connection without an error handler.** `OnLostConnect` does not fire without a `TFIBErrorHandler` or a call to `ExTestConnected`.
 - **Idle timeouts.** A server idle timeout and the client-side `Timeout` both close the connection; they are different settings (see [Timeouts](timeouts.md)).
 
 ## See also
 
 - [TFIBDatabase reference](../reference/TFIBDatabase.md)
-- [TpFIBDatabase reference](../reference/TpFIBDatabase.md)
 - [TFIBSession reference](../reference/TFIBSession.md)
 - [Transactions](transactions.md)
 - [Timeouts](timeouts.md)

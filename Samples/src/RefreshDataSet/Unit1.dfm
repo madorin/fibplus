@@ -101,7 +101,7 @@ object Form1: TForm1
         'Refresh only changed records')
     end
   end
-  object db: TpFIBDatabase
+  object db: TFIBDatabase
     DBName = 
       'localhost:D:\serge\Plus_demos\Voinov\FIBPlusExamples\db\EMPLOYEE' +
       '21.FDB'
@@ -119,13 +119,13 @@ object Form1: TForm1
     Left = 504
     Top = 8
   end
-  object tr: TpFIBTransaction
+  object tr: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 536
     Top = 8
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE EMPLOYEE'
       'SET '
@@ -198,7 +198,7 @@ object Form1: TForm1
     Left = 536
     Top = 40
   end
-  object qryExactRefresh: TpFIBQuery
+  object qryExactRefresh: TFIBQuery
     Transaction = tr
     Database = db
     SQL.Strings = (

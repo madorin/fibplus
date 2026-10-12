@@ -4,16 +4,16 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
-  ExtCtrls, StdCtrls, Grids, DBGrids, EdFieldInfo, pFIBDataInfo, Mask,
+  Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase,
+  ExtCtrls, StdCtrls, Grids, DBGrids, EdFieldInfo, FIBDataInfo, FIBProps, Mask,
   DSContainer;
 
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    DB: TpFIBDatabase;
-    tr: TpFIBTransaction;
-    dt: TpFIBDataSet;
+    DB: TFIBDatabase;
+    tr: TFIBTransaction;
+    dt: TFIBDataSet;
     ds: TDataSource;
     Panel1: TPanel;
     Label1: TLabel;
@@ -24,7 +24,7 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure Button1Click(Sender: TObject);
-    procedure DataSetsContainer1ApplyFieldRepository(DataSet: TDataSet; Field: TField; FieldInfo: TpFIBFieldInfo);
+    procedure DataSetsContainer1ApplyFieldRepository(DataSet: TDataSet; Field: TField; FieldInfo: TFIBFieldInfo);
   private
     { Private declarations }
   public
@@ -62,7 +62,7 @@ begin
   dt.CloseOpen(False);
 end;
 
-procedure TForm1.DataSetsContainer1ApplyFieldRepository(DataSet: TDataSet; Field: TField; FieldInfo: TpFIBFieldInfo);
+procedure TForm1.DataSetsContainer1ApplyFieldRepository(DataSet: TDataSet; Field: TField; FieldInfo: TFIBFieldInfo);
 begin
   Field.EditMask := FieldInfo.OtherInfo.Values['EDIT_MASK'];
 end;

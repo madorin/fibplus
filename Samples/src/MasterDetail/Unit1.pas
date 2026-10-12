@@ -6,21 +6,21 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
-  ExtCtrls, StdCtrls, Grids, DBGrids, DBCtrls, fib, FIBQuery, pFIBQuery;
+  Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase,
+  ExtCtrls, StdCtrls, Grids, DBGrids, DBCtrls, fib, FIBQuery;
 
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    DB: TpFIBDatabase;
-    tr: TpFIBTransaction;
-    dt: TpFIBDataSet;
+    DB: TFIBDatabase;
+    tr: TFIBTransaction;
+    dt: TFIBDataSet;
     ds: TDataSource;
     Panel1: TPanel;
     Label1: TLabel;
     Label2: TLabel;
     DBGrid1: TDBGrid;
-    dtDetail: TpFIBDataSet;
+    dtDetail: TFIBDataSet;
     dsDetail: TDataSource;
     Label3: TLabel;
     DBGrid2: TDBGrid;

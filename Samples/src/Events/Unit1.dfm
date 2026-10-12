@@ -91,7 +91,7 @@ object Form1: TForm1
     Width = 275
     Height = 25
     Anchors = [akTop, akRight]
-    Caption = 'Insert Sale with pFIBQuery'
+    Caption = 'Insert Sale with TFIBQuery'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -11
@@ -101,7 +101,7 @@ object Form1: TForm1
     TabOrder = 3
     OnClick = Button1Click
   end
-  object db: TpFIBDatabase
+  object db: TFIBDatabase
     DBName = 'localhost:D:\home\devrace\FIBPlusExamples\db\EMPLOYEE.FDB'
     DBParams.Strings = (
       'lc_ctype=NONE'
@@ -118,13 +118,13 @@ object Form1: TForm1
     Left = 504
     Top = 8
   end
-  object tr: TpFIBTransaction
+  object tr: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 536
     Top = 8
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     UpdateSQL.Strings = (
       ' Update  SALES Set '
       '   PO_NUMBER=:PO_NUMBER,'
@@ -211,7 +211,7 @@ object Form1: TForm1
     Left = 536
     Top = 40
   end
-  object qryInsertSale: TpFIBQuery
+  object qryInsertSale: TFIBQuery
     Transaction = trInsertSale
     Database = db
     SQL.Strings = (
@@ -233,7 +233,7 @@ object Form1: TForm1
     qoAutoCommit = True
     qoStartTransaction = True
   end
-  object trInsertSale: TpFIBTransaction
+  object trInsertSale: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 536

@@ -6,7 +6,7 @@ Executes an SQL statement on a Firebird or InterBase database and gives access t
 |---|---|
 | Unit | `FIBQuery` |
 | Inherits from | `TComponent`; implements `ISQLObject` and `IFIBQuery` |
-| Descendants | `TpFIBQuery`, which adds more options and error handling; `TpFIBStoredProc`; `TpFIBUpdateObject` |
+| Descendants | [TFIBStoredProc](TFIBStoredProc.md), [TFIBUpdateObject](TFIBUpdateObject.md) |
 
 `Query` is a `TFIBQuery` with `Database` and `Transaction` assigned.
 
@@ -39,13 +39,15 @@ Available in the Object Inspector. The published events are listed under [Events
 | `ParamCheck` | `Boolean` | `True` | Parse `:Name` parameters from `SQL`. Set to `False` when the text contains colons that are not parameters. |
 | `GoToFirstRecordOnExecute` | `Boolean` | `True` | Position on the first row after `ExecQuery` of a `SELECT`. |
 | `StatementTimeout` | `Cardinal` | `0` | Server-side limit in milliseconds, *Firebird 4+*, for `SELECT`, `INSERT`, `UPDATE`, `DELETE` and `EXECUTE PROCEDURE`. `0` uses `Database.Session.StatementTimeout`; `FIBNoStatementTimeout` ignores the session value for this statement (the `firebird.conf` limit still applies). See [Timeouts](../guide/timeouts.md). |
-| `Options` | `TpFIBQueryOptions` | `[]` | Behavior flags, see [Options](#options). The initial value comes from `DefQueryOptions` at design time and is empty at run time. |
+| `Options` | `TFIBQueryOptions` | `[]` | Behavior flags, see [Options](#options). The initial value comes from `DefQueryOptions` at design time and is empty at run time. |
 | `Conditions` | `TConditions` | | Named `WHERE` conditions. `TFIBQuery` does not apply them by itself: call `Conditions.Apply` after enabling or disabling conditions. `Apply` joins the enabled conditions to the main `WHERE` clause with `and`. Assigning `SQL` or `MainWhereClause` discards the applied conditions, and `Apply` must be called again. |
+| `Description` | `string` | | Free text stored with the component. |
+| `About` | `string` | | Read-only version string of the library (`FIBVersionString`). Writing it has no effect, and it is not stored in the form file. |
 | `CSMonitorSupport` | `TCSMonitorSupport` | | Adds monitoring text to the statement. Only when compiled with `CSMonitor`. |
 
 ## Options
 
-`TpFIBQueryOptions` is a set of:
+`TFIBQueryOptions` is a set of:
 
 | Value | Effect |
 |-------|--------|
@@ -112,7 +114,10 @@ Each flag is saved in the form file as its own `qoXxx` entry.
 | Name | Description |
 |------|-------------|
 | `Prepare` | Prepare the statement on the server. Called by `ExecQuery` when needed. |
-| `ExecQuery` | Run the statement. For a `SELECT`, opens a cursor and fetches the first row. A DDL statement (`SQLKind` `skDDL`) goes through `ExecuteImmediate`. |
+| `ExecQuery` | Run the statement. For a `SELECT`, opens a cursor and fetches the first row. A DDL statement (`SQLKind` `skDDL`) goes through `ExecuteImmediate`. When `OnExecuteError` is assigned, an `EFIBError` is passed to it, see [Handling execution errors](#handling-execution-errors). |
+| `ExecProc` | Runs `ExecQuery` only when the statement is an `EXECUTE ...` statement (`IsProc`). An `EXECUTE BLOCK` statement counts as well. Does nothing otherwise. |
+| `ExecProcedure(ProcName)` | Sets `SQL` to `EXECUTE PROCEDURE ProcName` and runs it. The text is not changed when it is already set. |
+| `ExecProcedure(ProcName, InputParams)` | Sets `SQL` to `EXECUTE PROCEDURE ProcName(?P0, ?P1, ...)` with one parameter for each element of `InputParams`, prepares the statement, assigns the values in order with `AsVariant`, and runs it. Read output values with `FN` or `Fields`.  `ProcName` is inserted into the text as given, it is not quoted or formatted; for a procedure whose parameters come from the database metadata, use [TFIBStoredProc](TFIBStoredProc.md). |
 | `ExecuteImmediate` | Run the text with `isc_dsql_execute_immediate`, without keeping a prepared statement. Returns no rows. |
 | `ExecuteAsBatch` / `ExecuteAsBatch(SQLs)` | *InterBase 2007 only*, when compiled with `SUPPORT_IB2007`; does nothing on other connections. Sends several statements in one call with `isc_dsql_batch_execute_immed`. Without arguments it splits `SQL.Text` on `;`; with an array it sends those statements. |
 | `ExecWP(Values)` | Set parameters from an array in order, then `ExecQuery`. |
@@ -127,8 +132,11 @@ Each flag is saved in the form file as its own `qoXxx` entry.
 | Name | Description |
 |------|-------------|
 | `FieldByName(Name)` | Column by name. Raises when the column does not exist. |
-| `FN(Name)` | Column by name, or `nil` when missing. `TpFIBQuery.FN` raises instead, like `FieldByName`. |
+| `FN(Name)` | Short form of `FieldByName`: raises when the column does not exist. Use `FindField` to get `nil`. |
 | `FindField(Name)` | Column by name, or `nil`. |
+| `FieldIsNull(Field)` | Returns `Field.IsNull`. |
+| `BlobToStrings(BlobFieldName, Destination)` | Loads a text `BLOB` column of the current row into `Destination`. Returns `False` when the cursor is not open, `Destination` is `nil`, the column does not exist, the column is not a `BLOB` with the text subtype, or reading fails. No exception is raised. |
+| `BlobAsString(BlobFieldName)` | The same as one string. Returns an empty string when `BlobToStrings` returns `False`. |
 | `FieldByOrigin(Table, Field)` | Column by source table and field. |
 | `ParamByName(Name)` | Parameter by name. For an `EXECUTE PROCEDURE` statement it falls back to the output column of that name. Raises when neither exists. |
 | `FindParam(Name)` | Parameter by name, or `nil`. |
@@ -183,17 +191,44 @@ Each flag is saved in the form file as its own `qoXxx` entry.
 
 ## Events
 
-`OnSQLChanging`, `AfterFirstFetch`, `OnBatching`, `OnBatchError`, `TransactionEnding` and `TransactionEnded` are published. `BeforeExecute`, `AfterExecute` and `OnSQLFetch` are public properties only; `TpFIBQuery` publishes the first two.
+`BeforeExecute`, `AfterExecute`, `OnExecuteError`, `OnSQLChanging`, `AfterFirstFetch`, `OnBatching`, `OnBatchError`, `TransactionEnding` and `TransactionEnded` are published. `OnSQLFetch` is a public property only.
 
 | Name | Description |
 |------|-------------|
 | `BeforeExecute` / `AfterExecute` | Before and after the statement runs. |
+| `OnExecuteError` | `ExecQuery` raised an `EFIBError`. Set `Action` to choose what happens, see [Handling execution errors](#handling-execution-errors). |
 | `AfterFirstFetch` | On the first `Next` after an execute, also when the result is empty. With `GoToFirstRecordOnExecute` set to `False` it fires on the first explicit `Next`. |
 | `OnSQLChanging` | The `SQL` text is about to change. |
 | `OnSQLFetch` | Before each fetch. `RecordNumber` is the number of rows fetched so far. Set `StopFetching` to make `Next` return `nil` without fetching; `Eof` stays `False`. |
 | `TransactionEnding` / `TransactionEnded` | Not called by the library. An open cursor is closed automatically when its transaction commits or rolls back. |
 | `OnBatching` | During a batch operation, for each row. Set `BatchAction`: continue, stop, or skip. |
 | `OnBatchError` | A batch row failed. Set `BatchErrorAction`: fail, abort, retry, or ignore. |
+
+### Handling execution errors
+
+`OnExecuteError` has the type `TFIBQueryErrorEvent`:
+
+```delphi
+procedure(Sender: TFIBQuery; E: EFIBError; var Action: TDataAction) of object;
+```
+
+`Action` is `daFail` when the event is called.
+
+| Action | Result |
+|--------|--------|
+| `daFail` | The exception is raised again. |
+| `daAbort` | A silent exception (`Abort`) ends the call. |
+| `daRetry` | The statement runs again. Nothing limits the number of retries. |
+
+The event is called for `EFIBError` only. Other exceptions are raised as they are. Without a handler, the exception is raised.
+
+```delphi
+procedure TMainForm.QueryExecuteError(Sender: TFIBQuery; E: EFIBError; var Action: TDataAction);
+begin
+  if E.IsStatementTimeout then
+    Action := daAbort;
+end;
+```
 
 ## Constants
 
@@ -204,5 +239,5 @@ Each flag is saved in the form file as its own `qoXxx` entry.
 ## See also
 
 - [TFIBDatabase](TFIBDatabase.md), [TFIBTransaction](TFIBTransaction.md), [TFIBDataSet](TFIBDataSet.md)
-- [TpFIBQuery](TpFIBQuery.md)
+- [TFIBStoredProc](TFIBStoredProc.md), [TFIBUpdateObject](TFIBUpdateObject.md)
 - [Timeouts](../guide/timeouts.md)

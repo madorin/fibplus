@@ -293,7 +293,7 @@ const
   );
 
 type
-  TpFIBLoginDialog = function(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
+  TFIBLoginDialogFunc = function(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
 
 const
   SQLDecimalSeparator = '.';
@@ -305,7 +305,7 @@ resourcestring
 var
   FIBCS: TCriticalSection;
   // hFIBTLGlobals: DWord_;
-  pFIBLoginDialog: TpFIBLoginDialog;
+  FIBLoginDialog: TFIBLoginDialogFunc;
 
   (* FIBAlloc acts like Realloc, except that it guarantees that
     the "newly" allocated memory is initialized to 0's *)
@@ -344,10 +344,10 @@ var
 implementation
 
 uses
-  IB_ErrorCodes, pFIBErrorHandler, StdFuncs, StrUtil;
+  IB_ErrorCodes, FIBErrorHandler, StdFuncs, StrUtil;
 
 var
-  IBErrorHandler: TpFibErrorHandler;
+  IBErrorHandler: TFIBErrorHandler;
   TPBConstants: TStringList;
   DPBConstants: TStringList;
 
@@ -372,8 +372,8 @@ end;
 
 procedure RegisterErrorHandler(aErrorHandler: TComponent);
 begin
-  if aErrorHandler is TpFibErrorHandler then
-    IBErrorHandler := TpFibErrorHandler(aErrorHandler)
+  if aErrorHandler is TFIBErrorHandler then
+    IBErrorHandler := TFIBErrorHandler(aErrorHandler)
 end;
 
 procedure UnRegisterErrorHandler;
@@ -976,6 +976,7 @@ procedure GenerateTPB(sl: TStrings; var TPB: AnsiString; var TPBLength: Short; I
 var
   i, j, TPBVal, ParamLength: Integer;
   param_name, param_value: AnsiString;
+  Line: string;
   LT: Word;
 begin
   TPB := '';
@@ -988,13 +989,13 @@ begin
     end;
   for i := 0 to sl.Count - 1 do
     begin
-      sl[i] := FastTrim(sl[i]);
-      if sl[i] = '' then
+      Line := FastTrim(sl[i]);
+      if Line = '' then
         begin
           Dec(TPBLength);
           Continue;
         end;
-      GetNameAndValue(sl[i], param_name, param_value);
+      GetNameAndValue(Line, param_name, param_value);
       DoLowerCase(param_name);
 
       if (Pos(TPBPrefix, param_name) = 1) then

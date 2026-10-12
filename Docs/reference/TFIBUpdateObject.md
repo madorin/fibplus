@@ -1,15 +1,15 @@
-# TpFIBUpdateObject
+# TFIBUpdateObject
 
-An extra statement that a [TpFIBDataSet](TpFIBDataSet.md) runs when it posts an insert, an update, or a delete. Use it to change other tables or call a procedure in the same step as the dataset's own statement. An update object has an `SQL` text like any query and is attached to one dataset.
+An extra statement that a [TFIBDataSet](TFIBDataSet.md) runs when it posts an insert, an update, or a delete. Use it to change other tables or call a procedure in the same step as the dataset's own statement. An update object has an `SQL` text like any query and is attached to one dataset.
 
 | | |
 |---|---|
-| Unit | `pFIBQuery` |
-| Inherits from | [TpFIBQuery](TpFIBQuery.md) |
+| Unit | `FIBDataSet` |
+| Inherits from | [TFIBQuery](TFIBQuery.md) |
 
-This page lists only what `TpFIBUpdateObject` adds or changes. The other members are described in [TpFIBQuery](TpFIBQuery.md) and [TFIBQuery](TFIBQuery.md).
+This page lists only what `TFIBUpdateObject` adds or changes. The other members are described in [TFIBQuery](TFIBQuery.md).
 
-The example writes an audit row after every update of `DataSet`. It uses the components `DataSet` (a `TpFIBDataSet`) and `AuditObject` (a `TpFIBUpdateObject`). `AuditObject` takes `Database` and `Transaction` from `DataSet` when `DataSet` is assigned. The parameters `OLD_ID` and `NEW_NAME` are filled from the record, see [Parameters](#parameters).
+The example writes an audit row after every update of `DataSet`. It uses the components `DataSet` (a `TFIBDataSet`) and `AuditObject` (a `TFIBUpdateObject`). `AuditObject` takes `Database` and `Transaction` from `DataSet` when `DataSet` is assigned. The parameters `OLD_ID` and `NEW_NAME` are filled from the record, see [Parameters](#parameters).
 
 ```delphi
 AuditObject.SQL.Text :=
@@ -23,11 +23,11 @@ Guides: [Datasets and caching](../guide/datasets-and-caching.md).
 
 ## Published properties
 
-`TpFIBUpdateObject` publishes everything that [TpFIBQuery](TpFIBQuery.md#published-properties) publishes, and these:
+`TFIBUpdateObject` publishes everything that [TFIBQuery](TFIBQuery.md#published-properties) publishes, and these:
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `DataSet` | `TFIBDataSet` | | Dataset that runs the object. Must be a `TpFIBDataSet`, otherwise an exception is raised. Assigning it registers the object with the dataset and copies `Database` and `Transaction` from the dataset when they are not set. |
+| `DataSet` | `TFIBCustomDataSet` | | Dataset that runs the object. Assigning it registers the object with the dataset and copies `Database` and `Transaction` from the dataset when they are not set. |
 | `KindUpdate` | `TUpdateKind` | `ukModify` | Operation the object belongs to: `ukModify`, `ukInsert`, or `ukDelete`. |
 | `ExecuteOrder` | `TFIBOrderExecUO` | `oeBeforeDefault` | Whether the object runs before or after the dataset's own statement, see [Types](#types). |
 | `OrderInList` | `Integer` | | Position among the objects of the same `KindUpdate`. Objects with a lower value run first. |
@@ -51,7 +51,7 @@ Guides: [Datasets and caching](../guide/datasets-and-caching.md).
 
 ## How a dataset uses update objects
 
-The order of execution (before the dataset's own statement, the statement, after it), the skip rule for an empty `SQL` or `No Action`, the read-back of returned rows, and the effect on `CanEdit`, `CanInsert`, and `CanDelete` are described in [TpFIBDataSet](TpFIBDataSet.md#update-objects). `ApplyUpdates` runs the objects through the same code as a direct post or delete.
+The order of execution (before the dataset's own statement, the statement, after it), the skip rule for an empty `SQL` or `No Action`, the read-back of returned rows, and the effect on `CanEdit`, `CanInsert`, and `CanDelete` are described in [TFIBDataSet](TFIBDataSet.md#update-objects). `ApplyUpdates` runs the objects through the same code as a direct post or delete.
 
 Two points are specific to the object:
 
@@ -75,7 +75,7 @@ The prefixes are case-insensitive.
 
 ### Provider path
 
-`TpFIBDataSet.PSUpdateRecord`, used when the dataset serves a [TpFIBDataSetProvider](TpFIBClientDataSet.md#tpfibdatasetprovider), also runs update objects, with these differences:
+`TFIBDataSet.PSUpdateRecord`, used when the dataset serves a [TFIBDataSetProvider](TFIBClientDataSet.md#tfibdatasetprovider), also runs update objects, with these differences:
 
 - An object runs when it is `Active`, its `ExecuteOrder` matches, and its `SQL` is not empty. The text `No Action` is not tested.
 - Only the parameters `Field`, `NEW_Field`, and `OLD_Field` are filled. `MAS_Field` is not supported.
@@ -88,6 +88,6 @@ The prefixes are case-insensitive.
 
 ## See also
 
-- [TpFIBQuery](TpFIBQuery.md), [TFIBQuery](TFIBQuery.md)
-- [TpFIBDataSet](TpFIBDataSet.md), [TFIBDataSet](TFIBDataSet.md)
+- [TFIBQuery](TFIBQuery.md)
+- [TFIBDataSet](TFIBDataSet.md)
 - [Datasets and caching](../guide/datasets-and-caching.md)

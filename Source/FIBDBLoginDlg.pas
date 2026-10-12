@@ -47,7 +47,7 @@ type
     { Public declarations }
   end;
 
-function pFIBLoginDialogEx(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
+function FIBLoginDialogEx(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
 
 implementation
 
@@ -56,7 +56,7 @@ implementation
 uses
   fib, FIBConsts;
 
-function pFIBLoginDialogEx(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
+function FIBLoginDialogEx(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
 var
   frmFIBDBLoginDlg: TfrmFIBDBLoginDlg;
 begin
@@ -95,10 +95,10 @@ end;
 
 initialization
 
-pFIBLoginDialog := pFIBLoginDialogEx;
+FIBLoginDialog := FIBLoginDialogEx;
 
 finalization
 
-pFIBLoginDialog := nil
+FIBLoginDialog := nil
 
 end.

@@ -5,21 +5,21 @@ interface
 uses
   fib,
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
-  ExtCtrls, StdCtrls, Grids, DBGrids, pFIBErrorHandler, pFIBSQLLog;
+  Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase,
+  ExtCtrls, StdCtrls, Grids, DBGrids, FIBErrorHandler, FIBSQLLog;
 
 type
   TForm1 = class(TForm)
     StatusBar1: TStatusBar;
-    DB: TpFIBDatabase;
-    tr: TpFIBTransaction;
-    dt: TpFIBDataSet;
+    DB: TFIBDatabase;
+    tr: TFIBTransaction;
+    dt: TFIBDataSet;
     ds: TDataSource;
     Panel1: TPanel;
     Label1: TLabel;
     Label2: TLabel;
     DBGrid1: TDBGrid;
-    pFibErrorHandler1: TpFibErrorHandler;
+    FIBErrorHandler1: TFIBErrorHandler;
     Panel2: TPanel;
     Label5: TLabel;
     cmbKindOnLost: TComboBox;
@@ -43,7 +43,7 @@ type
     procedure dbAfterRestoreConnect(Database: TFIBDatabase);
     procedure dbErrorRestoreConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TOnLostConnectActions);
     procedure dbLostConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TOnLostConnectActions);
-    procedure pFibErrorHandler1FIBErrorEvent(Sender: TObject; ErrorValue: EFIBError; KindIBError: TKindIBError; var DoRaise: Boolean);
+    procedure FIBErrorHandler1FIBErrorEvent(Sender: TObject; ErrorValue: EFIBError; KindIBError: TKindIBError; var DoRaise: Boolean);
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
   private
@@ -98,7 +98,7 @@ begin
     0:
       begin
         Actions := laCloseConnect;
-        MessageDlg('Connection lost. TpFIBDatabase will be closed!', mtInformation, [mbOk], 0);
+        MessageDlg('Connection lost. TFIBDatabase will be closed!', mtInformation, [mbOk], 0);
       end;
     1:
       begin
@@ -109,7 +109,7 @@ begin
   end;
 end;
 
-procedure TForm1.pFibErrorHandler1FIBErrorEvent(Sender: TObject; ErrorValue: EFIBError; KindIBError: TKindIBError; var DoRaise: Boolean);
+procedure TForm1.FIBErrorHandler1FIBErrorEvent(Sender: TObject; ErrorValue: EFIBError; KindIBError: TKindIBError; var DoRaise: Boolean);
 begin
   Label4.Visible := True;
   Label3.Visible := True;

@@ -112,7 +112,7 @@ object Form1: TForm1
       Height = 41
       AutoSize = False
       Caption = 
-        'This Example demonstrate using TpFIBDataSet Master-Detail. See D' +
+        'This Example demonstrate using TFIBDataSet Master-Detail. See D' +
         'etailConditions Properties for details'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
@@ -164,7 +164,7 @@ object Form1: TForm1
     TitleFont.Name = 'MS Sans Serif'
     TitleFont.Style = []
   end
-  object db: TpFIBDatabase
+  object db: TFIBDatabase
     DBName = 'localhost:D:\home\devrace\FIBPlusExamples\db\EMPLOYEE.FDB'
     DBParams.Strings = (
       'lc_ctype=WIN1251'
@@ -180,13 +180,13 @@ object Form1: TForm1
     Left = 504
     Top = 8
   end
-  object tr: TpFIBTransaction
+  object tr: TFIBTransaction
     DefaultDatabase = db
     TimeoutAction = TARollback
     Left = 536
     Top = 8
   end
-  object dt: TpFIBDataSet
+  object dt: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE CUSTOMER'
       'SET '
@@ -302,7 +302,7 @@ object Form1: TForm1
     Left = 472
     Top = 40
   end
-  object dtDetail: TpFIBDataSet
+  object dtDetail: TFIBDataSet
     UpdateSQL.Strings = (
       'UPDATE SALES'
       'SET '

@@ -50,7 +50,7 @@ object Form2: TForm2
     Step = 1
     TabOrder = 1
   end
-  object dtGenData: TpFIBDataSet
+  object dtGenData: TFIBDataSet
     UniDirectional = True
     SelectSQL.Strings = (
       'Select * from GEN_BIGTABLE_CONTENT(:CNT) ')

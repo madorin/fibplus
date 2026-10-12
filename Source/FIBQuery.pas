@@ -21,10 +21,30 @@ interface
 
 uses
   SysUtils, Classes, ibase, IB_Intf, IB_Externals, FIBPlatforms,
-  DB, fib, FIBDatabase, StdFuncs, IB_ErrorCodes, SqlTxtRtns, pFIBProps,
-  pFIBInterfaces
-{$IFDEF SUPPORT_ARRAY_FIELD}, pFIBArray {$ENDIF}
+  DB, fib, FIBDatabase, StdFuncs, IB_ErrorCodes, SqlTxtRtns, FIBProps,
+  FIBInterfaces
+{$IFDEF SUPPORT_ARRAY_FIELD}, FIBArray {$ENDIF}
   , FMTBcd, Variants, FIBTypes;
+
+type
+  TFIBSQLTypes = FIBProps.TFIBSQLTypes;
+
+const
+  SQLUnknown = FIBProps.SQLUnknown;
+  SQLSelect = FIBProps.SQLSelect;
+  SQLInsert = FIBProps.SQLInsert;
+  SQLUpdate = FIBProps.SQLUpdate;
+  SQLDelete = FIBProps.SQLDelete;
+  SQLDDL = FIBProps.SQLDDL;
+  SQLGetSegment = FIBProps.SQLGetSegment;
+  SQLPutSegment = FIBProps.SQLPutSegment;
+  SQLExecProcedure = FIBProps.SQLExecProcedure;
+  SQLStartTransaction = FIBProps.SQLStartTransaction;
+  SQLCommit = FIBProps.SQLCommit;
+  SQLRollback = FIBProps.SQLRollback;
+  SQLSelectForUpdate = FIBProps.SQLSelectForUpdate;
+  SQLSetGenerator = FIBProps.SQLSetGenerator;
+  SQLSavePointOperation = FIBProps.SQLSavePointOperation;
 
 type
   // Stream Events
@@ -73,7 +93,7 @@ type
     FWideTempValue: WideString;
     FParDataIsPrepared: boolean;
 {$IFDEF SUPPORT_ARRAY_FIELD}
-    vFIBArray: TpFIBArray;
+    FArrayInfo: TFIBArray;
     // value of an array parameter, written before the execution (TFIBQuery.PutArrayParams)
     FArrayValue: Variant;
 {$ENDIF}
@@ -279,7 +299,7 @@ type
 
     // Array Support
 {$IFDEF SUPPORT_ARRAY_FIELD}
-    property FIBArray: TpFIBArray read vFIBArray;
+    property ArrayInfo: TFIBArray read FArrayInfo;
     property DimensionCount: integer read GetDimensionCount;
     property Dimension[Index: integer]: TISC_ARRAY_BOUND read GetDimension;
     property ElementType: TFieldType read GetElementType;
@@ -369,23 +389,6 @@ type
   TFIBBatchOutputStreamClass = class of TFIBBatchOutputStream;
 
   // TFIBQuery
-  TFIBSQLTypes = (
-    SQLUnknown,
-    SQLSelect,
-    SQLInsert,
-    SQLUpdate,
-    SQLDelete,
-    SQLDDL,
-    SQLGetSegment,
-    SQLPutSegment,
-    SQLExecProcedure,
-    SQLStartTransaction,
-    SQLCommit,
-    SQLRollback,
-    SQLSelectForUpdate,
-    SQLSetGenerator,
-    SQLSavePointOperation
-  );
 
   TOnSQLFetch = procedure(RecordNumber: integer; var StopFetching: boolean) of object;
 
@@ -406,8 +409,12 @@ type
   TQueryRunStateValues = (qrsInPrepare, qrsInExecute, qrsInClose);
   TQueryRunState = set of TQueryRunStateValues;
 
+  TFIBQueryErrorEvent = procedure(Sender: TFIBQuery; E: EFIBError; var Action: TDataAction) of object;
+
   TFIBQuery = class(TComponent, ISQLObject, IFIBQuery)
   private
+    FDescription: string;
+    FOnExecuteError: TFIBQueryErrorEvent;
     FOnBatching: TOnBatching;
     FDoParamCheck: boolean;
     FParser: TSQLParser;
@@ -450,7 +457,7 @@ type
     vUserParamsCreated: boolean;
     FCountLockSQL: integer;
     FModifyTable: string;
-    FOptions: TpFIBQueryOptions;
+    FOptions: TFIBQueryOptions;
     vDiffParams: boolean;
     FOnlySrvParams: TStringList;
     FCallTime: Cardinal;
@@ -567,6 +574,12 @@ type
     procedure Close; // close the query.
     function Current: TFIBXSQLDA;
     procedure ExecQuery; virtual; // ExecQuery the query.
+    procedure ExecProc;
+    procedure ExecProcedure(const ProcName: string; const InputParams: array of Variant); overload;
+    procedure ExecProcedure(const ProcName: string); overload;
+    function BlobToStrings(const BlobFieldName: string; Destination: TStrings): Boolean;
+    function BlobAsString(const BlobFieldName: string): string;
+    function FieldIsNull(Field: TFIBXSQLVAR): Boolean;
     procedure ExecuteImmediate;
     // procedure CancelQuery;  // Only For IB
 {$IFDEF SUPPORT_IB2007}
@@ -656,6 +669,9 @@ type
     function ReadySQLText(ForChangeExecSQL: boolean = True): string;
     property SQLTextChangeCount: integer read FSQLTextChangeCount;
   private
+    function GetAbout: string;
+    procedure SetAbout(const Value: string);
+    procedure InternalExecQuery;
     procedure SetPlanClause(const Value: string);
     function GetPlanClause: string;
   public
@@ -674,8 +690,6 @@ type
     property CallTime: Cardinal read FCallTime;
     property MacroChanged: boolean read FMacroChanged;
     property SQLKind: TSQLKind read GetSQLKind;
-    property BeforeExecute: TNotifyEvent read FBeforeExecute write FBeforeExecute;
-    property AfterExecute: TNotifyEvent read FAfterExecute write FAfterExecute;
 
   published
     property Transaction: TFIBTransaction read GetTransaction write SetTransaction;
@@ -689,7 +703,7 @@ type
     property SQL: TStrings read FSQL write SetSQL;
 
     property OnSQLChanging: TNotifyEvent read FOnSQLChanging write FOnSQLChanging;
-    property Options: TpFIBQueryOptions read FOptions write FOptions stored False;
+    property Options: TFIBQueryOptions read FOptions write FOptions stored False;
     property OnBatching: TOnBatching read FOnBatching write FOnBatching;
     property OnBatchError: TOnBatchError read FOnBatchError write FOnBatchError;
     property TransactionEnding: TNotifyEvent read FTransactionEnding write FTransactionEnding;
@@ -698,6 +712,11 @@ type
 {$IFDEF CSMonitor}
     property CSMonitorSupport: TCSMonitorSupport read FCSMonitorSupport write SetMonitorSupport;
 {$ENDIF}
+    property BeforeExecute: TNotifyEvent read FBeforeExecute write FBeforeExecute;
+    property AfterExecute: TNotifyEvent read FAfterExecute write FAfterExecute;
+    property Description: string read FDescription write FDescription;
+    property OnExecuteError: TFIBQueryErrorEvent read FOnExecuteError write FOnExecuteError;
+    property About: string read GetAbout write SetAbout stored False;
   end;
 
 procedure BlobToStream(ModelVar: TFIBXSQLVAR; BlobID: TISC_QUAD; Stream: TStream);
@@ -732,7 +751,7 @@ uses
   , FIBSQLMonitor
 {$ENDIF}
 {$IFDEF CSMonitor}
-  , FIBDataSet, pFIBDataSet
+  , FIBDataSet
 {$ENDIF}
   ;
 
@@ -774,8 +793,8 @@ end;
 destructor TFIBXSQLVAR.Destroy; // override;
 begin
 {$IFDEF SUPPORT_ARRAY_FIELD}
-  if Assigned(vFIBArray) then
-    vFIBArray.Free;
+  if Assigned(FArrayInfo) then
+    FArrayInfo.Free;
 {$ENDIF}
   inherited Destroy;
   FreeAndNil(FStreamValue);
@@ -1712,7 +1731,7 @@ end;
 
 procedure TFIBXSQLVAR.CheckArrayType;
 begin
-  if not IsArray or not Assigned(vFIBArray) then
+  if not IsArray or not Assigned(FArrayInfo) then
     if FParent.FIsParams then
       FIBError(feNotIsArrayField, [Name])
     else
@@ -1722,25 +1741,25 @@ end;
 function TFIBXSQLVAR.GetDimensionCount: integer;
 begin
   CheckArrayType;
-  Result := vFIBArray.DimensionCount
+  Result := FArrayInfo.DimensionCount
 end;
 
 function TFIBXSQLVAR.GetElementType: TFieldType;
 begin
   CheckArrayType;
-  Result := vFIBArray.ArrayType
+  Result := FArrayInfo.ArrayType
 end;
 
 function TFIBXSQLVAR.GetDimension(Index: integer): TISC_ARRAY_BOUND;
 begin
   CheckArrayType;
-  Result := vFIBArray.Dimension[Index]
+  Result := FArrayInfo.Dimension[Index]
 end;
 
 function TFIBXSQLVAR.GetSliceSize: integer;
 begin
   CheckArrayType;
-  Result := vFIBArray.ArraySize
+  Result := FArrayInfo.ArraySize
 end;
 
 procedure TFIBXSQLVAR.SetArrayValue(Value: Variant);
@@ -1755,7 +1774,7 @@ begin
     Exit;
   end;
   CheckArrayType;
-  vFIBArray.SetArrayValue(Value, FXSQLVAR^.sqldata, FQuery.DBHandle, FQuery.TRHandle);
+  FArrayInfo.SetArrayValue(Value, FXSQLVAR^.sqldata, FQuery.DBHandle, FQuery.TRHandle);
   AsQuad := PISC_QUAD(FXSQLVAR^.sqldata)^;
 end;
 
@@ -1773,7 +1792,7 @@ begin
   if IsNull then
     Result := NULL
   else
-    Result := vFIBArray.GetArrayValues(FXSQLVAR^.sqldata, FQuery.DBHandle, FQuery.TRHandle);
+    Result := FArrayInfo.GetArrayValues(FXSQLVAR^.sqldata, FQuery.DBHandle, FQuery.TRHandle);
 end;
 
 function TFIBXSQLVAR.GetArrayElement(Indexes: array of integer): Variant;
@@ -1782,13 +1801,13 @@ begin
   if IsNull then
     Result := NULL
   else
-    Result := vFIBArray.GetElement(FXSQLVAR^.sqldata, Indexes, FQuery.DBHandle, FQuery.TRHandle);
+    Result := FArrayInfo.GetElement(FXSQLVAR^.sqldata, Indexes, FQuery.DBHandle, FQuery.TRHandle);
 end;
 
 function TFIBXSQLVAR.GetArraySize: integer;
 begin
   CheckArrayType;
-  Result := vFIBArray.ArraySize
+  Result := FArrayInfo.ArraySize
 end;
 {$ENDIF}
 // End Array Support
@@ -4390,7 +4409,7 @@ begin
 end;
 {$ENDIF}
 
-procedure TFIBQuery.ExecQuery;
+procedure TFIBQuery.InternalExecQuery;
 var
   fetch_res: ISC_STATUS;
   pc: integer;
@@ -4623,7 +4642,131 @@ end;
 
 function TFIBQuery.FN(const FieldName: string): TFIBXSQLVAR;
 begin
-  Result := FSQLRecord.ByName[FieldName];
+  Result := FieldByName(FieldName);
+end;
+
+function TFIBQuery.FieldIsNull(Field: TFIBXSQLVAR): Boolean;
+begin
+  Result := Field.IsNull;
+end;
+
+procedure TFIBQuery.ExecQuery;
+var
+  Action: TDataAction;
+begin
+  if not Assigned(FOnExecuteError) then
+  begin
+    InternalExecQuery;
+    Exit;
+  end;
+  Action := daRetry;
+  while Action = daRetry do
+    try
+      Action := daFail;
+      InternalExecQuery;
+    except
+      on E: EFIBError do
+        if Assigned(FOnExecuteError) then
+        begin
+          FOnExecuteError(Self, E, Action);
+          case Action of
+            daFail: raise;
+            daAbort: Abort;
+          end;
+        end
+        else
+          raise
+    end;
+end;
+
+procedure TFIBQuery.ExecProc;
+begin
+  if IsProc then
+    ExecQuery;
+end;
+
+procedure TFIBQuery.ExecProcedure(const ProcName: string);
+begin
+  ExecProcedure(ProcName, []);
+end;
+
+procedure TFIBQuery.ExecProcedure(const ProcName: string; const InputParams: array of Variant);
+var
+  i: Integer;
+  SQLText: string;
+begin
+  SQLText := ExecProcPrefix + 'PROCEDURE ' + ProcName;
+  if Length(InputParams) > 0 then
+  begin
+    SQLText := SQLText + '(?P0';
+    for i := 1 to High(InputParams) do
+      SQLText := SQLText + ',?P' + IntToStr(i);
+    SQLText := SQLText + ')';
+  end;
+  if SQL.Text <> SQLText + CLRF then
+    SQL.Text := SQLText;
+  if not Prepared then
+    Prepare;
+  for i := 0 to High(InputParams) do
+    Params[i].AsVariant := InputParams[i];
+  ExecProc;
+end;
+
+function TFIBQuery.BlobToStrings(const BlobFieldName: string; Destination: TStrings): Boolean;
+var
+  bs: TFIBBlobStream;
+  fld: TFIBXSQLVAR;
+begin
+  Result := False;
+  if not Open or (Destination = nil) then
+    Exit;
+  fld := FindField(BlobFieldName);
+  if fld = nil then
+    Exit;
+  if (fld.data.sqltype and (not 1) <> SQL_BLOB) then
+    Exit;
+  if (fld.data.sqlsubtype <> isc_blob_text) then
+    Exit;
+
+  bs := TFIBBlobStream.Create;
+  try
+    try
+      bs.Mode := bmRead;
+      bs.Database := Database;
+      bs.Transaction := Transaction;
+      bs.BlobID := fld.AsQuad;
+      bs.Seek(0, soBeginning);
+      Destination.LoadFromStream(bs);
+      Result := True;
+    except
+      Result := False;
+    end;
+  finally
+    bs.Free;
+  end;
+end;
+
+function TFIBQuery.BlobAsString(const BlobFieldName: string): string;
+var
+  ts: TStrings;
+begin
+  Result := '';
+  ts := TStringList.Create;
+  try
+    if BlobToStrings(BlobFieldName, ts) then
+      Result := ts.Text;
+  finally
+    ts.Free;
+  end;
+end;
+
+function TFIBQuery.GetAbout: string;
+begin
+  Result := FIBVersionString;
+end;
+
+procedure TFIBQuery.SetAbout(const Value: string);
+begin
 end;
 
 function TFIBQuery.FieldByOrigin(const TableName, FieldName: string): TFIBXSQLVAR;
@@ -4662,7 +4805,7 @@ var
 begin
   if not Prepared then
     Prepare;
-  tf := FN(aFieldName);
+  tf := FindField(aFieldName);
   if not Assigned(tf) then
     Result := ''
   else
@@ -5018,7 +5161,7 @@ function TFIBQuery.TableAliasForFieldByName(const aFieldName: string): string;
 var
   tf: TFIBXSQLVAR;
 begin
-  tf := FN(aFieldName);
+  tf := FindField(aFieldName);
   if not Assigned(tf) then
     Result := ''
   else
@@ -5712,10 +5855,10 @@ end;
 procedure TFIBQuery.PrepareArraySqlVar(SqlVar: TFIBXSQLVAR; const RelName, SqlName: string);
 begin
   // the variables of the query are reused by the next Prepare, also for another statement
-  if (SqlVar.vFIBArray = nil) or not SqlVar.vFIBArray.Matches(Database, RelName, SqlName) then
+  if (SqlVar.FArrayInfo = nil) or not SqlVar.FArrayInfo.Matches(Database, RelName, SqlName) then
   begin
-    FreeAndNil(SqlVar.vFIBArray);
-    SqlVar.vFIBArray := TpFIBArray.Create(Database, Transaction, RelName, SqlName);
+    FreeAndNil(SqlVar.FArrayInfo);
+    SqlVar.FArrayInfo := TFIBArray.Create(Database, Transaction, RelName, SqlName);
   end;
 end;
 
@@ -5762,16 +5905,16 @@ begin
       ReadParamNames;
     ColumnRelation := Srvpar.FRelationName;
     ColumnName := Srvpar.FSqlName;
-    if (Par.vFIBArray = nil) or not Par.vFIBArray.Matches(Database, ColumnRelation, ColumnName) then
+    if (Par.FArrayInfo = nil) or not Par.FArrayInfo.Matches(Database, ColumnRelation, ColumnName) then
     begin
-      FreeAndNil(Par.vFIBArray);
-      Par.vFIBArray := TpFIBArray.Create(Database, Transaction, ColumnRelation, ColumnName);
+      FreeAndNil(Par.FArrayInfo);
+      Par.FArrayInfo := TFIBArray.Create(Database, Transaction, ColumnRelation, ColumnName);
     end;
     buffer := nil;
-    FIBAlloc(buffer, 0, Par.vFIBArray.ArraySize);
+    FIBAlloc(buffer, 0, Par.FArrayInfo.ArraySize);
     try
-      Par.vFIBArray.VariantToBuffer(Par.FArrayValue, PAnsiChar(buffer));
-      Par.vFIBArray.PutSlice(PAnsiChar(buffer), ID, DBHandle, TRHandle);
+      Par.FArrayInfo.VariantToBuffer(Par.FArrayValue, PAnsiChar(buffer));
+      Par.FArrayInfo.PutSlice(PAnsiChar(buffer), ID, DBHandle, TRHandle);
     finally
       FIBAlloc(buffer, 0, 0);
     end;
@@ -6581,15 +6724,10 @@ begin
   if IsEmptyStr(sDs_pl_name) then
     sDs_pl_name := 'Query_0x' + IntToHex(integer(Self), 8);
   if Assigned(Owner) then
-    if Owner is TFIBDataSet then
+    if Owner is TFIBCustomDataSet then
     begin
-      if Owner is TpFIBDataSet then
-      begin
-        if (not IsEmptyStr((Owner as TpFIBDataSet).Description)) and bIncludeDSDesc then
-          sDs_pl_name := Owner.Name + ':[' + trim((Owner as TpFIBDataSet).Description) + '].' + sDs_pl_name
-        else
-          sDs_pl_name := Owner.Name + '.' + sDs_pl_name;
-      end
+      if (not IsEmptyStr(TFIBCustomDataSet(Owner).Description)) and bIncludeDSDesc then
+        sDs_pl_name := Owner.Name + ':[' + trim(TFIBCustomDataSet(Owner).Description) + '].' + sDs_pl_name
       else
         sDs_pl_name := Owner.Name + '.' + sDs_pl_name;
       if Assigned(Owner.Owner) then

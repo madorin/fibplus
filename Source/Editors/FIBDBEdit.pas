@@ -12,7 +12,7 @@
 {  Please see the file License.txt for full license information }
 {***************************************************************}
 
-unit pFIBDBEdit;
+unit FIBDBEdit;
 
 {$i ..\FIBPlus.inc}
 
@@ -30,7 +30,7 @@ uses
 {$IFDEF LINUX}
   Types, QControls, QForms, QDialogs, QStdCtrls, Classes,
 {$ENDIF}
-  SysUtils, pFIBInterfaces, TypInfo, uFIBEditorForm;
+  SysUtils, FIBInterfaces, TypInfo, uFIBEditorForm;
 
 type
   TDBEditForm = class(TFIBEditorCustomForm)
@@ -109,7 +109,7 @@ implementation
 uses
   Variants,
   // {$IFDEF LINUX}  Variants, {$ENDIF}
-  RegistryUtils, RTTIRoutines, pFIBEditorsConsts;
+  RegistryUtils, RTTIRoutines, FIBEditorsConsts;
 
 function EditFIBDatabase(Database: TComponent): boolean;
 begin

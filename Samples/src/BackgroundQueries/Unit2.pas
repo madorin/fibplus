@@ -6,8 +6,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ExtCtrls, Buttons, StdCtrls, Grids, DBGrids, DB, FIBDatabase,
-  pFIBDatabase, FIBDataSet, pFIBDataSet;
+  Dialogs, ExtCtrls, Buttons, StdCtrls, Grids, DBGrids, DB, FIBDatabase, FIBDataSet;
 
 type
   TThreadStatus = (tsWorking, tsEndSuccess, tsEndError);
@@ -19,9 +18,9 @@ type
     BitBtn1: TBitBtn;
     DBGrid1: TDBGrid;
     ds: TDataSource;
-    dba: TpFIBDatabase;
-    dt: TpFIBDataSet;
-    tra: TpFIBTransaction;
+    dba: TFIBDatabase;
+    dt: TFIBDataSet;
+    tra: TFIBTransaction;
     memSQL: TMemo;
     Label1: TLabel;
     Timer1: TTimer;
@@ -58,7 +57,7 @@ var
 type
   TFIBQueryThread = class(TThread)
   private
-    FQuery: TpFIBDataSet;
+    FQuery: TFIBDataSet;
     FDataS: TDataSource;
     FQueryException: Exception;
     FForm: TThreadSQLForm;
@@ -68,7 +67,7 @@ type
   protected
     procedure Execute; override;
   public
-    constructor Create(Q: TpFIBDataSet; D: TDataSource; Form: TThreadSQLForm); virtual;
+    constructor Create(Q: TFIBDataSet; D: TDataSource; Form: TThreadSQLForm); virtual;
     destructor Destroy; override;
   end;
 
@@ -127,7 +126,7 @@ end;
 
 { TFIBQueryThread }
 /// /////////////////////////////////////////////////////////////////////////////
-constructor TFIBQueryThread.Create(Q: TpFIBDataSet; D: TDataSource; Form: TThreadSQLForm);
+constructor TFIBQueryThread.Create(Q: TFIBDataSet; D: TDataSource; Form: TThreadSQLForm);
 begin
   inherited Create(True);
   FQuery := Q;

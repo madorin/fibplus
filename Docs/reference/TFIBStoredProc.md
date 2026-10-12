@@ -1,13 +1,13 @@
-# TpFIBStoredProc
+# TFIBStoredProc
 
-Query component that calls a stored procedure by name. It reads the input parameters of the procedure from the database metadata and builds the `EXECUTE PROCEDURE` statement. Use it for parameters created from the metadata; use [TpFIBQuery](TpFIBQuery.md) with `ExecProcedure` or a hand-written `SQL` text otherwise.
+Query component that calls a stored procedure by name. It reads the input parameters of the procedure from the database metadata and builds the `EXECUTE PROCEDURE` statement. Use it for parameters created from the metadata; use [TFIBQuery](TFIBQuery.md) with `ExecProcedure` or a hand-written `SQL` text otherwise.
 
 | | |
 |---|---|
-| Unit | `pFIBStoredProc` |
-| Inherits from | [TpFIBQuery](TpFIBQuery.md) |
+| Unit | `FIBStoredProc` |
+| Inherits from | [TFIBQuery](TFIBQuery.md) |
 
-This page lists only what `TpFIBStoredProc` adds or changes. The other members are described in [TpFIBQuery](TpFIBQuery.md) and [TFIBQuery](TFIBQuery.md).
+This page lists only what `TFIBStoredProc` adds or changes. The other members are described in [TFIBQuery](TFIBQuery.md).
 
 The example uses the components `Database`, `Transaction`, and `StoredProc`, with `StoredProc.Database` and `StoredProc.Transaction` assigned and the database connected.
 
@@ -22,7 +22,7 @@ Guides: [Queries and parameters](../guide/queries-and-parameters.md).
 
 ## Published properties
 
-`TpFIBStoredProc` publishes everything that [TpFIBQuery](TpFIBQuery.md#published-properties) publishes, and this:
+`TFIBStoredProc` publishes everything that [TFIBQuery](TFIBQuery.md#published-properties) publishes, and this:
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
@@ -61,6 +61,6 @@ The default is read from the procedure parameter on *Firebird 2.0+*. On older se
 
 ## See also
 
-- [TpFIBQuery](TpFIBQuery.md), [TFIBQuery](TFIBQuery.md)
+- [TFIBQuery](TFIBQuery.md)
 - [TFIBDatabase](TFIBDatabase.md), [TFIBTransaction](TFIBTransaction.md)
 - [Queries and parameters](../guide/queries-and-parameters.md)

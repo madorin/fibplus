@@ -13,7 +13,7 @@ uses
 {$ELSE}
   Graphics, Controls, Forms, Dialogs, ComCtrls, ExtCtrls, StdCtrls,
 {$ENDIF}
-  fraSQLEdit, DB, pFIBInterfaces, uFIBEditorForm;
+  fraSQLEdit, DB, FIBInterfaces, uFIBEditorForm;
 
 type
   TOnCanUseFields = procedure(const FieldName: string; Allow: boolean) of object;
@@ -97,7 +97,7 @@ const
 implementation
 
 uses
-  RegistryUtils, TypInfo, Variants, RegFIBPlusEditors, pFIBEditorsConsts,
+  RegistryUtils, TypInfo, Variants, RegFIBPlusEditors, FIBEditorsConsts,
   RTTIRoutines, IBSQLSyn;
 
 {$R *.dfm}
@@ -297,8 +297,8 @@ procedure TfDSSQLEdit.GenerateInsertSQL;
 var
   j: Integer;
   pn, rfn, tmpStr, tmpStr1: string;
-  // vpFIBTableInfo:TpFIBTableInfo;
-  // vFi:TpFIBFieldInfo;
+  // vpFIBTableInfo:TFIBTableInfo;
+  // vFi:TFIBFieldInfo;
   tn: string;
   ids: IFIBDataSet;
 begin
@@ -364,8 +364,8 @@ procedure TfDSSQLEdit.GenerateUpdateSQL;
 var
   j: Integer;
   pn, rfn, tmpStr: string;
-  { vpFIBTableInfo:TpFIBTableInfo;
-    vFi:TpFIBFieldInfo; }
+  { vpFIBTableInfo:TFIBTableInfo;
+    vFi:TFIBFieldInfo; }
   PrimaryKey: string;
   tn: string;
   ids: IFIBDataSet;

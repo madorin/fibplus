@@ -52,7 +52,7 @@ Each monitor receives the message in the thread that created it and calls `OnSQL
 | `tfQFetch` | Each fetched row, with column values. |
 | `tfConnect` | Connect and disconnect of a database. |
 | `tfTransact` | Start, commit, rollback, the retaining variants, and savepoint operations of a transaction. |
-| `tfService` | Attach, detach, query, and start of a service component from [TpFIBServices](TpFIBServices.md). Only when the library is compiled with service support (`INC_SERVICE_SUPPORT`). |
+| `tfService` | Attach, detach, query, and start of a service component from [TFIBServices](TFIBServices.md). Only when the library is compiled with service support (`INC_SERVICE_SUPPORT`). |
 | `tfMisc` | Text sent with `MonitorHook.SendMisc`. |
 
 `TSQLEvent` is the type of `OnSQL`: `procedure(EventText: String; EventTime: TDateTime) of object`.

@@ -32,8 +32,8 @@ type
   MSG_NO = longint;
   OPT = longint;
   TEXT = PChar;
-  FP_ERROR = function(IscCode: MSG_NO; UserContext: Pointer; const ActionDescription: TEXT): integer; {$I pFIBMacroComp.inc}
-  FP_STATUS = function(Status: integer; UserContext: Pointer; const ActionDescription: TEXT): integer; {$I pFIBMacroComp.inc}
+  FP_ERROR = function(IscCode: MSG_NO; UserContext: Pointer; const ActionDescription: TEXT): integer; {$I FIBMacroComp.inc}
+  FP_STATUS = function(Status: integer; UserContext: Pointer; const ActionDescription: TEXT): integer; {$I FIBMacroComp.inc}
 
 const
 
@@ -187,19 +187,19 @@ const
   isc_install_tran_version = isc_install_odbc_error + 3;
 
 type
-  Tisc_install_clear_options = function(hOption: POPTIONS_HANDLE): MSG_NO; {$I pFIBMacroComp.inc}
+  Tisc_install_clear_options = function(hOption: POPTIONS_HANDLE): MSG_NO; {$I FIBMacroComp.inc}
   Tisc_install_execute = function(hOption: OPTIONS_HANDLE; src_dir: TEXT; dest_dir: TEXT; status_func: FP_STATUS; status_data: Pointer;
-    error_func: FP_ERROR; error_data: Pointer; uninstal_file_name: TEXT): MSG_NO; {$I pFIBMacroComp.inc}
-  Tisc_install_get_info = function(info_type: integer; option: OPT; info_buffer: Pointer; buf_len: Cardinal): MSG_NO; {$I pFIBMacroComp.inc}
+    error_func: FP_ERROR; error_data: Pointer; uninstal_file_name: TEXT): MSG_NO; {$I FIBMacroComp.inc}
+  Tisc_install_get_info = function(info_type: integer; option: OPT; info_buffer: Pointer; buf_len: Cardinal): MSG_NO; {$I FIBMacroComp.inc}
   Tisc_install_get_message = function(hOption: OPTIONS_HANDLE; message_no: MSG_NO; message_txt: Pointer;
-    message_len: Cardinal): MSG_NO; {$I pFIBMacroComp.inc}
-  Tisc_install_load_external_text = function(msg_file_name: TEXT): MSG_NO; {$I pFIBMacroComp.inc}
-  Tisc_install_precheck = function(hOption: OPTIONS_HANDLE; src_dir: TEXT; dest_dir: TEXT): MSG_NO; {$I pFIBMacroComp.inc}
-  Tisc_install_set_option = function(hOption: POPTIONS_HANDLE; option: OPT): MSG_NO; {$I pFIBMacroComp.inc}
+    message_len: Cardinal): MSG_NO; {$I FIBMacroComp.inc}
+  Tisc_install_load_external_text = function(msg_file_name: TEXT): MSG_NO; {$I FIBMacroComp.inc}
+  Tisc_install_precheck = function(hOption: OPTIONS_HANDLE; src_dir: TEXT; dest_dir: TEXT): MSG_NO; {$I FIBMacroComp.inc}
+  Tisc_install_set_option = function(hOption: POPTIONS_HANDLE; option: OPT): MSG_NO; {$I FIBMacroComp.inc}
   Tisc_uninstall_execute = function(uninstall_file_name: TEXT; status_func: FP_STATUS; status_data: Pointer; error_func: FP_ERROR;
-    error_data: Pointer): MSG_NO; {$I pFIBMacroComp.inc}
-  Tisc_uninstall_precheck = function(uninstall_file_name: TEXT): MSG_NO; {$I pFIBMacroComp.inc}
-  Tisc_install_unset_option = function(hOption: POPTIONS_HANDLE; option: OPT): MSG_NO; {$I pFIBMacroComp.inc}
+    error_data: Pointer): MSG_NO; {$I FIBMacroComp.inc}
+  Tisc_uninstall_precheck = function(uninstall_file_name: TEXT): MSG_NO; {$I FIBMacroComp.inc}
+  Tisc_install_unset_option = function(hOption: POPTIONS_HANDLE; option: OPT): MSG_NO; {$I FIBMacroComp.inc}
 
 implementation
 

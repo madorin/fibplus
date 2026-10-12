@@ -1,8 +1,8 @@
 # Datasets and caching
 
-A FibPlus dataset reads rows from the server on demand and keeps them in a record cache, so you can scroll in both directions without another round trip. This article shows how rows are fetched, how to refresh and change them, how `TpFIBDataSet` generates its own SQL, and how the query cache and the metadata cache work.
+A FibPlus dataset reads rows from the server on demand and keeps them in a record cache, so you can scroll in both directions without another round trip. This article shows how rows are fetched, how to refresh and change them, how `TFIBDataSet` generates its own SQL, and how the query cache and the metadata cache work.
 
-The samples use these components: `Database` (`TpFIBDatabase`), `Transaction` and `UpdateTransaction` (`TFIBTransaction`), `DataSet` (`TpFIBDataSet`), and in the master-detail sample `MasterDS` and `DetailDS` (`TpFIBDataSet`) and `MasterSource` (`TDataSource`). The fetching and refresh features belong to the base class [TFIBDataSet](../reference/TFIBDataSet.md). Generated SQL, update objects, and `ApplyUpdates` belong to [TpFIBDataSet](../reference/TpFIBDataSet.md).
+The samples use these components: `Database` (`TFIBDatabase`), `Transaction` and `UpdateTransaction` (`TFIBTransaction`), `DataSet` (`TFIBDataSet`), and in the master-detail sample `MasterDS` and `DetailDS` (`TFIBDataSet`) and `MasterSource` (`TDataSource`). Fetching, refresh, generated SQL, update objects, and `ApplyUpdates` are all members of [TFIBDataSet](../reference/TFIBDataSet.md).
 
 ## Open and fetch
 
@@ -57,7 +57,7 @@ A `SELECT` is cancelled by a statement timeout if its last row is not fetched in
 SELECT ID, NAME, BALANCE FROM CUSTOMER WHERE ID = :ID
 ```
 
-`Refresh` raises an error when `RefreshSQL` is empty and the dataset has rows. `TpFIBDataSet` can generate `RefreshSQL`, see [Generated SQL](#generated-sql).
+`Refresh` raises an error when `RefreshSQL` is empty and the dataset has rows. `TFIBDataSet` can generate `RefreshSQL`, see [Generated SQL](#generated-sql).
 
 These options of `Options` change when a row is refreshed:
 
@@ -67,7 +67,7 @@ These options of `Options` change when a row is refreshed:
 
 ## Change data
 
-A dataset sends a row change with one of three statements: `InsertSQL`, `UpdateSQL`, and `DeleteSQL`. `Insert`, `Edit`, and `Delete` are allowed when the matching statement exists. `TpFIBDataSet` also allows them when it writes the statements again for each post (`UpdateOnlyModifiedFields`, see [Generated SQL](#generated-sql)), when an active update object exists for the kind, or when `CachedUpdates` is on and `OnUpdateRecord` is assigned. `AllowedUpdateKinds` can forbid a kind.
+A dataset sends a row change with one of three statements: `InsertSQL`, `UpdateSQL`, and `DeleteSQL`. `Insert`, `Edit`, and `Delete` are allowed when the matching statement exists. They are also allowed when the dataset writes the statements again for each post (`UpdateOnlyModifiedFields`, see [Generated SQL](#generated-sql)), when an active update object exists for the kind, or when `CachedUpdates` is on and `OnUpdateRecord` is assigned. `AllowedUpdateKinds` can forbid a kind.
 
 ### Statement parameters
 
@@ -102,7 +102,7 @@ UpdateTransaction.Commit;
 
 ### Update objects
 
-A `TpFIBUpdateObject` runs an extra statement when a row is inserted, updated, or deleted. Its `ExecuteOrder` is `oeBeforeDefault` or `oeAfterDefault`: it runs before or after the statement of the dataset. See [TpFIBUpdateObject](../reference/TpFIBUpdateObject.md).
+A `TFIBUpdateObject` runs an extra statement when a row is inserted, updated, or deleted. Its `ExecuteOrder` is `oeBeforeDefault` or `oeAfterDefault`: it runs before or after the statement of the dataset. See [TFIBUpdateObject](../reference/TFIBUpdateObject.md).
 
 ### Errors while posting
 
@@ -110,7 +110,7 @@ A `TpFIBUpdateObject` runs an extra statement when a row is inserted, updated, o
 
 ## Generated SQL
 
-`TpFIBDataSet` can write `InsertSQL`, `UpdateSQL`, `DeleteSQL`, and `RefreshSQL` from `SelectSQL`. Set the table the dataset changes, and turn on `AutoReWriteSqls`:
+`TFIBDataSet` can write `InsertSQL`, `UpdateSQL`, `DeleteSQL`, and `RefreshSQL` from `SelectSQL`. Set the table the dataset changes, and turn on `AutoReWriteSqls`:
 
 ```delphi
 DataSet.SelectSQL.Text := 'SELECT ID, NAME, BALANCE FROM CUSTOMER ORDER BY NAME';
@@ -129,7 +129,7 @@ The dataset generates the statements after `Open`, at run time, when the text of
 | `CanChangeSQLs` | Allow the dataset to replace statements that are not empty. |
 | `UpdateOnlyModifiedFields` | Generate `INSERT` and `UPDATE` again for each post, see below. |
 | `SeparateBlobUpdate` | Leave BLOB fields out of the generated `INSERT` and `UPDATE`; send them with a second `UPDATE` after the row. |
-| `UseExecuteBlock` | With `CachedUpdates`, `ApplyUpdates` sends the changes in `EXECUTE BLOCK` batches of generated statements (at most 255 each) instead of running the statements of the dataset and its update objects. See [Applying cached updates](../reference/TpFIBDataSet.md#applying-cached-updates). |
+| `UseExecuteBlock` | With `CachedUpdates`, `ApplyUpdates` sends the changes in `EXECUTE BLOCK` batches of generated statements (at most 255 each) instead of running the statements of the dataset and its update objects. See [Applying cached updates](../reference/TFIBDataSet.md#applying-cached-updates). |
 | `UseReturningFields` | Add a `RETURNING` clause to the `INSERT` and `UPDATE` made with `AutoReWriteSqls`. |
 | `UseRowsClause` | Add `ROWS 1` to generated `INSERT` and `UPDATE`. |
 
@@ -175,7 +175,7 @@ begin
 end;
 ```
 
-`GeneratorStep` is the increment, `1` by default. When you set `UpdateTableName` while `GeneratorName` is empty and `WhenGetGenID` is not `wgNever`, the dataset sets `GeneratorName` to `GEN_` plus the table name plus `_ID`. The prefix and suffix are the variables `DefPrefixGenName` and `DefSufixGenName` in the unit `pFIBProps`.
+`GeneratorStep` is the increment, `1` by default. When you set `UpdateTableName` while `GeneratorName` is empty and `WhenGetGenID` is not `wgNever`, the dataset sets `GeneratorName` to `GEN_` plus the table name plus `_ID`. The prefix and suffix are the variables `DefPrefixGenName` and `DefSufixGenName` in the unit `FIBProps`.
 
 ## Cached updates
 
@@ -194,7 +194,7 @@ end;
 
 `ApplyUpdates` posts a pending edit, then sends the changed rows in cache order. A row that the dataset sends is marked as applied. With `AutoCommit` set, the update transaction is committed after each inserted or modified row, and once more at the end when no row was skipped; if a later row fails, the earlier rows are already committed. Without `AutoCommit`, you commit. `CancelUpdates` reverts all changes, `RevertRecord` the current row. `CachedUpdateStatus` returns the status of the current row. `CountUpdatesPending` returns the number of changed rows. `UpdateRecordTypes` limits which rows are visible, for example only changed ones.
 
-Three events control `ApplyUpdates`: `OnUpdateRecord`, `OnUpdateError`, and `AfterUpdateRecord`. `OnUpdateRecord` is called for each pending row before the dataset sends it, so you can send the row yourself. `OnUpdateError` is called when sending raises `EFIBError`, and lets you fail, abort, skip, or retry the row. The actions and their effects are in [Applying cached updates](../reference/TpFIBDataSet.md#applying-cached-updates); the event signatures are in [Updates](../reference/TFIBDataSet.md#updates).
+Three events control `ApplyUpdates`: `OnUpdateRecord`, `OnUpdateError`, and `AfterUpdateRecord`. `OnUpdateRecord` is called for each pending row before the dataset sends it, so you can send the row yourself. `OnUpdateError` is called when sending raises `EFIBError`, and lets you fail, abort, skip, or retry the row. The actions and their effects are in [Applying cached updates](../reference/TFIBDataSet.md#applying-cached-updates); the event signatures are in [Updates](../reference/TFIBDataSet.md#updates).
 
 A row that `OnUpdateRecord` handled itself keeps its cached status, so it stays pending: the next `ApplyUpdates` calls the handler for it again. Call `CommitUpdToCach` after the transaction commits; it marks all pending rows as applied without sending anything. `UpdatesPending` can be `False` while such rows are still pending.
 
@@ -216,7 +216,7 @@ The detail reopens when a master value that its parameters use changes. A parame
 
 ## Save and load the record cache
 
-`TpFIBDataSet` can write the rows of the cache to a file or a stream and read them back:
+`TFIBDataSet` can write the rows of the cache to a file or a stream and read them back:
 
 ```delphi
 DataSet.SaveToFile('customers.cache');
@@ -242,7 +242,7 @@ FibPlus runs many small internal statements: reading metadata, `GEN_ID`, and the
 CustomerName := Database.QueryValue('SELECT NAME FROM CUSTOMER WHERE ID = :ID', 0, [42]);
 ```
 
-The unit `pFIBCacheQueries` exports `GetQueryForUse` and `FreeQueryForUse` for your own code. `GetQueryForUse` returns `nil` when the transaction is `nil`, or when it has no default database and not exactly one database. The datasets do not use the cache for their own five queries; each dataset owns them.
+The unit `FIBCacheQueries` exports `GetQueryForUse` and `FreeQueryForUse` for your own code. `GetQueryForUse` returns `nil` when the transaction is `nil`, or when it has no default database and not exactly one database. The datasets do not use the cache for their own five queries; each dataset owns them.
 
 ### Clearing the query cache
 
@@ -255,7 +255,7 @@ Generated SQL and the `PrepareOptions` that read the field definitions (for exam
 - At design time the cache is not used: the entry is read again each time, so the IDE sees your changes.
 - At run time an entry stays until you clear it. **A table that you alter while the application runs is not read again.**
 
-The cache is in the unit `pFIBDataInfo`:
+The cache is in the unit `FIBDataInfo`:
 
 ```delphi
 ListTableInfo.ClearForTable('CUSTOMER');
@@ -267,7 +267,7 @@ Clearing does not change datasets that are open. The next use of the table reads
 
 ### Save the metadata to a file
 
-Reading the metadata of many tables takes time at startup. `TpFIBDatabase.CacheSchemaOptions` saves the cache to a file and loads it on the next start:
+Reading the metadata of many tables takes time at startup. `TFIBDatabase.CacheSchemaOptions` saves the cache to a file and loads it on the next start:
 
 ```delphi
 Database.CacheSchemaOptions.LocalCacheFile := 'schema.cache';
@@ -297,9 +297,8 @@ When `OnAcceptCacheSchema` is assigned and `ValidateAfterLoad` is `True`, the lo
 ## See also
 
 - [TFIBDataSet reference](../reference/TFIBDataSet.md)
-- [TpFIBDataSet reference](../reference/TpFIBDataSet.md)
-- [TpFIBUpdateObject reference](../reference/TpFIBUpdateObject.md)
-- [TpFIBDatabase reference](../reference/TpFIBDatabase.md)
+- [TFIBUpdateObject reference](../reference/TFIBUpdateObject.md)
+- [TFIBDatabase reference](../reference/TFIBDatabase.md)
 - [Queries and parameters](queries-and-parameters.md)
 - [Transactions](transactions.md)
 - [Timeouts](timeouts.md)

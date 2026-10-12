@@ -56,7 +56,7 @@ implementation
 
 uses
 {$IFDEF CODEEDITOR} ToCodeEditor, {$ENDIF} TypInfo, RTTIRoutines, IBSQLSyn,
-  pFIBInterfaces,
+  FIBInterfaces,
   RegFIBPlusEditors;
 
 {
