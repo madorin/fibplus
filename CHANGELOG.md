@@ -101,6 +101,16 @@ The lists of old and new names, and what an application has to change, are in
   only on those that report a lost connection, instead of on every database of
   the process; a lost service connection closes no database.
 
+### Fixed
+
+- `TFIBScripter` cut a statement at a `--` comment when the script was added
+  as one item with several lines (e.g. `Script.Add` of a multi-line string):
+  the comment ran to the end of the item, not of the line
+  ([#95](https://github.com/madorin/fibplus/issues/95); also in 7.9.2).
+- `FIBArray` did not compile on Delphi 10.1 Berlin: "Invalid typecast" in
+  `TFIBArray.ReadElement`
+  ([#94](https://github.com/madorin/fibplus/issues/94); also in 7.9.2).
+
 ## [7.9.1] - 2026-10-09
 
 ### Added
