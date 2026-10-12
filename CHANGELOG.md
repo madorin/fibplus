@@ -1,5 +1,16 @@
 # Changelog
 
+## [7.9.2] - Unreleased
+
+### Fixed
+
+- `TpFIBScripter` cut a statement at a `--` comment when the script was added
+  as one item with several lines (e.g. `Script.Add` of a multi-line string):
+  the comment ran to the end of the item, not of the line
+  ([#95](https://github.com/madorin/fibplus/issues/95)).
+- `pFIBArray` did not compile on Delphi 10.1 Berlin: "Invalid typecast" in
+  `TpFIBArray.ReadElement` ([#94](https://github.com/madorin/fibplus/issues/94)).
+
 ## [7.9.1] - 2026-10-09
 
 ### Added

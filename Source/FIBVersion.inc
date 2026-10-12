@@ -15,7 +15,7 @@
 
 FIBMajorVersion = 7;
 FIBMinorVersion = 9;
-FIBPatchVersion = 1;
-FIBVersionNote  = 'Release';
-FIBVersionDate  = '2026-10-09';
+FIBPatchVersion = 2;
+FIBVersionNote  = 'Beta 1';
+FIBVersionDate  = '';
 FIBPalette      = 'FIBPlus';
