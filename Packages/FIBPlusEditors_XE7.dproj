@@ -156,12 +156,8 @@
             <Form>frmScript</Form>
         </DCCReference>
         <DCCReference Include="..\Source\Editors\IBSQLSyn.pas"/>
-        <DCCReference Include="..\Source\Editors\FindCmp.pas"/>
         <DCCReference Include="..\Source\Editors\FIBPreferences.pas">
             <Form>frmFIBPreferences</Form>
-        </DCCReference>
-        <DCCReference Include="..\Source\Editors\uFrmSearchResult.pas">
-            <Form>frmCompSearchResult</Form>
         </DCCReference>
         <DCCReference Include="..\Source\Editors\FIBToolsConsts.pas"/>
         <DCCReference Include="..\Source\Editors\FIBSyntaxMemo.pas"/>

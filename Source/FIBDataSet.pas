@@ -13976,21 +13976,6 @@ begin
   end;
 end;
 
-{
-  procedure TFIBCustomDataSet.SaveToXmlFile(const FileName:string; const FormatName:string);
-  begin
-  DataSetSaveToXML(Self,FileName,FormatName)
-  end;
-
-  procedure TFIBCustomDataSet.SaveToXmlFile(const FileName:string; Format:TXmlDataSetFormat);
-  begin
-  case Format of
-  xmlAdo :   DataSetSaveToXML(Self,FileName,TAdoXmlWriter.Name);
-  xmlClientDataset: DataSetSaveToXML(Self,FileName,TClientDataSetXmlWriter.Name);
-  else
-  end
-  end;
-}
 procedure TFIBCustomDataSet.LoadFromFile(const FileName: string);
 var
   AddInfo: Ansistring;

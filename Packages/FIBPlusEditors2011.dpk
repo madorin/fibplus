@@ -63,9 +63,7 @@ contains
   RegSynEditAlt in '..\Source\Editors\RegSynEditAlt.pas',
   uFIBScriptForm in '..\Source\Editors\uFIBScriptForm.pas' {frmScript},
   IBSQLSyn in '..\Source\Editors\IBSQLSyn.pas',
-  FindCmp in '..\Source\Editors\FindCmp.pas',
   FIBPreferences in '..\Source\Editors\FIBPreferences.pas' {frmFIBPreferences},
-  uFrmSearchResult in '..\Source\Editors\uFrmSearchResult.pas' {frmCompSearchResult},
   FIBToolsConsts in '..\Source\Editors\FIBToolsConsts.pas',
   uFontEditor in '..\Source\Editors\uFontEditor.pas' {frmFontEditor};
 
