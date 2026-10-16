@@ -64,9 +64,7 @@ contains
   RegSynEditAlt in '..\Source\Editors\RegSynEditAlt.pas',
   uFIBScriptForm in '..\Source\Editors\uFIBScriptForm.pas' {frmScript},
   FIBSyntaxMemo in '..\Source\Editors\FIBSyntaxMemo.pas',
-  IBSQLSyn in '..\Source\Editors\IBSQLSyn.pas',
-  FIBPreferences in '..\Source\Editors\FIBPreferences.pas' {frmFIBPreferences},
-  FIBToolsConsts in '..\Source\Editors\FIBToolsConsts.pas';
+  IBSQLSyn in '..\Source\Editors\IBSQLSyn.pas';
 
 end.
 

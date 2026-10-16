@@ -154,10 +154,6 @@
             <Form>frmScript</Form>
         </DCCReference>
         <DCCReference Include="IBSQLSyn.pas"/>
-        <DCCReference Include="FIBPreferences.pas">
-            <Form>frmFIBPreferences</Form>
-        </DCCReference>
-        <DCCReference Include="FIBToolsConsts.pas"/>
         <DCCReference Include="FIBSyntaxMemo.pas"/>
         <DCCReference Include="..\Source\FIBDBLoginDlg.pas">
             <Form>frmFIBDBLoginDlg</Form>

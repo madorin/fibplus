@@ -58,8 +58,6 @@ type
     property PosInText: Integer read GetPosInText;
   end;
 
-  { TODO 1 : Plug in the tools }
-
 procedure RegisterFIBSQLTextEditor(Editor: TClass);
 function GetSQLTextEditor: TClass;
 
@@ -68,7 +66,7 @@ procedure Register;
 implementation
 
 uses
-  FIBComponentEditors, ToolsAPI, RegSynEditAlt {, FIBSplash};
+  FIBComponentEditors, ToolsAPI, RegSynEditAlt;
 
 var
   vSQLTextEditorClass: TClass;
@@ -209,7 +207,6 @@ procedure Register;
   end;
 
 begin
-  // RegisterSplashScreen;
   RegisterEditors;
 end;
 

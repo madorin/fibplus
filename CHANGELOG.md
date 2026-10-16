@@ -2,6 +2,32 @@
 
 ## [8.0.0] - Unreleased
 
+### Added
+
+#### IDE tools
+
+- `FIBTools` design time package for Delphi 10.4 Sydney and later: one
+  `Packages\FIBTools.dpk` for all versions (`FIBTools270.bpl`, `FIBTools280.bpl`,
+  `FIBTools290.bpl`, `FIBTools370.bpl`, through `{$LIBSUFFIX AUTO}`). It is
+  optional and is in the `FIBPlus_D27`, `FIBPlus_D28`, `FIBPlus_D29` and
+  `FIBPlus_D37` project groups; install it after `FIBPlusEditors_Dxx`
+  ([#67](https://github.com/madorin/fibplus/issues/67)).
+- The **Tools > FIBPlus** menu with **Preferences...** and **About FIBPlus...**.
+  FIBPlus is also shown on the IDE splash screen and in the IDE About box.
+- **Preferences** is reachable from the IDE (the dialog was in
+  `FIBPlusEditors_Dxx` but no menu opened it). The options `psCanEditComputedFields`,
+  `psSupportUnicodeBlobs`, `poNoForceIsNull`, `poFreeHandlesAfterClose`,
+  `poRefreshAfterDelete`, `poDontCloseAfterEndTransaction`, `qoTrimCharFields`,
+  `qoNoForceIsNull` and `qoFreeHandleAfterExecute` can now be set as design time
+  defaults.
+- **Close design-time connections before the program runs** in Preferences: the
+  IDE closes the connections that are open at design time before **Run** and
+  **Run without debugging**, so the program doesn't compete with them for the
+  database.
+- The design time packages (`DclFIBPlus_D29`, `DclFIBPlus_D37`,
+  `FIBPlusEditors_D29`, `FIBPlusEditors_D37` and `FIBTools`) can be installed in
+  the 64-bit IDE of Delphi 12.3 and 13 (Win64 platform).
+
 ### Changed
 
 The lists of old and new names, and what an application has to change, are in

@@ -123,10 +123,6 @@
 			</DCCReference>
 			<DCCReference Include="..\Source\Editors\FIBSyntaxMemo.pas"/>
 			<DCCReference Include="..\Source\Editors\IBSQLSyn.pas"/>
-			<DCCReference Include="..\Source\Editors\FIBPreferences.pas">
-				<Form>frmFIBPreferences</Form>
-			</DCCReference>
-			<DCCReference Include="..\Source\Editors\FIBToolsConsts.pas"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>

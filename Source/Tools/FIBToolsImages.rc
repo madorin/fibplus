@@ -1,0 +1,8 @@
+FIB_ICON_24 RCDATA "Images\\fib-icon-24.png"
+FIB_ICON_36 RCDATA "Images\\fib-icon-36.png"
+FIB_ICON_48 RCDATA "Images\\fib-icon-48.png"
+FIB_ICON_128 RCDATA "Images\\fib-icon-128.png"
+FIB_ICON_256 RCDATA "Images\\fib-icon-256.png"
+FIB_ICON_16 RCDATA "Images\\fib-icon-16.png"
+FIB_ICON_20 RCDATA "Images\\fib-icon-20.png"
+FIB_ICON_32 RCDATA "Images\\fib-icon-32.png"

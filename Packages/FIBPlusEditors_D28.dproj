@@ -60,6 +60,7 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
+        <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
         <DCC_UnitSearchPath>..</DCC_UnitSearchPath>
         <DCC_ResourcePath>..</DCC_ResourcePath>
         <DCC_ObjPath>..</DCC_ObjPath>
@@ -188,10 +189,6 @@
             <Form>frmScript</Form>
         </DCCReference>
         <DCCReference Include="..\Source\Editors\IBSQLSyn.pas"/>
-        <DCCReference Include="..\Source\Editors\FIBPreferences.pas">
-            <Form>frmFIBPreferences</Form>
-        </DCCReference>
-        <DCCReference Include="..\Source\Editors\FIBToolsConsts.pas"/>
         <DCCReference Include="..\Source\Editors\FIBSyntaxMemo.pas"/>
         <DCCReference Include="..\Source\FIBDBLoginDlg.pas">
             <Form>frmFIBDBLoginDlg</Form>
