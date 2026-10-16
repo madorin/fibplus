@@ -4,7 +4,7 @@ object FIBAutoUpdateOptionForm: TFIBAutoUpdateOptionForm
   BorderStyle = bsDialog
   Caption = '%s - AutoUpdateOptions Editor'
   ClientHeight = 295
-  ClientWidth = 330
+  ClientWidth = 374
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,7 +17,7 @@ object FIBAutoUpdateOptionForm: TFIBAutoUpdateOptionForm
   PixelsPerInch = 96
   TextHeight = 15
   object OkB: TButton
-    Left = 158
+    Left = 202
     Top = 262
     Width = 75
     Height = 25
@@ -27,7 +27,7 @@ object FIBAutoUpdateOptionForm: TFIBAutoUpdateOptionForm
     TabOrder = 0
   end
   object CancelB: TButton
-    Left = 245
+    Left = 289
     Top = 262
     Width = 75
     Height = 25
@@ -39,11 +39,11 @@ object FIBAutoUpdateOptionForm: TFIBAutoUpdateOptionForm
   inline fAutoUpdateOptionForm1: TfAutoUpdateOptionForm
     Left = 0
     Top = 0
-    Width = 330
+    Width = 374
     Height = 262
     Align = alTop
     TabOrder = 2
-    ExplicitWidth = 330
+    ExplicitWidth = 374
     inherited PrimaryKeyL: TLabel
       Width = 90
       ExplicitWidth = 90

@@ -190,7 +190,7 @@ type
 
 procedure TfSQLEdit.Panel7Resize(Sender: TObject);
 begin
-  DBGrid1.Columns[0].Width := Panel7.Width - ScaleFromDefaultPPI(Self, 30);
+  DBGrid1.Columns[0].Width := Panel7.Width - ScaleToPPI(Self, 30);
   DBGrid2.Columns[0].Width := DBGrid1.Columns[0].Width;
 end;
 
@@ -1309,6 +1309,7 @@ procedure TfSQLEdit.ReadOptions;
 var
   v: Variant;
   i: Integer;
+  SavedPPI: Integer;
 
 begin
 
@@ -1316,9 +1317,13 @@ begin
     ['FontName', 'FontSize', 'FontColor', 'FontStyle', 'FontCharSet',
     'DoReplaceSQL', 'UseOnlySelectedFields', 'UseTableAlias', 'ParamSymbol',
     'AssistantWidth', 'TableListHeigth', 'BackgroundColor',
-    'DontUseMetadataInProposal']);
+    'DontUseMetadataInProposal', 'PixelsPerInch']);
 
   if (VarType(v) <> varBoolean) then
+  begin
+    // Sizes saved without the PPI come from the raw pixels of older versions
+    if not RegistryInteger(v, 13, SavedPPI) or (SavedPPI <= 0) then
+      SavedPPI := ControlPPI(Self);
     for i := 0 to 12 do
       if v[1, i] then
         case i of
@@ -1331,8 +1336,8 @@ begin
           6: chOnlySelFields.Checked := v[0, i];
           7: LbTableSyn.Checked := v[0, i];
           8: cmbParamSymbol.Text := v[0, i];
-          9: Panel6.Width := Max(Panel6.Width, ScaleFromDefaultPPI(Self, v[0, i]));
-          10: DBGrid1.Height := ScaleFromDefaultPPI(Self, v[0, i]);
+          9: Panel6.Width := Max(Panel6.Width, Min(MulDiv(v[0, i], ControlPPI(Self), SavedPPI), Width div 2));
+          10: DBGrid1.Height := Max(ScaleToPPI(Self, 20), MulDiv(v[0, i], ControlPPI(Self), SavedPPI));
           11:
             begin
               THackWinControl(viewSQL).Color := v[0, i];
@@ -1340,6 +1345,7 @@ begin
             end;
           12: viewSQL.Tag := v[0, i]
         end;
+  end;
 
   if viewSQL is TMPSyntaxMemo then
   begin
@@ -1442,11 +1448,11 @@ begin
       ['FontName', 'FontSize', 'FontColor', 'FontStyle', 'FontCharSet',
       'DoReplaceSQL', 'UseOnlySelectedFields', 'UseTableAlias', 'ParamSymbol',
       'AssistantWidth', 'TableListHeigth', 'BackgroundColor',
-      'DontUseMetadataInProposal'], [Font.Name, Font.Size, Font.Color,
+      'DontUseMetadataInProposal', 'PixelsPerInch'], [Font.Name, Font.Size, Font.Color,
       FontStyleToStr(Font), Font.CharSet, chReplaceSQL.Checked,
       chOnlySelFields.Checked, LbTableSyn.Checked, cmbParamSymbol.Text,
-      ScaleToDefaultPPI(Self, Panel6.Width), ScaleToDefaultPPI(Self, DBGrid1.Height), THackWinControl(viewSQL).Color,
-      viewSQL.Tag]);
+      Panel6.Width, DBGrid1.Height, THackWinControl(viewSQL).Color,
+      viewSQL.Tag, ControlPPI(Self)]);
 
     if viewSQL is TMPSyntaxMemo then
     begin

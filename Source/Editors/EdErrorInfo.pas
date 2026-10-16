@@ -30,7 +30,7 @@ uses
 {$ENDIF}
   Db, uFIBEditorForm
 
-    , Variants, RegistryUtils
+    , Variants
 
     ;
 {$ENDIF}
@@ -63,7 +63,6 @@ type
     procedure DataSource1DataChange(Sender: TObject; Field: TField);
     procedure sbDBGrid2DblClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
-    procedure FormCreate(Sender: TObject);
   private
     InfoTransaction: TComponent;
     qryAllErrors, qryConstraints, qryUniqueIndices, qryErrorMessages: TDataSet;
@@ -82,9 +81,6 @@ uses
   FIBInterfaces, RTTIRoutines, RegFIBPlusEditors;
 
 {$R *.dfm}
-
-const
-  RegSectionName = 'ErrorRepositoryEditor';
 
 procedure PrepareDataSetProps(DataSet, Database, Transaction: TComponent);
 begin
@@ -273,46 +269,8 @@ end;
 
 procedure TfrmErrors.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-
-  if WindowState = wsMaximized then
-  begin
-    WindowState := wsNormal;
-    DefWriteToRegistry(['Software', RegFIBRoot, RegRepository, RegSectionName],
-      ['Top', 'Left', 'Height', 'Width', 'Maximized'], [Top, Left, ScaleToDefaultPPI(Self, Height), ScaleToDefaultPPI(Self, Width), True]);
-  end
-  else
-    DefWriteToRegistry(['Software', RegFIBRoot, RegRepository, RegSectionName],
-      ['Top', 'Left', 'Height', 'Width', 'Maximized'], [Top, Left, ScaleToDefaultPPI(Self, Height), ScaleToDefaultPPI(Self, Width), False]);
-
   if qryErrorMessages.State in [dsEdit, dsInsert] then
     qryErrorMessages.Post;
-
-end;
-
-procedure TfrmErrors.FormCreate(Sender: TObject);
-var
-  v: Variant;
-begin
-
-  v := DefReadFromRegistry(['Software', RegFIBRoot, RegRepository,
-    RegSectionName], ['Top', 'Left', 'Height', 'Width', 'Maximized']);
-
-  if VarType(v) <> varBoolean then
-  begin
-    Position := poDesigned;
-    if v[1, 0] then
-      Top := v[0, 0];
-    if v[1, 1] then
-      Left := v[0, 1];
-    if v[1, 2] then
-      Height := ScaleFromDefaultPPI(Self, v[0, 2]);
-    if v[1, 3] then
-      Width := ScaleFromDefaultPPI(Self, v[0, 3]);
-    if v[1, 4] and v[0, 4] then
-      WindowState := wsMaximized;
-
-  end;
-
 end;
 
 end.

@@ -9,14 +9,13 @@ uses
 
 type
   TFIBEditorCustomForm = class(TForm)
+  private
+    procedure RestorePosition;
+    procedure SavePosition;
+    function IsResizable: Boolean;
   protected
     procedure ReadState(Reader: TReader); override;
     procedure OnReadError(Reader: TReader; const Message: string; var Handled: Boolean);
-  protected
-    LastTop, LastLeft, LastWidth, LastHeight: integer;
-    procedure ReadPositions;
-    procedure SavePositions;
-    function IsResizable: Boolean;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -28,17 +27,20 @@ type
     procedure OnReadError(Reader: TReader; const Message: string; var Handled: Boolean);
   end;
 
-// Sizes are stored in the registry at 96 DPI, so they restore correctly at any scaling
-function ScaleToDefaultPPI(Control: TControl; Value: Integer): Integer;
-function ScaleFromDefaultPPI(Control: TControl; Value: Integer): Integer;
+function ControlPPI(Control: TControl): Integer;
+// Scales a size designed at 96 DPI to the PPI of the control
+function ScaleToPPI(Control: TControl; Value: Integer): Integer;
+// Reads the integer at Index from the result of DefReadFromRegistry
+function RegistryInteger(const Values: Variant; Index: Integer; out Value: Integer): Boolean;
 
 implementation
 
 uses
-  RegistryUtils;
+  SysUtils, Math, RegistryUtils;
 
 const
   DefaultPPI = 96;
+  PositionValueNames: array[0..5] of string = ('Top', 'Left', 'Height', 'Width', 'Maximized', 'PixelsPerInch');
 
 function ControlPPI(Control: TControl): Integer;
 begin
@@ -49,14 +51,15 @@ begin
 {$ENDIF}
 end;
 
-function ScaleToDefaultPPI(Control: TControl; Value: Integer): Integer;
-begin
-  Result := MulDiv(Value, DefaultPPI, ControlPPI(Control));
-end;
-
-function ScaleFromDefaultPPI(Control: TControl; Value: Integer): Integer;
+function ScaleToPPI(Control: TControl; Value: Integer): Integer;
 begin
   Result := MulDiv(Value, ControlPPI(Control), DefaultPPI);
+end;
+
+function RegistryInteger(const Values: Variant; Index: Integer; out Value: Integer): Boolean;
+begin
+  Result := (VarType(Values[1, Index]) = varBoolean) and Values[1, Index] and
+    TryStrToInt(VarToStr(Values[0, Index]), Value);
 end;
 
 { TFIBEditorCustomForm }
@@ -64,30 +67,14 @@ end;
 constructor TFIBEditorCustomForm.Create(AOwner: TComponent);
 begin
   inherited;
-  LastTop := -1;
-  if not IsResizable then
-    Exit;
-  ReadPositions;
-  if LastTop <> -1 then
-  begin
-    Position := poDesigned;
-    Top := LastTop;
-    Left := LastLeft;
-    Width := ScaleFromDefaultPPI(Self, LastWidth);
-    Height := ScaleFromDefaultPPI(Self, LastHeight);
-  end;
+  if IsResizable then
+    RestorePosition;
 end;
 
 destructor TFIBEditorCustomForm.Destroy;
 begin
   if IsResizable then
-  begin
-    LastTop := Top;
-    LastLeft := Left;
-    LastWidth := ScaleToDefaultPPI(Self, Width);
-    LastHeight := ScaleToDefaultPPI(Self, Height);
-    SavePositions;
-  end;
+    SavePosition;
   inherited;
 end;
 
@@ -101,24 +88,54 @@ begin
   Handled := True
 end;
 
-procedure TFIBEditorCustomForm.ReadPositions;
+procedure TFIBEditorCustomForm.RestorePosition;
 {$IFNDEF NO_REGISTRY}
 var
-  v: Variant;
-  i: integer;
+  Values: Variant;
+  SavedTop, SavedLeft, SavedHeight, SavedWidth, SavedPPI, Maximized: Integer;
+  Bounds, WorkArea: TRect;
 {$ENDIF}
 begin
 {$IFNDEF NO_REGISTRY}
-  v := DefReadFromRegistry(['Software', RegFIBRoot, ClassName], ['Top', 'Left', 'Height', 'Width']);
-  if (VarType(v) <> varBoolean) then
-    for i := 0 to 3 do
-      if v[1, i] then
-        case i of
-          0: LastTop := v[0, i];
-          1: LastLeft := v[0, i];
-          2: LastHeight := v[0, i];
-          3: LastWidth := v[0, i]
-        end;
+  Values := DefReadFromRegistry(['Software', RegFIBRoot, ClassName], PositionValueNames);
+  if VarType(Values) = varBoolean then
+    Exit;
+  if not (RegistryInteger(Values, 0, SavedTop) and RegistryInteger(Values, 1, SavedLeft) and
+    RegistryInteger(Values, 2, SavedHeight) and RegistryInteger(Values, 3, SavedWidth)) then
+    Exit;
+  // Sizes saved without the PPI come from the raw pixels of older versions
+  if not RegistryInteger(Values, 5, SavedPPI) or (SavedPPI <= 0) then
+    SavedPPI := ControlPPI(Self);
+  SavedHeight := MulDiv(SavedHeight, ControlPPI(Self), SavedPPI);
+  SavedWidth := MulDiv(SavedWidth, ControlPPI(Self), SavedPPI);
+  if (SavedHeight <= 0) or (SavedWidth <= 0) then
+    Exit;
+
+  Bounds := Rect(SavedLeft, SavedTop, SavedLeft + SavedWidth, SavedTop + SavedHeight);
+  WorkArea := Screen.MonitorFromRect(Bounds).WorkareaRect;
+  SavedWidth := Min(SavedWidth, WorkArea.Right - WorkArea.Left);
+  SavedHeight := Min(SavedHeight, WorkArea.Bottom - WorkArea.Top);
+  SavedLeft := Max(WorkArea.Left, Min(SavedLeft, WorkArea.Right - SavedWidth));
+  SavedTop := Max(WorkArea.Top, Min(SavedTop, WorkArea.Bottom - SavedHeight));
+
+  Position := poDesigned;
+  SetBounds(SavedLeft, SavedTop, SavedWidth, SavedHeight);
+  if RegistryInteger(Values, 4, Maximized) and (Maximized <> 0) then
+    WindowState := wsMaximized;
+{$ENDIF}
+end;
+
+procedure TFIBEditorCustomForm.SavePosition;
+begin
+{$IFNDEF NO_REGISTRY}
+  // A maximized window keeps the size saved for its normal state
+  case WindowState of
+    wsNormal:
+      DefWriteToRegistry(['Software', RegFIBRoot, ClassName], PositionValueNames,
+        [Top, Left, Height, Width, False, ControlPPI(Self)]);
+    wsMaximized:
+      DefWriteToRegistry(['Software', RegFIBRoot, ClassName], ['Maximized'], [True]);
+  end;
 {$ENDIF}
 end;
 
@@ -127,14 +144,6 @@ begin
   Reader.OnError := OnReadError;
   inherited ReadState(Reader)
 
-end;
-
-procedure TFIBEditorCustomForm.SavePositions;
-begin
-{$IFNDEF NO_REGISTRY}
-  DefWriteToRegistry(['Software', RegFIBRoot, ClassName],
-    ['Top', 'Left', 'Height', 'Width'], [LastTop, LastLeft, LastHeight, LastWidth]);
-{$ENDIF}
 end;
 
 { TFIBEditorCustomFrame }

@@ -13,7 +13,6 @@ object frmErrors: TfrmErrors
   OldCreateOrder = True
   Position = poScreenCenter
   OnClose = FormClose
-  OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 15
   object Panel1: TPanel

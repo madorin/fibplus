@@ -4,7 +4,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
   BorderStyle = bsDialog
   Caption = '%s - Options, PrepareOptions'
   ClientHeight = 321
-  ClientWidth = 449
+  ClientWidth = 479
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -19,7 +19,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
   object Pages: TPageControl
     Left = 8
     Top = 8
-    Width = 433
+    Width = 463
     Height = 273
     ActivePage = OptionsPage
     TabOrder = 0
@@ -32,7 +32,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
       object ch_poTrimCharFields: TCheckBox
         Left = 16
         Top = 16
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Trim char fields'
         TabOrder = 0
@@ -42,7 +42,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 1
         Left = 16
         Top = 32
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Refresh current record after posting'
         TabOrder = 1
@@ -52,7 +52,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 2
         Left = 16
         Top = 48
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Delete non existing records from local buffer'
         TabOrder = 2
@@ -62,7 +62,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 3
         Left = 16
         Top = 64
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Auto start transaction before opening'
         TabOrder = 3
@@ -72,7 +72,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 4
         Left = 16
         Top = 80
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Apply DefaultFormats to DisplayFormat and EditFormat'
         TabOrder = 4
@@ -82,7 +82,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 5
         Left = 16
         Top = 96
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Execute idle update before record editing'
         TabOrder = 5
@@ -92,7 +92,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 6
         Left = 16
         Top = 112
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Place modified record according to sorting order'
         TabOrder = 6
@@ -102,7 +102,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 7
         Left = 16
         Top = 128
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Restore local sorting after re-opening'
         TabOrder = 7
@@ -112,7 +112,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 7
         Left = 16
         Top = 144
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Recno for visible records only'
         TabOrder = 8
@@ -122,7 +122,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 7
         Left = 16
         Top = 160
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'No change SQL to "IS NULL" for NULL parameters'
         TabOrder = 9
@@ -132,7 +132,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 7
         Left = 16
         Top = 176
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Fetch all records after dataset open'
         TabOrder = 10
@@ -142,7 +142,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 7
         Left = 16
         Top = 192
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Free SQL handle after dataset close'
         TabOrder = 11
@@ -152,7 +152,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 7
         Left = 16
         Top = 208
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Save Calc fields values to cache'
         TabOrder = 12
@@ -168,7 +168,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
       object ch_pfSetRequiredFields: TCheckBox
         Left = 16
         Top = 16
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 
           'Set Required property in TField components according to NOT NULL' +
@@ -180,7 +180,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 1
         Left = 16
         Top = 32
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Set ReadOnly property in TField components for calculated fields'
         TabOrder = 1
@@ -190,7 +190,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 2
         Left = 16
         Top = 48
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 
           'Set Default property of TField components according to table des' +
@@ -202,7 +202,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 3
         Left = 16
         Top = 64
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Emulate boolean fields'
         TabOrder = 3
@@ -212,7 +212,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 4
         Left = 16
         Top = 80
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 
           'Create TBCDField instances for INT64 fields with any scale (SQLD' +
@@ -224,7 +224,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 5
         Left = 16
         Top = 96
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 
           'Apply FIBPlus Repository options to field propetries, queries, e' +
@@ -236,7 +236,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 6
         Left = 16
         Top = 112
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Fill SortFields property using ORDER BY clause'
         TabOrder = 6
@@ -246,7 +246,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 7
         Left = 16
         Top = 128
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Get record count without fetching all records'
         TabOrder = 7
@@ -256,7 +256,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 7
         Left = 16
         Top = 144
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Can edit server calculated fields'
         TabOrder = 8
@@ -266,7 +266,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 7
         Left = 16
         Top = 160
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Empty string interpretate as null value'
         TabOrder = 9
@@ -276,7 +276,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 7
         Left = 16
         Top = 176
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 
           'FORCE Unicode translate for BLOB fields with UNICODE_FSS charset' +
@@ -288,7 +288,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         Tag = 7
         Left = 16
         Top = 192
-        Width = 390
+        Width = 420
         Height = 17
         Caption = 'Create TLargeIntField for BIGINT fields'
         TabOrder = 11
@@ -297,7 +297,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
     end
   end
   object OkB: TButton
-    Left = 280
+    Left = 310
     Top = 290
     Width = 75
     Height = 25
@@ -307,7 +307,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
     TabOrder = 1
   end
   object CancelB: TButton
-    Left = 365
+    Left = 395
     Top = 290
     Width = 75
     Height = 25

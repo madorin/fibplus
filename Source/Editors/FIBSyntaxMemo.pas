@@ -647,6 +647,7 @@ type
     procedure SetGutterWidth(const Value: Integer);
     function ScaleToPPI(Value: Integer): Integer;
     function ScaledSectionIndent: Integer;
+    function BreakPointsAreaWidth: Integer;
     function SymbolsGutterWidth: Integer;
     function LineNumbersLeft: Integer;
     function LineNumbersMargin: Integer;
@@ -5749,7 +5750,7 @@ begin
   if (Button = mbLeft) and (Shift = [ssLeft]) then
     if PtInRect(EntireGutterRect[-1], Point(X, Y)) then
       begin
-        if X > ScaleToPPI(13) then
+        if X > BreakPointsAreaWidth then
           begin
             { Button pressed in the gutter - collapse / expand the section }
             WndOffsetToPixOffset(Point(X, Y), Col, SRow, False);
@@ -5802,7 +5803,7 @@ begin
         GetWindowRect(Self.Handle, r);
         r.Bottom := r.Bottom - fHScroll.Height - 4;
         r.Right := r.Right - fVScroll.Width - 4;
-        r.Left := r.Left + GutterWidth + 2;
+        r.Left := r.Left + EntireGutterRect[-1].Right + 2;
         r.Top := r.Top + 2;
         ClipCursor(@r);
       end;
@@ -5935,7 +5936,7 @@ begin
       GetWindowRect(Self.Handle, r);
       r.Bottom := r.Bottom - fHScroll.Height - 4;
       r.Right := r.Right - fVScroll.Width - 4;
-      r.Left := r.Left + GutterWidth + 2;
+      r.Left := r.Left + EntireGutterRect[-1].Right + 2;
       r.Top := r.Top + 2;
       ClipCursor(@r);
     end;
@@ -5944,7 +5945,7 @@ begin
     begin
       if PtInRect(EntireGutterRect[-1], Point(X, Y)) then
         begin // Click on the gutter
-          if X < 11 then
+          if X <= BreakPointsAreaWidth then
             begin // Click on a BreakPoint
               GetWordAtPos(X, Y, W, Row);
               fBreakPoints.RowOfCurrentBP := Row;
@@ -6482,6 +6483,12 @@ end;
 function TMPCustomSyntaxMemo.ScaledSectionIndent: Integer;
 begin
   Result := ScaleToPPI(fSectionIndent);
+end;
+
+// Gutter area of the breakpoint glyphs, from the left edge
+function TMPCustomSyntaxMemo.BreakPointsAreaWidth: Integer;
+begin
+  Result := ScaleToPPI(15);
 end;
 
 // GutterWidth, widened to fit the line numbers in the current font

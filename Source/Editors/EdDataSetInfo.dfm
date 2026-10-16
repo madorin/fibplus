@@ -83,21 +83,21 @@ object frmEdDataSetInfo: TfrmEdDataSetInfo
         256)
       object Label1: TLabel
         Left = 6
-        Top = 7
+        Top = 9
         Width = 49
         Height = 13
         Caption = 'Key Field :'
       end
       object Label2: TLabel
         Left = 6
-        Top = 29
+        Top = 36
         Width = 50
         Height = 13
         Caption = 'Generator:'
       end
       object Label3: TLabel
         Left = 7
-        Top = 52
+        Top = 63
         Width = 65
         Height = 13
         Caption = 'UpdateTable:'
@@ -120,7 +120,7 @@ object frmEdDataSetInfo: TfrmEdDataSetInfo
       end
       object DBEdit2: TDBComboBox
         Left = 97
-        Top = 25
+        Top = 32
         Width = 258
         Height = 21
         Anchors = [akLeft, akTop, akRight]
@@ -136,7 +136,7 @@ object frmEdDataSetInfo: TfrmEdDataSetInfo
       end
       object DBEdit3: TDBEdit
         Left = 97
-        Top = 45
+        Top = 59
         Width = 258
         Height = 21
         Anchors = [akLeft, akTop, akRight]
@@ -152,7 +152,7 @@ object frmEdDataSetInfo: TfrmEdDataSetInfo
       end
       object DBCheckBox1: TDBCheckBox
         Left = 7
-        Top = 76
+        Top = 90
         Width = 195
         Height = 17
         Caption = 'UpdateOnlyModifiedFields'
@@ -252,7 +252,7 @@ object frmEdDataSetInfo: TfrmEdDataSetInfo
       584
       33)
     object Button1: TButton
-      Left = 434
+      Left = 421
       Top = 3
       Width = 75
       Height = 27
@@ -264,7 +264,7 @@ object frmEdDataSetInfo: TfrmEdDataSetInfo
       OnClick = Button1Click
     end
     object Button2: TButton
-      Left = 514
+      Left = 501
       Top = 3
       Width = 75
       Height = 27

@@ -58,11 +58,6 @@ uses
   FIBInterfaces,
   RegFIBPlusEditors;
 
-{
-  var
-  LastTop, LastLeft, LastWidth,LastHeight:integer;
-}
-
 function ShowSQLEdit(aQuery: TComponent): boolean;
 var
   ts: TStrings;
@@ -79,14 +74,6 @@ begin
     fSQLEdit1.SQLText := ts.Text;
     fSQLEdit1.vEditedQuery := aQuery;
     Caption := 'SQL edit :' + aQuery.Name;
-    { if   LastTop>-1 then
-      begin
-      Position:= poDesigned;
-      Top :=LastTop;
-      Left:=LastLeft;
-      Width :=LastWidth;
-      Height:=LastHeight;
-      end; }
     SetProposal;
     Result := ShowModal = mrOk;
     if Result then
@@ -97,10 +84,6 @@ end;
 
 procedure TfrmSQLEdit.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  // ~ LastTop   :=Top;
-  LastLeft := Left;
-  LastWidth := Width;
-  LastHeight := Height;
   fSQLEdit1.SaveOptions;
 end;
 
@@ -181,9 +164,5 @@ begin
   fSQLEdit1.SpeedButton1Click(Sender);
 
 end;
-
-initialization
-
-// ~  LastTop:=-1;
 
 end.

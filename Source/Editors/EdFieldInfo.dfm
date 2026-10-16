@@ -74,7 +74,7 @@ object frmFields: TfrmFields
       Left = 0
       Top = 0
       Width = 226
-      Height = 25
+      Height = 28
       Align = alTop
       BevelOuter = bvNone
       TabOrder = 1
@@ -91,9 +91,9 @@ object frmFields: TfrmFields
     end
     object Panel4: TPanel
       Left = 0
-      Top = 25
+      Top = 28
       Width = 226
-      Height = 307
+      Height = 304
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 2
@@ -101,7 +101,7 @@ object frmFields: TfrmFields
         Left = 0
         Top = 0
         Width = 226
-        Height = 307
+        Height = 304
         Hint = 'List of Tables or Stored Procedures'
         Align = alClient
         DataSource = DataSource2

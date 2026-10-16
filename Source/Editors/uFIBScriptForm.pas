@@ -66,9 +66,6 @@ implementation
 uses
   RTTIRoutines, TypInfo;
 
-{ var
-  LastTop, LastLeft,   LastWidth,LastHeight:integer;
-}
 procedure ShowScriptEx(const ACaption: string; Database: TObject;
   Script: TStrings; ForReadOnly: boolean = false; asSubModal: boolean = false;
   ClassCase: Integer = 0);
@@ -95,29 +92,11 @@ begin
     Form.iViewSQL.Lines := Script;
   if not asSubModal then
   begin
-    { if   LastTop>-1 then
-      with Form do
-      begin
-      Top :=LastTop;
-      Left:=LastLeft;
-      Width :=LastWidth;
-      Height:=LastHeight;
-      end;
-    }
     Form.ShowModal;
     // frmScript.Free
   end
   else
   begin
-    { if   LastTop>-1 then
-      with frmScript do
-      begin
-      Top :=LastTop;
-      Left:=LastLeft;
-      Width :=LastWidth;
-      Height:=LastHeight;
-      end;
-    }
     Caller := Screen.ActiveForm;
     if fsModal in Caller.FormState then
     // if (Caller.FormState=TFormState(fsVisible)) then

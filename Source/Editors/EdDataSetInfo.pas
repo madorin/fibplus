@@ -108,9 +108,6 @@ var
   SynSQLSyn1: TSynSQLSyn;
 {$ENDIF}
 
-const
-  RegSectionName = 'DataSetRepositoryEditor';
-
 procedure EditDSInfo(aDatabase: TComponent);
 begin
   if not Assigned(aDatabase) then
@@ -246,8 +243,6 @@ begin
 end;
 
 procedure TfrmEdDataSetInfo.FormCreate(Sender: TObject);
-var
-  v: Variant;
 begin
   Caption := SEdDataSetInfoCaption;
   // TabSheet1.Caption := SEdDataSetInfoFields;
@@ -267,25 +262,6 @@ begin
     SQLDialect := sqlInterbase6;
   end;
 {$ENDIF}
-  v := DefReadFromRegistry(['Software', RegFIBRoot, RegRepository,
-    RegSectionName], ['Top', 'Left', 'Height', 'Width', 'Maximized']);
-
-  if VarType(v) <> varBoolean then
-  begin
-    Position := poDesigned;
-    if v[1, 0] then
-      Top := v[0, 0];
-    if v[1, 1] then
-      Left := v[0, 1];
-    if v[1, 2] then
-      Height := ScaleFromDefaultPPI(Self, v[0, 2]);
-    if v[1, 3] then
-      Width := ScaleFromDefaultPPI(Self, v[0, 3]);
-    if v[1, 4] and v[0, 4] then
-      WindowState := wsMaximized;
-
-  end;
-
 end;
 
 procedure TfrmEdDataSetInfo.Button1Click(Sender: TObject);
@@ -404,20 +380,11 @@ end;
 
 procedure TfrmEdDataSetInfo.Panel2Resize(Sender: TObject);
 begin
-  DBGrid1.Columns[1].Width := DBGrid1.Width - ScaleFromDefaultPPI(Self, 90);
+  DBGrid1.Columns[1].Width := DBGrid1.Width - ScaleToPPI(Self, 90);
 end;
 
 procedure TfrmEdDataSetInfo.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  if WindowState = wsMaximized then
-  begin
-    WindowState := wsNormal;
-    DefWriteToRegistry(['Software', RegFIBRoot, RegRepository, RegSectionName],
-      ['Top', 'Left', 'Height', 'Width', 'Maximized'], [Top, Left, ScaleToDefaultPPI(Self, Height), ScaleToDefaultPPI(Self, Width), True]);
-  end
-  else
-    DefWriteToRegistry(['Software', RegFIBRoot, RegRepository, RegSectionName],
-      ['Top', 'Left', 'Height', 'Width', 'Maximized'], [Top, Left, ScaleToDefaultPPI(Self, Height), ScaleToDefaultPPI(Self, Width), false]);
   FCurCond.Free
 end;
 

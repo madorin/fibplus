@@ -289,18 +289,6 @@ begin
   if qryFL.State in [dsEdit, dsInsert] then
     qryFL.Post;
   iTr.Commit;
-{$IFNDEF NO_REGISTRY}
-  if WindowState = wsMaximized then
-  begin
-    WindowState := wsNormal;
-    DefWriteToRegistry(['Software', RegFIBRoot, RegRepository,
-      'FieldInfoEditor'], ['Top', 'Left', 'Height', 'Width', 'Maximized'], [Top, Left, ScaleToDefaultPPI(Self, Height), ScaleToDefaultPPI(Self, Width), True]);
-  end
-  else
-    DefWriteToRegistry(['Software', RegFIBRoot, RegRepository,
-      'FieldInfoEditor'], ['Top', 'Left', 'Height', 'Width', 'Maximized'], [Top, Left, ScaleToDefaultPPI(Self, Height), ScaleToDefaultPPI(Self, Width), False]);
-
-{$ENDIF}
 end;
 
 procedure TfrmFields.EdFilterChange(Sender: TObject);
@@ -319,9 +307,6 @@ begin
 end;
 
 procedure TfrmFields.FormCreate(Sender: TObject);
-var
-  v: Variant;
-
 begin
   cmbKindObjs.ItemIndex := 0;
   btnCopyFields.Hint := SFieldInfoCopyFieldsHint;
@@ -336,27 +321,6 @@ begin
   miTables1.Caption := SFieldInfoTablesItem;
   miProcedures1.Caption := SFieldInfoProcedureItem;
   miUserForms.Caption := SFieldInfoUserFormsItem;
-
-{$IFNDEF NO_REGISTRY}
-  v := DefReadFromRegistry(['Software', RegFIBRoot, RegRepository,
-    'FieldInfoEditor'], ['Top', 'Left', 'Height', 'Width', 'Maximized']);
-
-  if VarType(v) <> varBoolean then
-  begin
-    Position := poDesigned;
-    if v[1, 0] then
-      Top := v[0, 0];
-    if v[1, 1] then
-      Left := v[0, 1];
-    if v[1, 2] then
-      Height := ScaleFromDefaultPPI(Self, v[0, 2]);
-    if v[1, 3] then
-      Width := ScaleFromDefaultPPI(Self, v[0, 3]);
-    if v[1, 4] and v[0, 4] then
-      WindowState := wsMaximized;
-
-  end;
-{$ENDIF}
 end;
 
 procedure TfrmFields.cmbKindObjsChange(Sender: TObject);

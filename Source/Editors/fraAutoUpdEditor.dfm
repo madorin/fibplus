@@ -1,7 +1,7 @@
 object fAutoUpdateOptionForm: TfAutoUpdateOptionForm
   Left = 0
   Top = 0
-  Width = 334
+  Width = 374
   Height = 262
   TabOrder = 0
   object PrimaryKeyL: TLabel
@@ -21,14 +21,14 @@ object fAutoUpdateOptionForm: TfAutoUpdateOptionForm
   object GroupBox1: TGroupBox
     Left = 8
     Top = 62
-    Width = 318
+    Width = 358
     Height = 105
     Caption = ' SQL generation '
     TabOrder = 0
     object AllowChangeC: TCheckBox
       Left = 8
       Top = 24
-      Width = 308
+      Width = 348
       Height = 17
       Caption = 'Allow changing SQL properties without closing DataSet'
       TabOrder = 0
@@ -36,7 +36,7 @@ object fAutoUpdateOptionForm: TfAutoUpdateOptionForm
     object AutoGenC: TCheckBox
       Left = 8
       Top = 48
-      Width = 308
+      Width = 348
       Height = 17
       Caption = 'Auto generation of modifying queries after DataSet opening'
       TabOrder = 1
@@ -45,7 +45,7 @@ object fAutoUpdateOptionForm: TfAutoUpdateOptionForm
     object ModFieldsC: TCheckBox
       Left = 8
       Top = 72
-      Width = 308
+      Width = 348
       Height = 17
       Caption = 'Include in UpdateSQL only modified fields'
       Enabled = False
@@ -55,7 +55,7 @@ object fAutoUpdateOptionForm: TfAutoUpdateOptionForm
   object KeyC: TComboBox
     Left = 128
     Top = 34
-    Width = 199
+    Width = 239
     Height = 21
     ItemHeight = 13
     TabOrder = 1
@@ -63,7 +63,7 @@ object fAutoUpdateOptionForm: TfAutoUpdateOptionForm
   object GroupBox2: TGroupBox
     Left = 8
     Top = 168
-    Width = 318
+    Width = 358
     Height = 85
     Caption = ' Auto increment options '
     TabOrder = 2
@@ -110,7 +110,7 @@ object fAutoUpdateOptionForm: TfAutoUpdateOptionForm
   object TableC: TComboBox
     Left = 128
     Top = 8
-    Width = 199
+    Width = 239
     Height = 21
     ItemHeight = 13
     TabOrder = 3

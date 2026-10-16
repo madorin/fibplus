@@ -59,10 +59,6 @@ implementation
 uses
   TypInfo, RegistryUtils, RTTIRoutines, FIBInterfaces;
 
-{
-  var
-  LastTop, LastLeft,   LastWidth,LastHeight:integer;
-}
 const
   RegFIBSQLEdOptions = 'SQLEditor';
 
@@ -82,15 +78,6 @@ begin
         TStrings(GetObjectProp(aDataSet, 'DeleteSQL')).Text, TStrings(GetObjectProp(aDataSet, 'RefreshSQL')).Text);
     end;
     ReadOptions;
-    if LastTop > -1 then
-    begin
-      Position := poDesigned;
-      Top := LastTop;
-      Left := LastLeft;
-      Width := ScaleFromDefaultPPI(frmDstSQLedit, LastWidth);
-      Height := ScaleFromDefaultPPI(frmDstSQLedit, LastHeight);
-    end;
-
     Caption := 'SQL edit :' + aDataSet.Name;
     case KindSQL of
       0: fSQLsEdit.pgCtrl.ActivePage := fSQLsEdit.shSelect;
@@ -164,10 +151,6 @@ end;
 
 procedure TfrmDstSQLedit.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  LastTop := Top;
-  LastLeft := Left;
-  LastWidth := ScaleToDefaultPPI(Self, Width);
-  LastHeight := ScaleToDefaultPPI(Self, Height);
   SaveOptions;
 end;
 
@@ -176,21 +159,12 @@ procedure TfrmDstSQLedit.ReadOptions;
 {$IFNDEF NO_REGISTRY}
 var
   v: Variant;
-  i: integer;
 {$ENDIF}
 begin
 {$IFNDEF NO_REGISTRY}
-  v := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBSQLEdOptions], ['Top', 'Left', 'Height', 'Width', 'Origins']);
-  if (VarType(v) <> varBoolean) then
-    for i := 0 to 4 do
-      if v[1, i] then
-        case i of
-          0: LastTop := v[0, i];
-          1: LastLeft := v[0, i];
-          2: LastHeight := v[0, i];
-          3: LastWidth := v[0, i];
-          4: fSQLsEdit.chFieldOrigin.Checked := v[0, i]
-        end;
+  v := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBSQLEdOptions], ['Origins']);
+  if (VarType(v) <> varBoolean) and v[1, 0] then
+    fSQLsEdit.chFieldOrigin.Checked := v[0, 0];
   fSQLsEdit.ReadOptions;
 
 {$ENDIF}
@@ -199,8 +173,7 @@ end;
 procedure TfrmDstSQLedit.SaveOptions;
 begin
 {$IFNDEF NO_REGISTRY}
-  DefWriteToRegistry(['Software', RegFIBRoot, RegFIBSQLEdOptions], ['Top', 'Left', 'Height', 'Width', 'Origins'],
-    [LastTop, LastLeft, LastHeight, LastWidth, fSQLsEdit.chFieldOrigin.Checked]);
+  DefWriteToRegistry(['Software', RegFIBRoot, RegFIBSQLEdOptions], ['Origins'], [fSQLsEdit.chFieldOrigin.Checked]);
   fSQLsEdit.SaveOptions;
 {$ENDIF}
 end;
@@ -225,7 +198,4 @@ begin
   end;
 end;
 
-initialization
-
-// LastTop:=-1;
 end.
