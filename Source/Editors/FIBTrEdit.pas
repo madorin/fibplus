@@ -114,13 +114,13 @@ begin
 
   with memParams.Lines do
   begin
-    b := (VarType(v) <> varBoolean) and (v[0, 0] = cmbProps.Text);
+    b := (VarType(v) <> varBoolean) and (VarToStr(v[0, 0]) = cmbProps.Text);
     if b then
     begin
       v := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBTrKinds, IntToStr(cmbProps.ItemIndex)], ['Params']);
-      b := (VarType(v) <> varBoolean);
+      b := (VarType(v) <> varBoolean) and (VarType(v[1, 0]) = varBoolean) and v[1, 0];
       if b then
-        Text := v[0, 0]
+        Text := VarToStr(v[0, 0])
     end;
   end;
 {$ELSE}
@@ -227,11 +227,11 @@ begin
       if KindIndex <= 0 then
         Continue;
       v1 := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBTrKinds, IntToStr(KindIndex)], ['Name']);
-      if VarType(v1) = varBoolean then
+      if (VarType(v1) = varBoolean) or (VarToStr(v1[0, 0]) = '') then
         Continue;
       while cmbProps.Items.Count <= KindIndex do
         cmbProps.Items.Add('');
-      cmbProps.Items[KindIndex] := v1[0, 0];
+      cmbProps.Items[KindIndex] := VarToStr(v1[0, 0]);
     end;
 {$ENDIF}
 end;

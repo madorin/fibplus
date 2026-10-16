@@ -152,6 +152,10 @@ The lists of old and new names, and what an application has to change, are in
   the SQL editors and of the dataset repository editor was partly off the
   form; the gutter of the SQL editor (line numbers, bookmarks, breakpoints,
   section boxes, the click area of the breakpoints) was not scaled.
+- The editors did not save text and some integer settings on Delphi 2009 and
+  later: the font name, style and charset and the syntax highlighting styles of
+  the SQL editor, and the user transaction kinds of the transaction editor were
+  lost when the IDE was closed.
 - SQL editor: the line numbers covered the breakpoint glyphs, and a line
   number after a keyword was drawn in bold.
 - SQL editor: selecting with the mouse in an editor without lines raised an

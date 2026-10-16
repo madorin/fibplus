@@ -1406,33 +1406,16 @@ begin
   end
 end;
 
-function FontStyleToStr(Font: TFont): string;
+function FontStyleToStr(Style: TFontStyles): string;
 begin
   Result := '[';
-  if fsBold in Font.Style then
+  if fsBold in Style then
     Result := Result + 'fsBold,';
-  if fsItalic in Font.Style then
+  if fsItalic in Style then
     Result := Result + 'fsItalic,';
-  if fsUnderline in Font.Style then
+  if fsUnderline in Style then
     Result := Result + 'fsUnderline,';
-  if fsStrikeOut in Font.Style then
-    Result := Result + 'fsStrikeOut';
-  if Result[Length(Result)] = ',' then
-    Result[Length(Result)] := ']'
-  else
-    Result := Result + ']'
-end;
-
-function FontStyleToStr1(fs: TFontStyles): string;
-begin
-  Result := '[';
-  if fsBold in fs then
-    Result := Result + 'fsBold,';
-  if fsItalic in fs then
-    Result := Result + 'fsItalic,';
-  if fsUnderline in fs then
-    Result := Result + 'fsUnderline,';
-  if fsStrikeOut in fs then
+  if fsStrikeOut in Style then
     Result := Result + 'fsStrikeOut';
   if Result[Length(Result)] = ',' then
     Result[Length(Result)] := ']'
@@ -1449,7 +1432,7 @@ begin
       'DoReplaceSQL', 'UseOnlySelectedFields', 'UseTableAlias', 'ParamSymbol',
       'AssistantWidth', 'TableListHeigth', 'BackgroundColor',
       'DontUseMetadataInProposal', 'PixelsPerInch'], [Font.Name, Font.Size, Font.Color,
-      FontStyleToStr(Font), Font.CharSet, chReplaceSQL.Checked,
+      FontStyleToStr(Font.Style), Font.CharSet, chReplaceSQL.Checked,
       chOnlySelFields.Checked, LbTableSyn.Checked, cmbParamSymbol.Text,
       Panel6.Width, DBGrid1.Height, THackWinControl(viewSQL).Color,
       viewSQL.Tag, ControlPPI(Self)]);
@@ -1463,22 +1446,22 @@ begin
         'CommentsFontStyle', 'StringsFontColor', 'StringsFontStyle',
         'NumbersFontColor', 'NumbersFontStyle', 'SelectedColor'],
         [TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor[tokKeyWord],
-        FontStyleToStr1(TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle
+        FontStyleToStr(TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle
         [tokKeyWord]), TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor
-        [tokFunction], FontStyleToStr1(TMPSyntaxMemo(viewSQL)
+        [tokFunction], FontStyleToStr(TMPSyntaxMemo(viewSQL)
         .SyntaxAttributes.FontStyle[tokFunction]), TMPSyntaxMemo(viewSQL)
         .SyntaxAttributes.FontColor[tokParam],
-        FontStyleToStr1(TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle
+        FontStyleToStr(TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle
         [tokParam]), TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor
-        [tokTypes], FontStyleToStr1(TMPSyntaxMemo(viewSQL)
+        [tokTypes], FontStyleToStr(TMPSyntaxMemo(viewSQL)
         .SyntaxAttributes.FontStyle[tokTypes]), TMPSyntaxMemo(viewSQL)
         .SyntaxAttributes.FontColor[tokILComment],
-        FontStyleToStr1(TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle
+        FontStyleToStr(TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle
         [tokILComment]), TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor
-        [tokString], FontStyleToStr1(TMPSyntaxMemo(viewSQL)
+        [tokString], FontStyleToStr(TMPSyntaxMemo(viewSQL)
         .SyntaxAttributes.FontStyle[tokString]), TMPSyntaxMemo(viewSQL)
         .SyntaxAttributes.FontColor[tokInteger],
-        FontStyleToStr1(TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle
+        FontStyleToStr(TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle
         [tokInteger]), TMPSyntaxMemo(viewSQL).SelColor])
     end
   end;
