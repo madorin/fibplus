@@ -12,6 +12,7 @@ object frmEdParamToFields: TfrmEdParamToFields
   Font.Name = 'Segoe UI'
   Font.Style = []
   OldCreateOrder = True
+  Position = poScreenCenter
   PixelsPerInch = 96
   TextHeight = 15
   object Splitter2: TSplitter

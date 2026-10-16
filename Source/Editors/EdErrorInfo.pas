@@ -278,11 +278,11 @@ begin
   begin
     WindowState := wsNormal;
     DefWriteToRegistry(['Software', RegFIBRoot, RegRepository, RegSectionName],
-      ['Top', 'Left', 'Height', 'Width', 'Maximized'], [Top, Left, Height, Width, True]);
+      ['Top', 'Left', 'Height', 'Width', 'Maximized'], [Top, Left, ScaleToDefaultPPI(Self, Height), ScaleToDefaultPPI(Self, Width), True]);
   end
   else
     DefWriteToRegistry(['Software', RegFIBRoot, RegRepository, RegSectionName],
-      ['Top', 'Left', 'Height', 'Width', 'Maximized'], [Top, Left, Height, Width, False]);
+      ['Top', 'Left', 'Height', 'Width', 'Maximized'], [Top, Left, ScaleToDefaultPPI(Self, Height), ScaleToDefaultPPI(Self, Width), False]);
 
   if qryErrorMessages.State in [dsEdit, dsInsert] then
     qryErrorMessages.Post;
@@ -305,9 +305,9 @@ begin
     if v[1, 1] then
       Left := v[0, 1];
     if v[1, 2] then
-      Height := v[0, 2];
+      Height := ScaleFromDefaultPPI(Self, v[0, 2]);
     if v[1, 3] then
-      Width := v[0, 3];
+      Width := ScaleFromDefaultPPI(Self, v[0, 3]);
     if v[1, 4] and v[0, 4] then
       WindowState := wsMaximized;
 

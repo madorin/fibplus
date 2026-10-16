@@ -88,7 +88,7 @@ end;
 
 procedure TfraEdConditions.ListView1Resize(Sender: TObject);
 begin
-  ListView1.Columns[0].Width := ListView1.Width - 20
+  ListView1.Columns[0].Width := ListView1.Width - ScaleFromDefaultPPI(Self, 20)
 end;
 
 procedure TfraEdConditions.Button3Click(Sender: TObject);

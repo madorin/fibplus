@@ -89,22 +89,23 @@ object frmSQLEdit: TfrmSQLEdit
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 1
-    OnResize = Panel1Resize
     object btnOK: TBitBtn
-      Left = 546
+      Left = 626
       Top = 8
-      Width = 73
+      Width = 75
       Height = 25
+      Anchors = [akTop, akRight]
       Caption = '&OK'
       ModalResult = 1
       TabOrder = 0
       NumGlyphs = 2
     end
     object btnCancel: TBitBtn
-      Left = 626
+      Left = 707
       Top = 8
       Width = 75
       Height = 25
+      Anchors = [akTop, akRight]
       Cancel = True
       Caption = '&Cancel'
       ModalResult = 2

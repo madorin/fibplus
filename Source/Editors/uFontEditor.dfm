@@ -12,6 +12,7 @@ object frmFontEditor: TfrmFontEditor
   Font.Name = 'Segoe UI'
   Font.Style = []
   OldCreateOrder = False
+  Position = poScreenCenter
   PixelsPerInch = 96
   TextHeight = 15
   object PageControl1: TPageControl

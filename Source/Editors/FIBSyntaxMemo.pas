@@ -507,7 +507,7 @@ type
     destructor Destroy; override;
     function Find(const Row: Integer; var Index: TBookmarkIndex): Boolean;
     procedure Clear;
-    procedure PaintAt(const ACanvas: TCanvas; const X, Y: Integer; const Index: TBookmarkIndex);
+    procedure PaintAt(const ACanvas: TCanvas; const X, Y, Size: Integer; const Index: TBookmarkIndex);
     property BookMarks[const Index: TBookmarkIndex]: Integer read GetBookMarks write SetBookMarks; default;
   end;
 
@@ -549,7 +549,7 @@ type
     fRowOfCurrentBP: Integer;
     procedure RefreshBP(Sender: TBreakPoint);
     property Mode: TBPMode read fMode write fMode default bmFreeMode;
-    procedure PaintAt(const ACanvas: TCanvas; const X, Y: Integer; const kind: TBPKind);
+    procedure PaintAt(const ACanvas: TCanvas; const X, Y, Size: Integer; const kind: TBPKind);
     function Find(const Row: Integer; var kind: TBPKind): Boolean;
     procedure Add(const Row: Integer; const kind: TBPKind = bkEnabled;
       Condition: string = ''; PassCount: Cardinal = 0; Group: string = '';
@@ -619,6 +619,7 @@ type
     fScreenLines: array of Boolean;
     fGutterWidth: Integer;
     fSectionIndent: Integer;
+    fLineNumbersWidth: Integer;
     fChangesSummator: TChangedItems;
 {$IFDEF SYNDEBUG}
     fLogDisabled: Boolean;
@@ -644,6 +645,12 @@ type
     procedure OnChangePos(Pos: TPoint);
     procedure SetDefColor(const Index: Integer; const Value: TColor);
     procedure SetGutterWidth(const Value: Integer);
+    function ScaleToPPI(Value: Integer): Integer;
+    function ScaledSectionIndent: Integer;
+    function SymbolsGutterWidth: Integer;
+    function LineNumbersLeft: Integer;
+    function LineNumbersMargin: Integer;
+    procedure UpdateLineNumbersWidth;
     procedure SetOffset(const Index, Value: Integer);
     procedure SetOffsets(NewOffsets: TPoint);
     procedure SetOptions(const Value: TMPSynMemoOptions);
@@ -4633,14 +4640,15 @@ end;
 
 // Drawing breakpoints on the gutter.
 // Two-pass drawing allows a "transparent" icon edge. (masking)
-procedure TMPBreakPointCollection.PaintAt(const ACanvas: TCanvas; const X, Y: Integer; const kind: TBPKind);
+procedure TMPBreakPointCollection.PaintAt(const ACanvas: TCanvas; const X, Y, Size: Integer; const kind: TBPKind);
 const
   BOOKMARK_GLYPH_SIZE = 11;
 begin
-  BitBlt(ACanvas.Handle, X, Y, BOOKMARK_GLYPH_SIZE, BOOKMARK_GLYPH_SIZE,
-    fImagesMask.Canvas.Handle, Byte(kind) * BOOKMARK_GLYPH_SIZE, 0, SRCAND); { }
-  BitBlt(ACanvas.Handle, X, Y, BOOKMARK_GLYPH_SIZE, BOOKMARK_GLYPH_SIZE,
-    fImages.Canvas.Handle, Byte(kind) * BOOKMARK_GLYPH_SIZE, 0, SRCPAINT); { }
+  SetStretchBltMode(ACanvas.Handle, COLORONCOLOR);
+  StretchBlt(ACanvas.Handle, X, Y, Size, Size, fImagesMask.Canvas.Handle,
+    Byte(kind) * BOOKMARK_GLYPH_SIZE, 0, BOOKMARK_GLYPH_SIZE, BOOKMARK_GLYPH_SIZE, SRCAND);
+  StretchBlt(ACanvas.Handle, X, Y, Size, Size, fImages.Canvas.Handle,
+    Byte(kind) * BOOKMARK_GLYPH_SIZE, 0, BOOKMARK_GLYPH_SIZE, BOOKMARK_GLYPH_SIZE, SRCPAINT);
 end;
 
 // Look up a breakpoint on the given line.
@@ -5741,7 +5749,7 @@ begin
   if (Button = mbLeft) and (Shift = [ssLeft]) then
     if PtInRect(EntireGutterRect[-1], Point(X, Y)) then
       begin
-        if X > 11 then
+        if X > ScaleToPPI(13) then
           begin
             { Button pressed in the gutter - collapse / expand the section }
             WndOffsetToPixOffset(Point(X, Y), Col, SRow, False);
@@ -5822,7 +5830,7 @@ begin
       Row := FindVisibleRow(OffsetY, Row, True);
       // get the column number in the line
       Col := PixOffsetToCharPos(Col, Row);
-      if (Col <> Range.PosX) or (Row <> Range.PosY) then
+      if fLines.IsValidLineIndex(Row) and ((Col <> Range.PosX) or (Row <> Range.PosY)) then
         begin
           Range.Enlarge(Row - Range.PosY, True);
           Range.Enlarge(Col - Range.PosX);
@@ -6461,6 +6469,54 @@ begin
     end;
 end;
 
+// Gutter sizes are set for 96 DPI and scaled to the PPI of the control
+function TMPCustomSyntaxMemo.ScaleToPPI(Value: Integer): Integer;
+begin
+{$IFDEF D_27}
+  Result := MulDiv(Value, CurrentPPI, 96);
+{$ELSE}
+  Result := MulDiv(Value, Screen.PixelsPerInch, 96);
+{$ENDIF}
+end;
+
+function TMPCustomSyntaxMemo.ScaledSectionIndent: Integer;
+begin
+  Result := ScaleToPPI(fSectionIndent);
+end;
+
+// GutterWidth, widened to fit the line numbers in the current font
+function TMPCustomSyntaxMemo.SymbolsGutterWidth: Integer;
+begin
+  Result := Math.Max(ScaleToPPI(fGutterWidth), fLineNumbersWidth);
+end;
+
+// Line numbers start right of the bookmark and breakpoint glyphs
+function TMPCustomSyntaxMemo.LineNumbersLeft: Integer;
+begin
+  Result := ScaleToPPI(22);
+end;
+
+function TMPCustomSyntaxMemo.LineNumbersMargin: Integer;
+begin
+  Result := ScaleToPPI(6);
+end;
+
+procedure TMPCustomSyntaxMemo.UpdateLineNumbersWidth;
+var
+  NewWidth, i: Integer;
+begin
+  NewWidth := 0;
+  if (smoShowLineNumberToGutter in fOptions) and fLettersCalculated then
+    NewWidth := LineNumbersLeft + fCharWidths[False]['1'] * Length(IntToStr(Math.Max(Lines.Count, 1))) +
+      LineNumbersMargin;
+  if NewWidth <> fLineNumbersWidth then
+    begin
+      fLineNumbersWidth := NewWidth;
+      for i := Low(fScreenLines) to High(fScreenLines) do
+        fScreenLines[i] := True;
+    end;
+end;
+
 // Returns True if the line is shown on screen
 function TMPCustomSyntaxMemo.IsLineVisible(const Row: Integer; const PScreenRow: PInteger = nil): Boolean;
 var
@@ -6519,14 +6575,14 @@ begin
       2:
         begin
           Result := SymbolsGutterRect[ScreenRow];
-          Inc(Result.Right, fSectionIndent + 2);
+          Inc(Result.Right, ScaledSectionIndent + 2);
         end;
 
       { SymbolsGutterRect }
       3:
         begin
           Result := EntireRowRect[ScreenRow];
-          Result.Right := Result.Left + fGutterWidth;
+          Result.Right := Result.Left + SymbolsGutterWidth;
         end;
     end
 
@@ -6562,16 +6618,16 @@ begin
         begin
           Result := EntireRowRect[ScreenRow];
           if smoAutoGutterWidth in fOptions then
-            Result.Right := Result.Left + fGutterWidth + fSections.fMaxExpandLevel * fSectionIndent + 2
+            Result.Right := Result.Left + SymbolsGutterWidth + fSections.fMaxExpandLevel * ScaledSectionIndent + 2
           else
-            Result.Right := Result.Left + fGutterWidth + fSections.fMaxLevel * fSectionIndent + 2;
+            Result.Right := Result.Left + SymbolsGutterWidth + fSections.fMaxLevel * ScaledSectionIndent + 2;
         end;
 
       { SymbolsGutterRect }
       3:
         begin
           Result := EntireRowRect[ScreenRow];
-          Result.Right := Result.Left + fGutterWidth;
+          Result.Right := Result.Left + SymbolsGutterWidth;
         end;
     end;
 end;
@@ -6614,13 +6670,13 @@ begin
   if smoVSNET_SectionsStyle in fOptions
   // All boxes on one line
   then
-    Result.Left := Result.Right + 2
+    Result.Left := Result.Right + ScaleToPPI(2)
   // Horizontal box area within its SectionIndent
   else
-    Result.Left := Result.Right + (ALevel - 1) * fSectionIndent;
-  Result.Right := Result.Left + 9;
-  Result.Top := (Result.Top + Result.Bottom) shr 1 - 4;
-  Result.Bottom := Result.Top + 9;
+    Result.Left := Result.Right + (ALevel - 1) * ScaledSectionIndent;
+  Result.Right := Result.Left + ScaleToPPI(9);
+  Result.Top := (Result.Top + Result.Bottom - ScaleToPPI(9)) shr 1;
+  Result.Bottom := Result.Top + ScaleToPPI(9);
 end;
 
 // Hides the cursor
@@ -6997,6 +7053,7 @@ var
 begin
   if (Parent = nil) { or (THackStrings(Lines).UpdateCount > 0) } then
     Exit;
+  UpdateLineNumbersWidth;
   { } {$IFDEF SYNDEBUG}
   { } Log('Memo.Redraw');
   { } {$ENDIF}
@@ -7154,6 +7211,7 @@ var
   i: TBookmarkIndex;
   kind: TBPKind;
   StrNumRow: string;
+  GlyphSize, GlyphTop: Integer;
 begin
   RR := TextRowRect[ScreenRow];
   dec(RR.Bottom, RR.Top);
@@ -7170,9 +7228,9 @@ begin
       Brush.Style := bsSolid;
       Brush.Color := clBtnFace;
       if not(smoVSNET_SectionsStyle in fOptions) then
-        dec(r.Right, 4)
+        dec(r.Right, ScaleToPPI(4))
       else
-        dec(r.Right, fSectionIndent + 4);
+        dec(r.Right, ScaledSectionIndent + ScaleToPPI(4));
       FillRect(r);
       Pen.Color := clBtnHighlight;
       MoveTo(r.Right, r.Top);
@@ -7189,16 +7247,24 @@ begin
       FillRect(RR);
       if not Lines.IsValidLineIndex(Row) then
         Exit;
+      GlyphSize := ScaleToPPI(11);
+      GlyphTop := GR.Top + (GR.Bottom - GR.Top - GlyphSize) div 2;
       // Bookmark
       if fBookMarks.Find(Row, i) then
-        fBookMarks.PaintAt(ACanvas, GR.Left + 9, GR.Top + 2, i);
+        fBookMarks.PaintAt(ACanvas, GR.Left + ScaleToPPI(9), GlyphTop, GlyphSize, i);
       // BreakPoints
       if fBreakPoints.Find(Row, kind) then
-        fBreakPoints.PaintAt(ACanvas, GR.Left + 2, GR.Top + 2, kind);
+        fBreakPoints.PaintAt(ACanvas, GR.Left + ScaleToPPI(4), GlyphTop, GlyphSize, kind);
       StrNumRow := IntToStr(Row + 1);
       Font.Color := clBlack;
+      Font.Style := [];
       if smoShowLineNumberToGutter in Options then
-        TextOut(GR.Right - fCharWidths[False]['1'] * (Length(StrNumRow) + 1), GR.Top + 2, StrNumRow)
+        begin
+          Brush.Style := bsClear;
+          TextOut(GR.Left + SymbolsGutterWidth - LineNumbersMargin - fCharWidths[False]['1'] * Length(StrNumRow),
+            GR.Top + 2, StrNumRow);
+          Brush.Style := bsSolid;
+        end;
     end;
 end;
 
@@ -7287,7 +7353,7 @@ begin
       if not(smoVSNET_SectionsStyle in fOptions) then
         for i := Sec.Level - 1 downto 1 do
           begin
-            dec(SecPnt.X, fSectionIndent);
+            dec(SecPnt.X, ScaledSectionIndent);
             MoveTo(SecPnt.X, GR.Top);
             LineTo(SecPnt.X, GR.Bottom);
           end;
@@ -7685,12 +7751,13 @@ begin
 end;
 
 // Draws the donut on the gutter
-procedure TMPBookmarkManager.PaintAt(const ACanvas: TCanvas; const X, Y: Integer; const Index: TBookmarkIndex);
+procedure TMPBookmarkManager.PaintAt(const ACanvas: TCanvas; const X, Y, Size: Integer; const Index: TBookmarkIndex);
 const
   BOOKMARK_GLYPH_SIZE = 11;
 begin
-  BitBlt(ACanvas.Handle, X, Y, BOOKMARK_GLYPH_SIZE, BOOKMARK_GLYPH_SIZE,
-    fImages.Canvas.Handle, Index * BOOKMARK_GLYPH_SIZE, 0, SRCCOPY);
+  SetStretchBltMode(ACanvas.Handle, COLORONCOLOR);
+  StretchBlt(ACanvas.Handle, X, Y, Size, Size, fImages.Canvas.Handle,
+    Index * BOOKMARK_GLYPH_SIZE, 0, BOOKMARK_GLYPH_SIZE, BOOKMARK_GLYPH_SIZE, SRCCOPY);
 end;
 
 procedure TMPCustomSyntaxMemo.CloseProposal;

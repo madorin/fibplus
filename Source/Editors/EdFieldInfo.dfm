@@ -61,8 +61,9 @@ object frmFields: TfrmFields
       object cmbKindObjs: TComboBox
         Left = 8
         Top = 5
-        Width = 201
+        Width = 210
         Height = 21
+        Anchors = [akLeft, akTop, akRight]
         Style = csDropDownList
         ItemHeight = 13
         TabOrder = 0
@@ -77,12 +78,12 @@ object frmFields: TfrmFields
       Align = alTop
       BevelOuter = bvNone
       TabOrder = 1
-      OnResize = Panel3Resize
       object EdFilter: TEdit
         Left = 2
         Top = 3
-        Width = 217
+        Width = 210
         Height = 21
+        Anchors = [akLeft, akTop, akRight]
         Hint = 'FilterText'
         TabOrder = 0
         OnChange = EdFilterChange

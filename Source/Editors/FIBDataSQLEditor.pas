@@ -36,7 +36,6 @@ type
     btnOK: TBitBtn;
     btnCancel: TBitBtn;
     fSQLsEdit: TfDSSQLEdit;
-    procedure Panel1Resize(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
     procedure ReadOptions;
@@ -88,8 +87,8 @@ begin
       Position := poDesigned;
       Top := LastTop;
       Left := LastLeft;
-      Width := LastWidth;
-      Height := LastHeight;
+      Width := ScaleFromDefaultPPI(frmDstSQLedit, LastWidth);
+      Height := ScaleFromDefaultPPI(frmDstSQLedit, LastHeight);
     end;
 
     Caption := 'SQL edit :' + aDataSet.Name;
@@ -163,18 +162,12 @@ begin
   Result := ShowDSSQLEdit(aDataSet, 0, ExitToCodeEditor);
 end;
 
-procedure TfrmDstSQLedit.Panel1Resize(Sender: TObject);
-begin
-  btnCancel.Left := Panel1.Width - 80;
-  btnOK.Left := btnCancel.Left - btnOK.Width - 5;
-end;
-
 procedure TfrmDstSQLedit.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   LastTop := Top;
   LastLeft := Left;
-  LastWidth := Width;
-  LastHeight := Height;
+  LastWidth := ScaleToDefaultPPI(Self, Width);
+  LastHeight := ScaleToDefaultPPI(Self, Height);
   SaveOptions;
 end;
 

@@ -35,7 +35,6 @@ type
     Panel1: TPanel;
     btnOK: TBitBtn;
     btnCancel: TBitBtn;
-    procedure Panel1Resize(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure fSQLEdit1btnShowDDLClick(Sender: TObject);
     procedure fSQLEdit1SpeedButton1Click(Sender: TObject);
@@ -94,12 +93,6 @@ begin
       AssignStringsToProp(aQuery, 'SQL', fSQLEdit1.SQLText);
     Free
   end;
-end;
-
-procedure TfrmSQLEdit.Panel1Resize(Sender: TObject);
-begin
-  btnCancel.Left := Panel1.Width - 80;
-  btnOK.Left := btnCancel.Left - btnOK.Width - 5;
 end;
 
 procedure TfrmSQLEdit.FormClose(Sender: TObject; var Action: TCloseAction);

@@ -690,6 +690,7 @@ object fSQLEdit: TfSQLEdit
           Top = 0
           Width = 186
           Height = 21
+          Anchors = [akLeft, akTop, akRight]
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clBlack
           Font.Height = -12
@@ -704,6 +705,7 @@ object fSQLEdit: TfSQLEdit
           Top = 23
           Width = 283
           Height = 21
+          Anchors = [akLeft, akTop, akRight]
           Style = csDropDownList
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clBlack

@@ -62,7 +62,6 @@ type
     procedure cmbKindObjsChange(Sender: TObject);
     procedure qryFLAfterOpen(DataSet: TDataSet);
     procedure qryFLNewRecord(DataSet: TDataSet);
-    procedure Panel3Resize(Sender: TObject);
     procedure qryFLBeforeClose(DataSet: TDataSet);
     procedure qrySPFieldsBeforeOpen(DataSet: TDataSet);
   private
@@ -295,11 +294,11 @@ begin
   begin
     WindowState := wsNormal;
     DefWriteToRegistry(['Software', RegFIBRoot, RegRepository,
-      'FieldInfoEditor'], ['Top', 'Left', 'Height', 'Width', 'Maximized'], [Top, Left, Height, Width, True]);
+      'FieldInfoEditor'], ['Top', 'Left', 'Height', 'Width', 'Maximized'], [Top, Left, ScaleToDefaultPPI(Self, Height), ScaleToDefaultPPI(Self, Width), True]);
   end
   else
     DefWriteToRegistry(['Software', RegFIBRoot, RegRepository,
-      'FieldInfoEditor'], ['Top', 'Left', 'Height', 'Width', 'Maximized'], [Top, Left, Height, Width, False]);
+      'FieldInfoEditor'], ['Top', 'Left', 'Height', 'Width', 'Maximized'], [Top, Left, ScaleToDefaultPPI(Self, Height), ScaleToDefaultPPI(Self, Width), False]);
 
 {$ENDIF}
 end;
@@ -350,9 +349,9 @@ begin
     if v[1, 1] then
       Left := v[0, 1];
     if v[1, 2] then
-      Height := v[0, 2];
+      Height := ScaleFromDefaultPPI(Self, v[0, 2]);
     if v[1, 3] then
-      Width := v[0, 3];
+      Width := ScaleFromDefaultPPI(Self, v[0, 3]);
     if v[1, 4] and v[0, 4] then
       WindowState := wsMaximized;
 
@@ -395,12 +394,6 @@ procedure TfrmFields.qryFLNewRecord(DataSet: TDataSet);
 begin
   if chFilt.Checked then
     qryFL.FieldByName('TABLE_NAME').asString := sbDBGrid2.dataSource.DataSet.Fields[0].asString;
-end;
-
-procedure TfrmFields.Panel3Resize(Sender: TObject);
-begin
-  EdFilter.Width := Panel3.Width - 16;
-  cmbKindObjs.Width := Panel3.Width - 16;
 end;
 
 procedure TfrmFields.SaveLoadFieldsDisplaySize(isSave: Boolean);

@@ -165,7 +165,7 @@ implementation
 {$R *.dfm}
 
 uses
-  TypInfo, RegistryUtils, ToCodeEditorIntfs, FIBEditorsConsts, RTTIRoutines,
+  Math, TypInfo, RegistryUtils, ToCodeEditorIntfs, FIBEditorsConsts, RTTIRoutines,
   uFIBScriptForm,
   IBSQLSyn, FIBSyntaxMemo, uFontEditor;
 
@@ -190,9 +190,7 @@ type
 
 procedure TfSQLEdit.Panel7Resize(Sender: TObject);
 begin
-  DBGrid1.Columns[0].Width := Panel7.Width - 30;
-  Edit1.Width := Panel7.Width - 104;
-  cmbTabsNameViews.Width := Panel7.Width - 7;
+  DBGrid1.Columns[0].Width := Panel7.Width - ScaleFromDefaultPPI(Self, 30);
   DBGrid2.Columns[0].Width := DBGrid1.Columns[0].Width;
 end;
 
@@ -1333,8 +1331,8 @@ begin
           6: chOnlySelFields.Checked := v[0, i];
           7: LbTableSyn.Checked := v[0, i];
           8: cmbParamSymbol.Text := v[0, i];
-          9: Panel6.Width := v[0, i];
-          10: DBGrid1.Height := v[0, i];
+          9: Panel6.Width := Max(Panel6.Width, ScaleFromDefaultPPI(Self, v[0, i]));
+          10: DBGrid1.Height := ScaleFromDefaultPPI(Self, v[0, i]);
           11:
             begin
               THackWinControl(viewSQL).Color := v[0, i];
@@ -1447,7 +1445,7 @@ begin
       'DontUseMetadataInProposal'], [Font.Name, Font.Size, Font.Color,
       FontStyleToStr(Font), Font.CharSet, chReplaceSQL.Checked,
       chOnlySelFields.Checked, LbTableSyn.Checked, cmbParamSymbol.Text,
-      Panel6.Width, DBGrid1.Height, THackWinControl(viewSQL).Color,
+      ScaleToDefaultPPI(Self, Panel6.Width), ScaleToDefaultPPI(Self, DBGrid1.Height), THackWinControl(viewSQL).Color,
       viewSQL.Tag]);
 
     if viewSQL is TMPSyntaxMemo then

@@ -131,6 +131,9 @@ The lists of old and new names, and what an application has to change, are in
 
 - The editors, the login dialog and the samples use Segoe UI instead of
   MS Sans Serif (no anti-aliasing); their layouts are adjusted to the new font.
+- The dialogs of fixed size (connection, transaction, dataset options and the
+  others) no longer remember their size and position and open centered on the
+  screen; the resizable editors still do.
 
 ### Removed
 
@@ -141,6 +144,15 @@ The lists of old and new names, and what an application has to change, are in
 
 ### Fixed
 
+- Editors at a display scaling over 100%: the saved size of a window was
+  restored in pixels of 100%, so the window was too small for its content
+  (sizes are now saved for 96 DPI); the **Cancel** button of the SQL editors
+  was partly off the form; the gutter of the SQL editor (line numbers,
+  bookmarks, breakpoints, section boxes) was not scaled.
+- SQL editor: the line numbers covered the breakpoint glyphs, and a line
+  number after a keyword was drawn in bold.
+- SQL editor: selecting with the mouse in an editor without lines raised an
+  "index out of bounds" error.
 - `TFIBScripter` cut a statement at a `--` comment when the script was added
   as one item with several lines (e.g. `Script.Add` of a multi-line string):
   the comment ran to the end of the item, not of the line
