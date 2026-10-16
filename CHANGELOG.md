@@ -127,6 +127,11 @@ The lists of old and new names, and what an application has to change, are in
   only on those that report a lost connection, instead of on every database of
   the process; a lost service connection closes no database.
 
+#### Editors
+
+- The editors, the login dialog and the samples use Segoe UI instead of
+  MS Sans Serif (no anti-aliasing); their layouts are adjusted to the new font.
+
 ### Removed
 
 - Support for Delphi 6, 7, 2005, 2006, 2007 and C++Builder 6 to 2007 (the

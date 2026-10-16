@@ -8,12 +8,12 @@ object frmFontEditor: TfrmFontEditor
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Style = []
   OldCreateOrder = False
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object PageControl1: TPageControl
     Left = 0
     Top = 0
@@ -36,8 +36,8 @@ object frmFontEditor: TfrmFontEditor
         Caption = 'Color'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
         Font.Style = [fsBold]
         ParentFont = False
       end
@@ -49,8 +49,8 @@ object frmFontEditor: TfrmFontEditor
         Caption = 'Font'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
         Font.Style = [fsBold]
         ParentFont = False
       end
@@ -91,8 +91,8 @@ object frmFontEditor: TfrmFontEditor
         Caption = 'FontStyle'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
         Font.Style = [fsBold]
         ParentFont = False
         TabOrder = 2
@@ -105,8 +105,8 @@ object frmFontEditor: TfrmFontEditor
           Enabled = False
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -11
-          Font.Name = 'MS Sans Serif'
+          Font.Height = -12
+          Font.Name = 'Segoe UI'
           Font.Style = []
           ParentFont = False
           TabOrder = 0
@@ -121,8 +121,8 @@ object frmFontEditor: TfrmFontEditor
           Enabled = False
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -11
-          Font.Name = 'MS Sans Serif'
+          Font.Height = -12
+          Font.Name = 'Segoe UI'
           Font.Style = []
           ParentFont = False
           TabOrder = 1
@@ -137,8 +137,8 @@ object frmFontEditor: TfrmFontEditor
           Enabled = False
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -11
-          Font.Name = 'MS Sans Serif'
+          Font.Height = -12
+          Font.Name = 'Segoe UI'
           Font.Style = []
           ParentFont = False
           TabOrder = 2
@@ -193,8 +193,8 @@ object frmFontEditor: TfrmFontEditor
   object FontDialog1: TFontDialog
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Height = -12
+    Font.Name = 'Segoe UI'
     Font.Style = []
     Left = 360
     Top = 160

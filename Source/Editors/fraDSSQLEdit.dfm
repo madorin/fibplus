@@ -27,18 +27,18 @@ object fDSSQLEdit: TfDSSQLEdit
         TabOrder = 0
         TabStop = True
         inherited Splitter2: TSplitter
-          Left = 440
+          Left = 397
           Height = 411
         end
         inherited Panel1: TPanel
-          Width = 440
+          Width = 397
           Height = 411
           inherited splPlan: TSplitter
             Top = 388
-            Width = 438
+            Width = 395
           end
           inherited Panel10: TPanel
-            Width = 438
+            Width = 395
             inherited SpeedButton1: TSpeedButton
               OnClick = SelectSQLEditSpeedButton1Click
             end
@@ -49,22 +49,22 @@ object fDSSQLEdit: TfDSSQLEdit
           end
           inherited StatusBar1: TStatusBar
             Top = 391
-            Width = 438
+            Width = 395
           end
         end
         inherited Panel6: TPanel
-          Left = 443
+          Left = 400
           Height = 411
           inherited GroupBox1: TGroupBox
-            Height = 343
+            Height = 327
             inherited Panel2: TPanel
-              Height = 279
+              Height = 263
               Caption = ''
               inherited DBGrid2: TDBGrid
-                Height = 94
+                Height = 78
               end
               inherited Panel4: TPanel
-                Top = 187
+                Top = 171
               end
             end
           end
@@ -90,7 +90,7 @@ object fDSSQLEdit: TfDSSQLEdit
       Caption = 'Generate Modify SQLs'
       ImageIndex = 1
       object Splitter1: TSplitter
-        Left = 353
+        Left = 373
         Top = 0
         Width = 5
         Height = 411
@@ -98,7 +98,7 @@ object fDSSQLEdit: TfDSSQLEdit
       object Panel2: TPanel
         Left = 0
         Top = 0
-        Width = 145
+        Width = 165
         Height = 411
         Align = alLeft
         BevelOuter = bvNone
@@ -115,7 +115,7 @@ object fDSSQLEdit: TfDSSQLEdit
         object cmbTables: TComboBox
           Left = 3
           Top = 24
-          Width = 139
+          Width = 159
           Height = 21
           ItemHeight = 0
           ParentShowHint = False
@@ -126,7 +126,7 @@ object fDSSQLEdit: TfDSSQLEdit
         object btnGetFields: TButton
           Left = 3
           Top = 48
-          Width = 140
+          Width = 160
           Height = 25
           Caption = 'Get &Table Fields'
           TabOrder = 1
@@ -135,7 +135,7 @@ object fDSSQLEdit: TfDSSQLEdit
         object btnGenSql: TButton
           Left = 3
           Top = 75
-          Width = 140
+          Width = 160
           Height = 25
           Caption = '&Generate SQLs'
           TabOrder = 2
@@ -144,7 +144,7 @@ object fDSSQLEdit: TfDSSQLEdit
         object btnClearSQLs: TButton
           Left = 3
           Top = 137
-          Width = 140
+          Width = 160
           Height = 25
           Caption = '&Clear SQLs'
           TabOrder = 4
@@ -153,7 +153,7 @@ object fDSSQLEdit: TfDSSQLEdit
         object GroupBox1: TGroupBox
           Left = 1
           Top = 363
-          Width = 143
+          Width = 163
           Height = 47
           Align = alBottom
           Caption = 'On Save SQLs'
@@ -161,7 +161,7 @@ object fDSSQLEdit: TfDSSQLEdit
           object chFieldOrigin: TCheckBox
             Left = 6
             Top = 16
-            Width = 127
+            Width = 147
             Height = 17
             Hint = 'Save Fields origin'
             Caption = 'Field Origins'
@@ -173,7 +173,7 @@ object fDSSQLEdit: TfDSSQLEdit
         object GroupBox2: TGroupBox
           Left = 1
           Top = 279
-          Width = 143
+          Width = 163
           Height = 84
           Align = alBottom
           Caption = 'Options'
@@ -186,15 +186,15 @@ object fDSSQLEdit: TfDSSQLEdit
             Caption = 'ParamSymbol:'
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -11
-            Font.Name = 'MS Sans Serif'
+            Font.Height = -12
+            Font.Name = 'Segoe UI'
             Font.Style = []
             ParentFont = False
           end
           object chByPrimary: TCheckBox
             Left = 3
             Top = 17
-            Width = 136
+            Width = 156
             Height = 24
             Hint = 'Use only primary key in where clause'
             Caption = 'Where by primary key'
@@ -207,7 +207,7 @@ object fDSSQLEdit: TfDSSQLEdit
           object chNonUpdPrKey: TCheckBox
             Left = 3
             Top = 38
-            Width = 137
+            Width = 157
             Height = 17
             Hint = 'To not change a primary key in update SQL'
             Caption = 'Non update primary key'
@@ -226,8 +226,8 @@ object fDSSQLEdit: TfDSSQLEdit
             Color = clBtnFace
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
-            Font.Height = -11
-            Font.Name = 'MS Sans Serif'
+            Font.Height = -12
+            Font.Name = 'Segoe UI'
             Font.Style = [fsBold]
             ItemHeight = 13
             ParentFont = False
@@ -240,7 +240,7 @@ object fDSSQLEdit: TfDSSQLEdit
         object cmbGenerateKind: TComboBox
           Left = 3
           Top = 107
-          Width = 141
+          Width = 161
           Height = 21
           Style = csDropDownList
           ItemHeight = 13
@@ -254,7 +254,7 @@ object fDSSQLEdit: TfDSSQLEdit
         end
       end
       object Panel3: TPanel
-        Left = 145
+        Left = 165
         Top = 0
         Width = 208
         Height = 411
@@ -282,9 +282,9 @@ object fDSSQLEdit: TfDSSQLEdit
         end
       end
       object Panel5: TPanel
-        Left = 358
+        Left = 378
         Top = 0
-        Width = 332
+        Width = 312
         Height = 411
         Align = alClient
         BevelOuter = bvNone
@@ -341,36 +341,36 @@ object fDSSQLEdit: TfDSSQLEdit
         TabOrder = 1
         TabStop = True
         inherited Splitter2: TSplitter
-          Left = 440
+          Left = 397
           Height = 375
         end
         inherited Panel1: TPanel
-          Width = 440
+          Width = 397
           Height = 375
           inherited splPlan: TSplitter
             Top = 352
-            Width = 438
+            Width = 395
           end
           inherited Panel10: TPanel
-            Width = 438
+            Width = 395
           end
           inherited StatusBar1: TStatusBar
             Top = 355
-            Width = 438
+            Width = 395
           end
         end
         inherited Panel6: TPanel
-          Left = 443
+          Left = 400
           Height = 375
           inherited GroupBox1: TGroupBox
-            Height = 307
+            Height = 291
             inherited Panel2: TPanel
-              Height = 243
+              Height = 227
               inherited DBGrid2: TDBGrid
-                Height = 58
+                Height = 42
               end
               inherited Panel4: TPanel
-                Top = 151
+                Top = 135
               end
             end
           end

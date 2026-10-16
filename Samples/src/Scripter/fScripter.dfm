@@ -7,12 +7,12 @@ object Form3: TForm3
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Style = []
   OldCreateOrder = False
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object Splitter1: TSplitter
     Left = 225
     Top = 66
@@ -37,8 +37,8 @@ object Form3: TForm3
       Caption = 'This Example demonstrate using Script execute'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
+      Font.Height = -12
+      Font.Name = 'Segoe UI'
       Font.Style = [fsBold]
       ParentFont = False
       WordWrap = True

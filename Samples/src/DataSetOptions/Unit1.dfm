@@ -7,15 +7,15 @@ object Form1: TForm1
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Style = []
   OldCreateOrder = False
   Position = poDesktopCenter
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object StatusBar1: TStatusBar
     Left = 0
     Top = 452
@@ -45,8 +45,8 @@ object Form1: TForm1
         'BDataSet.PrepareOptions  for tuning work of TFIBDataSet. '
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
+      Font.Height = -12
+      Font.Name = 'Segoe UI'
       Font.Style = [fsBold]
       ParentFont = False
       WordWrap = True
@@ -71,8 +71,8 @@ object Form1: TForm1
       Color = clBtnShadow
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
+      Font.Height = -12
+      Font.Name = 'Segoe UI'
       Font.Style = [fsBold]
       ParentColor = False
       ParentFont = False
@@ -90,14 +90,14 @@ object Form1: TForm1
       TabOrder = 0
       TitleFont.Charset = DEFAULT_CHARSET
       TitleFont.Color = clWindowText
-      TitleFont.Height = -11
-      TitleFont.Name = 'MS Sans Serif'
+      TitleFont.Height = -12
+      TitleFont.Name = 'Segoe UI'
       TitleFont.Style = []
     end
     object Button1: TButton
-      Left = 448
+      Left = 436
       Top = 0
-      Width = 183
+      Width = 195
       Height = 21
       Caption = 'Set Options and Reopen DataSet'
       TabOrder = 1

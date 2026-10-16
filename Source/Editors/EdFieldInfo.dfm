@@ -7,8 +7,8 @@ object frmFields: TfrmFields
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Style = []
   OldCreateOrder = True
   Position = poScreenCenter
@@ -16,7 +16,7 @@ object frmFields: TfrmFields
   OnClose = FormClose
   OnCreate = FormCreate
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object Panel1: TPanel
     Left = 438
     Top = 0
@@ -42,8 +42,8 @@ object frmFields: TfrmFields
         Caption = '&Copy Fields'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
         Font.Style = []
         ParentFont = False
         TabOrder = 2
@@ -109,8 +109,8 @@ object frmFields: TfrmFields
         TabOrder = 0
         TitleFont.Charset = DEFAULT_CHARSET
         TitleFont.Color = clWindowText
-        TitleFont.Height = -11
-        TitleFont.Name = 'MS Sans Serif'
+        TitleFont.Height = -12
+        TitleFont.Name = 'Segoe UI'
         TitleFont.Style = []
         OnDblClick = btnCopyFieldsClick
         Columns = <
@@ -144,8 +144,8 @@ object frmFields: TfrmFields
       TabOrder = 0
       TitleFont.Charset = DEFAULT_CHARSET
       TitleFont.Color = clWindowText
-      TitleFont.Height = -11
-      TitleFont.Name = 'MS Sans Serif'
+      TitleFont.Height = -12
+      TitleFont.Name = 'Segoe UI'
       TitleFont.Style = []
     end
   end

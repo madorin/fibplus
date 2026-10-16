@@ -7,15 +7,15 @@ object frmErrors: TfrmErrors
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Style = []
   OldCreateOrder = True
   Position = poScreenCenter
   OnClose = FormClose
   OnCreate = FormCreate
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object Panel1: TPanel
     Left = 451
     Top = 0
@@ -41,8 +41,8 @@ object frmErrors: TfrmErrors
         Caption = '&Copy Constraints'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
         Font.Style = []
         ParentFont = False
         TabOrder = 2
@@ -84,7 +84,7 @@ object frmErrors: TfrmErrors
       BevelOuter = bvNone
       TabOrder = 1
       object DBText1: TDBText
-        Left = 60
+        Left = 68
         Top = 32
         Width = 50
         Height = 13
@@ -93,8 +93,8 @@ object frmErrors: TfrmErrors
         DataSource = DataSource1
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
         Font.Style = [fsBold]
         ParentFont = False
       end
@@ -106,8 +106,8 @@ object frmErrors: TfrmErrors
         Caption = 'On Table :'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clRed
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
         Font.Style = []
         ParentFont = False
       end
@@ -119,15 +119,15 @@ object frmErrors: TfrmErrors
         Caption = 'Filter :'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clRed
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
         Font.Style = []
         ParentFont = False
       end
       object EdFilter: TEdit
-        Left = 40
+        Left = 48
         Top = 3
-        Width = 182
+        Width = 174
         Height = 21
         Hint = 'FilterText'
         TabOrder = 0
@@ -154,8 +154,8 @@ object frmErrors: TfrmErrors
         TabOrder = 0
         TitleFont.Charset = DEFAULT_CHARSET
         TitleFont.Color = clWindowText
-        TitleFont.Height = -11
-        TitleFont.Name = 'MS Sans Serif'
+        TitleFont.Height = -12
+        TitleFont.Name = 'Segoe UI'
         TitleFont.Style = []
         OnDblClick = sbDBGrid2DblClick
         Columns = <
@@ -186,8 +186,8 @@ object frmErrors: TfrmErrors
       TabOrder = 0
       TitleFont.Charset = DEFAULT_CHARSET
       TitleFont.Color = clWindowText
-      TitleFont.Height = -11
-      TitleFont.Name = 'MS Sans Serif'
+      TitleFont.Height = -12
+      TitleFont.Name = 'Segoe UI'
       TitleFont.Style = []
       Columns = <
         item

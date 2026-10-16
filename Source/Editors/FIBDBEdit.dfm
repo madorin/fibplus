@@ -8,14 +8,14 @@ object DBEditForm: TDBEditForm
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Style = []
   OldCreateOrder = True
   Position = poScreenCenter
   OnCreate = FormCreate
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object GroupBox1: TGroupBox
     Left = 8
     Top = 5
@@ -106,9 +106,9 @@ object DBEditForm: TDBEditForm
         'TCP/IP')
     end
     object DBNameE: TEdit
-      Left = 78
+      Left = 92
       Top = 105
-      Width = 322
+      Width = 308
       Height = 21
       TabOrder = 6
     end
@@ -116,30 +116,30 @@ object DBEditForm: TDBEditForm
       Left = 401
       Top = 105
       Width = 20
-      Height = 21
+      Height = 23
       Caption = '...'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
+      Font.Height = -12
+      Font.Name = 'Segoe UI'
       Font.Style = [fsBold]
       ParentFont = False
       TabOrder = 7
       OnClick = BrowseBClick
     end
     object cmbAliases: TComboBox
-      Left = 78
+      Left = 92
       Top = 78
-      Width = 272
+      Width = 250
       Height = 21
       ItemHeight = 13
       TabOrder = 5
       OnChange = cmbAliasesChange
     end
     object chSaveAlias: TCheckBox
-      Left = 352
-      Top = 81
-      Width = 73
+      Left = 348
+      Top = 82
+      Width = 80
       Height = 17
       Caption = 'Save Alias'
       Checked = True
@@ -209,35 +209,35 @@ object DBEditForm: TDBEditForm
       Caption = 'Client Library'
     end
     object UserE: TEdit
-      Left = 78
+      Left = 92
       Top = 21
-      Width = 123
+      Width = 118
       Height = 21
       CharCase = ecUpperCase
       TabOrder = 0
       OnChange = UserEChange
     end
     object PasswordE: TEdit
-      Left = 78
+      Left = 92
       Top = 45
-      Width = 124
+      Width = 118
       Height = 21
       TabOrder = 1
       OnChange = PasswordEChange
     end
     object RoleE: TEdit
-      Left = 78
+      Left = 92
       Top = 69
-      Width = 124
+      Width = 118
       Height = 21
       CharCase = ecUpperCase
       TabOrder = 2
       OnChange = RoleEChange
     end
     object CharSetC: TComboBox
-      Left = 78
+      Left = 92
       Top = 93
-      Width = 124
+      Width = 118
       Height = 21
       ItemHeight = 13
       TabOrder = 3
@@ -271,7 +271,7 @@ object DBEditForm: TDBEditForm
     object UseLoginC: TCheckBox
       Left = 216
       Top = 120
-      Width = 113
+      Width = 125
       Height = 17
       Caption = 'Use lo&gin prompt'
       TabOrder = 5
@@ -284,9 +284,9 @@ object DBEditForm: TDBEditForm
       TabOrder = 6
     end
     object DialectC: TComboBox
-      Left = 78
+      Left = 92
       Top = 117
-      Width = 124
+      Width = 118
       Height = 21
       Style = csDropDownList
       ItemHeight = 13
@@ -297,9 +297,9 @@ object DBEditForm: TDBEditForm
         '3')
     end
     object edLibrary: TEdit
-      Left = 78
+      Left = 92
       Top = 141
-      Width = 323
+      Width = 309
       Height = 21
       TabOrder = 7
       OnChange = UserEChange
@@ -308,12 +308,12 @@ object DBEditForm: TDBEditForm
       Left = 403
       Top = 141
       Width = 20
-      Height = 21
+      Height = 23
       Caption = '...'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
+      Font.Height = -12
+      Font.Name = 'Segoe UI'
       Font.Style = [fsBold]
       ParentFont = False
       TabOrder = 8

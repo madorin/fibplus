@@ -7,14 +7,14 @@ object frmDstSQLedit: TfrmDstSQLedit
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Style = []
   OldCreateOrder = False
   Position = poScreenCenter
   OnClose = FormClose
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object Panel1: TPanel
     Left = 0
     Top = 398
@@ -63,39 +63,39 @@ object frmDstSQLedit: TfrmDstSQLedit
           Width = 726
           Height = 370
           inherited Splitter2: TSplitter
-            Left = 476
+            Left = 433
             Height = 370
           end
           inherited Panel1: TPanel
-            Width = 476
+            Width = 433
             Height = 370
             inherited splPlan: TSplitter
               Top = 347
-              Width = 474
+              Width = 431
             end
             inherited Panel10: TPanel
-              Width = 474
+              Width = 431
               inherited btnGenSQL: TSpeedButton
                 Left = 349
               end
             end
             inherited StatusBar1: TStatusBar
               Top = 350
-              Width = 474
+              Width = 431
             end
           end
           inherited Panel6: TPanel
-            Left = 479
+            Left = 436
             Height = 370
             inherited GroupBox1: TGroupBox
-              Height = 302
+              Height = 286
               inherited Panel2: TPanel
-                Height = 238
+                Height = 222
                 inherited DBGrid2: TDBGrid
-                  Height = 53
+                  Height = 37
                 end
                 inherited Panel4: TPanel
-                  Top = 146
+                  Top = 130
                 end
               end
             end
@@ -114,18 +114,18 @@ object frmDstSQLedit: TfrmDstSQLedit
           Width = 726
           Height = 334
           inherited Splitter2: TSplitter
-            Left = 476
+            Left = 433
             Height = 334
           end
           inherited Panel1: TPanel
-            Width = 476
+            Width = 433
             Height = 334
             inherited splPlan: TSplitter
               Top = 304
-              Width = 458
+              Width = 431
             end
             inherited Panel10: TPanel
-              Width = 458
+              Width = 431
               inherited btnGenSQL: TSpeedButton
                 Left = 365
               end
@@ -135,26 +135,26 @@ object frmDstSQLedit: TfrmDstSQLedit
             end
             inherited StatusBar1: TStatusBar
               Top = 307
-              Width = 458
+              Width = 431
             end
           end
           inherited Panel6: TPanel
-            Left = 479
+            Left = 436
             Height = 334
             inherited GroupBox1: TGroupBox
-              Height = 266
+              Height = 250
               inherited Panel2: TPanel
-                Height = 202
+                Height = 186
                 inherited DBGrid2: TDBGrid
-                  Height = 10
+                  Height = 1
                 end
                 inherited Panel4: TPanel
-                  Top = 103
+                  Top = 94
                   inherited edDomain: TDBEdit
-                    Width = 149
+                    Width = 152
                   end
                   inherited edFieldType: TEdit
-                    Width = 141
+                    Width = 144
                   end
                 end
               end

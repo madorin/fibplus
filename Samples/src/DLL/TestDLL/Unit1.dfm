@@ -7,13 +7,13 @@ object Form1: TForm1
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Style = []
   OldCreateOrder = False
   Position = poDesktopCenter
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object Label2: TLabel
     Left = 0
     Top = 0
@@ -25,8 +25,8 @@ object Form1: TForm1
     Color = clBtnShadow
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWhite
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Height = -12
+    Font.Name = 'Segoe UI'
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
@@ -53,8 +53,8 @@ object Form1: TForm1
     TabOrder = 1
     TitleFont.Charset = DEFAULT_CHARSET
     TitleFont.Color = clWindowText
-    TitleFont.Height = -11
-    TitleFont.Name = 'MS Sans Serif'
+    TitleFont.Height = -12
+    TitleFont.Name = 'Segoe UI'
     TitleFont.Style = []
   end
   object db: TFIBDatabase

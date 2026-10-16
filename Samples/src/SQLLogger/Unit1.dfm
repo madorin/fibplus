@@ -8,8 +8,8 @@ object Form1: TForm1
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Style = []
   OldCreateOrder = False
   Position = poDesktopCenter
@@ -20,7 +20,7 @@ object Form1: TForm1
     739
     427)
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object Label2: TLabel
     Left = 0
     Top = 57
@@ -32,8 +32,8 @@ object Form1: TForm1
     Color = clBtnShadow
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWhite
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Height = -12
+    Font.Name = 'Segoe UI'
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
@@ -80,8 +80,8 @@ object Form1: TForm1
         #1075#1086' '#1089#1086#1093#1088#1072#1085#1103#1077#1084' '#1089#1090#1072#1090#1080#1089#1090#1080#1082#1091' '#1074' '#1073#1072#1079#1091' '#1076#1072#1085#1085#1099#1093' '#1083#1080#1073#1086' '#1092#1072#1081#1083'.'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
+      Font.Height = -12
+      Font.Name = 'Segoe UI'
       Font.Style = [fsBold]
       ParentFont = False
       WordWrap = True
@@ -101,8 +101,8 @@ object Form1: TForm1
     TabOrder = 2
     TitleFont.Charset = DEFAULT_CHARSET
     TitleFont.Color = clWindowText
-    TitleFont.Height = -11
-    TitleFont.Name = 'MS Sans Serif'
+    TitleFont.Height = -12
+    TitleFont.Name = 'Segoe UI'
     TitleFont.Style = []
     Columns = <
       item
@@ -212,8 +212,8 @@ object Form1: TForm1
     Caption = 'Run Test Queries'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Height = -12
+    Font.Name = 'Segoe UI'
     Font.Style = [fsBold]
     ParentFont = False
     TabOrder = 4
@@ -228,8 +228,8 @@ object Form1: TForm1
     Caption = 'Show Log'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Height = -12
+    Font.Name = 'Segoe UI'
     Font.Style = [fsBold]
     ParentFont = False
     TabOrder = 5

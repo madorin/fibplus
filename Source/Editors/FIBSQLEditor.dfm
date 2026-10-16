@@ -7,14 +7,14 @@ object frmSQLEdit: TfrmSQLEdit
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Style = []
   OldCreateOrder = False
   Position = poScreenCenter
   OnClose = FormClose
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   inline fSQLEdit1: TfSQLEdit
     Left = 0
     Top = 0
@@ -26,18 +26,18 @@ object frmSQLEdit: TfrmSQLEdit
     TabOrder = 0
     TabStop = True
     inherited Splitter2: TSplitter
-      Left = 540
+      Left = 497
       Height = 399
     end
     inherited Panel1: TPanel
-      Width = 540
+      Width = 497
       Height = 399
       inherited splPlan: TSplitter
         Top = 376
-        Width = 538
+        Width = 495
       end
       inherited Panel10: TPanel
-        Width = 538
+        Width = 495
         inherited SpeedButton1: TSpeedButton
           OnClick = fSQLEdit1SpeedButton1Click
         end
@@ -47,30 +47,30 @@ object frmSQLEdit: TfrmSQLEdit
       end
       inherited StatusBar1: TStatusBar
         Top = 379
-        Width = 538
+        Width = 495
       end
     end
     inherited Panel6: TPanel
-      Left = 543
+      Left = 500
       Height = 399
       inherited GroupBox1: TGroupBox
-        Height = 331
+        Height = 315
         inherited Panel2: TPanel
-          Height = 267
+          Height = 251
           inherited Splitter1: TSplitter
             Height = 3
           end
           inherited DBGrid2: TDBGrid
             Top = 92
-            Height = 83
+            Height = 66
           end
           inherited Panel4: TPanel
-            Top = 175
+            Top = 159
             inherited edDomain: TDBEdit
-              Width = 145
+              Width = 152
             end
             inherited edFieldType: TEdit
-              Width = 137
+              Width = 144
             end
           end
         end

@@ -7,7 +7,7 @@ object fSQLEdit: TfSQLEdit
   ShowHint = True
   TabOrder = 0
   object Splitter2: TSplitter
-    Left = 527
+    Left = 484
     Top = 0
     Height = 456
     Align = alRight
@@ -15,7 +15,7 @@ object fSQLEdit: TfSQLEdit
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 527
+    Width = 484
     Height = 456
     Align = alClient
     BevelOuter = bvLowered
@@ -23,7 +23,7 @@ object fSQLEdit: TfSQLEdit
     object splPlan: TSplitter
       Left = 1
       Top = 433
-      Width = 525
+      Width = 482
       Height = 3
       Cursor = crVSplit
       Align = alBottom
@@ -32,7 +32,7 @@ object fSQLEdit: TfSQLEdit
     object Panel10: TPanel
       Left = 1
       Top = 1
-      Width = 525
+      Width = 482
       Height = 23
       Align = alTop
       BevelOuter = bvNone
@@ -353,7 +353,7 @@ object fSQLEdit: TfSQLEdit
     object StatusBar1: TStatusBar
       Left = 1
       Top = 436
-      Width = 525
+      Width = 482
       Height = 19
       Panels = <
         item
@@ -365,9 +365,9 @@ object fSQLEdit: TfSQLEdit
     end
   end
   object Panel6: TPanel
-    Left = 530
+    Left = 487
     Top = 0
-    Width = 247
+    Width = 290
     Height = 456
     Align = alRight
     BevelOuter = bvNone
@@ -375,99 +375,99 @@ object fSQLEdit: TfSQLEdit
     object Panel7: TGroupBox
       Left = 0
       Top = 0
-      Width = 247
-      Height = 68
+      Width = 290
+      Height = 84
       Align = alTop
       Caption = 'Generate options'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clBlack
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
+      Font.Height = -12
+      Font.Name = 'Segoe UI'
       Font.Style = [fsBold]
       ParentFont = False
       TabOrder = 0
       object Label1: TLabel
-        Left = 3
-        Top = 17
+        Left = 6
+        Top = 19
         Width = 58
         Height = 13
         Caption = 'SQL Kind:'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clRed
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
         Font.Style = [fsBold]
         ParentFont = False
       end
       object Label2: TLabel
-        Left = 140
-        Top = 17
+        Left = 156
+        Top = 19
         Width = 67
         Height = 13
         Caption = 'ParamSymbol:'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
         Font.Style = []
         ParentFont = False
       end
       object LbTableSyn: TCheckBox
-        Left = 5
-        Top = 51
-        Width = 90
-        Height = 13
+        Left = 6
+        Top = 62
+        Width = 115
+        Height = 17
         Caption = 'Use table alias'
         Checked = True
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
         Font.Style = []
         ParentFont = False
         State = cbChecked
         TabOrder = 4
       end
       object chReplaceSQL: TCheckBox
-        Left = 5
-        Top = 34
-        Width = 84
+        Left = 6
+        Top = 42
+        Width = 100
         Height = 17
         Caption = '&Replace SQL'
         Checked = True
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
         Font.Style = []
         ParentFont = False
         State = cbChecked
         TabOrder = 2
       end
       object chOnlySelFields: TCheckBox
-        Left = 100
-        Top = 34
-        Width = 140
+        Left = 112
+        Top = 42
+        Width = 165
         Height = 17
         Caption = 'Use Selected Fields Only '
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
         Font.Style = []
         ParentFont = False
         TabOrder = 3
       end
       object cmbKindSQL: TComboBox
-        Left = 61
-        Top = 12
-        Width = 79
+        Left = 70
+        Top = 15
+        Width = 76
         Height = 21
         Style = csDropDownList
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBlack
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
+        Font.Height = -12
+        Font.Name = 'Segoe UI'
         Font.Style = []
         ParentFont = False
         TabOrder = 0
@@ -479,9 +479,9 @@ object fSQLEdit: TfSQLEdit
           'Execute')
       end
       object cmbParamSymbol: TComboBox
-        Left = 208
-        Top = 12
-        Width = 36
+        Left = 244
+        Top = 15
+        Width = 40
         Height = 21
         Style = csDropDownList
         TabOrder = 1
@@ -493,30 +493,30 @@ object fSQLEdit: TfSQLEdit
     end
     object GroupBox1: TGroupBox
       Left = 0
-      Top = 68
-      Width = 247
-      Height = 388
+      Top = 84
+      Width = 290
+      Height = 372
       Align = alClient
       Caption = 'Database objects'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clBlack
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
+      Font.Height = -12
+      Font.Name = 'Segoe UI'
       Font.Style = [fsBold]
       ParentFont = False
       TabOrder = 1
       object Panel2: TPanel
         Left = 2
         Top = 62
-        Width = 243
-        Height = 324
+        Width = 286
+        Height = 308
         Align = alClient
         Caption = 'Panel2'
         TabOrder = 0
         object Splitter1: TSplitter
           Left = 1
           Top = 89
-          Width = 241
+          Width = 284
           Height = 4
           Cursor = crVSplit
           Align = alTop
@@ -524,23 +524,23 @@ object fSQLEdit: TfSQLEdit
         object DBGrid1: TDBGrid
           Left = 1
           Top = 1
-          Width = 241
+          Width = 284
           Height = 88
           Align = alTop
           Color = clBtnFace
           DataSource = ds
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clBlack
-          Font.Height = -11
-          Font.Name = 'MS Sans Serif'
+          Font.Height = -12
+          Font.Name = 'Segoe UI'
           Font.Style = []
           Options = [dgAlwaysShowSelection]
           ParentFont = False
           TabOrder = 0
           TitleFont.Charset = DEFAULT_CHARSET
           TitleFont.Color = clBlue
-          TitleFont.Height = -11
-          TitleFont.Name = 'MS Sans Serif'
+          TitleFont.Height = -12
+          TitleFont.Name = 'Segoe UI'
           TitleFont.Style = []
           OnDblClick = DBGrid1DblClick
           OnKeyDown = DBGrid1KeyDown
@@ -553,8 +553,8 @@ object fSQLEdit: TfSQLEdit
               Title.Caption = 'Tables'
               Title.Font.Charset = DEFAULT_CHARSET
               Title.Font.Color = clWindowText
-              Title.Font.Height = -11
-              Title.Font.Name = 'MS Sans Serif'
+              Title.Font.Height = -12
+              Title.Font.Name = 'Segoe UI'
               Title.Font.Style = [fsBold]
               Width = 193
               Visible = True
@@ -563,23 +563,23 @@ object fSQLEdit: TfSQLEdit
         object DBGrid2: TDBGrid
           Left = 1
           Top = 93
-          Width = 241
-          Height = 139
+          Width = 284
+          Height = 123
           Align = alClient
           Color = clBtnFace
           DataSource = dsFields
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clBlack
-          Font.Height = -11
-          Font.Name = 'MS Sans Serif'
+          Font.Height = -12
+          Font.Name = 'Segoe UI'
           Font.Style = []
           Options = [dgTitles, dgAlwaysShowSelection, dgCancelOnExit, dgMultiSelect]
           ParentFont = False
           TabOrder = 1
           TitleFont.Charset = DEFAULT_CHARSET
           TitleFont.Color = clBlue
-          TitleFont.Height = -11
-          TitleFont.Name = 'MS Sans Serif'
+          TitleFont.Height = -12
+          TitleFont.Name = 'Segoe UI'
           TitleFont.Style = []
           OnMouseMove = DBGrid1MouseMove
           Columns = <
@@ -589,8 +589,8 @@ object fSQLEdit: TfSQLEdit
               Title.Caption = 'Fields:'
               Title.Font.Charset = DEFAULT_CHARSET
               Title.Font.Color = clBlack
-              Title.Font.Height = -11
-              Title.Font.Name = 'MS Sans Serif'
+              Title.Font.Height = -12
+              Title.Font.Name = 'Segoe UI'
               Title.Font.Style = [fsBold]
               Width = 193
               Visible = True
@@ -598,8 +598,8 @@ object fSQLEdit: TfSQLEdit
         end
         object Panel4: TPanel
           Left = 1
-          Top = 232
-          Width = 241
+          Top = 216
+          Width = 284
           Height = 91
           Align = alBottom
           BorderStyle = bsSingle
@@ -616,8 +616,8 @@ object fSQLEdit: TfSQLEdit
             FocusControl = edDomain
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlue
-            Font.Height = -11
-            Font.Name = 'MS Sans Serif'
+            Font.Height = -12
+            Font.Name = 'Segoe UI'
             Font.Style = [fsBold]
             ParentFont = False
           end
@@ -630,8 +630,8 @@ object fSQLEdit: TfSQLEdit
             FocusControl = edDomain
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlue
-            Font.Height = -11
-            Font.Name = 'MS Sans Serif'
+            Font.Height = -12
+            Font.Name = 'Segoe UI'
             Font.Style = [fsBold]
             ParentFont = False
           end
@@ -645,7 +645,7 @@ object fSQLEdit: TfSQLEdit
           object edDomain: TDBEdit
             Left = 64
             Top = 8
-            Width = 109
+            Width = 152
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             DataField = 'DOMAIN_NAME'
@@ -655,7 +655,7 @@ object fSQLEdit: TfSQLEdit
           object edFieldType: TEdit
             Left = 72
             Top = 35
-            Width = 101
+            Width = 144
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             ReadOnly = True
@@ -666,7 +666,7 @@ object fSQLEdit: TfSQLEdit
       object Panel3: TPanel
         Left = 2
         Top = 15
-        Width = 243
+        Width = 286
         Height = 47
         Align = alTop
         BevelOuter = bvNone
@@ -680,20 +680,20 @@ object fSQLEdit: TfSQLEdit
           Caption = 'Filter by name'
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
-          Font.Height = -11
-          Font.Name = 'MS Sans Serif'
+          Font.Height = -12
+          Font.Name = 'Segoe UI'
           Font.Style = []
           ParentFont = False
         end
         object Edit1: TEdit
           Left = 98
           Top = 0
-          Width = 141
+          Width = 186
           Height = 21
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clBlack
-          Font.Height = -11
-          Font.Name = 'MS Sans Serif'
+          Font.Height = -12
+          Font.Name = 'Segoe UI'
           Font.Style = []
           ParentFont = False
           TabOrder = 0
@@ -702,13 +702,13 @@ object fSQLEdit: TfSQLEdit
         object cmbTabsNameViews: TComboBox
           Left = 2
           Top = 23
-          Width = 238
+          Width = 283
           Height = 21
           Style = csDropDownList
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clBlack
-          Font.Height = -11
-          Font.Name = 'MS Sans Serif'
+          Font.Height = -12
+          Font.Name = 'Segoe UI'
           Font.Style = [fsBold]
           ParentFont = False
           TabOrder = 1
@@ -724,8 +724,8 @@ object fSQLEdit: TfSQLEdit
   object FontDialog1: TFontDialog
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Height = -12
+    Font.Name = 'Segoe UI'
     Font.Style = [fsStrikeOut]
     Left = 32
     Top = 72

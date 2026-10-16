@@ -8,14 +8,14 @@ object Form2: TForm2
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Style = []
   FormStyle = fsStayOnTop
   OldCreateOrder = False
   Position = poMainFormCenter
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object Label1: TLabel
     Left = 8
     Top = 8
@@ -25,7 +25,7 @@ object Form2: TForm2
   end
   object lbProgress: TLabel
     Left = 8
-    Top = 27
+    Top = 24
     Width = 8
     Height = 13
     Caption = 'N'
@@ -42,7 +42,7 @@ object Form2: TForm2
   end
   object ProgressBar1: TProgressBar
     Left = 8
-    Top = 40
+    Top = 44
     Width = 385
     Height = 17
     Min = 0

@@ -7,15 +7,15 @@ object Form1: TForm1
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Style = []
   OldCreateOrder = False
   Position = poDesktopCenter
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object Label2: TLabel
     Left = 0
     Top = 57
@@ -27,8 +27,8 @@ object Form1: TForm1
     Color = clBtnShadow
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWhite
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Height = -12
+    Font.Name = 'Segoe UI'
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
@@ -65,8 +65,8 @@ object Form1: TForm1
         'abase. '
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWhite
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
+      Font.Height = -12
+      Font.Name = 'Segoe UI'
       Font.Style = [fsBold]
       ParentFont = False
       WordWrap = True
@@ -84,8 +84,8 @@ object Form1: TForm1
     TabOrder = 2
     TitleFont.Charset = DEFAULT_CHARSET
     TitleFont.Color = clWindowText
-    TitleFont.Height = -11
-    TitleFont.Name = 'MS Sans Serif'
+    TitleFont.Height = -12
+    TitleFont.Name = 'Segoe UI'
     TitleFont.Style = []
   end
   object Panel2: TPanel
@@ -105,14 +105,14 @@ object Form1: TForm1
       Color = clBtnFace
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clBlack
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
+      Font.Height = -12
+      Font.Name = 'Segoe UI'
       Font.Style = []
       ParentColor = False
       ParentFont = False
     end
     object Label3: TLabel
-      Left = 264
+      Left = 285
       Top = 8
       Width = 119
       Height = 13
@@ -120,15 +120,15 @@ object Form1: TForm1
       Color = clBtnFace
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clBlack
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
+      Font.Height = -12
+      Font.Name = 'Segoe UI'
       Font.Style = []
       ParentColor = False
       ParentFont = False
       Visible = False
     end
     object Label4: TLabel
-      Left = 381
+      Left = 432
       Top = 9
       Width = 8
       Height = 13
@@ -136,15 +136,15 @@ object Form1: TForm1
       Color = clBtnFace
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clBlack
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
+      Font.Height = -12
+      Font.Name = 'Segoe UI'
       Font.Style = [fsBold]
       ParentColor = False
       ParentFont = False
       Visible = False
     end
     object cmbKindOnLost: TComboBox
-      Left = 130
+      Left = 150
       Top = 3
       Width = 127
       Height = 21

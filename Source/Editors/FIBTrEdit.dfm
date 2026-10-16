@@ -8,14 +8,14 @@ object frmTransEdit: TfrmTransEdit
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Style = []
   OldCreateOrder = True
   Position = poScreenCenter
   OnCreate = FormCreate
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object Label1: TLabel
     Left = 8
     Top = 8
@@ -25,8 +25,8 @@ object frmTransEdit: TfrmTransEdit
     FocusControl = cmbProps
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Height = -12
+    Font.Name = 'Segoe UI'
     Font.Style = []
     ParentFont = False
   end
@@ -39,8 +39,8 @@ object frmTransEdit: TfrmTransEdit
     FocusControl = memParams
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Height = -12
+    Font.Name = 'Segoe UI'
     Font.Style = []
     ParentFont = False
   end
@@ -52,9 +52,9 @@ object frmTransEdit: TfrmTransEdit
     Shape = bsFrame
   end
   object cmbProps: TComboBox
-    Left = 112
+    Left = 120
     Top = 5
-    Width = 225
+    Width = 217
     Height = 21
     Style = csDropDownList
     ItemHeight = 13
@@ -95,36 +95,36 @@ object frmTransEdit: TfrmTransEdit
     TabOrder = 3
   end
   object Button3: TButton
-    Left = 242
+    Left = 238
     Top = 64
-    Width = 85
+    Width = 95
     Height = 25
     Caption = '&New Kind'
     TabOrder = 4
     OnClick = Button3Click
   end
   object Button4: TButton
-    Left = 242
+    Left = 238
     Top = 91
-    Width = 85
+    Width = 95
     Height = 25
     Caption = '&Save kind'
     TabOrder = 5
     OnClick = Button4Click
   end
   object Button5: TButton
-    Left = 242
+    Left = 238
     Top = 118
-    Width = 85
+    Width = 95
     Height = 25
     Caption = '&Export to Ini'
     TabOrder = 6
     OnClick = Button5Click
   end
   object Button6: TButton
-    Left = 242
+    Left = 238
     Top = 146
-    Width = 85
+    Width = 95
     Height = 25
     Caption = '&Import from Ini'
     TabOrder = 7

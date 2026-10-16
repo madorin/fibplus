@@ -11,15 +11,15 @@ object frmFIBDBLoginDlg: TfrmFIBDBLoginDlg
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = 11
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
   Font.Pitch = fpVariable
   Font.Style = []
   OldCreateOrder = True
   Position = poScreenCenter
   OnCreate = FormCreate
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object Bevel1: TBevel
     Left = 8
     Top = 8
@@ -42,8 +42,8 @@ object frmFIBDBLoginDlg: TfrmFIBDBLoginDlg
     Caption = 'Database :'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Height = -12
+    Font.Name = 'Segoe UI'
     Font.Pitch = fpVariable
     Font.Style = [fsBold]
     ParentFont = False
@@ -98,14 +98,14 @@ object frmFIBDBLoginDlg: TfrmFIBDBLoginDlg
     TabOrder = 1
   end
   object EdUserName: TEdit
-    Left = 83
+    Left = 92
     Top = 62
     Width = 179
     Height = 21
     TabOrder = 2
   end
   object EdPassword: TEdit
-    Left = 83
+    Left = 92
     Top = 86
     Width = 179
     Height = 21
@@ -113,7 +113,7 @@ object frmFIBDBLoginDlg: TfrmFIBDBLoginDlg
     TabOrder = 3
   end
   object EdRole: TEdit
-    Left = 83
+    Left = 92
     Top = 110
     Width = 179
     Height = 21
