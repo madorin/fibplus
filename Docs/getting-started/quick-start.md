@@ -4,8 +4,8 @@ Connect to a database, run a first query, and show data in a grid. The steps use
 
 You need:
 
-- FibPlus installed in the IDE, see [Installation](../../README.md#-installation). The components are on the **FIBPlus** page of the Tool Palette.
-- A running Firebird server and its client library. FibPlus loads `fbclient.dll` by default on Windows; put it next to the program or set `LibraryName` to its path.
+- FIBPlus installed in the IDE, see [Installation](../../README.md#-installation). The components are on the **FIBPlus** page of the Tool Palette.
+- A running Firebird server and its client library. FIBPlus loads `fbclient.dll` by default on Windows; put it next to the program or set `LibraryName` to its path.
 - A VCL application with an empty form.
 
 ## 1. Connect

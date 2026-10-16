@@ -76,7 +76,7 @@ The lists of old and new names, and what an application has to change, are in
   (it was `TFIBQuery`); `FIBDataSets[Index]` and `FIBQueries[Index]` of the
   database and the transaction return `TDataSet` and `TComponent`;
   `TFIBUpdateObject.DataSet` has the type `TFIBCustomDataSet` and accepts any
-  FibPlus dataset. The messages `SFIBErrorNotDataSet` and
+  FIBPlus dataset. The messages `SFIBErrorNotDataSet` and
   `SFIBErrorNotDataSetDetail` are removed.
 
 #### Transactions and lost connection

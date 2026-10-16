@@ -86,7 +86,7 @@ SET STATEMENT TIMEOUT 60 SECOND;
 
 The server must support the statement. For the timeouts, see [Timeouts](timeouts.md); after a script changes them, `Session.Apply` sends the values of the session properties again.
 
-A `SET` statement that the scripter does not know is skipped without an error. Older versions of FibPlus also skipped the session settings, so an old script that contains them now runs them.
+A `SET` statement that the scripter does not know is skipped without an error. Older versions of FIBPlus also skipped the session settings, so an old script that contains them now runs them.
 
 ## Directives
 

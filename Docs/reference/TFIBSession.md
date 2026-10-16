@@ -1,6 +1,6 @@
 # TFIBSession
 
-Holds the session settings that FibPlus sends to the server for an attachment: the statement timeout and the idle timeout. It is the `Session` property of [TFIBDatabase](TFIBDatabase.md). `TFIBDatabase` creates it.
+Holds the session settings that FIBPlus sends to the server for an attachment: the statement timeout and the idle timeout. It is the `Session` property of [TFIBDatabase](TFIBDatabase.md). `TFIBDatabase` creates it.
 
 | | |
 |---|---|

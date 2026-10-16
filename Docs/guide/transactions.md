@@ -1,6 +1,6 @@
 # Transactions
 
-Every statement of a Firebird or InterBase database runs inside a transaction. In FibPlus a `TFIBTransaction` component holds the transaction parameters, starts and ends the transaction, and is assigned to the queries and datasets that run in it. This article shows how to choose the isolation level, how to commit and roll back, how queries and datasets start transactions on their own, and what happens to open cursors when a transaction ends.
+Every statement of a Firebird or InterBase database runs inside a transaction. In FIBPlus a `TFIBTransaction` component holds the transaction parameters, starts and ends the transaction, and is assigned to the queries and datasets that run in it. This article shows how to choose the isolation level, how to commit and roll back, how queries and datasets start transactions on their own, and what happens to open cursors when a transaction ends.
 
 For the members of the class see [TFIBTransaction](../reference/TFIBTransaction.md).
 
@@ -87,7 +87,7 @@ Transaction.TRParams.Add('no_auto_undo');
 // write, nowait, read_committed, rec_version, no_auto_undo
 ```
 
-After an extra line the list is an ordinary list, so a line added later is added to the preset lines and can conflict with them. To change the access mode, the isolation level, or the wait, write those lines first, or use `Text :=`. FibPlus does not check the lines against each other; the server refuses a list that contradicts itself and `StartTransaction` raises.
+After an extra line the list is an ordinary list, so a line added later is added to the preset lines and can conflict with them. To change the access mode, the isolation level, or the wait, write those lines first, or use `Text :=`. FIBPlus does not check the lines against each other; the server refuses a list that contradicts itself and `StartTransaction` raises.
 
 Every preset writes `write` and `nowait`. `lock_timeout` is refused by *Firebird 3+* together with `nowait`, so `Add('lock_timeout=5')` on a preset leaves only that line. Write read committed with a lock timeout in full:
 
@@ -126,7 +126,7 @@ An SQL `COMMIT` or `ROLLBACK` statement executed with `ExecQuery` calls `Transac
 
 ### Retaining
 
-A retaining operation ends the unit of work but keeps the transaction handle. FibPlus does not close the queries and datasets of the transaction for it (see [Open cursors](#open-cursors-and-the-end-of-a-transaction)), so it is the way to save changes without closing the datasets that show them. A later `Commit` or `Rollback` is still needed to end the transaction.
+A retaining operation ends the unit of work but keeps the transaction handle. FIBPlus does not close the queries and datasets of the transaction for it (see [Open cursors](#open-cursors-and-the-end-of-a-transaction)), so it is the way to save changes without closing the datasets that show them. A later `Commit` or `Rollback` is still needed to end the transaction.
 
 ### Savepoints
 
@@ -188,7 +188,7 @@ The components in the sample are `ReadTransaction`, `WriteTransaction`, and a `T
 
 ## Open cursors and the end of a transaction
 
-A cursor is the open result set of a `SELECT`. The server closes the cursors of a transaction when it ends. FibPlus closes its own cursors first, so the components stay in a consistent state. What the components do depends on the way the transaction ends.
+A cursor is the open result set of a `SELECT`. The server closes the cursors of a transaction when it ends. FIBPlus closes its own cursors first, so the components stay in a consistent state. What the components do depends on the way the transaction ends.
 
 ### Commit and Rollback
 
@@ -206,7 +206,7 @@ A plain `TFIBQuery` has no setting to keep its cursor. Read the rows before you 
 
 ### Retaining operations
 
-`CommitRetaining` and `RollbackRetaining` do not close queries or datasets in FibPlus. The components are notified, but they close their cursors only for `Commit` and `Rollback`. `HasUncommitedUpdates` of the transaction (needs `WatchUncommitedUpdates`) is reset for the retaining operations as well.
+`CommitRetaining` and `RollbackRetaining` do not close queries or datasets in FIBPlus. The components are notified, but they close their cursors only for `Commit` and `Rollback`. `HasUncommitedUpdates` of the transaction (needs `WatchUncommitedUpdates`) is reset for the retaining operations as well.
 
 ### Automatic end
 

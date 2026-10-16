@@ -4,7 +4,7 @@ A connection to a Firebird or InterBase database is a `TFIBDatabase`. This artic
 
 ## Requirements
 
-- A Firebird or InterBase client library on the machine of the application. By default FibPlus loads `fbclient.dll` (`libfbclient.dylib` on macOS); see [Client library](#client-library).
+- A Firebird or InterBase client library on the machine of the application. By default FIBPlus loads `fbclient.dll` (`libfbclient.dylib` on macOS); see [Client library](#client-library).
 - Features that depend on the server or client version are listed in [Capabilities](#capabilities) and in [Firebird versions](firebird-versions.md).
 
 The examples use the components `Database` (`TFIBDatabase`) and `Transaction` (`TFIBTransaction`).
@@ -177,7 +177,7 @@ Database.ConnectParams.CharSet := 'UTF8';
 
 Use a character set that can hold all the characters of your users. `UTF8` can hold all of them. The server converts text between the column character set and the connection character set, except for `NONE` and `OCTETS` columns. A character that the target code page cannot hold raises `EFIBClientError` with the message "Cannot transliterate character between character sets", for example a character outside a `WIN1252` connection, instead of being replaced by `?`.
 
-FibPlus converts text between Delphi strings and bytes through the code page of the character set. `Database.Capabilities` reports what it uses for the current connection: `AttachmentCharSetID`, `CodePage`, `MetadataCodePage`, and `TextCodePage` and `BlobCodePage` for a column character set ID. The members are described in [Capabilities](../reference/TFIBDatabase.md#capabilities). A dataset gives the same for its fields: `StringFieldCharSetID`, `StringFieldCodePage`, `BlobFieldCodePage` (see [TFIBDataSet](../reference/TFIBDataSet.md)). The unit `FIBCharSets` converts between IDs, names, and code pages:
+FIBPlus converts text between Delphi strings and bytes through the code page of the character set. `Database.Capabilities` reports what it uses for the current connection: `AttachmentCharSetID`, `CodePage`, `MetadataCodePage`, and `TextCodePage` and `BlobCodePage` for a column character set ID. The members are described in [Capabilities](../reference/TFIBDatabase.md#capabilities). A dataset gives the same for its fields: `StringFieldCharSetID`, `StringFieldCodePage`, `BlobFieldCodePage` (see [TFIBDataSet](../reference/TFIBDataSet.md)). The unit `FIBCharSets` converts between IDs, names, and code pages:
 
 ```delphi
 uses
@@ -191,7 +191,7 @@ ShowMessage(IntToStr(FirebirdCharSetCodePage(Database.Capabilities.AttachmentCha
 
 ### Connection with `NONE`
 
-On a `NONE` connection (`ConnectParams.CharSet` is `NONE`), the server does not convert text. FibPlus then decodes each text column with the character set declared for the column, so text of a `WIN1251` column shows as stored. Columns with `NONE` or `OCTETS` use the system code page. Text that was stored from another code page than the column declares appears as stored; to read it right, reinterpret the bytes in SQL:
+On a `NONE` connection (`ConnectParams.CharSet` is `NONE`), the server does not convert text. FIBPlus then decodes each text column with the character set declared for the column, so text of a `WIN1251` column shows as stored. Columns with `NONE` or `OCTETS` use the system code page. Text that was stored from another code page than the column declares appears as stored; to read it right, reinterpret the bytes in SQL:
 
 ```sql
 cast(cast(C as varchar(20) character set OCTETS) as varchar(20) character set WIN1250)

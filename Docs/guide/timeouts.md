@@ -1,6 +1,6 @@
 # Timeouts
 
-FibPlus has two kinds of timeouts that are easy to confuse:
+FIBPlus has two kinds of timeouts that are easy to confuse:
 
 | Kind | Where it runs | Properties |
 |------|---------------|------------|

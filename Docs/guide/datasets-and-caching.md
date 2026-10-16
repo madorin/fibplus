@@ -1,6 +1,6 @@
 # Datasets and caching
 
-A FibPlus dataset reads rows from the server on demand and keeps them in a record cache, so you can scroll in both directions without another round trip. This article shows how rows are fetched, how to refresh and change them, how `TFIBDataSet` generates its own SQL, and how the query cache and the metadata cache work.
+A FIBPlus dataset reads rows from the server on demand and keeps them in a record cache, so you can scroll in both directions without another round trip. This article shows how rows are fetched, how to refresh and change them, how `TFIBDataSet` generates its own SQL, and how the query cache and the metadata cache work.
 
 The samples use these components: `Database` (`TFIBDatabase`), `Transaction` and `UpdateTransaction` (`TFIBTransaction`), `DataSet` (`TFIBDataSet`), and in the master-detail sample `MasterDS` and `DetailDS` (`TFIBDataSet`) and `MasterSource` (`TDataSource`). Fetching, refresh, generated SQL, update objects, and `ApplyUpdates` are all members of [TFIBDataSet](../reference/TFIBDataSet.md).
 
@@ -228,7 +228,7 @@ DataSet.LoadFromFile('customers.cache');
 
 ## Query cache
 
-FibPlus runs many small internal statements: reading metadata, `GEN_ID`, and the statements behind `TFIBDatabase.QueryValue`. A query cache keeps prepared queries for them, so the statement is prepared once.
+FIBPlus runs many small internal statements: reading metadata, `GEN_ID`, and the statements behind `TFIBDatabase.QueryValue`. A query cache keeps prepared queries for them, so the statement is prepared once.
 
 - The cache belongs to a `TFIBDatabase` and exists as long as the database component.
 - A query is stored under its SQL text, without leading and trailing blanks. One query is kept for each text.
@@ -250,7 +250,7 @@ Cached queries stay prepared on the server. A prepared statement can keep a tabl
 
 ## Metadata cache
 
-Generated SQL and the `PrepareOptions` that read the field definitions (for example `pfSetRequiredFields`, `pfImportDefaultValues`, `pfSetReadOnlyFields`) need information about tables: computed columns, defaults, domains, and primary keys. FibPlus reads it once for each table and keeps it in a cache that all databases in the process share. An entry is identified by the database name (`DBName`) and the table name.
+Generated SQL and the `PrepareOptions` that read the field definitions (for example `pfSetRequiredFields`, `pfImportDefaultValues`, `pfSetReadOnlyFields`) need information about tables: computed columns, defaults, domains, and primary keys. FIBPlus reads it once for each table and keeps it in a cache that all databases in the process share. An entry is identified by the database name (`DBName`) and the table name.
 
 - At design time the cache is not used: the entry is read again each time, so the IDE sees your changes.
 - At run time an entry stays until you clear it. **A table that you alter while the application runs is not read again.**

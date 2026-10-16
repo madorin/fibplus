@@ -144,7 +144,7 @@ Transaction.TRParams.Add('rec_version');
 // only these three lines; TPBMode is tpbDefault
 ```
 
-FibPlus does not check the lines against each other. A list that contradicts itself, such as a preset with `read` added after `no_auto_undo`, starts the transaction on the server, which refuses it (`isc_bad_tpb_content`). All presets write `write`, so a read-only transaction needs `read` in its own list, as in the sample above.
+FIBPlus does not check the lines against each other. A list that contradicts itself, such as a preset with `read` added after `no_auto_undo`, starts the transaction on the server, which refuses it (`isc_bad_tpb_content`). All presets write `write`, so a read-only transaction needs `read` in its own list, as in the sample above.
 
 `lock_timeout` counts as a wait line because *Firebird 3+* refuses it together with `nowait`, which every preset writes. `Add('lock_timeout=5')` on a preset therefore leaves only that line. Write read committed with a lock timeout in full:
 

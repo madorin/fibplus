@@ -85,7 +85,7 @@ Available in the Object Inspector. When the component is dropped on a form at de
 |------|------|---------|-------------|
 | `DesignDBOptions` | `TDesignDBOptions` | `[ddoStoreConnected]` | See [Types](#types). |
 | `MemoSubtypes` | `string` | | BLOB subtypes, separated by `;`, that a dataset treats as text (memo) fields besides subtype `1`. A value of `1` in the list is ignored. |
-| `UseRepositories` | `TFIBUseRepositories` | `[urFieldsInfo, urDataSetInfo, urErrorMessagesInfo]` | Which repository tables FibPlus reads, see [Types](#types). |
+| `UseRepositories` | `TFIBUseRepositories` | `[urFieldsInfo, urDataSetInfo, urErrorMessagesInfo]` | Which repository tables FIBPlus reads, see [Types](#types). |
 
 ### BLOB handling and logging
 
