@@ -9589,14 +9589,6 @@ var
           Buff := GetActiveBuf;
       end;
   end;
-{
-  procedure DoUTFStringValue;
-  begin
-  TFIBStringField(Field).FStringBuffer:=UTF8Decode(PAnsiChar(Data));
-  L:=Length(TFIBStringField(Field).FStringBuffer);
-  Move(TFIBStringField(Field).FStringBuffer[1], Buffer^, L);
-  PAnsiChar(Buffer)[L]:=#0
-  end; }
 
 begin
   Result := false;

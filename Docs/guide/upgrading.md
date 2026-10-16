@@ -25,7 +25,7 @@ Find the version you use now, then read every section above it, from the one jus
 | Old | New | What to do |
 |-----|-----|------------|
 | `StrUtil.CharInSet`, `FIBPlatforms.WideCompareStr` (declared only for compilers before Delphi 2009) | Removed | Nothing: `SysUtils` declares both. |
-| `IWideStringField`, `TFIBMemoField.WideDisplayText`/`WideText` (`GetWideDisplayText`, `GetWideEditText`, `SetWideEditText`), for the TNT controls | Removed | Use `DisplayText`, `Text` or `AsString`. |
+| `IWideStringField` with its properties `WideDisplayText`/`WideText`, implemented by `TFIBMemoField` (`GetWideDisplayText`, `GetWideEditText`, `SetWideEditText`), for the TNT controls | Removed | Use `DisplayText`, `Text` or `AsString`. |
 | `FIBCharSets.DecodeWideString` | `DecodeString` | Rename; assign the result to a `WideString` if the type matters. |
 | `AsComp` of `TFIBBCDField`, `TFIBClientBCDField`, `TFIBXSQLVAR` (compiled only without `NO_USE_COMP`, which `FIBPlus.inc` always defined) | Removed | Use `AsBcd` or `AsInt64`. |
 | Unit `pFIBScripter` | `FIBScripter` | Change the `uses` clause. The old unit still compiles and gives a warning. |

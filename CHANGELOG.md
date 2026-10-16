@@ -143,6 +143,11 @@ The lists of old and new names, and what an application has to change, are in
   non-Unicode compilers), their packages, the Kylix code and the TNT controls
   interface `IWideStringField`; the minimum is Delphi 2009.
 - `FIBCharSets.DecodeWideString`: use `DecodeString`.
+- `TFIBMemoField.WideDisplayText` and `WideText` of `IWideStringField`,
+  `AsComp` of `TFIBBCDField`, `TFIBClientBCDField` and `TFIBXSQLVAR`, and the
+  polyfills `StrUtil.CharInSet` and `FIBPlatforms.WideCompareStr` (`SysUtils`
+  declares both); see [Upgrading](Docs/guide/upgrading.md#800).
+- The samples `UnicodeFSS` (TNT controls) and `UnicodeFSS_2009`.
 
 ### Fixed
 
