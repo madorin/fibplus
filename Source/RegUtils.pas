@@ -88,9 +88,7 @@ begin
           varBoolean: WriteBool(ParamNames[i], Values[i]);
           varString: WriteString(ParamNames[i], Values[i]);
           varDate: WriteDateTime(ParamNames[i], Values[i]);
-{$IFDEF D2009+}
           varUString: WriteString(ParamNames[i], Values[i]);
-{$ENDIF}
         end
     finally
       CloseKey;

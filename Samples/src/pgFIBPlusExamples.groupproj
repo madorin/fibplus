@@ -81,9 +81,6 @@
 			<Projects Include="RefreshDataSet\RefreshDataSet.dproj">
 				<Dependencies/>
 			</Projects>
-			<Projects Include="UnicodeFSS_2009\UnicodeFSS_2009.dproj">
-				<Dependencies/>
-			</Projects>
 		</ItemGroup>
 		<ProjectExtensions>
 			<Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -326,23 +323,14 @@
 		<Target Name="RefreshDataSet:Make">
 			<MSBuild Targets="Make" Projects="RefreshDataSet\RefreshDataSet.dproj"/>
 		</Target>
-		<Target Name="UnicodeFSS_2009">
-			<MSBuild Projects="UnicodeFSS_2009\UnicodeFSS_2009.dproj"/>
-		</Target>
-		<Target Name="UnicodeFSS_2009:Clean">
-			<MSBuild Targets="Clean" Projects="UnicodeFSS_2009\UnicodeFSS_2009.dproj"/>
-		</Target>
-		<Target Name="UnicodeFSS_2009:Make">
-			<MSBuild Targets="Make" Projects="UnicodeFSS_2009\UnicodeFSS_2009.dproj"/>
-		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="DataSetBasic;AutoUpdateOptions;DataSetOptions;SQLMonitor;BackgroundQuery;MasterDetail;LocalSorting;LocalFiltering;ServerFilteringConditions;ServerFilteringMacroses;ProtectedEditing;FieldsRepository;ErrorMessagesRepository;Events;ConnectionLost;BlobFilters;StoredProcedure;LimitedBuffersSize;SQLLogger;DLLMain;TestDLL;ArrayFields1;ArrayFields2;Scripter;OfflineWork;RefreshDataSet;UnicodeFSS_2009"/>
+			<CallTarget Targets="DataSetBasic;AutoUpdateOptions;DataSetOptions;SQLMonitor;BackgroundQuery;MasterDetail;LocalSorting;LocalFiltering;ServerFilteringConditions;ServerFilteringMacroses;ProtectedEditing;FieldsRepository;ErrorMessagesRepository;Events;ConnectionLost;BlobFilters;StoredProcedure;LimitedBuffersSize;SQLLogger;DLLMain;TestDLL;ArrayFields1;ArrayFields2;Scripter;OfflineWork;RefreshDataSet"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="DataSetBasic:Clean;AutoUpdateOptions:Clean;DataSetOptions:Clean;SQLMonitor:Clean;BackgroundQuery:Clean;MasterDetail:Clean;LocalSorting:Clean;LocalFiltering:Clean;ServerFilteringConditions:Clean;ServerFilteringMacroses:Clean;ProtectedEditing:Clean;FieldsRepository:Clean;ErrorMessagesRepository:Clean;Events:Clean;ConnectionLost:Clean;BlobFilters:Clean;StoredProcedure:Clean;LimitedBuffersSize:Clean;SQLLogger:Clean;DLLMain:Clean;TestDLL:Clean;ArrayFields1:Clean;ArrayFields2:Clean;Scripter:Clean;OfflineWork:Clean;RefreshDataSet:Clean;UnicodeFSS_2009:Clean"/>
+			<CallTarget Targets="DataSetBasic:Clean;AutoUpdateOptions:Clean;DataSetOptions:Clean;SQLMonitor:Clean;BackgroundQuery:Clean;MasterDetail:Clean;LocalSorting:Clean;LocalFiltering:Clean;ServerFilteringConditions:Clean;ServerFilteringMacroses:Clean;ProtectedEditing:Clean;FieldsRepository:Clean;ErrorMessagesRepository:Clean;Events:Clean;ConnectionLost:Clean;BlobFilters:Clean;StoredProcedure:Clean;LimitedBuffersSize:Clean;SQLLogger:Clean;DLLMain:Clean;TestDLL:Clean;ArrayFields1:Clean;ArrayFields2:Clean;Scripter:Clean;OfflineWork:Clean;RefreshDataSet:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="DataSetBasic:Make;AutoUpdateOptions:Make;DataSetOptions:Make;SQLMonitor:Make;BackgroundQuery:Make;MasterDetail:Make;LocalSorting:Make;LocalFiltering:Make;ServerFilteringConditions:Make;ServerFilteringMacroses:Make;ProtectedEditing:Make;FieldsRepository:Make;ErrorMessagesRepository:Make;Events:Make;ConnectionLost:Make;BlobFilters:Make;StoredProcedure:Make;LimitedBuffersSize:Make;SQLLogger:Make;DLLMain:Make;TestDLL:Make;ArrayFields1:Make;ArrayFields2:Make;Scripter:Make;OfflineWork:Make;RefreshDataSet:Make;UnicodeFSS_2009:Make"/>
+			<CallTarget Targets="DataSetBasic:Make;AutoUpdateOptions:Make;DataSetOptions:Make;SQLMonitor:Make;BackgroundQuery:Make;MasterDetail:Make;LocalSorting:Make;LocalFiltering:Make;ServerFilteringConditions:Make;ServerFilteringMacroses:Make;ProtectedEditing:Make;FieldsRepository:Make;ErrorMessagesRepository:Make;Events:Make;ConnectionLost:Make;BlobFilters:Make;StoredProcedure:Make;LimitedBuffersSize:Make;SQLLogger:Make;DLLMain:Make;TestDLL:Make;ArrayFields1:Make;ArrayFields2:Make;Scripter:Make;OfflineWork:Make;RefreshDataSet:Make"/>
 		</Target>
 		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 	</Project>

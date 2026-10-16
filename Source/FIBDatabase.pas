@@ -5599,14 +5599,7 @@ var
   vSQLText: AnsiString;
 begin
   CheckInTransaction;
-{$IFDEF D2009+}
   vSQLText := EncodeString(SQLText, MainDatabase.Capabilities.CodePage);
-{$ELSE}
-  if MainDatabase.IsUnicodeConnect then
-    vSQLText := UTF8Encode(SQLText)
-  else
-    vSQLText := SQLText;
-{$ENDIF}
   Call(MainDatabase.ClientLibrary.isc_dsql_execute_immediate(StatusVector,
     @MainDatabase.Handle, @FHandle, 0, PAnsiChar(vSQLText), MainDatabase.SQLDialect, nil), True);
 end;

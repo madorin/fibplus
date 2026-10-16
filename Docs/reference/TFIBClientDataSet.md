@@ -51,7 +51,6 @@ The three transaction methods send a command text to the provider. The standard 
 |------|------|-------------|
 | `AsInt64` | `Int64` | Value as an integer; with a non-zero `Size` the value is rounded. |
 | `AsExtended` | `Extended` | Value as a floating-point number. |
-| `AsComp` | `Comp` | Value as `Comp`. Compiled only when `NO_USE_COMP` is not defined; `FIBPlus.inc` defines it, so the property is absent in the default configuration. |
 | `Value` | `Extended` | Same as `AsExtended`. |
 
 `AsVariant` returns an `Int64` when `Size` is `0`, a `Currency` when `Size` is `4`, and an `Extended` otherwise. `Assign` takes the value from another `TField`, and clears the field when the source is `nil`.

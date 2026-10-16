@@ -111,9 +111,6 @@ type
     function GetAsUTCDateTime: TDateTime;
 
     function GetAsCurrency: Currency;
-{$IFNDEF NO_USE_COMP}
-    function GetAsComp: Comp;
-{$ENDIF}
     function GetAsDateTime: TDateTime;
     function GetAsTimeStamp: TTimeStamp;
     function GetAsDouble: Double;
@@ -152,9 +149,6 @@ type
     procedure SetValue(aSQLType, aSize: integer; ValueType: TTypeSetToParam; const aValue; ws: PWideString = nil);
 
     procedure SetAsCurrency(aValue: Currency);
-{$IFNDEF NO_USE_COMP}
-    procedure SetAsComp(aValue: Comp); // patchInt64A
-{$ENDIF}
     procedure SetAsInt64(aValue: Int64);
     procedure SetAsDateTime(aValue: TDateTime);
     procedure SetAsTime(aValue: TDateTime);
@@ -226,9 +220,6 @@ type
     //
 
     property AsCurrency: Currency read GetAsCurrency write SetAsCurrency;
-{$IFNDEF NO_USE_COMP}
-    property AsComp: Comp read GetAsComp write SetAsComp;
-{$ENDIF}
     property AsExtended: Extended read GetAsExtended write SetAsExtended;
     property AsInt64: Int64 read GetAsInt64 write SetAsInt64;
     property AsBcd: TBcd read GetAsBcd write SetAsBcd;
@@ -550,9 +541,7 @@ type
   public
     function TableAliasForField(FieldIndex: integer): string; overload;
     function TableAliasForFieldByName(const aFieldName: string): string;
-    // {$IFNDEF BCB}
     function TableAliasForField(const aFieldName: string): string; overload;
-    // {$ENDIF}
   private
     FOnBatchError: TOnBatchError;
     FCursorName: string;
@@ -998,20 +987,6 @@ begin
     Result := PInt64(FXSQLVAR^.sqldata)^ * E10[FXSQLVAR^.sqlscale];
 end;
 
-{$IFNDEF NO_USE_COMP}
-
-function TFIBXSQLVAR.GetAsComp: Comp;
-begin
-  InitFPU;
-  Result := 0;
-  if not IsNull then
-    if (FXSQLVAR^.SQLType and (not 1)) <> SQL_INT64 then
-      Result := AsDouble
-    else
-      Result := PInt64(FXSQLVAR^.sqldata)^ * E10[FXSQLVAR^.sqlscale];
-end;
-{$ENDIF}
-
 const
   IBBuffDateDelta = 678576;
 
@@ -1414,10 +1389,8 @@ begin
               SetLength(Result, FStreamValue.Size);
               FStreamValue.Position := 0;
               FStreamValue.Read(Result[1], FStreamValue.Size);
-{$IFDEF D2009+}
               if Assigned(FQuery.Database) then
                 SetStringCodePage(RawByteString(Result), BlobCodePage);
-{$ENDIF}
             end;
           end
           else
@@ -1456,35 +1429,18 @@ begin
             str_len := PWord(sz)^; // It is isc_vax_integer(LocalData, 2);
             Inc(sz, 2);
           end;
-{$IFDEF D2009+}
           // before tagging: SetLength of a shared string drops the code page; spaces are never in
           // multi-byte characters
           if qoTrimCharFields in FQuery.Options then
             while (str_len > 0) and (PAnsiChar(sz)[str_len - 1] = ' ') do
               Dec(str_len);
-{$ENDIF}
           SetLength(byteStr, str_len);
           if str_len > 0 then
             Move(sz^, byteStr[1], str_len);
 
-{$IFDEF D2009+}
           if Assigned(FQuery.Database) and (str_len > 0) then
             SetStringCodePage(byteStr, TextCodePage);
           Result := byteStr;
-{$ELSE}
-          if Assigned(FQuery.Database) and (Byte(FXSQLVAR^.SQLSubtype) in FQuery.Database.UnicodeCharsets) then
-          begin
-            if FQuery.Database.NeedUnicodeFieldsTranslation then
-              Result := Ansistring(UTF8Decode(byteStr))
-            else
-              Result := byteStr
-          end
-          else
-            Result := byteStr;
-
-          if qoTrimCharFields in FQuery.Options then
-            DoTrimRight(Result);
-{$ENDIF}
         end;
       SQL_TYPE_DATE: Result := DateToStr(AsDateTime);
       SQL_TIMESTAMP: Result := DateTimeToStr(AsDateTime);
@@ -1575,7 +1531,7 @@ begin
       SQL_TEXT, SQL_VARYING:
         // a variant keeps no code page
         if Assigned(FQuery.Database) and ((Byte(FXSQLVAR^.SQLSubtype) in FQuery.Database.UnicodeCharsets)
-          {$IFDEF D2009+} or not IsSystemCodePage(TextCodePage){$ENDIF}) then
+          or not IsSystemCodePage(TextCodePage)) then
           Result := GetAsWideString
         else
           Result := AsAnsiString;
@@ -2171,14 +2127,6 @@ begin
   end;
 end;
 
-{$IFNDEF NO_USE_COMP}
-
-procedure TFIBXSQLVAR.SetAsComp(aValue: Comp);
-begin
-  SetValue(SQL_INT64, SizeOf(Comp), tspValue, aValue)
-end;
-{$ENDIF}
-
 procedure TFIBXSQLVAR.SetAsTimeStamp(aValue: TTimeStamp);
 var
   tq: TISC_QUAD;
@@ -2347,18 +2295,14 @@ begin
         end;
     end;
   end
-  // Unicode Delphi: kept until the server type is known
-  else if not IsMacro and ({$IFDEF D2009+}True{$ELSE}FQuery.Database.NeedUnicodeFieldsTranslation{$ENDIF}) then
+  // kept until the server type is known
+  else if not IsMacro then
   begin
     if IsWide then
       FWideTempValue := PWideString(aValue)^
     else
-{$IFDEF D2009+}
       // with its own code page, lost in the buffer
       FWideTempValue := string(PAnsiString(aValue)^);
-{$ELSE}
-      FWideTempValue := '';
-{$ENDIF}
 
     case sSQLType of
       0:
@@ -2417,13 +2361,10 @@ begin
   end
   else if (CodePage <> FIBCodePageSystem) and not Provisional then
   begin
-{$IFDEF D2009+}
     // already in the code page (not deferred values: tagged by the described type)
     if not AdjustDeffered and (StringCodePage(PAnsiString(aValue)^) = CodePage) then
       vValue := PAnsiString(aValue)^
-    else
-{$ENDIF}
-    if Length(FWideTempValue) = 0 then
+    else if Length(FWideTempValue) = 0 then
       vValue := EncodeString(string(PAnsiString(aValue)^), CodePage)
     else
       vValue := EncodeString(FWideTempValue, CodePage);
@@ -2485,11 +2426,7 @@ end;
 
 procedure TFIBXSQLVAR.SetAsString(const aValue: string);
 begin
-{$IFDEF D2009+}
   SetAsWideString(aValue)
-{$ELSE}
-  SetAsAnsiString(aValue)
-{$ENDIF}
 end;
 
 procedure TFIBXSQLVAR.SetAsAnsiString(const aValue: Ansistring);
@@ -2512,58 +2449,18 @@ end;
 
 function TFIBXSQLVAR.GetAsWideString: WideString;
 var
-  sz: TDataBuffer;
-  str_len: integer;
-  // s:Ansistring;
   bs: TFIBBlobStream;
   byteStr: FIBByteString;
 begin
 
   if Length(FWideTempValue) > 0 then
     Result := FWideTempValue
-{$IFDEF D2009+}
   else if Assigned(FQuery.Database) and ((FXSQLVAR^.SQLType and (not 1) = SQL_TEXT) or
     (FXSQLVAR^.SQLType and (not 1) = SQL_VARYING)) then
     Result := DecodeString(GetAsAnsiString, TextCodePage)
-{$ENDIF}
   else if Assigned(FQuery.Database) and FQuery.Database.NeedUnicodeFieldsTranslation then
     with FXSQLVAR^ do
       case SQLType and (not 1) of
-        SQL_TEXT, SQL_VARYING:
-          if Byte(SQLSubtype) in FQuery.Database.UnicodeCharsets then
-          begin
-            if IsNull then
-              Result := ''
-            else
-            begin
-              sz := FXSQLVAR^.sqldata;
-              if (FXSQLVAR^.SQLType and (not 1) = SQL_TEXT) then
-                str_len := FXSQLVAR^.sqllen
-              else
-              begin
-                // str_len := FQuery.Database.ClientLibrary.isc_vax_integer(FXSQLVar^.sqldata, 2);
-                str_len := PWord(sz)^; // It is isc_vax_integer(sz, 2);
-                Inc(sz, 2);
-              end;
-              // SetString(s, sz, str_len);
-
-              SetLength(byteStr, str_len);
-              if str_len > 0 then
-                Move(sz^, byteStr[1], str_len);
-
-{$IFDEF D2009+}
-              Result := UTF8ToString(byteStr);
-{$ELSE}
-              Result := UTF8Decode(byteStr);
-{$ENDIF}
-              if qoTrimCharFields in FQuery.Options then
-                DoTrimRight(Result);
-              // Result:=DoTrimRight(Result);
-            end
-          end
-          else
-            Result := GetAsAnsiString;
-
         SQL_BLOB:
           try
             Result := '(BLOB)'; { return on error }
@@ -2579,7 +2476,7 @@ begin
                 SetLength(byteStr, FStreamValue.Size);
                 FStreamValue.Position := 0;
                 FStreamValue.Read(byteStr[1], FStreamValue.Size);
-                Result := DecodeWideString(byteStr, BlobCodePage);
+                Result := DecodeString(byteStr, BlobCodePage);
               end;
             end
             else
@@ -2673,7 +2570,7 @@ begin
         else
           AsDateTime := Value;
         end;
-      varOleStr{$IFDEF D2009+}, varUString{$ENDIF} :
+      varOleStr, varUString:
         AsWideString := Value;
       varString: AsAnsiString := Value;
       varArray:
@@ -5168,12 +5065,10 @@ begin
     Result := TableAliasForField(tf.FIndex);
 end;
 
-// {$IFNDEF BCB}
 function TFIBQuery.TableAliasForField(const aFieldName: string): string;
 begin
   Result := TableAliasForFieldByName(aFieldName)
 end;
-// {$ENDIF}
 
 function TFIBQuery.SQLDescribeInfo(InfoRequest: array of AnsiChar): PXSQLDA;
 var

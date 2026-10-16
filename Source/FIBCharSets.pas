@@ -26,23 +26,18 @@ function FirebirdCharSetCodePage(CharSetID: Integer): Word;
 // '' for an unknown ID
 function FirebirdCharSetName(CharSetID: Integer): string;
 
-// Before Delphi 2009 only UTF-8 is converted
 function DecodeString(Buffer: PAnsiChar; Length: Integer; CodePage: Word): string; overload;
 function DecodeString(const Bytes: FIBByteString; CodePage: Word): string; overload;
 // Not tagged with CodePage: concatenating tagged AnsiStrings converts them
 function EncodeString(const S: string; CodePage: Word): FIBByteString;
-// Before Delphi 2009 UTF-8 without the loss of DecodeString
-function DecodeWideString(const Bytes: FIBByteString; CodePage: Word): WideString;
-{$IFDEF D2009+}
 procedure SetStringCodePage(var S: RawByteString; CodePage: Word);
 function IsSystemCodePage(CodePage: Word): Boolean;
-{$ENDIF}
 
 implementation
 
 uses
   fib, FIBConsts
-{$IFDEF D2009+}{$IFNDEF D_XE}, Windows{$ENDIF}{$ENDIF};
+{$IFNDEF D_XE}, Windows{$ENDIF};
 
 type
   TFirebirdCharSet = record
@@ -141,8 +136,6 @@ begin
     Result := '';
 end;
 
-{$IFDEF D2009+}
-
 const
   WC_NO_BEST_FIT_CHARS = $400;
   GB18030CodePage = 54936;
@@ -235,40 +228,9 @@ begin
   FromUnicode(CodePage, PWideChar(S), Length(S), PAnsiChar(Result), L, nil);
 end;
 
-{$ELSE}
-
-function DecodeString(Buffer: PAnsiChar; Length: Integer; CodePage: Word): string;
-begin
-  SetString(Result, Buffer, Length);
-  if CodePage = FIBCodePageUTF8 then
-    Result := UTF8Decode(Result);
-end;
-
-function EncodeString(const S: string; CodePage: Word): FIBByteString;
-begin
-  if CodePage = FIBCodePageUTF8 then
-    Result := UTF8Encode(S)
-  else
-    Result := S;
-end;
-
-{$ENDIF}
-
 function DecodeString(const Bytes: FIBByteString; CodePage: Word): string;
 begin
   Result := DecodeString(PAnsiChar(Bytes), Length(Bytes), CodePage);
-end;
-
-function DecodeWideString(const Bytes: FIBByteString; CodePage: Word): WideString;
-begin
-{$IFDEF D2009+}
-  Result := DecodeString(Bytes, CodePage);
-{$ELSE}
-  if CodePage = FIBCodePageUTF8 then
-    Result := UTF8Decode(Bytes)
-  else
-    Result := Bytes;
-{$ENDIF}
 end;
 
 end.

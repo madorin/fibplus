@@ -203,7 +203,6 @@ On a `NONE` connection to *Firebird 2.1+* with ODS 11.1 or later, DDL and the na
 
 ### Limits
 
-- Before Delphi 2009, FibPlus converts only UTF-8; other code pages are passed through.
 - The code page must exist on the system; if it does not, an error "Code page %d is not available on this system" is raised.
 - When the server does not report the connection character set (always on InterBase), `CodePage` comes from `ConnectParams.CharSet`: UTF-8 for `UTF8` and `UNICODE_FSS`, else the system code page.
 

@@ -65,9 +65,7 @@ begin
     varBoolean: result := @TVarData(v).VBoolean;
     varVariant, varByRef: result := GetVariantData(PVariant(@TVarData(v).VPointer)^);
     varString: result := TVarData(v).VString;
-{$IFDEF D2009+}
     varUString: result := TVarData(v).VUString;
-{$ENDIF}
   else
     result := nil;
   end;
@@ -107,9 +105,7 @@ function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
                         case VarType(v) of
                           varString: result := WideString(P) = string(TVarData(v).VString);
                           varOleStr: result := WideString(P) = WideString(TVarData(v).VOleStr);
-{$IFDEF D2009+}
                           varUString: result := WideString(P) = string(TVarData(v).VUString);
-{$ENDIF}
                         else
                           result := WideString(P) = VarToStr(v);
                         end;
@@ -120,9 +116,7 @@ function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
                         case VarType(v) of
                           varString: result := AnsiString(P) = String(TVarData(v).VString);
                           varOleStr: result := AnsiString(P) = WideString(TVarData(v).VOleStr);
-{$IFDEF D2009+}
                           varUString: result := AnsiString(P) = string(TVarData(v).VUString);
-{$ENDIF}
                         else
                           result := AnsiString(P) = VarToStr(v);
                         end;
@@ -149,7 +143,6 @@ function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
                               else
                                 result := -1;
                             end;
-{$IFDEF D2009+}
                           varUString:
                             begin
                               if WideString(P) = string(TVarData(v).VUString) then
@@ -159,7 +152,6 @@ function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
                               else
                                 result := -1;
                             end;
-{$ENDIF}
                         else
                           if WideString(P) = VarToStr(v) then
                             result := 0
@@ -172,10 +164,8 @@ function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
 
 {$WARNINGS OFF}
                       function CompareStringAndVariant(P: Pointer; const v: Variant): integer;
-{$IFDEF D2009+}
                       var
                         s: UnicodeString;
-{$ENDIF}
                       begin
                         case VarType(v) of
                           varString:
@@ -196,7 +186,6 @@ function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
                               else
                                 result := -1
                             end;
-{$IFDEF D2009+}
                           varUString:
                             begin
                               s := AnsiString(P);
@@ -210,7 +199,6 @@ function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
                                   result := -1;
                               end
                             end
-{$ENDIF}
                         else
                           if AnsiString(P) = VarToStr(v) then
                             result := 0
@@ -261,11 +249,9 @@ function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
                           varInt64:
                             result := ComparePInt64AndVariant
                               (GetVariantData(v), v1);
-                          // {$IFNDEF D_XE}
                           varString:
                             result := CompareStringAndVariant
                               (GetVariantData(v), v1);
-                          // {$ENDIF}
                         else
                           if v = v1 then
                             result := 0

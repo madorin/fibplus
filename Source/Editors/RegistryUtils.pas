@@ -20,12 +20,7 @@ unit RegistryUtils;
 interface
 
 uses
-{$IFDEF WINDOWS}
   Windows, SysUtils, Classes, registry, Variants;
-{$ENDIF}
-{$IFDEF LINUX}
-Types, SysUtils, Classes, Variants;
-{$ENDIF}
 {$IFNDEF NO_REGISTRY}
 
 const

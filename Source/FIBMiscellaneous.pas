@@ -1497,11 +1497,7 @@ begin
     Seek(0, soFromBeginning);
     SetString(Result, nil, FDataSize);
     ReadBuffer(Result[1], FDataSize);
-{$IFDEF D2009+}
     SetStringCodePage(RawByteString(Result), BlobCodePage);
-{$ELSE}
-    Result := DecodeString(Result, BlobCodePage);
-{$ENDIF}
   end
   else
     Result := '';
@@ -1518,7 +1514,7 @@ begin
     Seek(0, soFromBeginning);
     SetString(s, nil, FDataSize);
     ReadBuffer(s[1], FDataSize);
-    Result := DecodeWideString(s, BlobCodePage);
+    Result := DecodeString(s, BlobCodePage);
   end
   else
     Result := '';

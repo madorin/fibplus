@@ -42,13 +42,8 @@ const
 
 type
 
-{$IFDEF D2009+}
   FIBByteString = RawByteString;
   TDataBuffer = PByte;
-{$ELSE}
-  FIBByteString = Ansistring;
-  TDataBuffer = PChar;
-{$ENDIF}
   PFIBByteString = ^FIBByteString;
 
   DWORD = LongWord;
@@ -60,43 +55,11 @@ procedure TerminateApplication;
 function ApplicationPath: string;
 function CurrentThreadID: DWORD;
 
-{$IFNDEF D7+}
-function WideCompareStr(const S1, S2: WideString): Integer;
-{$ENDIF}
-
 const
-{$IFDEF D2009+}
   ZeroData = 0;
-{$ELSE}
-  ZeroData = #0;
-{$ENDIF}
 
 implementation
 
-{$IFNDEF D7+}
-
-function DumbItDownFor95(const S1, S2: WideString; CmpFlags: Integer): Integer;
-var
-  a1, a2: Ansistring;
-begin
-  a1 := S1;
-  a2 := S2;
-  Result := CompareStringA(LOCALE_USER_DEFAULT, CmpFlags, PChar(a1), Length(a1), PChar(a2), Length(a2)) - 2;
-end;
-
-function WideCompareStr(const S1, S2: WideString): Integer;
-
-begin
-  SetLastError(0);
-  Result := CompareStringW(LOCALE_USER_DEFAULT, 0, PWideChar(S1), Length(S1), PWideChar(S2), Length(S2)) - 2;
-  case GetLastError of
-    0: ;
-    ERROR_CALL_NOT_IMPLEMENTED: Result := DumbItDownFor95(S1, S2, 0);
-  else
-    RaiseLastWin32Error;
-  end;
-end;
-{$ENDIF}
 {$IFDEF WINDOWS}
 
 function FIBGetTickCount: Cardinal;

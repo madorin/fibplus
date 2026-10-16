@@ -27,14 +27,10 @@ uses
 {$ELSE}
   Graphics, Controls, Forms, Dialogs, ComCtrls, ExtCtrls, StdCtrls,
 {$ENDIF}
-  uFIBEditorForm
-{$IFDEF LINUX}
-    , VKCodes
-{$ENDIF}
-    ;
+  uFIBEditorForm;
 
 type
-  TFrame = TFIBEditorCustomFrame; // Fake for D5
+  TFrame = TFIBEditorCustomFrame;
 
   TfraEdConditions = class(TFrame)
     Panel1: TPanel;
@@ -109,11 +105,7 @@ begin
     VK_F2:
       begin
         if Assigned(ListView1.Selected) then
-{$IFNDEF LINUX}
           ListView1.Selected.EditCaption;
-{$ELSE}
-          ListView1.Selected.EditText;
-{$ENDIF}
       end;
   end;
 end;
@@ -203,11 +195,7 @@ end;
 procedure TfraEdConditions.btnEditClick(Sender: TObject);
 begin
   if Assigned(ListView1.Selected) then
-{$IFNDEF LINUX}
     ListView1.Selected.EditCaption;
-{$ELSE}
-    ListView1.Selected.EditText;
-{$ENDIF}
 end;
 
 {

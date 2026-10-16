@@ -27,11 +27,7 @@ uses
 {$ELSE}
   Graphics, Controls, Forms, Dialogs, ComCtrls, ExtCtrls, StdCtrls,
 {$ENDIF}
-  fraConditionsEdit, uFIBEditorForm
-{$IFDEF LINUX}
-    , VKCodes
-{$ENDIF}
-    ;
+  fraConditionsEdit, uFIBEditorForm;
 
 type
   TfrmEditCheckStrings = class(TFIBEditorCustomForm)

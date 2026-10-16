@@ -108,11 +108,9 @@ function ReplaceStrInSubstr(const Source: string; const Srch, Replace: string; B
 function ReplaceCIStr(const S, Srch, Replace: string; Ansi: Boolean = True): string;
 function ReplaceStrCIInSubstr(const Source: string; const Srch, Replace: string; BeginPos, EndPos: Integer): string;
 
-function FastUpperCase(const S: string): string; {$IFDEF D2007+} inline; {$ENDIF}
+function FastUpperCase(const S: string): string; inline;
 procedure DoUpperCase(var S: string; FirstPos: Integer = 1; LastPos: Integer = 0);
-{$IFDEF   D2009+}
 procedure DoAnsiUpperCase(var S: AnsiString); overload;
-{$ENDIF}
 procedure DoAnsiUpperCase(var S: string); overload;
 
 procedure DoWideUpperCase(var S: Widestring);
@@ -126,21 +124,19 @@ function iifVariant(Condition: Boolean; const Var1, Var2: variant): variant;
 function StrOnMask(const StrIn, MaskIn, MaskOut: string): string;
 function StrIsInteger(const Str: string): Boolean;
 
-function FormatIdentifierValue(Dialect: Integer; const Value: string): string; {$IFDEF D2007+} inline; {$ENDIF}
-function FormatIdentifier(Dialect: Integer; const Value: string): string; {$IFDEF D2007+} inline; {$ENDIF}
-function NormalizeName(Dialect: Integer; const Name: string): string; {$IFDEF D2007+} inline; {$ENDIF}
-function EasyFormatIdentifier(Dialect: Integer; const Value: string; DoEasy: Boolean): string; {$IFDEF D2007+} inline; {$ENDIF}
-function EquelNames(CI: Boolean; const Value, Value1: String): Boolean; {$IFDEF D2007+} inline; {$ENDIF}
+function FormatIdentifierValue(Dialect: Integer; const Value: string): string; inline;
+function FormatIdentifier(Dialect: Integer; const Value: string): string; inline;
+function NormalizeName(Dialect: Integer; const Name: string): string; inline;
+function EasyFormatIdentifier(Dialect: Integer; const Value: string; DoEasy: Boolean): string; inline;
+function EquelNames(CI: Boolean; const Value, Value1: String): Boolean; inline;
 function NeedQuote(const Name: string): Boolean;
 function EasyNeedQuote(const Name: string): Boolean;
 
 function PosCh(aCh: Char; const S: string): Integer;
 function PosCh1(aCh: Char; const S: string; StartPos: Integer): Integer; overload;
-{$IFDEF   D2009+}
 function PosCh1(aCh: AnsiChar; const S: AnsiString; StartPos: Integer): Integer; overload;
-{$ENDIF}
-function PosCI(const Substr, Str: string): Integer; {$IFDEF D2007+} inline; {$ENDIF}
-function PosExt(const Substr, Str: string; BegSub, EndSub: TCharSet): Integer; {$IFDEF D2009+} inline; {$ENDIF}
+function PosCI(const Substr, Str: string): Integer; inline;
+function PosExt(const Substr, Str: string; BegSub, EndSub: TCharSet): Integer; inline;
 function PosExtCI(const Substr, Str: string; BegSub, EndSub: TCharSet; AnsiUpper: Boolean = True): Integer;
 
 function PosInSubstr(const Substr, Str: string; BeginPos, EndPos: Integer): Integer;
@@ -154,9 +150,7 @@ function PosInSubstrExt(const SearchStr: string; Str: string; BeginPos, EndPos: 
 function PosInSubstrCIExt(const SearchStr, Str: string; BeginPos, EndPos: Integer; BegSub, EndSub: TCharSet): Integer;
 
 function FirstPos(Search: array of Char; const InString: string): Integer; overload;
-{$IFDEF D2009+}
 function FirstPos(Search: array of AnsiChar; const InString: AnsiString): Integer; overload;
-{$ENDIF}
 function LastChar(const Str: string): Char;
 
 function QuotedStr(const S: string): string;
@@ -165,36 +159,26 @@ function CutQuote(const S: String): string;
 function StringInArray(const S: string; const a: array of string): Boolean;
 function IsBlank(const Str: string): Boolean;
 function IsBeginPartStr(const PartStr, TargetStr: AnsiString): Boolean; overload;
-{$IFDEF D2009+}
 function IsBeginPartStrWA(const PartStr: string; const TargetStr: AnsiString): Boolean;
-{$ENDIF}
 function IsBeginPartStrVarA(const PartStr: variant; const TargetStr: AnsiString): Boolean;
 function IsBeginPartStr(const PartStr, TargetStr: Widestring): Boolean; overload;
 // Ansistring procedures
 procedure DoLowerCase(var Str: string); overload;
-{$IFDEF D2009+}
 procedure DoLowerCase(var Str: AnsiString); overload;
-{$ENDIF}
 procedure DoTrim(var Str: string);
 
 // procedure DoTrimTo(const Source:Ansistring ;var Dest:Ansistring);
 function VarTrimRight(const Str: variant): variant;
 procedure DoTrimRight(var Str: string); overload;
 procedure DoTrimRight(var Str: Widestring); overload;
-{$IFDEF D2009+}
 procedure DoTrimRight(var Str: AnsiString); overload;
-{$ENDIF}
 procedure DoCopy(const Source: string; var Dest: string; Index, Count: Integer); overload;
-{$IFDEF D2009+}
 procedure DoCopy(const Source: AnsiString; var Dest: AnsiString; Index, Count: Integer); overload;
-{$ENDIF}
 // function  StrTrimmedLen(Str:PChar):Integer;
 
 function FastTrim(const S: string): string;
-function FastCopy(const S: String; Index: Integer; Count: Integer): String; overload; {$IFDEF D2009+} inline; {$ENDIF}
-{$IFDEF D2009+}
+function FastCopy(const S: String; Index: Integer; Count: Integer): String; overload; inline;
 function FastCopy(const S: AnsiString; Index: Integer; Count: Integer): AnsiString; overload; inline;
-{$ENDIF}
 // TStringList functions
 
 procedure SLDifference(ASL, BSL: TStringList; ResultSL: TStrings);
@@ -231,22 +215,10 @@ function IsNumericStr(const Str: string): Boolean;
 function IsEmptyStr(const Str: string): Boolean;
 function CompareStrTrimmed(const Str1, Str2: PChar; Len: Integer): Integer;
 
-{$IFNDEF D2009+}
-function CharInSet(C: AnsiChar; const CharSet: TSysCharSet): Boolean;
-{$ENDIF}
-
 implementation
 
 uses
   SysConst, Variants;
-
-{$IFNDEF D2009+}
-
-function CharInSet(C: AnsiChar; const CharSet: TSysCharSet): Boolean;
-begin
-  Result := C in CharSet;
-end;
-{$ENDIF}
 
 function IsNumericStr(const Str: string): Boolean;
 var
@@ -603,7 +575,6 @@ begin
     Result := True;
   end;
 end;
-{$IFDEF D2009+}
 
 function IsBeginPartStrWA(const PartStr: string; const TargetStr: AnsiString): Boolean;
 var
@@ -627,15 +598,10 @@ begin
     Result := True;
   end;
 end;
-{$ENDIF}
 
 function IsBeginPartStrVarA(const PartStr: variant; const TargetStr: AnsiString): Boolean;
 begin
-{$IFDEF D2009+}
   Result := IsBeginPartStrWA(PartStr, TargetStr)
-{$ELSE}
-  Result := IsBeginPartStr(PartStr, TargetStr)
-{$ENDIF}
 end;
 
 function IsBeginPartStr(const PartStr, TargetStr: AnsiString): Boolean;
@@ -669,8 +635,6 @@ begin
   Result := L = 0;
 end;
 
-{$IFDEF D2009+}
-
 procedure DoLowerCase(var Str: AnsiString);
 var
   i: Integer;
@@ -679,7 +643,6 @@ begin
     if (Str[i] >= 'A') and (Str[i] <= 'Z') then
       Inc(Str[i], 32)
 end;
-{$ENDIF}
 
 procedure DoLowerCase(var Str: string);
 var
@@ -774,8 +737,6 @@ begin
     SetLength(Str, i)
 end;
 
-{$IFDEF D2009+}
-
 procedure DoTrimRight(var Str: AnsiString);
 var
   i: Integer;
@@ -806,9 +767,6 @@ begin
   end
 end;
 
-{$ENDIF}
-{$IFDEF D2009+}
-
 procedure DoCopy(const Source: AnsiString; var Dest: AnsiString; Index, Count: Integer);
 var
   L: Integer;
@@ -825,7 +783,6 @@ begin
     Move(Source[Index], Dest[1], L * SizeOf(AnsiChar));
   end;
 end;
-{$ENDIF}
 
 procedure DoCopy(const Source: string; var Dest: string; Index, Count: Integer);
 var
@@ -869,8 +826,6 @@ begin
   end;
 end;
 
-{$IFDEF D2009+}
-
 // System.Copy is at least as fast (measured on Delphi 13)
 function FastCopy(const S: string; Index: Integer; Count: Integer): string;
 begin
@@ -881,28 +836,6 @@ function FastCopy(const S: AnsiString; Index: Integer; Count: Integer): AnsiStri
 begin
   Result := Copy(S, Index, Count);
 end;
-
-{$ELSE}
-
-function FastCopy(const S: string; Index: Integer; Count: Integer): string;
-var
-  L: Integer;
-begin
-  // Same bounds as System.Copy: Index < 1 starts at the first character
-  L := Length(S);
-  if Index < 1 then
-    Index := 1;
-  if Count > L - Index + 1 then
-    Count := L - Index + 1;
-  if Count <= 0 then
-    Result := ''
-  else
-  begin
-    SetLength(Result, Count);
-    Move(S[Index], Result[1], Count * SizeOf(Char));
-  end;
-end;
-{$ENDIF}
 
 function StringInArray(const S: string; const a: array of String): Boolean;
 var
@@ -1041,8 +974,6 @@ begin
 
 end;
 
-{$IFDEF D2009+}
-
 function PosCh1(aCh: Char; const S: string; StartPos: Integer): Integer;
 var
   i: Integer;
@@ -1055,7 +986,6 @@ begin
     end;
   Result := 0
 end;
-{$ENDIF}
 
 function PosCI(const Substr, Str: string): Integer;
 begin
@@ -1454,13 +1384,10 @@ begin
 {$ENDIF}
 end;
 
-{$IFDEF D2009+}
-
 procedure DoAnsiUpperCase(var S: string); overload;
 begin
   S := AnsiUpperCase(S)
 end;
-{$ENDIF}
 
 procedure DoWideUpperCase(var S: Widestring);
 {$IFDEF WINDOWS}
@@ -1496,20 +1423,12 @@ end;
 
 procedure DoUtf8Decode(const S: AnsiString; var ws: Widestring);
 begin
-{$IFDEF D2009+}
   ws := UTF8ToString(S)
-{$ELSE}
-  ws := UTF8Decode(S)
-{$ENDIF}
 end;
 
 procedure DoUtf8Decode(const S: variant; var ws: Widestring);
 begin
-{$IFDEF D2009+}
   ws := UTF8ToString(S)
-{$ELSE}
-  ws := UTF8Decode(S)
-{$ENDIF}
 end;
 
 {$WARNINGS ON}
@@ -1682,8 +1601,6 @@ begin
     Result := Var2
 end;
 
-{$IFDEF D2009+}
-
 function FirstPos(Search: array of Char; const InString: string): Integer;
 var
   i: Integer;
@@ -1698,7 +1615,6 @@ begin
         Result := p1
   end;
 end;
-{$ENDIF}
 
 function FirstPos(Search: array of AnsiChar; const InString: AnsiString): Integer;
 var
@@ -2196,7 +2112,7 @@ var
 const
   NonQuotedChars = ['_', '$', '%', '#'];
 
-function InternalNeedQuote(const Name: string; Easy: Boolean): Boolean; {$IFDEF D2007+} inline; {$ENDIF}
+function InternalNeedQuote(const Name: string; Easy: Boolean): Boolean; inline;
 var
   i, L: Integer;
   ch1, Ch2: Char;
@@ -2482,9 +2398,6 @@ end;
 
 procedure TFastStringStream.WriteString(const AString: string);
 begin
-{$IFNDEF   D2009+}
-  Write(PChar(AString)^, Length(AString))
-{$ELSE}
   if StringCodePage(AString) = StringCodePage(FDataString) then
     Write(PChar(AString)^, Length(AString))
   else
@@ -2494,7 +2407,6 @@ begin
     FActualLength := Length(FDataString);
     FElementSize := StringElementSize(FDataString);
   end;
-{$ENDIF}
 end;
 
 {$ENDIF}

@@ -164,17 +164,12 @@ begin
     Exit;
   end;
   Result := StringFieldCodePage(Field);
-{$IFDEF D2009+}
   // ftString of the system code page: as bytes
   if IsSystemCodePage(Result) then
     if Field.DataType = ftString then
       Result := 0
     else
       Result := DefaultSystemCodePage;
-{$ELSE}
-  if Result <> FIBCodePageUTF8 then
-    Result := 0;
-{$ENDIF}
 end;
 
 function IsVisibleRecord:boolean;
@@ -345,9 +340,7 @@ begin
        if eloCaseInsensitive in Options then
        begin
          KeyValues[i]:=AnsiUpperCase(KeyValues[i]);
-        {$IFDEF D2009+}
          KeyValues[i]:=VarAsType(KeyValues[i],varString);
-        {$ENDIF}
        end
        else
         KeyValues[i]:=VarAsType(KeyValues[i],varString);
@@ -802,32 +795,20 @@ begin
              if (eloPartialKey in Options) then
              begin
               if (eloCaseInsensitive in Options) then
-               {$IFDEF D2009+}
-                DoAnsiUpperCase(StrValue)   ;
-               {$ELSE}
-                StrValue:=AnsiUpperCase(StrValue);
-               {$ENDIF}
+                DoAnsiUpperCase(StrValue);
               Result :=IsBeginPartStr(sKey,StrValue)
              end
              else
              if  (eloWildCards in Options) then
              begin
               if (eloCaseInsensitive in Options) then
-               {$IFDEF D2009+}
-                DoAnsiUpperCase(StrValue)    ;
-               {$ELSE}
-                StrValue:=AnsiUpperCase(StrValue);
-               {$ENDIF}
+                DoAnsiUpperCase(StrValue);
               Result:= SQLMaskCompareAA(StrValue,sKey)
              end
              else
              if (eloCaseInsensitive in Options) then
              begin //eloCaseInsensitive in Options
-              {$IFDEF D2009+}
-               Result:=AnsiCompareTextAA(sKey, StrValue)=0;
-              {$ELSE}
-               Result:=AnsiCompareText(sKey, StrValue)=0;
-              {$ENDIF}
+               Result := AnsiCompareTextAA(sKey, StrValue) = 0;
              end
              else
              // eloSorted
@@ -842,7 +823,7 @@ begin
               begin
                if vIsString then
                begin
-                WideValue := DecodeWideString(PFIBByteString(p)^, CodePage);
+                WideValue := DecodeString(PFIBByteString(p)^, CodePage);
                 if poTrimCharFields in Self.Options then
                    DoTrimRight(WideValue)
                end
@@ -850,16 +831,11 @@ begin
                begin
                 if TField(fl.List^[i]).FieldNo<0 then
                 begin
-                  {$IFDEF D2009+}
-                   {$IFDEF D_XE}
-                    WideValue:=PWideChar(p)
-                   {$ELSE}
-                    WideValue:=UTF8ToString(PAnsiChar(P))
-                   {$ENDIF}
-          			 {$ELSE}
-                    WideValue:=UTF8Decode(PChar(P))
-			           {$ENDIF}
-                    ;
+                  {$IFDEF D_XE}
+                  WideValue := PWideChar(p);
+                  {$ELSE}
+                  WideValue := UTF8ToString(PAnsiChar(p));
+                  {$ENDIF}
 //                  WideValue:=PWideChar(p);
                   if poTrimCharFields in Self.Options then
                    DoTrimRight(WideValue)
@@ -874,7 +850,7 @@ begin
                   while (L>0) and (PAnsiChar(p)[L-1]= ' ') do
                    Dec(L);
                   SetString(StrValue,PAnsiChar(p),L);
-                  WideValue := DecodeWideString(StrValue, CodePage);
+                  WideValue := DecodeString(StrValue, CodePage);
                 end
                end;
 

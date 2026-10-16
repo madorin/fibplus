@@ -469,11 +469,7 @@ begin
                   Move(ps^[1], Dest[FStringFieldOffsets^[i] + SizeOf(Integer)], L);
                 end;
               if L < FStringFieldSize^[i] then
-      {$IFDEF D2009+}
                 Dest[FStringFieldOffsets^[i] + L + SizeOf(Integer)] := 0;
-      {$ELSE}
-                Dest[FStringFieldOffsets^[i] + L + SizeOf(Integer)] := #0;
-      {$ENDIF}
             end;
         end;
       if FRecordSize > FStringFieldOffsets^[1] then // Blobs

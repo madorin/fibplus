@@ -19,9 +19,7 @@ interface
 {$I ..\FIBPlus.inc}
 
 uses
-{$IFNDEF LINUX}
   Windows,
-{$ENDIF}
   SysUtils, Classes,
 {$IFDEF D_XE2}
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls,

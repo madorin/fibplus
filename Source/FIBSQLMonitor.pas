@@ -303,10 +303,6 @@ begin
   end;
   inherited Destroy;
 end;
-{$WARN SYMBOL_DEPRECATED ON}
-{$IFDEF D2009+}
-{$WARN SYMBOL_DEPRECATED OFF}
-{$ENDIF}
 
 procedure TFIBCustomSQLMonitor.MonitorWndProc(var Message: TMessage);
 var

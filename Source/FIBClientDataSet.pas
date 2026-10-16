@@ -62,18 +62,13 @@ type
     function GetAsCurrency: Currency; override;
     function GetAsFloat: Double; override;
 
-{$IFNDEF NO_USE_COMP}
-    function GetAsComp: Comp; virtual;
-    procedure SetAsComp(Value: Comp); virtual;
-{$ENDIF}
-    function GetAsExtended: Extended; {$IFNDEF D2009+} virtual{$ELSE} override
-    {$ENDIF};
+    function GetAsExtended: Extended; override;
     function GetAsString: string; override;
     function GetAsInt64: Int64; virtual;
     function GetAsVariant: variant; override;
     procedure SetAsFloat(Value: Double); override;
 
-    procedure SetAsExtended(Value: Extended); {$IFNDEF D2009+} virtual{$ELSE} override {$ENDIF};
+    procedure SetAsExtended(Value: Extended); override;
     procedure SetAsString(const Value: string); override;
     procedure SetAsCurrency(Value: Currency); override;
     procedure SetAsInt64(Value: Int64); virtual;
@@ -83,15 +78,12 @@ type
     procedure Assign(Source: TPersistent); override;
     property AsExtended: Extended read GetAsExtended write SetAsExtended;
     property AsInt64: Int64 read GetAsInt64 write SetAsInt64;
-{$IFNDEF NO_USE_COMP}
-    property AsComp: Comp read GetAsComp write SetAsComp;
-{$ENDIF}
     property Value: Extended read GetAsExtended write SetAsExtended;
   end;
 
   TFIBDataSetProvider = class(TDataSetProvider)
   protected
-    function FindRecord(Source, Delta: TDataSet; UpdateMode: TUpdateMode): Boolean; {$IFDEF D2005+}override; {$ENDIF}
+    function FindRecord(Source, Delta: TDataSet; UpdateMode: TUpdateMode): Boolean; override;
     procedure UpdateRecord(Source, Delta: TDataSet; BlobsOnly, KeyOnly: Boolean); override;
     function CreateResolver: TCustomResolver; override;
   end;
@@ -290,20 +282,6 @@ begin
     inherited Assign(Source);
 end;
 
-{$IFNDEF NO_USE_COMP}
-
-function TFIBClientBCDField.GetAsComp: Comp;
-begin
-  Result := GetAsExtended
-end;
-
-procedure TFIBClientBCDField.SetAsComp(Value: Comp);
-begin
-  SetData(@Value, False)
-end;
-
-{$ENDIF}
-
 function TFIBClientBCDField.GetAsCurrency: Currency;
 begin
   Result := GetAsExtended
@@ -451,7 +429,7 @@ procedure TFIBClientBCDField.SetVarValue(const Value: variant);
 begin
   case VarType(Value) of
     varEmpty, varNull: Clear;
-    varString, varOleStr{$IFDEF D2009+}, varUString{$ENDIF} :
+    varString, varOleStr, varUString:
       AsString := Value;
     varSmallint, varInteger, varWord, varLongWord: AsInteger := Value;
     varInt64: AsInt64 := Value

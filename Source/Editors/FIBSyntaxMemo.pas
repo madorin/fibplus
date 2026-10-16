@@ -13,78 +13,7 @@ unit FIBSyntaxMemo;
 interface
 
 {$I ..\FIBPlus.inc}
-{$IFDEF VER140}
-{$IFDEF BCB}			// C++Buider 6.0
-{$OBJEXPORTALL on}
-{$ENDIF}
-{$WARN SYMBOL_PLATFORM OFF}
-{$ENDIF}
-{$IFDEF VER150}
-{$DEFINE D7+}
-{$WARN UNSAFE_TYPE OFF}
-{$WARN UNSAFE_CODE OFF}
-{$WARN UNSAFE_CAST OFF}
-{$WARN SYMBOL_PLATFORM OFF}
-{$ENDIF}
-// Probably Delphi 2005 defines
-{$IFDEF VER170}
-{$DEFINE D7+}
-{$DEFINE D9+}
-{$INLINE OFF}
-{$WARN UNSAFE_TYPE OFF}
-{$WARN UNSAFE_CODE OFF}
-{$WARN UNSAFE_CAST OFF}
-{$WARN SYMBOL_PLATFORM OFF}
-{$ENDIF}
-{$IFDEF VER180}
-{$DEFINE D7+}
-{$DEFINE D9+}
-{$DEFINE D10+}
-{$WARN UNSAFE_TYPE OFF}
-{$WARN UNSAFE_CODE OFF}
-{$WARN UNSAFE_CAST OFF}
-{$WARN SYMBOL_PLATFORM OFF}
-{$ENDIF}
-{$IFDEF VER200}
-{$DEFINE D7+}
-{$DEFINE D9+}
-{$DEFINE D10+}
-{$DEFINE D11+}
-{$WARN UNSAFE_TYPE OFF}
-{$WARN UNSAFE_CODE OFF}
-{$WARN UNSAFE_CAST OFF}
-{$WARN SYMBOL_PLATFORM OFF}
-{$WARNINGS  OFF}
-{$ENDIF}
-{$IFDEF VER210} // Delphi 2010
-{$DEFINE D7+}
-{$DEFINE D9+}
-{$DEFINE D10+}
-{$DEFINE D11+}
-{$DEFINE D12+}
-{$WARN UNSAFE_TYPE OFF}
-{$WARN UNSAFE_CODE OFF}
-{$WARN UNSAFE_CAST OFF}
-{$WARN SYMBOL_PLATFORM OFF}
-{$WARNINGS  OFF}
-{$ENDIF}
-{$IF CompilerVersion >= 22} // Delphi XE
-{$WARN UNSAFE_TYPE OFF}
-{$WARN UNSAFE_CODE OFF}
-{$WARN UNSAFE_CAST OFF}
-{$WARN SYMBOL_PLATFORM OFF}
 {$WARNINGS OFF}
-{$DEFINE D7+}
-{$DEFINE D9+}
-{$DEFINE D10+}
-{$DEFINE D11+}
-{$DEFINE D12+}
-{$DEFINE D13+}
-{$IF CompilerVersion >= 23} // Delphi XE2
-{$DEFINE D_XE2}
-{$ENDIF}
-{$ENDIF}
-{$UNDEF UNICODE}
 
 uses
   Windows, Messages, SysUtils, Classes,
@@ -1483,159 +1412,6 @@ begin
       Result.Y := (Bottom - Top) div 2 + Top;
     end;
 end;
-
-{$IFNDEF D9+}
-
-function EnsureRange(const AValue, AMin, AMax: Integer): Integer;
-begin
-  Result := AValue;
-  // assert(AMin <= AMax);
-  if Result < AMin then
-    Result := AMin;
-  if Result > AMax then
-    Result := AMax;
-end;
-
-function PointsEqual(const P1, P2: TPoint): Boolean;
-begin
-  Result := (P1.X = P2.X) and (P1.Y = P2.Y);
-end;
-
-function Sign(const AValue: Integer): Integer;
-begin
-  Result := 0;
-  if AValue < 0 then
-    Result := -1
-  else if AValue > 0 then
-    Result := 1;
-end;
-
-function StuffString(const AText: string; AStart, ALength: Cardinal; const ASubText: string): string;
-begin
-  Result := Copy(AText, 1, AStart - 1) + ASubText + Copy(AText, AStart + ALength, MaxInt);
-end;
-
-function InRange(const AValue, AMin, AMax: Int64): Boolean;
-begin
-  Result := (AValue >= AMin) and (AValue <= AMax);
-end;
-
-function RightStr(const AText: AnsiString; const ACount: Integer): AnsiString;
-begin
-  Result := Copy(WideString(AText), Length(WideString(AText)) + 1 - ACount, ACount);
-end;
-
-{$IFNDEF D10+}
-
-function LeftStr(const AText: AnsiString; const ACount: Integer): AnsiString; overload;
-begin
-  Result := Copy(WideString(AText), 1, ACount);
-end;
-{$ENDIF}
-
-function IfThen(AValue: Boolean; const ATrue: Integer; const AFalse: Integer): Integer;
-begin
-  if AValue then
-    Result := ATrue
-  else
-    Result := AFalse;
-end;
-
-function PosEx(const SubStr, s: string; Offset: Integer = 1): Integer;
-asm
-  test  eax, eax
-  jz    @Nil
-  test  edx, edx
-  jz    @Nil
-  dec   ecx
-  jl    @Nil
-
-  push  esi
-  push  ebx
-
-  mov   esi, [edx-4]  // Length(Str)
-  mov   ebx, [eax-4]  // Length(Substr)
-  sub   esi, ecx      // effective length of Str
-  add   edx, ecx      // addr of the first char at starting position
-  cmp   esi, ebx
-  jl    @Past         // jump if EffectiveLength(Str)<Length(Substr)
-  test  ebx, ebx
-  jle   @Past         // jump if Length(Substr)<=0
-
-  add   esp, -12
-  add   ebx, -1       // Length(Substr)-1
-  add   esi, edx      // addr of the terminator
-  add   edx, ebx      // addr of the last char at starting position
-  mov   [esp+8], esi  // save addr of the terminator
-  add   eax, ebx      // addr of the last char of Substr
-  sub   ecx, edx      // -@Str[Length(Substr)]
-  neg   ebx           // -(Length(Substr)-1)
-  mov   [esp+4], ecx  // save -@Str[Length(Substr)]
-  mov   [esp], ebx    // save -(Length(Substr)-1)
-  movzx ecx, byte ptr [eax] // the last char of Substr
-
-@Loop:
-  cmp   cl, [edx]
-  jz    @Test0
-@AfterTest0:
-  cmp   cl, [edx+1]
-  jz    @TestT
-@AfterTestT:
-  add   edx, 4
-  cmp   edx, [esp+8]
-  jb   @Continue
-@EndLoop:
-  add   edx, -2
-  cmp   edx, [esp+8]
-  jb    @Loop
-@Exit:
-  add   esp, 12
-@Past:
-  pop   ebx
-  pop   esi
-@Nil:
-  xor   eax, eax
-  ret
-@Continue:
-  cmp   cl, [edx-2]
-  jz    @Test2
-  cmp   cl, [edx-1]
-  jnz   @Loop
-@Test1:
-  add   edx,  1
-@Test2:
-  add   edx, -2
-@Test0:
-  add   edx, -1
-@TestT:
-  mov   esi, [esp]
-  test  esi, esi
-  jz    @Found
-@String:
-  movzx ebx, word ptr [esi+eax]
-  cmp   bx, word ptr [esi+edx+1]
-  jnz   @AfterTestT
-  cmp   esi, -2
-  jge   @Found
-  movzx ebx, word ptr [esi+eax+2]
-  cmp   bx, word ptr [esi+edx+3]
-  jnz   @AfterTestT
-  add   esi, 4
-  jl    @String
-@Found:
-  mov   eax, [esp+4]
-  add   edx, 2
-
-  cmp   edx, [esp+8]
-  ja    @Exit
-
-  add   esp, 12
-  add   eax, edx
-  pop   ebx
-  pop   esi
-end;
-
-{$ENDIF}
 
 function IfThenStr(AValue: Boolean; const ATrue: string; const AFalse: string): string;
 begin
@@ -3855,14 +3631,10 @@ begin
           // Get a pointer to it
           DataPtr := GlobalLock(Data);
           try
-  {$IFDEF D11+}
             if s = sa then
               Move(PAnsiChar(sa)^, DataPtr^, Length(s) * SizeOf(AnsiChar) + SizeOf(AnsiChar))
             else
               Move(PChar(s)^, DataPtr^, Length(s) * SizeOf(Char) + SizeOf(Char));
-  {$ELSE}
-            Move(PChar(s)^, DataPtr^, Length(s) * SizeOf(Char) + SizeOf(Char));
-  {$ENDIF}
             SetClipboardData(CF_SYNTAX, Data);
           finally
             GlobalUnlock(Data);
@@ -3908,14 +3680,10 @@ begin
           p := GlobalLock(Data);
           s := PChar(p);
           sa := PAnsiChar(p);
-  {$IFDEF D11+}
           if sa = s then
             SetMarkedText(s)
           else
             SetMarkedText(sa);
-  {$ELSE}
-          SetMarkedText(s);
-  {$ENDIF}
         finally
           GlobalUnlock(Data);
           CloseClipboard;
@@ -6866,19 +6634,7 @@ begin
 end;
 
 type
-{$IFNDEF D9+}
-  THackStrings = class(TPersistent)
-  private
-    FDefined: TStringsDefined;
-    FDelimiter: Char;
-    FQuoteChar: Char;
-    UpdateCount: Integer;
-  end;
-
-{$ELSE}
-
   THackStrings = class(TStrings);
-{$ENDIF}
 
   // Shows the cursor
 procedure TMPCustomSyntaxMemo.ShowCaret;
@@ -6904,7 +6660,7 @@ begin
       Windows.ShowCaret(Handle);
       fCaretVisible := True; }
     end
-  else if (THackStrings(Lines).UpdateCount = 0) and { TODO : D5 }
+  else if (THackStrings(Lines).UpdateCount = 0) and
   (Lines.IsValidLineIndex(Range.PosY) and IsLineVisible(Range.PosY, @ScreenRow)) then
       begin
         N := CharPosToPixOffset(Range.PosX, Range.PosY);

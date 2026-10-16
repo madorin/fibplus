@@ -191,9 +191,6 @@ begin
   if isStringsPropFile then
   begin
     FCurrentUnit := UpperCase(FCurrentUnit);
-{$IFDEF D9+}
-    FCurrentUnit := Copy(FCurrentUnit, 5, MaxInt);
-{$ENDIF}
     iWSep2 := 1;
     for iWSep1 := Length(FCurrentUnit) - 3 downto 1 do
     begin
@@ -296,9 +293,6 @@ begin
   else
   begin
     s := Module.FileName;
-{$IFDEF D9+}
-    s := Copy(s, 5, MaxInt);
-{$ENDIF}
     j := Length(s);
     for I := 1 to Length(s) do
     begin

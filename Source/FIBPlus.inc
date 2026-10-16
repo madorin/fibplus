@@ -15,7 +15,6 @@
 
 // Library options
 
-{$DEFINE NO_USE_COMP}
 {$DEFINE SUPPORT_ARRAY_FIELD}         // ARRAY field support
 {$DEFINE INC_SERVICE_SUPPORT}         // include service components
 
@@ -30,19 +29,11 @@
 // {$DEFINE USE_DEPRECATE_METHODS2}   // FIBDabase.DataSets -> FIBDabase.Bases
 // {$DEFINE DFM_VERSION1}             // save dfm in the old format (Conditions and FIBDataSet.Options)
 
-{$IFDEF VER140}
-  {$IFDEF BCB} // C++Builder 6
-    {$OBJEXPORTALL on}
-  {$ENDIF}
-{$ENDIF}
+{$IF CompilerVersion < 20}
+  {$MESSAGE FATAL 'FIBPlus 8 needs Delphi 2009 or later'}
+{$IFEND}
 
 // Version defines are cumulative: each one stays active on all newer compilers.
-{$IF CompilerVersion >= 14}   {$DEFINE D6+}    {$IFEND} // Delphi 6
-{$IF CompilerVersion >= 15}   {$DEFINE D7+}    {$IFEND} // Delphi 7
-{$IF CompilerVersion >= 17}   {$DEFINE D2005+} {$IFEND} // Delphi 2005
-{$IF CompilerVersion >= 18}   {$DEFINE D2006+} {$IFEND} // Delphi 2006
-{$IF CompilerVersion >= 18.5} {$DEFINE D2007+} {$IFEND} // Delphi 2007
-{$IF CompilerVersion >= 20}   {$DEFINE D2009+} {$IFEND} // Delphi 2009
 {$IF CompilerVersion >= 21}   {$DEFINE D2010+} {$IFEND} // Delphi 2010
 {$IF CompilerVersion >= 22}   {$DEFINE D_XE}   {$IFEND} // Delphi XE
 {$IF CompilerVersion >= 23}   {$DEFINE D_XE2}  {$IFEND} // Delphi XE2
@@ -61,9 +52,7 @@
 {$IF CompilerVersion >= 36}   {$DEFINE D_29}   {$IFEND} // Delphi 12 Athens
 {$IF CompilerVersion >= 37}   {$DEFINE D_30}   {$IFEND} // Delphi 13 Florence
 
-{$IF CompilerVersion = 17} {$INLINE OFF} {$IFEND} // Delphi 2005 only
-
-{$IF (CompilerVersion >= 18) and (CompilerVersion < 24)} // Delphi 2006 .. XE2
+{$IF CompilerVersion < 24} // Delphi 2009 .. XE2
   {$DEFINE TWideDataSet}
 {$IFEND}
 
@@ -71,33 +60,19 @@
 
 {$WARN SYMBOL_DEPRECATED OFF}
 {$WARN SYMBOL_PLATFORM OFF}
-
-{$IFDEF D7+}
-  {$WARN UNSAFE_TYPE OFF}
-  {$WARN UNSAFE_CODE OFF}
-  {$WARN UNSAFE_CAST OFF}
-{$ENDIF}
-
-{$IFDEF D2009+}
-  {$WARN WIDECHAR_REDUCED OFF}
-  {$WARN IMPLICIT_STRING_CAST OFF}
-  {$WARN IMPLICIT_STRING_CAST_LOSS OFF}
-{$ENDIF}
+{$WARN UNSAFE_TYPE OFF}
+{$WARN UNSAFE_CODE OFF}
+{$WARN UNSAFE_CAST OFF}
+{$WARN WIDECHAR_REDUCED OFF}
+{$WARN IMPLICIT_STRING_CAST OFF}
+{$WARN IMPLICIT_STRING_CAST_LOSS OFF}
 
 // Platform
 
-{$IFNDEF LINUX}
-  {$IFNDEF NO_GUI}
-    {$IFNDEF MACOS}
-      {$IFNDEF D_XE2}
-        {$DEFINE DIRECT_USE_DB_LOGIN_FORM}
-      {$ENDIF}
-    {$ENDIF}
+{$IFNDEF NO_GUI}
+  {$IFNDEF D_XE2}
+    {$DEFINE DIRECT_USE_DB_LOGIN_FORM}
   {$ENDIF}
-{$ENDIF}
-
-{$IFNDEF D7+}
-  {$DEFINE WINDOWS}
 {$ENDIF}
 
 {$IFDEF MSWINDOWS}
@@ -109,10 +84,6 @@
     {$DEFINE NO_MONITOR}
     {$DEFINE NO_GUI}
   {$ENDIF}
-{$ENDIF}
-
-{$IFNDEF D2009+}
-  {$UNDEF UNICODE_TO_STRING_FIELDS}
 {$ENDIF}
 
 // Compiler options

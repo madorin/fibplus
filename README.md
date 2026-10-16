@@ -12,7 +12,7 @@ See the [documentation](Docs/README.md): a guide to features such as transaction
 
 ## 📦 Installation
 
-The `Packages` folder contains a project group `FibPlus_Dxx.groupproj` for each supported Delphi version, where `xx` is the product version:
+The `Packages` folder contains a project group `FibPlus_Dxx.groupproj` for each Delphi version in the table below, where `xx` is the product version:
 
 | Delphi | Suffix |
 |--------|--------|
@@ -24,6 +24,8 @@ The `Packages` folder contains a project group `FibPlus_Dxx.groupproj` for each 
 | 10.2 Tokyo | D25 |
 | 10.1 Berlin | D24 |
 | 10 Seattle | D23 |
+
+FibPlus 8 supports Delphi 2009 and later; use 7.9.x for Delphi 6 to 2007. The packages of Delphi 2009 to XE8 are also in `Packages` (project groups only for XE2 to XE5 and XE7); they are not tested with 8.0.
 
 Each group contains these packages:
 

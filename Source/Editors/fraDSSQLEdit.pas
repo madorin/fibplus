@@ -17,7 +17,7 @@ uses
 
 type
   TOnCanUseFields = procedure(const FieldName: string; Allow: boolean) of object;
-  TFrame = TFIBEditorCustomFrame; // Fake for D5
+  TFrame = TFIBEditorCustomFrame;
 
   TfDSSQLEdit = class(TFrame)
     pgCtrl: TPageControl;
@@ -588,7 +588,7 @@ begin
     Exit;
   end;
   b := GetPropValue(SelectSQLEdit.FDatabase, 'Connected');
-  b1 := b; // D5 bugs variant conversion
+  b1 := b;
   if not b1 then
   begin
     SelectSQLEdit.iViewSQL.ISetProposalItems(DefProposalShadow[0], DefProposalShadow[1]);

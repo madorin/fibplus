@@ -14,10 +14,20 @@ Find the version you use now, then read every section above it, from the one jus
 
 ## 8.0.0
 
+### Build
+
+| Change | What to do |
+|--------|------------|
+| Delphi 6, 7, 2005, 2006, 2007 and C++Builder 6 to 2007 are no longer supported; their packages are removed. Compiling with them stops with a fatal message. | Stay on 7.9.x, or move to Delphi 2009 or later. |
+
 ### Renamed and removed identifiers
 
 | Old | New | What to do |
 |-----|-----|------------|
+| `StrUtil.CharInSet`, `FIBPlatforms.WideCompareStr` (declared only for compilers before Delphi 2009) | Removed | Nothing: `SysUtils` declares both. |
+| `IWideStringField`, `TFIBMemoField.WideDisplayText`/`WideText` (`GetWideDisplayText`, `GetWideEditText`, `SetWideEditText`), for the TNT controls | Removed | Use `DisplayText`, `Text` or `AsString`. |
+| `FIBCharSets.DecodeWideString` | `DecodeString` | Rename; assign the result to a `WideString` if the type matters. |
+| `AsComp` of `TFIBBCDField`, `TFIBClientBCDField`, `TFIBXSQLVAR` (compiled only without `NO_USE_COMP`, which `FIBPlus.inc` always defined) | Removed | Use `AsBcd` or `AsInt64`. |
 | Unit `pFIBScripter` | `FIBScripter` | Change the `uses` clause. The old unit still compiles and gives a warning. |
 | `TpFIBScripter` | `TFIBScripter` | Rename. The old name is a deprecated alias of the same class. |
 | `TpFIBScriptParser` | `TFIBScriptParser` | Rename. The old name is a deprecated alias of the same class. |
@@ -142,7 +152,7 @@ The transaction of the SQL logger uses `nowait` and no longer the server default
 
 | Change | What to do |
 |--------|------------|
-| The packages for Delphi 2007 and later write DCU files to `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`. | Add that folder to the Library path if you link the DCU files instead of the sources. |
+| The packages write DCU files to `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`. | Add that folder to the Library path if you link the DCU files instead of the sources. |
 | `FIBPlusFMX` is a new runtime package (Delphi 13) that contains the FireMonkey login dialog `FIB_FMX_DBLoginDlg`. The unit was in no package before. | Add the package to the requires list of an FMX application that uses the dialog. |
 
 ### Renamed and removed identifiers
@@ -232,7 +242,7 @@ Text goes through the code page of its column's character set. These changes can
   ```
 
 - `ISO8859_1` and `ISO8859_9` use code pages 1252 and 1254, so the range `0x80..0x9F` shows `€ “ ” …` instead of control characters. `ASCII` uses the system code page.
-- `TFIBStringField.AsAnsiString` (*Delphi 2009+*) returns the column bytes with their code page set. Calculated and lookup `ftString` fields use the system code page.
+- `TFIBStringField.AsAnsiString` returns the column bytes with their code page set. Calculated and lookup `ftString` fields use the system code page.
 
 #### Restoring a lost connection
 

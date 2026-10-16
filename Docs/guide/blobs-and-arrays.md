@@ -13,7 +13,7 @@ A BLOB column has a *subtype*. Subtype `1` is text. Other subtypes are binary. A
 
 | Subtype | `TFIBDataSet` field class | Data type |
 |---------|---------------------------|-----------|
-| `1`, or a subtype listed in `TFIBDatabase.MemoSubtypes` | `TFIBMemoField` | `ftMemo`, or `ftWideMemo` (*Delphi 2007+*) on a Unicode connection with a Unicode column character set, *Firebird 2.1+* |
+| `1`, or a subtype listed in `TFIBDatabase.MemoSubtypes` | `TFIBMemoField` | `ftMemo`, or `ftWideMemo` on a Unicode connection with a Unicode column character set, *Firebird 2.1+* |
 | any other | `TFIBBlobField` | `ftBlob` |
 
 A BLOB value does not travel with the row. The row carries a BLOB ID, and the content is read from the server when you ask for it.

@@ -101,6 +101,13 @@ The lists of old and new names, and what an application has to change, are in
   only on those that report a lost connection, instead of on every database of
   the process; a lost service connection closes no database.
 
+### Removed
+
+- Support for Delphi 6, 7, 2005, 2006, 2007 and C++Builder 6 to 2007 (the
+  non-Unicode compilers), their packages, the Kylix code and the TNT controls
+  interface `IWideStringField`; the minimum is Delphi 2009.
+- `FIBCharSets.DecodeWideString`: use `DecodeString`.
+
 ### Fixed
 
 - `TFIBScripter` cut a statement at a `--` comment when the script was added

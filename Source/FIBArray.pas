@@ -146,7 +146,7 @@ begin
         C := Value;
         Result := Int64ToFBDecimal(PInt64(@C)^, -4);
       end;
-    varString, varOleStr{$IFDEF D2009+}, varUString{$ENDIF}:
+    varString, varOleStr, varUString:
       begin
         S := StringReplace(Trim(VarToStr(Value)), LocalDecimalSeparator, '.', []);
         if not StrToFBDecimal(S, Result) then
@@ -548,14 +548,7 @@ begin
               Dec(L);
         end;
         SetString(S, P, L);
-{$IFDEF D2009+}
         Result := DecodeString(S, FElementCodePage);
-{$ELSE}
-        if FElementCodePage = FIBCodePageUTF8 then
-          Result := UTF8Decode(S)
-        else
-          Result := S;
-{$ENDIF}
       end;
     blr_short:
       if FElementScale = 0 then

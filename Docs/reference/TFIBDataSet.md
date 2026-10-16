@@ -783,7 +783,7 @@ The dataset creates these `TField` descendants for the columns of `SelectSQL`. M
 | Class | Created for | Added members |
 |-------|-------------|---------------|
 | `TFIBArrayField` | `ftBytes` (array columns), when array support is compiled in | `DimensionCount`, `ElementType`, `Dimension[Index]`, `ArraySize`, `ArrayID`. Its text is `(ARRAY)`, or `(Array)` when null. |
-| `TFIBBCDField` | `ftBCD`: `BIGINT` (scale 0) unless `psUseLargeIntField` is set, and scaled 64-bit `NUMERIC` with scale up to 4, or any scale with `psSQLINT64ToBCD` | `AsInt64` (whole part), `AsBcd`, `AsExtended`, `AsComp` (when available), `Value`, `FieldModified`, and in-place arithmetic: `AddExtended`, `SubtractExtended`, `MultiplyExtended`, `DivideExtended`, `AddBCD`, `SubtractBCD`, `MultiplyBCD`, `DivideBCD`. Published: `Size` (default `8`). |
+| `TFIBBCDField` | `ftBCD`: `BIGINT` (scale 0) unless `psUseLargeIntField` is set, and scaled 64-bit `NUMERIC` with scale up to 4, or any scale with `psSQLINT64ToBCD` | `AsInt64` (whole part), `AsBcd`, `AsExtended`, `Value`, `FieldModified`, and in-place arithmetic: `AddExtended`, `SubtractExtended`, `MultiplyExtended`, `DivideExtended`, `AddBCD`, `SubtractBCD`, `MultiplyBCD`, `DivideBCD`. Published: `Size` (default `8`). |
 | `TFIBBlobField` | `ftBlob`, `ftFmtMemo`, `ftParadoxOle`, `ftDBaseOle`, `ftTypedBinary` | `SubType`, `Blob_ID`, `GetBlobInfo`. Published: `IsClientField` (default `False`): the value is not read from the server but filled in `OnFillClientBlob`. |
 | `TFIBBooleanField` | `ftBoolean` | Published: `StringTrue`, `StringFalse` (text used by `AsString`). `SetAsString` also accepts `1`, `T`, `0`, `F`. A `SMALLINT` or `INTEGER` column also becomes a boolean field when `psUseBooleanField` is set and its metadata allows it. |
 | `TFIBDateField` | `ftDate` | |
@@ -793,7 +793,7 @@ The dataset creates these `TField` descendants for the columns of `SelectSQL`. M
 | `TFIBGuidField` | `ftGuid` | `AsGuid`. |
 | `TFIBIntegerField` | `ftInteger` | `AsBoolean`: `True` for a value above `0`; setting it writes `1` or `0`. |
 | `TFIBLargeIntField` | `ftLargeint` | `OldValue` as `Int64`. |
-| `TFIBMemoField` | `ftMemo`, `ftWideMemo` (*Delphi 2007+*) | `SubType`, `Blob_ID`, `GetBlobInfo`; implements `IWideStringField`. |
+| `TFIBMemoField` | `ftMemo`, `ftWideMemo` | `SubType`, `Blob_ID`, `GetBlobInfo`. |
 | `TFIBSmallIntField` | `ftSmallint` | `AsBoolean`: `True` for a value above `0`; setting it writes `1` or `0`. |
 | `TFIBStringField` | `ftString` | `IsDBKey` (`True` for a `DB_KEY` column), `SqlSubType`, `CharacterSet` (name), `AsNativeData` and `AsOctetsData` (raw bytes; `AsOctetsData` can be set), `DefaultValueEmptyString`. Published: `EmptyStrToNull`. |
 | `TFIBTimeField` | `ftTime` | Published: `ShowMsec` (default `False`): append the milliseconds to the text when they are not zero. |

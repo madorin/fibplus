@@ -31,7 +31,7 @@ uses
   Db, uFIBEditorForm, Classes;
 
 type
-  TFrame = TFIBEditorCustomFrame; // Fake for D5
+  TFrame = TFIBEditorCustomFrame;
 
   TfAutoUpdateOptionForm = class(TFrame)
     GroupBox1: TGroupBox;

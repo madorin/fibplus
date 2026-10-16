@@ -155,9 +155,7 @@ var
     IgnoreCase: Word;
     S1, S2: Variant;
     S: string;
-{$IFDEF D2009+}
     us: UnicodeString;
-{$ENDIF}
     null1, null2: Boolean;
     p, p1: Integer;
   type
@@ -194,11 +192,9 @@ var
         case iOperator of
           coCONST2:
             begin
-{$IFDEF D2007+}
               if PWord(@pfd[0])^ = $1007 then
                 DataType := ftWideString
               else
-{$ENDIF}
                 DataType := TFieldType(PWord(@pfd[0])^);
               DataOfs := iLiteralStart + PWord(@pfd[4])^;
               pArg1 := pfdStart;
@@ -208,14 +204,12 @@ var
                 ftInteger, ftAutoInc: Result := PInteger(pArg1)^;
                 ftFloat, ftCurrency: Result := PDouble(pArg1)^;
                 ftString, ftFixedChar: Result := string(pArg1);
-{$IFDEF D2009+}
                 ftWideString:
                   begin
                     SetLength(us, PWord(pArg1)^ div 2);
                     Move(pArg1[2], us[1], PWord(pArg1)^);
                     Result := us
                   end;
-{$ENDIF}
                 ftDate:
                   begin
                     ts.Date := PInteger(pArg1)^;
@@ -477,8 +471,7 @@ var
                 if VarIsNull(Result[0]) then
                   Result := Null
                 else
-                  Result := VarAsType(Result[0],
-                    {$IFDEF D2009+}varUString{$ELSE}varString{$ENDIF});
+                  Result := VarAsType(Result[0], varUString);
             end;
           else
             DatabaseError(SExprIncorrect);

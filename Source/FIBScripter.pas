@@ -426,7 +426,7 @@ begin
 
 end;
 
-function StmtCoord(X, Y: Integer): TStmtCoord; {$IFDEF D2009+}inline; {$ENDIF}
+function StmtCoord(X, Y: Integer): TStmtCoord; inline;
 begin
   Result.X := X;
   Result.Y := Y;
@@ -1874,12 +1874,12 @@ end;
 
 { TFIBScriptParser }
 
-function IsBlank(C: Char): boolean; {$IFDEF D2009+}inline; {$ENDIF}
+function IsBlank(C: Char): boolean; inline;
 begin
   Result := CharInSet(C, [' ', #9, #10, #13]);
 end;
 
-function IsWordChar(C: Char): boolean; {$IFDEF D2009+}inline; {$ENDIF}
+function IsWordChar(C: Char): boolean; inline;
 begin
   Result := CharInSet(C, ['A' .. 'Z', 'a' .. 'z', '0' .. '9', '_', '$']);
 end;

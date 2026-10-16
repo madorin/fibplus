@@ -83,12 +83,6 @@ uses
 {$ENDIF}
   ToCodeEditorIntfs;
 
-{$IFDEF D9+}
-
-const
-  cDfmExt = 'dfm';
-{$ENDIF}
-
 type
   TToCodeEditor = class(TComponent, IStringsToCodeEditor)
   private
@@ -220,11 +214,7 @@ begin
   if (Component.Owner = nil) then
     Exit;
   ModuleServices := BorlandIDEServices as IOTAModuleServices;
-{$IFDEF D9+}
-  Ident := cDfmExt + DotSep + Component.Owner.Name + DotSep + Component.Name + DotSep + PropName;
-{$ELSE}
   Ident := Component.Owner.Name + DotSep + Component.Name + DotSep + PropName;
-{$ENDIF}
   Module := ModuleServices.FindModule(Ident);
   if (Module <> nil) and (Module.GetModuleFileCount > 0) then
   begin
@@ -324,11 +314,7 @@ begin
 
   end;
 
-{$IFDEF D9+}
-  Ident := cDfmExt + DotSep + Component.Owner.Name + DotSep + Component.Name + DotSep + pName;
-{$ELSE}
   Ident := Component.Owner.Name + DotSep + Component.Name + DotSep + pName;
-{$ENDIF}
   // Ident := Component.Owner.Name + DotSep + Component.Name + DotSep + PropName;
   SaveCloseModule(Ident);
   // this used to be done in LibMain's TLibrary.Create but now its done here
@@ -362,14 +348,6 @@ procedure SetSQLPropertiesHighlights;
 const
   SQLProps = ';selectsql;insertsql;deletesql;refreshsql;updatesql;';
 begin
-{$IFNDEF D7+}
-  if Assigned(BorlandIDEServices) then
-    with (BorlandIDEServices as IOTAEditorServices).EditOptions do
-    begin
-      if Pos(SQLProps, SyntaxHighlightTypes[shSQL]) = 0 then
-        SyntaxHighlightTypes[shSQL] := SyntaxHighlightTypes[shSQL] + SQLProps
-    end;
-{$ELSE}
   if Assigned(BorlandIDEServices) then
     with (BorlandIDEServices as IOTAEditorServices).GetEditOptionsForFile
       ('*.SQL') do
@@ -377,8 +355,6 @@ begin
       if Pos(SQLProps, Extensions) = 0 then
         Extensions := Extensions + SQLProps
     end;
-
-{$ENDIF}
 end;
 
 { TToCodeEditor }

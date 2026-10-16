@@ -19,16 +19,11 @@ unit FIBDBEdit;
 interface
 
 uses
-{$IFDEF WINDOWS}
   Windows, Messages,
 {$IFDEF D_XE2}
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Classes,
 {$ELSE}
   Controls, Forms, Dialogs, StdCtrls, Classes,
-{$ENDIF}
-{$ENDIF}
-{$IFDEF LINUX}
-  Types, QControls, QForms, QDialogs, QStdCtrls, Classes,
 {$ENDIF}
   SysUtils, FIBInterfaces, TypInfo, uFIBEditorForm;
 
@@ -108,7 +103,6 @@ implementation
 
 uses
   Variants,
-  // {$IFDEF LINUX}  Variants, {$ENDIF}
   RegistryUtils, RTTIRoutines, FIBEditorsConsts;
 
 function EditFIBDatabase(Database: TComponent): boolean;

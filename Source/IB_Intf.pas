@@ -633,21 +633,12 @@ implementation
 uses
   FIBConsts;
 
-{$IFDEF LINUX}
-
-const
-  HINSTANCE_ERROR = $20;
-{$ENDIF}
-
 var
 {$IFDEF WINDOWS}
   IBInstallLibrary: THandle;
 {$ENDIF}
 {$IFDEF MACOS}
   IBInstallLibrary: THandle;
-{$ENDIF}
-{$IFDEF LINUX}
-  IBInstallLibrary: Pointer;
 {$ENDIF}
   vClientLibs: TInterfaceList;
 
@@ -767,12 +758,6 @@ procedure LoadIBInstallLibrary;
       RaiseLastOSError
   end;
 {$ENDIF}
-{$IFDEF LINUX}
-  function GetProcAddr(ProcName: PAnsiChar): Pointer;
-  begin
-    Result := dlsym(IBInstallLibrary, ProcName);
-  end;
-{$ENDIF}
 {$IFDEF MACOS}
   function GetProcAddr(ProcName: PWideChar): Pointer;
   begin
@@ -790,10 +775,6 @@ begin
 {$IFDEF MACOS}
     IBInstallLibrary := LoadLibrary(PChar(IB_INSTALL_DLL));
   if (IBInstallLibrary <> 0) then
-{$ENDIF}
-{$IFDEF LINUX}
-    IBInstallLibrary := dlopen(PAnsiChar(IB_INSTALL_DLL), 0);
-  if (IBInstallLibrary <> nil) then
 {$ENDIF}
   begin
     isc_install_clear_options := GetProcAddr('isc_install_clear_options');
@@ -834,13 +815,6 @@ begin
     IBInstallLibrary := 0;
   end;
 {$ENDIF}
-{$IFDEF LINUX}
-  if IBInstallLibrary <> nil then
-  begin
-    dlclose(IBInstallLibrary);
-    IBInstallLibrary := nil;
-  end;
-{$ENDIF}
 end;
 
 procedure CheckIBInstallLoaded;
@@ -849,11 +823,6 @@ begin
   if (IBInstallLibrary <= HINSTANCE_ERROR) then
     LoadIBInstallLibrary;
   if (IBInstallLibrary <= HINSTANCE_ERROR) then
-{$ENDIF}
-{$IFDEF LINUX}
-    if (IBInstallLibrary = nil) then
-      LoadIBInstallLibrary;
-  if (IBInstallLibrary = nil) then
 {$ENDIF}
     raise EAPICallException.Create(Format(SCantLoadLibrary, [IB_INSTALL_DLL]));
 end;
@@ -1983,11 +1952,7 @@ begin
   else
   begin
     // Can't load Library
-{$IFDEF D7+}
     RaiseLastOSError
-{$ELSE}
-    raise EAPICallException.Create(Format(SCantLoadLibrary, [FLibraryName]));
-{$ENDIF}
   end;
 
   Fisc_get_client_version := TryGetProcAddr('isc_get_client_version');
@@ -2033,13 +1998,6 @@ begin
     FLibraryHandle := HINSTANCE_ERROR
   end;
 {$ENDIF}
-{$IFDEF LINUX}
-  if (FLibraryHandle <> nil) then
-  begin
-    dlclose(FLibraryHandle);
-    FLibraryHandle := nil
-  end;
-{$ENDIF}
 end;
 
 function TIBClientLibrary.LibraryLoaded: boolean;
@@ -2049,9 +2007,6 @@ begin
 {$ENDIF}
 {$IFDEF MACOS}
     Result := FLibraryHandle > HINSTANCE_ERROR
-{$ENDIF}
-{$IFDEF LINUX}
-    Result := FLibraryHandle <> nil
 {$ENDIF}
 end;
 
@@ -2094,12 +2049,6 @@ begin
   GetModuleFileName(FLibraryHandle, buffer, SizeOf(buffer));
   Result := buffer
 end;
-
-{$IFNDEF D2009+}
-
-type
-  NativeInt = Integer; // older compilers target 32 bits only
-{$ENDIF}
 
 type
   TCryptKeyCallbackVTable = record

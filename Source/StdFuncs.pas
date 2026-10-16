@@ -43,9 +43,9 @@ function ConvertToBase(iNum, iBase: Integer; cDigits: String): String;
 
 function Max(n1, n2: Integer): Integer;
 function MaxD(n1, n2: Double): Double;
-function Min(n1, n2: Integer): Integer; {$IFDEF D2005+} inline; {$ENDIF}
+function Min(n1, n2: Integer): Integer; inline;
 function MinD(n1, n2: Double): Double;
-function Signum(Arg: Integer): Integer; {$IFDEF D2005+} inline; {$ENDIF}
+function Signum(Arg: Integer): Integer; inline;
 function RandomString(iLength: Integer): String;
 // function RandomInteger(iLow, iHigh: Integer): Integer;
 function Soundex(st: String): String;
@@ -57,8 +57,8 @@ function DayOfYear(d: TDateTime): Integer;
 function DayOfMonth(d: TDateTime): Integer;
 
 procedure WeekOfYear(d: TDateTime; var Year, Week: Integer);
-function Degree10(Degree: Integer): Extended; {$IFDEF D2005+} inline; {$ENDIF}
-function ExtPrecision(Value: Extended): Integer; {$IFDEF D2005+} inline; {$ENDIF}
+function Degree10(Degree: Integer): Extended; inline;
+function ExtPrecision(Value: Extended): Integer; inline;
 function RoundExtend(Value: Extended; Decimals: Integer): Extended;
 
 // Comp type stuff
@@ -69,20 +69,19 @@ function ExtendedToBCD(const Value: Extended; NeedScale: Integer): TBCD;
 // end Comp type stuff
 
 function Int64ToBCD(Value: Int64; Scale: Integer; var BCD: TBCD): Boolean;
-// {$IFDEF D2005+} inline;{$ENDIF}
 
 function BCDToExtended(BCD: TBCD; var Value: Extended): Boolean;
 function BCDToCompWithScale(BCD: TBCD; var Value: Int64; var Scale: byte): Boolean;
 function BCDToInt64WithScale(BCD: TBCD; var Value: Int64; var Scale: byte): Boolean;
 function BCDToSQLStr(BCD: TBCD): String;
-function CompareBCD(const BCD1, BCD2: TBCD): Integer; {$IFDEF D2005+} inline; {$ENDIF}
+function CompareBCD(const BCD1, BCD2: TBCD): Integer; inline;
 function fFormatBcd(const Format: string; BCD: TBCD): string;
 function FormatNumericString(const Format, Source: string; OneSectionFormat: Boolean = False): string;
 
 function TimeStamp(const aDate, aTime: Integer): TTimeStamp;
 function CmpFullName(cmp: TComponent): string;
 function CmpPropPath(Cmp: TComponent; const PropName: string): string;
-function CmpInLoadedState(cmp: TComponent): Boolean; {$IFDEF D2005+} inline; {$ENDIF}
+function CmpInLoadedState(cmp: TComponent): Boolean; inline;
 procedure FullClearStrings(aStrings: TStrings);
 
 function HookTimeStampToMSecs(const TimeStamp: TTimeStamp): Int64;
@@ -98,7 +97,7 @@ function BCDFieldAsSQLString(Field: TField; OldVal: Boolean): variant;
 function BCDFieldAsString(Field: TField; OldVal: Boolean): variant;
 function GetBCDFieldData(Field: TField; OldVal: Boolean; var BCD: TBCD): Boolean;
 
-function GetBit(InByte: byte; Index: byte): Boolean; {$IFDEF D2005+} inline; {$ENDIF}
+function GetBit(InByte: byte; Index: byte): Boolean; inline;
 function SetBit(InByte: byte; Index: byte; Value: Boolean): byte;
 
 function HexStr2Int(const S: String): Integer;
@@ -674,97 +673,6 @@ end;
 
 const
   ZeroStr = '000000000000000000';
-
-{$IFNDEF D2005+}
-
-function RoundAt(const Value: string; Position: SmallInt): string;
-
-  Procedure RoundChar(const PrevChar: SmallInt; var Carry: Boolean);
-  begin
-    if Result[PrevChar] in ['0' .. '9'] then
-    begin
-      if Result[PrevChar] = '9' then
-      begin
-        Result[PrevChar] := '0';
-        Carry := true;
-      end
-      else
-      begin
-        Result[PrevChar] := Char(byte(Result[PrevChar]) + 1);
-        Carry := False;
-      end;
-    end;
-  end;
-
-var
-  c, Dot: Char;
-  PrevChar, i, DecPos, DecDigits: SmallInt;
-  Carry: Boolean;
-  Neg: string;
-begin
-  Dot := DecimalSeparator;
-  if Value[1] = '-' then
-  begin
-    Result := FastCopy(Value, 2, MaxInt);
-    Neg := '-';
-  end
-  else
-  begin
-    Result := Value;
-    Neg := '';
-  end;
-  DecPos := Pos(Dot, Result);
-  if DecPos > 0 then
-    DecDigits := Length(Result) - DecPos
-  else
-    DecDigits := 0;
-  if (DecPos = 0) or (DecDigits <= Position) then
-  { nothing to round }
-  begin
-    Result := Value;
-    Exit;
-  end;
-  if Result[DecPos + Position + 1] < '5' then
-  begin
-    { no possible rounding required }
-    if Position = 0 then
-      Result := Neg + Copy(Result, 1, DecPos + Position - 1)
-    else
-      Result := Neg + Copy(Result, 1, DecPos + Position);
-  end
-  else
-  begin
-    Carry := False;
-    PrevChar := 1;
-    for i := DecPos + DecDigits downto (DecPos + 1 + Position) do
-    begin
-      c := Result[i];
-      PrevChar := i - 1;
-      if Result[PrevChar] = Dot then
-      begin
-        Dec(PrevChar);
-        Dec(Position);
-      end;
-      if (byte(c) >= 53) or Carry then { if '5' or greater }
-        RoundChar(PrevChar, Carry);
-    end;
-    while Carry do
-    begin
-      if PrevChar >= DecPos then
-        Dec(Position);
-      Dec(PrevChar);
-      if PrevChar = 0 then
-        Break;
-      if Result[PrevChar] <> Dot then
-        RoundChar(PrevChar, Carry);
-    end;
-    if Carry then
-      Result := Neg + '1' + Copy(Result, 1, DecPos + Position)
-    else
-      Result := Neg + Copy(Result, 1, DecPos + Position);
-  end;
-end;
-{$ENDIF}
 
 function IsZero(const Str: string): Boolean;
 var

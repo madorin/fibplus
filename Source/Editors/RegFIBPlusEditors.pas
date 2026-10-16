@@ -58,7 +58,7 @@ type
     property PosInText: Integer read GetPosInText;
   end;
 
-  { TODO 1 : Plug in the tools. Check that it compiles under D6, port to D2009 }
+  { TODO 1 : Plug in the tools }
 
 procedure RegisterFIBSQLTextEditor(Editor: TClass);
 function GetSQLTextEditor: TClass;

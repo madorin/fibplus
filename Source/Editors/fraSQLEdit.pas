@@ -20,7 +20,7 @@ uses
     ;
 
 type
-  TFrame = TFIBEditorCustomFrame; // Fake for D5
+  TFrame = TFIBEditorCustomFrame;
 
   TfSQLEdit = class(TFrame)
     Panel1: TPanel;
@@ -817,27 +817,18 @@ begin
           SelLength := Length(FindDialog1.FindText);
 {$ENDIF}
           SetFocus;
-{$IFNDEF LINUX}
           FindDialog1.CloseDialog;
-{$ENDIF}
           Exit;
         end;
       end;
     end;
-{$IFNDEF LINUX}
   FindDialog1.CloseDialog;
-{$ENDIF}
 end;
 
 procedure TfSQLEdit.DBGrid1KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
-{$IFDEF MSWINDOWS}
   if Key = VK_RETURN then
-{$ENDIF}
-{$IFDEF LINUX}
-    if Key = Key_Return then
-{$ENDIF}
-      DBGrid1DblClick(Sender)
+    DBGrid1DblClick(Sender);
 end;
 
 procedure TfSQLEdit.ShowEditorStatus;
@@ -915,11 +906,7 @@ begin
       end
     else
       case Key of
-{$IFDEF WINDOWS}
         VK_F3:
-{$ELSE}
-        Key_F3:
-{$ENDIF}
           // FindDialog1Find(FindDialog1);
           Search(True);
         VK_F11:
