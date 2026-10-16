@@ -31,7 +31,6 @@
 			<DCC_ImageBase>00400000</DCC_ImageBase>
 			<DesignOnlyPackage>true</DesignOnlyPackage>
 			<DCC_Description>FIBPlus Property Editors</DCC_Description>
-			<DCC_DependencyCheckOutputName>G:\Documents and Settings\All Users.WINDOWS\Документы\RAD Studio\6.0\Bpl\FIBPlusEditors2009.bpl</DCC_DependencyCheckOutputName>
 			<DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
 			<GenDll>true</GenDll>
 			<DCC_WriteableConstants>true</DCC_WriteableConstants>

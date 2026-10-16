@@ -80,7 +80,6 @@
         <DCC_ImageBase>00400000</DCC_ImageBase>
         <DesignOnlyPackage>true</DesignOnlyPackage>
         <DCC_Description>FIBPlus Property Editors</DCC_Description>
-        <DCC_DependencyCheckOutputName>C:\Users\Public\Documents\RAD Studio\7.0\Bpl\FIBPlusEditors2010.bpl</DCC_DependencyCheckOutputName>
         <GenDll>true</GenDll>
         <DCC_WriteableConstants>true</DCC_WriteableConstants>
         <GenPackage>true</GenPackage>
