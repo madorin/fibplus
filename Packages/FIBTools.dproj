@@ -2,7 +2,7 @@
     <PropertyGroup>
         <ProjectGuid>{7B704927-E649-407A-BF0C-24A2115781D5}</ProjectGuid>
         <MainSource>FIBTools.dpk</MainSource>
-        <ProjectVersion>19.0</ProjectVersion>
+        <ProjectVersion>20.5</ProjectVersion>
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Release</Config>

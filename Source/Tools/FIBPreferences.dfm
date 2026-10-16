@@ -16,30 +16,30 @@ object FIBPreferencesForm: TFIBPreferencesForm
   OnCreate = FormCreate
   OnCloseQuery = FormCloseQuery
   TextHeight = 15
-  object z: TPageControl
+  object PageControl: TPageControl
     Left = 8
     Top = 8
     Width = 464
     Height = 540
-    ActivePage = TabSheet4
+    ActivePage = DataSetPage
     TabOrder = 0
-    object TabSheet4: TTabSheet
+    object DataSetPage: TTabSheet
       Caption = 'TFIBDataSet'
-      object Label4: TLabel
+      object GeneratorPrefixLabel: TLabel
         Left = 6
         Top = 485
         Width = 121
         Height = 15
         Caption = 'Prefix Generator name'
       end
-      object Label5: TLabel
+      object GeneratorSuffixLabel: TLabel
         Left = 234
         Top = 485
         Width = 117
         Height = 15
         Caption = 'Sufix Generator name'
       end
-      object GroupBox2: TGroupBox
+      object DataSetOptionsGroup: TGroupBox
         Left = 6
         Top = 6
         Width = 222
@@ -175,7 +175,7 @@ object FIBPreferencesForm: TFIBPreferencesForm
           TabOrder = 15
         end
       end
-      object GroupBox1: TGroupBox
+      object PrepareOptionsGroup: TGroupBox
         Left = 234
         Top = 6
         Width = 216
@@ -287,7 +287,7 @@ object FIBPreferencesForm: TFIBPreferencesForm
           TabOrder = 12
         end
       end
-      object GroupBox3: TGroupBox
+      object DetailConditionsGroup: TGroupBox
         Left = 6
         Top = 328
         Width = 176
@@ -327,28 +327,28 @@ object FIBPreferencesForm: TFIBPreferencesForm
           TabOrder = 3
         end
       end
-      object EdPrefixGen: TEdit
+      object edGeneratorPrefix: TEdit
         Left = 136
         Top = 482
         Width = 86
         Height = 23
         TabOrder = 4
       end
-      object EdSufixGen: TEdit
+      object edGeneratorSuffix: TEdit
         Left = 360
         Top = 482
         Width = 90
         Height = 23
         TabOrder = 5
       end
-      object GroupBox4: TGroupBox
+      object DefaultFormatsGroup: TGroupBox
         Left = 188
         Top = 328
         Width = 262
         Height = 146
         Caption = 'DefaultFormats'
         TabOrder = 3
-        object Label9: TLabel
+        object DateFormatLabel: TLabel
           Left = 10
           Top = 26
           Width = 90
@@ -356,7 +356,7 @@ object FIBPreferencesForm: TFIBPreferencesForm
           Caption = 'Date'
           FocusControl = edDateFormat
         end
-        object Label10: TLabel
+        object TimeFormatLabel: TLabel
           Left = 10
           Top = 50
           Width = 90
@@ -364,7 +364,7 @@ object FIBPreferencesForm: TFIBPreferencesForm
           Caption = 'Time'
           FocusControl = edTimeFormat
         end
-        object Label7: TLabel
+        object DateTimeFormatLabel: TLabel
           Left = 10
           Top = 74
           Width = 90
@@ -372,7 +372,7 @@ object FIBPreferencesForm: TFIBPreferencesForm
           Caption = 'DateTimeDisplay'
           FocusControl = edDateTimeDisplay
         end
-        object Label11: TLabel
+        object DisplayNumFormatLabel: TLabel
           Left = 10
           Top = 98
           Width = 90
@@ -380,7 +380,7 @@ object FIBPreferencesForm: TFIBPreferencesForm
           Caption = 'Display Numeric'
           FocusControl = edDisplayNumFormat
         end
-        object Label12: TLabel
+        object EditNumFormatLabel: TLabel
           Left = 10
           Top = 122
           Width = 90
@@ -425,23 +425,23 @@ object FIBPreferencesForm: TFIBPreferencesForm
         end
       end
     end
-    object TabSheet1: TTabSheet
+    object DatabasePage: TTabSheet
       Caption = 'TFIBDatabase'
-      object Label6: TLabel
+      object CharSetLabel: TLabel
         Left = 12
         Top = 123
         Width = 42
         Height = 15
         Caption = 'C&harSet'
-        FocusControl = CharSetC
+        FocusControl = cmbCharSet
       end
-      object Label8: TLabel
+      object SQLDialectLabel: TLabel
         Left = 12
         Top = 152
         Width = 64
         Height = 15
         Caption = 'S&QL Dialect'
-        FocusControl = DialectC
+        FocusControl = cmbSQLDialect
       end
       object chStoreConnected: TCheckBox
         Left = 12
@@ -475,7 +475,7 @@ object FIBPreferencesForm: TFIBPreferencesForm
         Caption = 'Use Login Prompt'
         TabOrder = 3
       end
-      object CharSetC: TComboBox
+      object cmbCharSet: TComboBox
         Left = 110
         Top = 120
         Width = 140
@@ -506,7 +506,7 @@ object FIBPreferencesForm: TFIBPreferencesForm
           'WIN1253'
           'WIN1254')
       end
-      object DialectC: TComboBox
+      object cmbSQLDialect: TComboBox
         Left = 110
         Top = 149
         Width = 140
@@ -518,7 +518,7 @@ object FIBPreferencesForm: TFIBPreferencesForm
           '2'
           '3')
       end
-      object chCloseDsgnConnect: TCheckBox
+      object chCloseDesignConnections: TCheckBox
         Left = 12
         Top = 188
         Width = 430
@@ -527,9 +527,9 @@ object FIBPreferencesForm: TFIBPreferencesForm
         TabOrder = 6
       end
     end
-    object TabSheet2: TTabSheet
+    object TransactionPage: TTabSheet
       Caption = 'TFIBTransaction'
-      object Label1: TLabel
+      object TimeoutActionLabel: TLabel
         Left = 12
         Top = 15
         Width = 81
@@ -537,7 +537,7 @@ object FIBPreferencesForm: TFIBPreferencesForm
         Caption = 'Timeout action'
         FocusControl = cmbTimeOutAction
       end
-      object Label2: TLabel
+      object TimeoutLabel: TLabel
         Left = 12
         Top = 44
         Width = 45
@@ -545,7 +545,7 @@ object FIBPreferencesForm: TFIBPreferencesForm
         Caption = 'Timeout'
         FocusControl = edTimeout
       end
-      object Label3: TLabel
+      object TPBModeLabel: TLabel
         Left = 12
         Top = 73
         Width = 54
@@ -587,9 +587,9 @@ object FIBPreferencesForm: TFIBPreferencesForm
           'tpbReadConsistency')
       end
     end
-    object TabSheet3: TTabSheet
+    object QueryPage: TTabSheet
       Caption = 'TFIBQuery'
-      object ChGo1: TCheckBox
+      object chGoToFirstRecord: TCheckBox
         Left = 12
         Top = 12
         Width = 430
@@ -597,7 +597,7 @@ object FIBPreferencesForm: TFIBPreferencesForm
         Caption = 'Go to First Record'
         TabOrder = 0
       end
-      object ChParamCheck: TCheckBox
+      object chParamCheck: TCheckBox
         Left = 12
         Top = 36
         Width = 430
@@ -647,7 +647,7 @@ object FIBPreferencesForm: TFIBPreferencesForm
       end
     end
   end
-  object Button1: TButton
+  object OKButton: TButton
     Left = 314
     Top = 556
     Width = 75
@@ -657,7 +657,7 @@ object FIBPreferencesForm: TFIBPreferencesForm
     ModalResult = 1
     TabOrder = 1
   end
-  object Button2: TButton
+  object CancelButton: TButton
     Left = 397
     Top = 556
     Width = 75

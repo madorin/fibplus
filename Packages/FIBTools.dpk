@@ -30,6 +30,9 @@ package FIBTools;
 {$DESIGNONLY}
 {$LIBSUFFIX AUTO}
 {$IMPLICITBUILD OFF}
+{$IFNDEF VER340}{$IFNDEF VER350}{$IFNDEF VER360}{$IFNDEF VER370}
+  {$MESSAGE FATAL 'FIBTools supports Delphi 10.4 to 13: add this version to the requires clause'}
+{$ENDIF}{$ENDIF}{$ENDIF}{$ENDIF}
 
 requires
   rtl,
@@ -37,20 +40,16 @@ requires
   vclimg,
   designide,
 {$IFDEF VER370}
-  FIBPlus_D37,
-  FIBPlusEditors_D37
+  FIBPlus_D37
 {$ENDIF}
 {$IFDEF VER360}
-  FIBPlus_D29,
-  FIBPlusEditors_D29
+  FIBPlus_D29
 {$ENDIF}
 {$IFDEF VER350}
-  FIBPlus_D28,
-  FIBPlusEditors_D28
+  FIBPlus_D28
 {$ENDIF}
 {$IFDEF VER340}
-  FIBPlus_D27,
-  FIBPlusEditors_D27
+  FIBPlus_D27
 {$ENDIF};
 
 contains

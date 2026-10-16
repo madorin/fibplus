@@ -19,7 +19,7 @@ implementation
 
 uses
   System.SysUtils, System.Classes, System.Generics.Collections, Vcl.Graphics, Vcl.ImgList, Vcl.Controls,
-  Vcl.Menus, Vcl.Imaging.pngimage, ToolsAPI, FIB, FIBDatabase, FIBToolsConsts, FIBPreferences, FIBAbout;
+  Vcl.Menus, Vcl.Forms, Vcl.Imaging.pngimage, ToolsAPI, FIB, FIBDatabase, FIBToolsConsts, FIBPreferences, FIBAbout;
 
 type
   TFIBToolsMenuHandler = class(TComponent)
@@ -55,8 +55,6 @@ var
   DebuggerNotifierIndex: Integer = -1;
   AboutBoxIndex: Integer = -1;
 
-{ TFIBToolsMenuHandler }
-
 procedure TFIBToolsMenuHandler.Notification(AComponent: TComponent; Operation: TOperation);
 begin
   inherited;
@@ -74,8 +72,6 @@ procedure TFIBToolsMenuHandler.AboutClick(Sender: TObject);
 begin
   ShowFIBAbout;
 end;
-
-{ TFIBDebuggerNotifier }
 
 procedure TFIBDebuggerNotifier.ProcessCreated(const Process: IOTAProcess);
 begin
@@ -107,16 +103,19 @@ end;
 
 function TFIBDebuggerNotifier.BeforeProgramLaunch(const Project: IOTAProject): Boolean;
 begin
-  if bCloseDesignConnect then
-    CloseAllDatabases;
+  if CloseDesignConnections then
+    try
+      CloseDesignTimeDatabases;
+    except
+      // The program starts even if a connection fails to close
+      Application.HandleException(Self);
+    end;
   Result := True;
 end;
 
 procedure TFIBDebuggerNotifier.ProcessMemoryChanged;
 begin
 end;
-
-{ Images }
 
 // Every image given to the IDE is owned by ToolsImages and kept until finalization
 {$IF CompilerVersion >= 35}
@@ -169,15 +168,11 @@ begin
   Result := Format(SAboutProduct, [FIBVersionString]);
 end;
 
-{ Splash screen }
-
 procedure RegisterSplashScreen;
 begin
   if Assigned(SplashScreenServices) then
     SplashScreenServices.AddPluginBitmap(ProductTitle, ToolsIcon{$IF CompilerVersion < 35}.Handle{$ENDIF});
 end;
-
-{ Menu }
 
 {$IF CompilerVersion >= 35}
 procedure SetMenuImage(const Services: INTAServices);
@@ -260,8 +255,6 @@ begin
   FreeAndNil(MenuHandler);
 end;
 
-{ Debugger notifier }
-
 procedure RegisterDebuggerNotifier;
 var
   Services: IOTADebuggerServices;
@@ -278,8 +271,6 @@ begin
     Services.RemoveNotifier(DebuggerNotifierIndex);
   DebuggerNotifierIndex := -1;
 end;
-
-{ About box }
 
 function AboutBoxDescription: string;
 begin

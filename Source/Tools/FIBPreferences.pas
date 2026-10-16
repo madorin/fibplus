@@ -2,18 +2,18 @@ unit FIBPreferences;
 
 interface
 
-{$I ..\FIBPlUS.INC}
+{$I ..\FIBPlus.inc}
 
 uses
   System.SysUtils, System.Classes, System.Variants, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls,
-  Vcl.StdCtrls, FIBProps, uFIBEditorForm;
+  Vcl.StdCtrls, FIBProps;
 
 type
-  TFIBPreferencesForm = class(TFIBEditorCustomForm)
-    z: TPageControl;
-    TabSheet1: TTabSheet;
-    TabSheet4: TTabSheet;
-    GroupBox1: TGroupBox;
+  TFIBPreferencesForm = class(TForm)
+    PageControl: TPageControl;
+    DatabasePage: TTabSheet;
+    DataSetPage: TTabSheet;
+    PrepareOptionsGroup: TGroupBox;
     chRequiredFields: TCheckBox;
     chSetReadOnlyFields: TCheckBox;
     chImportDefaultValues: TCheckBox;
@@ -21,7 +21,7 @@ type
     chApplyRepositary: TCheckBox;
     chGetOrderInfo: TCheckBox;
     chAskRecordCount: TCheckBox;
-    GroupBox2: TGroupBox;
+    DataSetOptionsGroup: TGroupBox;
     chTrimCharFields: TCheckBox;
     chRefreshAfterPost: TCheckBox;
     chRefreshDeletedRecord: TCheckBox;
@@ -30,43 +30,43 @@ type
     chProtectedEdit: TCheckBox;
     chKeepSorting: TCheckBox;
     chPersistentSorting: TCheckBox;
-    GroupBox3: TGroupBox;
+    DetailConditionsGroup: TGroupBox;
     chForceOpen: TCheckBox;
     chForceMasterRefresh: TCheckBox;
     chWaitEndMasterScroll: TCheckBox;
-    EdPrefixGen: TEdit;
-    EdSufixGen: TEdit;
-    Label4: TLabel;
-    Label5: TLabel;
-    Button1: TButton;
-    Button2: TButton;
-    TabSheet2: TTabSheet;
-    TabSheet3: TTabSheet;
+    edGeneratorPrefix: TEdit;
+    edGeneratorSuffix: TEdit;
+    GeneratorPrefixLabel: TLabel;
+    GeneratorSuffixLabel: TLabel;
+    OKButton: TButton;
+    CancelButton: TButton;
+    TransactionPage: TTabSheet;
+    QueryPage: TTabSheet;
     chStoreConnected: TCheckBox;
     chSynchronizeTime: TCheckBox;
     chUpperOldNames: TCheckBox;
     chUseLoginPrompt: TCheckBox;
-    Label6: TLabel;
-    CharSetC: TComboBox;
-    Label8: TLabel;
-    DialectC: TComboBox;
-    Label1: TLabel;
-    Label2: TLabel;
-    Label3: TLabel;
+    CharSetLabel: TLabel;
+    cmbCharSet: TComboBox;
+    SQLDialectLabel: TLabel;
+    cmbSQLDialect: TComboBox;
+    TimeoutActionLabel: TLabel;
+    TimeoutLabel: TLabel;
+    TPBModeLabel: TLabel;
     cmbTimeOutAction: TComboBox;
     edTimeout: TEdit;
     cmbTPBMode: TComboBox;
-    ChGo1: TCheckBox;
-    ChParamCheck: TCheckBox;
+    chGoToFirstRecord: TCheckBox;
+    chParamCheck: TCheckBox;
     chAutoStartTransaction: TCheckBox;
     chAutoCommitTransaction: TCheckBox;
     chUseSQLINT64ToBCD: TCheckBox;
     chVisibleRecno: TCheckBox;
-    GroupBox4: TGroupBox;
-    Label9: TLabel;
-    Label10: TLabel;
-    Label11: TLabel;
-    Label12: TLabel;
+    DefaultFormatsGroup: TGroupBox;
+    DateFormatLabel: TLabel;
+    TimeFormatLabel: TLabel;
+    DisplayNumFormatLabel: TLabel;
+    EditNumFormatLabel: TLabel;
     edDateFormat: TEdit;
     edTimeFormat: TEdit;
     edDisplayNumFormat: TEdit;
@@ -75,10 +75,10 @@ type
     chUseGuidField: TCheckBox;
     chFetchAll: TCheckBox;
     chEmptyStrToNull: TCheckBox;
-    chCloseDsgnConnect: TCheckBox;
+    chCloseDesignConnections: TCheckBox;
     chCacheCalcFields: TCheckBox;
     edDateTimeDisplay: TEdit;
-    Label7: TLabel;
+    DateTimeFormatLabel: TLabel;
     chUseLargeIntField: TCheckBox;
     chUseSelectForLock: TCheckBox;
     chNoForceIsNull: TCheckBox;
@@ -102,7 +102,7 @@ type
   end;
 
 var
-  bCloseDesignConnect: Boolean;
+  CloseDesignConnections: Boolean;
 
 procedure ShowFIBPreferences;
 
@@ -253,7 +253,7 @@ begin
   if ReadBoolean(Values, 5, Flag) then
     DefStoreConnected := Flag;
   if ReadBoolean(Values, 6, Flag) then
-    bCloseDesignConnect := Flag;
+    CloseDesignConnections := Flag;
 
   Values := DefReadFromRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBQuery'],
     ['GoToFirstRecordOnExecute', 'ParamCheck']);
@@ -314,7 +314,7 @@ begin
     ['DialectC', 'CharSetC', 'UseLoginPrompt', 'UpperOldNames', 'SynchronizeTime', 'StoreConnected',
     'CloseDesignConnectAfterRun'],
     [DefSQLDialect, DefCharSet, DefUseLoginPrompt, DefUpperOldNames, DefSynchronizeTime, DefStoreConnected,
-    bCloseDesignConnect]);
+    CloseDesignConnections]);
 
   DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBQuery'],
     ['GoToFirstRecordOnExecute', 'ParamCheck'], [DefGoToFirstRecordOnExecute, DefParamCheck]);
@@ -345,14 +345,8 @@ begin
   end;
 end;
 
-{ TFIBPreferencesForm }
-
 procedure TFIBPreferencesForm.FormCreate(Sender: TObject);
 begin
-  // The base class restores a saved size; this fixed dialog keeps the size of its layout
-  ClientWidth := z.Left + z.Width + z.Left;
-  ClientHeight := Button1.Top + Button1.Height + z.Top;
-
   FDataSetOptionBoxes[poTrimCharFields] := chTrimCharFields;
   FDataSetOptionBoxes[poRefreshAfterPost] := chRefreshAfterPost;
   FDataSetOptionBoxes[poRefreshDeletedRecord] := chRefreshDeletedRecord;
@@ -396,25 +390,25 @@ begin
   FQueryOptionBoxes[qoFreeHandleAfterExecute] := chFreeHandleAfterExecute;
 
   Caption := FPTPrefCaption;
-  Label4.Caption := FPTGeneratorPref;
-  Label5.Caption := FPTGeneratorSuf;
+  GeneratorPrefixLabel.Caption := FPTGeneratorPref;
+  GeneratorSuffixLabel.Caption := FPTGeneratorSuf;
 
-  Label6.Caption := FPTCharSet;
-  Label8.Caption := FPTSQLDialect;
+  CharSetLabel.Caption := FPTCharSet;
+  SQLDialectLabel.Caption := FPTSQLDialect;
   chStoreConnected.Caption := FPTStoreConnected;
   chSynchronizeTime.Caption := FPTSyncTime;
   chUpperOldNames.Caption := FPTUpperOldNames;
   chUseLoginPrompt.Caption := FPTUseLoginPrompt;
-  chCloseDsgnConnect.Caption := FPTCloseDesignConnections;
-  Label1.Caption := FPTTimeoutAction;
-  Label2.Caption := FPTTimeout;
-  ChGo1.Caption := FPTGotoFirstRecord;
-  ChParamCheck.Caption := FPTCheckParam;
+  chCloseDesignConnections.Caption := FPTCloseDesignConnections;
+  TimeoutActionLabel.Caption := FPTTimeoutAction;
+  TimeoutLabel.Caption := FPTTimeout;
+  chGoToFirstRecord.Caption := FPTGotoFirstRecord;
+  chParamCheck.Caption := FPTCheckParam;
   chAutoStartTransaction.Caption := FPTAutoStartTrans;
   chAutoCommitTransaction.Caption := FPTAutoCommitTrans;
 
-  Button1.Caption := SOKButton;
-  Button2.Caption := SCancelButton;
+  OKButton.Caption := SOKButton;
+  CancelButton.Caption := SCancelButton;
 end;
 
 procedure TFIBPreferencesForm.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -424,7 +418,7 @@ begin
   if (ModalResult = mrOk) and not (TryStrToInt(Trim(edTimeout.Text), Timeout) and (Timeout >= 0)) then
   begin
     CanClose := False;
-    z.ActivePage := TabSheet2;
+    PageControl.ActivePage := TransactionPage;
     edTimeout.SetFocus;
     MessageDlg(FPTInvalidTimeout, mtError, [mbOK], 0);
   end;
@@ -447,23 +441,23 @@ begin
   for QueryOption := Low(TFIBQueryOption) to High(TFIBQueryOption) do
     FQueryOptionBoxes[QueryOption].Checked := QueryOption in DefQueryOptions;
 
-  DialectC.ItemIndex := DefSQLDialect - 1;
-  CharSetC.Text := DefCharSet;
+  cmbSQLDialect.ItemIndex := DefSQLDialect - 1;
+  cmbCharSet.Text := DefCharSet;
   chUseLoginPrompt.Checked := DefUseLoginPrompt;
   chUpperOldNames.Checked := DefUpperOldNames;
   chSynchronizeTime.Checked := DefSynchronizeTime;
   chStoreConnected.Checked := DefStoreConnected;
-  chCloseDsgnConnect.Checked := bCloseDesignConnect;
+  chCloseDesignConnections.Checked := CloseDesignConnections;
 
   cmbTimeOutAction.ItemIndex := Ord(DefTimeOutAction);
   edTimeout.Text := IntToStr(DefTimeOut);
   cmbTPBMode.ItemIndex := Ord(DefTPBMode);
 
-  ChGo1.Checked := DefGoToFirstRecordOnExecute;
-  ChParamCheck.Checked := DefParamCheck;
+  chGoToFirstRecord.Checked := DefGoToFirstRecordOnExecute;
+  chParamCheck.Checked := DefParamCheck;
 
-  EdPrefixGen.Text := DefPrefixGenName;
-  EdSufixGen.Text := DefSufixGenName;
+  edGeneratorPrefix.Text := DefPrefixGenName;
+  edGeneratorSuffix.Text := DefSufixGenName;
   edDateFormat.Text := dDefDateFormat;
   edTimeFormat.Text := dDefTimeFormat;
   edDisplayNumFormat.Text := dDefDisplayFormatNum;
@@ -492,18 +486,18 @@ begin
   DefSynchronizeTime := chSynchronizeTime.Checked;
   DefUpperOldNames := chUpperOldNames.Checked;
   DefUseLoginPrompt := chUseLoginPrompt.Checked;
-  DefCharSet := CharSetC.Text;
-  DefSQLDialect := DialectC.ItemIndex + 1;
-  bCloseDesignConnect := chCloseDsgnConnect.Checked;
+  DefCharSet := cmbCharSet.Text;
+  DefSQLDialect := cmbSQLDialect.ItemIndex + 1;
+  CloseDesignConnections := chCloseDesignConnections.Checked;
 
   DefTimeOutAction := TTransactionAction1(cmbTimeOutAction.ItemIndex);
   DefTimeOut := StrToInt(Trim(edTimeout.Text));
   DefTPBMode := TTPBMode(cmbTPBMode.ItemIndex);
 
-  DefGoToFirstRecordOnExecute := ChGo1.Checked;
-  DefParamCheck := ChParamCheck.Checked;
-  DefPrefixGenName := EdPrefixGen.Text;
-  DefSufixGenName := EdSufixGen.Text;
+  DefGoToFirstRecordOnExecute := chGoToFirstRecord.Checked;
+  DefParamCheck := chParamCheck.Checked;
+  DefPrefixGenName := edGeneratorPrefix.Text;
+  DefSufixGenName := edGeneratorSuffix.Text;
 
   dDefDateFormat := edDateFormat.Text;
   dDefTimeFormat := edTimeFormat.Text;

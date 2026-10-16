@@ -1031,6 +1031,7 @@ function ExistBlobFilter(Database: TFIBDatabase; BlobSubType: Integer): Boolean;
 
 function GetConnectedDataBase(const DBName: string): TFIBDatabase;
 procedure CloseAllDatabases;
+procedure CloseDesignTimeDatabases;
 procedure WriteDBParamsToAlias(Database: TFIBDatabase);
 // A transaction of the library itself: read committed, nowait, no database events
 function CreateInternalTransaction(Database: TFIBDatabase; ReadOnly: Boolean; AOwner: TComponent = nil): TFIBTransaction;
@@ -1166,6 +1167,24 @@ begin
         end;
     finally
       DatabaseList.UnLockList
+    end;
+end;
+
+procedure CloseDesignTimeDatabases;
+var
+  I: Integer;
+  Database: TFIBDatabase;
+begin
+  with DatabaseList.LockList do
+    try
+      for I := 0 to Count - 1 do
+      begin
+        Database := TFIBDatabase(Items[I]);
+        if Database.Connected and (csDesigning in Database.ComponentState) then
+          Database.ForceClose;
+      end;
+    finally
+      DatabaseList.UnlockList;
     end;
 end;
 

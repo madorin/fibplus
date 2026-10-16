@@ -1,6 +1,6 @@
 {***************************************************************}
 { FIBPlus - component library for direct access to Firebird and }
-{ Interbase databases                                           }
+{ InterBase databases                                           }
 {                                                               }
 {    FIBPlus is based in part on the product                    }
 {    Free IB Components, written by Gregory H. Deatz for        }
@@ -39,14 +39,14 @@ resourcestring
   SOKButton     = '&OK';
   SCancelButton = '&Cancel';
 
-  SToolsMenu = 'FIBPlus';
+  SToolsMenu            = 'FIBPlus';
   SToolsPreferencesItem = '&Preferences...';
-  SToolsAboutItem = '&About FIBPlus...';
-  SAboutCaption = 'About FIBPlus';
-  SAboutProduct = 'FIBPlus %s';
-  SAboutDescription = 'Components for direct access to Firebird and InterBase';
-  SAboutProjectLink = 'Project on GitHub';
-  SAboutSupportLink = 'Support FIBPlus';
+  SToolsAboutItem       = '&About FIBPlus...';
+  SAboutCaption         = 'About FIBPlus';
+  SAboutProduct         = 'FIBPlus %s';
+  SAboutDescription     = 'Components for direct access to Firebird and InterBase';
+  SAboutProjectLink     = 'Project on GitHub';
+  SAboutSupportLink     = 'Support FIBPlus';
 
 const
   FIBProjectURL = 'https://github.com/madorin/fibplus';
