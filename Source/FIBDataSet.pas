@@ -595,7 +595,7 @@ type
   EventInfo = LongInt;
 {$ENDIF}
 
-  TFIBCustomDataSet = class({$IFDEF TWideDataSet}TWideDataset{$ELSE}TDataSet{$ENDIF}, ISQLObject, IFIBDataSet)
+  TFIBCustomDataSet = class({$IFDEF C24}TDataSet{$ELSE}TWideDataSet{$ENDIF}, ISQLObject, IFIBDataSet)
   protected
     (*
       * Fields, and internal objects
@@ -1415,11 +1415,12 @@ type
     procedure DoOnDeleteError(DataSet: TDataSet; E: EDatabaseError; var Action: TDataAction);
 
     // IProviderSupport
-{$IFNDEF TWideDataSet}
+{$IFDEF C24}
     function PSGetTableName: string; override;
     function PSGetKeyFields: string; override;
     function PSGetQuoteChar: string; override;
     procedure PSSetCommandText(const CommandText: string); override;
+    function PSGetCommandText: string; override;
 {$ELSE}
     procedure PSSetCommandText(const CommandText: WideString); override;
     function PSGetTableNameW: WideString; override;
@@ -1436,7 +1437,7 @@ type
     procedure PSReset; override;
     function PSUpdateRecord(UpdateKind: TUpdateKind; Delta: TDataSet): Boolean; override;
     function PSExecuteStatement(const ASQL:
-      {$IFNDEF TWideDataSet} string{$ELSE} WideString{$ENDIF}; AParams: TParams;
+      {$IFDEF C24} string{$ELSE} WideString{$ENDIF}; AParams: TParams;
       ResultSet: Pointer = nil): Integer; override;
     procedure PSExecute; override;
     function PSGetParams: TParams; override;
@@ -16123,7 +16124,7 @@ begin
 end;
 
 // IProviderSupport
-{$IFNDEF TWideDataSet}
+{$IFDEF C24}
 
 function TFIBCustomDataSet.PSGetQuoteChar: string;
 {$ELSE}
@@ -16136,7 +16137,7 @@ begin
     Result := '"'
 end;
 
-{$IFNDEF TWideDataSet}
+{$IFDEF C24}
 
 function TFIBCustomDataSet.PSGetTableName: string;
 {$ELSE}
@@ -16161,7 +16162,7 @@ begin
   end;
 end;
 
-{$IFNDEF TWideDataSet}
+{$IFDEF C24}
 
 function TFIBCustomDataSet.PSGetKeyFields: string;
 {$ELSE}
@@ -16169,7 +16170,7 @@ function TFIBCustomDataSet.PSGetKeyFields: string;
 function TFIBCustomDataSet.PSGetKeyFieldsW: Widestring;
 {$ENDIF}
 begin
-{$IFNDEF TWideDataSet}
+{$IFDEF C24}
   Result := inherited PSGetKeyFields;
 {$ELSE}
   Result := inherited PSGetKeyFieldsW;
@@ -16178,12 +16179,12 @@ begin
     Result := FAutoUpdateOptions.KeyFields;
 end;
 
-{$IFDEF TWideDataSet}
-
-procedure TFIBCustomDataSet.PSSetCommandText(const CommandText: Widestring);
-{$ELSE}
+{$IFDEF C24}
 
 procedure TFIBCustomDataSet.PSSetCommandText(const CommandText: string);
+{$ELSE}
+
+procedure TFIBCustomDataSet.PSSetCommandText(const CommandText: Widestring);
 {$ENDIF}
 begin
   ClearMidasCommand;
@@ -16194,16 +16195,19 @@ begin
     SelectSQL.Text := CommandText;
 end;
 
-{$IFDEF TWideDataSet}
+{$IFDEF C24}
+
+function TFIBCustomDataSet.PSGetCommandText: string;
+{$ELSE}
 
 function TFIBCustomDataSet.PSGetCommandTextW: Widestring;
+{$ENDIF}
 begin
   if FMidasCommandText = '' then
     Result := SelectSQL.Text
   else
     Result := FMidasCommandText
 end;
-{$ENDIF}
 
 function TFIBCustomDataSet.PSGetUpdateException(E: Exception; Prev: EUpdateError): EUpdateError;
 var
@@ -16420,7 +16424,7 @@ begin
 end;
 
 function TFIBCustomDataSet.PSExecuteStatement(const ASQL:
-  {$IFNDEF TWideDataSet} string{$ELSE} Widestring{$ENDIF}; AParams: TParams;
+  {$IFDEF C24} string{$ELSE} Widestring{$ENDIF}; AParams: TParams;
   ResultSet: Pointer = nil): integer;
 var
   vDataset: TFIBDataSet;

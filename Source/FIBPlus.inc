@@ -52,10 +52,6 @@
 {$IF CompilerVersion >= 36} {$DEFINE C36} {$IFEND} // Delphi 12 Athens
 {$IF CompilerVersion >= 37} {$DEFINE C37} {$IFEND} // Delphi 13 Florence
 
-{$IF CompilerVersion < 24} // Delphi 2009 .. XE2
-  {$DEFINE TWideDataSet}
-{$IFEND}
-
 // Warnings
 
 {$WARN SYMBOL_DEPRECATED OFF}

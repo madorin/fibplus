@@ -141,7 +141,8 @@ The lists of old and new names, and what an application has to change, are in
 
 - The compiler version symbols of `FIBPlus.inc` are named after
   `CompilerVersion`: `C21` (Delphi 2010) to `C37` (Delphi 13) replace `D2010+`,
-  `D_XE`..`D_XE5` and `D_20`..`D_30`; see
+  `D_XE`..`D_XE5` and `D_20`..`D_30`; `TWideDataSet` is removed (`C24` not
+  defined); see
   [Upgrading](Docs/guide/upgrading.md#800).
 
 ### Removed
@@ -158,6 +159,9 @@ The lists of old and new names, and what an application has to change, are in
 
 ### Fixed
 
+- `PSGetCommandText` of `IProviderSupport` returned an empty string on Delphi
+  XE3 and later; it returns the select SQL or the pending provider command, as
+  `PSGetCommandTextW` did on Delphi 2009 to XE2.
 - Editors at a display scaling over 100%: the saved size of a window was
   restored in pixels of 100%, so the window was too small for its content
   (sizes are now saved with the DPI of the window); the **Cancel** button of
