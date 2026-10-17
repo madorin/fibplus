@@ -2,14 +2,13 @@
 
 | Section | Use it to |
 |---------|-----------|
-| [Getting started](getting-started/) | Install the packages and write a first program |
-| [Guide](guide/) | Learn a feature: connections, transactions, timeouts, caching, scripting |
+| [Guide](guide/) | Write a first program, learn a feature: connections, transactions, timeouts, caching, scripting |
 | [Reference](reference/) | Look up a class, property, method, or event |
 | [Changelog](../CHANGELOG.md) | See what changed in each version |
 
 ## Where do I start?
 
-- New to FIBPlus: [Installation](../README.md#-installation), then the [Quick start](getting-started/quick-start.md).
+- New to FIBPlus: [Installation](../README.md#-installation), then the [Quick start](guide/quick-start.md).
 - Upgrading from an older version: [Upgrading](guide/upgrading.md) lists the renames and behavior changes of each version.
 - Know FIBPlus and need a feature: pick an article in the [Guide](guide/).
 - Need exact members of a class: open the [Reference index](reference/README.md).

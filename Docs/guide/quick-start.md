@@ -71,7 +71,7 @@ begin
 end;
 ```
 
-`ExecQuery` of a `SELECT` opens a cursor and fetches the first row. `Next` fetches the next row. Close the cursor before the transaction ends. Statements that change data work the same way: use `ExecQuery` and commit the transaction when the change is complete. See [TFIBQuery](../reference/TFIBQuery.md) for the members and [Queries and parameters](../guide/queries-and-parameters.md) for the scenarios.
+`ExecQuery` of a `SELECT` opens a cursor and fetches the first row. `Next` fetches the next row. Close the cursor before the transaction ends. Statements that change data work the same way: use `ExecQuery` and commit the transaction when the change is complete. See [TFIBQuery](../reference/TFIBQuery.md) for the members and [Queries and parameters](queries-and-parameters.md) for the scenarios.
 
 ## 3. Show data in a dataset
 
@@ -105,9 +105,9 @@ The dataset sends changes to the server with `UpdateTransaction`. They become pe
 DataSet.AutoCommit := True;
 ```
 
-See [TFIBDataSet](../reference/TFIBDataSet.md) for the members, and [Datasets and caching](../guide/datasets-and-caching.md) for editing scenarios.
+See [TFIBDataSet](../reference/TFIBDataSet.md) for the members, and [Datasets and caching](datasets-and-caching.md) for editing scenarios.
 
 ## Next steps
 
-- [Transactions](../guide/transactions.md)
+- [Transactions](transactions.md)
 - [Reference](../reference/README.md)
