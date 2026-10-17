@@ -80,7 +80,7 @@
     'Клиенская библиотека InterBase gds32.dll не обнаружена. Пожалуйста, установите клиента InterBase!', // feIBMissing
     {$ENDIF}
     {$IFDEF LINUX}
-    'Клиенская библиотека InterBase libgds.so.0 не обнаружена. Пожалуйста, установите клиента InterBase!', // feIBMissing
+    'Клиенская библиотека InterBase libfbclient.so не обнаружена. Пожалуйста, установите клиента InterBase!', // feIBMissing
     {$ENDIF}
     {$IFDEF MACOS}
     'InterBase library  not found in the path. Please install InterBase to use this functionality', // feIBMissing

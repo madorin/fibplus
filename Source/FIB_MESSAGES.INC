@@ -79,7 +79,7 @@
     'InterBase library gds32.dll not found in the path. Please install InterBase to use this functionality',//feIBMissing,
    {$ENDIF}
    {$IFDEF LINUX}
-    'InterBase library libgds.so.0 not found in the path. Please install InterBase to use this functionality',//feIBMissing,
+    'InterBase library libfbclient.so not found in the path. Please install InterBase to use this functionality',//feIBMissing,
    {$ENDIF}
    {$IFDEF MACOS}
     'InterBase library  not found in the path. Please install InterBase to use this functionality',//feIBMissing,
