@@ -7,7 +7,7 @@ interface
 uses
 
   Windows, Messages, SysUtils, Classes,
-{$IFDEF D_XE2}
+{$IFDEF C23}
   Vcl.Graphics, Vcl.Dialogs, Vcl.Menus, Vcl.Forms,
   Data.DB, Vcl.DBCtrls, Vcl.StdCtrls, Vcl.Mask, Vcl.Grids, Vcl.DBGrids,
   Vcl.Controls, Vcl.ComCtrls, Vcl.Buttons, Vcl.ExtCtrls,

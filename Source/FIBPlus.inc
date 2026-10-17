@@ -33,24 +33,24 @@
   {$MESSAGE FATAL 'FIBPlus 8 needs Delphi 2009 or later'}
 {$IFEND}
 
-// Version defines are cumulative: each one stays active on all newer compilers.
-{$IF CompilerVersion >= 21}   {$DEFINE D2010+} {$IFEND} // Delphi 2010
-{$IF CompilerVersion >= 22}   {$DEFINE D_XE}   {$IFEND} // Delphi XE
-{$IF CompilerVersion >= 23}   {$DEFINE D_XE2}  {$IFEND} // Delphi XE2
-{$IF CompilerVersion >= 24}   {$DEFINE D_XE3}  {$IFEND} // Delphi XE3
-{$IF CompilerVersion >= 25}   {$DEFINE D_XE4}  {$IFEND} // Delphi XE4
-{$IF CompilerVersion >= 26}   {$DEFINE D_XE5}  {$IFEND} // Delphi XE5
-{$IF CompilerVersion >= 27}   {$DEFINE D_20}   {$IFEND} // Delphi XE6
-{$IF CompilerVersion >= 28}   {$DEFINE D_21}   {$IFEND} // Delphi XE7
-{$IF CompilerVersion >= 29}   {$DEFINE D_22}   {$IFEND} // Delphi XE8
-{$IF CompilerVersion >= 30}   {$DEFINE D_23}   {$IFEND} // Delphi 10 Seattle
-{$IF CompilerVersion >= 31}   {$DEFINE D_24}   {$IFEND} // Delphi 10.1 Berlin
-{$IF CompilerVersion >= 32}   {$DEFINE D_25}   {$IFEND} // Delphi 10.2 Tokyo
-{$IF CompilerVersion >= 33}   {$DEFINE D_26}   {$IFEND} // Delphi 10.3 Rio
-{$IF CompilerVersion >= 34}   {$DEFINE D_27}   {$IFEND} // Delphi 10.4 Sydney
-{$IF CompilerVersion >= 35}   {$DEFINE D_28}   {$IFEND} // Delphi 11 Alexandria
-{$IF CompilerVersion >= 36}   {$DEFINE D_29}   {$IFEND} // Delphi 12 Athens
-{$IF CompilerVersion >= 37}   {$DEFINE D_30}   {$IFEND} // Delphi 13 Florence
+// C<n> = CompilerVersion >= n, active on all newer compilers (VER<n>0 is the exact version).
+{$IF CompilerVersion >= 21} {$DEFINE C21} {$IFEND} // Delphi 2010
+{$IF CompilerVersion >= 22} {$DEFINE C22} {$IFEND} // Delphi XE
+{$IF CompilerVersion >= 23} {$DEFINE C23} {$IFEND} // Delphi XE2
+{$IF CompilerVersion >= 24} {$DEFINE C24} {$IFEND} // Delphi XE3
+{$IF CompilerVersion >= 25} {$DEFINE C25} {$IFEND} // Delphi XE4
+{$IF CompilerVersion >= 26} {$DEFINE C26} {$IFEND} // Delphi XE5
+{$IF CompilerVersion >= 27} {$DEFINE C27} {$IFEND} // Delphi XE6
+{$IF CompilerVersion >= 28} {$DEFINE C28} {$IFEND} // Delphi XE7
+{$IF CompilerVersion >= 29} {$DEFINE C29} {$IFEND} // Delphi XE8
+{$IF CompilerVersion >= 30} {$DEFINE C30} {$IFEND} // Delphi 10 Seattle
+{$IF CompilerVersion >= 31} {$DEFINE C31} {$IFEND} // Delphi 10.1 Berlin
+{$IF CompilerVersion >= 32} {$DEFINE C32} {$IFEND} // Delphi 10.2 Tokyo
+{$IF CompilerVersion >= 33} {$DEFINE C33} {$IFEND} // Delphi 10.3 Rio
+{$IF CompilerVersion >= 34} {$DEFINE C34} {$IFEND} // Delphi 10.4 Sydney
+{$IF CompilerVersion >= 35} {$DEFINE C35} {$IFEND} // Delphi 11 Alexandria
+{$IF CompilerVersion >= 36} {$DEFINE C36} {$IFEND} // Delphi 12 Athens
+{$IF CompilerVersion >= 37} {$DEFINE C37} {$IFEND} // Delphi 13 Florence
 
 {$IF CompilerVersion < 24} // Delphi 2009 .. XE2
   {$DEFINE TWideDataSet}
@@ -70,7 +70,7 @@
 // Platform
 
 {$IFNDEF NO_GUI}
-  {$IFNDEF D_XE2}
+  {$IFNDEF C23}
     {$DEFINE DIRECT_USE_DB_LOGIN_FORM}
   {$ENDIF}
 {$ENDIF}

@@ -76,7 +76,7 @@ implementation
 
 uses
   SysUtils, TypInfo, StFilSys,
-{$IFDEF D_XE2}
+{$IFDEF C23}
   Vcl.Forms, Vcl.Controls,
 {$ELSE}
   Forms, Controls,

@@ -61,7 +61,7 @@ type
 
 implementation
 
-{$IFDEF D_XE3}
+{$IFDEF C24}
 
 uses
   System.Types, System.TypInfo; // for inline funcs

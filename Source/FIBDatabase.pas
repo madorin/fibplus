@@ -18,7 +18,7 @@ unit FIBDatabase;
 interface
 
 {$I FIBPlus.inc}
-{$IFDEF D_XE2}
+{$IFDEF C23}
 {$UNDEF NO_GUI}
 {$UNDEF DIRECT_USE_DB_LOGIN_FORM}
 {$ENDIF}
@@ -27,7 +27,7 @@ uses
   SysUtils, SyncObjs, Classes, DB, ibase, IB_Intf, IB_Externals,
   FIBProps, IBBlobFilter, Fib, FIBEventLists, StdFuncs,
   FIBInterfaces, FIBPlatforms, Variants
-{$IFDEF D_XE2}
+{$IFDEF C23}
   , System.UITypes
 {$ENDIF}
 {$IFDEF DIRECT_USE_DB_LOGIN_FORM}
@@ -154,7 +154,7 @@ type
 
 // TFIBDatabase
 
-{$IFDEF D_XE2}
+{$IFDEF C23}
 
   TDoChangeScreenCursor = procedure(NewCursor: Integer; var OldCursor: Integer) of object;
 {$ENDIF}
@@ -179,7 +179,7 @@ type
     FCryptKey: FIBByteString;
     FOnCryptKeyRequest: TFIBCryptKeyRequestEvent;
     FCryptKeyCallback: TFIBCryptKeyCallback;
-{$IFDEF D_XE2}
+{$IFDEF C23}
     FLibraryName64: string;
     FDoChangeScreenCursor: TDoChangeScreenCursor;
 {$ENDIF}
@@ -215,7 +215,7 @@ type
     procedure SetLibraryName(const LibName: string);
 
     function StoredLibraryName: Boolean;
-{$IFDEF D_XE2}
+{$IFDEF C23}
     function StoredLibraryName64: Boolean;
 {$ENDIF}
     procedure LoadLibrary;
@@ -738,7 +738,7 @@ type
       urErrorMessagesInfo];
     property LibraryName: string read FLibraryName write SetLibraryName stored StoredLibraryName;
     // libfbclient.so MACOS
-{$IFDEF D_XE2}
+{$IFDEF C23}
     property LibraryName64: string read FLibraryName64 write FLibraryName64 stored StoredLibraryName64;
 {$ENDIF}
     property SQLLogger: ISQLLogger read FSQLLogger write SetSQLLogger;
@@ -747,7 +747,7 @@ type
 {$IFDEF CSMonitor}
     property CSMonitorSupport: TCSMonitorSupport read FCSMonitorSupport write SetCSMonitorSupport;
 {$ENDIF}
-{$IFDEF D_XE2}
+{$IFDEF C23}
     property DoChangeScreenCursor: TDoChangeScreenCursor read FDoChangeScreenCursor write FDoChangeScreenCursor;
 {$ENDIF}
   published
@@ -1055,7 +1055,7 @@ uses
 {$IFNDEF NO_MONITOR}
   FIBSQLMonitor,
 {$ENDIF}
-{$IFDEF D_XE3}
+{$IFDEF C24}
   System.Types, // for inline funcs
 {$ENDIF}
 {$IFNDEF NO_REGISTRY}
@@ -1773,7 +1773,7 @@ begin
     end;
 end;
 
-{$IFDEF D_XE2}
+{$IFDEF C23}
 
 function TFIBDatabase.StoredLibraryName64: Boolean;
 begin
@@ -3252,7 +3252,7 @@ procedure TFIBDatabase.LoadLibrary;
 var
   XLibraryName: AnsiString;
 begin
-{$IFDEF D_XE2}
+{$IFDEF C23}
 {$IFDEF WIN64}
   if (FLibraryName <> FLibraryName64) and (Trim(FLibraryName64) <> '') then
     FLibraryName := FLibraryName64;

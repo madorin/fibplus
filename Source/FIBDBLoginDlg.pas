@@ -20,10 +20,10 @@ unit FIBDBLoginDlg;
 interface
 
 uses
-  {$IFDEF D_XE2}Vcl.StdCtrls, Vcl.Controls,
+  {$IFDEF C23}Vcl.StdCtrls, Vcl.Controls,
   System.Classes, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls,
 {$ENDIF}
-  SysUtils{$IFNDEF D_XE2}, Forms, Classes, Controls,
+  SysUtils{$IFNDEF C23}, Forms, Classes, Controls,
   StdCtrls, ExtCtrls, Dialogs{$ENDIF};
 
 type

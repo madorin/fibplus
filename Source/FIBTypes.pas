@@ -145,7 +145,7 @@ implementation
 
 function LocalDecimalSeparator: Char;
 begin
-  Result := {$IFDEF D_XE3}FormatSettings.{$ENDIF}DecimalSeparator;
+  Result := {$IFDEF C24}FormatSettings.{$ENDIF}DecimalSeparator;
 end;
 
 { Generic decimal routines }

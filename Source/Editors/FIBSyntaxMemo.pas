@@ -17,7 +17,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes,
-{$IFDEF D_XE2}
+{$IFDEF C23}
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls,
   Vcl.ExtCtrls,
   Vcl.StdCtrls, Vcl.Menus, Vcl.Clipbrd,
@@ -6473,7 +6473,7 @@ end;
 // Gutter sizes are set for 96 DPI and scaled to the PPI of the control
 function TMPCustomSyntaxMemo.ScaleToPPI(Value: Integer): Integer;
 begin
-{$IFDEF D_27}
+{$IFDEF C34}
   Result := MulDiv(Value, CurrentPPI, 96);
 {$ELSE}
   Result := MulDiv(Value, Screen.PixelsPerInch, 96);

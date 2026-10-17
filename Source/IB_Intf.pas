@@ -667,7 +667,7 @@ begin
 end;
 
 {$IFDEF WINDOWS}
-{$IFNDEF D_XE2}
+{$IFNDEF C23}
 
 procedure InitFPU;
 var

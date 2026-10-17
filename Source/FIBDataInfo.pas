@@ -227,7 +227,7 @@ implementation
 uses
   StrUtil, FIBConsts, FIBCacheQueries, ibase, SqlTxtRtns, fib,
   StdFuncs, FIBCharSets
-{$IFDEF D_XE3}
+{$IFDEF C24}
 {$IFDEF MACOS}
     , Posix.Unistd // for inline functions
 {$ENDIF}

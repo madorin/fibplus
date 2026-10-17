@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils,
-{$IFDEF D_XE2}
+{$IFDEF C23}
   Vcl.Forms, Vcl.Controls, DB, Vcl.Dialogs,
 {$ELSE}
   Forms, Controls, DB, Dialogs,

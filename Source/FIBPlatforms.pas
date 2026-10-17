@@ -20,7 +20,7 @@ interface
 {$I FIBPlus.inc}
 
 uses
-{$IFDEF D_XE2}
+{$IFDEF C23}
   System.UITypes, System.Types,
 {$ENDIF}
 {$IFDEF WINDOWS}

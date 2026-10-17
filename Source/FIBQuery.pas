@@ -1455,7 +1455,7 @@ begin
           Result := IntToStr(AsInt64)
         else
           with FXSQLVAR^ do
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+{$IFDEF C24}with FormatSettings do {$ENDIF}
             begin
               Result := Int64WithScaleToStr(PInt64(sqldata)^, -sqlscale, DecimalSeparator)
             end;
@@ -2403,7 +2403,7 @@ begin
   end;
   FreeAndNil(FStreamValue); // a previous long value
 
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+{$IFDEF C24}with FormatSettings do {$ENDIF}
     if vSize > 0 then
     begin
       if not IsMacro and IsNumericType(sSQLType) then

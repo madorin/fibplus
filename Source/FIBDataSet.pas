@@ -30,7 +30,7 @@ uses
   FIBInterfaces, FIBEventLists, DSContainer,
   Classes, StdFuncs
 {$IFNDEF NO_GUI}
-{$IFDEF D_XE2}
+{$IFDEF C23}
   , System.UITypes
 {$ELSE}
   , Forms, Controls // IS GUI units
@@ -46,7 +46,7 @@ const
 
 type
 
-{$IFNDEF D_XE4}
+{$IFNDEF C25}
   TRecordBuffer = PByte;
 {$ENDIF}
   TFIBCustomDataSet = class;
@@ -245,7 +245,7 @@ type
 
   TFIBDateField = class(TDateField)
   protected
-{$IFDEF D_XE3}
+{$IFDEF C24}
     procedure SetAsDateTime(Value: TDateTime); override;
 {$ENDIF}
   public
@@ -257,7 +257,7 @@ type
     FShowMsec: Boolean;
   protected
     procedure GetText(var Text: string; DisplayText: Boolean); override;
-{$IFDEF D_XE3}
+{$IFDEF C24}
     procedure SetAsDateTime(Value: TDateTime); override;
 {$ENDIF}
   public
@@ -273,7 +273,7 @@ type
 
   protected
     procedure GetText(var Text: string; DisplayText: Boolean); override;
-{$IFDEF D_XE3}
+{$IFDEF C24}
     procedure SetAsDateTime(Value: TDateTime); override;
 {$ENDIF}
   public
@@ -307,7 +307,7 @@ type
   protected
     procedure SetAsVariant(const Value: Variant); override;
     function GetAsAnsiString: AnsiString; override;
-{$IFDEF D_XE3}
+{$IFDEF C24}
     procedure SetAsAnsiString(const Value: AnsiString); override;
 {$ENDIF}
   public
@@ -401,7 +401,7 @@ type
   protected
     class procedure CheckTypeSize(Value: Integer); override;
     procedure SetAsString(const Value: string); override;
-{$IFDEF D_25}
+{$IFDEF C32}
     function GetAsGuid: TGUID; override;
     procedure SetAsGuid(const Value: TGUID); override;
 {$ELSE}
@@ -588,7 +588,7 @@ type
     NonVisibleRecords: TSortedList;
   end;
 
-{$IFDEF D_XE2}
+{$IFDEF C23}
 
   EventInfo = NativeInt;
 {$ELSE}
@@ -914,11 +914,11 @@ type
     function GetCacheRecNo: Integer;
     procedure TryDesignPrepare;
 
-{$IFDEF D_XE4}
+{$IFDEF C25}
     procedure GetBookmarkData(Buffer: TRecordBuffer; Data: TBookMark); override;
     procedure DataConvert(Field: TField; Source: TValueBuffer; var Dest: TValueBuffer; ToNative: Boolean); override;
 {$ELSE}
-{$IFDEF D_XE3}
+{$IFDEF C24}
     procedure GetBookmarkData(Buffer: TRecordBuffer; Data: TBookMark); override;
     procedure DataConvert(Field: TField; Source, Dest: TValueBuffer; ToNative: Boolean); override;
 {$ENDIF}
@@ -933,7 +933,7 @@ type
     function GetRecordCount: Integer; override;
     function GetRecordSize: Word; override; // abstract
 
-{$IFDEF D_23}
+{$IFDEF C30}
     procedure InternalAddRecord(Buffer: TRecBuf; Append: Boolean); override;
 {$ELSE}
     procedure InternalAddRecord(Buffer: Pointer; Append: Boolean); override; // abstract
@@ -955,7 +955,7 @@ type
     function IsCursorOpen: Boolean; override; // abstract
 
     procedure SetBookmarkFlag(Buffer: TRecordBuffer; Value: TBookmarkFlag); override;
-{$IFDEF D_23}
+{$IFDEF C30}
     procedure InternalGotoBookmark(BookMark: TBookMark); override;
     procedure SetBookmarkData(Buffer: TRecBuf; Data: TBookMark); override;
 {$ELSE}
@@ -1099,11 +1099,11 @@ type
     property RunState: TDataSetRunState read FRunState;
     procedure Resync(Mode: TResyncMode); override;
     function BookmarkValid(BookMark: TBookMark): Boolean; override;
-{$IFDEF D_XE4}
+{$IFDEF C25}
     function GetFieldData(Field: TField; var Buffer: TValueBuffer): Boolean; override;
     procedure SetFieldData(Field: TField; Buffer: TValueBuffer); override;
 {$ELSE}
-{$IFDEF D_XE3}
+{$IFDEF C24}
     function GetFieldData(Field: TField; Buffer: TValueBuffer): Boolean; override;
     procedure SetFieldData(Field: TField; Buffer: TValueBuffer); override;
 {$ENDIF}
@@ -1227,9 +1227,9 @@ type
     function CanDelete: Boolean; virtual;
     function IsSequenced: Boolean; override; // Scroll bar
     // Before XE6 TDataSet.DefaultFields is a flag that is stale while the dataset is inactive
-{$IFDEF D_20}{$WARN HIDING_MEMBER OFF}{$ENDIF}
+{$IFDEF C27}{$WARN HIDING_MEMBER OFF}{$ENDIF}
     property DefaultFields: Boolean read GetDefaultFields;
-{$IFDEF D_20}{$WARN HIDING_MEMBER DEFAULT}{$ENDIF}
+{$IFDEF C27}{$WARN HIDING_MEMBER DEFAULT}{$ENDIF}
   public
 {$IFDEF CSMonitor}
     procedure SetCSMonitorSupportToQ;
@@ -1789,7 +1789,7 @@ const
 implementation
 
 uses
-{$IFDEF D_XE3}
+{$IFDEF C24}
   System.Types, // for inline funcs
 {$ENDIF}
   StrUtil, FIBConsts, FIBDataInfo, VariantRtn, IB_ErrorCodes,
@@ -2727,7 +2727,7 @@ end;
   * TFIBDateField - implementation
 *)
 
-{$IFDEF D_XE3}
+{$IFDEF C24}
 
 procedure TFIBDateField.SetAsDateTime(Value: TDateTime);
 begin
@@ -2742,7 +2742,7 @@ end;
 (*
   * TFIBTimeField - implementation
 *)
-{$IFDEF D_XE3}
+{$IFDEF C24}
 
 procedure TFIBTimeField.SetAsDateTime(Value: TDateTime);
 begin
@@ -2774,7 +2774,7 @@ end;
   * TFIBDateTimeField - implementation
 *)
 
-{$IFDEF D_XE3}
+{$IFDEF C24}
 
 procedure TFIBDateTimeField.SetAsDateTime(Value: TDateTime);
 begin
@@ -2905,11 +2905,11 @@ begin
     Result := inherited GetIsNull;
 end;
 
-{$IFDEF D_XE3}
+{$IFDEF C24}
 
 procedure TFIBMemoField.SetAsAnsiString(const Value: AnsiString);
 begin
-{$IFDEF D_25}
+{$IFDEF C32}
   SetData(TValueBuffer(Value), Length(Value));
 {$ELSE}
   SetData(Pointer(Value), Length(Value));
@@ -3469,8 +3469,8 @@ begin
       else
         begin
           VarFMTBcdCreate(Result, AsBcd);
-    {$IFDEF D_XE}
-    {$IFNDEF D_XE2}
+    {$IFDEF C22}
+    {$IFNDEF C23}
           Result := Result + 0; // Avoid bug BCD in XE
     {$ENDIF}
     {$ENDIF}
@@ -3553,7 +3553,7 @@ begin
                 end;
             end
           else
-    {$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+    {$IFDEF C24}with FormatSettings do {$ENDIF}
               begin
                 if FmtStr = '' then
                   begin
@@ -3647,7 +3647,7 @@ begin
       if Size = 0 then
         begin
           C := Value;
-  {$IFDEF D_XE3}
+  {$IFDEF C24}
           TFIBDataSet(DataSet).SetFieldData(Self, @C);
   {$ELSE}
           SetData(@C);
@@ -3662,7 +3662,7 @@ begin
                 RangeError(Value, MinValue, MaxValue);
             end;
           C := Value * E10[Size];
-  {$IFDEF D_XE3}
+  {$IFDEF C24}
           TFIBDataSet(DataSet).SetFieldData(Self, @C);
   {$ELSE}
           SetData(@C);
@@ -3717,7 +3717,7 @@ begin
       BCDToInt64WithScale(Value, C, lScale);
       if lScale <> Size then
         C := Round(C * E10[Size - lScale]);
-  {$IFDEF D_XE3}
+  {$IFDEF C24}
       TFIBDataSet(DataSet).SetFieldData(Self, @C);
   {$ELSE}
       SetData(@C);
@@ -3745,7 +3745,7 @@ begin
             else
               begin
                 C := Value * E10[Size];
-    {$IFDEF D_XE3}
+    {$IFDEF C24}
                 TFIBDataSet(DataSet).SetFieldData(Self, @C);
     {$ELSE}
                 SetData(@C);
@@ -3824,7 +3824,7 @@ begin
           raise Exception.Create(CmpFullName(Self) + CLRF + E.Message)
       end;
   end;
-{$IFDEF D_XE3}
+{$IFDEF C24}
   TFIBDataSet(DataSet).SetFieldData(Self, @RndComp);
 {$ELSE}
   SetData(@RndComp);
@@ -6197,7 +6197,7 @@ end;
 procedure TFIBCustomDataSet.ChangeScreenCursor(var OldCursor: Integer);
 begin
 {$IFNDEF NO_GUI}
-{$IFDEF D_XE2}
+{$IFDEF C23}
   if Assigned(Database) and Assigned(Database.DoChangeScreenCursor) then
     Database.DoChangeScreenCursor(FSQLScreenCursor, OldCursor)
 {$ELSE}
@@ -6209,13 +6209,13 @@ begin
 end;
 
 procedure TFIBCustomDataSet.RestoreScreenCursor(const OldCursor: Integer);
-{$IFDEF D_XE2}
+{$IFDEF C23}
 var
   Dummy: Integer;
 {$ENDIF}
 begin
 {$IFNDEF NO_GUI}
-{$IFDEF D_XE2}
+{$IFDEF C23}
   if Assigned(Database) and Assigned(Database.DoChangeScreenCursor) then
     Database.DoChangeScreenCursor(OldCursor, Dummy)
 {$ELSE}
@@ -8945,7 +8945,7 @@ begin
     end;
 end;
 
-{$IFDEF D_XE3}
+{$IFDEF C24}
 
 procedure TFIBCustomDataSet.GetBookmarkData(Buffer: TRecordBuffer; Data: TBookMark);
 begin
@@ -9270,7 +9270,7 @@ begin
                 ftFloat: Result := PDouble(p)^;
                 ftWideString:
                   if Database.NeedUnicodeFieldsTranslation then
-      {$IFDEF D_XE}
+      {$IFDEF C22}
                     Result := WideString(PWideChar(p))
       {$ELSE}
                     Result := UTF8ToString(PAnsiChar(p))
@@ -9413,14 +9413,14 @@ begin
       FIBError(feInvalidDataConversion, [nil]);
 end;
 
-{$IFDEF D_XE4}
+{$IFDEF C25}
 
 procedure TFIBCustomDataSet.DataConvert(Field: TField; Source: TValueBuffer; var Dest: TValueBuffer; ToNative: Boolean);
 begin
   DataConvert(Field, Pointer(Source), Pointer(Dest), ToNative);
 end;
 {$ELSE}
-{$IFDEF D_XE3}
+{$IFDEF C24}
 
 procedure TFIBCustomDataSet.DataConvert(Field: TField; Source, Dest: TValueBuffer; ToNative: Boolean);
 begin
@@ -9507,14 +9507,14 @@ begin
       Stream.Free;
     end;
 end;
-{$IFDEF D_XE4}
+{$IFDEF C25}
 
 function TFIBCustomDataSet.GetFieldData(Field: TField; var Buffer: TValueBuffer): Boolean;
 begin
   Result := GetFieldData(Field, Pointer(Buffer))
 end;
 {$ELSE}
-{$IFDEF D_XE3}
+{$IFDEF C24}
 
 function TFIBCustomDataSet.GetFieldData(Field: TField; Buffer: TValueBuffer): Boolean;
 begin
@@ -10335,7 +10335,7 @@ end;
 
 // InsertRecord, AppendRecord: the new record is positioned as by Insert, Append.
 // AddRecord calls the TRecBuf overload, TDataSet does not forward it to Pointer.
-{$IFDEF D_23}
+{$IFDEF C30}
 
 procedure TFIBCustomDataSet.InternalAddRecord(Buffer: TRecBuf; Append: Boolean);
 {$ELSE}
@@ -10665,7 +10665,7 @@ begin
     end;
 end;
 
-{$IFDEF D_23}
+{$IFDEF C30}
 
 procedure TFIBCustomDataSet.InternalGotoBookmark(BookMark: TBookMark);
 {$ELSE}
@@ -11792,7 +11792,7 @@ begin
 
 end;
 
-{$IFDEF D_23}
+{$IFDEF C30}
 
 procedure TFIBCustomDataSet.SetBookmarkData(Buffer: TRecBuf; Data: TBookMark);
 {$ELSE}
@@ -11938,10 +11938,10 @@ const
     , ord(ftUnknown), ord(ftUnknown), ord(ftUnknown), ord(ftUnknown)
     , ord(ftUnknown), ord(ftUnknown), ord(ftUnknown), ord(ftUnknown),
     ord(ftUnknown), ord(ftUnknown), ord(ftUnknown)
-{$IFDEF D2010+}
+{$IFDEF C21}
     , ord(ftUnknown), ord(ftUnknown), ord(ftUnknown)
 {$ENDIF}
-{$IFDEF D_30}
+{$IFDEF C37}
     , ord(ftUnknown)
 {$ENDIF}
   );
@@ -12060,7 +12060,7 @@ begin
     end;
 end;
 
-{$IFDEF D_XE3}
+{$IFDEF C24}
 
 procedure TFIBCustomDataSet.SetFieldData(Field: TField; Buffer: TValueBuffer);
 begin
@@ -13154,7 +13154,7 @@ begin
   if IsEqualGUIDs(Value, fibGUID_NULL) then
     Clear
   else
-{$IFDEF D_XE3}
+{$IFDEF C24}
     TFIBDataSet(DataSet).SetFieldData(Self, @Value);
 {$ELSE}
     SetData(@Value);
@@ -14455,7 +14455,7 @@ begin
       if (Fields[i] is TFIBMemoField) and ((psSupportUnicodeBlobs in PrepareOptions) or Database.NeedUTFEncodeDDL) then
         TFIBMemoField(Fields[i]).InternalSetCharSet(vFi.CharSetID);
 
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+{$IFDEF C24}with FormatSettings do {$ENDIF}
         if pfImportDefaultValues in PrepareOptions then
           if (Fields[i] is TNumericField) then
           begin
@@ -14696,7 +14696,7 @@ begin
 
   if not CachedUpdates and not(State in [dsEdit, dsInsert]) then
     SaveOldBuffer(GetActiveBuf);
-{$IFDEF D_XE4}
+{$IFDEF C25}
   SetQueryParams(vLockQry, Pointer(GetActiveBuf));
 {$ELSE}
   SetQueryParams(vLockQry, GetActiveBuf);
@@ -16733,7 +16733,7 @@ begin
     Exit;
   with FDataSet do
   begin
-{$IFDEF D_XE4}
+{$IFDEF C25}
     ExecUpdateObjects(FKindUpdate, Pointer(ActiveBuffer), FExecuteOrder);
 {$ELSE}
     ExecUpdateObjects(FKindUpdate, ActiveBuffer, FExecuteOrder);

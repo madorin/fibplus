@@ -21,7 +21,7 @@ interface
 uses
   Windows, SysUtils,
 
-{$IFDEF D_XE2}
+{$IFDEF C23}
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls,
   Vcl.ExtCtrls,
   Vcl.StdCtrls,

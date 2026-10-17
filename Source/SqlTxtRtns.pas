@@ -2892,7 +2892,7 @@ end;
 
 function ChangeToSQLDecimalSeparator(const Source: string): string;
 begin
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+{$IFDEF C24}with FormatSettings do {$ENDIF}
     if DecimalSeparator = '.' then
       Result := Source
     else

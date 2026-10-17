@@ -163,7 +163,7 @@ type
 
 implementation
 
-{$IFNDEF D_XE2}
+{$IFNDEF C23}
 
 uses
   Windows;

@@ -6,7 +6,7 @@ interface
 
 uses
   Windows, Classes,
-{$IFDEF D_XE2}
+{$IFDEF C23}
   Vcl.StdCtrls, Vcl.Forms, Vcl.ExtCtrls, Vcl.Dialogs,
 {$ELSE}
   StdCtrls, Forms, ExtCtrls, Dialogs,

@@ -30,7 +30,7 @@ procedure ClearQueryCacheList(DB: TFIBDataBase);
 implementation
 
 uses
-{$IFDEF D_XE3}
+{$IFDEF C24}
   System.Types, // for inline funcs
 {$ENDIF}
   SqlTxtRtns, FIBLists, StrUtil;

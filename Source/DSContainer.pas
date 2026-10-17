@@ -125,7 +125,7 @@ function GlobalContainer: TDataSetsContainer;
 implementation
 
 uses
-{$IFDEF D_XE3}
+{$IFDEF C24}
   System.Types, // for inline funcs
 {$ENDIF}
   StrUtil, FIBConsts;

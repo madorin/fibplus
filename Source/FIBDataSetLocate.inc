@@ -831,7 +831,7 @@ begin
                begin
                 if TField(fl.List^[i]).FieldNo<0 then
                 begin
-                  {$IFDEF D_XE}
+                  {$IFDEF C22}
                   WideValue := PWideChar(p);
                   {$ELSE}
                   WideValue := UTF8ToString(PAnsiChar(p));

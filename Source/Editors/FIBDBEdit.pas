@@ -20,7 +20,7 @@ interface
 
 uses
   Windows, Messages,
-{$IFDEF D_XE2}
+{$IFDEF C23}
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Classes,
 {$ELSE}
   Controls, Forms, Dialogs, StdCtrls, Classes,

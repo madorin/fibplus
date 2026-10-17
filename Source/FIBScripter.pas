@@ -658,13 +658,13 @@ begin
   begin
     // May be floats
     Value := StringReplace(Value, '.',
-      {$IFDEF D_XE3}FormatSettings.{$ENDIF} DecimalSeparator, []);
+      {$IFDEF C24}FormatSettings.{$ENDIF} DecimalSeparator, []);
     Value := StringReplace(Value, ',',
-      {$IFDEF D_XE3}FormatSettings.{$ENDIF} DecimalSeparator, []);
+      {$IFDEF C24}FormatSettings.{$ENDIF} DecimalSeparator, []);
     cValue := StringReplace(cValue, '.',
-      {$IFDEF D_XE3}FormatSettings.{$ENDIF} DecimalSeparator, []);
+      {$IFDEF C24}FormatSettings.{$ENDIF} DecimalSeparator, []);
     cValue := StringReplace(cValue, ',',
-      {$IFDEF D_XE3}FormatSettings.{$ENDIF} DecimalSeparator, []);
+      {$IFDEF C24}FormatSettings.{$ENDIF} DecimalSeparator, []);
 
     cValueF := StrToFloat(cValue);
     ValueF := StrToFloat(Value);

@@ -321,7 +321,7 @@ function TFIBClientBCDField.GetAsString: string;
 var
   C: Int64;
 begin
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+{$IFDEF C24}with FormatSettings do {$ENDIF}
     if GetData(@C, False) then
       Result := Int64WithScaleToStr(C, Size, DecimalSeparator)
     else
@@ -348,7 +348,7 @@ var
   FmtStr: string;
   C: Int64;
 begin
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+{$IFDEF C24}with FormatSettings do {$ENDIF}
     try
       if GetData(@C, False) then
       begin

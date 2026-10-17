@@ -137,6 +137,13 @@ The lists of old and new names, and what an application has to change, are in
   screen; the resizable editors still do, also when maximized, and a saved
   position outside the screen is moved onto it.
 
+#### Build
+
+- The compiler version symbols of `FIBPlus.inc` are named after
+  `CompilerVersion`: `C21` (Delphi 2010) to `C37` (Delphi 13) replace `D2010+`,
+  `D_XE`..`D_XE5` and `D_20`..`D_30`; see
+  [Upgrading](Docs/guide/upgrading.md#800).
+
 ### Removed
 
 - Support for Delphi 6, 7, 2005, 2006, 2007 and C++Builder 6 to 2007 (the

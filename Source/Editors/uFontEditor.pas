@@ -6,7 +6,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes,
-{$IFDEF D_XE2}
+{$IFDEF C23}
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls
 {$ELSE}
   Graphics, Controls, Forms, ComCtrls, StdCtrls, Dialogs

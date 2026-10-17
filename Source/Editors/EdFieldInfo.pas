@@ -20,7 +20,7 @@ interface
 uses
 {$IFDEF WINDOWS}
   Windows, Messages, SysUtils, Classes,
-{$IFDEF D_XE2}
+{$IFDEF C23}
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   Vcl.Grids, Vcl.DBGrids, Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.DBCtrls,
   Vcl.Buttons, Vcl.Menus,

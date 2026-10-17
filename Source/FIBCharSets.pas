@@ -37,7 +37,7 @@ implementation
 
 uses
   fib, FIBConsts
-{$IFNDEF D_XE}, Windows{$ENDIF};
+{$IFNDEF C22}, Windows{$ENDIF};
 
 type
   TFirebirdCharSet = record
@@ -165,7 +165,7 @@ end;
 
 function ToUnicode(CodePage: Word; Buffer: PAnsiChar; Length: Integer; Dest: PWideChar; DestLength: Integer): Integer;
 begin
-{$IFDEF D_XE}
+{$IFDEF C22}
   Result := UnicodeFromLocaleChars(CodePage, 0, Buffer, Length, Dest, DestLength);
 {$ELSE}
   Result := MultiByteToWideChar(CodePage, 0, Buffer, Length, Dest, DestLength);
@@ -185,7 +185,7 @@ begin
   end
   else
     Flags := WC_NO_BEST_FIT_CHARS;
-{$IFDEF D_XE}
+{$IFDEF C22}
   Result := LocaleCharsFromUnicode(CodePage, Flags, Source, Length, Dest, DestLength, nil, UsedDefault);
 {$ELSE}
   Result := WideCharToMultiByte(CodePage, Flags, Source, Length, Dest, DestLength, nil, UsedDefault);

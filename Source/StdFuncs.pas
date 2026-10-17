@@ -265,7 +265,7 @@ begin
   finally
     THackDS(Field.DataSet).RestoreState(OldState);
   end;
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+{$IFDEF C24}with FormatSettings do {$ENDIF}
     if SQLFormat and (DecimalSeparator <> '.') then
       ReplaceStr(Result, DecimalSeparator, '.')
 end;
@@ -481,7 +481,7 @@ begin
   BCD.Fraction[Digit div 2] := B;
 end;
 
-{$IFDEF D_XE2}
+{$IFDEF C23}
 // CUT FROM Delphi XE
 
 function CurrToBCD(const Curr: Currency; var BCD: TBCD; Precision: Integer = 32; Decimals: Integer = 4): Boolean;
@@ -662,7 +662,7 @@ var
   pd: Integer;
 begin
   Result := BCDToStr(BCD);
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+{$IFDEF C24}with FormatSettings do {$ENDIF}
     if DecimalSeparator <> '.' then
     begin
       pd := Pos(DecimalSeparator, Result);
@@ -679,7 +679,7 @@ var
   i: Integer;
 begin
   Result := False;
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+{$IFDEF C24}with FormatSettings do {$ENDIF}
     for i := 1 to Length(Str) do
     begin
       Result := (Str[i] = '0') or (Str[i] = DecimalSeparator);
@@ -742,7 +742,7 @@ begin
 
   Result := Source;
   L := Length(Format);
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+{$IFDEF C24}with FormatSettings do {$ENDIF}
     if L > 0 then
     begin
       while (L > 0) and CharInSet(Format[L], [#9, ' ', ';']) do
@@ -862,7 +862,7 @@ begin
         i := PosDecSepInString - 1;
         if i < 0 then
           i := Length(Result);
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+{$IFDEF C24}with FormatSettings do {$ENDIF}
           while i > 1 do
           begin
             if L = 3 then
@@ -887,7 +887,7 @@ begin
         else if (PosDecSepInString = 3) and (Result[1] = '-') and (Result[2] = '0') then
           Delete(Result, 2, 1);
       end;
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+{$IFDEF C24}with FormatSettings do {$ENDIF}
         if Result[Length(Result)] = DecimalSeparator then
           SetLength(Result, Length(Result) - 1);
       if OneSectionFormat and (Result[1] = '-') then

@@ -22,7 +22,7 @@ uses
 {$I FIBPlus.inc}
 
 type
-{$IFDEF D_XE2}
+{$IFDEF C23}
   TFIBList = class(TList)
   private
     function GetPList: PPointerList;
@@ -126,7 +126,7 @@ implementation
 uses
   StdFuncs, StrUtil;
 
-{$IFDEF D_XE2}
+{$IFDEF C23}
 
 function TFIBList.GetPList: PPointerList;
 begin

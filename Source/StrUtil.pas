@@ -37,7 +37,7 @@ type
     Y: Longint;
   end;
 
-{$IFDEF D_XE5}
+{$IFDEF C26}
 
   TFastStringStream = TStringStream;
 
@@ -490,12 +490,12 @@ begin
 end;
 
 function CurrentFormatSettings: TFormatSettings;
-{$IFNDEF D_XE3}
+{$IFNDEF C24}
 var
   I: Integer;
 {$ENDIF}
 begin
-{$IFDEF D_XE3}
+{$IFDEF C24}
   Result := FormatSettings;
 {$ELSE}
   Result.CurrencyFormat := CurrencyFormat;
@@ -1123,14 +1123,14 @@ var
   i: Integer;
   AlterChar: Char;
 begin
-  if {$IFDEF D_XE3}FormatSettings.{$ENDIF}DecimalSeparator = '.' then
+  if {$IFDEF C24}FormatSettings.{$ENDIF}DecimalSeparator = '.' then
     AlterChar := ','
   else
     AlterChar := '.';
   for i := 1 to Length(S) do
   begin
     if S[i] = AlterChar then
-      S[i] := {$IFDEF D_XE3}FormatSettings.{$ENDIF}DecimalSeparator
+      S[i] := {$IFDEF C24}FormatSettings.{$ENDIF}DecimalSeparator
   end;
   Result := StrToFloat(S)
 end;
@@ -1168,7 +1168,7 @@ begin
     Result := False;
   if Result then
     D1 := ReplaceStr(D, '-',
-{$IFDEF D_XE3}FormatSettings.{$ENDIF}DateSeparator);
+{$IFDEF C24}FormatSettings.{$ENDIF}DateSeparator);
 end;
 
 function ToClientDateFmt(D: string; caseFmt: Byte): string;
@@ -1986,7 +1986,7 @@ end;
 type
   THackStringList = class(TStrings)
   private
-{$IFNDEF D_XE2}
+{$IFNDEF C23}
     FList: PStringItemList;
 {$ELSE}
     FList: TStringItemList;
@@ -2000,7 +2000,7 @@ var
 begin
   C := THackStringList(SL).FCount - 1;
   for Result := 0 to C do
-{$IFNDEF D_XE2}
+{$IFNDEF C23}
     if THackStringList(SL).FList^[Result].FString = S then
 {$ELSE}
     if THackStringList(SL).FList[Result].FString = S then
@@ -2272,7 +2272,7 @@ var
   OldChar: Char;
   OldChar1: Char;
 
-{$IFNDEF D_XE5}
+{$IFNDEF C26}
   { TFastStringStream }
 
 constructor TFastStringStream.Create(const AString: string);

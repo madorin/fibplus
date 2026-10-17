@@ -5,7 +5,7 @@ interface
 {$I ..\FIBPlus.inc}
 
 uses
-  Windows, Classes, Variants, {$IFDEF D_XE2}Vcl.Controls, Vcl.Forms{$ELSE}Controls, Forms{$ENDIF};
+  Windows, Classes, Variants, {$IFDEF C23}Vcl.Controls, Vcl.Forms{$ELSE}Controls, Forms{$ENDIF};
 
 type
   TFIBEditorCustomForm = class(TForm)
@@ -44,7 +44,7 @@ const
 
 function ControlPPI(Control: TControl): Integer;
 begin
-{$IFDEF D_27}
+{$IFDEF C34}
   Result := Control.CurrentPPI;
 {$ELSE}
   Result := Screen.PixelsPerInch;

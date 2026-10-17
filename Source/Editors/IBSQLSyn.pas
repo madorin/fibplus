@@ -34,7 +34,7 @@ implementation
 {$I ..\FIBPlus.inc}
 
 uses
-{$IFDEF D_XE2}
+{$IFDEF C23}
   Vcl.Graphics
 {$ELSE}
     Graphics
