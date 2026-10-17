@@ -1,4 +1,4 @@
-# TFIBClientDataSet
+# <img src="../images/icons/TFIBClientDataSet.png" width="32" height="32" align="absmiddle" alt=""> TFIBClientDataSet
 
 A `TClientDataSet` for the client side of a multi-tier application whose server publishes a [TFIBDataSet](TFIBDataSet.md) through a provider. It adds parameterized open, transaction control through the application server, and a `BCD` field class that keeps the scale of `NUMERIC` and `DECIMAL` values. The unit also holds `TFIBDataSetProvider`, the provider for the server side.
 

@@ -1,4 +1,4 @@
-# TFIBUpdateObject
+# <img src="../images/icons/TFIBUpdateObject.png" width="32" height="32" align="absmiddle" alt=""> TFIBUpdateObject
 
 An extra statement that a [TFIBDataSet](TFIBDataSet.md) runs when it posts an insert, an update, or a delete. Use it to change other tables or call a procedure in the same step as the dataset's own statement. An update object has an `SQL` text like any query and is attached to one dataset.
 

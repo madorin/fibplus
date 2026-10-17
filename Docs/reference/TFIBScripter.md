@@ -1,4 +1,4 @@
-# TFIBScripter
+# <img src="../images/icons/TFIBScripter.png" width="32" height="32" align="absmiddle" alt=""> TFIBScripter
 
 Splits an SQL script into statements and runs them one by one on a database. It understands the `SET TERM` command, conditional directives, and client commands such as `CONNECT` and `INPUT`, and sends all other statements, including session `SET` statements, to the server. Use it for DDL scripts and data scripts. To run a single statement from code, use [TFIBQuery](TFIBQuery.md).
 

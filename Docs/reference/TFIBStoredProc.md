@@ -1,4 +1,4 @@
-# TFIBStoredProc
+# <img src="../images/icons/TFIBStoredProc.png" width="32" height="32" align="absmiddle" alt=""> TFIBStoredProc
 
 Query component that calls a stored procedure by name. It reads the input parameters of the procedure from the database metadata and builds the `EXECUTE PROCEDURE` statement. Use it for parameters created from the metadata; use [TFIBQuery](TFIBQuery.md) with `ExecProcedure` or a hand-written `SQL` text otherwise.
 

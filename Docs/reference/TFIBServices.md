@@ -40,19 +40,19 @@ end;
 | Class | Purpose |
 |-------|---------|
 | [TFIBCustomService](#tfibcustomservice) | Base class: attach to the service manager and detach |
-| [TFIBServerProperties](#tfibserverproperties) | Read database list, license, configuration, and version of the server |
+| <img src="../images/icons/TFIBServerProperties.png" width="24" height="24" align="absmiddle" alt=""> [TFIBServerProperties](#tfibserverproperties) | Read database list, license, configuration, and version of the server |
 | [TFIBControlService](#tfibcontrolservice) | Base class for services that are started with `ServiceStart` |
 | [TFIBControlAndQueryService](#tfibcontrolandqueryservice) | Base class for started services that return text output |
-| [TFIBConfigService](#tfibconfigservice) | Change database properties, shut down, bring online |
-| [TFIBLicensingService](#tfiblicensingservice) | Add or remove a license key |
-| [TFIBLogService](#tfiblogservice) | Read the server log |
-| [TFIBStatisticalService](#tfibstatisticalservice) | Database statistics |
-| [TFIBBackupService](#tfibbackupservice) | Back up a database |
-| [TFIBRestoreService](#tfibrestoreservice) | Restore a database from a backup |
-| [TFIBNBackupService](#tfibnbackupservice) | Incremental backup |
-| [TFIBNRestoreService](#tfibnrestoreservice) | Restore from incremental backup files |
-| [TFIBValidationService](#tfibvalidationservice) | Validate, sweep, and repair; handle limbo transactions |
-| [TFIBSecurityService](#tfibsecurityservice) | Manage users |
+| <img src="../images/icons/TFIBConfigService.png" width="24" height="24" align="absmiddle" alt=""> [TFIBConfigService](#tfibconfigservice) | Change database properties, shut down, bring online |
+| <img src="../images/icons/TFIBLicensingService.png" width="24" height="24" align="absmiddle" alt=""> [TFIBLicensingService](#tfiblicensingservice) | Add or remove a license key |
+| <img src="../images/icons/TFIBLogService.png" width="24" height="24" align="absmiddle" alt=""> [TFIBLogService](#tfiblogservice) | Read the server log |
+| <img src="../images/icons/TFIBStatisticalService.png" width="24" height="24" align="absmiddle" alt=""> [TFIBStatisticalService](#tfibstatisticalservice) | Database statistics |
+| <img src="../images/icons/TFIBBackupService.png" width="24" height="24" align="absmiddle" alt=""> [TFIBBackupService](#tfibbackupservice) | Back up a database |
+| <img src="../images/icons/TFIBRestoreService.png" width="24" height="24" align="absmiddle" alt=""> [TFIBRestoreService](#tfibrestoreservice) | Restore a database from a backup |
+| <img src="../images/icons/TFIBNBackupService.png" width="24" height="24" align="absmiddle" alt=""> [TFIBNBackupService](#tfibnbackupservice) | Incremental backup |
+| <img src="../images/icons/TFIBNRestoreService.png" width="24" height="24" align="absmiddle" alt=""> [TFIBNRestoreService](#tfibnrestoreservice) | Restore from incremental backup files |
+| <img src="../images/icons/TFIBValidationService.png" width="24" height="24" align="absmiddle" alt=""> [TFIBValidationService](#tfibvalidationservice) | Validate, sweep, and repair; handle limbo transactions |
+| <img src="../images/icons/TFIBSecurityService.png" width="24" height="24" align="absmiddle" alt=""> [TFIBSecurityService](#tfibsecurityservice) | Manage users |
 
 `TFIBBackupRestoreService` sits between `TFIBControlAndQueryService` and the backup and restore classes. It adds the published `ParallelWorkers`, `Verbose` and `OnTextNotify`.
 

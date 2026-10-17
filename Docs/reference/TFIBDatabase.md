@@ -1,4 +1,4 @@
-# TFIBDatabase
+# <img src="../images/icons/TFIBDatabase.png" width="32" height="32" align="absmiddle" alt=""> TFIBDatabase
 
 Connection to a Firebird or InterBase database. It loads the client library, attaches to the database, keeps the list of transactions and datasets that use the connection, and reads server information. It keeps connection aliases, handles a lost connection, saves a schema cache file, raises connect and transaction events, and lists the queries and datasets that use the connection. Every `TFIBQuery`, `TFIBDataSet`, and `TFIBTransaction` needs a `TFIBDatabase`.
 

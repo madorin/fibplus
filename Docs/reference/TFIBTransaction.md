@@ -1,4 +1,4 @@
-# TFIBTransaction
+# <img src="../images/icons/TFIBTransaction.png" width="32" height="32" align="absmiddle" alt=""> TFIBTransaction
 
 Controls one transaction on one or more databases: starts it, ends it, and holds its parameters. Queries and datasets run inside the transaction assigned to them. A transaction can end by itself after a period of inactivity (`Timeout`). A transaction mode sets the parameters, named transaction kinds can be saved at design time, and events run around starting and ending the transaction and around the queries that run in it.
 

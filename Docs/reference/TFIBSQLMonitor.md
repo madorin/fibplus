@@ -1,4 +1,4 @@
-# TFIBSQLMonitor
+# <img src="../images/icons/TFIBSQLMonitor.png" width="32" height="32" align="absmiddle" alt=""> TFIBSQLMonitor
 
 Receives a trace of the library's SQL activity: statement prepare, execute, and fetch, connect and disconnect, and transaction control. Handle `OnSQL` to log what the application sends to the server. The component works only in Windows builds. The unit is not compiled when `NO_MONITOR` is defined; `FIBPlus.inc` defines it for non-Windows targets, and it can be defined by hand (the commented `{$DEFINE NO_MONITOR}` line in `FIBPlus.inc`).
 

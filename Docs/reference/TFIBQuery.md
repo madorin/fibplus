@@ -1,4 +1,4 @@
-# TFIBQuery
+# <img src="../images/icons/TFIBQuery.png" width="32" height="32" align="absmiddle" alt=""> TFIBQuery
 
 Executes an SQL statement on a Firebird or InterBase database and gives access to its parameters and result rows, without a `TDataSet`. Use it for commands, stored procedures, and for reading rows in code. For data-aware controls use [TFIBDataSet](TFIBDataSet.md).
 

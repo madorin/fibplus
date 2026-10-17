@@ -1,4 +1,4 @@
-# TFIBDataSet
+# <img src="../images/icons/TFIBDataSet.png" width="32" height="32" align="absmiddle" alt=""> TFIBDataSet
 
 The dataset to use in applications, and the one on the component palette. It reads rows through a `TFIBQuery` and keeps them in a record cache, so that scrolling in both directions, sorting, and locating need no further round trip. It can generate its SQL statements from the table and key fields, take keys from generators, run update objects, apply cached updates, lock records, set field properties from the metadata, and save the record cache to a file. Use it for data-aware controls. For commands and for reading rows in code without a `TDataSet`, use [TFIBQuery](TFIBQuery.md).
 
