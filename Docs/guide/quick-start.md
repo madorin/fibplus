@@ -4,8 +4,8 @@ Connect to a database, run a first query, and show data in a grid. The steps use
 
 You need:
 
-- FibPlus installed in the IDE, see [Installation](../../README.md#-installation). The components are on the **FIBPlus** page of the Tool Palette.
-- A running Firebird server and its client library. FibPlus loads `fbclient.dll` by default on Windows; put it next to the program or set `LibraryName` to its path.
+- FIBPlus installed in the IDE, see [Installation](../../README.md#-installation). The components are on the **FIBPlus** page of the Tool Palette.
+- A running Firebird server and its client library. FIBPlus loads `fbclient.dll` by default on Windows; put it next to the program or set `LibraryName` to its path.
 - A VCL application with an empty form.
 
 ## 1. Connect
@@ -71,7 +71,7 @@ begin
 end;
 ```
 
-`ExecQuery` of a `SELECT` opens a cursor and fetches the first row. `Next` fetches the next row. Close the cursor before the transaction ends. Statements that change data work the same way: use `ExecQuery` and commit the transaction when the change is complete. See [TFIBQuery](../reference/TFIBQuery.md) for the members and [Queries and parameters](../guide/queries-and-parameters.md) for the scenarios.
+`ExecQuery` of a `SELECT` opens a cursor and fetches the first row. `Next` fetches the next row. Close the cursor before the transaction ends. Statements that change data work the same way: use `ExecQuery` and commit the transaction when the change is complete. See [TFIBQuery](../reference/TFIBQuery.md) for the members and [Queries and parameters](queries-and-parameters.md) for the scenarios.
 
 ## 3. Show data in a dataset
 
@@ -105,9 +105,9 @@ The dataset sends changes to the server with `UpdateTransaction`. They become pe
 DataSet.AutoCommit := True;
 ```
 
-See [TFIBDataSet](../reference/TFIBDataSet.md) and [TpFIBDataSet](../reference/TpFIBDataSet.md) for the members, and [Datasets and caching](../guide/datasets-and-caching.md) for editing scenarios.
+See [TFIBDataSet](../reference/TFIBDataSet.md) and [TpFIBDataSet](../reference/TpFIBDataSet.md) for the members, and [Datasets and caching](datasets-and-caching.md) for editing scenarios.
 
 ## Next steps
 
-- [Transactions](../guide/transactions.md)
+- [Transactions](transactions.md)
 - [Reference](../reference/README.md)

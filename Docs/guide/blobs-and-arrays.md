@@ -1,6 +1,6 @@
 # BLOBs and arrays
 
-A BLOB column holds binary or text data of any size. An array column holds a fixed-size, multi-dimensional list of values of one type. FibPlus reads and writes both through `TFIBQuery`, `TFIBDataSet`, and the field classes of a dataset. This article shows how, and how text BLOBs are decoded.
+A BLOB column holds binary or text data of any size. An array column holds a fixed-size, multi-dimensional list of values of one type. FIBPlus reads and writes both through `TFIBQuery`, `TFIBDataSet`, and the field classes of a dataset. This article shows how, and how text BLOBs are decoded.
 
 ## Requirements and limits
 
@@ -84,7 +84,7 @@ Setting `AsString` on a parameter works the same way for BLOB parameters. A stri
 
 ### Code pages of text BLOBs
 
-The server stores a text BLOB in the character set of its column. FibPlus converts between that set and Delphi strings when you use the string properties. The code page comes from `Database.Capabilities.BlobCodePage` for the character set of the column. A BLOB of another subtype is handled in the system code page.
+The server stores a text BLOB in the character set of its column. FIBPlus converts between that set and Delphi strings when you use the string properties. The code page comes from `Database.Capabilities.BlobCodePage` for the character set of the column. A BLOB of another subtype is handled in the system code page.
 
 - On *Firebird 2.1+*, `BlobCodePage` returns the same code page as `TextCodePage` for that character set.
 - On older servers and on InterBase it returns UTF-8 for Unicode character sets, and the system code page for the others.
@@ -225,7 +225,7 @@ DataSet.Post;
 
 ## BLOB filters
 
-A filter changes the bytes of a BLOB of one user-defined subtype when FibPlus reads or writes it. Register the filter on the database.
+A filter changes the bytes of a BLOB of one user-defined subtype when FIBPlus reads or writes it. Register the filter on the database.
 
 ```delphi
 procedure EncodeNote(var BlobBuffer; var BlobSize: LongInt);

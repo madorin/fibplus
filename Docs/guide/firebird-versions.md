@@ -1,8 +1,8 @@
 # Firebird versions
 
-FibPlus connects to Firebird and InterBase servers of several generations. Some features need a newer server, a newer client library, or both. This article is organized like a changelog: one section per Firebird version, newest first, with the features that version introduced and how FibPlus supports them.
+FIBPlus connects to Firebird and InterBase servers of several generations. Some features need a newer server, a newer client library, or both. This article is organized like a changelog: one section per Firebird version, newest first, with the features that version introduced and how FIBPlus supports them.
 
-| Version | Features in FibPlus |
+| Version | Features in FIBPlus |
 |---------|---------------------|
 | [Firebird 5.0](#firebird-50) | Parallel workers for sweep, index creation, backup and restore |
 | [Firebird 4.0](#firebird-40) | Session timeouts, statement timeout, long identifiers, read consistency, `INT128`, `DECFLOAT`, time zones |
@@ -50,7 +50,7 @@ Writeln(Database.ClientLibrary.Version.Major);
 *Firebird 5* can use several worker threads for sweep, `CREATE INDEX` and `ALTER INDEX ... ACTIVE`, backup, and restore.
 
 - **Server:** *Firebird 5+*. **Client library:** any.
-- **In FibPlus:** `ConnectParams.ParallelWorkers` of `TFIBDatabase` (the `parallel_workers` entry of `DBParams`) for the work done in the attachment; `ParallelWorkers` of `TpFIBBackupService`, `TpFIBRestoreService`, and `TpFIBValidationService` for the services. The value is sent only when it is greater than `0`, so nothing changes for existing code. FibPlus does not check the server version or the range of the value.
+- **In FIBPlus:** `ConnectParams.ParallelWorkers` of `TFIBDatabase` (the `parallel_workers` entry of `DBParams`) for the work done in the attachment; `ParallelWorkers` of `TpFIBBackupService`, `TpFIBRestoreService`, and `TpFIBValidationService` for the services. The value is sent only when it is greater than `0`, so nothing changes for existing code. FIBPlus does not check the server version or the range of the value.
 - **Server settings:** `MaxParallelWorkers` in `firebird.conf` (default `1`) is the upper limit for every request. `ParallelWorkers` (default `1`) is used when the attachment did not ask for a value. With the defaults nothing runs in parallel, whatever the client sends.
 - A value above `MaxParallelWorkers`, or below `0`, is not an error: the server posts a warning and uses the limit (or `1`).
 - On `TpFIBValidationService` the value is used for the sweep only, so it is sent only with `SweepDB` in `Options`.
@@ -72,42 +72,42 @@ On *Firebird 3* and *Firebird 4* the DPB parameter is ignored, so `ConnectParams
 ### Session timeouts
 
 - **Server:** *Firebird 4+*. **Client library:** any.
-- **In FibPlus:** `Session.StatementTimeout` and `Session.IdleTimeout` of `TFIBDatabase` are applied on connect. Check `Capabilities.SessionTimeouts`.
+- **In FIBPlus:** `Session.StatementTimeout` and `Session.IdleTimeout` of `TFIBDatabase` are applied on connect. Check `Capabilities.SessionTimeouts`.
 - **Guide:** [Timeouts](timeouts.md), [TFIBSession](../reference/TFIBSession.md).
 
 ### Statement timeout of a query or dataset
 
 - **Server:** *Firebird 4+*. **Client library:** `fbclient` with `fb_dsql_set_timeout` (*Firebird 4+*).
-- **In FibPlus:** `StatementTimeout` of `TFIBQuery` and the datasets is applied after prepare. Check `Capabilities.StatementTimeout`; it is `False` on a *Firebird 4+* server when the client library is older, while `Capabilities.SessionTimeouts` can still be `True`.
+- **In FIBPlus:** `StatementTimeout` of `TFIBQuery` and the datasets is applied after prepare. Check `Capabilities.StatementTimeout`; it is `False` on a *Firebird 4+* server when the client library is older, while `Capabilities.SessionTimeouts` can still be `True`.
 - **Guide:** [Timeouts](timeouts.md); what happens on older servers is in [Timeouts](timeouts.md#firebird-3-and-older).
 
 ### Long identifiers
 
 *Firebird 4* raises the limit for names of tables, columns, and parameters from 31 to 63 characters.
 
-- **Server:** *Firebird 4+*. **Client library:** works with any; a client that is not a *Firebird 4+* one makes FibPlus read the names with an extra request.
-- **In FibPlus:** long names are supported for columns, parameters, relation aliases, array columns, the field repository, and the editors. `Capabilities.MaxIdentifierLength` is `63` on a *Firebird 4+* server and `31` on others.
+- **Server:** *Firebird 4+*. **Client library:** works with any; a client that is not a *Firebird 4+* one makes FIBPlus read the names with an extra request.
+- **In FIBPlus:** long names are supported for columns, parameters, relation aliases, array columns, the field repository, and the editors. `Capabilities.MaxIdentifierLength` is `63` on a *Firebird 4+* server and `31` on others.
 
 Points that matter when you move to a *Firebird 4+* server:
 
 - Names longer than 31 bytes come in full. Before, they were cut or replaced with `F_n`. Rename these to the full column name, or the existing items no longer match the columns:
   - persistent fields of datasets (`FieldName`);
   - `FIB$FIELDS_INFO` rows.
-- A client library before *Firebird 4* returns names longer than 31 bytes empty, and a newer one cuts them. FibPlus reads the full names with an additional describe request: with a client before *Firebird 4* on a *Firebird 4+* server for every statement that has columns or parameters, and with a newer client only when a name was cut. Preparing a query therefore costs one more round trip with a *Firebird 3 or older* client.
+- A client library before *Firebird 4* returns names longer than 31 bytes empty, and a newer one cuts them. FIBPlus reads the full names with an additional describe request: with a client before *Firebird 4* on a *Firebird 4+* server for every statement that has columns or parameters, and with a newer client only when a name was cut. Preparing a query therefore costs one more round trip with a *Firebird 3 or older* client.
 
 See also [Upgrading](upgrading.md).
 
 ### Read consistency
 
 - **Server:** *Firebird 4+*. **Client library:** any.
-- **In FibPlus:** `TPBMode` `tpbReadConsistency` of `TpFIBTransaction`, or `read_consistency` in `TRParams`. Check `Capabilities.ReadConsistency`; on an older server `tpbReadConsistency` raises `EFIBClientError` at `StartTransaction`.
+- **In FIBPlus:** `TPBMode` `tpbReadConsistency` of `TpFIBTransaction`, or `read_consistency` in `TRParams`. Check `Capabilities.ReadConsistency`; on an older server `tpbReadConsistency` raises `EFIBClientError` at `StartTransaction`.
 - With the default server setting `ReadConsistency = 1`, every read committed transaction already runs in this mode; `rec_version` and `no_rec_version` are ignored.
 - **Reference:** [Transaction mode](../reference/TpFIBTransaction.md#transaction-mode), [Transaction parameters](../reference/TFIBTransaction.md#transaction-parameters).
 
 ### New data types
 
 - **Server:** *Firebird 4+*. **Client library:** *Firebird 4+*.
-- **In FibPlus:** supported in queries, parameters, and datasets.
+- **In FIBPlus:** supported in queries, parameters, and datasets.
 
 | SQL type | Notes |
 |----------|-------|
@@ -122,7 +122,7 @@ Database.DBParams.Add('set_bind=TIME ZONE TO LEGACY');
 Database.Connected := True;
 ```
 
-The DPB parameters `session_time_zone`, `set_bind`, `decfloat_round`, `decfloat_traps`, and `parallel_workers` are sent to Firebird only; FibPlus ignores them on InterBase. Set them in `DBParams` before connecting, as any other parameter.
+The DPB parameters `session_time_zone`, `set_bind`, `decfloat_round`, `decfloat_traps`, and `parallel_workers` are sent to Firebird only; FIBPlus ignores them on InterBase. Set them in `DBParams` before connecting, as any other parameter.
 
 For queries and parameters in general, see [Queries and parameters](queries-and-parameters.md).
 
@@ -143,18 +143,18 @@ An ID refers either to an offset zone (`+02:00`) or to a region zone. `FIBTypes`
 ### Boolean
 
 - **Server:** *Firebird 3+*. **Client library:** any.
-- **In FibPlus:** `SQL_BOOLEAN` in `ibase.pas` is the `BOOLEAN` type. Read and write it with `AsBoolean`. On InterBase 7 and later the type has another code: use the constant `IB_SQL_BOOLEAN` in code that checks `SQLType`. `FB3_SQL_BOOLEAN` is a deprecated alias of `SQL_BOOLEAN`.
+- **In FIBPlus:** `SQL_BOOLEAN` in `ibase.pas` is the `BOOLEAN` type. Read and write it with `AsBoolean`. On InterBase 7 and later the type has another code: use the constant `IB_SQL_BOOLEAN` in code that checks `SQLType`. `FB3_SQL_BOOLEAN` is a deprecated alias of `SQL_BOOLEAN`.
 
 ### Encrypted databases
 
 - **Server:** *Firebird 3+* with a crypt plugin. **Client library:** `fbclient` that exports `fb_database_crypt_callback`.
-- **In FibPlus:** `CryptKey` and `OnCryptKeyRequest` pass the key of an encrypted database to the crypt plugin.
+- **In FIBPlus:** `CryptKey` and `OnCryptKeyRequest` pass the key of an encrypted database to the crypt plugin.
 - **Guide:** [Connections](connections.md), [TFIBDatabase](../reference/TFIBDatabase.md).
 
 ### `config=` lines in `DBParams`
 
 - **Server:** any. **Client library:** *Firebird 3+* (the code marks `isc_dpb_config` as *Firebird 3+*).
-- **In FibPlus:** lines `config=Name=Value` in `DBParams` and `ConfigParam[Name]` pass configuration values to the client. `ConnectParams.WireCompression` writes the `WireCompression` value this way.
+- **In FIBPlus:** lines `config=Name=Value` in `DBParams` and `ConfigParam[Name]` pass configuration values to the client. `ConnectParams.WireCompression` writes the `WireCompression` value this way.
 - **Guide:** [Connections](connections.md).
 
 ## Firebird 2.1
@@ -163,7 +163,7 @@ An ID refers either to an offset zone (`+02:00`) or to a region zone. `FIBTypes`
 
 The code page of text is chosen from the character set of the attachment and of the column. Which rules apply depends on the server:
 
-- On *Firebird 2.1+* the server converts text BLOBs to the attachment character set. Older servers send the bytes of the column; FibPlus then uses UTF-8 for the Unicode character sets and the system code page for the rest.
+- On *Firebird 2.1+* the server converts text BLOBs to the attachment character set. Older servers send the bytes of the column; FIBPlus then uses UTF-8 for the Unicode character sets and the system code page for the rest.
 - On *Firebird 2.1+* with ODS 11.1 or later, a `NONE` or Unicode attachment receives metadata names and DDL in UTF-8.
 - `Capabilities.AttachmentCharSetID` is read once at connect. It is `-1` on InterBase and when not connected.
 
@@ -173,7 +173,7 @@ The code page of text is chosen from the character set of the attachment and of 
 
 ### Default values of stored procedure parameters
 
-FibPlus reads the default values of the input parameters of a stored procedure with a query that depends on the ODS version. ODS 11 (*Firebird 2.0*) stores the default with the parameter; ODS 12 (*Firebird 3.0*) adds packages, and the parameters of package procedures are not read. On older ODS versions the default comes from the domain of the parameter.
+FIBPlus reads the default values of the input parameters of a stored procedure with a query that depends on the ODS version. ODS 11 (*Firebird 2.0*) stores the default with the parameter; ODS 12 (*Firebird 3.0*) adds packages, and the parameters of package procedures are not read. On older ODS versions the default comes from the domain of the parameter.
 
 **Guide:** [TpFIBStoredProc](../reference/TpFIBStoredProc.md).
 

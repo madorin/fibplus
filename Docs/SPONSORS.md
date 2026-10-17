@@ -1,6 +1,6 @@
-# ❤️ Support FibPlus
+# ❤️ Support FIBPlus
 
-Keeping FibPlus alive takes real time: fixing bugs, reviewing patches and adapting the code to every new Delphi and Firebird release. If FibPlus powers your apps, consider becoming a backer and help keep it maintained, compatible and moving forward.
+Keeping FIBPlus alive takes real time: fixing bugs, reviewing patches and adapting the code to every new Delphi and Firebird release. If FIBPlus powers your apps, consider becoming a backer and help keep it maintained, compatible and moving forward.
 
 ## Monthly backers
 
@@ -18,7 +18,7 @@ For professional developers and small teams.
 
 ### 🐦‍🔥 Phoenix — €99/month
 
-For companies building on FibPlus.
+For companies building on FIBPlus.
 
 [![Subscribe](https://img.shields.io/badge/Subscribe-PayPal-0070ba?style=for-the-badge&logo=paypal)](https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-2H024868PP4224610NK735DQ)
 
@@ -36,7 +36,7 @@ Need an invoice, bank transfer or a custom sponsorship? [Contact us](mailto:cont
 <!--
 ## Our backers
 
-Thank you to everyone who keeps FibPlus alive!
+Thank you to everyone who keeps FIBPlus alive!
 
 ### 🐦‍🔥 Phoenix
 
@@ -53,4 +53,4 @@ Thank you to everyone who keeps FibPlus alive!
 
 ---
 
-*Sponsorships fund maintenance work only; FibPlus remains free and open to everyone.*
+*Sponsorships fund maintenance work only; FIBPlus remains free and open to everyone.*

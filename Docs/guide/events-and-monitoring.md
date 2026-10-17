@@ -1,6 +1,6 @@
 # Events and monitoring
 
-FibPlus has four tools that tell your application, or you, what is going on:
+FIBPlus has four tools that tell your application, or you, what is going on:
 
 | Tool | Component | Use it to |
 |------|-----------|-----------|
@@ -262,7 +262,7 @@ A long event can arrive in several `OnSQL` calls, and only the first one has the
 
 ### Several applications
 
-The monitor receives the events of other processes that use the library, not only of its own application. The `[Application: ...]` line tells which one wrote the event. A small separate program with a `TFIBSQLMonitor` can therefore show the SQL of another FibPlus application without changing it. See [How it works](../reference/TFIBSQLMonitor.md#how-it-works) for the shared counters.
+The monitor receives the events of other processes that use the library, not only of its own application. The `[Application: ...]` line tells which one wrote the event. A small separate program with a `TFIBSQLMonitor` can therefore show the SQL of another FIBPlus application without changing it. See [How it works](../reference/TFIBSQLMonitor.md#how-it-works) for the shared counters.
 
 ### Switch tracing off
 

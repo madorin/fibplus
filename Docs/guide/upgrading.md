@@ -1,6 +1,6 @@
 # Upgrading
 
-This article lists what an existing application must know or do when it moves to a newer FibPlus version: breaking changes, changed behavior, renamed or removed identifiers, deprecated members, and build changes. It does not list bug fixes or new features. For the complete list, see [CHANGELOG.md](../../CHANGELOG.md) in the repository root.
+This article lists what an existing application must know or do when it moves to a newer FIBPlus version: breaking changes, changed behavior, renamed or removed identifiers, deprecated members, and build changes. It does not list bug fixes or new features. For the complete list, see [CHANGELOG.md](../../CHANGELOG.md) in the repository root.
 
 ## How to use this page
 
@@ -9,7 +9,7 @@ Find the version you use now, then read every section above it, from the one jus
 | Version | Status | Notes |
 |---------|--------|-------|
 | [7.9.1](#791) | 2026-10-09 | Text in the code page of each column's character set, *Firebird 4+* statement and idle timeouts and read consistency, *Firebird 5+* parallel workers, an FMX login dialog package, and many bug fixes. |
-| [7.9.0](#790) | 2026-10-01 | First release of the community maintained FibPlus. Based on the FIBPlus 7 sources of build 632 (2014-02-17). |
+| [7.9.0](#790) | 2026-10-01 | First release of the community maintained FIBPlus. Based on the FIBPlus 7 sources of build 632 (2014-02-17). |
 
 ## 7.9.1
 
@@ -36,7 +36,7 @@ The version constants are untyped and live in the `fib` unit, so you can test th
 
 ```delphi
 {$IF (FIBMajorVersion > 7) or ((FIBMajorVersion = 7) and (FIBMinorVersion >= 9))}
-  // code for FibPlus 7.9 and later
+  // code for FIBPlus 7.9 and later
 {$IFEND}
 ```
 
@@ -57,7 +57,7 @@ These members still compile.
 
 The default `LibraryName` is `fbclient.dll` (Windows); it was `gds32.dll`. This applies to `TFIBDatabase` and `TpFIBServices`, and comes from the global `CLIENT_DLL`. A form saved with the old default does not store `LibraryName`, so it gets the new one.
 
-When `LibraryName` is `fbclient.dll` without a path and that library cannot be loaded, FibPlus loads `gds32.dll`. An application that ships the Firebird client renamed to `gds32.dll` keeps working, but:
+When `LibraryName` is `fbclient.dll` without a path and that library cannot be loaded, FIBPlus loads `gds32.dll`. An application that ships the Firebird client renamed to `gds32.dll` keeps working, but:
 
 - An `fbclient.dll` that Windows finds first (in `System32` or in `PATH`) is loaded instead of the `gds32.dll` next to the program. Ship `fbclient.dll` next to the program, or set `LibraryName` to the full path of the library you ship.
 - The plugins of the *Firebird 3+* client, for example `ChaCha` for wire encryption, need a library with the name `fbclient.dll`. A client renamed to `gds32.dll` cannot load them.

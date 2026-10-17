@@ -1,6 +1,6 @@
 # Transactions
 
-Every statement of a Firebird or InterBase database runs inside a transaction. In FibPlus a `TFIBTransaction` component holds the transaction parameters, starts and ends the transaction, and is assigned to the queries and datasets that run in it. This article shows how to choose the isolation level, how to commit and roll back, how queries and datasets start transactions on their own, and what happens to open cursors when a transaction ends.
+Every statement of a Firebird or InterBase database runs inside a transaction. In FIBPlus a `TFIBTransaction` component holds the transaction parameters, starts and ends the transaction, and is assigned to the queries and datasets that run in it. This article shows how to choose the isolation level, how to commit and roll back, how queries and datasets start transactions on their own, and what happens to open cursors when a transaction ends.
 
 For the members of the classes see [TFIBTransaction](../reference/TFIBTransaction.md) and [TpFIBTransaction](../reference/TpFIBTransaction.md).
 
@@ -98,7 +98,7 @@ An SQL `COMMIT` or `ROLLBACK` statement executed with `ExecQuery` calls `Transac
 
 ### Retaining
 
-A retaining operation ends the unit of work but keeps the transaction handle. FibPlus does not close the queries and datasets of the transaction for it (see [Open cursors](#open-cursors-and-the-end-of-a-transaction)), so it is the way to save changes without closing the datasets that show them. A later `Commit` or `Rollback` is still needed to end the transaction.
+A retaining operation ends the unit of work but keeps the transaction handle. FIBPlus does not close the queries and datasets of the transaction for it (see [Open cursors](#open-cursors-and-the-end-of-a-transaction)), so it is the way to save changes without closing the datasets that show them. A later `Commit` or `Rollback` is still needed to end the transaction.
 
 ### Savepoints
 
@@ -160,7 +160,7 @@ The components in the sample are `ReadTransaction`, `WriteTransaction`, and a `T
 
 ## Open cursors and the end of a transaction
 
-A cursor is the open result set of a `SELECT`. The server closes the cursors of a transaction when it ends. FibPlus closes its own cursors first, so the components stay in a consistent state. What the components do depends on the way the transaction ends.
+A cursor is the open result set of a `SELECT`. The server closes the cursors of a transaction when it ends. FIBPlus closes its own cursors first, so the components stay in a consistent state. What the components do depends on the way the transaction ends.
 
 ### Commit and Rollback
 
@@ -178,7 +178,7 @@ A plain `TFIBQuery` has no setting to keep its cursor. Read the rows before you 
 
 ### Retaining operations
 
-`CommitRetaining` and `RollbackRetaining` do not close queries or datasets in FibPlus. The components are notified, but they close their cursors only for `Commit` and `Rollback`. `HasUncommitedUpdates` of the transaction (needs `WatchUncommitedUpdates`) is reset for the retaining operations as well.
+`CommitRetaining` and `RollbackRetaining` do not close queries or datasets in FIBPlus. The components are notified, but they close their cursors only for `Commit` and `Rollback`. `HasUncommitedUpdates` of the transaction (needs `WatchUncommitedUpdates`) is reset for the retaining operations as well.
 
 ### Automatic end
 

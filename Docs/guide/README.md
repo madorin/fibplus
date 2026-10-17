@@ -4,6 +4,7 @@ Task-oriented articles. Each one explains a feature, shows how to use it, and li
 
 | Article | Covers |
 |---------|--------|
+| [Quick start](quick-start.md) | Start here: from an empty form to data in a grid, a first query in code |
 | [Connections](connections.md) | Connecting, login dialog, reconnect, lost connection, character sets, client library |
 | [Transactions](transactions.md) | Isolation, commit, rollback, retaining, automatic start, open cursors |
 | [Timeouts](timeouts.md) | Statement, idle, and session timeouts |

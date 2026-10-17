@@ -16,7 +16,7 @@ ShowMessage(IntToStr(Query.RowsAffected) + ' rows changed');
 Transaction.Commit;
 ```
 
-`ExecQuery` prepares the statement when it is not prepared yet. Call `Prepare` yourself only when you need the statement metadata (`Params`, `Fields`, `Plan`) before the first run. Changing `SQL` releases the prepared statement, and the next `ExecQuery` prepares again. To keep a statement prepared, leave `SQL` alone and change only the parameter values. Two kinds of value change also prepare again: a change of a macro value (see [Macros](#macros)), and a switch between null and not null of a parameter that FibPlus can rewrite to `IS NULL` (see [Null in WHERE conditions](#null-in-where-conditions)). The second case does not occur with `qoNoForceIsNull`.
+`ExecQuery` prepares the statement when it is not prepared yet. Call `Prepare` yourself only when you need the statement metadata (`Params`, `Fields`, `Plan`) before the first run. Changing `SQL` releases the prepared statement, and the next `ExecQuery` prepares again. To keep a statement prepared, leave `SQL` alone and change only the parameter values. Two kinds of value change also prepare again: a change of a macro value (see [Macros](#macros)), and a switch between null and not null of a parameter that FIBPlus can rewrite to `IS NULL` (see [Null in WHERE conditions](#null-in-where-conditions)). The second case does not occur with `qoNoForceIsNull`.
 
 DDL statements (`CREATE`, `ALTER`, `DROP`, and so on) run through `ExecuteImmediate`. `ExecQuery` does this for you when it recognizes the statement as DDL.
 
@@ -59,7 +59,7 @@ end;
 
 ## Parameters
 
-A `:Name` or `?Name` in the statement text is a parameter. With `ParamCheck` set to `True` (the default), FibPlus finds the parameters when you change `SQL`. Set `ParamCheck` to `False` when the text must be sent unchanged, even if it contains colons or macro characters. Then `Params` is empty.
+A `:Name` or `?Name` in the statement text is a parameter. With `ParamCheck` set to `True` (the default), FIBPlus finds the parameters when you change `SQL`. Set `ParamCheck` to `False` when the text must be sent unchanged, even if it contains colons or macro characters. Then `Params` is empty.
 
 ### Setting values
 
@@ -122,7 +122,7 @@ If a row fails and `OnBatchError` is assigned, the handler can answer `beFail` (
 
 ### Null in WHERE conditions
 
-`WHERE NAME = :Name` never matches when `:Name` is `NULL`. By default FibPlus rewrites such a comparison to `IS NULL` at execution time when the parameter is null and sits in the `WHERE` clause. The operators `<>`, `!=`, `^=`, and `~=` become `IS NOT NULL`. Add `qoNoForceIsNull` to `Options` to turn this off and send the text as written.
+`WHERE NAME = :Name` never matches when `:Name` is `NULL`. By default FIBPlus rewrites such a comparison to `IS NULL` at execution time when the parameter is null and sits in the `WHERE` clause. The operators `<>`, `!=`, `^=`, and `~=` become `IS NOT NULL`. Add `qoNoForceIsNull` to `Options` to turn this off and send the text as written.
 
 ## Macros
 
