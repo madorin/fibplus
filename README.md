@@ -1,4 +1,4 @@
-# <img src="Source/Tools/Images/fib-icon-128.png" width="40" height="40" align="absmiddle" alt=""> FIBPlus Library
+# <img src="Docs/images/fibplus-title.png" width="40" height="44" align="absmiddle" alt=""> FIBPlus Library
 
 FIBPlus is a fast, easy-to-use component library for Delphi and C++Builder that works with Firebird and InterBase directly through the native client API, with no extra data access layers in between.
 

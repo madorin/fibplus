@@ -1,4 +1,4 @@
-# <img src="../Source/Tools/Images/fib-icon-128.png" width="40" height="40" align="absmiddle" alt=""> FIBPlus documentation
+# <img src="images/fibplus-title.png" width="40" height="44" align="absmiddle" alt=""> FIBPlus documentation
 
 | Section | Use it to |
 |---------|-----------|
