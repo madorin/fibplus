@@ -18,9 +18,6 @@
 {$ENDIF}
 
 {$IFDEF FIB_IMPLEMENT}
-
-
-
 procedure TFIBCustomDataSet.GetFieldDataPointer(Field:TField;RecNumber:integer; var  IsString:boolean;var OutRes:Pointer);
 var
    P1:Pointer;

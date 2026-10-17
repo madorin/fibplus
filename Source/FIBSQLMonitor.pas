@@ -19,7 +19,6 @@ interface
 
 {$I FIBPlus.inc}
 {$IFNDEF NO_MONITOR}
-
 uses
 
   SysUtils, Windows, Messages, Classes, FIBQuery, ibase,
@@ -129,7 +128,6 @@ function MonitoringEnabled: Boolean;
 implementation
 
 {$IFNDEF NO_MONITOR}
-
 uses
 
 {$IFDEF C24}
@@ -567,7 +565,6 @@ begin
 end;
 
 {$IFDEF  INC_SERVICE_SUPPORT}
-
 procedure TFIBSQLMonitorHook.ServiceAttach(service: TFIBCustomService);
 var
   st: String;

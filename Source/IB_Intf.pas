@@ -667,20 +667,6 @@ begin
 end;
 
 {$IFDEF WINDOWS}
-{$IFNDEF C23}
-
-procedure InitFPU;
-var
-  Default8087CW: Word;
-begin
-  asm
-    FSTCW Default8087CW
-    OR Default8087CW, 0300h
-    FLDCW Default8087CW
-  end;
-end;
-{$ELSE}
-
 procedure InitFPU;
 var
   Default8087CW: Word;
@@ -689,8 +675,6 @@ var
     OR Default8087CW, 0300h
     FLDCW Default8087CW
 end;
-
-{$ENDIF}
 {$ENDIF}
 {$DEFINE FP_STDCALL}
 

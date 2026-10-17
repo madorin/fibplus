@@ -1014,7 +1014,6 @@ begin
 end;
 
 {$IFDEF USE_SYN_EDIT}
-
 function GetPositionOfMouse(Mem: TSynMemo; out Point: TPoint): Boolean;
 begin
   { Get XY caret position of mouse. Returns False if point is outside the

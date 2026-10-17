@@ -61,7 +61,6 @@ const
   );
 
 {$IFDEF INC_SERVICE_SUPPORT}
-
 type
   TProtocol = (TCP, SPX, NamedPipe, Local);
   TOutputBufferOption = (ByLine, ByChunk);
@@ -601,7 +600,6 @@ type
 implementation
 
 {$IFDEF  INC_SERVICE_SUPPORT}
-
 uses
   RTLConsts, StrUtil,
 {$IFNDEF NO_MONITOR}

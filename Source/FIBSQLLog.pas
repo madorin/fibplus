@@ -20,7 +20,7 @@ interface
 uses
   SysUtils, Classes,
   FIBTestInfo, FIBInterfaces, FIBDatabase, FIBProps, fib, StdFuncs,
-  FIBQuery, FIBCacheQueries, FIBPlatforms;
+  FIBQuery, FIBCacheQueries;
 
 type
   TFIBStatisticsParam = (
@@ -434,9 +434,9 @@ begin
   if ActiveLogging and (DataType in FLogFlags) then
   begin
     EventDateTime := Now;
-    Rows := 'Application:' + FApplicationID + CLRF + ' Object: "' + ObjectName +
-      '"' + CLRF + ' Operation:' + OperationName + '>> Time ' +
-      FormatDateTime('C.zzz', EventDateTime) + CLRF + EventText + CLRF;
+    Rows := 'Application:' + FApplicationID + sLineBreak + ' Object: "' + ObjectName +
+      '"' + sLineBreak + ' Operation:' + OperationName + '>> Time ' +
+      FormatDateTime('C.zzz', EventDateTime) + sLineBreak + EventText + sLineBreak;
     WriteToLog := True;
     if Assigned(FOnLogEvent) then
       FOnLogEvent(ObjectName, OperationName, EventText, DataType, FApplicationID, EventDateTime, WriteToLog);

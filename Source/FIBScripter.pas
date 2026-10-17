@@ -21,7 +21,7 @@ interface
 {$A2}
 
 uses
-  SysUtils, Classes, Types, FIBPlatforms, FIBDatabase, FIBQuery,
+  SysUtils, Classes, Types, FIBDatabase, FIBQuery,
   fib, FIBInterfaces;
 
 // {$DEFINE BEZBAZY}
@@ -389,7 +389,7 @@ uses
 
 procedure RaiseParserDirectiveError(const DirName: string; Line: Integer);
 begin
-  raise Exception.Create('Parse script error.' + CLRF + 'Can''t resolve directive  "' + DirName + '"' + CLRF + 'Line ' +
+  raise Exception.Create('Parse script error.' + sLineBreak + 'Can''t resolve directive  "' + DirName + '"' + sLineBreak + 'Line ' +
     IntToStr(Line));
 end;
 
@@ -608,7 +608,7 @@ begin
           while (i <= Length(Expr)) and (Expr[i] in [' ', #9, #10, #13]) do
             Inc(i);
           if (i > Length(Expr)) or not(Expr[i] in ['=', '>', '<']) then
-            raise Exception.Create('Parse script error.' + CLRF + 'Can''t resolve condition  "$IF"' + CLRF + Expr);
+            raise Exception.Create('Parse script error.' + sLineBreak + 'Can''t resolve condition  "$IF"' + sLineBreak + Expr);
           State := sOperator;
         end
         else if (Expr[i] in ['=', '>', '<']) then
@@ -638,7 +638,7 @@ begin
   //
   Value := FDirectiveConsts.Values[cName];
   if Trim(Value) = '' then
-    raise Exception.Create('Parse script error.' + CLRF + 'Constant don''t exists' + CLRF + cName);
+    raise Exception.Create('Parse script error.' + sLineBreak + 'Constant don''t exists' + sLineBreak + cName);
 
   if cOper = '=' then
   begin
@@ -1230,8 +1230,8 @@ begin
                 end
               end
               else
-                raise Exception.Create('Unknown directive :' + CLRF + 'Line ' +
-                  IntToStr(Stmt.smdBegin.Y) + CLRF + TmpSQL.Text);
+                raise Exception.Create('Unknown directive :' + sLineBreak + 'Line ' +
+                  IntToStr(Stmt.smdBegin.Y) + sLineBreak + TmpSQL.Text);
 
           end;
         sRollBack:
@@ -2097,7 +2097,7 @@ end;
 procedure TFIBScriptParser.EndSetTerm;
 begin
   if FNewTerminator = '' then
-    raise Exception.Create('Parse script error.' + CLRF + 'SET TERM without terminator' + CLRF + 'Line :' +
+    raise Exception.Create('Parse script error.' + sLineBreak + 'SET TERM without terminator' + sLineBreak + 'Line :' +
       IntToStr(FStatements[FStatementCount - 1].smdBegin.Y + 1));
   SetTerminator(FNewTerminator);
   Dec(FStatementCount); // SET TERM is not executed
@@ -2296,8 +2296,8 @@ begin
                 Inc(X, E - 1);
               end
               else if FNewTerminatorDone then
-                raise Exception.Create('Parse script error.' + CLRF +
-                  'Invalid SET TERM' + CLRF + 'Line :' + IntToStr(Y + 1) +
+                raise Exception.Create('Parse script error.' + sLineBreak +
+                  'Invalid SET TERM' + sLineBreak + 'Line :' + IntToStr(Y + 1) +
                   ' Pos:' + IntToStr(X))
               else
                 FNewTerminator := FNewTerminator + C;
@@ -2328,8 +2328,8 @@ begin
                   if FParenDepth > 0 then
                     Dec(FParenDepth);
                 '{':
-                  raise Exception.Create('Parse script error.' + CLRF +
-                    ' Unexpected symbol "{"' + CLRF + 'Line :' + IntToStr(Y + 1) +
+                  raise Exception.Create('Parse script error.' + sLineBreak +
+                    ' Unexpected symbol "{"' + sLineBreak + 'Line :' + IntToStr(Y + 1) +
                     ' Pos:' + IntToStr(X));
               else
                 if CharInSet(C, ['q', 'Q']) and (X + 2 <= L) and (S[X + 1] = '''') then
@@ -2411,7 +2411,7 @@ begin
         EndStatement;
   end;
   if Length(FDirectiveStack) > 0 then
-    raise Exception.Create('Parse script error.' + CLRF + '$ENDIF skipped ' +
+    raise Exception.Create('Parse script error.' + sLineBreak + '$ENDIF skipped ' +
       IntToStr(Length(FDirectiveStack)) + ' times');
 end;
 

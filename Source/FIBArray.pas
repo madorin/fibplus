@@ -25,7 +25,6 @@ uses
   FIBPlatforms, Variants;
 
 {$IFDEF SUPPORT_ARRAY_FIELD}
-
 type
   // Not TISC_ARRAY_BOUND: its 16-bit bounds can't hold every INTEGER bound of the column
   TArrayBound = record
@@ -109,7 +108,6 @@ type
 implementation
 
 {$IFDEF SUPPORT_ARRAY_FIELD}
-
 uses
   StrUtil, Math, FMTBcd, FIBTypes, FIBQuery, FIBCharSets;
 

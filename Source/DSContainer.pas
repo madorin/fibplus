@@ -196,7 +196,6 @@ begin
 end;
 
 {$IFDEF USE_DEPRECATE_METHODS2}
-
 procedure TDataSetsContainer.UserEvent(Sender: TObject; Receiver: TDataSet; const EventName: string; var Info: string);
 begin
   if Assigned(FMasterContainer) then
@@ -259,8 +258,8 @@ begin
   if MasterContainer <> nil then
     MasterContainer.RemoveDataSet(Value);
 end;
-{$IFDEF USE_DEPRECATE_METHODS2}
 
+{$IFDEF USE_DEPRECATE_METHODS2}
 procedure TDataSetsContainer.NotifyDataSets(Sender: TObject; const UDA, UDE: string; var Info: string);
 var
   i: Integer;

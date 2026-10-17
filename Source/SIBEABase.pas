@@ -164,7 +164,6 @@ type
 implementation
 
 {$IFNDEF C23}
-
 uses
   Windows;
 {$ENDIF}

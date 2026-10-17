@@ -14,7 +14,6 @@
 {***************************************************************}
 
 {$IFDEF BODY_NUMERIC_COMPARE_EQ}
-
 begin
   case TVarData(v).VType of
     varSmallInt:

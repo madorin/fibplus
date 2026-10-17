@@ -6983,7 +6983,6 @@ begin
 end;
 
 {$IFDEF SYNDEBUG}
-
 // Component log for debugging
 procedure TMPCustomSyntaxMemo.Log(const LogString: string);
 begin

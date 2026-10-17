@@ -155,7 +155,6 @@ type
 // TFIBDatabase
 
 {$IFDEF C23}
-
   TDoChangeScreenCursor = procedure(NewCursor: Integer; var OldCursor: Integer) of object;
 {$ENDIF}
 
@@ -1189,7 +1188,6 @@ begin
 end;
 
 {$IFNDEF NO_REGISTRY}
-
 procedure WriteDBParamsToAlias(Database: TFIBDatabase);
 begin
   with Database do
@@ -1201,7 +1199,6 @@ begin
 end;
 
 {$ELSE}
-
 procedure WriteDBParamsToAlias(Database: TFIBDatabase);
 begin
 
@@ -1774,7 +1771,6 @@ begin
 end;
 
 {$IFDEF C23}
-
 function TFIBDatabase.StoredLibraryName64: Boolean;
 begin
   Result := Trim(FLibraryName64) <> ''
@@ -1968,8 +1964,8 @@ begin
 end;
 
 // Alias Works
-{$IFNDEF NO_REGISTRY}
 
+{$IFNDEF NO_REGISTRY}
 function TFIBDatabase.ReadParamsFromAlias: Boolean;
 var
   Values: Variant;
@@ -1998,7 +1994,6 @@ begin
 end;
 
 {$ELSE}
-
 function TFIBDatabase.ReadParamsFromAlias: Boolean;
 begin
   Result := False;
@@ -2864,7 +2859,6 @@ begin
 end;
 
 {$IFDEF CSMonitor}
-
 procedure TFIBDatabase.SetCSMonitorSupport(Value: TCSMonitorSupport);
 begin
   FCSMonitorSupport.Assign(Value)
@@ -4922,7 +4916,6 @@ begin
 end;
 
 {$IFDEF CSMonitor}
-
 procedure TFIBTransaction.SetCSMonitorSupport(Value: TCSMonitorSupport);
 begin
   FCSMonitorSupport.Assign(Value)
@@ -5081,7 +5074,6 @@ begin
 end;
 
 {$IFDEF USE_DEPRECATE_METHODS1}
-
 function TFIBTransaction.AddDataSet(ds: TFIBBase): Integer;
 begin
   Result := AddFIBBase(ds);

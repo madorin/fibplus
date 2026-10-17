@@ -23,7 +23,7 @@ uses
 {$IFDEF WINDOWS}
   Windows, // for inline functions
 {$ENDIF}
-  SyncObjs, SysUtils, Classes, DB, FIBPlatforms, FIBDataSet, FIBDataBase,
+  SyncObjs, SysUtils, Classes, DB, FIBDataSet, FIBDataBase,
   FIBQuery, FIBProps;
 
 type
@@ -262,12 +262,12 @@ end;
 const
   SDefer = '@FIB_DEFERRED';
 
-  FormatNumbersSQL = 'select a1.rdb$relation_name,a1.RDB$RELATION_ID VER  from RDB$RELATIONS a1' + CLRF +
-    'where a1.RDB$SYSTEM_FLAG = 0' + CLRF +
-    'and not  a1.rdb$view_blr is null' + CLRF +
-    'union' + CLRF +
-    'select R.rdb$relation_name,RDB$FORMAT from RDB$RELATIONS R' + CLRF +
-    'where R.RDB$SYSTEM_FLAG = 0' + CLRF +
+  FormatNumbersSQL = 'select a1.rdb$relation_name,a1.RDB$RELATION_ID VER  from RDB$RELATIONS a1' + sLineBreak +
+    'where a1.RDB$SYSTEM_FLAG = 0' + sLineBreak +
+    'and not  a1.rdb$view_blr is null' + sLineBreak +
+    'union' + sLineBreak +
+    'select R.rdb$relation_name,RDB$FORMAT from RDB$RELATIONS R' + sLineBreak +
+    'where R.RDB$SYSTEM_FLAG = 0' + sLineBreak +
     'and  R.rdb$view_blr is null   order by 1';
 
 function ExistRepositaryTable(DB: TFIBDataBase; Kind: byte): boolean;
@@ -324,8 +324,8 @@ begin
         ParamCheck := True;
         Database := DB;
         Transaction := aTransaction;
-        SQL.Text := 'select COUNT(RDB$RELATION_NAME)' + CLRF +
-          'from RDB$RELATIONS where RDB$FLAGS = 1' + CLRF +
+        SQL.Text := 'select COUNT(RDB$RELATION_NAME)' + sLineBreak +
+          'from RDB$RELATIONS where RDB$FLAGS = 1' + sLineBreak +
           'and RDB$RELATION_NAME=?RT';
         aTransaction.StartTransaction;
         case Kind of
@@ -378,7 +378,7 @@ begin
       Database := DB;
       ParamCheck := False;
       Transaction.StartTransaction;
-      Text := 'Select Count(*) FROM RDB$FIELDS FLD' + CLRF + 'WHERE FLD.RDB$FIELD_NAME = ''FIB$BOOLEAN''';
+      Text := 'Select Count(*) FROM RDB$FIELDS FLD' + sLineBreak + 'WHERE FLD.RDB$FIELD_NAME = ''FIB$BOOLEAN''';
       ExecQuery;
       Result := qry.Fields[0].asInteger <> 0;
     end
@@ -622,15 +622,15 @@ begin
 
       try
         Text := 'CREATE TRIGGER FIB$FIELDS_INFO_BI FOR FIB$FIELDS_INFO ' +
-          'ACTIVE BEFORE INSERT POSITION 0 as ' + CLRF + 'begin ' + #13#10 +
-          'new.fib$version=gen_id(fib$field_info_version,1);' + CLRF + 'end';
+          'ACTIVE BEFORE INSERT POSITION 0 as ' + sLineBreak + 'begin ' + #13#10 +
+          'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end';
         ExecQuery;
       except
       end;
       try
         Text := 'CREATE TRIGGER FIB$FIELDS_INFO_BU FOR FIB$FIELDS_INFO ' +
-          'ACTIVE BEFORE UPDATE POSITION 0 as ' + CLRF + 'begin ' + CLRF +
-          'new.fib$version=gen_id(fib$field_info_version,1);' + CLRF + 'end';
+          'ACTIVE BEFORE UPDATE POSITION 0 as ' + sLineBreak + 'begin ' + sLineBreak +
+          'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end';
         ExecQuery;
       except
       end;
@@ -683,13 +683,13 @@ begin
         Text := 'ALTER TABLE FIB$DATASETS_INFO ADD fib$version  INTEGER';
         ExecQuery;
         Text := 'CREATE TRIGGER FIB$DATASETS_INFO_BI FOR FIB$DATASETS_INFO ' +
-          'ACTIVE BEFORE INSERT POSITION 0 as ' + CLRF + 'begin' + CLRF +
-          'new.fib$version=gen_id(fib$field_info_version,1);' + CLRF + 'end';
+          'ACTIVE BEFORE INSERT POSITION 0 as ' + sLineBreak + 'begin' + sLineBreak +
+          'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end';
         ExecQuery;
 
         Text := 'CREATE TRIGGER FIB$DATASETS_INFO_BU FOR FIB$DATASETS_INFO ' +
-          'ACTIVE BEFORE UPDATE POSITION 0 as ' + CLRF + 'begin' + CLRF +
-          'new.fib$version=gen_id(fib$field_info_version,1);' + CLRF + 'end';
+          'ACTIVE BEFORE UPDATE POSITION 0 as ' + sLineBreak + 'begin' + sLineBreak +
+          'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end';
         ExecQuery;
 
       except
@@ -726,13 +726,13 @@ begin
             end;
             Text := Format
               ('CREATE TABLE FIB$FIELDS_INFO (TABLE_NAME VARCHAR(%0:d) NOT NULL,',
-              [DB.Capabilities.MaxIdentifierLength]) + CLRF +
+              [DB.Capabilities.MaxIdentifierLength]) + sLineBreak +
               Format('FIELD_NAME VARCHAR(%0:d) NOT NULL,',
-              [DB.Capabilities.MaxIdentifierLength]) + CLRF +
-              'DISPLAY_LABEL VARCHAR(25),' + CLRF +
-              'VISIBLE FIB$BOOLEAN DEFAULT 1 NOT NULL,' + CLRF +
-              'DISPLAY_FORMAT VARCHAR(15),' + CLRF + 'EDIT_FORMAT VARCHAR(15),'
-              + CLRF + 'TRIGGERED FIB$BOOLEAN DEFAULT 0 NOT NULL,' + CLRF +
+              [DB.Capabilities.MaxIdentifierLength]) + sLineBreak +
+              'DISPLAY_LABEL VARCHAR(25),' + sLineBreak +
+              'VISIBLE FIB$BOOLEAN DEFAULT 1 NOT NULL,' + sLineBreak +
+              'DISPLAY_FORMAT VARCHAR(15),' + sLineBreak + 'EDIT_FORMAT VARCHAR(15),'
+              + sLineBreak + 'TRIGGERED FIB$BOOLEAN DEFAULT 0 NOT NULL,' + sLineBreak +
               'CONSTRAINT PK_FIB$FIELDS_INFO PRIMARY KEY (TABLE_NAME, FIELD_NAME))';
             ExecQuery;
             Text := 'GRANT SELECT ON TABLE FIB$FIELDS_INFO TO PUBLIC';
@@ -742,12 +742,12 @@ begin
         2:
           begin
             Text := 'CREATE TABLE FIB$DATASETS_INFO (DS_ID INTEGER NOT NULL,' +
-              CLRF + 'DESCRIPTION VARCHAR(40),' +
-              'SELECT_SQL BLOB sub_type 1 segment size 80,' + CLRF +
-              'UPDATE_SQL BLOB sub_type 1 segment size 80,' + CLRF +
-              'INSERT_SQL BLOB sub_type 1 segment size 80,' + CLRF +
-              'DELETE_SQL BLOB sub_type 1 segment size 80,' + CLRF +
-              'REFRESH_SQL BLOB sub_type 1 segment size 80,' + CLRF +
+              sLineBreak + 'DESCRIPTION VARCHAR(40),' +
+              'SELECT_SQL BLOB sub_type 1 segment size 80,' + sLineBreak +
+              'UPDATE_SQL BLOB sub_type 1 segment size 80,' + sLineBreak +
+              'INSERT_SQL BLOB sub_type 1 segment size 80,' + sLineBreak +
+              'DELETE_SQL BLOB sub_type 1 segment size 80,' + sLineBreak +
+              'REFRESH_SQL BLOB sub_type 1 segment size 80,' + sLineBreak +
               'NAME_GENERATOR VARCHAR(68), ' + 'KEY_FIELD VARCHAR(1024),' +
               'CONSTRAINT PK_FIB$DATASETS_INFO PRIMARY KEY (DS_ID))';
             ExecQuery;
@@ -773,15 +773,15 @@ begin
             except
             end;
             Text := 'CREATE TRIGGER BI_FIB$ERROR_MESSAGES FOR FIB$ERROR_MESSAGES ' +
-              'ACTIVE BEFORE INSERT POSITION 0 AS ' + CLRF + 'begin ' + CLRF +
+              'ACTIVE BEFORE INSERT POSITION 0 AS ' + sLineBreak + 'begin ' + sLineBreak +
               'new.fib$version=gen_id(fib$field_info_version,1);' +
-              CLRF + ' end';
+              sLineBreak + ' end';
             ExecQuery;
 
             Text := 'CREATE TRIGGER BU_FIB$ERROR_MESSAGES FOR FIB$ERROR_MESSAGES ' +
-              'ACTIVE BEFORE UPDATE POSITION 0 AS ' + CLRF + 'begin ' + CLRF +
+              'ACTIVE BEFORE UPDATE POSITION 0 AS ' + sLineBreak + 'begin ' + sLineBreak +
               'new.fib$version=gen_id(fib$field_info_version,1);' +
-              CLRF + ' end';
+              sLineBreak + ' end';
             ExecQuery;
           end;
       end;
@@ -986,11 +986,11 @@ function DBPrimaryKeyFields(const TableName: string; aTransaction: TFIBTransacti
 var
   q: TFIBQuery;
 const
-  SGetPrimary = 'select i.rdb$field_name' + CLRF +
-    'from    rdb$relation_constraints r, rdb$index_segments i' + CLRF +
-    'where   r.rdb$relation_name=:TN and' + CLRF +
-    'r.rdb$constraint_type=''PRIMARY KEY'' and' + CLRF +
-    'r.rdb$index_name=i.rdb$index_name' + CLRF +
+  SGetPrimary = 'select i.rdb$field_name' + sLineBreak +
+    'from    rdb$relation_constraints r, rdb$index_segments i' + sLineBreak +
+    'where   r.rdb$relation_name=:TN and' + sLineBreak +
+    'r.rdb$constraint_type=''PRIMARY KEY'' and' + sLineBreak +
+    'r.rdb$index_name=i.rdb$index_name' + sLineBreak +
     'order by i.rdb$field_position';
 
 begin
@@ -1248,10 +1248,10 @@ end;
 
 const
   FormatNumberSQL = 'select a1.RDB$RELATION_ID VER  from RDB$RELATIONS a1' +
-    CLRF + 'where a1.RDB$SYSTEM_FLAG = 0  and a1.rdb$relation_name=?TN' + CLRF +
-    'and not  a1.rdb$view_blr is null' + CLRF + 'union' + CLRF +
-    'select RDB$FORMAT from RDB$RELATIONS R' + CLRF +
-    'where R.RDB$SYSTEM_FLAG = 0    and R.rdb$relation_name=?TN' + CLRF +
+    sLineBreak + 'where a1.RDB$SYSTEM_FLAG = 0  and a1.rdb$relation_name=?TN' + sLineBreak +
+    'and not  a1.rdb$view_blr is null' + sLineBreak + 'union' + sLineBreak +
+    'select RDB$FORMAT from RDB$RELATIONS R' + sLineBreak +
+    'where R.RDB$SYSTEM_FLAG = 0    and R.rdb$relation_name=?TN' + sLineBreak +
     'and  R.rdb$view_blr is null';
 
   FI_VersionSQL  = 'Select Max(fib$version) From FIB$FIELDS_INFO Where table_name=?TN';
@@ -1465,15 +1465,15 @@ begin
   else
   begin
     q := GetQueryForUse(aTransaction,
-      'Select R.RDB$FIELD_NAME,R.RDB$FIELD_SOURCE,F.RDB$COMPUTED_BLR, ' + CLRF +
-      'R.RDB$DEFAULT_SOURCE DS,F.RDB$DEFAULT_SOURCE DS1, ' + CLRF +
-      'F.RDB$FIELD_TYPE, ' + CLRF + 'F.RDB$CHARACTER_SET_ID, F.RDB$DIMENSIONS, '
-      + CLRF + 'RL.RDB$FORMAT, RL.RDB$RELATION_ID, RL.RDB$VIEW_BLR ' + CLRF +
-      'from  RDB$RELATION_FIELDS R ' + CLRF +
-      'JOIN RDB$FIELDS F ON (R.RDB$FIELD_SOURCE = F.RDB$FIELD_NAME) ' + CLRF +
+      'Select R.RDB$FIELD_NAME,R.RDB$FIELD_SOURCE,F.RDB$COMPUTED_BLR, ' + sLineBreak +
+      'R.RDB$DEFAULT_SOURCE DS,F.RDB$DEFAULT_SOURCE DS1, ' + sLineBreak +
+      'F.RDB$FIELD_TYPE, ' + sLineBreak + 'F.RDB$CHARACTER_SET_ID, F.RDB$DIMENSIONS, '
+      + sLineBreak + 'RL.RDB$FORMAT, RL.RDB$RELATION_ID, RL.RDB$VIEW_BLR ' + sLineBreak +
+      'from  RDB$RELATION_FIELDS R ' + sLineBreak +
+      'JOIN RDB$FIELDS F ON (R.RDB$FIELD_SOURCE = F.RDB$FIELD_NAME) ' + sLineBreak +
       'LEFT JOIN RDB$RELATIONS RL ON (RL.RDB$RELATION_NAME = R.RDB$RELATION_NAME '
-      + CLRF + '  and RL.RDB$SYSTEM_FLAG = 0) ' + CLRF +
-      'where  R.RDB$RELATION_NAME=:TN ' + CLRF +
+      + sLineBreak + '  and RL.RDB$SYSTEM_FLAG = 0) ' + sLineBreak +
+      'where  R.RDB$RELATION_NAME=:TN ' + sLineBreak +
       'order by R.RDB$FIELD_POSITION');
 
     with q do
@@ -1493,11 +1493,11 @@ begin
           Close;
           FreeQueryForUse(q);
           q := GetQueryForUse(aTransaction,
-            'Select P.RDB$PARAMETER_NAME,F.RDB$FIELD_NAME,0,0,0,' + CLRF +
-            'P.RDB$PARAMETER_TYPE,' + CLRF + 'F.RDB$CHARACTER_SET_ID, NULL' +
-            CLRF + 'from RDB$PROCEDURE_PARAMETERS P' + CLRF +
+            'Select P.RDB$PARAMETER_NAME,F.RDB$FIELD_NAME,0,0,0,' + sLineBreak +
+            'P.RDB$PARAMETER_TYPE,' + sLineBreak + 'F.RDB$CHARACTER_SET_ID, NULL' +
+            sLineBreak + 'from RDB$PROCEDURE_PARAMETERS P' + sLineBreak +
             'JOIN RDB$FIELDS F ON (P.RDB$FIELD_SOURCE = F.RDB$FIELD_NAME)' +
-            'WHERE P.RDB$PROCEDURE_NAME=:PN' + CLRF +
+            'WHERE P.RDB$PROCEDURE_NAME=:PN' + sLineBreak +
             'AND P.RDB$PARAMETER_TYPE=1');
           Options := [qoStartTransaction, qoTrimCharFields];
           Params[0].asString := TableName;
@@ -1984,7 +1984,7 @@ begin
   if DataSet = nil then
     Exit
   else if (DataSet = nil) or (DataSet.Database = nil) or (DataSet.Database.DBName = '') then
-    Raise Exception.Create(SCantGetInfo + IntToStr(DataSet.DataSet_ID) + CLRF + SDataBaseNotAssigned);
+    Raise Exception.Create(SCantGetInfo + IntToStr(DataSet.DataSet_ID) + sLineBreak + SDataBaseNotAssigned);
   inherited Create;
   FDBName := DataSet.Database.DBName;
   FSelectSQL := TStringList.Create;
@@ -2235,9 +2235,9 @@ begin
 end;
 
 const
-  qInputParams = 'SELECT PP.RDB$PARAMETER_NAME, %s' + CLRF +
-    'FROM RDB$PROCEDURE_PARAMETERS PP' + CLRF + '%s' +
-    'WHERE PP.RDB$PROCEDURE_NAME = :PN AND PP.RDB$PARAMETER_TYPE = 0' + CLRF +
+  qInputParams = 'SELECT PP.RDB$PARAMETER_NAME, %s' + sLineBreak +
+    'FROM RDB$PROCEDURE_PARAMETERS PP' + sLineBreak + '%s' +
+    'WHERE PP.RDB$PROCEDURE_NAME = :PN AND PP.RDB$PARAMETER_TYPE = 0' + sLineBreak +
     '%s' + 'ORDER BY PP.RDB$PARAMETER_NUMBER';
 
   // ODS 11 (Firebird 2.0) has parameter defaults, ODS 12 (Firebird 3.0) packages
@@ -2250,12 +2250,12 @@ begin
   else
     ODS := 0;
   if ODS >= 12 then
-    Result := Format(qInputParams, ['PP.RDB$DEFAULT_SOURCE', '', 'AND PP.RDB$PACKAGE_NAME IS NULL' + CLRF])
+    Result := Format(qInputParams, ['PP.RDB$DEFAULT_SOURCE', '', 'AND PP.RDB$PACKAGE_NAME IS NULL' + sLineBreak])
   else if ODS >= 11 then
     Result := Format(qInputParams, ['PP.RDB$DEFAULT_SOURCE', '', ''])
   else
     Result := Format(qInputParams, ['F.RDB$DEFAULT_SOURCE',
-      'JOIN RDB$FIELDS F ON F.RDB$FIELD_NAME = PP.RDB$FIELD_SOURCE' + CLRF, '']);
+      'JOIN RDB$FIELDS F ON F.RDB$FIELD_NAME = PP.RDB$FIELD_SOURCE' + sLineBreak, '']);
 end;
 
 // '= 5' or 'DEFAULT 5' -> '5'

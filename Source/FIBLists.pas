@@ -30,7 +30,6 @@ type
     property List: PPointerList read GetPList;
   end;
 {$ELSE}
-
   TFIBList = TList;
 {$ENDIF}
 
@@ -127,7 +126,6 @@ uses
   StdFuncs, StrUtil;
 
 {$IFDEF C23}
-
 function TFIBList.GetPList: PPointerList;
 begin
   Result := @ inherited List

@@ -20,7 +20,6 @@ unit RegUtils;
 interface
 
 {$IFNDEF NO_REGISTRY}
-
 uses
 
   Windows, SysUtils, Classes, registry, Variants;
@@ -47,7 +46,6 @@ function GetKeyForParValue(const aRootKey, ParName, ParValue: string): string;
 implementation
 
 {$IFNDEF NO_REGISTRY}
-
 uses
   IniFiles {,StrUtil};
 

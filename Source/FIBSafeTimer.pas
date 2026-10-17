@@ -62,7 +62,6 @@ type
 implementation
 
 {$IFDEF C24}
-
 uses
   System.Types, System.TypInfo; // for inline funcs
 {$ENDIF}
@@ -79,7 +78,6 @@ type
   end;
 
 {$IFDEF WINDOWS}
-
 procedure TimerProc(HWND, uMsg, idEvent, dwTime: Integer); stdcall;
 var
   I: Integer;
@@ -119,7 +117,6 @@ begin
 end;
 {$ENDIF}
 {$IFDEF MACOS}
-
 type
   TTimerProc = procedure of object;
 

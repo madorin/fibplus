@@ -22,7 +22,6 @@ interface
 uses
   Windows, SysUtils, Classes, registry, Variants;
 {$IFNDEF NO_REGISTRY}
-
 const
 
   RegFIBRoot     = 'FIBC_Software';
@@ -52,7 +51,6 @@ function GetKeyForParValue(const aRootKey, ParName, ParValue: string): string;
 implementation
 
 {$IFNDEF NO_REGISTRY}
-
 uses
   IniFiles;
 

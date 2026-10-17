@@ -916,8 +916,8 @@ begin
 end;
 
 { .$DEFINE REL }
-{$IFDEF REL}
 
+{$IFDEF REL}
 procedure TRecordsCache.SaveToStream(Stream: TStream; SeekBegin: Boolean; CacheSize: Integer = 32 * 1024);
 const
   DefDelta: Integer = 32 * 1024;
@@ -1002,7 +1002,6 @@ begin
     end
 end;
 {$ELSE}
-
 procedure TRecordsCache.SaveToStream(Stream: TStream; SeekBegin: Boolean; CacheSize: Integer = 32 * 1024);
 var
   i, j, L: Integer;

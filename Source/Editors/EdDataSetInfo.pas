@@ -103,7 +103,6 @@ uses
 
 {$R *.dfm}
 {$IFDEF USE_SYN_EDIT}
-
 var
   SynSQLSyn1: TSynSQLSyn;
 {$ENDIF}
@@ -295,7 +294,6 @@ begin
 end;
 
 {$IFDEF USE_SYN_EDIT}
-
 type
   THackDBSynEdit = class(TDBSynEdit);
 {$ENDIF}

@@ -30,15 +30,6 @@ uses
 Classes, SysUtils, Macapi.CoreServices, Macapi.Mach, Macapi.Foundation,
   Macapi.AppKit, Macapi.CocoaTypes;
 {$ENDIF MACOS}
-{$IFDEF WINDOWS}
-
-const
-  CLRF = #13#10;
-{$ELSE}
-
-const
-  CLRF = #10;
-{$ENDIF}
 
 type
 
@@ -61,7 +52,6 @@ const
 implementation
 
 {$IFDEF WINDOWS}
-
 function FIBGetTickCount: Cardinal;
 begin
   Result := Windows.GetTickCount;
@@ -82,8 +72,8 @@ begin
   Result := GetCurrentThreadID
 end;
 {$ENDIF}
-{$IFDEF MACOS}
 
+{$IFDEF MACOS}
 function FIBGetTickCount: Cardinal;
 begin
   Result := AbsoluteToNanoseconds(mach_absolute_time) div 1000000;

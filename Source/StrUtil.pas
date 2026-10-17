@@ -38,11 +38,9 @@ type
   end;
 
 {$IFDEF C26}
-
   TFastStringStream = TStringStream;
 
 {$ELSE}
-
   TFastStringStream = class(TStream)
   private
     FDataString: string;
@@ -916,7 +914,6 @@ begin
 end;
 
 {$IFDEF CPUX86}
-
 function Q_StrScan(const S: AnsiString; Ch: AnsiChar; StartPos: Integer): Integer;
 asm
 
@@ -944,7 +941,6 @@ asm
 @@qt:
 end;
 {$ELSE}
-
 function Q_StrScan(const S: AnsiString; Ch: AnsiChar; StartPos: Integer): Integer;
 var
   i, L: Integer;
@@ -1986,11 +1982,7 @@ end;
 type
   THackStringList = class(TStrings)
   private
-{$IFNDEF C23}
-    FList: PStringItemList;
-{$ELSE}
-    FList: TStringItemList;
-{$ENDIF}
+    FList: {$IFDEF C23}TStringItemList{$ELSE}PStringItemList{$ENDIF};
     FCount: Integer;
   end;
 
@@ -2000,11 +1992,7 @@ var
 begin
   C := THackStringList(SL).FCount - 1;
   for Result := 0 to C do
-{$IFNDEF C23}
-    if THackStringList(SL).FList^[Result].FString = S then
-{$ELSE}
     if THackStringList(SL).FList[Result].FString = S then
-{$ENDIF}
       Exit;
   Result := -1;
 end;
@@ -2167,8 +2155,8 @@ function EasyNeedQuote(const Name: string): Boolean;
 begin
   Result := InternalNeedQuote(Name, True);
 end;
-{$IFDEF CPUX86}
 
+{$IFDEF CPUX86}
 function Q_StrLen(P: PAnsiChar): Cardinal; assembler;
 asm
   TEST    EAX,EAX
@@ -2192,7 +2180,6 @@ asm
 @@qt:
 end;
 {$ELSE}
-
 function Q_StrLen(P: PAnsiChar): Cardinal;
 begin
   Result := StrLen(P)

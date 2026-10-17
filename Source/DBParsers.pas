@@ -20,7 +20,7 @@ interface
 {$I FIBPlus.inc}
 
 uses
-  SysUtils, Classes, DB, DBCommon, DbConsts, FIBPlatforms, Variants, FMTBcd;
+  SysUtils, Classes, DB, DBCommon, DbConsts, Variants, FMTBcd;
 
 type
 
@@ -69,7 +69,7 @@ begin
   except
     on e: Exception do
       begin
-        e.Message := 'Can''t parse Filter for: ' + CLRF + e.Message;
+        e.Message := 'Can''t parse Filter for: ' + sLineBreak + e.Message;
         raise;
       end;
   end;

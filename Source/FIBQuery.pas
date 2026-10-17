@@ -1679,7 +1679,6 @@ end;
 // Array Support
 
 {$IFDEF SUPPORT_ARRAY_FIELD}
-
 function TFIBXSQLVAR.IsArray: boolean;
 begin
   Result := (FXSQLVAR^.SQLType and (not 1) = SQL_ARRAY)
@@ -3870,7 +3869,6 @@ begin
 end;
 
 {$IFNDEF NO_MONITOR}
-
 type
   THackMonitorHook = class(TFIBSQLMonitorHook);
 {$ENDIF}
@@ -4126,7 +4124,6 @@ begin
 end;
 
 {$IFDEF SUPPORT_IB2007}
-
 procedure TFIBQuery.ExecuteAsBatch(const SQLs: array of Ansistring);
 var
   vBatchBuffer, vb: PPAnsiChar;
@@ -4331,9 +4328,9 @@ var
         with vParams[j] do
         begin
           if (FXSQLVAR^.SQLType and (not 1) <> SQL_ARRAY) and (FXSQLVAR^.SQLType and (not 1) <> SQL_BLOB) then
-            st := st + CLRF + 'Params[' + IntToStr(j) + ']=''' + AsString + ''''
+            st := st + sLineBreak + 'Params[' + IntToStr(j) + ']=''' + AsString + ''''
           else
-            st := st + CLRF + 'Params[' + IntToStr(j) + ']=(' + IntToStr(vParams[j].AsQuad.gds_quad_high) + ',' +
+            st := st + sLineBreak + 'Params[' + IntToStr(j) + ']=(' + IntToStr(vParams[j].AsQuad.gds_quad_high) + ',' +
               IntToStr(vParams[j].AsQuad.gds_quad_low) + ')'
         end;
 
@@ -4600,7 +4597,7 @@ begin
       SQLText := SQLText + ',?P' + IntToStr(i);
     SQLText := SQLText + ')';
   end;
-  if SQL.Text <> SQLText + CLRF then
+  if SQL.Text <> SQLText + sLineBreak then
     SQL.Text := SQLText;
   if not Prepared then
     Prepare;
@@ -5745,8 +5742,8 @@ begin
 end;
 
 // Array Support
-{$IFDEF SUPPORT_ARRAY_FIELD}
 
+{$IFDEF SUPPORT_ARRAY_FIELD}
 procedure TFIBQuery.PrepareArraySqlVar(SqlVar: TFIBXSQLVAR; const RelName, SqlName: string);
 begin
   // the variables of the query are reused by the next Prepare, also for another statement
@@ -6544,7 +6541,6 @@ begin
 end;
 
 {$IFDEF CSMonitor}
-
 procedure TFIBQuery.SetMonitorSupport(Value: TCSMonitorSupport);
 begin
   FCSMonitorSupport.Assign(Value)

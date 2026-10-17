@@ -167,7 +167,6 @@ type
   end;
 
 {$IFDEF SUPPORT_ARRAY_FIELD}
-
   // The whole ARRAY value, with the layout of the slice calls (see TFIBArray)
   TFIBArrayStream = class(TFIBFieldStream)
   private
@@ -1627,7 +1626,6 @@ begin
 end;
 
 {$IFDEF SUPPORT_ARRAY_FIELD}
-
 constructor TFIBArrayStream.CreateNew(AFieldNo: Integer; AStreamList: TList; AArray: TFIBArray);
 begin
   inherited CreateNew(AFieldNo, AStreamList);

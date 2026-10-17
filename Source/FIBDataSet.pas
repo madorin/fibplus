@@ -401,13 +401,8 @@ type
   protected
     class procedure CheckTypeSize(Value: Integer); override;
     procedure SetAsString(const Value: string); override;
-{$IFDEF C32}
-    function GetAsGuid: TGUID; override;
-    procedure SetAsGuid(const Value: TGUID); override;
-{$ELSE}
-    function GetAsGuid: TGUID;
-    procedure SetAsGuid(const Value: TGUID);
-{$ENDIF}
+    function GetAsGuid: TGUID; {$IFDEF C32}override;{$ENDIF}
+    procedure SetAsGuid(const Value: TGUID); {$IFDEF C32}override;{$ENDIF}
     function GetAsVariant: Variant; override;
     procedure SetAsVariant(const Value: Variant); override;
 
@@ -443,7 +438,6 @@ type
   end;
 
 {$IFDEF SUPPORT_ARRAY_FIELD}
-
   TFIBArrayField = class(TBytesField)
   private
     FStreamIndex: Integer;
@@ -589,7 +583,6 @@ type
   end;
 
 {$IFDEF C23}
-
   EventInfo = NativeInt;
 {$ELSE}
   EventInfo = LongInt;
@@ -914,14 +907,9 @@ type
     function GetCacheRecNo: Integer;
     procedure TryDesignPrepare;
 
-{$IFDEF C25}
-    procedure GetBookmarkData(Buffer: TRecordBuffer; Data: TBookMark); override;
-    procedure DataConvert(Field: TField; Source: TValueBuffer; var Dest: TValueBuffer; ToNative: Boolean); override;
-{$ELSE}
 {$IFDEF C24}
     procedure GetBookmarkData(Buffer: TRecordBuffer; Data: TBookMark); override;
-    procedure DataConvert(Field: TField; Source, Dest: TValueBuffer; ToNative: Boolean); override;
-{$ENDIF}
+    procedure DataConvert(Field: TField; Source: TValueBuffer; {$IFDEF C25}var {$ENDIF}Dest: TValueBuffer; ToNative: Boolean); override;
 {$ENDIF}
   protected
 
@@ -933,11 +921,7 @@ type
     function GetRecordCount: Integer; override;
     function GetRecordSize: Word; override; // abstract
 
-{$IFDEF C30}
-    procedure InternalAddRecord(Buffer: TRecBuf; Append: Boolean); override;
-{$ELSE}
-    procedure InternalAddRecord(Buffer: Pointer; Append: Boolean); override; // abstract
-{$ENDIF}
+    procedure InternalAddRecord(Buffer: {$IFDEF C30}TRecBuf{$ELSE}Pointer{$ENDIF}; Append: Boolean); override; // abstract
     procedure InternalCancel; override;
     procedure InternalClose; override; // abstract
     procedure CloseCursor; override;
@@ -955,13 +939,8 @@ type
     function IsCursorOpen: Boolean; override; // abstract
 
     procedure SetBookmarkFlag(Buffer: TRecordBuffer; Value: TBookmarkFlag); override;
-{$IFDEF C30}
-    procedure InternalGotoBookmark(BookMark: TBookMark); override;
-    procedure SetBookmarkData(Buffer: TRecBuf; Data: TBookMark); override;
-{$ELSE}
-    procedure InternalGotoBookmark(BookMark: Pointer); override;
-    procedure SetBookmarkData(Buffer: TRecordBuffer; Data: Pointer); override;
-{$ENDIF}
+    procedure InternalGotoBookmark(BookMark: {$IFDEF C30}TBookMark{$ELSE}Pointer{$ENDIF}); override;
+    procedure SetBookmarkData(Buffer: {$IFDEF C30}TRecBuf{$ELSE}TRecordBuffer{$ENDIF}; Data: {$IFDEF C30}TBookMark{$ELSE}Pointer{$ENDIF}); override;
     procedure SetCachedUpdates(Value: Boolean);
     procedure SetDataSource(Value: TDataSource);
     procedure SetOptions(Value: TFIBDataSetOptions);
@@ -1099,14 +1078,9 @@ type
     property RunState: TDataSetRunState read FRunState;
     procedure Resync(Mode: TResyncMode); override;
     function BookmarkValid(BookMark: TBookMark): Boolean; override;
-{$IFDEF C25}
-    function GetFieldData(Field: TField; var Buffer: TValueBuffer): Boolean; override;
-    procedure SetFieldData(Field: TField; Buffer: TValueBuffer); override;
-{$ELSE}
 {$IFDEF C24}
-    function GetFieldData(Field: TField; Buffer: TValueBuffer): Boolean; override;
+    function GetFieldData(Field: TField; {$IFDEF C25}var {$ENDIF}Buffer: TValueBuffer): Boolean; override;
     procedure SetFieldData(Field: TField; Buffer: TValueBuffer); override;
-{$ENDIF}
 {$ENDIF}
     procedure Post; override;
     function SetRecordPosInBuffer(NewPos: Integer): Integer;
@@ -2136,7 +2110,7 @@ const
 procedure TFIBStringField.SetAsNativeData(const Value: FIBByteString);
 begin
   if FieldKind <> fkData then
-    raise Exception.Create('Method TFIBStringField.SetAsNativeData:' + CLRF +
+    raise Exception.Create('Method TFIBStringField.SetAsNativeData:' + sLineBreak +
       'DataSet ' + CmpFullName(Self) + ' field "' + FieldName +
       '" is not data field');
   Include(TFIBCustomDataSet(DataSet).FRunState, drsInFieldAsData);
@@ -2161,7 +2135,6 @@ begin
 end;
 
 {$IFDEF UNICODE_TO_STRING_FIELDS}
-
 function TFIBStringField.GetDataSize: Integer;
 begin
   Result := inherited GetDataSize;
@@ -2339,7 +2312,7 @@ end;
 procedure TFIBWideStringField.SetAsNativeData(const Value: FIBByteString);
 begin
   if FieldKind <> fkData then
-    raise Exception.Create('Method TFIBWideStringField.SetAsNativeData:' + CLRF +
+    raise Exception.Create('Method TFIBWideStringField.SetAsNativeData:' + sLineBreak +
       'DataSet ' + CmpFullName(Self) + ' field "' + FieldName +
       '" is not data field');
   Include(TFIBCustomDataSet(DataSet).FRunState, drsInFieldAsData);
@@ -2729,7 +2702,6 @@ end;
 *)
 
 {$IFDEF C24}
-
 procedure TFIBDateField.SetAsDateTime(Value: TDateTime);
 begin
 {$IFDEF WIN64}
@@ -2743,8 +2715,8 @@ end;
 (*
   * TFIBTimeField - implementation
 *)
-{$IFDEF C24}
 
+{$IFDEF C24}
 procedure TFIBTimeField.SetAsDateTime(Value: TDateTime);
 begin
 {$IFDEF WIN64}
@@ -2776,7 +2748,6 @@ end;
 *)
 
 {$IFDEF C24}
-
 procedure TFIBDateTimeField.SetAsDateTime(Value: TDateTime);
 begin
   inherited SetAsDateTime(Value)
@@ -2907,7 +2878,6 @@ begin
 end;
 
 {$IFDEF C24}
-
 procedure TFIBMemoField.SetAsAnsiString(const Value: AnsiString);
 begin
 {$IFDEF C32}
@@ -3240,8 +3210,8 @@ begin
 end;
 
 // Array support
-{$IFDEF SUPPORT_ARRAY_FIELD}
 
+{$IFDEF SUPPORT_ARRAY_FIELD}
 constructor TFIBArrayField.Create(AOwner: TComponent); // override;
 begin
   inherited Create(AOwner);
@@ -3674,9 +3644,9 @@ begin
         if Assigned(OnValidate) then
           raise
         else if Self.Name = '' then
-          raise Exception.Create(CmpFullName(Self) + '.' + FieldName + CLRF + E.Message)
+          raise Exception.Create(CmpFullName(Self) + '.' + FieldName + sLineBreak + E.Message)
         else
-          raise Exception.Create(CmpFullName(Self) + CLRF + E.Message)
+          raise Exception.Create(CmpFullName(Self) + sLineBreak + E.Message)
     end
 end;
 
@@ -3820,9 +3790,9 @@ begin
     on E: Exception do
       begin
         if Self.Name = '' then
-          raise Exception.Create(CmpFullName(Self) + '.' + FieldName + CLRF + E.Message)
+          raise Exception.Create(CmpFullName(Self) + '.' + FieldName + sLineBreak + E.Message)
         else
-          raise Exception.Create(CmpFullName(Self) + CLRF + E.Message)
+          raise Exception.Create(CmpFullName(Self) + sLineBreak + E.Message)
       end;
   end;
 {$IFDEF C24}
@@ -6799,7 +6769,7 @@ begin
     (psUseLargeIntField in FPrepareOptions - Value)) then
     begin
       CheckDatasetClosed
-      ('change psUseBooleanField or psSQLINT64ToBCD or psUseLargeIntField' + CLRF);
+      ('change psUseBooleanField or psSQLINT64ToBCD or psUseLargeIntField' + sLineBreak);
       if Prepared then
         begin
           FPrepareOptions := Value;
@@ -8088,7 +8058,7 @@ begin
               if tf = nil then
                 begin
                   if FCacheModelOptions.FCacheModelKind = cmkLimitedBufferSize then
-                    FIBErrorEx('%s.' + CLRF + 'Field %s use in order, but not presented in fields section of SelectSQL',
+                    FIBErrorEx('%s.' + sLineBreak + 'Field %s use in order, but not presented in fields section of SelectSQL',
                       [CmpFullName(Self), tmpStr]);
                   FIsClientSorting := false;
                   FSortFields := Null;
@@ -8947,7 +8917,6 @@ begin
 end;
 
 {$IFDEF C24}
-
 procedure TFIBCustomDataSet.GetBookmarkData(Buffer: TRecordBuffer; Data: TBookMark);
 begin
   GetBookmarkData(TRecordBuffer(Buffer), Pointer(Data));
@@ -9414,20 +9383,11 @@ begin
       FIBError(feInvalidDataConversion, [nil]);
 end;
 
-{$IFDEF C25}
-
-procedure TFIBCustomDataSet.DataConvert(Field: TField; Source: TValueBuffer; var Dest: TValueBuffer; ToNative: Boolean);
-begin
-  DataConvert(Field, Pointer(Source), Pointer(Dest), ToNative);
-end;
-{$ELSE}
 {$IFDEF C24}
-
-procedure TFIBCustomDataSet.DataConvert(Field: TField; Source, Dest: TValueBuffer; ToNative: Boolean);
+procedure TFIBCustomDataSet.DataConvert(Field: TField; Source: TValueBuffer; {$IFDEF C25}var {$ENDIF}Dest: TValueBuffer; ToNative: Boolean);
 begin
   DataConvert(Field, Pointer(Source), Pointer(Dest), ToNative);
 end;
-{$ENDIF}
 {$ENDIF}
 
 procedure TFIBCustomDataSet.DataConvert(Field: TField; Source, Dest: Pointer; ToNative: Boolean);
@@ -9508,20 +9468,12 @@ begin
       Stream.Free;
     end;
 end;
-{$IFDEF C25}
 
-function TFIBCustomDataSet.GetFieldData(Field: TField; var Buffer: TValueBuffer): Boolean;
-begin
-  Result := GetFieldData(Field, Pointer(Buffer))
-end;
-{$ELSE}
 {$IFDEF C24}
-
-function TFIBCustomDataSet.GetFieldData(Field: TField; Buffer: TValueBuffer): Boolean;
+function TFIBCustomDataSet.GetFieldData(Field: TField; {$IFDEF C25}var {$ENDIF}Buffer: TValueBuffer): Boolean;
 begin
   Result := GetFieldData(Field, Pointer(Buffer))
 end;
-{$ENDIF}
 {$ENDIF}
 
 type
@@ -10336,13 +10288,7 @@ end;
 
 // InsertRecord, AppendRecord: the new record is positioned as by Insert, Append.
 // AddRecord calls the TRecBuf overload, TDataSet does not forward it to Pointer.
-{$IFDEF C30}
-
-procedure TFIBCustomDataSet.InternalAddRecord(Buffer: TRecBuf; Append: Boolean);
-{$ELSE}
-
-procedure TFIBCustomDataSet.InternalAddRecord(Buffer: Pointer; Append: Boolean);
-{$ENDIF}
+procedure TFIBCustomDataSet.InternalAddRecord(Buffer: {$IFDEF C30}TRecBuf{$ELSE}Pointer{$ENDIF}; Append: Boolean);
 begin
   if Append then
     begin
@@ -10666,13 +10612,7 @@ begin
     end;
 end;
 
-{$IFDEF C30}
-
-procedure TFIBCustomDataSet.InternalGotoBookmark(BookMark: TBookMark);
-{$ELSE}
-
-procedure TFIBCustomDataSet.InternalGotoBookmark(BookMark: Pointer);
-{$ENDIF}
+procedure TFIBCustomDataSet.InternalGotoBookmark(BookMark: {$IFDEF C30}TBookMark{$ELSE}Pointer{$ENDIF});
 var
   Rno: Integer;
   i: Integer;
@@ -11793,13 +11733,7 @@ begin
 
 end;
 
-{$IFDEF C30}
-
-procedure TFIBCustomDataSet.SetBookmarkData(Buffer: TRecBuf; Data: TBookMark);
-{$ELSE}
-
-procedure TFIBCustomDataSet.SetBookmarkData(Buffer: TRecordBuffer; Data: Pointer);
-{$ENDIF}
+procedure TFIBCustomDataSet.SetBookmarkData(Buffer: {$IFDEF C30}TRecBuf{$ELSE}TRecordBuffer{$ENDIF}; Data: {$IFDEF C30}TBookMark{$ELSE}Pointer{$ENDIF});
 var
   Rno: Integer;
 begin
@@ -12062,7 +11996,6 @@ begin
 end;
 
 {$IFDEF C24}
-
 procedure TFIBCustomDataSet.SetFieldData(Field: TField; Buffer: TValueBuffer);
 begin
   SetFieldData(Field, Pointer(Buffer))
@@ -13259,7 +13192,6 @@ begin
 end;
 
 {$IFDEF CSMonitor}
-
 procedure TFIBCustomDataSet.SetCSMonitorSupport(Value: TCSMonitorSupport);
 begin
   FCSMonitorSupport.Assign(Value)
@@ -14697,11 +14629,7 @@ begin
 
   if not CachedUpdates and not(State in [dsEdit, dsInsert]) then
     SaveOldBuffer(GetActiveBuf);
-{$IFDEF C25}
-  SetQueryParams(vLockQry, Pointer(GetActiveBuf));
-{$ELSE}
   SetQueryParams(vLockQry, GetActiveBuf);
-{$ENDIF}
   if CachedUpdates then
     for i := 0 to Pred(vLockQry.Params.Count) do
     begin
@@ -14909,7 +14837,6 @@ end;
 // Containers stuff
 
 {$IFDEF USE_DEPRECATE_METHODS2}
-
 procedure TFIBCustomDataSet.SetReceiveEvents(Value: TStrings);
 begin
   FReceiveEvents.Assign(Value)
@@ -14948,8 +14875,8 @@ begin
       end;
   end;
 end;
-{$IFDEF USE_DEPRECATE_METHODS2}
 
+{$IFDEF USE_DEPRECATE_METHODS2}
 procedure TFIBCustomDataSet.DoUserEvent(Sender: TObject; const UDE: string; var Info: string);
 begin
   if FastUpperCase(UDE) = 'CLOSE' then
@@ -15247,7 +15174,7 @@ begin
       end;
     FIBDataSet.skDelete:
       begin
-        Result := 'Delete from ' + FormatTableName + ' ' + vAliasTableName + CLRF + 'where ' + pWhereClause;
+        Result := 'Delete from ' + FormatTableName + ' ' + vAliasTableName + sLineBreak + 'where ' + pWhereClause;
         Exit;
       end;
     skRefresh:
@@ -15336,7 +15263,7 @@ begin
   else
     case SK of
       skModify: Result := Result + ' where ' + pWhereClause;
-      FIBDataSet.skInsert: Result := Result + CLRF + ')' + InsValuesStr + ')';
+      FIBDataSet.skInsert: Result := Result + sLineBreak + ')' + InsValuesStr + ')';
     end;
 end;
 
@@ -15507,7 +15434,7 @@ begin
       end;
     FIBDataSet.skDelete:
       begin
-        Result := 'Delete from ' + FormatTableName + ' ' + vAliasTableName + CLRF + 'where ' + pWhereClause;
+        Result := 'Delete from ' + FormatTableName + ' ' + vAliasTableName + sLineBreak + 'where ' + pWhereClause;
         Exit;
       end;
     skRefresh:
@@ -15601,8 +15528,8 @@ begin
     if (vFi = nil) or (vFi.IsComputed and not(psCanEditComputedFields in PrepareOptions)) then
       Continue;
     Inc(AcceptCount);
-    Result := Result + iifStr(AcceptCount = 1, '', ',') + CLRF;
-    InsValuesStr := InsValuesStr + iifStr(AcceptCount = 1, '', ',') + CLRF;
+    Result := Result + iifStr(AcceptCount = 1, '', ',') + sLineBreak;
+    InsValuesStr := InsValuesStr + iifStr(AcceptCount = 1, '', ',') + sLineBreak;
     case SK of
       skModify:
         begin
@@ -15631,16 +15558,16 @@ begin
   end
   else
     case SK of
-      skModify: Result := Result + CLRF + 'where ' + pWhereClause;
-      FIBDataSet.skInsert: Result := Result + CLRF + ')' + CLRF + InsValuesStr + CLRF + ')';
+      skModify: Result := Result + sLineBreak + 'where ' + pWhereClause;
+      FIBDataSet.skInsert: Result := Result + sLineBreak + ')' + sLineBreak + InsValuesStr + sLineBreak + ')';
     end;
   if Length(sReturningFields) > 0 then
   begin
     SetLength(sReturningFields, Length(sReturningFields) - 1);
-    Result := Result + CLRF + 'RETURNING ' + sReturningFields
+    Result := Result + sLineBreak + 'RETURNING ' + sReturningFields
   end;
   if FAutoUpdateOptions.UseRowsClause then
-    Result := Result + CLRF + ' ROWS 1'
+    Result := Result + sLineBreak + ' ROWS 1'
 end;
 
 function TFIBCustomDataSet.GenerateSQLTextWA(const TableName: string; SK: TFIBSQLKind;
@@ -16124,11 +16051,10 @@ begin
 end;
 
 // IProviderSupport
-{$IFDEF C24}
 
+{$IFDEF C24}
 function TFIBCustomDataSet.PSGetQuoteChar: string;
 {$ELSE}
-
 function TFIBCustomDataSet.PSGetQuoteCharW: Widestring;
 {$ENDIF}
 begin
@@ -16138,10 +16064,8 @@ begin
 end;
 
 {$IFDEF C24}
-
 function TFIBCustomDataSet.PSGetTableName: string;
 {$ELSE}
-
 function TFIBCustomDataSet.PSGetTableNameW: Widestring;
 {$ENDIF}
 var
@@ -16163,10 +16087,8 @@ begin
 end;
 
 {$IFDEF C24}
-
 function TFIBCustomDataSet.PSGetKeyFields: string;
 {$ELSE}
-
 function TFIBCustomDataSet.PSGetKeyFieldsW: Widestring;
 {$ENDIF}
 begin
@@ -16179,13 +16101,7 @@ begin
     Result := FAutoUpdateOptions.KeyFields;
 end;
 
-{$IFDEF C24}
-
-procedure TFIBCustomDataSet.PSSetCommandText(const CommandText: string);
-{$ELSE}
-
-procedure TFIBCustomDataSet.PSSetCommandText(const CommandText: Widestring);
-{$ENDIF}
+procedure TFIBCustomDataSet.PSSetCommandText(const CommandText: {$IFDEF C24}string{$ELSE}WideString{$ENDIF});
 begin
   ClearMidasCommand;
   if (CommandText = FIBCommitCommand) or (CommandText = FIBRollbackCommand) or
@@ -16196,10 +16112,8 @@ begin
 end;
 
 {$IFDEF C24}
-
 function TFIBCustomDataSet.PSGetCommandText: string;
 {$ELSE}
-
 function TFIBCustomDataSet.PSGetCommandTextW: Widestring;
 {$ENDIF}
 begin
@@ -16737,13 +16651,8 @@ begin
     Exit;
   with FDataSet do
   begin
-{$IFDEF C25}
     ExecUpdateObjects(FKindUpdate, Pointer(ActiveBuffer), FExecuteOrder);
-{$ELSE}
-    ExecUpdateObjects(FKindUpdate, ActiveBuffer, FExecuteOrder);
-{$ENDIF}
   end;
 end;
-
 
 end.

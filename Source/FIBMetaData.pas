@@ -20,7 +20,7 @@ interface
 {$I FIBPlus.inc}
 
 uses
-  Classes, SysUtils, ibase, DB, FIBPlatforms,
+  Classes, SysUtils, ibase, DB,
   FIBDatabase, FIBQuery, FIBDataSet, FIBProps, StrUtil,
   FIBInterfaces, fib, Variants;
 
@@ -1341,7 +1341,7 @@ begin
     Result := Childs.Count;
     for I := 0 to Childs.Count - 1 do
     begin
-      Stream.WriteString(CLRF);
+      Stream.WriteString(sLineBreak);
       TCustomMetaObject(Childs[I]).GenerateObjectDDL(Stream);
       Stream.WriteString(DefTerminator);
     end;
@@ -1361,7 +1361,7 @@ end;
 procedure TCustomMetaObject.GenerateDDLText(Stream: TFastStringStream);
 begin
   GenerateObjectDDL(Stream);
-  Stream.WriteString(DefTerminator + CLRF)
+  Stream.WriteString(DefTerminator + sLineBreak)
 end;
 
 function TCustomMetaObject.GetAsObjectDDL: string;
@@ -1445,7 +1445,7 @@ end;
 
 procedure TMetaGenerator.GenerateObjectDDL(Stream: TFastStringStream);
 begin
-  Stream.WriteString(Format('CREATE GENERATOR %s;%sSET GENERATOR %0:s TO %2:d', [FormatName, CLRF, FValue]));
+  Stream.WriteString(Format('CREATE GENERATOR %s;%sSET GENERATOR %0:s TO %2:d', [FormatName, sLineBreak, FValue]));
 end;
 
 class function TMetaGenerator.ClassIndex: Integer;
@@ -1644,17 +1644,17 @@ procedure TMetaTable.GenerateDDLText(Stream: TFastStringStream);
 begin
   inherited GenerateDDLText(Stream);
   GenerateChildDDL(Stream, Ord(soPrimaryKey));
-  Stream.WriteString(CLRF);
+  Stream.WriteString(sLineBreak);
   if GenerateChildDDL(Stream, Ord(soUniqueConstr)) > 0 then
-    Stream.WriteString(CLRF);
+    Stream.WriteString(sLineBreak);
   if GenerateChildDDL(Stream, Ord(soIndex)) > 0 then
-    Stream.WriteString(CLRF);
+    Stream.WriteString(sLineBreak);
   if GenerateChildDDL(Stream, Ord(soForeignKey)) > 0 then
-    Stream.WriteString(CLRF);
+    Stream.WriteString(sLineBreak);
   if GenerateChildDDL(Stream, Ord(soCheckConstr)) > 0 then
-    Stream.WriteString(CLRF);
+    Stream.WriteString(sLineBreak);
   if GenerateChildDDL(Stream, Ord(soTableTriggers)) > 0 then
-    Stream.WriteString(CLRF);
+    Stream.WriteString(sLineBreak);
 end;
 
 procedure TMetaTable.GenerateDDLTextOnlyTable(Stream: TFastStringStream);
@@ -1725,15 +1725,15 @@ begin
   end;
   for I := 0 to FieldsCount - 1 do
   begin
-    Stream.WriteString(CLRF + '   ');
+    Stream.WriteString(sLineBreak + '   ');
     Fields[I].GenerateObjectDDL(Stream);
     if I <> FieldsCount - 1 then
       Stream.WriteString(',');
   end;
-  Stream.WriteString(CLRF + ')');
+  Stream.WriteString(sLineBreak + ')');
   case FRelationType of
-    4: Stream.WriteString(CLRF + 'ON COMMIT PRESERVE ROWS ');
-    5: Stream.WriteString(CLRF + 'ON COMMIT DELETE ROWS ');
+    4: Stream.WriteString(sLineBreak + 'ON COMMIT PRESERVE ROWS ');
+    5: Stream.WriteString(sLineBreak + 'ON COMMIT DELETE ROWS ');
   end;
 end;
 
@@ -2451,12 +2451,12 @@ var
   begin
     if TablesCount > 0 then
     begin
-      Stream.WriteString(CLRF + Format('/* %s */', [Comment]) + CLRF);
+      Stream.WriteString(sLineBreak + Format('/* %s */', [Comment]) + sLineBreak);
       for I := 0 to FItems[ParentType].Childs.Count - 1 do
       begin
         for J := 0 to GetChildObject(ParentType, I).FItems[ChildType].Childs.Count - 1 do
         begin
-          Stream.WriteString(CLRF);
+          Stream.WriteString(sLineBreak);
           case Kind of
             0: TCustomMetaObject(GetChildObject(ParentType, I).FItems[ChildType].Childs[J]).GenerateObjectDDL(Stream);
             1:
@@ -2466,7 +2466,7 @@ var
               TCustomMetaTrigger(TCustomMetaObject(GetChildObject(ParentType,
                 I).FItems[ChildType].Childs[J])).SaveAlterDDL(Stream);
           end;
-          Stream.WriteString(Separator + CLRF);
+          Stream.WriteString(Separator + sLineBreak);
         end;
       end;
     end;
@@ -2479,12 +2479,12 @@ var
   begin
     if FItems[ObjType].Childs.Count > 0 then
     begin
-      Stream.WriteString(CLRF + CLRF + Format('/* %s */', [Comment]));
+      Stream.WriteString(sLineBreak + sLineBreak + Format('/* %s */', [Comment]));
       if Separator <> DefTerminator then
       begin
-        Stream.WriteString(CLRF);
+        Stream.WriteString(sLineBreak);
         Stream.WriteString('SET TERM ^;');
-        Stream.WriteString(CLRF);
+        Stream.WriteString(sLineBreak);
       end;
 
       for I := 0 to FItems[ObjType].Childs.Count - 1 do
@@ -2493,10 +2493,10 @@ var
         if not CurObj.Loaded then
           CurObj := GetDBObject(FInternalTransaction.DefaultDatabase, TDBObjectType(ObjType), CurObj.FName);
         if I = 0 then
-          Stream.WriteString(CLRF)
+          Stream.WriteString(sLineBreak)
         else
         begin
-          Stream.WriteString(CLRF + CLRF);
+          Stream.WriteString(sLineBreak + sLineBreak);
         end;
         if CurObj is TMetaProcedure then
           TMetaProcedure(CurObj).SaveToPostDDL(Stream)
@@ -2510,13 +2510,13 @@ var
           CurObj.GenerateDDLText(Stream);
         Stream.WriteString(Separator);
       end;
-      Stream.WriteString(CLRF + CLRF);
+      Stream.WriteString(sLineBreak + sLineBreak);
 
       if Separator <> DefTerminator then
       begin
-        Stream.WriteString(CLRF);
+        Stream.WriteString(sLineBreak);
         Stream.WriteString('SET TERM ;^');
-        Stream.WriteString(CLRF);
+        Stream.WriteString(sLineBreak);
       end;
 
     end;
@@ -2530,13 +2530,13 @@ var
     ProcNode: TMetaProcedure;
     RoleNode: TMetaRole;
   begin
-    Stream.WriteString(CLRF + CLRF);
+    Stream.WriteString(sLineBreak + sLineBreak);
 
     Stream.WriteString('/*GRANTS*/');
-    Stream.WriteString(CLRF);
+    Stream.WriteString(sLineBreak);
     Stream.WriteString('/*GRANTS ON TABLES*/');
-    Stream.WriteString(CLRF);
-    Stream.WriteString(CLRF);
+    Stream.WriteString(sLineBreak);
+    Stream.WriteString(sLineBreak);
     for I := 0 to TablesCount - 1 do
     begin
       TabNode := Tables[I];
@@ -2545,9 +2545,9 @@ var
     end;
     Stream.WriteString('COMMIT WORK;');
 
-    Stream.WriteString(CLRF + CLRF);
+    Stream.WriteString(sLineBreak + sLineBreak);
     Stream.WriteString('/*GRANTS ON VIEWS*/');
-    Stream.WriteString(CLRF + CLRF);
+    Stream.WriteString(sLineBreak + sLineBreak);
     for I := 0 to ViewsCount - 1 do
     begin
       ViewNode := Views[I];
@@ -2556,9 +2556,9 @@ var
     end;
     Stream.WriteString('COMMIT WORK;');
 
-    Stream.WriteString(CLRF + CLRF);
+    Stream.WriteString(sLineBreak + sLineBreak);
     Stream.WriteString('/*GRANTS ON PROCEDURES*/');
-    Stream.WriteString(CLRF + CLRF);
+    Stream.WriteString(sLineBreak + sLineBreak);
     for I := 0 to ProceduresCount - 1 do
     begin
       ProcNode := Procedures[I];
@@ -2567,9 +2567,9 @@ var
     end;
     Stream.WriteString('COMMIT WORK;');
 
-    Stream.WriteString(CLRF + CLRF);
+    Stream.WriteString(sLineBreak + sLineBreak);
     Stream.WriteString('/*GRANTS ROLES*/');
-    Stream.WriteString(CLRF + CLRF);
+    Stream.WriteString(sLineBreak + sLineBreak);
     for I := 0 to RolesCount - 1 do
     begin
       RoleNode := Roles[I];
@@ -2584,20 +2584,20 @@ var
   vProcTerminator: Char;
 begin
 
-  Stream.WriteString('SET SQL DIALECT ' + IntToStr(FSQLDialect) + ';' + CLRF);
-  Stream.WriteString('SET NAMES  ' + FConnectCharset + ';' + CLRF);
+  Stream.WriteString('SET SQL DIALECT ' + IntToStr(FSQLDialect) + ';' + sLineBreak);
+  Stream.WriteString('SET NAMES  ' + FConnectCharset + ';' + sLineBreak);
   if dtoUseSetClientLib in Options then
-    Stream.WriteString('SET CLIENTLIB  ''' + FClientLib + ''';' + CLRF + CLRF);
+    Stream.WriteString('SET CLIENTLIB  ''' + FClientLib + ''';' + sLineBreak + sLineBreak);
 
   if dtoUseCreateDB in Options then
   begin
-    Stream.WriteString('CREATE DATABASE ''' + FName + '''' + CLRF +
-      'USER ''SYSDBA'' PASSWORD ''masterkey''' + CLRF + 'PAGE_SIZE ' + IntToStr(FPageSize) + CLRF);
+    Stream.WriteString('CREATE DATABASE ''' + FName + '''' + sLineBreak +
+      'USER ''SYSDBA'' PASSWORD ''masterkey''' + sLineBreak + 'PAGE_SIZE ' + IntToStr(FPageSize) + sLineBreak);
     if Length(FDefaultCharset) > 0 then
-      Stream.WriteString('DEFAULT CHARACTER SET ' + FDefaultCharset + DefTerminator + CLRF);
+      Stream.WriteString('DEFAULT CHARACTER SET ' + FDefaultCharset + DefTerminator + sLineBreak);
   end
   else
-    Stream.WriteString('CONNECT ''' + FName + ''' USER ''SYSDBA'' PASSWORD ''masterkey'';' + CLRF);
+    Stream.WriteString('CONNECT ''' + FName + ''' USER ''SYSDBA'' PASSWORD ''masterkey'';' + sLineBreak);
 
   if dtoUseSetTerm in Options then
     vProcTerminator := ProcTerminator
@@ -2627,39 +2627,39 @@ begin
 
   if ProceduresCount > 0 then
   begin
-    Stream.WriteString(CLRF + '/* PROCEDURES */');
+    Stream.WriteString(sLineBreak + '/* PROCEDURES */');
     for I := 0 to ProceduresCount - 1 do
     begin
-      Stream.WriteString(CLRF + CLRF);
+      Stream.WriteString(sLineBreak + sLineBreak);
       Procedures[I].SaveToAlterDDL(Stream);
-      Stream.WriteString(vProcTerminator + CLRF);
+      Stream.WriteString(vProcTerminator + sLineBreak);
     end;
   end;
 
   if PackageCount > 0 then
   begin
-    Stream.WriteString(CLRF + '/* PACKAGES */');
+    Stream.WriteString(sLineBreak + '/* PACKAGES */');
     for I := 0 to PackageCount - 1 do
     begin
-      Stream.WriteString(CLRF + CLRF);
+      Stream.WriteString(sLineBreak + sLineBreak);
       Packages[I].SaveBodyDDL(Stream);
-      Stream.WriteString(vProcTerminator + CLRF);
+      Stream.WriteString(vProcTerminator + sLineBreak);
     end;
   end;
 
   if GetFunctionsCount > 0 then
   begin
-    Stream.WriteString(CLRF + '/* FUNCTIONS */');
+    Stream.WriteString(sLineBreak + '/* FUNCTIONS */');
     for I := 0 to GetFunctionsCount - 1 do
     begin
-      Stream.WriteString(CLRF + CLRF);
+      Stream.WriteString(sLineBreak + sLineBreak);
       GetFunctions(I).SaveAlterDDL(Stream);
-      Stream.WriteString(vProcTerminator + CLRF);
+      Stream.WriteString(vProcTerminator + sLineBreak);
     end;
   end;
 
   if dtoUseSetTerm in Options then
-    Stream.WriteString('SET TERM ;^' + CLRF + CLRF);
+    Stream.WriteString('SET TERM ;^' + sLineBreak + sLineBreak);
   Stream.WriteString('COMMIT WORK;');
 
   if dtoIncludeGrants in Options then
@@ -3127,7 +3127,7 @@ begin
   end;
   Stream.WriteString(')');
   if not FActive then
-    Stream.WriteString(Format('%sALTER INDEX %s INACTIVE', [CLRF, FormatName]));
+    Stream.WriteString(Format('%sALTER INDEX %s INACTIVE', [sLineBreak, FormatName]));
 end;
 
 { TMetaForeignKey }
@@ -3155,7 +3155,7 @@ begin
   if Copy(FName, 0, 6) = 'INTEG_' then
     Stream.WriteString(Format('ALTER TABLE %s ADD FOREIGN KEY (', [TMetaTable(FOwner).FormatName]))
   else
-    Stream.WriteString(Format('ALTER TABLE %s ADD CONSTRAINT %s ' + CLRF +
+    Stream.WriteString(Format('ALTER TABLE %s ADD CONSTRAINT %s ' + sLineBreak +
       ' FOREIGN KEY (', [TMetaTable(FOwner).FormatName, FormatName]));
 
   for I := 0 to FieldsCount - 1 do
@@ -3252,11 +3252,11 @@ begin
   // For Updateble View
   if FPrefix <> ttON then
   begin
-    Stream.WriteString(Format('CREATE TRIGGER %s FOR %s%s', [Name, TCustomMetaObject(FOwner).Name, CLRF]));
+    Stream.WriteString(Format('CREATE TRIGGER %s FOR %s%s', [Name, TCustomMetaObject(FOwner).Name, sLineBreak]));
   end
   else
   begin
-    Stream.WriteString(Format('CREATE TRIGGER %s%s', [Name, CLRF]));
+    Stream.WriteString(Format('CREATE TRIGGER %s%s', [Name, sLineBreak]));
   end;
 
   if FActive then
@@ -3272,15 +3272,15 @@ begin
         Stream.WriteString(' OR ');
       Stream.WriteString(TriggerSuffixes[Suf]);
     end;
-  Stream.WriteString(Format(' POSITION %d%s%s', [FPosition, CLRF, 'AS BEGIN  POST_EVENT ''FAKE''; END']));
+  Stream.WriteString(Format(' POSITION %d%s%s', [FPosition, sLineBreak, 'AS BEGIN  POST_EVENT ''FAKE''; END']));
 end;
 
 procedure TCustomMetaTrigger.SaveAlterDDL(Stream: TFastStringStream);
 begin
-  Stream.WriteString(Format('ALTER TRIGGER %s%s', [Name, CLRF]));
+  Stream.WriteString(Format('ALTER TRIGGER %s%s', [Name, sLineBreak]));
   if FActive then
     Stream.WriteString('ACTIVE ');
-  Stream.WriteString(Format(' %s%s', [CLRF, FSource]));
+  Stream.WriteString(Format(' %s%s', [sLineBreak, FSource]));
 end;
 
 class function TCustomMetaTrigger.IsSubObject: boolean;
@@ -3295,11 +3295,11 @@ var
 begin
   if FPrefix <> ttON then
   begin
-    Stream.WriteString(Format('CREATE TRIGGER %s FOR %s%s', [Name, TCustomMetaObject(FOwner).FormatName, CLRF]));
+    Stream.WriteString(Format('CREATE TRIGGER %s FOR %s%s', [Name, TCustomMetaObject(FOwner).FormatName, sLineBreak]));
   end
   else
   begin
-    Stream.WriteString(Format('CREATE TRIGGER %s%s', [FormatName, CLRF]));
+    Stream.WriteString(Format('CREATE TRIGGER %s%s', [FormatName, sLineBreak]));
   end;
 
   if FActive then
@@ -3316,7 +3316,7 @@ begin
       Stream.WriteString(TriggerSuffixes[Suf]);
     end;
   // Stream.WriteString(Format(' POSITION %d%s', [FPosition, NewLine,FSource]));
-  Stream.WriteString(' POSITION ' + IntToStr(FPosition) + CLRF + FSource);
+  Stream.WriteString(' POSITION ' + IntToStr(FPosition) + sLineBreak + FSource);
 end;
 
 { TMetaTableGrant }
@@ -3448,11 +3448,11 @@ begin
   Stream.WriteString(Format('CREATE VIEW %s (', [FormatName]));
   for I := 0 to FieldsCount - 1 do
   begin
-    Stream.WriteString(CLRF + '   ' + Fields[I].FormatName);
+    Stream.WriteString(sLineBreak + '   ' + Fields[I].FormatName);
     if I <> FieldsCount - 1 then
       Stream.WriteString(',');
   end;
-  Stream.WriteString(CLRF + ')' + CLRF + 'AS' + CLRF);
+  Stream.WriteString(sLineBreak + ')' + sLineBreak + 'AS' + sLineBreak);
   Stream.WriteString(Source);
 end;
 
@@ -3535,7 +3535,7 @@ begin
     Stream.WriteString(' (');
     for I := 0 to InputFieldsCount - 1 do
     begin
-      Stream.WriteString(CLRF + '   ');
+      Stream.WriteString(sLineBreak + '   ');
       InputFields[I].GenerateObjectDDL(Stream);
       if I <> InputFieldsCount - 1 then
         Stream.WriteString(',');
@@ -3545,10 +3545,10 @@ begin
 
   if OutputFieldsCount > 0 then
   begin
-    Stream.WriteString(Format('%sRETURNS (', [CLRF]));
+    Stream.WriteString(Format('%sRETURNS (', [sLineBreak]));
     for I := 0 to OutputFieldsCount - 1 do
     begin
-      Stream.WriteString(CLRF + '   ');
+      Stream.WriteString(sLineBreak + '   ');
       OutputFields[I].GenerateObjectDDL(Stream);
       if I <> OutputFieldsCount - 1 then
         Stream.WriteString(',');
@@ -3596,20 +3596,20 @@ end;
 procedure TMetaProcedure.SaveToAlterDDL(Stream: TFastStringStream);
 begin
   InternalSaveToDDL(Stream, 'ALTER');
-  Stream.WriteString(CLRF + 'AS ');
+  Stream.WriteString(sLineBreak + 'AS ');
   Stream.WriteString(FSource);
 end;
 
 procedure TMetaProcedure.SaveToPostDDL(Stream: TFastStringStream);
 begin
   InternalSaveToDDL(Stream, 'CREATE');
-  Stream.WriteString(CLRF + 'AS' + CLRF + 'BEGIN' + CLRF + '  SUSPEND;' + CLRF + 'END');
+  Stream.WriteString(sLineBreak + 'AS' + sLineBreak + 'BEGIN' + sLineBreak + '  SUSPEND;' + sLineBreak + 'END');
 end;
 
 procedure TMetaProcedure.GenerateObjectDDL(Stream: TFastStringStream);
 begin
   InternalSaveToDDL(Stream, 'CREATE');
-  Stream.WriteString(CLRF + 'AS' + CLRF);
+  Stream.WriteString(sLineBreak + 'AS' + sLineBreak);
   Stream.WriteString(FSource);
 end;
 
@@ -3704,14 +3704,14 @@ begin
       begin
         if C > 0 then
           Stream.WriteString(',');
-        Stream.WriteString(CLRF + '  ');
+        Stream.WriteString(sLineBreak + '  ');
         Fields[I].GenerateObjectDDL(Stream);
         Inc(C);
       end;
     for I := 0 to FieldsCount - 1 do
       if Fields[I].Position = Return then
       begin
-        Stream.WriteString(CLRF + '  RETURNS ');
+        Stream.WriteString(sLineBreak + '  RETURNS ');
         Fields[I].GenerateObjectDDL(Stream);
         Break;
       end;
@@ -3722,14 +3722,14 @@ begin
     begin
       if C > 0 then
         Stream.WriteString(',');
-      Stream.WriteString(CLRF + '  ');
+      Stream.WriteString(sLineBreak + '  ');
       Fields[I].GenerateObjectDDL(Stream);
       Inc(C);
     end;
-    Stream.WriteString(Format('%s  RETURNS PARAMETER %d', [CLRF, FReturn]));
+    Stream.WriteString(Format('%s  RETURNS PARAMETER %d', [sLineBreak, FReturn]));
   end;
 
-  Stream.WriteString(Format('%s  ENTRY_POINT ''%s'' MODULE_NAME ''%s''', [CLRF, FEntry, FModule]));
+  Stream.WriteString(Format('%s  ENTRY_POINT ''%s'' MODULE_NAME ''%s''', [sLineBreak, FEntry, FModule]));
 end;
 
 procedure TMetaUDF.LoadFromDataBase(QNames, QFields: TFIBQuery; QCharset: TFIBQuery);
@@ -3856,7 +3856,7 @@ begin
     if FNotNull then
       Stream.WriteString(' NOT NULL');
     if FValidationSource <> '' then
-      Stream.WriteString(CLRF + FValidationSource);
+      Stream.WriteString(sLineBreak + FValidationSource);
   end;
 end;
 
@@ -4068,12 +4068,12 @@ begin
     if FPrivileges[I] = [goRole] then
     begin
       Stream.WriteString('GRANT  ' + FormatIdentifier(3, FObjectName) + ' TO ');
-      Stream.WriteString(CLRF + '  ' + FUserList[I]);
+      Stream.WriteString(sLineBreak + '  ' + FUserList[I]);
     end
     else if FPrivileges[I] = [goExecuteProc] then
     begin
       Stream.WriteString('GRANT EXECUTE ON PROCEDURE ' + FormatIdentifier(3, FObjectName) + ' TO');
-      Stream.WriteString(CLRF + '  ' + FUserList[I]);
+      Stream.WriteString(sLineBreak + '  ' + FUserList[I]);
     end
     else
     begin
@@ -4111,12 +4111,12 @@ begin
       end;
 
       Stream.WriteString(FormatIdentifier(3, FObjectName));
-      Stream.WriteString(' TO ' + CLRF + '  ');
+      Stream.WriteString(' TO ' + sLineBreak + '  ');
       Stream.WriteString(FUserList[I]);
       if FWithGrantOption[I] then
         Stream.WriteString(' WITH GRANT OPTION');
     end;
-    Stream.WriteString(DefTerminator + CLRF + CLRF)
+    Stream.WriteString(DefTerminator + sLineBreak + sLineBreak)
   end;
 end;
 
@@ -4215,7 +4215,7 @@ begin
             if Length(FUserList[J]) + Length(FUserList[I]) < 100 then
               FUserList[J] := FUserList[J] + ',' + FUserList[I]
             else if (Length(FUserList[J]) mod 100 + Length(FUserList[I]) mod 100) > 100 then
-              FUserList[J] := FUserList[J] + ',' + CLRF + '  ' + FUserList[I]
+              FUserList[J] := FUserList[J] + ',' + sLineBreak + '  ' + FUserList[I]
             else
               FUserList[J] := FUserList[J] + ',' + FUserList[I];
             DeleteIndex(I, TDynStrArray(FUserList));
@@ -4471,7 +4471,7 @@ end;
 procedure TMetaStoredFunc.GenerateObjectDDL(Stream: TFastStringStream);
 begin
   InternalSaveToDDL(Stream, 'CREATE ');
-  Stream.WriteString(CLRF + 'AS' + CLRF);
+  Stream.WriteString(sLineBreak + 'AS' + sLineBreak);
   Stream.WriteString(FSource);
 end;
 
@@ -4507,7 +4507,7 @@ begin
       Stream.WriteString(' (');
       for I := 0 to InputFieldsCount - 1 do
       begin
-        Stream.WriteString(CLRF + '   ');
+        Stream.WriteString(sLineBreak + '   ');
         InputFields[I].GenerateObjectDDL(Stream);
         if I <> InputFieldsCount - 1 then
           Stream.WriteString(',');
@@ -4522,7 +4522,7 @@ begin
     end;
   end;
 
-  Stream.WriteString(Format('%sRETURNS  ', [CLRF]));
+  Stream.WriteString(Format('%sRETURNS  ', [sLineBreak]));
   // Return:=TMetaProcOutField(GetChildObject(Ord(soProcFieldOut), 0));
   if Return <> nil then
     Return.GenerateObjectDDL(Stream);
@@ -4564,13 +4564,13 @@ end;
 procedure TMetaStoredFunc.SaveEmptyDDL(Stream: TFastStringStream);
 begin
   InternalSaveToDDL(Stream, 'CREATE');
-  Stream.WriteString(CLRF + 'AS' + CLRF + 'BEGIN' + CLRF + 'END');
+  Stream.WriteString(sLineBreak + 'AS' + sLineBreak + 'BEGIN' + sLineBreak + 'END');
 end;
 
 procedure TMetaStoredFunc.SaveAlterDDL(Stream: TFastStringStream);
 begin
   InternalSaveToDDL(Stream, 'ALTER');
-  Stream.WriteString(CLRF + 'AS' + CLRF);
+  Stream.WriteString(sLineBreak + 'AS' + sLineBreak);
   Stream.WriteString(FSource);
 
 end;
@@ -4584,11 +4584,11 @@ end;
 
 procedure TMetaPackage.GenerateObjectDDL(Stream: TFastStringStream);
 begin
-  Stream.WriteString(Format('CREATE PACKAGE %s AS ' + CLRF, [FormatName]));
+  Stream.WriteString(Format('CREATE PACKAGE %s AS ' + sLineBreak, [FormatName]));
   Stream.WriteString(FSpec);
   Stream.WriteString(DefTerminator);
-  Stream.WriteString(CLRF + CLRF);
-  Stream.WriteString(Format('RECREATE PACKAGE BODY %s AS ' + CLRF, [FormatName]));
+  Stream.WriteString(sLineBreak + sLineBreak);
+  Stream.WriteString(Format('RECREATE PACKAGE BODY %s AS ' + sLineBreak, [FormatName]));
   Stream.WriteString(FBody);
   Stream.WriteString(DefTerminator);
 end;
@@ -4603,13 +4603,13 @@ end;
 
 procedure TMetaPackage.SaveBodyDDL(Stream: TFastStringStream);
 begin
-  Stream.WriteString(Format('RECREATE PACKAGE BODY %s AS ' + CLRF, [FormatName]));
+  Stream.WriteString(Format('RECREATE PACKAGE BODY %s AS ' + sLineBreak, [FormatName]));
   Stream.WriteString(FBody);
 end;
 
 procedure TMetaPackage.SaveSpecDDL(Stream: TFastStringStream);
 begin
-  Stream.WriteString(Format('CREATE PACKAGE %s AS ' + CLRF, [FormatName]));
+  Stream.WriteString(Format('CREATE PACKAGE %s AS ' + sLineBreak, [FormatName]));
   Stream.WriteString(FSpec);
 end;
 
