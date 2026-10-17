@@ -74,7 +74,7 @@
         <VerInfo_Locale>1048</VerInfo_Locale>
         <VerInfo_Keys>CompanyName=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductVersion=1.0.0.0;Comments=;ProgramID=com.embarcadero.$(MSBuildProjectName);FileDescription=$(MSBuildProjectName);ProductName=$(MSBuildProjectName)</VerInfo_Keys>
         <RuntimeOnlyPackage>true</RuntimeOnlyPackage>
-        <DCC_Description>FibPlus Access Components</DCC_Description>
+        <DCC_Description>FIBPlus Access Components</DCC_Description>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <VerInfo_Locale>1033</VerInfo_Locale>

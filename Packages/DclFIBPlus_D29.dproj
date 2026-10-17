@@ -60,7 +60,7 @@
         <SanitizedProjectName>DclFIBPlus_D29</SanitizedProjectName>
         <VerInfo_Locale>1048</VerInfo_Locale>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
-        <DCC_Description>FibPlus Access Components</DCC_Description>
+        <DCC_Description>FIBPlus Access Components</DCC_Description>
         <DesignOnlyPackage>true</DesignOnlyPackage>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">

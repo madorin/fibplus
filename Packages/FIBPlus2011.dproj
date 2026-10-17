@@ -29,7 +29,6 @@
 			<DCC_UnitAlias>WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;$(DCC_UnitAlias)</DCC_UnitAlias>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
 			<DCC_Description>FIBPlus</DCC_Description>
-			<DCC_DependencyCheckOutputName>C:\Users\Public\Documents\RAD Studio\7.0\Bpl\FIBPlus2011.bpl</DCC_DependencyCheckOutputName>
 			<DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
 			<GenDll>true</GenDll>
 			<DCC_WriteableConstants>true</DCC_WriteableConstants>
