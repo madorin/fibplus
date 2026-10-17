@@ -93,7 +93,8 @@ contains
   FIBCloneComponents in '..\Source\FIBCloneComponents.pas',
   FIBFieldsDescr in '..\Source\FIBFieldsDescr.pas',
   SIBAPI in '..\Source\SIBAPI.pas',
-  SIBFIBEA in '..\Source\SIBFIBEA.PAS',
+  FIBEventAlerter in '..\Source\FIBEventAlerter.pas',
+  SIBFIBEA in '..\Source\SIBFIBEA.pas',
   SIBGlobals in '..\Source\SIBGlobals.pas',
   FIBTypes in '..\Source\FIBTypes.pas',
   FIBCharSets in '..\Source\FIBCharSets.pas';

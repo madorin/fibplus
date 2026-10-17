@@ -101,7 +101,8 @@
 			<DCCReference Include="..\Source\RegUtils.pas"/>
 			<DCCReference Include="..\Source\SIBAPI.pas"/>
 			<DCCReference Include="..\Source\SIBEABase.pas"/>
-			<DCCReference Include="..\Source\SIBFIBEA.PAS"/>
+			<DCCReference Include="..\Source\FIBEventAlerter.pas"/>
+			<DCCReference Include="..\Source\SIBFIBEA.pas"/>
 			<DCCReference Include="..\Source\SIBGlobals.pas"/>
 			<DCCReference Include="..\Source\SqlTxtRtns.pas"/>
 			<DCCReference Include="..\Source\StdFuncs.pas"/>

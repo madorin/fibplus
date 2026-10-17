@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase,
   ExtCtrls, StdCtrls, Grids, DBGrids, FIBQuery, SIBEABase,
-  SIBFIBEA;
+  FIBEventAlerter;
 
 type
   TForm1 = class(TForm)
@@ -22,11 +22,11 @@ type
     Button1: TButton;
     qryInsertSale: TFIBQuery;
     trInsertSale: TFIBTransaction;
-    SIBfibEventAlerter1: TSIBfibEventAlerter;
+    FIBEventAlerter1: TFIBEventAlerter;
     procedure FormCreate(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure Button1Click(Sender: TObject);
-    procedure SIBfibEventAlerter1EventAlert(Sender: TObject; EventName: String; EventCount: Integer);
+    procedure FIBEventAlerter1EventAlert(Sender: TObject; EventName: String; EventCount: Integer);
   private
     { Private declarations }
   public
@@ -80,7 +80,7 @@ begin
   end;
 end;
 
-procedure TForm1.SIBfibEventAlerter1EventAlert(Sender: TObject; EventName: String; EventCount: Integer);
+procedure TForm1.FIBEventAlerter1EventAlert(Sender: TObject; EventName: String; EventCount: Integer);
 // var inf: String;
 begin
   ShowMessage(Format('Event received: %s (count: %d)', [EventName, EventCount]));

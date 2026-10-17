@@ -21,7 +21,7 @@ interface
 
 uses
   Classes, Sysutils, DB, DSContainer,
-  FIBSQLLog, SIBFIBEA, FIBMetadata, FIBDataRefresh, FIBExports,
+  FIBSQLLog, FIBEventAlerter, FIBMetadata, FIBDataRefresh, FIBExports,
 {$IFNDEF NO_MONITOR} FIBSQLMonitor, {$ENDIF} FIBErrorHandler,
   FIBStoredProc, FIBProps, FIBClientDataSet {$IFDEF INC_SERVICE_SUPPORT},
   FIBServices {$ENDIF}
@@ -56,7 +56,7 @@ begin
 
   RegisterComponents(pnFIBPlus, [TFIBDatabase, TFIBDataSet, TFIBTransaction,
     TFIBQuery, TFIBStoredProc, TFIBUpdateObject, TDataSetsContainer,
-    TFIBErrorHandler, TFIBScripter, TFIBDBSchemaExtract, TFIBTableChangesReader, TFIBSQLLogger, TSIBfibEventAlerter,
+    TFIBErrorHandler, TFIBScripter, TFIBDBSchemaExtract, TFIBTableChangesReader, TFIBSQLLogger, TFIBEventAlerter,
     TFIBClientDataSet, TFIBDataSetProvider
 {$IFNDEF NO_MONITOR}, TFIBSQLMonitor{$ENDIF}]);
 

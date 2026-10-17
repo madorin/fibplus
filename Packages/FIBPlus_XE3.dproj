@@ -167,7 +167,8 @@
         <DCCReference Include="FIBCloneComponents.pas"/>
         <DCCReference Include="FIBFieldsDescr.pas"/>
         <DCCReference Include="SIBAPI.pas"/>
-        <DCCReference Include="SIBFIBEA.PAS"/>
+        <DCCReference Include="FIBEventAlerter.pas"/>
+        <DCCReference Include="SIBFIBEA.pas"/>
         <DCCReference Include="SIBGlobals.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>

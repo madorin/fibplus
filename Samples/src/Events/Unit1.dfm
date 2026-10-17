@@ -239,10 +239,10 @@ object Form1: TForm1
     Left = 536
     Top = 72
   end
-  object SIBfibEventAlerter1: TSIBfibEventAlerter
+  object FIBEventAlerter1: TFIBEventAlerter
     Events.Strings = (
       'new_order')
-    OnEventAlert = SIBfibEventAlerter1EventAlert
+    OnEventAlert = FIBEventAlerter1EventAlert
     Database = db
     AutoRegister = True
     Left = 568

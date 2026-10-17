@@ -22,7 +22,7 @@ resourcestring
   SIB_RS_ALREADY_REGISTERED   = 'Events already registered';
   SIB_RS_EMPTY_STRINGS        = 'Can not assign empty strings as events.  ';
   SIB_RS_TOO_LONG             = 'Some event names are longer than %d characters.  ';
-  SIB_RS_FIB_SET_NATIVEHANDLE = 'SIBfibEventAlerter does not allow you to set the NativeHandle property';
+  SIB_RS_FIB_SET_NATIVEHANDLE = 'TFIBEventAlerter does not allow you to set the NativeHandle property';
   SIB_RS_FIB_NO_DATABASE      = 'Cannot register events, no database assigned or database not connected';
 
 implementation

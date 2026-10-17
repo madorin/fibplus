@@ -4,7 +4,7 @@ FIBPlus has four tools that tell your application, or you, what is going on:
 
 | Tool | Component | Use it to |
 |------|-----------|-----------|
-| Database events | `TSIBfibEventAlerter` | React to events that the server posts with `POST_EVENT` |
+| Database events | `TFIBEventAlerter` | React to events that the server posts with `POST_EVENT` |
 | Error handling | `TFIBErrorHandler` | Classify server errors, replace messages, handle a lost connection |
 | SQL monitor | `TFIBSQLMonitor` | Watch the statements that the library sends, live |
 | SQL log and statistics | `TFIBSQLLogger` | Write the statements to a file and measure how long they take |
@@ -13,7 +13,7 @@ The sections below follow this order.
 
 ## Requirements
 
-- `TSIBfibEventAlerter` needs a connected `TFIBDatabase`.
+- `TFIBEventAlerter` needs a connected `TFIBDatabase`.
 - Only one `TFIBErrorHandler` can exist in an application at run time. Creating a second one raises an exception.
 - `TFIBSQLMonitor` works only in Windows builds. The unit is not compiled when `NO_MONITOR` is defined; see [TFIBSQLMonitor](../reference/TFIBSQLMonitor.md).
 - `TFIBSQLLogger` has no platform limit.
@@ -37,7 +37,7 @@ SET TERM ; ^
 
 ### Listen for an event
 
-The unit is `SIBFIBEA` (the base class `TSIBEventAlerter` is in `SIBEABase`). The sample uses a `TSIBfibEventAlerter` named `EventAlerter` and a `TFIBDatabase` named `Database`.
+The unit is `FIBEventAlerter` (the base class `TSIBEventAlerter` is in `SIBEABase`). The sample uses a `TFIBEventAlerter` named `EventAlerter` and a `TFIBDatabase` named `Database`.
 
 ```delphi
 procedure TMainForm.FormCreate(Sender: TObject);

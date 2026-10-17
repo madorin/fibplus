@@ -91,10 +91,12 @@ Find the version you use now, then read every section above it, from the one jus
 | Unit `pFIBArray` | `FIBArray` | Change the `uses` clause. The old unit still compiles and gives a warning. |
 | `TpFIBArray` | `TFIBArray` | Rename. The old name is a deprecated alias of the same class in `pFIBArray`. |
 | `TFIBXSQLVAR.FIBArray`, `TFIBArrayStream.FIBArray` | `ArrayInfo` | Rename. The property had the name of the new unit `FIBArray`. There is no old name. |
+| Unit `SIBFIBEA` | `FIBEventAlerter` | Change the `uses` clause. The old unit still compiles and gives a warning. |
+| `TSIBfibEventAlerter` | `TFIBEventAlerter` | Rename. The old name is a deprecated alias of the same class in `SIBFIBEA`. |
 | Variable `pFIBLoginDialog`, type `TpFIBLoginDialog` (unit `fib`) | `FIBLoginDialog`, `TFIBLoginDialogFunc` | Rename in code that installs its own login dialog (`pFIBLoginDialog := MyLoginDialog`) or tests the variable. There are no old names: a variable cannot have a deprecated alias, so the old code does not compile. |
 | `pFIBLoginDialogEx` (`FIBDBLoginDlg`), `pFIBLoginDialogFMX` (`FIB_FMX_DBLoginDlg`) | `FIBLoginDialogEx`, `FIBLoginDialogFMX` | Rename in code that calls them. There are no old names. |
 
-Forms that contain one of the old component classes still load. The classes `TpFIBDataSet`, `TpFIBDatabase`, `TpFIBTransaction`, `TpFIBClientDataSet`, `TpFIBDataSetProvider`, the field class `TpFIBClientBCDField`, `TpFIBDBSchemaExtract` and the service components are registered by the units `pFIBDataSet`, `pFIBDatabase`, `pFIBClientDataSet`, `pFIBMetaData` and `IB_Services`, so keep them linked (in a `uses` clause) until the form is saved again. The next time you save the form, the IDE writes the new class name. The old unit and names are removed in a later major version.
+Forms that contain one of the old component classes still load. The classes `TpFIBDataSet`, `TpFIBDatabase`, `TpFIBTransaction`, `TpFIBClientDataSet`, `TpFIBDataSetProvider`, the field class `TpFIBClientBCDField`, `TpFIBDBSchemaExtract`, `TSIBfibEventAlerter` and the service components are registered by the units `pFIBDataSet`, `pFIBDatabase`, `pFIBClientDataSet`, `pFIBMetaData`, `SIBFIBEA` and `IB_Services`, so keep them linked (in a `uses` clause) until the form is saved again. The next time you save the form, the IDE writes the new class name. The old unit and names are removed in a later major version.
 
 ### Changed behavior
 

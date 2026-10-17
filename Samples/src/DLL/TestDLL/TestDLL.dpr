@@ -3,20 +3,20 @@ library TestDLL;
 uses
   SysUtils,
   Classes,
-  SIBFIBEA,
+  FIBEventAlerter,
   Dialogs,
   Unit1 in 'Unit1.pas' {Form1};
 
 {$R *.res}
 
 var // Added
-  SIBfibEventAlerter: TSIBfibEventAlerter; // Added
+  FIBEventAlerter: TFIBEventAlerter; // Added
 
 begin
-  SIBfibEventAlerter := TSIBfibEventAlerter.Create(Nil); // Added
+  FIBEventAlerter := TFIBEventAlerter.Create(Nil); // Added
   // ShowMessage('Is I');
   // ----------------
   // Hangs on this line
-  SIBfibEventAlerter.Free; // Added
+  FIBEventAlerter.Free; // Added
 
 end.

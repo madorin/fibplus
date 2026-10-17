@@ -40,12 +40,14 @@ The lists of old and new names, and what an application has to change, are in
   database, transaction, query, update object, stored procedure, scripter,
   error handler, client dataset, array, schema extract and the other classes.
   The service components are now `TFIB...Service` in `FIBServices` (was
-  `IB_Services`), and `TpFIBStatistics` is now `TFIBSQLLogger`.
+  `IB_Services`), `TpFIBStatistics` is now `TFIBSQLLogger`, and
+  `TSIBfibEventAlerter` in `SIBFIBEA` is now `TFIBEventAlerter` in
+  `FIBEventAlerter`.
 - Most existing code compiles without a change: the old units (`pFIBDataSet`,
   `pFIBDatabase`, `pFIBQuery`, `pFIBStoredProc`, `pFIBScripter`,
   `pFIBErrorHandler`, `pFIBDataRefresh`, `pFIBProps`, `pFIBMetaData`,
-  `pFIBSQLLog`, `pFIBClientDataSet`, `pFIBArray`, `IB_Services`) stay as
-  deprecated units, with the old names as deprecated aliases. The compiler
+  `pFIBSQLLog`, `pFIBClientDataSet`, `pFIBArray`, `IB_Services`, `SIBFIBEA`)
+  stay as deprecated units, with the old names as deprecated aliases. The compiler
   warns at the `uses` clause that names an old unit. Forms with the old class
   names load as long as the old unit is linked, and are saved with the new
   names. The old units and names will be removed in a later major version.
