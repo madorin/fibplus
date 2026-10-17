@@ -4,6 +4,13 @@ FIBPlus is a fast, easy-to-use component library for Delphi and C++Builder that 
 
 It is built for database application developers and has grown from their real-world needs: every component, method and property is designed to solve the tasks you face every day.
 
+<p align="center">
+  <a href="Docs/README.md"><picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Docs/images/palette-dark.png">
+    <img src="Docs/images/palette-light.png" width="956" alt="FIBPlus component palette">
+  </picture></a>
+</p>
+
 
 ## 📚 Documentation
 
