@@ -6054,7 +6054,7 @@ begin
       Row := FindVisibleRow(OffsetY, Row, True);
       // get the column number in the line
       Col := PixOffsetToCharPos(Col, Row);
-      if (Col <> Range.PosX) or (Row <> Range.PosY) then
+      if fLines.IsValidLineIndex(Row) and ((Col <> Range.PosX) or (Row <> Range.PosY)) then
         begin
           Range.Enlarge(Row - Range.PosY, True);
           Range.Enlarge(Col - Range.PosX);
@@ -7441,6 +7441,7 @@ begin
         fBreakPoints.PaintAt(ACanvas, GR.Left + 2, GR.Top + 2, kind);
       StrNumRow := IntToStr(Row + 1);
       Font.Color := clBlack;
+      Font.Style := [];
       if smoShowLineNumberToGutter in Options then
         TextOut(GR.Right - fCharWidths[False]['1'] * (Length(StrNumRow) + 1), GR.Top + 2, StrNumRow)
     end;

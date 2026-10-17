@@ -117,6 +117,9 @@ type
     function PSGetKeyFields: string; override;
     function PSGetQuoteChar: string; override;
     procedure PSSetCommandText(const CommandText: string); override;
+{$IFDEF D_XE3}
+    function PSGetCommandText: string; override;
+{$ENDIF}
 {$ELSE}
     procedure PSSetCommandText(const CommandText: Widestring); override;
     function PSGetTableNameW: Widestring; override;
@@ -3968,6 +3971,17 @@ end;
 {$IFDEF TWideDataSet}
 
 function TpFIBDataSet.PSGetCommandTextW: Widestring;
+begin
+  if FMidasCommandText = '' then
+    Result := SelectSQL.Text
+  else
+    Result := FMidasCommandText
+end;
+{$ENDIF}
+
+{$IFDEF D_XE3}
+
+function TpFIBDataSet.PSGetCommandText: string;
 begin
   if FMidasCommandText = '' then
     Result := SelectSQL.Text

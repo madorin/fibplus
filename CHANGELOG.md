@@ -10,6 +10,17 @@
   ([#95](https://github.com/madorin/fibplus/issues/95)).
 - `pFIBArray` did not compile on Delphi 10.1 Berlin: "Invalid typecast" in
   `TpFIBArray.ReadElement` ([#94](https://github.com/madorin/fibplus/issues/94)).
+- `PSGetCommandText` of `IProviderSupport` returned an empty string on Delphi
+  XE3 and later; it returns the select SQL or the pending provider command, as
+  `PSGetCommandTextW` does on Delphi 2006 to XE2.
+- The editors did not save text and some integer settings: the font name,
+  style and charset and the syntax highlighting styles of the SQL editor, and
+  the user transaction kinds of the transaction editor were lost when the IDE
+  was closed (the font charset on every version, the rest on Delphi 2009 and
+  later).
+- SQL editor: a line number after a keyword was drawn in bold.
+- SQL editor: selecting with the mouse in an editor without lines raised an
+  "index out of bounds" error.
 
 ## [7.9.1] - 2026-10-09
 
