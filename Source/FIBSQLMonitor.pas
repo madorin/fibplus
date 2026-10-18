@@ -142,7 +142,6 @@ type
     FDataType: TFIBTraceFlag;
     FMsg: String;
     FTimeStamp: TDateTime;
-    FIsUnicodeVersion: Boolean;
   public
     constructor Create(const Msg: string; DataType: TFIBTraceFlag);
   end;
@@ -311,14 +310,7 @@ begin
       begin
         st := TFIBTraceObject(Message.LParam);
         if (Assigned(FOnSQLEvent)) and (st.FDataType in FTraceFlags) then
-        begin
-          if st.FIsUnicodeVersion then
-          begin
-            FOnSQLEvent(UTF8Decode(st.FMsg), st.FTimeStamp);
-          end
-          else
-            FOnSQLEvent(st.FMsg, st.FTimeStamp);
-        end;
+          FOnSQLEvent(st.FMsg, st.FTimeStamp);
         st.Free;
       end;
     CM_RELEASE: Free;
@@ -621,7 +613,7 @@ end;
 
 procedure TFIBSQLMonitorHook.SQLExecute(qry: TFIBQuery; const AdditionalMessage: string);
 var
-  st: Ansistring;
+  st: string;
   i: integer;
   Q: TISC_QUAD;
 begin
@@ -631,7 +623,7 @@ begin
       st := TFIBCustomDataSet(qry.Owner).Name + '.' + qry.Name
     else
       st := qry.Name;
-    st := st + ': [Execute] ' + UTF8Encode(qry.ReadySQLText(false));
+    st := st + ': [Execute] ' + qry.ReadySQLText(false);
     { do not localize }
 
     if qry.Params.Count > 0 then
@@ -644,7 +636,7 @@ begin
             if IsNull then
               st := st + '<NULL>' { do not localize }
             else if (SQLType = (SQL_TEXT)) or (SQLType = (SQL_VARYING)) then
-              st := st + '''' + UTF8Encode(AsString) + ''''
+              st := st + '''' + AsString + ''''
             else if ((SQLType and (not 1)) = SQL_BLOB) then
             begin
               Q := AsQuad;
@@ -664,15 +656,13 @@ begin
     if Length(AdditionalMessage) > 0 then
       st := st + CRLF + AdditionalMessage;
     st := st + CRLF + 'Execute tick count ' + IntToStr(qry.CallTime);
-    // ast:=Utf8Encode( st);
     WriteSQLData(st, tfQExecute);
-    // WriteSQLData(st, tfQExecute);
   end;
 end;
 
 procedure TFIBSQLMonitorHook.SQLFetch(qry: TFIBQuery);
 var
-  st: Ansistring;
+  st: string;
   i: integer;
 begin
   if FActive and bEnabledMonitoring and (GetMonitorCount > 0) and (FQFetchReaderCount^ > 0) then
@@ -681,7 +671,7 @@ begin
       st := TFIBCustomDataSet(qry.Owner).Name
     else
       st := qry.Name;
-    st := st + ': [Fetch] ' + UTF8Encode(qry.ReadySQLText(false));
+    st := st + ': [Fetch] ' + qry.ReadySQLText(false);
     { do not localize }
     for i := 0 to Pred(qry.Current.Count) do
     begin
@@ -689,7 +679,7 @@ begin
       if qry.Fields[i].IsNull then
         st := st + 'NULL'
       else
-        st := st + UTF8Encode(qry.Fields[i].asWideString);
+        st := st + qry.Fields[i].asWideString;
     end;
     st := CRLF + st;
 
@@ -701,7 +691,7 @@ end;
 
 procedure TFIBSQLMonitorHook.SQLPrepare(qry: TFIBQuery);
 var
-  st: Ansistring;
+  st: string;
 begin
   if FActive and bEnabledMonitoring and (GetMonitorCount > 0) and (FQPrepareReaderCount^ > 0) then
   begin
@@ -709,7 +699,7 @@ begin
       st := TFIBCustomDataSet(qry.Owner).Name
     else
       st := qry.Name;
-    st := st + ': [Prepare] ' + UTF8Encode(qry.ReadySQLText(false)) + CRLF;
+    st := st + ': [Prepare] ' + qry.ReadySQLText(false) + CRLF;
     { do not localize }
     try
       st := st + '  Plan: ' + qry.Plan; { do not localize }
@@ -1001,10 +991,10 @@ end;
 
 procedure TMonitorWriterThread.WriteToBuffer(Trace: TFIBTraceObject);
 var
-  Text: Ansistring;
+  Text: UTF8String;
   Offset, Remaining, ChunkSize: integer;
 begin
-  Text := Ansistring(EscapeControlChars(Trace.FMsg));
+  Text := UTF8Encode(EscapeControlChars(Trace.FMsg));
   Offset := 1;
   Remaining := Length(Text);
   // the outer lock keeps the chunks of one message together
@@ -1013,6 +1003,9 @@ begin
     while Remaining > 0 do
     begin
       ChunkSize := Min(Remaining, cMaxBufferSize);
+      // a chunk must not end inside a UTF-8 sequence
+      while (ChunkSize < Remaining) and ((Byte(Text[Offset + ChunkSize]) and $C0) = $80) do
+        Dec(ChunkSize);
       BeginWrite;
       try
         FTraceDataType^ := integer(Trace.FDataType);
@@ -1023,6 +1016,8 @@ begin
       finally
         EndWrite;
       end;
+      // cleared after all readers, for writers that never set the flag
+      FIsUnicodeVersion^ := false;
       Inc(Offset, ChunkSize);
       Dec(Remaining, ChunkSize);
     end;
@@ -1113,23 +1108,26 @@ begin
       for i := 0 to FMonitors.Count - 1 do
       begin
         FTemp := TFIBTraceObject.Create(st.FMsg, st.FDataType);
-        FTemp.FIsUnicodeVersion := st.FIsUnicodeVersion;
         PostMessage(TFIBCustomSQLMonitor(FMonitors[i]).Handle, WM_FIBSQL_SQL_EVENT, 0, LParam(FTemp));
       end;
   end;
 end;
 
 procedure TMonitorReaderThread.ReadSQLData;
+var
+  Text: RawByteString;
 begin
   st.FMsg := '';
   BeginRead;
   if not bDone then
     try
-      SetString(st.FMsg, PAnsiChar(FBuffer), FBufferSize^);
+      SetString(Text, PAnsiChar(FBuffer), FBufferSize^);
+      if FIsUnicodeVersion^ then
+        st.FMsg := UTF8ToString(Text)
+      else
+        st.FMsg := string(AnsiString(Text));
       st.FDataType := TFIBTraceFlag(FTraceDataType^);
       st.FTimeStamp := TDateTime(FTimeStamp^);
-      st.FIsUnicodeVersion := FIsUnicodeVersion^;
-      FIsUnicodeVersion^ := false;
     finally
       EndRead;
     end;

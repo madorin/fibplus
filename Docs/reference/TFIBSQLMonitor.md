@@ -75,7 +75,7 @@ Each monitor receives the message in the thread that created it and calls `OnSQL
 
 | Name | Description |
 |------|-------------|
-| `OnSQL` | An event of a kind in `TraceFlags` arrived. `EventText` starts with a line break, then a line `[Application: <exe name>]`, then the text of the event. `EventTime` is the time the event was recorded. Control characters other than tab, line feed, and carriage return are replaced by `#$` and their hexadecimal code. A long event is sent in chunks of about 2000 bytes, so one event can call `OnSQL` several times. |
+| `OnSQL` | An event of a kind in `TraceFlags` arrived. `EventText` starts with a line break, then a line `[Application: <exe name>]`, then the text of the event. `EventTime` is the time the event was recorded. Control characters other than tab, line feed, and carriage return are replaced by `#$` and their hexadecimal code. The text goes between processes as UTF-8. A long event is sent in chunks of about 2000 bytes, cut between characters, so one event can call `OnSQL` several times. |
 
 ## Constants
 

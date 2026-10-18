@@ -185,6 +185,8 @@ The lists of old and new names, and what an application has to change, are in
 - `FIBArray` did not compile on Delphi 10.1 Berlin: "Invalid typecast" in
   `TFIBArray.ReadElement`
   ([#94](https://github.com/madorin/fibplus/issues/94); also in 7.9.2).
+- SQL monitor: non-ASCII text could arrive garbled, through the system code
+  page or a chunk of a long event cut inside a character.
 
 ## [7.9.1] - 2026-10-09
 
