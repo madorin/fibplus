@@ -209,6 +209,11 @@ The lists of old and new names, and what an application has to change, are in
 - A string over 32767 bytes for a `VARCHAR` parameter was sent as a blob of the
   column charset subtype, so the server reported "Filter not found to convert
   type 4 to type 1" instead of a string truncation.
+- `Locate` on a `TIMESTAMP` or `TIMESTAMP WITH TIME ZONE` field did not find a
+  value with milliseconds given as a `Double` (e.g. `EncodeDate(...) +
+  EncodeTime(...)`), and could miss a `TIMESTAMP WITH TIME ZONE` value by a
+  rounding difference. The values are now compared in milliseconds; only a text
+  key ignores them.
 
 ## [7.9.1] - 2026-10-09
 
