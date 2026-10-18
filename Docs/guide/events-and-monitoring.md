@@ -117,7 +117,7 @@ The unit is `FIBErrorHandler`. Drop one `TFIBErrorHandler` on a data module or t
 
 | Value | Effect |
 |-------|--------|
-| `oeException` | For `keException`, extract the exception number into `ExceptionNumber` and the text into the message. On *Firebird 2+*, also extract the exception name into `ExceptionName`. |
+| `oeException` | For `keException`, extract the exception number into `ExceptionNumber` and the text into the message. On *Firebird 2+*, also extract the exception name into `ExceptionName` and remove the stack trace (the `At ...` lines that follow the text). The SQL monitor and `TFIBSQLLogger` still show the server text with the stack trace, as does `EFIBError.IBMessage`. |
 | `oeForeignKey` | Replace the message with the text stored for the constraint, when there is one. Without a stored text the message stays as it is. |
 | `oeCheck` | Set `ConstraintName` and replace the message with the stored text. Without a stored text, the message becomes the server message (`IBMessage`) only. |
 | `oeUniqueViolation` | The same as `oeCheck`, for a unique key violation. |

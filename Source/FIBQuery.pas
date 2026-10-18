@@ -3873,6 +3873,23 @@ type
   THackMonitorHook = class(TFIBSQLMonitorHook);
 {$ENDIF}
 
+// for the monitor and the log: the server text, also when the error handler changed Message
+function ErrorTraceText(E: Exception): string;
+var
+  Error: EFIBError;
+begin
+  Result := E.Message;
+  if not (E is EFIBError) then
+    Exit;
+  Error := EFIBError(E);
+  if (Error.IBMessage <> '') and (Pos(Error.IBMessage, Result) = 0) then
+  begin
+    Result := Error.IBMessage;
+    if ShowSQLMessage in IBErrorMessages then
+      Result := Error.SQLMessage + Result;
+  end;
+end;
+
 function TFIBQuery.ReadySQLText(ForChangeExecSQL: boolean = True): string;
 type
   TCompareNull = (cNone, cIsNull, cIsNotNull);
@@ -4320,7 +4337,7 @@ var
     if E = nil then
       Mess := 'Execute query:'
     else
-      Mess := 'Error on execute query. Error message: "' + E.Message + '"';
+      Mess := 'Error on execute query. Error message: "' + ErrorTraceText(E) + '"';
     // if Assigned(Database.SQLLogger)  and (lfQExecute in Database.SQLLogger.LogFlags) then
     begin
       st := '';
@@ -4345,7 +4362,7 @@ var
     with THackMonitorHook(MonitorHook) do // Added Source
     begin
       SQLExecute(Self, '');
-      WriteSQLData(CmpFullName(Self) + ': [Execute] ' + E.Message, tfQExecute);
+      WriteSQLData(CmpFullName(Self) + ': [Execute] ' + ErrorTraceText(E), tfQExecute);
     end;
   end;
 {$ENDIF}
@@ -6074,7 +6091,7 @@ begin
 {$IFNDEF NO_MONITOR}
         if MonitoringEnabled then
           if MonitorHook <> nil then
-            THackMonitorHook(MonitorHook).WriteSQLData(CmpFullName(Self) + ': [Prepare] ' + E.Message, tfQPrepare);
+            THackMonitorHook(MonitorHook).WriteSQLData(CmpFullName(Self) + ': [Prepare] ' + ErrorTraceText(E), tfQPrepare);
 {$ENDIF}
         if Assigned(Database.SQLLogger) then
         begin

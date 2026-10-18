@@ -187,6 +187,10 @@ The lists of old and new names, and what an application has to change, are in
   ([#94](https://github.com/madorin/fibplus/issues/94); also in 7.9.2).
 - SQL monitor: non-ASCII text could arrive garbled, through the system code
   page or a chunk of a long event cut inside a character.
+- `TFIBErrorHandler`: the message of a user exception was cut at an "at" in its
+  text, or kept the stack trace (`At procedure ...`). The SQL monitor and the
+  SQL logger got the message after the error handler changed it; they now show
+  the server text with the stack trace.
 
 ## [7.9.1] - 2026-10-09
 

@@ -166,7 +166,7 @@ end;
 procedure TFIBErrorHandler.DefaultOnError(Sender: TObject; ErrorValue: EFIBError; var DoRaise: boolean);
 var
   p: integer;
-  s: string;
+  s, AtLexem, LowerMessage: string;
   CurTr: TFIBTransaction;
   vDB: THackDatabase;
   LostCode: ISC_STATUS;
@@ -227,11 +227,18 @@ begin
                     begin
                       FExceptionName := FastCopy(Message, 1, p - 1);
                       Message := FastCopy(Message, p + 1, MaxInt);
-                      p := Pos(ErrorLexems.FAt, AnsiLowerCase(Message));
-                      if (p > 0) and (p + Length(ErrorLexems.FAt) < Length(Message) - 1) and
-                        (Message[p + Length(ErrorLexems.FAt)] = ' ') then
-                        Message := FastCopy(Message, 1, p - 1);
-
+                      // the stack trace is the last status item, its frames are split by a bare LF
+                      if ErrorLexems.FAt <> '' then
+                      begin
+                        AtLexem := CRLF + ErrorLexems.FAt + ' ';
+                        LowerMessage := AnsiLowerCase(Message);
+                        p := Length(LowerMessage) - Length(AtLexem) + 1;
+                        while (p > 0) and
+                          not CompareMem(@LowerMessage[p], Pointer(AtLexem), Length(AtLexem) * SizeOf(Char)) do
+                          Dec(p);
+                        if p > 0 then
+                          Message := FastCopy(Message, 1, p - 1);
+                      end;
                     end;
                   end;
                 end;
