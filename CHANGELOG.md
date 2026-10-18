@@ -158,6 +158,8 @@ The lists of old and new names, and what an application has to change, are in
   polyfills `StrUtil.CharInSet` and `FIBPlatforms.WideCompareStr` (`SysUtils`
   declares both); see [Upgrading](Docs/guide/upgrading.md#800).
 - The samples `UnicodeFSS` (TNT controls) and `UnicodeFSS_2009`.
+- `Resources\English\FIB_Messages.inc`, a duplicate of `Source\FIB_MESSAGES.INC`,
+  where the English messages are.
 
 ### Fixed
 
@@ -199,6 +201,11 @@ The lists of old and new names, and what an application has to change, are in
   `EXECUTE BLOCK` counted characters, so with UTF8 and non-ASCII text a block
   could be over the 64 KB the server accepts. The limit is now in bytes of the
   connection charset, and 10 MB with a Firebird 3 or later server and client.
+- Russian messages (`Resources\Russian\FIB_Messages.inc`): an unknown DPB or
+  TPB constant raised an `EConvertError` ("Format ... invalid or incompatible
+  with argument") instead of its message. The file was in code page 1251 and
+  compiled to garbled text on a machine with another system code page; it is
+  now UTF-8.
 
 ## [7.9.1] - 2026-10-09
 

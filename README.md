@@ -60,6 +60,8 @@ The runtime package itself does not need to be installed. The design packages ex
 
 The packages write their DCU files to `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`, e.g. `C:\Users\Public\Documents\Embarcadero\Studio\37.0\Dcu\FIBPlus\Win32\Release`. This folder is separate for each Delphi version, so several versions installed on the same machine don't overwrite each other's DCU files. Adding this folder to the library path, before `Source`, is optional and only avoids recompiling FIBPlus in each project; `Source` stays needed for the form and resource files.
 
+**Russian messages**: most messages of the errors raised by FIBPlus itself (`EFIBClientError`) come from the table in `Source\FIB_MESSAGES.INC`, in English; a few, such as those of array fields, are fixed English text. For Russian, copy `Resources\Russian\FIB_Messages.inc` over `Source\FIB_MESSAGES.INC` and rebuild the packages and your application. Server error messages come from the server and are not affected.
+
 
 ## ❤️ Support FIBPlus
 
