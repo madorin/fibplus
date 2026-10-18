@@ -18,7 +18,6 @@ unit FIBTrEdit;
 interface
 
 uses
-{$IFDEF WINDOWS}
   Windows, Messages, SysUtils, Classes,
 {$IFDEF C23}
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls,
@@ -28,7 +27,6 @@ uses
   Graphics, Controls, Forms, Dialogs, ComCtrls, ExtCtrls, StdCtrls,
 {$ENDIF}
   uFIBEditorForm;
-{$ENDIF}
 
 type
   TfrmTransEdit = class(TFIBEditorCustomForm)

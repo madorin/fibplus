@@ -18,7 +18,6 @@ unit EdFieldInfo;
 interface
 
 uses
-{$IFDEF WINDOWS}
   Windows, Messages, SysUtils, Classes,
 {$IFDEF C23}
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
@@ -30,7 +29,6 @@ uses
 {$ENDIF}
   Db, FIBInterfaces, uFIBEditorForm,
   RegistryUtils, Variants;
-{$ENDIF}
 
 type
   TfrmFields = class(TFIBEditorCustomForm)

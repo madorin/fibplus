@@ -19,7 +19,6 @@ interface
 {$I ..\FIBPlus.inc}
 
 uses
-{$IFDEF WINDOWS}
   TypInfo, Windows, Messages, SysUtils, Classes,
 {$IFDEF C23}
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.Grids,
@@ -28,12 +27,7 @@ uses
   Graphics, Controls, Forms, Dialogs, Grids,
   DBGrids, ExtCtrls, StdCtrls, DBCtrls, Buttons, Menus,
 {$ENDIF}
-  Db, uFIBEditorForm
-
-    , Variants
-
-    ;
-{$ENDIF}
+  Db, uFIBEditorForm, Variants;
 
 type
   TfrmErrors = class(TFIBEditorCustomForm)
