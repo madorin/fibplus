@@ -206,6 +206,9 @@ The lists of old and new names, and what an application has to change, are in
   with argument") instead of its message. The file was in code page 1251 and
   compiled to garbled text on a machine with another system code page; it is
   now UTF-8.
+- A string over 32767 bytes for a `VARCHAR` parameter was sent as a blob of the
+  column charset subtype, so the server reported "Filter not found to convert
+  type 4 to type 1" instead of a string truncation.
 
 ## [7.9.1] - 2026-10-09
 

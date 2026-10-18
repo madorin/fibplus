@@ -2374,8 +2374,16 @@ begin
     FXSQLVAR^.SQLSubtype := FQuery.Database.UTF8CharSetID
   else if (CodePage <> FIBCodePageSystem) and ((sSQLType = SQL_TEXT) or (sSQLType = SQL_VARYING)) then
     FXSQLVAR^.SQLSubtype := sSubType;
-  if Length(vValue) > 32767 then
+  // too long for a VARCHAR: sent as a text blob in the charset of the column
+  if (Length(vValue) > 32767) and (sSQLType <> SQL_BLOB) then
+  begin
+    if (sSQLType = SQL_TEXT) or (sSQLType = SQL_VARYING) then
+    begin
+      sSQLScale := Byte(sSubType);
+      sSubType := isc_blob_text;
+    end;
     sSQLType := SQL_BLOB;
+  end;
   if (sSQLType = SQL_BLOB) then
   begin
     if FStreamValue = nil then
@@ -6151,7 +6159,10 @@ begin
         if FStreamValue <> nil then
         begin
           IsNull := False;
-          bs.blobSubType := ServerSQLSubType;
+          if ServerSQLType = SQL_BLOB then
+            bs.blobSubType := ServerSQLSubType
+          else
+            bs.blobSubType := FXSQLVAR^.SQLSubtype;
           with FQuery do
           begin
             bs.Database := Database;
