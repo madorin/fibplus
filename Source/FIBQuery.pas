@@ -6061,7 +6061,11 @@ begin
                           FSrvSQLType := tmpVar.SQLType;
                           tmpVar.FSrvSQLType := tmpVar.SQLType;
                           FSrvSQLSubType := tmpVar.SQLSubtype;
-                          InternalSetAsString(@BlobValue, False, True)
+                          // the string is kept to read it back, the stream is freed after the execute
+                          if Length(FWideTempValue) > 0 then
+                            InternalSetAsString(@FWideTempValue, True, True)
+                          else
+                            InternalSetAsString(@BlobValue, False, True)
                         end;
                     end;
                 end;

@@ -247,6 +247,9 @@ The lists of old and new names, and what an application has to change, are in
 - `AsTimeZoneName` of a `TIME` or `TIMESTAMP WITH TIME ZONE` value in a region
   unknown to the built-in time zone table was empty, and `AsString` ended with
   a blank. It is now the offset of the value (`+02:00`).
+- A text BLOB parameter set with `AsString` before `Prepare` read `(BLOB)`
+  after `ExecQuery`; it now returns the string, as when it is set after
+  `Prepare`.
 
 ## [7.9.1] - 2026-10-09
 
