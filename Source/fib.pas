@@ -653,7 +653,9 @@ begin
   inherited Create(''); // IMS - (sn+aMsg);
   Msg := aMsg; // IMS
   FSQLCode := ASQLCode;
-  FIBErrorCode := StatusVectorArray[1];
+  // a client error has no server code, the status vector can hold an old one
+  if not (Self is EFIBClientError) then
+    FIBErrorCode := StatusVectorArray[1];
   SenderObj := Sender;
 end;
 

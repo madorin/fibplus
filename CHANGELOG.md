@@ -214,6 +214,9 @@ The lists of old and new names, and what an application has to change, are in
   EncodeTime(...)`), and could miss a `TIMESTAMP WITH TIME ZONE` value by a
   rounding difference. The values are now compared in milliseconds; only a text
   key ignores them.
+- `EFIBClientError.IBErrorCode` had the code of an earlier server error of the
+  thread: after a statement timeout a client error had `isc_cancelled`, so
+  `TFIBErrorHandler` took it for a cancelled statement. It is now 0.
 
 ## [7.9.1] - 2026-10-09
 
