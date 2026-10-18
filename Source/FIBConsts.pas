@@ -68,6 +68,7 @@ resourcestring
   SFIBParamsCountNotEquelValuesCount    = '%s. Parameters count is not equel count of parameter values';
   SFIBErrorEOFInComments                = 'EOF in comment detected';
   SFIBErrorEOFInString                  = 'EOF in string detected';
+  SFIBErrorEOFInMacro                   = 'EOF in macro detected';
   SFIBErrorParamNameExpected            = 'Parameter name expected';
   SFIBErrorInvalidComp                  = 'Invalid comp value';
   SFIBErrorNotDataSet                   = '%s is not TpFIBDataSet';

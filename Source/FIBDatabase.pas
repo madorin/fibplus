@@ -194,7 +194,7 @@ type
     FClientLibrary: IIbClientLibrary;
     FFIBBases: TList; // TFIBBases attached.
     FTransactions: TList; // TFIBTransactions attached.
-    FDBName: AnsiString; // DB's name
+    FDBName: string; // DB's name
     FDBParams: TDBParams; // "Pretty" Parameters to database
     FDBParamsChanged: Boolean; // Flag to determine if DPB must be regenerated
     FDPB: PAnsiChar; // Parameters to DB as passed to IB.
@@ -1738,7 +1738,7 @@ begin
   LoadLibrary;
   tr_handle := nil;
   Call(FClientLibrary.isc_dsql_execute_immediate(StatusVector, @FHandle,
-    @tr_handle, 0, PAnsiChar('CREATE DATABASE ''' + FDBName + ''' ' +
+    @tr_handle, 0, PAnsiChar('CREATE DATABASE ''' + AnsiString(FDBName) + ''' ' +
     AnsiString(DBParams.Text)), SQLDialect, nil), True);
   FConnectionSerial := NextConnectionSerial;
 
@@ -2239,6 +2239,8 @@ var
   i: Integer;
   SV: PISC_STATUS;
   UseCryptKey: Boolean;
+  AttachName: AnsiString;
+  UTF8Name: UTF8String;
 begin
   // isc_res:=0;
   (*
@@ -2289,9 +2291,16 @@ begin
           FCryptKeyCallback := TFIBCryptKeyCallback.Create(Self, DoCryptKeyRequest);
         Call(FCryptKeyCallback.Activate(FClientLibrary, SV), True);
       end;
+    if DPBUsesUTF8(FDBParams, FConnectParams.IsFirebird) then
+      begin
+        UTF8Name := UTF8Encode(FDBName);
+        SetString(AttachName, PAnsiChar(UTF8Name), Length(UTF8Name));
+      end
+    else
+      AttachName := AnsiString(FDBName);
     try
-      isc_res := Call(FClientLibrary.isc_attach_database(SV, Length(FDBName),
-        PAnsiChar(FDBName), @FHandle, FDPBLength, FDPB), False);
+      isc_res := Call(FClientLibrary.isc_attach_database(SV, Length(AttachName),
+        PAnsiChar(AttachName), @FHandle, FDPBLength, FDPB), False);
     finally
       if UseCryptKey then
         FCryptKeyCallback.Deactivate(FClientLibrary);

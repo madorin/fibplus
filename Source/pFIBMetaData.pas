@@ -1303,9 +1303,15 @@ function TCustomMetaObject.GetAsDDL: string;
 var
   Stream: TFastStringStream;
 begin
+{$IFDEF D_XE5}
+  Stream := TFastStringStream.Create('', TEncoding.Unicode);
+{$ELSE}
   Stream := TFastStringStream.Create('');
+{$ENDIF}
   try
+{$IFNDEF D_XE5}
     Stream.Size := 10240;
+{$ENDIF}
     GenerateDDLText(Stream);
     Result := Stream.DataString;
   finally
@@ -1368,7 +1374,11 @@ function TCustomMetaObject.GetAsObjectDDL: string;
 var
   Stream: TFastStringStream;
 begin
+{$IFDEF D_XE5}
+  Stream := TFastStringStream.Create('', TEncoding.Unicode);
+{$ELSE}
   Stream := TFastStringStream.Create('');
+{$ENDIF}
   try
     GenerateObjectDDL(Stream);
     Result := Stream.DataString;

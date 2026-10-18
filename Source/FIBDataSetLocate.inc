@@ -309,6 +309,7 @@ var
       CurrencyKey: Currency;
       ScaledKey: Int64;
       Scale: integer;
+      MSecsKey: Double;
 begin
   CalcSize:=0;
   SetLength(CodePages, fl.Count);
@@ -414,11 +415,12 @@ begin
       end;
       ftDateTime:
       begin
-       if VarType(KeyValues[i])<>varDate then
-       begin
-        vDateAdjusted:=True;
-        KeyValues[i]:=VarAsType(KeyValues[i],varDate);
-       end 
+       // a text key has no milliseconds; a Double key (EncodeDate + EncodeTime) is a TDateTime
+       if VarIsStr(KeyValues[i]) then
+         vDateAdjusted := True;
+       // compared in milliseconds: two TDateTime of the same instant can differ in the last bits
+       MSecsKey := TimeStampToMSecs(DateTimeToTimeStamp(VarAsType(KeyValues[i], varDate)));
+       KeyValues[i] := MSecsKey;
       end;
       ftGuid:
         KeyValues[i]:=VarAsType(KeyValues[i],varString);
@@ -471,7 +473,6 @@ var
   p:Pointer;
   vIsString:boolean;
   L:integer;
-  dt:TDateTime;
   cResult:shortInt;
   InitStrValue:boolean;
   ts:TTimeStamp;
@@ -635,17 +636,14 @@ var
                end;
                ftDateTime :
                begin
-                ts:=MSecsToTimeStamp(PDouble(P)^);
+                ts := MSecsToTimeStamp(Round(PDouble(P)^));
                 if vDateAdjusted then
-                   ts.Time:= ts.Time - (ts.Time mod 1000);
-//                 ts.Time:=(ts.Time div 1000)*1000; // TDateTime can't contain Msecs
-                dt:=TimeStampToDateTime(ts);
-{                if (vDateAdjusted and  (Abs(dt-TVarData(KeyValues[i]).VDate)<1E-5))
-                 or (dt=TVarData(KeyValues[i]).VDate)}
-                if dt=TVarData(KeyValues[i]).VDate  then
+                  ts.Time := ts.Time - (ts.Time mod 1000);
+                dv := TimeStampToMSecs(ts);
+                if dv = TVarData(KeyValues[i]).VDouble then
                  cResult:=0
                 else
-                if dt>TVarData(KeyValues[i]).VDate then
+                if dv > TVarData(KeyValues[i]).VDouble then
                  cResult:=1
                 else
                  cResult:=-1

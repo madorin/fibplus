@@ -331,6 +331,8 @@ function StatusVectorAsText: string;
 
 // Generate a DPB
 procedure GenerateDPB(sl: TStrings; var DPB: AnsiString; var DPBLength: Short; IsFirebird: Boolean);
+// utf8_filename in DBParams: the strings of the DPB and the database name go in UTF-8
+function DPBUsesUTF8(sl: TStrings; IsFirebird: Boolean): Boolean;
 // Name in DBParams of a DPB code, '' when unknown
 function DPBConstantName(Code: Integer): string;
 procedure GenerateTPB(sl: TStrings; var TPB: AnsiString; var TPBLength: Short; IsFB21orMore: Boolean);
@@ -653,7 +655,9 @@ begin
   inherited Create(''); // IMS - (sn+aMsg);
   Msg := aMsg; // IMS
   FSQLCode := ASQLCode;
-  FIBErrorCode := StatusVectorArray[1];
+  // a client error has no server code, the status vector can hold an old one
+  if not (Self is EFIBClientError) then
+    FIBErrorCode := StatusVectorArray[1];
   SenderObj := Sender;
 end;
 
@@ -765,6 +769,30 @@ begin
     end;
 end;
 
+function DPBUsesUTF8(sl: TStrings; IsFirebird: Boolean): Boolean;
+var
+  i, p: Integer;
+  Name: string;
+begin
+  Result := False;
+  if IsFirebird then
+    for i := 0 to sl.Count - 1 do
+    begin
+      Name := sl[i];
+      p := Pos('=', Name);
+      if p > 0 then
+        SetLength(Name, p - 1);
+      Name := LowerCase(Trim(Name));
+      if Pos(DPBPrefix, Name) = 1 then
+        Delete(Name, 1, Length(DPBPrefix));
+      if Name = 'utf8_filename' then
+      begin
+        Result := True;
+        Exit;
+      end;
+    end;
+end;
+
 (*
   * GenerateDPB -
   *  Given a string containing a textual representation
@@ -777,13 +805,23 @@ var
   i: Integer;
   j, DPBVal: Integer;
   param_name, param_value: AnsiString;
-  pval: Integer;
   config: AnsiString;
+  Line, Value: string;
+  UTF8: Boolean;
+  UTF8Value: UTF8String;
 
   procedure ApplyStrParam;
   begin
     DPB := DPB + AnsiChar(DPBVal) + AnsiChar(Length(param_value)) + param_value;
     Inc(DPBLength, 2 + Length(param_value));
+  end;
+
+  // the engine reads 1 to 4 bytes
+  procedure ApplyIntParam(IntValue: Integer);
+  begin
+    DPB := DPB + AnsiChar(DPBVal) + #4 + PAnsiChar(@IntValue)[0] +
+      PAnsiChar(@IntValue)[1] + PAnsiChar(@IntValue)[2] + PAnsiChar(@IntValue)[3];
+    Inc(DPBLength, 6);
   end;
 
 begin
@@ -793,6 +831,7 @@ begin
   *)
   DPBLength := 1;
   DPB := AnsiChar(isc_dpb_version1);
+  UTF8 := DPBUsesUTF8(sl, IsFirebird);
   (*
     * Iterate through the textual database parameters, constructing
     * a DPB on-the-fly.
@@ -808,7 +847,19 @@ begin
       if sl[i] = '' then
         Continue;
 
-      GetNameAndValue(sl[i], param_name, param_value);
+      Line := sl[i];
+      j := Pos('=', Line);
+      if j = 0 then
+        j := Length(Line) + 1;
+      param_name := AnsiString(Copy(Line, 1, j - 1));
+      Value := Copy(Line, j + 1, MaxInt);
+      if UTF8 then
+        begin
+          UTF8Value := UTF8Encode(Value);
+          SetString(param_value, PAnsiChar(UTF8Value), Length(UTF8Value));
+        end
+      else
+        param_value := AnsiString(Value);
       DoLowerCase(param_name);
 
       if (Pos(DPBPrefix, param_name) = 1) then
@@ -872,31 +923,18 @@ begin
         isc_dpb_num_buffers, isc_dpb_dbkey_scope, isc_dpb_force_write,
           isc_dpb_no_reserve, isc_dpb_damaged, isc_dpb_verify, isc_dpb_dummy_packet_interval, isc_dpb_connect_timeout,
           isc_dpb_online_dump, isc_dpb_overwrite, isc_dpb_old_file_size, isc_dpb_shutdown_delay:
-          begin
-            DPB := DPB + AnsiChar(DPBVal) + #1 + AnsiChar(StrToInt(param_value));
-            Inc(DPBLength, 3);
-          end;
+          ApplyIntParam(StrToInt(param_value));
         isc_dpb_sweep:
           begin
             DPB := DPB + AnsiChar(DPBVal) + #1 + AnsiChar(isc_dpb_records);
             Inc(DPBLength, 3);
           end;
         isc_dpb_sweep_interval:
-          begin
-            pval := StrToInt(param_value);
-            DPB := DPB + AnsiChar(DPBVal) + #4 + PAnsiChar(@pval)[0] +
-              PAnsiChar(@pval)[1] + PAnsiChar(@pval)[2] + PAnsiChar(@pval)[3];
-            Inc(DPBLength, 6);
-          end;
+          ApplyIntParam(StrToInt(param_value));
         isc_dpb_parallel_workers:
           begin
             if IsFirebird then
-              begin
-                pval := StrToInt(param_value);
-                DPB := DPB + AnsiChar(DPBVal) + #4 + PAnsiChar(@pval)[0] +
-                  PAnsiChar(@pval)[1] + PAnsiChar(@pval)[2] + PAnsiChar(@pval)[3];
-                Inc(DPBLength, 6);
-              end;
+              ApplyIntParam(StrToInt(param_value));
           end;
         isc_dpb_activate_shadow, isc_dpb_delete_shadow, isc_dpb_begin_log, isc_dpb_quit_log:
           begin

@@ -1112,11 +1112,20 @@ begin
 end;
 
 function TFIBXSQLVAR.GetAsTimeZoneName: string;
+var
+  ts: TTimeStamp;
+  ZoneID: Word;
+  OffsetMinutes: Integer;
 begin
+  Result := '';
   if IsNull or not IsTimeZoneType then
-    Result := ''
-  else
-    Result := FBTimeZoneName(AsTimeZoneID);
+    Exit;
+  GetTimeZoneValue(ts, ZoneID, OffsetMinutes);
+  Result := FBTimeZoneName(ZoneID);
+  // a region unknown to the built-in table: only the extended forms carry its offset
+  if (Result = '') and ((SQLType = SQL_TIME_TZ_EX) or (SQLType = SQL_TIMESTAMP_TZ_EX)) and
+    (OffsetMinutes <> FBUnresolvedOffset) then
+    Result := FBFormatZoneOffset(OffsetMinutes);
 end;
 
 function TFIBXSQLVAR.GetAsUTCDateTime: TDateTime;
@@ -2415,8 +2424,16 @@ begin
     FXSQLVAR^.SQLSubtype := FQuery.Database.UTF8CharSetID
   else if (CodePage <> FIBCodePageSystem) and ((sSQLType = SQL_TEXT) or (sSQLType = SQL_VARYING)) then
     FXSQLVAR^.SQLSubtype := sSubType;
-  if Length(vValue) > 32767 then
+  // too long for a VARCHAR: sent as a text blob in the charset of the column
+  if (Length(vValue) > 32767) and (sSQLType <> SQL_BLOB) then
+  begin
+    if (sSQLType = SQL_TEXT) or (sSQLType = SQL_VARYING) then
+    begin
+      sSQLScale := Byte(sSubType);
+      sSubType := isc_blob_text;
+    end;
     sSQLType := SQL_BLOB;
+  end;
   if (sSQLType = SQL_BLOB) then
   begin
     if FStreamValue = nil then
@@ -5544,7 +5561,7 @@ begin
             // Step 1, collect the name of the parameter
             if (iCurParamState = ParamQuoteState) or CharInSet(cCurChar, ParamNameChars) then
               sParamName := sParamName + cCurChar
-            else if ((iCurState = MacroState) and (not OldStyleMacro or not CharInSet(cCurChar, [' ', #13, #10]))) then
+            else if ((iCurState = MacroState) and (not OldStyleMacro or not CharInSet(cCurChar, [' ', #9, #13, #10]))) then
               sParamName := sParamName + cCurChar
             else if not CmpInLoadedState(Self) then
               FIBError(feSQLParseError, [CmpFullName(Self), SFIBErrorParamNameExpected])
@@ -5577,7 +5594,8 @@ begin
             begin
               if OldStyleMacro then
               begin
-                if not(iCurParamState = ParamQuoteState) and CharInSet(cNextChar, [' ', #13, #10]) then
+                // #0: end of the text
+                if not(iCurParamState = ParamQuoteState) and CharInSet(cNextChar, [#0, ' ', #9, #13, #10]) then
                 begin
                   RegParamName(False);
                   Inc(i);
@@ -5596,10 +5614,14 @@ begin
       end;
       if (iCurState in [ParamState, MacroState]) then
         AddToProcessedSQL(' ')
-      else
+      // a name at the very end moved i past the text
+      else if i <= iLenSQL then
         AddToProcessedSQL(sSQL[i]);
       Inc(i);
     end;
+
+    if (iCurState = MacroState) and not OldStyleMacro and not CmpInLoadedState(Self) then
+      FIBError(feSQLParseError, [CmpFullName(Self), SFIBErrorEOFInMacro]);
 
     if not IsUserSQL then
     begin
@@ -6005,7 +6027,11 @@ begin
                           FSrvSQLType := tmpVar.SQLType;
                           tmpVar.FSrvSQLType := tmpVar.SQLType;
                           FSrvSQLSubType := tmpVar.SQLSubtype;
-                          InternalSetAsString(@BlobValue, False, True)
+                          // the string is kept to read it back, the stream is freed after the execute
+                          if Length(FWideTempValue) > 0 then
+                            InternalSetAsString(@FWideTempValue, True, True)
+                          else
+                            InternalSetAsString(@BlobValue, False, True)
                         end;
                     end;
                 end;
@@ -6116,7 +6142,10 @@ begin
         if FStreamValue <> nil then
         begin
           IsNull := False;
-          bs.blobSubType := ServerSQLSubType;
+          if ServerSQLType = SQL_BLOB then
+            bs.blobSubType := ServerSQLSubType
+          else
+            bs.blobSubType := FXSQLVAR^.SQLSubtype;
           with FQuery do
           begin
             bs.Database := Database;
