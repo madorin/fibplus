@@ -331,6 +331,8 @@ function StatusVectorAsText: string;
 
 // Generate a DPB
 procedure GenerateDPB(sl: TStrings; var DPB: AnsiString; var DPBLength: Short; IsFirebird: Boolean);
+// utf8_filename in DBParams: the strings of the DPB and the database name go in UTF-8
+function DPBUsesUTF8(sl: TStrings; IsFirebird: Boolean): Boolean;
 // Name in DBParams of a DPB code, '' when unknown
 function DPBConstantName(Code: Integer): string;
 procedure GenerateTPB(sl: TStrings; var TPB: AnsiString; var TPBLength: Short; IsFB21orMore: Boolean);
@@ -767,6 +769,27 @@ begin
     end;
 end;
 
+function DPBUsesUTF8(sl: TStrings; IsFirebird: Boolean): Boolean;
+var
+  i, p: Integer;
+  Name: string;
+begin
+  if IsFirebird then
+    for i := 0 to sl.Count - 1 do
+    begin
+      Name := sl[i];
+      p := Pos('=', Name);
+      if p > 0 then
+        SetLength(Name, p - 1);
+      Name := LowerCase(Trim(Name));
+      if Pos(DPBPrefix, Name) = 1 then
+        Delete(Name, 1, Length(DPBPrefix));
+      if Name = 'utf8_filename' then
+        Exit(True);
+    end;
+  Result := False;
+end;
+
 (*
   * GenerateDPB -
   *  Given a string containing a textual representation
@@ -780,6 +803,9 @@ var
   j, DPBVal: Integer;
   param_name, param_value: AnsiString;
   config: AnsiString;
+  Line, Value: string;
+  UTF8: Boolean;
+  UTF8Value: UTF8String;
 
   procedure ApplyStrParam;
   begin
@@ -802,6 +828,7 @@ begin
   *)
   DPBLength := 1;
   DPB := AnsiChar(isc_dpb_version1);
+  UTF8 := DPBUsesUTF8(sl, IsFirebird);
   (*
     * Iterate through the textual database parameters, constructing
     * a DPB on-the-fly.
@@ -817,7 +844,19 @@ begin
       if sl[i] = '' then
         Continue;
 
-      GetNameAndValue(sl[i], param_name, param_value);
+      Line := sl[i];
+      j := Pos('=', Line);
+      if j = 0 then
+        j := Length(Line) + 1;
+      param_name := AnsiString(Copy(Line, 1, j - 1));
+      Value := Copy(Line, j + 1, MaxInt);
+      if UTF8 then
+        begin
+          UTF8Value := UTF8Encode(Value);
+          SetString(param_value, PAnsiChar(UTF8Value), Length(UTF8Value));
+        end
+      else
+        param_value := AnsiString(Value);
       DoLowerCase(param_name);
 
       if (Pos(DPBPrefix, param_name) = 1) then

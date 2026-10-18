@@ -214,6 +214,12 @@ The lists of old and new names, and what an application has to change, are in
   EncodeTime(...)`), and could miss a `TIMESTAMP WITH TIME ZONE` value by a
   rounding difference. The values are now compared in milliseconds; only a text
   key ignores them.
+- `utf8_filename` in `DBParams` was sent, but the database name, user name,
+  password and role stayed in the system code page, so non-ASCII values were
+  garbled or rejected. With `utf8_filename` they are now sent in UTF-8, and
+  `TFIBDatabase.DBName` keeps characters outside the system code page. The
+  Firebird client still converts the file name to the system code page before
+  it parses it.
 - `EFIBClientError.IBErrorCode` had the code of an earlier server error of the
   thread: after a statement timeout a client error had `isc_cancelled`, so
   `TFIBErrorHandler` took it for a cancelled statement. It is now 0.
