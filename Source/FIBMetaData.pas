@@ -161,12 +161,12 @@ type
     function GetAsDDL: string;
     procedure AddClass(ClassID: TMetaObjectClass);
 
-    function GenerateChildDDL(Stream: TFastStringStream; ChildType: Integer): Integer;
+    function GenerateChildDDL(Stream: TStringStream; ChildType: Integer): Integer;
     function GetAsObjectDDL: string;
     procedure SetName(const Value: string);
     function GetItems(const Index: Integer): TMetaDataItem;
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); virtual;
+    procedure GenerateObjectDDL(Stream: TStringStream); virtual;
   public
     constructor Create(AOwner: TCustomMetaObject; aName: string = ''); virtual;
     destructor Destroy; override;
@@ -174,7 +174,7 @@ type
     class function ClassIndex: Integer; virtual;
     class function IsSubObject: boolean; virtual;
 
-    procedure GenerateDDLText(Stream: TFastStringStream); virtual;
+    procedure GenerateDDLText(Stream: TStringStream); virtual;
     property Name: string read FName write SetName;
     property AsDDL: string read GetAsDDL;
     property AsObjectDDL: string read GetAsObjectDDL;
@@ -223,7 +223,7 @@ type
     function GetSize: Integer;
     procedure LoadFromDataBase(QGrants: TFIBQuery; const Name: string; Pack: boolean = True);
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
     property Count: Integer read GetSize;
   end;
 
@@ -252,7 +252,7 @@ type
     FValue: Integer;
     procedure LoadFromDataBase(Transaction: TFIBTransaction; const aName: string);
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
     property Value: Integer read FValue;
@@ -279,7 +279,7 @@ type
     function GetShortFieldType: string;
     function GetDimensionStr: string;
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function IsSubObject: boolean; override;
     property Scale: Word read FScale;
@@ -296,7 +296,7 @@ type
   private
     procedure LoadFromDataBase(QField, QCharset: TFIBQuery); override;
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
     property SegmentLength;
@@ -313,7 +313,7 @@ type
     FDefaultValue: string;
     procedure DoLoadFromQuery(QField, QCharset: TFIBQuery; CanUseParamDomain, CanUseProcParamRelation: boolean);
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   end;
 
   TMetaProcInField = class(TMetaProcField)
@@ -337,7 +337,7 @@ type
     procedure LoadFromDataBase(Q: TFIBQuery; C: TFIBQuery); override;
     function GetDomain: TMetaDomain;
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
     property DefaultValue: string read FDefaultValue;
@@ -348,11 +348,11 @@ type
 
   TMetaDomain = class(TMetaTableField)
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
     class function IsSubObject: boolean; override;
-    procedure GenerateDDLText(Stream: TFastStringStream); override;
+    procedure GenerateDDLText(Stream: TStringStream); override;
   end;
 
   TMetaConstraint = class(TCustomMetaObject)
@@ -370,14 +370,14 @@ type
   private
     procedure LoadFromDataBase(Q: TFIBQuery);
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
   end;
 
   TMetaUniqueConstraint = class(TMetaConstraint)
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
   end;
@@ -392,7 +392,7 @@ type
     function GetForFieldsCount: Word;
     function GetForTable: TMetaTable;
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
     property ForTable: TMetaTable read GetForTable;
@@ -406,7 +406,7 @@ type
   private
     FConstraint: string;
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
     property Constraint: string read FConstraint;
@@ -418,7 +418,7 @@ type
     FActive: boolean;
     FOrder: TIndexOrder;
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
     property Unique: boolean read FUnique;
@@ -437,9 +437,9 @@ type
     class function DecodeSuffixes(Value: Integer): TTriggerActions;
     procedure LoadFromDataBase(Q: TFIBQuery);
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
-    procedure SaveFakeDDL(Stream: TFastStringStream); // For Views
-    procedure SaveAlterDDL(Stream: TFastStringStream);
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
+    procedure SaveFakeDDL(Stream: TStringStream); // For Views
+    procedure SaveAlterDDL(Stream: TStringStream);
   public
     class function IsSubObject: boolean; override;
     property Prefix: TTriggerType read FPrefix;
@@ -491,14 +491,14 @@ type
     function GetGrantsCount: Integer;
 
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
-    procedure GenerateDDLTextOnlyTable(Stream: TFastStringStream);
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
+    procedure GenerateDDLTextOnlyTable(Stream: TStringStream);
   public
     constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
 
     function FindFieldName(const Name: string): TMetaTableField;
-    procedure GenerateDDLText(Stream: TFastStringStream); override;
+    procedure GenerateDDLText(Stream: TStringStream); override;
 
     property Fields[const Index: Integer]: TMetaTableField read GetFields;
     property FieldsCount: Integer read GetFieldsCount;
@@ -535,11 +535,11 @@ type
     procedure LoadFromDataBase(QName, QFields, QTriggers: TFIBQuery; QCharset: TFIBQuery; ChildTypes: TViewChildTypes);
 
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
-    procedure GenerateDDLText(Stream: TFastStringStream); override;
+    procedure GenerateDDLText(Stream: TStringStream); override;
     property Source: string read FSource;
     property Fields[const Index: Integer]: TMetaField read GetFields;
     property FieldsCount: Integer read GetFieldsCount;
@@ -559,11 +559,11 @@ type
     function GetGrants(const Index: Integer): TCustomMetaGrant;
     function GetGrantsCount: Integer;
 
-    procedure InternalSaveToDDL(Stream: TFastStringStream; Operation: string);
-    procedure SaveToPostDDL(Stream: TFastStringStream);
-    procedure SaveToAlterDDL(Stream: TFastStringStream);
+    procedure InternalSaveToDDL(Stream: TStringStream; Operation: string);
+    procedure SaveToPostDDL(Stream: TStringStream);
+    procedure SaveToAlterDDL(Stream: TStringStream);
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
 
   public
     constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
@@ -585,12 +585,12 @@ type
     function GetInputFieldsCount: Integer;
 
     procedure LoadFromDataBase(QNames, QFields: TFIBQuery; QCharset: TFIBQuery);
-    procedure InternalSaveToDDL(Stream: TFastStringStream; Operation: string);
+    procedure InternalSaveToDDL(Stream: TStringStream; Operation: string);
     function GetReturn: TMetaProcOutField;
   protected
-    procedure SaveEmptyDDL(Stream: TFastStringStream);
-    procedure SaveAlterDDL(Stream: TFastStringStream);
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure SaveEmptyDDL(Stream: TStringStream);
+    procedure SaveAlterDDL(Stream: TStringStream);
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
@@ -606,10 +606,10 @@ type
     FSpec: string;
     FBody: string;
     procedure LoadFromDataBase(QNames: TFIBQuery);
-    procedure SaveSpecDDL(Stream: TFastStringStream);
-    procedure SaveBodyDDL(Stream: TFastStringStream);
+    procedure SaveSpecDDL(Stream: TStringStream);
+    procedure SaveBodyDDL(Stream: TStringStream);
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
     property SpecSource: string read FSpec;
@@ -622,7 +622,7 @@ type
     FNumber: Integer;
     procedure LoadFromDataBase(QName: TFIBQuery);
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
     property Message: string read FMessage;
@@ -635,7 +635,7 @@ type
     FMechanism: Smallint;
     procedure LoadFromDataBase(QField, QCharset: TFIBQuery); override;
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
     property Position: Smallint read FPosition;
@@ -651,7 +651,7 @@ type
     function GetFields(const Index: Integer): TMetaUDFField;
     function GetFieldsCount: Integer;
   protected
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
@@ -667,7 +667,7 @@ type
     FOwner: string;
   protected
     procedure LoadFromDataBase(QName: TFIBQuery);
-    procedure GenerateObjectDDL(Stream: TFastStringStream); override;
+    procedure GenerateObjectDDL(Stream: TStringStream); override;
     function GetGrants(const Index: Integer): TCustomMetaGrant;
     function GetGrantsCount: Integer;
 
@@ -738,8 +738,8 @@ type
     procedure Clear;
     procedure LoadFromDataBase(DB: TFIBDatabase; OnlyNames: boolean = False);
 
-    procedure GenerateDDLText(Stream: TFastStringStream); override;
-    procedure ExtGenerateDDLText(Stream: TFastStringStream; Options: TDDLTextOptions = [dtoUseCreateDB, dtoUseSetTerm]);
+    procedure GenerateDDLText(Stream: TStringStream); override;
+    procedure ExtGenerateDDLText(Stream: TStringStream; Options: TDDLTextOptions = [dtoUseCreateDB, dtoUseSetTerm]);
 
     function GetDBObject(DB: TFIBDatabase; ObjectType: TDBObjectType;
       const ObjectName: string; ForceLoad: boolean = True): TCustomMetaObject;
@@ -1301,11 +1301,10 @@ end;
 
 function TCustomMetaObject.GetAsDDL: string;
 var
-  Stream: TFastStringStream;
+  Stream: TStringStream;
 begin
-  Stream := TFastStringStream.Create('');
+  Stream := TStringStream.Create('', TEncoding.Unicode);
   try
-    Stream.Size := 10240;
     GenerateDDLText(Stream);
     Result := Stream.DataString;
   finally
@@ -1332,7 +1331,7 @@ begin
   Inc(FItemsCount);
 end;
 
-function TCustomMetaObject.GenerateChildDDL(Stream: TFastStringStream; ChildType: Integer): Integer;
+function TCustomMetaObject.GenerateChildDDL(Stream: TStringStream; ChildType: Integer): Integer;
 var
   I: Integer;
 begin
@@ -1348,7 +1347,7 @@ begin
   end
 end;
 
-procedure TCustomMetaObject.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TCustomMetaObject.GenerateObjectDDL(Stream: TStringStream);
 begin
 end;
 
@@ -1358,7 +1357,7 @@ begin
   Result := FItems[Index];
 end;
 
-procedure TCustomMetaObject.GenerateDDLText(Stream: TFastStringStream);
+procedure TCustomMetaObject.GenerateDDLText(Stream: TStringStream);
 begin
   GenerateObjectDDL(Stream);
   Stream.WriteString(DefTerminator + sLineBreak)
@@ -1366,9 +1365,9 @@ end;
 
 function TCustomMetaObject.GetAsObjectDDL: string;
 var
-  Stream: TFastStringStream;
+  Stream: TStringStream;
 begin
-  Stream := TFastStringStream.Create('');
+  Stream := TStringStream.Create('', TEncoding.Unicode);
   try
     GenerateObjectDDL(Stream);
     Result := Stream.DataString;
@@ -1443,7 +1442,7 @@ begin
   FLoaded := True
 end;
 
-procedure TMetaGenerator.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaGenerator.GenerateObjectDDL(Stream: TStringStream);
 begin
   Stream.WriteString(Format('CREATE GENERATOR %s;%sSET GENERATOR %0:s TO %2:d', [FormatName, sLineBreak, FValue]));
 end;
@@ -1640,7 +1639,7 @@ begin
   FLoaded := True
 end;
 
-procedure TMetaTable.GenerateDDLText(Stream: TFastStringStream);
+procedure TMetaTable.GenerateDDLText(Stream: TStringStream);
 begin
   inherited GenerateDDLText(Stream);
   GenerateChildDDL(Stream, Ord(soPrimaryKey));
@@ -1657,7 +1656,7 @@ begin
     Stream.WriteString(sLineBreak);
 end;
 
-procedure TMetaTable.GenerateDDLTextOnlyTable(Stream: TFastStringStream);
+procedure TMetaTable.GenerateDDLTextOnlyTable(Stream: TStringStream);
 begin
   inherited GenerateDDLText(Stream);
 end;
@@ -1712,7 +1711,7 @@ begin
   Result := FItems[Ord(soTableTriggers)].Childs.Count;
 end;
 
-procedure TMetaTable.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaTable.GenerateObjectDDL(Stream: TStringStream);
 var
   I: Integer;
 begin
@@ -1846,7 +1845,7 @@ begin
   Result[System.Length(Result)] := ']'
 end;
 
-procedure TCustomMetaField.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TCustomMetaField.GenerateObjectDDL(Stream: TStringStream);
 begin
   case FFieldType of
     fftNumeric:
@@ -2440,7 +2439,7 @@ begin
   end
 end;
 
-procedure TMetaDataBase.ExtGenerateDDLText(Stream: TFastStringStream; Options: TDDLTextOptions = [dtoUseCreateDB, dtoUseSetTerm]);
+procedure TMetaDataBase.ExtGenerateDDLText(Stream: TStringStream; Options: TDDLTextOptions = [dtoUseCreateDB, dtoUseSetTerm]);
 var
   I: Integer;
 
@@ -2808,7 +2807,7 @@ begin
   FNamesLoaded := False;
 end;
 
-procedure TMetaDataBase.GenerateDDLText(Stream: TFastStringStream);
+procedure TMetaDataBase.GenerateDDLText(Stream: TStringStream);
 begin
   { if not FLoaded then
     begin
@@ -3044,7 +3043,7 @@ begin
   Result := Ord(soUniqueConstr)
 end;
 
-procedure TMetaUniqueConstraint.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaUniqueConstraint.GenerateObjectDDL(Stream: TStringStream);
 var
   I: Integer;
 begin
@@ -3077,7 +3076,7 @@ begin
   FLoaded := True
 end;
 
-procedure TMetaPrimaryKey.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaPrimaryKey.GenerateObjectDDL(Stream: TStringStream);
 var
   I: Integer;
 begin
@@ -3107,7 +3106,7 @@ begin
   Result := Ord(soIndex)
 end;
 
-procedure TMetaIndex.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaIndex.GenerateObjectDDL(Stream: TStringStream);
 var
   I: Integer;
   Unique, Order: string;
@@ -3148,7 +3147,7 @@ begin
   Result := TMetaDataBase(FOwner.FOwner).Tables[FForTable];
 end;
 
-procedure TMetaForeignKey.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaForeignKey.GenerateObjectDDL(Stream: TStringStream);
 var
   I: Integer;
 begin
@@ -3200,7 +3199,7 @@ begin
   Result := Ord(soCheckConstr)
 end;
 
-procedure TMetaCheckConstraint.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaCheckConstraint.GenerateObjectDDL(Stream: TStringStream);
 begin
   Stream.WriteString(Format('ALTER TABLE %s ADD %s', [TMetaTable(FOwner).FormatName, FConstraint]));
 end;
@@ -3244,7 +3243,7 @@ begin
   FLoaded := True
 end;
 
-procedure TCustomMetaTrigger.SaveFakeDDL(Stream: TFastStringStream);
+procedure TCustomMetaTrigger.SaveFakeDDL(Stream: TStringStream);
 var
   Count: Smallint;
   Suf: TTriggerAction;
@@ -3275,7 +3274,7 @@ begin
   Stream.WriteString(Format(' POSITION %d%s%s', [FPosition, sLineBreak, 'AS BEGIN  POST_EVENT ''FAKE''; END']));
 end;
 
-procedure TCustomMetaTrigger.SaveAlterDDL(Stream: TFastStringStream);
+procedure TCustomMetaTrigger.SaveAlterDDL(Stream: TStringStream);
 begin
   Stream.WriteString(Format('ALTER TRIGGER %s%s', [Name, sLineBreak]));
   if FActive then
@@ -3288,7 +3287,7 @@ begin
   Result := True
 end;
 
-procedure TCustomMetaTrigger.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TCustomMetaTrigger.GenerateObjectDDL(Stream: TStringStream);
 var
   Count: Smallint;
   Suf: TTriggerAction;
@@ -3435,13 +3434,13 @@ begin
   FLoaded := True
 end;
 
-procedure TMetaView.GenerateDDLText(Stream: TFastStringStream);
+procedure TMetaView.GenerateDDLText(Stream: TStringStream);
 begin
   inherited GenerateDDLText(Stream);
   GenerateChildDDL(Stream, Ord(soViewTriggers));
 end;
 
-procedure TMetaView.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaView.GenerateObjectDDL(Stream: TStringStream);
 var
   I: Integer;
 begin
@@ -3473,12 +3472,12 @@ end;
 
 { TMetaDomain }
 
-procedure TMetaDomain.GenerateDDLText(Stream: TFastStringStream);
+procedure TMetaDomain.GenerateDDLText(Stream: TStringStream);
 begin
   GenerateObjectDDL(Stream);
 end;
 
-procedure TMetaDomain.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaDomain.GenerateObjectDDL(Stream: TStringStream);
 begin
   // Stream.WriteString(Format('CREATE DOMAIN %s AS ', [FormatName]));
   Stream.WriteString('CREATE DOMAIN ');
@@ -3525,7 +3524,7 @@ begin
   Result := FItems[Ord(soProcFieldOut)].Childs.Count;
 end;
 
-procedure TMetaProcedure.InternalSaveToDDL(Stream: TFastStringStream; Operation: string);
+procedure TMetaProcedure.InternalSaveToDDL(Stream: TStringStream; Operation: string);
 var
   I: Integer;
 begin
@@ -3593,20 +3592,20 @@ begin
 
 end;
 
-procedure TMetaProcedure.SaveToAlterDDL(Stream: TFastStringStream);
+procedure TMetaProcedure.SaveToAlterDDL(Stream: TStringStream);
 begin
   InternalSaveToDDL(Stream, 'ALTER');
   Stream.WriteString(sLineBreak + 'AS ');
   Stream.WriteString(FSource);
 end;
 
-procedure TMetaProcedure.SaveToPostDDL(Stream: TFastStringStream);
+procedure TMetaProcedure.SaveToPostDDL(Stream: TStringStream);
 begin
   InternalSaveToDDL(Stream, 'CREATE');
   Stream.WriteString(sLineBreak + 'AS' + sLineBreak + 'BEGIN' + sLineBreak + '  SUSPEND;' + sLineBreak + 'END');
 end;
 
-procedure TMetaProcedure.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaProcedure.GenerateObjectDDL(Stream: TStringStream);
 begin
   InternalSaveToDDL(Stream, 'CREATE');
   Stream.WriteString(sLineBreak + 'AS' + sLineBreak);
@@ -3668,7 +3667,7 @@ begin
   end;
 end;
 
-procedure TMetaException.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaException.GenerateObjectDDL(Stream: TStringStream);
 var
   s: string;
 begin
@@ -3690,7 +3689,7 @@ begin
   AddClass(TMetaUDFField);
 end;
 
-procedure TMetaUDF.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaUDF.GenerateObjectDDL(Stream: TStringStream);
 var
   I, C: Integer;
 begin
@@ -3833,7 +3832,7 @@ begin
   FLoaded := True
 end;
 
-procedure TMetaTableField.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaTableField.GenerateObjectDDL(Stream: TStringStream);
 begin
   if (FDomainName <> '') and not(dtoDecodeDomains in TMetaDataBase(FOwner.FOwner).DDLTextOptions) then
   begin
@@ -3874,7 +3873,7 @@ begin
   FSegmentLength := QField.Fields[7].AsInteger;
 end;
 
-procedure TMetaField.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaField.GenerateObjectDDL(Stream: TStringStream);
 begin
   if Self is TMetaDomain then
     Stream.WriteString(FormatName + ' AS ')
@@ -3899,7 +3898,7 @@ begin
   FLoaded := True
 end;
 
-procedure TMetaUDFField.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaUDFField.GenerateObjectDDL(Stream: TStringStream);
 begin
   if FFieldType = fftBlob then
     Stream.WriteString('BLOB')
@@ -3927,7 +3926,7 @@ begin
   FLoaded := True
 end;
 
-procedure TMetaRole.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaRole.GenerateObjectDDL(Stream: TStringStream);
 begin
   Stream.WriteString(Format('CREATE ROLE %s ; /* By user %s */', [FormatName, Trim(FOwner)]));
 end;
@@ -3986,7 +3985,7 @@ begin
   FLoaded := True
 end;
 
-procedure TMetaProcField.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaProcField.GenerateObjectDDL(Stream: TStringStream);
 begin
   if FUseDomain then
   begin
@@ -4056,7 +4055,7 @@ begin
   end;
 end;
 
-procedure TCustomMetaGrant.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TCustomMetaGrant.GenerateObjectDDL(Stream: TStringStream);
 var
   I: Integer;
   L: Integer;
@@ -4468,7 +4467,7 @@ begin
   AddClass(TCustomMetaGrant); // grant
 end;
 
-procedure TMetaStoredFunc.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaStoredFunc.GenerateObjectDDL(Stream: TStringStream);
 begin
   InternalSaveToDDL(Stream, 'CREATE ');
   Stream.WriteString(sLineBreak + 'AS' + sLineBreak);
@@ -4493,7 +4492,7 @@ begin
     Result := nil
 end;
 
-procedure TMetaStoredFunc.InternalSaveToDDL(Stream: TFastStringStream; Operation: string);
+procedure TMetaStoredFunc.InternalSaveToDDL(Stream: TStringStream; Operation: string);
 var
   I: Integer;
   // Return:TMetaProcOutField;
@@ -4561,13 +4560,13 @@ begin
 
 end;
 
-procedure TMetaStoredFunc.SaveEmptyDDL(Stream: TFastStringStream);
+procedure TMetaStoredFunc.SaveEmptyDDL(Stream: TStringStream);
 begin
   InternalSaveToDDL(Stream, 'CREATE');
   Stream.WriteString(sLineBreak + 'AS' + sLineBreak + 'BEGIN' + sLineBreak + 'END');
 end;
 
-procedure TMetaStoredFunc.SaveAlterDDL(Stream: TFastStringStream);
+procedure TMetaStoredFunc.SaveAlterDDL(Stream: TStringStream);
 begin
   InternalSaveToDDL(Stream, 'ALTER');
   Stream.WriteString(sLineBreak + 'AS' + sLineBreak);
@@ -4582,7 +4581,7 @@ begin
   Result := Ord(otPackage)
 end;
 
-procedure TMetaPackage.GenerateObjectDDL(Stream: TFastStringStream);
+procedure TMetaPackage.GenerateObjectDDL(Stream: TStringStream);
 begin
   Stream.WriteString(Format('CREATE PACKAGE %s AS ' + sLineBreak, [FormatName]));
   Stream.WriteString(FSpec);
@@ -4601,13 +4600,13 @@ begin
   FLoaded := True;
 end;
 
-procedure TMetaPackage.SaveBodyDDL(Stream: TFastStringStream);
+procedure TMetaPackage.SaveBodyDDL(Stream: TStringStream);
 begin
   Stream.WriteString(Format('RECREATE PACKAGE BODY %s AS ' + sLineBreak, [FormatName]));
   Stream.WriteString(FBody);
 end;
 
-procedure TMetaPackage.SaveSpecDDL(Stream: TFastStringStream);
+procedure TMetaPackage.SaveSpecDDL(Stream: TStringStream);
 begin
   Stream.WriteString(Format('CREATE PACKAGE %s AS ' + sLineBreak, [FormatName]));
   Stream.WriteString(FSpec);
