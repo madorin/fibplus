@@ -1106,11 +1106,19 @@ begin
 end;
 
 function TFIBXSQLVAR.GetAsTimeZoneName: string;
+var
+  ts: TTimeStamp;
+  ZoneID: Word;
+  OffsetMinutes: Integer;
 begin
   if IsNull or not IsTimeZoneType then
-    Result := ''
-  else
-    Result := FBTimeZoneName(AsTimeZoneID);
+    Exit('');
+  GetTimeZoneValue(ts, ZoneID, OffsetMinutes);
+  Result := FBTimeZoneName(ZoneID);
+  // a region unknown to the built-in table: only the extended forms carry its offset
+  if (Result = '') and ((SQLType = SQL_TIME_TZ_EX) or (SQLType = SQL_TIMESTAMP_TZ_EX)) and
+    (OffsetMinutes <> FBUnresolvedOffset) then
+    Result := FBFormatZoneOffset(OffsetMinutes);
 end;
 
 function TFIBXSQLVAR.GetAsUTCDateTime: TDateTime;

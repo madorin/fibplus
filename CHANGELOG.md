@@ -244,6 +244,9 @@ The lists of old and new names, and what an application has to change, are in
   text up to the next space into its name, and one at the very end of the text
   was not replaced. A new form macro (`@@Name@`) without the closing `@` went
   to the server as it was; it now raises "EOF in macro detected".
+- `AsTimeZoneName` of a `TIME` or `TIMESTAMP WITH TIME ZONE` value in a region
+  unknown to the built-in time zone table was empty, and `AsString` ended with
+  a blank. It is now the offset of the value (`+02:00`).
 
 ## [7.9.1] - 2026-10-09
 
