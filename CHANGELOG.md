@@ -21,6 +21,23 @@
 - SQL editor: a line number after a keyword was drawn in bold.
 - SQL editor: selecting with the mouse in an editor without lines raised an
   "index out of bounds" error.
+- SQL monitor: non-ASCII text could arrive garbled, through the system code
+  page or a chunk of a long event cut inside a character.
+- `TpFibErrorHandler`: the message of a user exception was cut at an "at" in its
+  text, or kept the stack trace (`At procedure ...`). The SQL monitor and the
+  SQL logger got the message after the error handler changed it; they now show
+  the server text with the stack trace.
+- `TpFIBScripter` with `UseExecBlockForDML`: an `INSERT`, `UPDATE`, `DELETE` or
+  `MERGE` with `RETURNING` was grouped into an `EXECUTE BLOCK`, where it needs
+  `INTO`, so the whole block failed. Such a statement now runs alone; the new
+  `TStatementDesc.HasReturning` field marks it.
+- `TpFIBScripter` with `UseExecBlockForDML`: the size limit of an
+  `EXECUTE BLOCK` counted characters, so with UTF8 and non-ASCII text a block
+  could be over the 64 KB the server accepts. The limit is now in bytes of the
+  connection charset, and 10 MB with a Firebird 3 or later server and client.
+- Russian messages (`Resources\Russian\FIB_Messages.inc`): an unknown DPB or
+  TPB constant raised an `EConvertError` ("Format ... invalid or incompatible
+  with argument") instead of its message.
 
 ## [7.9.1] - 2026-10-09
 

@@ -31,6 +31,9 @@ function DecodeString(Buffer: PAnsiChar; Length: Integer; CodePage: Word): strin
 function DecodeString(const Bytes: FIBByteString; CodePage: Word): string; overload;
 // Not tagged with CodePage: concatenating tagged AnsiStrings converts them
 function EncodeString(const S: string; CodePage: Word): FIBByteString;
+// Bytes of S in CodePage, without the transliteration check of EncodeString
+function EncodedLength(const S: string; CodePage: Word): Integer;
+function IsCodePageAvailable(CodePage: Word): Boolean;
 // Before Delphi 2009 UTF-8 without the loss of DecodeString
 function DecodeWideString(const Bytes: FIBByteString; CodePage: Word): WideString;
 {$IFDEF D2009+}
@@ -235,6 +238,25 @@ begin
   FromUnicode(CodePage, PWideChar(S), Length(S), PAnsiChar(Result), L, nil);
 end;
 
+function EncodedLength(const S: string; CodePage: Word): Integer;
+begin
+  if S = '' then
+    Result := 0
+  else
+  begin
+    Result := FromUnicode(ActualCodePage(CodePage), PWideChar(S), Length(S), nil, 0, nil);
+    if Result = 0 then
+      CodePageError(CodePage);
+  end;
+end;
+
+function IsCodePageAvailable(CodePage: Word): Boolean;
+const
+  Probe: string = 'A';
+begin
+  Result := FromUnicode(ActualCodePage(CodePage), PWideChar(Probe), 1, nil, 0, nil) > 0;
+end;
+
 {$ELSE}
 
 function DecodeString(Buffer: PAnsiChar; Length: Integer; CodePage: Word): string;
@@ -250,6 +272,19 @@ begin
     Result := UTF8Encode(S)
   else
     Result := S;
+end;
+
+function EncodedLength(const S: string; CodePage: Word): Integer;
+begin
+  if CodePage = FIBCodePageUTF8 then
+    Result := Length(UTF8Encode(S))
+  else
+    Result := Length(S);
+end;
+
+function IsCodePageAvailable(CodePage: Word): Boolean;
+begin
+  Result := True;
 end;
 
 {$ENDIF}

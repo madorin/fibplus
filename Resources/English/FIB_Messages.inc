@@ -76,15 +76,7 @@
     'Column types "%s" is not array field', // feNotIsArrayField
     'Dimension %d don''t exist in "%s" ', // feWrongDimension
     'SQL Dialect invalid', // feSQLDialectInvalid
-    {$IFDEF WINDOWS}
-    'InterBase library gds32.dll not found in the path. Please install InterBase to use this functionality', // feIBMissing
-    {$ENDIF}
-    {$IFDEF LINUX}
-    'InterBase library libfbclient.so not found in the path. Please install InterBase to use this functionality', // feIBMissing
-    {$ENDIF}
-    {$IFDEF MACOS}
-    'InterBase library  not found in the path. Please install InterBase to use this functionality', // feIBMissing
-    {$ENDIF}
+    'Firebird client library not found. Install the Firebird client to use this functionality', // feIBMissing
     '%s is an InterBase6 function. Please upgrade to InterBase6 to use this functonality',
     'InterBase Install DLL ibinstall.dll not found in the path. Please install InterBase 6 to use this functionality',
     'Cannot perform operation -- service is not attached',
