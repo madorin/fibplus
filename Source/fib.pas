@@ -779,13 +779,20 @@ var
   i: Integer;
   j, DPBVal: Integer;
   param_name, param_value: AnsiString;
-  pval: Integer;
   config: AnsiString;
 
   procedure ApplyStrParam;
   begin
     DPB := DPB + AnsiChar(DPBVal) + AnsiChar(Length(param_value)) + param_value;
     Inc(DPBLength, 2 + Length(param_value));
+  end;
+
+  // the engine reads 1 to 4 bytes
+  procedure ApplyIntParam(IntValue: Integer);
+  begin
+    DPB := DPB + AnsiChar(DPBVal) + #4 + PAnsiChar(@IntValue)[0] +
+      PAnsiChar(@IntValue)[1] + PAnsiChar(@IntValue)[2] + PAnsiChar(@IntValue)[3];
+    Inc(DPBLength, 6);
   end;
 
 begin
@@ -874,31 +881,18 @@ begin
         isc_dpb_num_buffers, isc_dpb_dbkey_scope, isc_dpb_force_write,
           isc_dpb_no_reserve, isc_dpb_damaged, isc_dpb_verify, isc_dpb_dummy_packet_interval, isc_dpb_connect_timeout,
           isc_dpb_online_dump, isc_dpb_overwrite, isc_dpb_old_file_size, isc_dpb_shutdown_delay:
-          begin
-            DPB := DPB + AnsiChar(DPBVal) + #1 + AnsiChar(StrToInt(param_value));
-            Inc(DPBLength, 3);
-          end;
+          ApplyIntParam(StrToInt(param_value));
         isc_dpb_sweep:
           begin
             DPB := DPB + AnsiChar(DPBVal) + #1 + AnsiChar(isc_dpb_records);
             Inc(DPBLength, 3);
           end;
         isc_dpb_sweep_interval:
-          begin
-            pval := StrToInt(param_value);
-            DPB := DPB + AnsiChar(DPBVal) + #4 + PAnsiChar(@pval)[0] +
-              PAnsiChar(@pval)[1] + PAnsiChar(@pval)[2] + PAnsiChar(@pval)[3];
-            Inc(DPBLength, 6);
-          end;
+          ApplyIntParam(StrToInt(param_value));
         isc_dpb_parallel_workers:
           begin
             if IsFirebird then
-              begin
-                pval := StrToInt(param_value);
-                DPB := DPB + AnsiChar(DPBVal) + #4 + PAnsiChar(@pval)[0] +
-                  PAnsiChar(@pval)[1] + PAnsiChar(@pval)[2] + PAnsiChar(@pval)[3];
-                Inc(DPBLength, 6);
-              end;
+              ApplyIntParam(StrToInt(param_value));
           end;
         isc_dpb_activate_shadow, isc_dpb_delete_shadow, isc_dpb_begin_log, isc_dpb_quit_log:
           begin

@@ -217,6 +217,10 @@ The lists of old and new names, and what an application has to change, are in
 - `EFIBClientError.IBErrorCode` had the code of an earlier server error of the
   thread: after a statement timeout a client error had `isc_cancelled`, so
   `TFIBErrorHandler` took it for a cancelled statement. It is now 0.
+- Numeric `DBParams` (`num_buffers`, `dummy_packet_interval`,
+  `connect_timeout`, `old_file_size`, `shutdown_delay`, `force_write` and the
+  other flags) were written in one byte, so a value over 255 was cut
+  (`num_buffers=2048` sent 0). They are now written in 4 bytes.
 
 ## [7.9.1] - 2026-10-09
 
