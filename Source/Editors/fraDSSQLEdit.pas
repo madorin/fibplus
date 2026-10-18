@@ -573,69 +573,9 @@ begin
 end;
 
 procedure TfDSSQLEdit.SetProposal;
-var
-  // i:integer;
-  // ts,ts1:TStrings;
-  // DDLExtractor1:IFIBMetaDataExtractor;
-  // Stringer:IFIBStringer;
-  b: Variant;
-  b1: boolean;
 begin
-  if (SelectSQLEdit.FDatabase = nil) then
-  begin
-    // or not GetPropValue(fSQLEdit1.FDatabase,'Connected')
+  if (SelectSQLEdit.FDatabase = nil) or not Boolean(GetPropValue(SelectSQLEdit.FDatabase, 'Connected')) then
     SelectSQLEdit.iViewSQL.ISetProposalItems(DefProposalShadow[0], DefProposalShadow[1]);
-    Exit;
-  end;
-  b := GetPropValue(SelectSQLEdit.FDatabase, 'Connected');
-  b1 := b;
-  if not b1 then
-  begin
-    SelectSQLEdit.iViewSQL.ISetProposalItems(DefProposalShadow[0], DefProposalShadow[1]);
-    Exit;
-  end;
-
-  { DDLExtractor1:=FIBClassesExporter.iGetMetaExtractor;
-    DDLExtractor1.SetDatabase(SelectSQLEdit.FDatabase);
-    DDLExtractor1.LoadObjectNames;
-    Stringer:=FIBClassesExporter.iGetStringer;
-
-    ts:=TStringList.Create;
-    ts1:=TStringList.Create;
-    with DDLExtractor1 do
-    try
-    ts.Assign(DefProposalShadow[0]);
-    ts1.Assign(DefProposalShadow[1]);
-    for i:=0 to  Pred(TablesCount) do
-    begin
-    ts.Add('table '+ProposalDelimiterShadow+'M '+Stringer.FormatIdentifier(3,TableName[i]));
-    ts1.Add(Stringer.FormatIdentifier(3,TableName[i]));
-    end;
-
-    for i:=0 to  Pred(ViewsCount) do
-    begin
-    ts.Add('view '+ProposalDelimiterShadow+'O '+Stringer.FormatIdentifier(3,ViewName[i]));
-    ts1.Add(Stringer.FormatIdentifier(3,ViewName[i]));
-    end;
-
-    for i:=0 to  Pred(ProceduresCount) do
-    begin
-    ts.Add('procedure '+ProposalDelimiterShadow+'N '+Stringer.FormatIdentifier(3,ProcedureName[i]));
-    ts1.Add(Stringer.FormatIdentifier(3,ProcedureName[i]));
-    end;
-
-    for i:=0 to  Pred(UDFSCount) do
-    begin
-    ts.Add('udf '+ProposalDelimiterShadow+'T '+Stringer.FormatIdentifier(3,UDFName[i]));
-    ts1.Add(Stringer.FormatIdentifier(3,UDFName[i]));
-    end;
-    SelectSQLEdit.iViewSQL.ISetProposalItems(ts,ts1);
-    ModifySQLEdit.iViewSQL.ISetProposalItems(ts,ts1);
-    //  SynMemo.SetProposalItems(ts);
-    finally
-    ts.Free;
-    ts1.Free;
-    end }
 end;
 
 end.
