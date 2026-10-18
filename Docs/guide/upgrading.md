@@ -54,6 +54,7 @@ Find the version you use now, then read every section above it, from the one jus
 | `TOnBlobFieldProcessing` (`FIBDataSet`) | Declared in `FIBProps` | `FIBDataSet` exports it, so code that uses it compiles without a change. |
 | `TExtBoolean` (`pFIBDataInfo`) | Declared in `FIBProps` | Internal type. The `FIBDataInfo` routines that took `TFIBDataSet` now take `TFIBCustomDataSet`. |
 | `SFIBErrorNotDataSet`, `SFIBErrorNotDataSetDetail` (`FIBConsts`) | Removed | Nothing raises them any more. |
+| `TFIBTableInfo.TableName`, `TFIBFieldInfo.DefaultValue`, `DomainName`, `DisplayLabel`, `EditFormat`, `DisplayFormat` (`AnsiString`) | `string` | Nothing for most code. Assigning them to an `AnsiString` loses the characters outside the system code page, as before. `TFIBFieldInfo.LoadFromStream` has a new `UTF8` parameter (default `True`, the format `SaveToStream` writes now). |
 | `TpFIBDataSetOptionsEditor` | `TFIBDataSetOptionsEditor` | Rename in design-time code that registers it. |
 | IDE preferences of the dataset (registry key `pFIBDataSet`) | registry key `FIBDataSet` | The saved design-time defaults for new datasets (`Options`, `PrepareOptions`, `DetailConditions`, default formats, generator name prefix and suffix) are not read from the old key. Set them again once in the FIBPlus preferences. |
 | Unit `pFIBDatabase` | `FIBDatabase` | Change the `uses` clause. The old unit still compiles and gives a warning. |

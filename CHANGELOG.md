@@ -220,6 +220,14 @@ The lists of old and new names, and what an application has to change, are in
   `TFIBDatabase.DBName` keeps characters outside the system code page. The
   Firebird client still converts the file name to the system code page before
   it parses it.
+- The metadata and dataset info caches (`ListTableInfo`, `ListDataSetInfo`)
+  kept the database name in the system code page: with a name outside it no
+  entry was found, and each `GetTableInfo` read the metadata again and added
+  an entry. The metadata cache also lost table and column names, primary key
+  fields, defaults, labels and formats outside it (a non-ASCII default value
+  of a column came back as `?`). They are now kept as `string` and the cache
+  files are saved in UTF-8; files saved by older versions are still read
+  ([Upgrading](Docs/guide/upgrading.md#800)).
 - `EFIBClientError.IBErrorCode` had the code of an earlier server error of the
   thread: after a statement timeout a client error had `isc_cancelled`, so
   `TFIBErrorHandler` took it for a cancelled statement. It is now 0.

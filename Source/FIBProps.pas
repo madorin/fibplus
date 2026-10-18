@@ -483,16 +483,16 @@ type
   TFIBFieldInfo = class
   protected
     FIsComputed: boolean;
-    FDefaultValue: Ansistring;
+    FDefaultValue: string;
     FCanIncToWhereClause: boolean;
-    FDomainName: Ansistring;
+    FDomainName: string;
     FDefaultValueEmptyString: boolean;
     // Info from FIB$FIELDS_INFO
     FWithAdditionalInfo: boolean;
-    FDisplayLabel: Ansistring;
+    FDisplayLabel: string;
     FVisible: boolean;
-    FEditFormat: Ansistring;
-    FDisplayFormat: Ansistring;
+    FEditFormat: string;
+    FDisplayFormat: string;
     FIsTriggered: boolean;
     FOtherInfo: TStrings;
     FDisplayWidth: integer;
@@ -506,17 +506,18 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure SaveToStream(Stream: TStream);
-    procedure LoadFromStream(Stream: TStream; FromBegin: boolean);
+    // UTF8: text in UTF-8, as SaveToStream writes it; False for the cache stream version 6
+    procedure LoadFromStream(Stream: TStream; FromBegin: Boolean; UTF8: Boolean = True);
     property IsComputed: boolean read FIsComputed;
-    property DefaultValue: Ansistring read FDefaultValue;
-    property DomainName: Ansistring read FDomainName;
+    property DefaultValue: string read FDefaultValue;
+    property DomainName: string read FDomainName;
     property CanIncToWhereClause: boolean read FCanIncToWhereClause;
     // Info from FIB$FIELDS_INFO
     property WithAdditionalInfo: boolean read FWithAdditionalInfo;
-    property DisplayLabel: Ansistring read FDisplayLabel;
+    property DisplayLabel: string read FDisplayLabel;
     property Visible: boolean read FVisible;
-    property EditFormat: Ansistring read FEditFormat;
-    property DisplayFormat: Ansistring read FDisplayFormat;
+    property EditFormat: string read FEditFormat;
+    property DisplayFormat: string read FDisplayFormat;
     property IsTriggered: boolean read FIsTriggered;
     property OtherInfo: TStrings read FOtherInfo;
     property DisplayWidth: integer read FDisplayWidth;
@@ -581,6 +582,9 @@ const
 
 procedure WriteStrToStream(const s: Ansistring; Stream: TStream);
 procedure ReadStrFromStream(const Stream: TStream; var ResStr: Ansistring);
+procedure WriteUTF8StrToStream(const S: string; Stream: TStream);
+// UTF8 False: the text was written in the system code page (WriteStrToStream)
+function ReadUTF8StrFromStream(const Stream: TStream; UTF8: Boolean = True): string;
 
 
 implementation
@@ -2138,6 +2142,22 @@ begin
   end;
 end;
 
+procedure WriteUTF8StrToStream(const S: string; Stream: TStream);
+begin
+  WriteStrToStream(UTF8Encode(S), Stream);
+end;
+
+function ReadUTF8StrFromStream(const Stream: TStream; UTF8: Boolean = True): string;
+var
+  S: AnsiString;
+begin
+  ReadStrFromStream(Stream, S);
+  if UTF8 then
+    Result := UTF8ToString(S)
+  else
+    Result := string(S);
+end;
+
 constructor TFIBFieldInfo.Create;
 begin
   inherited Create;
@@ -2193,18 +2213,16 @@ begin
     WriteBuffer(FIsTriggered, SizeOf(boolean));
     WriteBuffer(FDisplayWidth, SizeOf(integer));
     WriteBuffer(FCharSet, SizeOf(integer));
-    WriteStrToStream(FDefaultValue, Stream);
-    WriteStrToStream(FDomainName, Stream);
-    WriteStrToStream(FDisplayLabel, Stream);
-    WriteStrToStream(FEditFormat, Stream);
-    WriteStrToStream(FDisplayFormat, Stream);
-    WriteStrToStream(FOtherInfo.Text, Stream);
+    WriteUTF8StrToStream(FDefaultValue, Stream);
+    WriteUTF8StrToStream(FDomainName, Stream);
+    WriteUTF8StrToStream(FDisplayLabel, Stream);
+    WriteUTF8StrToStream(FEditFormat, Stream);
+    WriteUTF8StrToStream(FDisplayFormat, Stream);
+    WriteUTF8StrToStream(FOtherInfo.Text, Stream);
   end;
 end;
 
-procedure TFIBFieldInfo.LoadFromStream(Stream: TStream; FromBegin: boolean);
-var
-  st: Ansistring;
+procedure TFIBFieldInfo.LoadFromStream(Stream: TStream; FromBegin: Boolean; UTF8: Boolean = True);
   procedure RaizeErrStream;
   begin
     raise Exception.Create(SCompEditFieldInfoLoadError);
@@ -2224,13 +2242,12 @@ begin
     ReadBuffer(FDisplayWidth, SizeOf(integer));
     ReadBuffer(FCharSet, SizeOf(integer));
 
-    ReadStrFromStream(Stream, FDefaultValue);
-    ReadStrFromStream(Stream, FDomainName);
-    ReadStrFromStream(Stream, FDisplayLabel);
-    ReadStrFromStream(Stream, FEditFormat);
-    ReadStrFromStream(Stream, FDisplayFormat);
-    ReadStrFromStream(Stream, st);
-    FOtherInfo.Text := st;
+    FDefaultValue := ReadUTF8StrFromStream(Stream, UTF8);
+    FDomainName := ReadUTF8StrFromStream(Stream, UTF8);
+    FDisplayLabel := ReadUTF8StrFromStream(Stream, UTF8);
+    FEditFormat := ReadUTF8StrFromStream(Stream, UTF8);
+    FDisplayFormat := ReadUTF8StrFromStream(Stream, UTF8);
+    FOtherInfo.Text := ReadUTF8StrFromStream(Stream, UTF8);
   end
 end;
 

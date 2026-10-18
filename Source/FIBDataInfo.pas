@@ -32,9 +32,9 @@ type
   TFIBTableInfo = class
   private
     FOwner: TFIBTableInfoCache;
-    FDBName: Ansistring;
-    FTableName: Ansistring;
-    FPrimaryKeyFields: Ansistring;
+    FDBName: string;
+    FTableName: string;
+    FPrimaryKeyFields: string;
     FFieldList: TStringList;
     FFormatNumber: integer;
     FFIVersion: integer; // FIB$FIELDS_INFO
@@ -58,7 +58,7 @@ type
     procedure LoadFromStream(Stream: TStream; FromBegin: boolean);
 
     function FieldInfo(const FieldName: string): TFIBFieldInfo;
-    property TableName: Ansistring read FTableName;
+    property TableName: string read FTableName;
     property PrimaryKeyFields[DB: TFIBDataBase]: string read GetPrimaryKeyFields;
     property FieldList: TStringList read FFieldList;
     property TableID[DB: TFIBDataBase]: integer read GetTableId;
@@ -98,7 +98,8 @@ type
 
   TFIBDataSetInfo = class
   private
-    FDBName: Ansistring;
+    FDBName: string;
+    FStreamVersion: Integer;
     FVersion: integer;
     FSelectSQL: TStrings;
     FInsertSQL: TStrings;
@@ -233,6 +234,13 @@ uses
 {$ENDIF}
 {$ENDIF}
     ;
+
+const
+  // 7: the text of the table info in UTF-8
+  CurStreamVersion = 7;
+  MinStreamVersion = 6;
+  // 2: DBName of the dataset info in UTF-8
+  DSCurStreamVersion = 2;
 
 type
   TFriendDatabase = class(TFIBDataBase);
@@ -1033,6 +1041,7 @@ begin
   FOwner := AOwner;
   FFieldList := TStringList.Create;
   FTableID := -1;
+  FStreamVersion := CurStreamVersion;
 end;
 
 procedure TFIBTableInfo.FillInfo(DB: TFIBDataBase; Tr: TFIBTransaction; const ATableName: string);
@@ -1075,17 +1084,17 @@ var
 begin
   with Stream do
   begin
-    WriteStrToStream(FDBName, Stream);
-    WriteStrToStream(FTableName, Stream);
+    WriteUTF8StrToStream(FDBName, Stream);
+    WriteUTF8StrToStream(FTableName, Stream);
     WriteBuffer(FWithFieldRepositaryInfo, SizeOf(boolean));
     WriteBuffer(FFormatNumber, SizeOf(integer)); // metadate counter
     WriteBuffer(FFIVersion, SizeOf(integer)); // counter for FIB$FIELD_INFO
-    WriteStrToStream(FPrimaryKeyFields, Stream);
+    WriteUTF8StrToStream(FPrimaryKeyFields, Stream);
     L := FFieldList.Count;
     WriteBuffer(L, SizeOf(integer));
     for i := 0 to Pred(FFieldList.Count) do
     begin
-      WriteStrToStream(FFieldList[i], Stream);
+      WriteUTF8StrToStream(FFieldList[i], Stream);
       TFIBFieldInfo(FFieldList.Objects[i]).SaveToStream(Stream)
     end;
   end;
@@ -1099,8 +1108,9 @@ end;
 
 procedure TFIBTableInfo.LoadFromStream(Stream: TStream; FromBegin: boolean);
 var
-  i, fc, L: integer;
-  fn: Ansistring;
+  i, fc: Integer;
+  UTF8: Boolean;
+  fn: string;
   fi: TFIBFieldInfo;
 
   {
@@ -1115,31 +1125,23 @@ begin
     if FromBegin then
       Seek(0, soFromBeginning);
 
-    ReadBuffer(L, SizeOf(integer));
-    SetLength(FDBName, L);
-    ReadBuffer(Pointer(FDBName)^, L);
-
-    ReadBuffer(L, SizeOf(integer));
-    SetLength(FTableName, L);
-    ReadBuffer(Pointer(FTableName)^, L);
+    UTF8 := FStreamVersion >= 7;
+    FDBName := ReadUTF8StrFromStream(Stream, UTF8);
+    FTableName := ReadUTF8StrFromStream(Stream, UTF8);
     ReadBuffer(FWithFieldRepositaryInfo, SizeOf(boolean));
 
     ReadBuffer(FFormatNumber, SizeOf(integer));
     ReadBuffer(FFIVersion, SizeOf(integer)); // Counter for FIB$FIELD_INFO
 
-    ReadBuffer(L, SizeOf(integer));
-    SetLength(FPrimaryKeyFields, L);
-    ReadBuffer(FPrimaryKeyFields[1], L);
+    FPrimaryKeyFields := ReadUTF8StrFromStream(Stream, UTF8);
     ReadBuffer(fc, SizeOf(integer));
 
     ClearFieldList;
     for i := 0 to Pred(fc) do
     begin
-      ReadBuffer(L, SizeOf(integer));
-      SetLength(fn, L);
-      ReadBuffer(fn[1], L);
+      fn := ReadUTF8StrFromStream(Stream, UTF8);
       fi := TFIBFieldInfo.Create;
-      fi.LoadFromStream(Stream, False);
+      fi.LoadFromStream(Stream, False, UTF8);
       FFieldList.AddObject(fn, fi);
     end;
   end;
@@ -1529,7 +1531,7 @@ begin
               p := 1;
               while p <= Length(FDefaultValue) do
               begin
-                if FDefaultValue[p] in ['''', '"'] then
+                if CharInSet(FDefaultValue[p], ['''', '"']) then
                 begin
                   vQuoteExist := True;
                   Break
@@ -1619,7 +1621,6 @@ end;
 const
   Signature        = 'FIB$MCF';
   DSSignature      = 'FIB$MCFDS';
-  CurStreamVersion = 6;
 
 procedure TFIBTableInfoCache.SaveToStream(Stream: TStream);
 var
@@ -1637,7 +1638,7 @@ begin
     WriteBuffer(tc, SizeOf(integer));
     for i := 0 to Pred(tc) do
     begin
-      WriteStrToStream(FListTabInfo[i], Stream);
+      WriteUTF8StrToStream(FListTabInfo[i], Stream);
       TFIBTableInfo(FListTabInfo.Objects[i]).SaveToStream(Stream);
     end;
   end;
@@ -1648,6 +1649,7 @@ var
   i, tc: integer;
   StreamVersion: integer;
   tn: Ansistring;
+  TableName: string;
   ti: TFIBTableInfo;
 begin
   Clear;
@@ -1664,7 +1666,7 @@ begin
     if tn <> Signature then
       Exit;
     ReadBuffer(StreamVersion, SizeOf(integer));
-    if StreamVersion < CurStreamVersion then
+    if StreamVersion < MinStreamVersion then
       Exit; // old style cache
 
     ReadBuffer(tc, SizeOf(integer));
@@ -1678,10 +1680,10 @@ begin
     ReadBuffer(tc, SizeOf(integer));
     for i := 0 to Pred(tc) do
     begin
-      ReadStrFromStream(Stream, tn);
+      TableName := ReadUTF8StrFromStream(Stream, StreamVersion >= 7);
       ti := TFIBTableInfo.Create(Self);
       ti.LoadFromStreamVersion(Stream, StreamVersion);
-      FListTabInfo.AddObject(tn, ti)
+      FListTabInfo.AddObject(TableName, ti)
     end;
   end;
 end;
@@ -1972,6 +1974,7 @@ end;
 // DataSets info
 constructor TFIBDataSetInfo.Create;
 begin
+  FStreamVersion := DSCurStreamVersion;
   FSelectSQL := TStringList.Create;
   FInsertSQL := TStringList.Create;
   FUpdateSQL := TStringList.Create;
@@ -1987,6 +1990,7 @@ begin
     Raise Exception.Create(SCantGetInfo + IntToStr(DataSet.DataSet_ID) + sLineBreak + SDataBaseNotAssigned);
   inherited Create;
   FDBName := DataSet.Database.DBName;
+  FStreamVersion := DSCurStreamVersion;
   FSelectSQL := TStringList.Create;
   FInsertSQL := TStringList.Create;
   FUpdateSQL := TStringList.Create;
@@ -2747,7 +2751,11 @@ procedure TFIBDataSetInfo.LoadFromStream(Stream: TStream);
 var
   s: Ansistring;
 begin
-  ReadStrFromStream(Stream, FDBName);
+  ReadStrFromStream(Stream, s);
+  if FStreamVersion >= 2 then
+    FDBName := UTF8ToString(s)
+  else
+    FDBName := string(s);
   Stream.ReadBuffer(FVersion, SizeOf(integer));
   ReadStrFromStream(Stream, s);
   FSelectSQL.Text := s;
@@ -2770,7 +2778,7 @@ end;
 
 procedure TFIBDataSetInfo.SaveToStream(Stream: TStream);
 begin
-  WriteStrToStream(FDBName, Stream);
+  WriteStrToStream(UTF8Encode(FDBName), Stream);
   Stream.WriteBuffer(FVersion, SizeOf(integer));
   WriteStrToStream(FSelectSQL.Text, Stream);
   WriteStrToStream(FInsertSQL.Text, Stream);
@@ -2813,6 +2821,7 @@ begin
     begin
       ReadStrFromStream(Stream, tn);
       DI := TFIBDataSetInfo.Create;
+      DI.FStreamVersion := StreamVersion;
       DI.LoadFromStream(Stream);
       FListDataSetInfo.AddObject(tn, DI)
     end;
@@ -2828,8 +2837,7 @@ begin
     try
       Seek(0, soFromBeginning);
       WriteStrToStream(DSSignature, Stream);
-      c := 1;
-      /// StreamVersion
+      c := DSCurStreamVersion;
       WriteBuffer(c, SizeOf(integer));
       c := FListDataSetInfo.Count;
       WriteBuffer(c, SizeOf(integer));
