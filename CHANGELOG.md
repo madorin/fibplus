@@ -220,6 +220,11 @@ The lists of old and new names, and what an application has to change, are in
   `TFIBDatabase.DBName` keeps characters outside the system code page. The
   Firebird client still converts the file name to the system code page before
   it parses it.
+- A quoted role name in `DBParams` (`sql_role_name="MixRole"`) lost its case and
+  the connection had no role: without a dialect in the DPB the server takes
+  dialect 1 and uppercases it. `SQLDialect` is now sent in the DPB, unless
+  `DBParams` has `sql_dialect`. A role without quotes is still uppercased; see
+  [Upgrading](Docs/guide/upgrading.md#role-name-in-quotes).
 - The metadata and dataset info caches (`ListTableInfo`, `ListDataSetInfo`)
   kept the database name in the system code page: with a name outside it no
   entry was found, and each `GetTableInfo` read the metadata again and added

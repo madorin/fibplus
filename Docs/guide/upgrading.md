@@ -150,6 +150,10 @@ The transaction of the SQL logger uses `nowait` and no longer the server default
 
 `TFIBErrorHandler` runs the lost-connection action (`OnLostConnect`, default `laCloseConnect`) on the database of the failing object: a database, a query, a transaction, or a BLOB stream. When the object gives no database (BLOB routines called without a sender, service components), the handler no longer acts on every database of the process. It pings each connected database and acts on those that report a lost connection. A lost service connection closes no database. This also changes applications with several `TpFIBDatabase` connections: only the database that was lost is closed and gets `OnLostConnect`. Every `TFIBDatabase` is handled now, not only `TpFIBDatabase`.
 
+#### Role name in quotes
+
+`TFIBDatabase` now sends `SQLDialect` in the DPB (`isc_dpb_sql_dialect`). Without it the server took dialect 1 for the attachment and uppercased the role name even inside quotes. A role written without quotes (`sql_role_name=MyRole`) is still uppercased (`MYROLE`), as before. A role written in quotes keeps its case: `sql_role_name="MyRole"` now selects a role created as `CREATE ROLE "MyRole"`. If the role was created without quotes (stored as `MYROLE`) and `DBParams` has it in quotes with other case, the connection now has no role (`CURRENT_ROLE` is `NONE`), without an error. Remove the quotes, write the name in uppercase, or add `sql_dialect=1` to `DBParams` for the old behavior.
+
 ## 7.9.1
 
 ### Build

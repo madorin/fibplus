@@ -3072,6 +3072,12 @@ begin
       begin
         FDBParamsChanged := False;
         GenerateDPB(FDBParams, DPB, FDPBLength, FConnectParams.IsFirebird);
+        // without it the server takes dialect 1 and uppercases a quoted role name
+        if IndexOfDBConst(DPBConstantNames[isc_dpb_sql_dialect]) < 0 then
+          begin
+            DPB := DPB + AnsiChar(isc_dpb_sql_dialect) + #1 + AnsiChar(FSQLDialect);
+            Inc(FDPBLength, 3);
+          end;
         FIBAlloc(FDPB, 0, FDPBLength);
         Move(DPB[1], FDPB[0], FDPBLength);
       end;
@@ -4430,12 +4436,12 @@ procedure TFIBDatabase.SetSQLDialect(const Value: Integer);
 begin
   if (Value < 1) then
     FIBError(feSQLDialectInvalid, [nil]);
-  if (FHandle = nil) then
-    FSQLDialect := Value
-  else if Value <= DBSQLDialect then
-    FSQLDialect := Value
-  else
-    FIBError(feSQLDialectInvalid, [nil])
+  if (FHandle <> nil) and (Value > DBSQLDialect) then
+    FIBError(feSQLDialectInvalid, [nil]);
+  // sent in the DPB
+  if FSQLDialect <> Value then
+    FDBParamsChanged := True;
+  FSQLDialect := Value;
 end;
 
 function TFIBDatabase.GetSQLDialect: Integer;
