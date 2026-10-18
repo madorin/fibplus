@@ -1400,8 +1400,6 @@ begin
 {$ENDIF}
 end;
 
-{$WARNINGS OFF}
-
 procedure DoUtf8Decode(const S: PAnsiChar; StrLen: Integer; var ws: Widestring);
 var
   L: Integer;
@@ -1426,8 +1424,6 @@ procedure DoUtf8Decode(const S: variant; var ws: Widestring);
 begin
   ws := UTF8ToString(S)
 end;
-
-{$WARNINGS ON}
 
 {
   procedure DoUtf8Decode(const s:variant; var ws:WideString);
@@ -1835,13 +1831,10 @@ begin
   Result := DoMaskCompare(string(AString), Mask, ['%', '_']);
 end;
 
-{$WARNINGS OFF}
-
 function SQLMaskCompareAA(const AString, Mask: AnsiString): Boolean;
 begin
   Result := DoMaskCompare(string(AString), Mask, ['%', '_']);
 end;
-{$WARNINGS ON}
 
 function SQLMaskCompare(const AString, Mask: Widestring): Boolean;
 begin
@@ -2073,8 +2066,6 @@ begin
         ResultSL.AddObject(ASL[i], ASL.Objects[i])
     end
 end;
-
-{$WARNINGS OFF}
 
 procedure GetNameAndValue(const S: string; var Name, Value: AnsiString);
 var
