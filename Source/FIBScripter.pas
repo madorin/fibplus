@@ -100,6 +100,7 @@ type
     objName: string;
     DirectiveNum: Integer;
     DirectiveElse: boolean;
+    HasReturning: boolean;
   end;
 
   PStatementDesc = ^TStatementDesc;
@@ -136,17 +137,22 @@ type
     kwBlock,
     kwCase,
     kwCreate,
+    kwDelete,
     kwEnd,
     kwExecute,
     kwExternal,
     kwFunction,
+    kwInsert,
+    kwMerge,
     kwOr,
     kwPackage,
     kwProcedure,
     kwRecreate,
+    kwReinsert,
     kwSet,
     kwTerm,
-    kwTrigger
+    kwTrigger,
+    kwUpdate
   );
 
   // Splits a script into statements in one pass. Lines are scanned as they are
@@ -183,6 +189,7 @@ type
     FInBody: boolean; // in the body of a PSQL module, after AS
     FBlockDepth: Integer; // BEGIN and CASE blocks open in the body
     FLastWordIsEnd: boolean;
+    FCheckReturning: boolean;
     FInSetTerm: boolean;
     FNewTerminator: string;
     FNewTerminatorDone: boolean;
@@ -269,7 +276,9 @@ type
     // AutoExecBlock support
     FUseExecBlockForDML: boolean;
     FBlockStatementCount: Integer;
-    FBlockSize: Integer;
+    FBlockSize: Integer; // bytes in FBlockCodePage
+    FBlockMaxSize: Integer;
+    FBlockCodePage: Word;
     FExecBlockStatement: TStrings;
     // the last statement added to the block, reported when the block runs
     FBlockLastStmt: TStatementDesc;
@@ -277,6 +286,7 @@ type
     FBlockLastLine: Integer;
     procedure RestartBlock;
     function CanGroupInExecuteBlock(const Stmt: TStatementDesc): Boolean;
+    function ExecuteBlockMaxSize(out CodePage: Word): Integer;
     function AddStatementToExecuteBlock(const Stmt: TStatementDesc; StmtNo, Line: Integer; SQLText: TStrings): Boolean;
     function FlushExecBlock: Boolean;
   private
@@ -384,7 +394,7 @@ const
 implementation
 
 uses
-  StrUtil, SqlTxtRtns, StdFuncs;
+  StrUtil, SqlTxtRtns, StdFuncs, IB_Intf, FIBCharSets;
 { TFIBScripter }
 
 procedure RaiseParserDirectiveError(const DirName: string; Line: Integer);
@@ -1924,10 +1934,18 @@ begin
       else if SameWord(S, X, Len, 'ALTER') then
         Result := kwAlter
       else if SameWord(S, X, Len, 'BLOCK') then
-        Result := kwBlock;
+        Result := kwBlock
+      else if SameWord(S, X, Len, 'MERGE') then
+        Result := kwMerge;
     6:
       if SameWord(S, X, Len, 'CREATE') then
-        Result := kwCreate;
+        Result := kwCreate
+      else if SameWord(S, X, Len, 'INSERT') then
+        Result := kwInsert
+      else if SameWord(S, X, Len, 'UPDATE') then
+        Result := kwUpdate
+      else if SameWord(S, X, Len, 'DELETE') then
+        Result := kwDelete;
     7:
       if SameWord(S, X, Len, 'EXECUTE') then
         Result := kwExecute
@@ -1941,7 +1959,9 @@ begin
       else if SameWord(S, X, Len, 'FUNCTION') then
         Result := kwFunction
       else if SameWord(S, X, Len, 'EXTERNAL') then
-        Result := kwExternal;
+        Result := kwExternal
+      else if SameWord(S, X, Len, 'REINSERT') then
+        Result := kwReinsert;
     9:
       if SameWord(S, X, Len, 'PROCEDURE') then
         Result := kwProcedure;
@@ -2010,6 +2030,11 @@ procedure TFIBScriptParser.ProcessWord(const S: string; X, Len: Integer);
 var
   K: TScriptKeyword;
 begin
+  if FCheckReturning and SameWord(S, X, Len, 'RETURNING') then
+  begin
+    FStatements[FStatementCount - 1].HasReturning := True;
+    FCheckReturning := False;
+  end;
   if (FWordCount > High(FHeader)) and not FInBody and not FMayHaveBody then
     Exit;
   K := KeywordOf(S, X, Len);
@@ -2017,7 +2042,10 @@ begin
   begin
     FHeader[FWordCount] := K;
     if FWordCount = 0 then
+    begin
       FMayHaveBody := (FTerminator = ';') and (K in [kwCreate, kwAlter, kwRecreate, kwExecute]);
+      FCheckReturning := K in [kwInsert, kwUpdate, kwDelete, kwMerge, kwReinsert];
+    end;
   end;
   Inc(FWordCount);
   if FInBody then
@@ -2058,6 +2086,7 @@ begin
   P.objName := '';
   P.DirectiveNum := FCurDirective;
   P.DirectiveElse := (FCurDirective >= 0) and (FDirectives[FCurDirective].dElse.X > 0);
+  P.HasReturning := False;
 
   FDisposition := pdInStatement;
   FLastSignificant := StmtCoord(X, Y);
@@ -2070,6 +2099,7 @@ begin
   FInBody := False;
   FBlockDepth := 0;
   FLastWordIsEnd := False;
+  FCheckReturning := False;
   FInSetTerm := False;
   FNewTerminator := '';
   FNewTerminatorDone := False;
@@ -3116,11 +3146,35 @@ begin
 end;
 
 // Only inside a run, which flushes the block at its end. A user EXECUTE BLOCK or
-// EXECUTE PROCEDURE is not nested into a block.
+// EXECUTE PROCEDURE is not nested into a block, nor RETURNING, which needs INTO in PSQL.
 function TFIBScripter.CanGroupInExecuteBlock(const Stmt: TStatementDesc): Boolean;
 begin
   Result := FUseExecBlockForDML and (FRunDepth > 0) and (Stmt.smtType in [sInsert, sReinsert, sDML]) and
-    not IsClause('EXECUTE', FParser.GetToken(Stmt.smdBegin), 1);
+    not Stmt.HasReturning and not IsClause('EXECUTE', FParser.GetToken(Stmt.smdBegin), 1);
+end;
+
+// 0 when the text cannot be measured: the statement then runs alone and reports the error
+function TFIBScripter.ExecuteBlockMaxSize(out CodePage: Word): Integer;
+const
+  cMaxSizeLegacy = High(Word);
+  cMaxSizeFB3 = 10 * 1024 * 1024;
+var
+  DB: TFIBDatabase;
+begin
+  Result := 0;
+  CodePage := FIBCodePageSystem;
+  DB := FQuery.Database;
+  if (DB = nil) or not DB.Connected then
+    Exit;
+  if not DisableEncodingSQLText then
+    CodePage := DB.Capabilities.CodePage;
+  if not IsCodePageAvailable(CodePage) then
+    Exit;
+  if DB.IsFirebirdConnect and (DB.ServerMajorVersion >= 3) and
+    (DB.ClientLibrary.Version.Product = fpFirebird) and (DB.ClientLibrary.Version.Major >= 3) then
+    Result := cMaxSizeFB3
+  else
+    Result := cMaxSizeLegacy;
 end;
 
 // False when the statement does not fit into the pending block
@@ -3128,18 +3182,26 @@ function TFIBScripter.AddStatementToExecuteBlock(const Stmt: TStatementDesc;
   StmtNo, Line: Integer; SQLText: TStrings): Boolean;
 const
   cHeader = 'EXECUTE BLOCK AS BEGIN';
+  // the server allows 256 contexts (tables) in a statement
   cMaxStatements = 255;
-  cMaxSize = High(Word) - Length('END') - 2;
 var
   i, Size, L: Integer;
 begin
   Size := FBlockSize;
   if FBlockStatementCount = 0 then
+  begin
+    FBlockMaxSize := ExecuteBlockMaxSize(FBlockCodePage) - Length('END') - 2;
     Size := Length(cHeader) + 2;
+    if Size >= FBlockMaxSize then
+    begin
+      Result := False;
+      Exit;
+    end;
+  end;
   L := 1; // ';'
   for i := 0 to SQLText.Count - 1 do
-    Inc(L, Length(SQLText[i]) + 2);
-  Result := (FBlockStatementCount < cMaxStatements) and (Size + L <= cMaxSize);
+    Inc(L, EncodedLength(SQLText[i], FBlockCodePage) + 2);
+  Result := (FBlockStatementCount < cMaxStatements) and (Size + L <= FBlockMaxSize);
   if not Result then
     Exit;
   if FBlockStatementCount = 0 then

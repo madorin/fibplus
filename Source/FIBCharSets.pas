@@ -30,6 +30,9 @@ function DecodeString(Buffer: PAnsiChar; Length: Integer; CodePage: Word): strin
 function DecodeString(const Bytes: FIBByteString; CodePage: Word): string; overload;
 // Not tagged with CodePage: concatenating tagged AnsiStrings converts them
 function EncodeString(const S: string; CodePage: Word): FIBByteString;
+// Bytes of S in CodePage, without the transliteration check of EncodeString
+function EncodedLength(const S: string; CodePage: Word): Integer;
+function IsCodePageAvailable(CodePage: Word): Boolean;
 procedure SetStringCodePage(var S: RawByteString; CodePage: Word);
 function IsSystemCodePage(CodePage: Word): Boolean;
 
@@ -226,6 +229,25 @@ begin
     FIBErrorEx(SCannotTransliterate, [Copy(S, 1, 100), CodePage]);
   SetLength(Result, L);
   FromUnicode(CodePage, PWideChar(S), Length(S), PAnsiChar(Result), L, nil);
+end;
+
+function EncodedLength(const S: string; CodePage: Word): Integer;
+begin
+  if S = '' then
+    Result := 0
+  else
+  begin
+    Result := FromUnicode(ActualCodePage(CodePage), PWideChar(S), Length(S), nil, 0, nil);
+    if Result = 0 then
+      CodePageError(CodePage);
+  end;
+end;
+
+function IsCodePageAvailable(CodePage: Word): Boolean;
+const
+  Probe: string = 'A';
+begin
+  Result := FromUnicode(ActualCodePage(CodePage), PWideChar(Probe), 1, nil, 0, nil) > 0;
 end;
 
 function DecodeString(const Bytes: FIBByteString; CodePage: Word): string;
