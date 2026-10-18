@@ -240,6 +240,10 @@ The lists of old and new names, and what an application has to change, are in
   `connect_timeout`, `old_file_size`, `shutdown_delay`, `force_write` and the
   other flags) were written in one byte, so a value over 255 was cut
   (`num_buffers=2048` sent 0). They are now written in 4 bytes.
+- Macros: an old form macro (`@Name`) followed by a tab took the rest of the
+  text up to the next space into its name, and one at the very end of the text
+  was not replaced. A new form macro (`@@Name@`) without the closing `@` went
+  to the server as it was; it now raises "EOF in macro detected".
 
 ## [7.9.1] - 2026-10-09
 

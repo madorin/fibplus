@@ -5587,7 +5587,7 @@ begin
             // Step 1, collect the name of the parameter
             if (iCurParamState = ParamQuoteState) or CharInSet(cCurChar, ParamNameChars) then
               sParamName := sParamName + cCurChar
-            else if ((iCurState = MacroState) and (not OldStyleMacro or not CharInSet(cCurChar, [' ', #13, #10]))) then
+            else if ((iCurState = MacroState) and (not OldStyleMacro or not CharInSet(cCurChar, [' ', #9, #13, #10]))) then
               sParamName := sParamName + cCurChar
             else if not CmpInLoadedState(Self) then
               FIBError(feSQLParseError, [CmpFullName(Self), SFIBErrorParamNameExpected])
@@ -5620,7 +5620,8 @@ begin
             begin
               if OldStyleMacro then
               begin
-                if not(iCurParamState = ParamQuoteState) and CharInSet(cNextChar, [' ', #13, #10]) then
+                // #0: end of the text
+                if not(iCurParamState = ParamQuoteState) and CharInSet(cNextChar, [#0, ' ', #9, #13, #10]) then
                 begin
                   RegParamName(False);
                   Inc(i);
@@ -5639,10 +5640,14 @@ begin
       end;
       if (iCurState in [ParamState, MacroState]) then
         AddToProcessedSQL(' ')
-      else
+      // a name at the very end moved i past the text
+      else if i <= iLenSQL then
         AddToProcessedSQL(sSQL[i]);
       Inc(i);
     end;
+
+    if (iCurState = MacroState) and not OldStyleMacro and not CmpInLoadedState(Self) then
+      FIBError(feSQLParseError, [CmpFullName(Self), SFIBErrorEOFInMacro]);
 
     if not IsUserSQL then
     begin
