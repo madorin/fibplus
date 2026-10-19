@@ -163,6 +163,11 @@ The lists of old and new names, and what an application has to change, are in
 - `StrUtil.TFastStringStream`: the DDL methods of `FIBMetaData`
   (`GenerateDDLText`, `GenerateObjectDDL` and the others) take a
   `TStringStream`; see [Upgrading](Docs/guide/upgrading.md#800).
+- `TFIBLicensingService` (InterBase license keys) and the units `IB_Install` and
+  `IB_InstallHeader` with `TpFIBInstall` and `TpFIBUnInstall` (InterBase 6 install
+  library `ibinstall.dll`, never registered: `IBINSTALL_SUPPORT` was off) with their
+  messages in `FIBConsts`. Firebird has neither; see
+  [Upgrading](Docs/guide/upgrading.md#800).
 
 ### Fixed
 

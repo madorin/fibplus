@@ -78,8 +78,6 @@
     'Firebird client library not found. Install the Firebird client to use this functionality',//feIBMissing
 
     '%s is an InterBase6 function. Please upgrade to InterBase6 to use this functonality',
-    // Added by Serg Vostrikov
-    'InterBase Install DLL ibinstall.dll not found in the path. Please install InterBase 6 to use this functionality',
     'Cannot perform operation -- service is not attached',
     'Cannot perform operation -- service is attached',
     'Server Name Missing',

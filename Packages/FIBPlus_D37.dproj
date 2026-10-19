@@ -146,11 +146,9 @@
         <DCCReference Include="..\Source\IB_Services.pas"/>
         <DCCReference Include="..\Source\ibase.pas"/>
         <DCCReference Include="..\Source\FIBDatabase.pas"/>
-        <DCCReference Include="..\Source\IB_Install.pas"/>
         <DCCReference Include="..\Source\pFIBDatabase.pas"/>
         <DCCReference Include="..\Source\FIBPlatforms.pas"/>
         <DCCReference Include="..\Source\IB_Intf.pas"/>
-        <DCCReference Include="..\Source\IB_InstallHeader.pas"/>
         <DCCReference Include="..\Source\FIBSafeTimer.pas"/>
         <DCCReference Include="..\Source\IBBlobFilter.pas"/>
         <DCCReference Include="..\Source\IB_Externals.pas"/>

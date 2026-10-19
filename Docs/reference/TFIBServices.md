@@ -10,7 +10,7 @@ Service components for the Firebird and InterBase Services API (`service_mgr`): 
 
 The components exist only when `INC_SERVICE_SUPPORT` is defined, which `FIBPlus.inc` does by default.
 
-Eleven classes are registered on the palette page: `TFIBServerProperties`, `TFIBConfigService`, `TFIBLicensingService`, `TFIBLogService`, `TFIBStatisticalService`, `TFIBBackupService`, `TFIBRestoreService`, `TFIBValidationService`, `TFIBSecurityService`, `TFIBNBackupService`, and `TFIBNRestoreService`. The base classes are not registered. `RegFIBPlus.pas` also registers `TpFIBInstall` and `TpFIBUnInstall` on this page under `IBINSTALL_SUPPORT`, which `FIBPlus.inc` leaves commented out.
+Ten classes are registered on the palette page: `TFIBServerProperties`, `TFIBConfigService`, `TFIBLogService`, `TFIBStatisticalService`, `TFIBBackupService`, `TFIBRestoreService`, `TFIBValidationService`, `TFIBSecurityService`, `TFIBNBackupService`, and `TFIBNRestoreService`. The base classes are not registered.
 
 ```delphi
 Backup.ServerName := 'localhost';
@@ -44,7 +44,6 @@ end;
 | [TFIBControlService](#tfibcontrolservice) | Base class for services that are started with `ServiceStart` |
 | [TFIBControlAndQueryService](#tfibcontrolandqueryservice) | Base class for started services that return text output |
 | <img src="../images/icons/TFIBConfigService.png" width="24" height="24" align="absmiddle" alt=""> [TFIBConfigService](#tfibconfigservice) | Change database properties, shut down, bring online |
-| <img src="../images/icons/TFIBLicensingService.png" width="24" height="24" align="absmiddle" alt=""> [TFIBLicensingService](#tfiblicensingservice) | Add or remove a license key |
 | <img src="../images/icons/TFIBLogService.png" width="24" height="24" align="absmiddle" alt=""> [TFIBLogService](#tfiblogservice) | Read the server log |
 | <img src="../images/icons/TFIBStatisticalService.png" width="24" height="24" align="absmiddle" alt=""> [TFIBStatisticalService](#tfibstatisticalservice) | Database statistics |
 | <img src="../images/icons/TFIBBackupService.png" width="24" height="24" align="absmiddle" alt=""> [TFIBBackupService](#tfibbackupservice) | Back up a database |
@@ -245,29 +244,6 @@ Changes database properties. There is no `ServiceStart` for this class; it raise
 | `SetReserveSpace(Value)` | `True` reserves space on each page for record versions; `False` uses all space. |
 | `SetAsyncMode(Value)` | `True` sets asynchronous write mode; `False` sets synchronous. |
 | `SetReadOnly(Value)` | `True` sets read-only access mode; `False` sets read-write. |
-
-## TFIBLicensingService
-
-Adds or removes a license key. For servers that use license keys.
-
-| | |
-|---|---|
-| Inherits from | `TFIBControlService` |
-
-### Published properties
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `Action` | `TLicensingAction` | `LicenseAdd` | `LicenseAdd` or `LicenseRemove`. Setting `LicenseRemove` clears `Id`. |
-| `Key` | `String` | | License key. |
-| `Id` | `String` | | License ID. Sent only when adding. |
-
-### Methods
-
-| Name | Description |
-|------|-------------|
-| `AddLicense` | Set `Action` to `LicenseAdd` and start. |
-| `RemoveLicense` | Set `Action` to `LicenseRemove` and start. |
 
 ## TFIBLogService
 
@@ -517,10 +493,6 @@ Text values are sent UTF-8 encoded. When modifying, only the properties set sinc
 | `DisplayUser(UserName)` | method | Read one user into `UserInfo`. |
 | `UserInfo[Index]` | `TUserInfo` | One user: `UserName`, `FirstName`, `MiddleName`, `LastName`, `GroupID`, `UserID`. An `Index` out of range raises `EListError`. |
 | `UserInfoCount` | `Integer` | Number of users read. |
-
-## Install API header
-
-`IB_InstallHeader` declares the types and constants of the InterBase install library (`ibinstall.dll`): option handles, the `isc_install_...` and `isc_uninstall_...` function types, component numbers, and error codes. It has no components and no code of its own, and the service components do not use it. `IB_Intf` and `IB_Install` use it.
 
 ## See also
 

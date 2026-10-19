@@ -20,7 +20,6 @@ interface
 resourcestring
 
   SCantFindApiProc            = 'Can''t find procedure %s in %s';
-  SCantLoadLibrary            = 'Can''t load library %s ';
   SUnknownClientLibrary       = 'Can''t perform operation %s. Unknown client library';
   STransactionForOtherLibrary = '%s.' + sLineBreak + 'Transaction can''t work with different client library.';
   SCryptKeyTooLong            = 'The crypt key has %d bytes, but the server accepts at most %d';
@@ -79,17 +78,6 @@ resourcestring
   SFIBErrorGenerationError              = '%s: unable to generate %s because fields for "%s" do not exist in dataset.';
   SFIBErrorExecuteBlockField            = '%s: field %s cannot be written as a literal, UseExecuteBlock does not support array and binary BLOB fields.';
   SFIBErrorExecuteBlockRowSize          = '%s: the statement of a record (%d bytes) does not fit in an EXECUTE BLOCK of 64K, UseExecuteBlock cannot apply it.';
-  SSuccess                              = 'Successful execution';
-  SDelphiException                      = 'DelphiException %s';
-  SNoOptionsSet                         = 'No Install Options selected';
-  SNoDestinationDirectory               = 'DestinationDirectory is not set';
-  SNosourceDirectory                    = 'SourceDirectory is not set';
-  SNoUninstallFile                      = 'Uninstall File Name is not set';
-  SOptionNeedsClient                    = '%s component requires Client to function properly';
-  SOptionNeedsServer                    = '%s component requires Server to function properly';
-  SInvalidOption                        = 'Invalid option specified';
-  SInvalidOnErrorResult                 = 'Unexpected onError return value';
-  SInvalidOnStatusResult                = 'Unexpected onStatus return value';
   reVarNotArray                         = 'Variant is not an array.';
   reVarArrayBounds                      = 'Variant array index out of bounds.';
   reVarArrayCreate                      = 'Unable to create variant array.';

@@ -49,8 +49,6 @@ contains
   FIBSQLMonitor in '..\Source\FIBSQLMonitor.pas',
   IB_ErrorCodes in '..\Source\IB_ErrorCodes.pas',
   IB_Externals in '..\Source\IB_Externals.pas',
-  IB_Install in '..\Source\IB_Install.pas',
-  IB_InstallHeader in '..\Source\IB_InstallHeader.pas',
   IB_Intf in '..\Source\IB_Intf.pas',
   FIBServices in '..\Source\FIBServices.pas',
   IB_Services in '..\Source\IB_Services.pas',

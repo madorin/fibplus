@@ -24,8 +24,7 @@ uses
   FIBSQLLog, FIBEventAlerter, FIBMetadata, FIBDataRefresh, FIBExports,
 {$IFNDEF NO_MONITOR} FIBSQLMonitor, {$ENDIF} FIBErrorHandler,
   FIBStoredProc, FIBProps, FIBClientDataSet {$IFDEF INC_SERVICE_SUPPORT},
-  FIBServices {$ENDIF}
-{$IFDEF IBINSTALL_SUPPORT}, IB_Install{$ENDIF};
+  FIBServices {$ENDIF};
 
 procedure Register;
 
@@ -62,12 +61,9 @@ begin
 
 {$IFDEF INC_SERVICE_SUPPORT}
   RegisterComponents(pnFIBPlusServices, [TFIBServerProperties,
-    TFIBConfigService, TFIBLicensingService, TFIBLogService,
+    TFIBConfigService, TFIBLogService,
     TFIBStatisticalService, TFIBBackupService, TFIBRestoreService,
     TFIBValidationService, TFIBSecurityService, TFIBNBackupService, TFIBNRestoreService]);
-{$ENDIF}
-{$IFDEF IBINSTALL_SUPPORT}
-  RegisterComponents(pnFIBPlusServices, [TpFIBInstall, TpFIBUnInstall]);
 {$ENDIF}
 end;
 

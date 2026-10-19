@@ -21,7 +21,7 @@ uses
 {$I FIBPlus.inc}
 {$T-}
 {$IFDEF WINDOWS} Windows, {$ENDIF}
-  SyncObjs, Classes, Sysutils, ibase, IB_InstallHeader, IB_Externals,
+  SyncObjs, Classes, Sysutils, ibase, IB_Externals,
   FIBPlatforms;
 
 type
@@ -571,11 +571,6 @@ type
     procedure RaiseRequestError;
   end;
 
-  { Library Initialization }
-procedure LoadIBInstallLibrary;
-procedure FreeIBInstallLibrary;
-procedure CheckIBInstallLoaded;
-
 function GetClientLibrary(const aLibName: string): IIBClientLibrary;
 
 const
@@ -616,30 +611,12 @@ const
     Ansichar(isc_info_sql_describe_end)
   );
 
-var
-  isc_install_clear_options: Tisc_install_clear_options;
-  isc_install_execute: Tisc_install_execute;
-  isc_install_get_info: Tisc_install_get_info;
-  isc_install_get_message: Tisc_install_get_message;
-  isc_install_load_external_text: Tisc_install_load_external_text;
-  isc_install_precheck: Tisc_install_precheck;
-  isc_install_set_option: Tisc_install_set_option;
-  isc_uninstall_execute: Tisc_uninstall_execute;
-  isc_uninstall_precheck: Tisc_uninstall_precheck;
-  isc_install_unset_option: Tisc_install_unset_option;
-
 implementation
 
 uses
   FIBConsts;
 
 var
-{$IFDEF WINDOWS}
-  IBInstallLibrary: THandle;
-{$ENDIF}
-{$IFDEF MACOS}
-  IBInstallLibrary: THandle;
-{$ENDIF}
   vClientLibs: TInterfaceList;
 
 var
@@ -676,140 +653,6 @@ var
     FLDCW Default8087CW
 end;
 {$ENDIF}
-{$DEFINE FP_STDCALL}
-
-function isc_install_clear_options_stub(hOption: POPTIONS_HANDLE): MSG_NO; {$I FIBMacroComp.inc}
-begin
-  raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_install_clear_options', IB_INSTALL_DLL]));
-end;
-
-function isc_install_execute_stub(hOption: OPTIONS_HANDLE; src_dir: TEXT; dest_dir: TEXT; status_func: FP_STATUS; status_data: Pointer;
-  error_func: FP_ERROR; error_data: Pointer; uninstal_file_name: TEXT): MSG_NO; {$I FIBMacroComp.inc}
-begin
-  raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_install_execute_stub', IB_INSTALL_DLL]));
-end;
-
-function isc_install_get_info_stub(info_type: Integer; option: OPT; info_buffer: Pointer; buf_len: Cardinal): MSG_NO; {$I FIBMacroComp.inc}
-begin
-  raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_install_get', IB_INSTALL_DLL]));
-end;
-
-function isc_install_get_message_stub(hOption: OPTIONS_HANDLE; message_no: MSG_NO; message_txt: Pointer;
-  message_len: Cardinal): MSG_NO; {$I FIBMacroComp.inc}
-begin
-  raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_install_get_message', IB_INSTALL_DLL]));
-end;
-
-function isc_install_load_external_text_stub(msg_file_name: TEXT): MSG_NO; {$I FIBMacroComp.inc}
-begin
-  raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_install_load_external_text', IB_INSTALL_DLL]));
-end;
-
-function isc_install_precheck_stub(hOption: OPTIONS_HANDLE; src_dir: TEXT; dest_dir: TEXT): MSG_NO; {$I FIBMacroComp.inc}
-begin
-  raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_install_precheck', IB_INSTALL_DLL]));
-end;
-
-function isc_install_set_option_stub(hOption: POPTIONS_HANDLE; option: OPT): MSG_NO; {$I FIBMacroComp.inc}
-begin
-  raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_install_set_option', IB_INSTALL_DLL]));
-end;
-
-function isc_uninstall_execute_stub(uninstall_file_name: TEXT; status_func: FP_STATUS; status_data: Pointer; error_func: FP_ERROR;
-  error_data: Pointer): MSG_NO; {$I FIBMacroComp.inc}
-begin
-  raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_uninstall_execute', IB_INSTALL_DLL]));
-end;
-
-function isc_uninstall_precheck_stub(uninstall_file_name: TEXT): MSG_NO; {$I FIBMacroComp.inc}
-begin
-  raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_uninstall_precheck', IB_INSTALL_DLL]));
-end;
-
-function isc_install_unset_option_stub(hOption: POPTIONS_HANDLE; option: OPT): MSG_NO; {$I FIBMacroComp.inc}
-begin
-  raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_install_unset_option', IB_INSTALL_DLL]));
-end;
-
-{$UNDEF FP_STDCALL}
-
-procedure LoadIBInstallLibrary;
-{$IFDEF WINDOWS}
-  function GetProcAddr(ProcName: PAnsiChar): Pointer;
-  begin
-    Result := GetProcAddress(IBInstallLibrary, ProcName);
-    if not Assigned(Result) then
-      RaiseLastOSError
-  end;
-{$ENDIF}
-{$IFDEF MACOS}
-  function GetProcAddr(ProcName: PWideChar): Pointer;
-  begin
-    Result := GetProcAddress(IBInstallLibrary, ProcName);
-    if not Assigned(Result) then
-      RaiseLastOSError
-  end;
-{$ENDIF}
-
-begin
-{$IFDEF WINDOWS}
-  IBInstallLibrary := LoadLibrary(PChar(IB_INSTALL_DLL));
-  if (IBInstallLibrary > HINSTANCE_ERROR) then
-{$ENDIF}
-{$IFDEF MACOS}
-    IBInstallLibrary := LoadLibrary(PChar(IB_INSTALL_DLL));
-  if (IBInstallLibrary <> 0) then
-{$ENDIF}
-  begin
-    isc_install_clear_options := GetProcAddr('isc_install_clear_options');
-    isc_install_execute := GetProcAddr('isc_install_execute');
-    isc_install_get_info := GetProcAddr('isc_install_get_info');
-    isc_install_get_message := GetProcAddr('isc_install_get_message');
-    isc_install_load_external_text := GetProcAddr('isc_install_load_external_text');
-    isc_install_precheck := GetProcAddr('isc_install_precheck');
-    isc_install_set_option := GetProcAddr('isc_install_set_option');
-    isc_uninstall_execute := GetProcAddr('isc_uninstall_execute');
-    isc_uninstall_precheck := GetProcAddr('isc_uninstall_precheck');
-    isc_install_unset_option := GetProcAddr('isc_install_unset_option');
-  end
-  else
-  begin
-    isc_install_clear_options := isc_install_clear_options_stub;
-    isc_install_execute := isc_install_execute_stub;
-    isc_install_get_info := isc_install_get_info_stub;
-    isc_install_get_message := isc_install_get_message_stub;
-    isc_install_load_external_text := isc_install_load_external_text_stub;
-    isc_install_precheck := isc_install_precheck_stub;
-    isc_install_set_option := isc_install_set_option_stub;
-    isc_uninstall_execute := isc_uninstall_execute_stub;
-    isc_uninstall_precheck := isc_uninstall_precheck_stub;
-    isc_install_unset_option := isc_install_unset_option_stub;
-  end;
-{$IFDEF WINDOWS}
-  InitFPU
-{$ENDIF}
-end;
-
-procedure FreeIBInstallLibrary;
-begin
-{$IFDEF WINDOWS}
-  if IBInstallLibrary > HINSTANCE_ERROR then
-  begin
-    FreeLibrary(IBInstallLibrary);
-    IBInstallLibrary := 0;
-  end;
-{$ENDIF}
-end;
-
-procedure CheckIBInstallLoaded;
-begin
-{$IFDEF WINDOWS}
-  if (IBInstallLibrary <= HINSTANCE_ERROR) then
-    LoadIBInstallLibrary;
-  if (IBInstallLibrary <= HINSTANCE_ERROR) then
-{$ENDIF}
-    raise EAPICallException.Create(Format(SCantLoadLibrary, [IB_INSTALL_DLL]));
-end;
 
 { TIBClientLibrary }
 

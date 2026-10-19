@@ -148,8 +148,6 @@ type
     feSQLDialectInvalid,
     feIBMissing,
     feIB60feature,
-  // Added by Serg Vostrikov
-    feInterBaseInstallMissing,
     feServiceActive,
     feServiceInActive,
     feServerNameMissing,

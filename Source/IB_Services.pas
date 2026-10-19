@@ -14,7 +14,6 @@ type
   TpFIBControlService = FIBServices.TFIBControlService deprecated 'Use TFIBControlService';
   TpFIBControlAndQueryService = FIBServices.TFIBControlAndQueryService deprecated 'Use TFIBControlAndQueryService';
   TpFIBConfigService = FIBServices.TFIBConfigService deprecated 'Use TFIBConfigService';
-  TpFIBLicensingService = FIBServices.TFIBLicensingService deprecated 'Use TFIBLicensingService';
   TpFIBLogService = FIBServices.TFIBLogService deprecated 'Use TFIBLogService';
   TpFIBStatisticalService = FIBServices.TFIBStatisticalService deprecated 'Use TFIBStatisticalService';
   TpFIBBackupRestoreService = FIBServices.TFIBBackupRestoreService deprecated 'Use TFIBBackupRestoreService';
@@ -42,8 +41,6 @@ type
   TFIBControlAndQueryService = FIBServices.TFIBControlAndQueryService;
   TShutdownMode = FIBServices.TShutdownMode;
   TFIBConfigService = FIBServices.TFIBConfigService;
-  TLicensingAction = FIBServices.TLicensingAction;
-  TFIBLicensingService = FIBServices.TFIBLicensingService;
   TFIBLogService = FIBServices.TFIBLogService;
   TStatOption = FIBServices.TStatOption;
   TStatOptions = FIBServices.TStatOptions;
@@ -90,8 +87,6 @@ const
   Forced = FIBServices.Forced;
   DenyTransaction = FIBServices.DenyTransaction;
   DenyAttachment = FIBServices.DenyAttachment;
-  LicenseAdd = FIBServices.LicenseAdd;
-  LicenseRemove = FIBServices.LicenseRemove;
   DataPages = FIBServices.DataPages;
   DbLog = FIBServices.DbLog;
   HeaderPages = FIBServices.HeaderPages;
@@ -160,7 +155,6 @@ uses
 initialization
   RegisterClassAlias(TFIBServerProperties, 'TpFIBServerProperties');
   RegisterClassAlias(TFIBConfigService, 'TpFIBConfigService');
-  RegisterClassAlias(TFIBLicensingService, 'TpFIBLicensingService');
   RegisterClassAlias(TFIBLogService, 'TpFIBLogService');
   RegisterClassAlias(TFIBStatisticalService, 'TpFIBStatisticalService');
   RegisterClassAlias(TFIBBackupService, 'TpFIBBackupService');

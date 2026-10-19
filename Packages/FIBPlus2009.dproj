@@ -69,8 +69,6 @@
 			<DCCReference Include="..\Source\FIBSQLMonitor.pas"/>
 			<DCCReference Include="..\Source\IB_ErrorCodes.pas"/>
 			<DCCReference Include="..\Source\IB_Externals.pas"/>
-			<DCCReference Include="..\Source\IB_Install.pas"/>
-			<DCCReference Include="..\Source\IB_InstallHeader.pas"/>
 			<DCCReference Include="..\Source\IB_Intf.pas"/>
 			<DCCReference Include="..\Source\FIBServices.pas"/>
 			<DCCReference Include="..\Source\IB_Services.pas"/>

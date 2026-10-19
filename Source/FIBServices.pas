@@ -285,25 +285,6 @@ type
     property DatabaseName: string read FDatabaseName write SetDatabaseName;
   end;
 
-  TLicensingAction = (LicenseAdd, LicenseRemove);
-
-  TFIBLicensingService = class(TFIBControlService)
-  private
-    FID: String;
-    FKey: String;
-    FAction: TLicensingAction;
-    procedure SetAction(Value: TLicensingAction);
-  protected
-    procedure SetServiceStartOptions; override;
-  public
-    procedure AddLicense;
-    procedure RemoveLicense;
-  published
-    property Action: TLicensingAction read FAction write SetAction default LicenseAdd;
-    property Key: String read FKey write FKey;
-    property Id: String read FID write FID;
-  end;
-
   TFIBLogService = class(TFIBControlAndQueryService)
   private
 
@@ -1502,41 +1483,6 @@ begin
   else
     ServiceStartAddParam(Wait, isc_spb_prp_deny_new_attachments);
   InternalServiceStart;
-end;
-
-{ TFIBLicensingService }
-procedure TFIBLicensingService.SetAction(Value: TLicensingAction);
-begin
-  FAction := Value;
-  if (Value = LicenseRemove) then
-    FID := '';
-end;
-
-procedure TFIBLicensingService.AddLicense;
-begin
-  Action := LicenseAdd;
-  ServiceStart;
-end;
-
-procedure TFIBLicensingService.RemoveLicense;
-begin
-  Action := LicenseRemove;
-  ServiceStart;
-end;
-
-procedure TFIBLicensingService.SetServiceStartOptions;
-begin
-  if (FAction = LicenseAdd) then
-  begin
-    ServiceStartParams := AnsiChar(isc_action_svc_add_license);
-    ServiceStartAddParam(FKey, isc_spb_lic_key);
-    ServiceStartAddParam(FID, isc_spb_lic_id);
-  end
-  else
-  begin
-    ServiceStartParams := AnsiChar(isc_action_svc_remove_license);
-    ServiceStartAddParam(FKey, isc_spb_lic_key);
-  end;
 end;
 
 { TFIBStatisticalService }
