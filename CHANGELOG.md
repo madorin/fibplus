@@ -6,16 +6,15 @@
 
 #### IDE tools
 
-- `FIBTools` design time package for Delphi 10.4 Sydney and later: one
-  `Packages\FIBTools.dpk` for all versions (`FIBTools270.bpl`, `FIBTools280.bpl`,
-  `FIBTools290.bpl`, `FIBTools370.bpl`, through `{$LIBSUFFIX AUTO}`). It is
-  optional and is in the `FIBPlus_D27`, `FIBPlus_D28`, `FIBPlus_D29` and
-  `FIBPlus_D37` project groups. It needs only `FIBPlus_Dxx`
+- `dclFIBTools` design time package for Delphi 10.4 Sydney and later: one
+  `Packages\dclFIBTools.dpk` for all versions (`dclFIBTools270.bpl` to
+  `dclFIBTools370.bpl`, through `{$LIBSUFFIX AUTO}`). It is
+  optional and is in the `FIB` project group. It needs only `FIB`
   ([#67](https://github.com/madorin/fibplus/issues/67)).
 - The **Tools > FIBPlus** menu with **Preferences...** and **About FIBPlus...**.
   FIBPlus is also shown on the IDE splash screen and in the IDE About box.
-- **Preferences** is reachable from the IDE (the dialog was in
-  `FIBPlusEditors_Dxx` but no menu opened it). The options `psCanEditComputedFields`,
+- **Preferences** is reachable from the IDE (the dialog was in the
+  editors package but no menu opened it). The options `psCanEditComputedFields`,
   `psSupportUnicodeBlobs`, `poNoForceIsNull`, `poFreeHandlesAfterClose`,
   `poRefreshAfterDelete`, `poDontCloseAfterEndTransaction`, `qoTrimCharFields`,
   `qoNoForceIsNull` and `qoFreeHandleAfterExecute` can now be set as design time
@@ -24,8 +23,7 @@
   IDE closes the connections of the design time components before **Run** and
   **Run without debugging**, so the program doesn't compete with them for the
   database. Connections opened by code running in the IDE stay open.
-- The design time packages (`DclFIBPlus_D29`, `DclFIBPlus_D37`,
-  `FIBPlusEditors_D29`, `FIBPlusEditors_D37` and `FIBTools`) can be installed in
+- The design time packages `dclFIB` and `dclFIBTools` can be installed in
   the 64-bit IDE of Delphi 12.3 and 13 (Win64 platform).
 
 ### Changed
@@ -146,6 +144,20 @@ The lists of old and new names, and what an application has to change, are in
   `D_XE`..`D_XE5` and `D_20`..`D_30`; `TWideDataSet` is removed (`C24` not
   defined); see
   [Upgrading](Docs/guide/upgrading.md#800).
+- Delphi 10.4 and later have one package per purpose for all versions, through
+  `{$LIBSUFFIX AUTO}`, and one project group `Packages\FIB.groupproj` instead
+  of `FIBPlus_D27` to `FIBPlus_D37`:
+  - runtime `FIB` (`FIB270.bpl` to `FIB370.bpl`) replaces `FIBPlus_D27` to
+    `FIBPlus_D37`;
+  - design time `dclFIB` (`dclFIB270.bpl` to `dclFIB370.bpl`) replaces
+    `DclFIBPlus_Dxx` and `FIBPlusEditors_Dxx`;
+  - `FIBTools` is now `dclFIBTools`, `FIBPlusFMX` is now `FIBFMX` and is also
+    built for Delphi 10.4 to 12.
+- Delphi 10 Seattle to 10.3 Rio keep `FIBPlus_D23` to `FIBPlus_D26`;
+  `DclFIBPlus_Dxx` and `FIBPlusEditors_Dxx` are merged into `dclFIB_D23` to
+  `dclFIB_D26`. The editors packages of older versions are renamed to
+  `dclFIB_xx`. Design time package names start with `dcl`, as in Delphi and
+  other libraries.
 
 ### Removed
 

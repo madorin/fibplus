@@ -6,7 +6,7 @@
         <Projects Include="FIBPlus_XE7.dproj">
             <Dependencies/>
         </Projects>
-        <Projects Include="FIBPlusEditors_XE7.dproj">
+        <Projects Include="dclFIB_XE7.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -26,23 +26,23 @@
     <Target Name="FIBPlus_XE7:Make">
         <MSBuild Projects="FIBPlus_XE7.dproj" Targets="Make"/>
     </Target>
-    <Target Name="FIBPlusEditors_XE7">
-        <MSBuild Projects="FIBPlusEditors_XE7.dproj"/>
+    <Target Name="dclFIB_XE7">
+        <MSBuild Projects="dclFIB_XE7.dproj"/>
     </Target>
-    <Target Name="FIBPlusEditors_XE7:Clean">
-        <MSBuild Projects="FIBPlusEditors_XE7.dproj" Targets="Clean"/>
+    <Target Name="dclFIB_XE7:Clean">
+        <MSBuild Projects="dclFIB_XE7.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="FIBPlusEditors_XE7:Make">
-        <MSBuild Projects="FIBPlusEditors_XE7.dproj" Targets="Make"/>
+    <Target Name="dclFIB_XE7:Make">
+        <MSBuild Projects="dclFIB_XE7.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="FIBPlus_XE7;FIBPlusEditors_XE7"/>
+        <CallTarget Targets="FIBPlus_XE7;dclFIB_XE7"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="FIBPlus_XE7:Clean;FIBPlusEditors_XE7:Clean"/>
+        <CallTarget Targets="FIBPlus_XE7:Clean;dclFIB_XE7:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="FIBPlus_XE7:Make;FIBPlusEditors_XE7:Make"/>
+        <CallTarget Targets="FIBPlus_XE7:Make;dclFIB_XE7:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

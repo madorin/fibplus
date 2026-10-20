@@ -76,7 +76,7 @@ The dialog is not part of `TFIBDatabase`; a dialog unit registers it when the pr
 | Framework | Unit |
 |-----------|------|
 | VCL | `FIBDBLoginDlg` |
-| FireMonkey | `FIB_FMX_DBLoginDlg` (package `FIBPlusFMX`, *Delphi 13*) |
+| FireMonkey | `FIB_FMX_DBLoginDlg` (package `FIBFMX`, *Delphi 10.4 and later*) |
 
 Without such a unit, a connect with `UseLoginPrompt` raises an error that asks you to add `FIBDBLoginDlg` to the `uses` clause.
 

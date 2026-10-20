@@ -1,0 +1,72 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{761A3621-064E-4446-92AA-3B4BABC23EA5}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="FIB.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="FIBFMX.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="dclFIB.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="dclFIBTools.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="FIB">
+        <MSBuild Projects="FIB.dproj"/>
+    </Target>
+    <Target Name="FIB:Clean">
+        <MSBuild Projects="FIB.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="FIB:Make">
+        <MSBuild Projects="FIB.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="FIBFMX">
+        <MSBuild Projects="FIBFMX.dproj"/>
+    </Target>
+    <Target Name="FIBFMX:Clean">
+        <MSBuild Projects="FIBFMX.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="FIBFMX:Make">
+        <MSBuild Projects="FIBFMX.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="dclFIB">
+        <MSBuild Projects="dclFIB.dproj"/>
+    </Target>
+    <Target Name="dclFIB:Clean">
+        <MSBuild Projects="dclFIB.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="dclFIB:Make">
+        <MSBuild Projects="dclFIB.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="dclFIBTools">
+        <MSBuild Projects="dclFIBTools.dproj"/>
+    </Target>
+    <Target Name="dclFIBTools:Clean">
+        <MSBuild Projects="dclFIBTools.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="dclFIBTools:Make">
+        <MSBuild Projects="dclFIBTools.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="FIB;FIBFMX;dclFIB;dclFIBTools"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="FIB:Clean;FIBFMX:Clean;dclFIB:Clean;dclFIBTools:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="FIB:Make;FIBFMX:Make;dclFIB:Make;dclFIBTools:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
