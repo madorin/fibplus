@@ -1,6 +1,6 @@
 # Datasets and caching
 
-A FIBPlus dataset reads rows from the server on demand and keeps them in a record cache, so you can scroll in both directions without another round trip. This article shows how rows are fetched, how to refresh and change them, how `TFIBDataSet` generates its own SQL, and how the query cache and the metadata cache work.
+A FIBPlus dataset reads rows from the server on demand and keeps them in a record cache, so you can scroll in both directions without another round trip. This article shows how rows are fetched, how to refresh and change them, how to lock a row while it is edited, how `TFIBDataSet` generates its own SQL, how to sort, filter, and search on the client, how to change only the record cache, and how the query cache and the metadata cache work.
 
 The samples use these components: `Database` (`TFIBDatabase`), `Transaction` and `UpdateTransaction` (`TFIBTransaction`), `DataSet` (`TFIBDataSet`), and in the master-detail sample `MasterDS` and `DetailDS` (`TFIBDataSet`) and `MasterSource` (`TDataSource`). Fetching, refresh, generated SQL, update objects, and `ApplyUpdates` are all members of [TFIBDataSet](../reference/TFIBDataSet.md).
 
@@ -108,6 +108,33 @@ A `TFIBUpdateObject` runs an extra statement when a row is inserted, updated, or
 
 `OnPostError` and `OnDeleteError` are the standard `TDataSetErrorEvent` events. They are called when sending the statement fails.
 
+### Lock a row while it is edited
+
+Without a lock, a user can edit a row for minutes and learn at `Post` that another user changed it in the meantime (`Update conflicts with concurrent update`). With `poProtectedEdit` in `Options`, the dataset locks the row on the server when the edit starts, so the conflict shows at once.
+
+```delphi
+DataSet.UpdateTransaction := UpdateTransaction;
+DataSet.Options := DataSet.Options + [poProtectedEdit];
+DataSet.AutoCommit := True;
+```
+
+When an unmodified row goes into edit, the dataset:
+
+1. Locks the row in `UpdateTransaction` with an `UPDATE` that sets a column to its own value, or with `SELECT ... FOR UPDATE WITH LOCK` when `poUseSelectForLock` is also set.
+2. Reads the row again with `RefreshSQL`, so the user edits the values that are committed now.
+
+The dataset takes the table and the key from `UpdateSQL`, or from `AutoUpdateOptions` when it generates its statements (see [Generated SQL](#generated-sql)). The details are in [Locking](../reference/TFIBDataSet.md#locking).
+
+When another transaction holds a lock on the row, `Edit` raises an `Exception` whose message says that a deadlock was detected, and the dataset stays in browse state. The error is not an `EFIBError`. With the default `nowait` update transaction it comes at once.
+
+The lock lasts until `UpdateTransaction` ends. `Cancel` does not release it, and neither does `Post`. `Commit` or `Rollback` of the update transaction does; with `AutoCommit` the commit after `Post` releases the lock. Keep the update transaction short.
+
+| Task | Use |
+|------|-----|
+| Lock the current row from code | `LockRecord`; `LockRecord(False)` returns a `TLockStatus` instead of raising, for example `lsDeadLock` |
+| Change the message, or abort or retry the edit | `OnLockError`: `daAbort` ends `Edit` with a silent `EAbort`, `daRetry` tries again |
+| Lock with your own statement | `OnLockSQLText` |
+
 ## Generated SQL
 
 `TFIBDataSet` can write `InsertSQL`, `UpdateSQL`, `DeleteSQL`, and `RefreshSQL` from `SelectSQL`. Set the table the dataset changes, and turn on `AutoReWriteSqls`:
@@ -214,6 +241,91 @@ MasterDS.Open;
 
 The detail reopens when a master value that its parameters use changes. A parameter named `MAS_ID` is matched to the master field `ID` as well. `DetailConditions` controls opening, closing, and refreshing, for example `dcWaitEndMasterScroll` waits until the master stops scrolling. The rules and the table of conditions are in [Master-detail](../reference/TFIBDataSet.md#master-detail).
 
+## Sort, filter, and search
+
+A dataset can sort, filter, and search the rows of its record cache without asking the server. This suits result sets that fit in memory. For large result sets, let the server do the work: an `ORDER BY` or `WHERE` built with [macros](queries-and-parameters.md#macros) or [conditions](queries-and-parameters.md#conditions), and a new `Open`.
+
+The members are in [Sorting](../reference/TFIBDataSet.md#sorting), [Locating](../reference/TFIBDataSet.md#locating), and [Locate options](../reference/TFIBDataSet.md#locate-options).
+
+### Sort on the client
+
+```delphi
+DataSet.DoSort(['CITY', 'LAST_NAME'], [True, False]);
+```
+
+The first array names the fields, the second gives the direction of each one: `True` for ascending. `DoSort` posts a pending edit and **fetches all rows** first. The current row stays current. Null values come first in ascending order.
+
+| Task | Use |
+|------|-----|
+| Is the dataset sorted, and by what | `Sorted`, `SortedFields` (`CITY;LAST_NAME`), `SortFieldsCount`, `SortFieldInfo(1)` |
+| Fill the sort information from the `ORDER BY` of `SelectSQL` | `psGetOrderInfo` in `PrepareOptions`, on by default |
+| Move an edited or inserted row to its sorted position at `Post` | `poKeepSorting` in `Options` |
+| Sort the rows again after the dataset is opened again | `poPersistentSorting` in `Options` |
+| Forget the sort | `DoSort([], [])`; the rows keep their order |
+
+Without `poKeepSorting`, a posted row stays where it is, and `Sorted` becomes `False`. Without `poPersistentSorting`, a dataset that is opened again shows the rows in the order of the server. With it, the dataset sorts them again, so it also fetches all rows again.
+
+Strings are compared by the rules of the Windows locale, so national letters sort in their place. For the Romanian locale the order is `alfa`, `ana`, `Ana`, `Ärger`, `Beta`, `Stan`, `Ştefan`, `Tudor`: letters first, then case. For another order, assign `OnCompareFieldValues`. This handler ignores case:
+
+```delphi
+function TMainForm.CompareNoCase(Field: TField; const S1, S2: Variant): Integer;
+begin
+  if (Field.DataType in [ftString, ftWideString]) and not VarIsNull(S1) and not VarIsNull(S2) then
+    Result := AnsiCompareText(S1, S2)
+  else
+    Result := DataSet.StdCompareValues(Field, S1, S2);
+end;
+
+DataSet.OnCompareFieldValues := CompareNoCase;
+```
+
+`StdCompareValues` is the default comparison. The functions `AnsiCompareString` and `StdAnsiCompareString` were needed for national letters in versions before Unicode Delphi; the default comparison does that now.
+
+### Filter on the client
+
+`Filter` and `Filtered` work as in any `TDataSet`. The filter applies to the rows in the cache and to each row that is fetched later; it does not fetch all rows.
+
+```delphi
+DataSet.Filter := 'CITY = ''Iasi'' and UPPER(LAST_NAME) like ''ION%''';
+DataSet.Filtered := True;
+```
+
+| Syntax | Example |
+|--------|---------|
+| Comparison, `and`, `or`, `not`, arithmetic | `(ID > 10) and not (ID + 1 = 20)` |
+| Null test | `CITY is null` |
+| List | `ID in (1, 2, 3)` |
+| SQL mask, `%` for any characters and `_` for one | `NAME like 'Ion_%'` |
+| Starts with, unless `foNoPartialCompare` is in `FilterOptions` | `NAME = 'Ion*'` |
+| String functions | `UPPER`, `LOWER`, `TRIM`, `TRIMLEFT`, `TRIMRIGHT`, `SUBSTRING(NAME, 1, 3)` |
+| Date functions | `YEAR`, `MONTH`, `DAY`, `HOUR`, `MINUTE`, `SECOND`, `DATE` |
+
+`foCaseInsensitive` in `FilterOptions` ignores case in comparisons. A function of a null value is null, as in SQL. An unknown function, for example `TIME`, raises when the filter is applied.
+
+`OnFilterRecord` runs for the rows that `Filter` accepts, so a row must pass both. `RecordCount` counts all cached rows; `VisibleRecordCount` counts the rows that pass the filter. With `poVisibleRecno` in `Options`, `RecordCount` and `RecNo` count only the visible rows, which a grid scroll bar needs.
+
+### Search
+
+`Locate`, `LocateNext`, and `LocatePrior` search the rows and fetch more rows from the server when needed. `ExtLocate`, `ExtLocateNext`, and `ExtLocatePrior` take more options:
+
+```delphi
+if DataSet.ExtLocate('LAST_NAME', 'Ion%', [eloWildCards, eloCaseInsensitive]) then
+  repeat
+    // the current row matches
+  until not DataSet.ExtLocateNext('LAST_NAME', 'Ion%', [eloWildCards, eloCaseInsensitive]);
+```
+
+| Option | When it helps |
+|--------|---------------|
+| `eloCaseInsensitive`, `eloPartialKey`, `eloWildCards` | Matching of string keys, as above |
+| `eloInFetchedRecords` | Search only the rows already fetched, without reading more from the server |
+| `eloInSortedDS` | The dataset is sorted by the key fields: the search uses the sort order |
+| `eloNearest` | With `eloInSortedDS`, when nothing matches, go to the row where the key would be; the function still returns `False` |
+
+`FindFirst`, `FindNext`, `FindPrior`, and `FindLast` are not implemented and always return `False`. Use `ExtLocate` and its `Next` and `Prior` forms instead.
+
+With `CacheModelKind` `cmkLimitedBufferSize`, `Locate` and `ExtLocate` run a query on the server, and only the first three options apply.
+
 ## Save and load the record cache
 
 `TFIBDataSet` can write the rows of the cache to a file or a stream and read them back:
@@ -225,6 +337,77 @@ DataSet.LoadFromFile('customers.cache');
 ```
 
 `SaveToFile` reads all remaining rows first. `LoadFromFile` opens the dataset with the rows from the file and moves to the first row. It does nothing at design time. It raises an error when the file is not a cache file or has an older format, or when the field count, sizes, or types differ from the dataset. The optional `AddInfo` string is stored in the file and returned by `LoadFromFile`.
+
+## Change only the record cache
+
+The `Cache...` methods change the rows in the record cache and send nothing to the server. The rows keep the unmodified status, so `ApplyUpdates` and `UpdatesPending` ignore them. The methods take field indexes. They are listed in [Record cache](../reference/TFIBDataSet.md#record-cache).
+
+### A table in memory
+
+`CacheOpen` prepares `SelectSQL` but does not run it: the dataset opens empty, with the fields of the select list. A select from `RDB$DATABASE` with `CAST` describes the fields:
+
+```delphi
+DataSet.SelectSQL.Text :=
+  'SELECT CAST(0 AS INTEGER) ID, CAST('''' AS VARCHAR(255)) NAME FROM RDB$DATABASE';
+DataSet.CacheOpen;
+DataSet.CacheAppend([0, 1], [1, 'one']);
+DataSet.CacheAppend([0, 1], [2, 'two']);
+DataSet.First;
+DataSet.CacheInsert([0, 1], [3, 'three']); // before the current row
+DataSet.CacheEdit([1], ['THREE']);
+DataSet.CacheDelete;
+```
+
+The prepare needs a connection and starts `Transaction`. Sorting and filtering work on these rows as usual. `Open` runs the query and replaces them; `Close` drops them.
+
+The dataset has no statements, so `Edit`, `Insert`, and `Append` raise `Cannot modify a read-only dataset`. To let the user edit the rows in a grid, set `CachedUpdates` before `CacheOpen` and assign an `OnUpdateRecord` handler; the posted rows then stay in the cache as pending changes, and nothing is sent until `ApplyUpdates`.
+
+For a table that the user edits freely, with a log of the changes, a `TClientDataSet` is the general tool. [TFIBClientDataSet](../reference/TFIBClientDataSet.md) is the client side of a multi-tier application.
+
+### Show changes made elsewhere
+
+When a stored procedure, another dataset, or another user changed rows, you can bring the cache up to date without reopening the dataset:
+
+| Change | Use |
+|--------|-----|
+| A row was inserted and you know its key | `CacheInsert([0], [NewID])`, then `Refresh`, which reads the row with `RefreshSQL`; or `CacheAppend(NewID, True)` |
+| A row was deleted | Move to it, then `CacheDelete` |
+| Another dataset has the new values of the current row | `CacheRefresh(OtherDataSet, frkEdit, nil)` copies the fields with the same names; `CacheRefreshByArrMap` takes a map |
+| A query or dataset returns several changed rows | `RefreshFromQuery` or `RefreshFromDataSet` with the key fields: the rows found in the cache are updated, the others are inserted. With `IsDeletedRecords` set to `True`, the rows found are deleted instead |
+
+```delphi
+// NewID was returned by the procedure that inserted the row
+DataSet.CacheInsert([0], [NewID]);
+DataSet.Refresh;
+```
+
+In this sample the key is the first field (index `0`). `CacheAppend(NewID, True)` always sets the first field. `RefreshSQL` must find the row by the key.
+
+## BOOLEAN and GUID domains
+
+Two `PrepareOptions` give a column a field class by the name of its domain. Both look at the domain of the table column, so the domain name must contain the word.
+
+| Option | Column | Field |
+|--------|--------|-------|
+| `psUseBooleanField`, on by default | `SMALLINT` or `INTEGER` with a domain whose name contains `BOOLEAN` | `TFIBBooleanField` |
+| `psUseGuidField`, off by default | `CHAR(16) CHARACTER SET OCTETS` with a domain whose name contains `GUID` | `TFIBGuidField` |
+
+```sql
+CREATE DOMAIN FIB$BOOLEAN AS SMALLINT DEFAULT 1 NOT NULL CHECK (VALUE IN (0, 1));
+CREATE DOMAIN FIB$GUID AS CHAR(16) CHARACTER SET OCTETS;
+```
+
+The boolean domain is for databases that must run on servers before *Firebird 3*. A native `BOOLEAN` column becomes a `TFIBBooleanField` without any option; see [Boolean](firebird-versions.md#boolean).
+
+A `TFIBGuidField` shows the value as text, `{4E46EF02-B207-4C8E-A41A-2FBCA07C11F9}`, and `AsGuid` reads and writes a `TGUID`. A new row gets a new GUID in the field when it is created, so a GUID key needs no generator.
+
+```delphi
+DataSet.PrepareOptions := DataSet.PrepareOptions + [psUseGuidField];
+DataSet.Open;
+DataSet.Append; // the GUID field already has a new value
+```
+
+Set `psUseGuidField` before the dataset is prepared for the first time. A dataset that was opened once keeps its field definitions, and setting the option later, even after `Close`, has no effect on them.
 
 ## Query cache
 
@@ -293,6 +476,12 @@ When `OnAcceptCacheSchema` is assigned and `ValidateAfterLoad` is `True`, the lo
 - **`UpdateOnlyModifiedFields` stays `False` when set in the wrong order.** Set `AutoReWriteSqls` and `CanChangeSQLs` first.
 - **Altered tables are not noticed.** See [Metadata cache](#metadata-cache).
 - **Prepared cached queries can block DDL.** See [Clearing the query cache](#clearing-the-query-cache).
+- **`DoSort` on a large result set.** It fetches all rows first. Sort on the server with `ORDER BY` instead.
+- **`FindFirst` and `FindNext` return `False`.** They are not implemented. Use `ExtLocate` and `ExtLocateNext`.
+- **`RecordCount` with a filter.** It counts all cached rows. Use `VisibleRecordCount`, or set `poVisibleRecno`.
+- **A locked row stays locked after `Cancel`.** With `poProtectedEdit` the lock ends only with the update transaction. See [Lock a row while it is edited](#lock-a-row-while-it-is-edited).
+- **A dataset opened with `CacheOpen` is read-only.** Use the `Cache...` methods, or `CachedUpdates` with `OnUpdateRecord`. See [A table in memory](#a-table-in-memory).
+- **`psUseGuidField` set too late.** Set it before the first `Open`.
 
 ## See also
 

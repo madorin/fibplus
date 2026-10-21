@@ -2,7 +2,7 @@
 
 | Section | Use it to |
 |---------|-----------|
-| [Guide](guide/) | Write a first program, learn a feature: connections, transactions, timeouts, caching, scripting |
+| [Guide](guide/) | Learn a feature: connections, transactions, timeouts, caching, scripting, services |
 | [Reference](reference/) | Look up a class, property, method, or event |
 | [Changelog](../CHANGELOG.md) | See what changed in each version |
 
@@ -18,11 +18,3 @@
 - Code samples are Delphi unless stated otherwise.
 - Version limits are marked inline, for example *Firebird 4+*.
 - Details of a member live only in the Reference; the Guide links to it instead of repeating it.
-
-## Legacy documents
-
-These PDFs describe older versions. Content that is still valid is being moved into the Guide.
-
-- [FIBPlus Developer's Guide, part 1](FibPlus%20Developer%27s%20Guide%201-2.pdf)
-- [FIBPlus Developer's Guide, part 2](FibPlus%20Developer%27s%20Guide%202-2.pdf)
-- [Tutorial Using FIBPlus](Tutorial%20Using%20FIBPlus.pdf)

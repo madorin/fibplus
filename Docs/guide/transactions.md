@@ -1,6 +1,6 @@
 # Transactions
 
-Every statement of a Firebird or InterBase database runs inside a transaction. In FIBPlus a `TFIBTransaction` component holds the transaction parameters, starts and ends the transaction, and is assigned to the queries and datasets that run in it. This article shows how to choose the isolation level, how to commit and roll back, how queries and datasets start transactions on their own, and what happens to open cursors when a transaction ends.
+Every statement of a Firebird or InterBase database runs inside a transaction. In FIBPlus a `TFIBTransaction` component holds the transaction parameters, starts and ends the transaction, and is assigned to the queries and datasets that run in it. This article shows how to choose the isolation level, how to commit and roll back, how queries and datasets start transactions on their own, how one transaction spans several databases, and what happens to open cursors when a transaction ends.
 
 For the members of the class see [TFIBTransaction](../reference/TFIBTransaction.md).
 
@@ -186,6 +186,55 @@ The components in the sample are `ReadTransaction`, `WriteTransaction`, and a `T
 
 `TFIBDataSet.HasUncommitedChanges` is `True` after the dataset sent a change to the server and stays so until `UpdateTransaction` is committed or rolled back, including the retaining variants. `HaveRollbackedChanges` records that such changes were rolled back; it is cleared when the dataset closes or its SQL changes.
 
+## One transaction over several databases
+
+A `TFIBTransaction` can span several databases. `StartTransaction` starts it in all of them, and `Commit` and `Rollback` end it in all of them together.
+
+A database joins the transaction when it becomes the transaction's `DefaultDatabase`, when the transaction becomes the database's `DefaultTransaction` or `DefaultUpdateTransaction`, or when you call `AddDatabase`. `DatabaseCount` and `Databases[I]` list the databases, and `RemoveDatabase` takes one out. All databases must use the same client library (`LibraryName`); `AddDatabase` raises otherwise. `AddDatabase(DB, TRParams)` gives one database its own transaction parameters.
+
+```delphi
+Transaction.DefaultDatabase := SalesDB;
+Transaction.AddDatabase(StockDB);
+SalesQuery.Database := SalesDB;
+SalesQuery.Transaction := Transaction;
+StockQuery.Database := StockDB;
+StockQuery.Transaction := Transaction;
+Transaction.StartTransaction;
+try
+  SalesQuery.ExecQuery;
+  StockQuery.ExecQuery;
+  Transaction.Commit;
+except
+  Transaction.Rollback;
+  raise;
+end;
+```
+
+`SalesDB` and `StockDB` are `TFIBDatabase` components, `SalesQuery` and `StockQuery` are `TFIBQuery` components.
+
+### Rules across databases
+
+A foreign key cannot point to another database. An update object of the master dataset can apply the rule in the other database, in the same transaction. Here `CountryDS` shows the table `COUNTRY` of `SalesDB`, and the table `PERSON` of `StockDB` refers to it:
+
+```delphi
+CountryDS.UpdateTransaction := Transaction; // spans SalesDB and StockDB
+
+CascadeUpdate.Database := StockDB;
+CascadeUpdate.Transaction := Transaction;
+CascadeUpdate.SQL.Text := 'UPDATE PERSON SET COUNTRY = :CODE WHERE COUNTRY = :OLD_CODE';
+CascadeUpdate.KindUpdate := ukModify;
+CascadeUpdate.ExecuteOrder := oeAfterDefault;
+CascadeUpdate.DataSet := CountryDS;
+
+CascadeDelete.Database := StockDB;
+CascadeDelete.Transaction := Transaction;
+CascadeDelete.SQL.Text := 'DELETE FROM PERSON WHERE COUNTRY = :OLD_CODE';
+CascadeDelete.KindUpdate := ukDelete;
+CascadeDelete.DataSet := CountryDS;
+```
+
+`CascadeUpdate` and `CascadeDelete` are `TFIBUpdateObject` components. Set `Database` and `Transaction` before `DataSet`: assigning `DataSet` copies them from the dataset only when they are not set. A change of a country code and the change of its persons are committed or rolled back together. See [Update objects](datasets-and-caching.md#update-objects).
+
 ## Open cursors and the end of a transaction
 
 A cursor is the open result set of a `SELECT`. The server closes the cursors of a transaction when it ends. FIBPlus closes its own cursors first, so the components stay in a consistent state. What the components do depends on the way the transaction ends.
@@ -236,6 +285,7 @@ The default is `TARollback`. Choose `TACommit` when the work in the transaction 
 - **`no_savepoint`.** It shares its code with `lock_timeout`. A bare `no_savepoint` is sent as `lock_timeout=10` on *Firebird 2.1+*; do not use it for another purpose.
 - **Inactive transaction.** Without `qoStartTransaction` or `poStartTransaction`, a statement raises `EFIBClientError` ("Transaction is not active"). Start the transaction first, or set the option.
 - **Uncommitted work at an automatic end.** The default `TimeoutAction` is `TARollback`; a disconnect or a destroyed transaction component rolls back what you did not commit.
+- **Databases with different client libraries in one transaction.** `AddDatabase` raises. Give all databases of the transaction the same `LibraryName`.
 - **Silent no-start with `AutoReconnect`.** When the connection cannot be made, `StartTransaction` returns without an error and the transaction stays inactive. Check `InTransaction` when `AutoReconnect` is on.
 
 ## See also

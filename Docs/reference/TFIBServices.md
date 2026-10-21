@@ -35,6 +35,8 @@ end;
 
 `Backup` is a `TFIBBackupService` and `Line` is a `string`. This sample was not run against a server.
 
+Guides: [Services](../guide/services.md).
+
 ## Class overview
 
 | Class | Purpose |
@@ -334,7 +336,7 @@ Restores a database from a backup with the server's restore service.
 |------|------|---------|-------------|
 | `BackupFile` | `TStrings` | | Backup files to read, one per line, as in [TFIBBackupService](#tfibbackupservice). |
 | `DatabaseName` | `TStrings` | | Database files to create, one per line: a file name, or `name=length`. Empty lines are skipped. |
-| `PageSize` | `Integer` | `4096` | Page size of the new database. Sent only when greater than `0`. |
+| `PageSize` | `Integer` | `4096` | Page size of the new database. Sent only when greater than `0`, so with the default a database with larger pages is restored with 4096-byte pages. `0` keeps the page size of the backup. |
 | `PageBuffers` | `Integer` | | Page buffers. Sent only when greater than `0`. |
 | `FixCharset` | `AnsiString` | | Character set name for `FixFssMetadata` and `FixFssData`. Both flags are sent only when this is not empty. |
 | `Options` | `TRestoreOptions` | `[CreateNewDB]` | Restore flags, see below. |
@@ -360,7 +362,7 @@ Restores a database from a backup with the server's restore service.
 
 ## TFIBNBackupService
 
-Incremental backup. The source comment marks this class as *Firebird 2.5 only*; this was not checked against newer servers.
+Incremental backup. Tested with Firebird 3, 4, and 5; the source comment that marks this class as *Firebird 2.5 only* is out of date.
 
 | | |
 |---|---|
@@ -382,7 +384,7 @@ Incremental backup. The source comment marks this class as *Firebird 2.5 only*; 
 
 ## TFIBNRestoreService
 
-Restores a database from incremental backup files. The source comment marks this class as *Firebird 2.5 only*; this was not checked against newer servers.
+Restores a database from incremental backup files into a new file; the start raises when the file exists. Tested with Firebird 3, 4, and 5; the source comment that marks this class as *Firebird 2.5 only* is out of date.
 
 | | |
 |---|---|
@@ -496,5 +498,6 @@ Text values are sent UTF-8 encoded. When modifying, only the properties set sinc
 
 ## See also
 
+- [Services guide](../guide/services.md)
 - [TFIBSQLMonitor](TFIBSQLMonitor.md)
 - [TFIBDatabase](TFIBDatabase.md)

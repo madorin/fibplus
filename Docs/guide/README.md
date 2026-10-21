@@ -20,6 +20,7 @@ Task-oriented articles. Each one explains a feature, shows how to use it, and li
 | [Timeouts](timeouts.md) | Statement, idle, and session timeouts |
 | [Scripting](scripting.md) | Running scripts with `TFIBScripter` |
 | [Events and monitoring](events-and-monitoring.md) | Database events, error handling, SQL monitor, SQL log |
+| [Services](services.md) | Backup and restore, incremental backup, validation, database properties, shutdown, users, server information |
 | [Localization](localization.md) | Language of the error messages and the login dialog, server messages, adding a language |
 
 ## Versions
