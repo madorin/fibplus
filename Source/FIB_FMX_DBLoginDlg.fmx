@@ -50,25 +50,28 @@ object fmxFIBDBLoginDlg: TfmxFIBDBLoginDlg
       Position.X = 8.000000000000000000
       Position.Y = 9.000000000000000000
       Text = 'User Name :'
-      Width = 72.000000000000000000
+      Width = 110.000000000000000000
+      FocusControl = EdUserName
     end
     object Label3: TLabel
       Height = 17.000000000000000000
       Position.X = 8.000000000000000000
       Position.Y = 33.000000000000000000
       Text = 'Password:'
-      Width = 72.000000000000000000
+      Width = 110.000000000000000000
+      FocusControl = EdPassword
     end
     object Label4: TLabel
       Height = 17.000000000000000000
       Position.X = 8.000000000000000000
       Position.Y = 57.000000000000000000
       Text = 'Role:'
-      Width = 72.000000000000000000
+      Width = 110.000000000000000000
+      FocusControl = EdRole
     end
     object EdUserName: TEdit
       TabOrder = 3
-      Position.X = 88.000000000000000000
+      Position.X = 124.000000000000000000
       Position.Y = 8.000000000000000000
       Width = 233.000000000000000000
       Height = 22.000000000000000000
@@ -76,7 +79,7 @@ object fmxFIBDBLoginDlg: TfmxFIBDBLoginDlg
     end
     object EdPassword: TEdit
       TabOrder = 5
-      Position.X = 88.000000000000000000
+      Position.X = 124.000000000000000000
       Position.Y = 32.000000000000000000
       Width = 233.000000000000000000
       Height = 22.000000000000000000
@@ -84,7 +87,7 @@ object fmxFIBDBLoginDlg: TfmxFIBDBLoginDlg
     end
     object EdRole: TEdit
       TabOrder = 4
-      Position.X = 88.000000000000000000
+      Position.X = 124.000000000000000000
       Position.Y = 56.000000000000000000
       Width = 233.000000000000000000
       Height = 22.000000000000000000

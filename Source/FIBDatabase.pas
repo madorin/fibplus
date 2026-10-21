@@ -3524,16 +3524,13 @@ begin
 end;
 
 procedure TFIBDatabase.RaiseFeatureNotSupported(const Feature: string; ByClientLibrary: Boolean);
-var
-  Missing: string;
 begin
   if not IsFirebirdConnect then
-    Missing := 'InterBase'
+    FIBError(feFeatureNotSupported, [Feature, 'InterBase'])
   else if ByClientLibrary then
-    Missing := 'the client library ' + ClientLibrary.LibraryName
+    FIBError(feClientFeatureNotSupported, [Feature, ClientLibrary.LibraryName])
   else
-    Missing := Format('Firebird %d.%d', [ServerMajorVersion, ServerMinorVersion]);
-  FIBError(feFeatureNotSupported, [Feature, Missing]);
+    FIBError(feFeatureNotSupported, [Feature, Format('Firebird %d.%d', [ServerMajorVersion, ServerMinorVersion])]);
 end;
 
 procedure TFIBDatabase.RequireSessionTimeouts(const PropName: string; Value: Cardinal);

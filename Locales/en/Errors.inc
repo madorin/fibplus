@@ -1,6 +1,8 @@
-{***************************************************************}
+﻿{***************************************************************}
 { FIBPlus - component library for direct access to Firebird and }
 { InterBase databases                                           }
+{                                                               }
+{  English error messages.                                      }
 {                                                               }
 {    FIBPlus is based in part on the product                    }
 {    Free IB Components, written by Gregory H. Deatz for        }
@@ -12,7 +14,8 @@
 {                                                               }
 {  Please see the file License.txt for full license information }
 {***************************************************************}
-  FIBErrorMessages: array[TFIBClientError] of String = (
+
+  FIBErrorMessages: array[TFIBClientError] of string = (
     'Unknown error.',
     'Unsupported feature.',
     'Not permitted.',
@@ -28,19 +31,19 @@
     '%s: Cannot perform operation -- DB is not open.',
     'Cannot perform operation -- DB is currently open.',
     'Database name is missing.',
-    '%s :Transaction is not active.',
-    '%s :Transaction is active.',
+    '%s: Transaction is not active.',
+    '%s: Transaction is active.',
     'Timeout values cannot be negative.',
-    '%s :No databases are listed in transaction component.', // Changed
-    '%s :Updating wrong database.',  // Changed
-    '%s :Updating wrong transaction.',// Changed
+    '%s: No databases are listed in transaction component.',
+    '%s: Updating wrong database.',
+    '%s: Updating wrong transaction.',
     'Database not assigned for %s.',
     'Transaction not assigned for %s.',
     'XSQLDA index out of range.',
     'XSQLDA name does not exist (%s).',
     'End of file.',
     'Beginning of file.',
-    '%s:Invalid statement handle.', // Changed
+    '%s: Invalid statement handle.',
     'Can''t %s because %s dataset open.',
     'Can''t %s because %s dataset closed.',
     'Unknown SQL Data type (%d).',
@@ -50,20 +53,20 @@
     'Column cannot be set to null (%s)',
     'Blob stream cannot be read.',
     'Blob stream cannot be written.',
-    'Can''t %s , because  query is empty',
+    'Can''t %s, because query is empty.',
     'Can''t "open" a non-select statement. Use ExecQuery.',
     'No access to field "%s".',
     'Field "%s" is read-only.',
     'Field "%s" not found.',
-    'DataSet not in Edit or Insert mode.(%s)',
+    'DataSet not in Edit or Insert mode. (%s)',
     'Not editing.',
     'Can''t insert into dataset. (%s)',
-    'Can''t post. (%s) ',
+    'Can''t post. (%s)',
     'Can''t update. (%s)',
     'Can''t delete from dataset. (%s)',
     'Can''t refresh row. (%s)',
     'Buffer not set.',
-    'Circular references not permitted.(%s)',
+    'Circular references not permitted. (%s)',
     'SQL Parse Error in '+':%s ' + CRLF + CRLF + '%s',
     'User abort.',
     'Data set is uni-directional.',
@@ -72,12 +75,11 @@
     'Column lists do not match.',
     'Column types don''t match. (From index: %d, To index: %d)',
     'Can''t end a shared transaction unless it is forced and equal to the transaction''s TimeoutAction.',
-    'Column types "%s" is not array field',//feNotIsArrayField
-    'Dimension %d don''t exist in "%s" ',//feWrongDimension
-    'SQL Dialect invalid',//feSQLDialectInvalid
-    'Firebird client library not found. Install the Firebird client to use this functionality',//feIBMissing
-
-    '%s is an InterBase6 function. Please upgrade to InterBase6 to use this functonality',
+    'Column "%s" is not an array field', // feNotIsArrayField
+    'Dimension %d doesn''t exist in "%s"', // feWrongDimension
+    'SQL Dialect invalid', // feSQLDialectInvalid
+    'Firebird client library not found. Install the Firebird client to use this functionality', // feIBMissing
+    '%s is an InterBase 6 function. Please upgrade to InterBase 6 to use this functionality',
     'Cannot perform operation -- service is not attached',
     'Cannot perform operation -- service is attached',
     'Server Name Missing',
@@ -88,18 +90,33 @@
     'SPB Constant Not supported',
     'SPB Constant Unknown',
     'Field Size too small. Field %s.%s',
-
-    '%s. Can''t use limited cache. '#13#10+
-    'CachedUpdates must be False,'#13#10+
-    'Select must have "Order by" clause ,'#13#10+
-    'All order fields must exist in fields section'#13#10+
-    'Select can''t use params with prefix "NEW_"'#13#10+
-    'UpdateTransaction must be equel Transaction or AutoCommit=True '
-    ,
-
+    '%s. Can''t use limited cache. '#13#10 +
+      'CachedUpdates must be False,'#13#10 +
+      'Select must have "Order by" clause,'#13#10 +
+      'All order fields must exist in fields section'#13#10 +
+      'Select can''t use params with prefix "NEW_"'#13#10 +
+      'UpdateTransaction must be equal to Transaction or AutoCommit=True',
     'Error in %s. FieldList is empty.',
     '%s can''t use field "%s"',
-    '%s is an Firebird 2 function. Please upgrade to Firebird 2 to use this functonality',
-    '%s is not supported by %s'
-    
+    '%s is a Firebird 2 function. Please upgrade to Firebird 2 to use this functionality',
+    '%s is not supported by %s',
+    '%s is not supported by the client library %s',
+    'Array column %s.%s not found',
+    'Array %s.%s: the name %s is too long',
+    'Array %s.%s has %d dimension(s), %d index(es) given',
+    'Array %s.%s: can''t convert "%s" to the element type',
+    'Array %s.%s: element type %d is not supported',
+    'Array %s.%s: the string "%s" is longer than %d bytes',
+    'Array %s.%s: the value is not an array',
+    'Array %s.%s has %d dimension(s), the value has %d',
+    'Array %s.%s: the value has %d bytes instead of %d',
+    'Array %s.%s: index %d is out of the bounds %d:%d of dimension %d',
+    'Array %s.%s: the bounds %d:%d of dimension %d don''t fit TISC_ARRAY_BOUND',
+    'Array %s.%s: dimension %d has %d element(s), the value has %d',
+    'Parameter %s is not an array',
+    'Code page %d is not available on this system',
+    'Cannot transliterate character between character sets: "%s" to code page %d',
+    '%s: Can''t find or parse ORDER BY statement.',
+    '%s.' + CRLF + 'Field %s is used in the order, but is not in the fields of SelectSQL',
+    '%s: Can''t load metadata.'
   );

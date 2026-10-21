@@ -162,7 +162,26 @@ type
     feFieldListEmpty,
     feCantUseField,
     feFB2feature,
-    feFeatureNotSupported
+    feFeatureNotSupported,
+    feClientFeatureNotSupported,
+    feArrayColumnNotFound,
+    feArrayNameTooLong,
+    feArrayIndexCount,
+    feArrayCantConvert,
+    feArrayElementType,
+    feArrayStringTooLong,
+    feArrayValueNotArray,
+    feArrayDimensionCount,
+    feArrayDataSize,
+    feArrayIndexOutOfBounds,
+    feArrayBoundsTooWide,
+    feArrayElementCount,
+    feParamNotArray,
+    feCodePageNotAvailable,
+    feCantTransliterate,
+    feOrderByNotParsed,
+    feOrderFieldNotInSelect,
+    feCantLoadMetadata
   );
 
   TStatusVector = array [0 .. 19] of ISC_STATUS;
@@ -175,9 +194,31 @@ const
   FIBLocalBufferLength     = 512;
   FIBBigLocalBufferLength  = FIBLocalBufferLength * 2;
   FIBHugeLocalBufferLength = FIBBigLocalBufferLength * 20;
-  // Default "Prefix" to show in error messages.
 
-  {$I FIB_MESSAGES.INC}
+  {$I FIBLocale.inc}
+  {$IF FIBLocale = 'en'}
+    {$I ..\Locales\en\Errors.inc}
+  {$ELSEIF FIBLocale = 'cs'}
+    {$I ..\Locales\cs\Errors.inc}
+  {$ELSEIF FIBLocale = 'de'}
+    {$I ..\Locales\de\Errors.inc}
+  {$ELSEIF FIBLocale = 'es'}
+    {$I ..\Locales\es\Errors.inc}
+  {$ELSEIF FIBLocale = 'pl'}
+    {$I ..\Locales\pl\Errors.inc}
+  {$ELSEIF FIBLocale = 'pt-BR'}
+    {$I ..\Locales\pt-BR\Errors.inc}
+  {$ELSEIF FIBLocale = 'ro'}
+    {$I ..\Locales\ro\Errors.inc}
+  {$ELSEIF FIBLocale = 'ru'}
+    {$I ..\Locales\ru\Errors.inc}
+  {$ELSEIF FIBLocale = 'uk'}
+    {$I ..\Locales\uk\Errors.inc}
+  {$ELSE}
+    {$MESSAGE FATAL 'Unknown FIBLocale in FIBLocale.inc'}
+  {$IFEND}
+
+  // Default "Prefix" to show in error messages.
   DPBPrefix = 'isc_dpb_';
   DPBConstantNames: array [1 .. isc_dpb_last_dpb_constant] of string = (
     'cdd_pathname',

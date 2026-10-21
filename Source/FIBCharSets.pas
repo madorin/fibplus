@@ -39,7 +39,7 @@ function IsSystemCodePage(CodePage: Word): Boolean;
 implementation
 
 uses
-  fib, FIBConsts
+  fib
 {$IFNDEF C22}, Windows{$ENDIF};
 
 type
@@ -145,7 +145,7 @@ const
 
 procedure CodePageError(CodePage: Word);
 begin
-  FIBErrorEx(SCodePageNotAvailable, [CodePage]);
+  FIBError(feCodePageNotAvailable, [CodePage]);
 end;
 
 function ActualCodePage(CodePage: Word): Word;
@@ -226,7 +226,7 @@ begin
     CodePageError(CodePage);
   // as the server does
   if UsedDefault then
-    FIBErrorEx(SCannotTransliterate, [Copy(S, 1, 100), CodePage]);
+    FIBError(feCantTransliterate, [Copy(S, 1, 100), CodePage]);
   SetLength(Result, L);
   FromUnicode(CodePage, PWideChar(S), Length(S), PAnsiChar(Result), L, nil);
 end;

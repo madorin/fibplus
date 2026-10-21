@@ -17,6 +17,9 @@ unit FIBConsts;
 
 interface
 
+uses
+  fib;
+
 resourcestring
 
   SCantFindApiProc            = 'Can''t find procedure %s in %s';
@@ -33,15 +36,27 @@ resourcestring
   SCantGetInfo         = 'Can''t get info for ';
   SDataBaseNotAssigned = 'Database is not assigned';
 
-  SOKButton     = '&OK';
-  SCancelButton = '&Cancel';
-
-  SDBEditUserName = '&User name';
-  SDBEditPassword = '&Password';
-  SDBEditSQLRole  = 'Rol&e';
-
-  SLoginDlgLoginCaption = 'Database login';
-  SLoginDlgDatabase     = 'Database:';
+  {$IF FIBLocale = 'en'}
+    {$I ..\Locales\en\LoginDlg.inc}
+  {$ELSEIF FIBLocale = 'cs'}
+    {$I ..\Locales\cs\LoginDlg.inc}
+  {$ELSEIF FIBLocale = 'de'}
+    {$I ..\Locales\de\LoginDlg.inc}
+  {$ELSEIF FIBLocale = 'es'}
+    {$I ..\Locales\es\LoginDlg.inc}
+  {$ELSEIF FIBLocale = 'pl'}
+    {$I ..\Locales\pl\LoginDlg.inc}
+  {$ELSEIF FIBLocale = 'pt-BR'}
+    {$I ..\Locales\pt-BR\LoginDlg.inc}
+  {$ELSEIF FIBLocale = 'ro'}
+    {$I ..\Locales\ro\LoginDlg.inc}
+  {$ELSEIF FIBLocale = 'ru'}
+    {$I ..\Locales\ru\LoginDlg.inc}
+  {$ELSEIF FIBLocale = 'uk'}
+    {$I ..\Locales\uk\LoginDlg.inc}
+  {$ELSE}
+    {$MESSAGE FATAL 'Unknown FIBLocale in FIBLocale.inc'}
+  {$IFEND}
 
   SCompEditDataSet_ID = '.DataSet_ID should be greater than 0';
 
@@ -86,8 +101,6 @@ resourcestring
   SCompDatabaseNotConnected             = 'Database component is not set properly or not connected';
   SEInvalidCharsetData                  = 'Invalid data charset  %s. Need charset %s';
   SErrorInProc                          = 'Error in %s procedure %s ';
-  SCodePageNotAvailable                 = 'Code page %d is not available on this system';
-  SCannotTransliterate                  = 'Cannot transliterate character between character sets: "%s" to code page %d';
 
 implementation
 

@@ -5829,7 +5829,7 @@ begin
     else
       Srvpar := FSQLParams[i];
     if (Srvpar = nil) or (Srvpar.SQLType <> SQL_ARRAY) then
-      FIBErrorEx('Parameter %s is not an array', [Par.Name]);
+      FIBError(feParamNotArray, [Par.Name]);
     // the column the parameter is assigned to
     if not FParamNamesRead then
       ReadParamNames;

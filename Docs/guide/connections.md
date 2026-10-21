@@ -80,6 +80,8 @@ The dialog is not part of `TFIBDatabase`; a dialog unit registers it when the pr
 
 Without such a unit, a connect with `UseLoginPrompt` raises an error that asks you to add `FIBDBLoginDlg` to the `uses` clause.
 
+The texts of both dialogs follow the language chosen in `FIBLocale.inc`; see [Localization](localization.md).
+
 To show your own dialog, assign a function of type `TFIBLoginDialogFunc` (unit `fib`) to the global variable `FIBLoginDialog`. It receives the database name and the current user name, password, and role, and returns `True` to continue.
 
 ```delphi

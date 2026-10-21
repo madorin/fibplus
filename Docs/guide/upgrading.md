@@ -20,6 +20,7 @@ Find the version you use now, then read every section above it, from the one jus
 |--------|------------|
 | Delphi 6, 7, 2005, 2006, 2007 and C++Builder 6 to 2007 are no longer supported; their packages are removed. Compiling with them stops with a fatal message. | Stay on 7.9.x, or move to Delphi 2009 or later. |
 | The include file `FIBPlus.inc` is renamed to `FIB.inc`. | Change `{$I FIBPlus.inc}` to `{$I FIB.inc}` in code that includes it. |
+| `Source\FIB_MESSAGES.INC` moved to `Locales\en\Errors.inc`, and `Resources\Russian` to `Locales\ru`. The language of the messages and of the login dialog is set in `Source\FIBLocale.inc`, for example `FIBLocale = 'ru';`; see [Localization](localization.md). | If you copied a translation over `Source\FIB_MESSAGES.INC`, set its code in `FIBLocale.inc` instead. `fib.pas` and `FIBConsts.pas` include the files from `..\Locales`, so keep the `Locales` folder next to `Source`. |
 | The compiler version symbols of `FIB.inc` are renamed to `C<CompilerVersion>`: `D2010+` → `C21`, `D_XE` → `C22`, `D_XE2` → `C23`, `D_XE3` → `C24`, `D_XE4` → `C25`, `D_XE5` → `C26`, `D_20`..`D_29` → `C27`..`C36`, `D_30` → `C37`. `TWideDataSet` (Delphi 2009 to XE2) is removed: test `{$IFNDEF C24}`. | Only for code that includes `FIB.inc` and tests these symbols: rename them. |
 
 ### Packages
@@ -69,6 +70,7 @@ These have no old name, so the code that uses them must change:
 | Writable defaults of `pFIBProps`: `DefaultOptions`, `DefaultPrepareOptions`, `DefaultDetailConditions`, `DefTPBMode`, `DefTimeOutAction`, `DefQueryOptions`, `DefCharSet`, `DefSQLDialect`, the `RDef...` and `dDef...` formats and the others | The same names, only in `FIBProps` | Add `FIBProps` to the `uses` clause. The old unit cannot export a variable. |
 | `SPBConstantNames`, `SPBConstantValues` (`IB_Services`) | The same names, only in `FIBServices` | Add `FIBServices` to the `uses` clause. The old unit cannot export a typed constant. |
 | Variable `pFIBLoginDialog`, type `TpFIBLoginDialog` (unit `fib`), functions `pFIBLoginDialogEx` (`FIBDBLoginDlg`) and `pFIBLoginDialogFMX` (`FIB_FMX_DBLoginDlg`) | `FIBLoginDialog`, `TFIBLoginDialogFunc`, `FIBLoginDialogEx`, `FIBLoginDialogFMX` | Rename in code that installs its own login dialog, tests the variable or calls the functions. |
+| Texts of the login dialog in `FIBConsts`: `SLoginDlgLoginCaption`, `SDBEditUserName`, `SDBEditPassword`, `SDBEditSQLRole`, `SOKButton`, `SCancelButton` | `SLoginDlgCaption`, `SLoginDlgUserName`, `SLoginDlgPassword`, `SLoginDlgRole`, `SLoginDlgOK`, `SLoginDlgCancel` (`SLoginDlgDatabase` keeps its name) | Rename in code that uses them, for example an own login dialog. They are now translated with `FIBLocale`. |
 | `TFIBXSQLVAR.FIBArray`, `TFIBArrayStream.FIBArray` | `ArrayInfo` | Rename. The property had the name of the new unit `FIBArray`. |
 | Units `pFIBDataInfo`, `pFIBLists`, `pFIBCacheQueries`, `pFIBEventLists`, `pFIBFieldsDescr`, `pFIBExports`, `pFIBInterfaces`, `pTestInfo`, include file `pFIBMacroComp.inc` | The same names without `p` (`FIBTestInfo` for `pTestInfo`) | Change the `uses` clause. The old units stop the compilation with a message that names the new unit. The names inside the units are the same, except those of the next row. |
 | `TpFIBTableInfo`, `TpFIBTableInfoCollect`, `TpDataSetInfo`, `TpDataSetInfoCollect`, `TpErrorMessage`, `TpErrorMessagesCollect` (`pFIBDataInfo`) | `TFIBTableInfo`, `TFIBTableInfoCache`, `TFIBDataSetInfo`, `TFIBDataSetInfoCache`, `TFIBErrorMessage`, `TFIBErrorMessageCache` (`FIBDataInfo`) | Rename. The variables `ListTableInfo`, `ListDataSetInfo` and `ListErrorMessages` keep their names. |
@@ -98,6 +100,7 @@ These have no old name, so the code that uses them must change:
 | `FIBCharSets.DecodeWideString` | Use `DecodeString`; assign the result to a `WideString` if the type matters. |
 | `AsComp` of `TFIBBCDField`, `TFIBClientBCDField`, `TFIBXSQLVAR` (compiled only without `NO_USE_COMP`, which `FIBPlus.inc` always defined) | Use `AsBcd` or `AsInt64`. |
 | `SFIBErrorNotDataSet`, `SFIBErrorNotDataSetDetail` (`FIBConsts`) | Nothing: nothing raises them any more. |
+| `SCodePageNotAvailable`, `SCannotTransliterate` (`FIBConsts`) | The errors are `feCodePageNotAvailable` and `feCantTransliterate` now; see [Codes of client errors](#codes-of-client-errors). |
 | `TFIBLicensingService`, `TpFIBLicensingService`, `TLicensingAction` (`LicenseAdd`, `LicenseRemove`) | The service added and removed InterBase license keys; Firebird has none, and InterBase registers licenses with its License Manager. Delete the component from forms and code: a form that contains it no longer loads. |
 | Units `IB_Install`, `IB_InstallHeader`, `TpFIBInstall`, `TpFIBUnInstall`, `LoadIBInstallLibrary`, `FreeIBInstallLibrary`, `CheckIBInstallLoaded` and the `isc_install_...` variables (`IB_Intf`), symbol `IBINSTALL_SUPPORT`, `feInterBaseInstallMissing`, the messages `SCantLoadLibrary`, `SSuccess`, `SDelphiException`, `SNoOptionsSet`, `SNoDestinationDirectory`, `SNosourceDirectory`, `SNoUninstallFile`, `SOptionNeedsClient`, `SOptionNeedsServer`, `SInvalidOption`, `SInvalidOnErrorResult`, `SInvalidOnStatusResult` (`FIBConsts`) | They wrapped the InterBase 6 install library `ibinstall.dll`, which Firebird does not have. Remove them from the `uses` clause and the code. |
 
@@ -155,6 +158,12 @@ The transaction of the SQL logger uses `nowait` and no longer the server default
 #### Role name in quotes
 
 `TFIBDatabase` now sends `SQLDialect` in the DPB (`isc_dpb_sql_dialect`). Without it the server took dialect 1 for the attachment and uppercased the role name even inside quotes. A role written without quotes (`sql_role_name=MyRole`) is still uppercased (`MYROLE`), as before. A role written in quotes keeps its case: `sql_role_name="MyRole"` now selects a role created as `CREATE ROLE "MyRole"`. If the role was created without quotes (stored as `MYROLE`) and `DBParams` has it in quotes with other case, the connection now has no role (`CURRENT_ROLE` is `NONE`), without an error. Remove the quotes, write the name in uppercase, or add `sql_dialect=1` to `DBParams` for the old behavior.
+
+#### Codes of client errors
+
+The errors of array fields and parameters, of the conversion to a code page, of the `ORDER BY` of a dataset with a limited cache and of the metadata load had `SQLCode` -1 and an English text. They now have their own value in `TFIBClientError` (`feArrayColumnNotFound` to `feCantLoadMetadata`), `SQLCode` is its ordinal, and the text follows `FIBLocale`. Code that tested `SQLCode = -1` for them must test the new value, for example `E.SQLCode = Ord(feArrayValueNotArray)`.
+
+A feature that the client library doesn't support raises `feClientFeatureNotSupported` ("... is not supported by the client library ..."), no longer `feFeatureNotSupported`, which stays for a feature that the server doesn't support.
 
 ## 7.9.1
 

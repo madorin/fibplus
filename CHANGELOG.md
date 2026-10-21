@@ -26,6 +26,33 @@
 - The design time packages `dclFIB` and `dclFIBTools` can be installed in
   the 64-bit IDE of Delphi 12.3 and 13 (Win64 platform).
 
+#### Localization
+
+- Translations of the FIBPlus error messages in Portuguese (Brazil), Spanish,
+  German, Ukrainian, Czech, Polish and Romanian, in
+  `Locales\<code>\Errors.inc` (`pt-BR`, `es`, `de`, `uk`, `cs`, `pl`,
+  `ro`), beside the Russian one (`ru`); see
+  [Localization](Docs/guide/localization.md).
+- The VCL and FMX login dialogs are translated in the same languages
+  (`Locales\<code>\LoginDlg.inc`), and their fields are wider for the longer
+  texts. The hotkeys of **User name**, **Password** and **Role** move to
+  their fields.
+- The errors of array fields and parameters, of the conversion to a code
+  page, of the `ORDER BY` of a dataset with a limited cache and of the
+  metadata load are translated too: they have their own `TFIBClientError`
+  values (`feArrayColumnNotFound` to `feCantLoadMetadata`) instead of
+  `SQLCode` -1 and an English text. A feature missing in the client library
+  raises `feClientFeatureNotSupported`, whose text names the library in the
+  language of the messages; see
+  [Upgrading](Docs/guide/upgrading.md#codes-of-client-errors).
+- The locale is set in `Source\FIBLocale.inc`, for example
+  `FIBLocale = 'ro';` (`'en'` by default); an unknown code stops the build.
+  `FIBLocale` is also a constant of the unit `fib`.
+  `Source\FIB_MESSAGES.INC` moved to `Locales\en\Errors.inc` and
+  `Resources\Russian` to `Locales\ru`, so a translation is no longer copied
+  over it, and the `Resources` folder is removed; see
+  [Upgrading](Docs/guide/upgrading.md#800).
+
 ### Changed
 
 The lists of old and new names, and what an application has to change, are in
@@ -156,8 +183,6 @@ The lists of old and new names, and what an application has to change, are in
   polyfills `StrUtil.CharInSet` and `FIBPlatforms.WideCompareStr` (`SysUtils`
   declares both); see [Upgrading](Docs/guide/upgrading.md#800).
 - The samples `UnicodeFSS` (TNT controls) and `UnicodeFSS_2009`.
-- `Resources\English\FIB_Messages.inc`, a duplicate of `Source\FIB_MESSAGES.INC`,
-  where the English messages are.
 - `StrUtil.TFastStringStream`: the DDL methods of `FIBMetaData`
   (`GenerateDDLText`, `GenerateObjectDDL` and the others) take a
   `TStringStream`; see [Upgrading](Docs/guide/upgrading.md#800).
@@ -207,11 +232,15 @@ The lists of old and new names, and what an application has to change, are in
   `EXECUTE BLOCK` counted characters, so with UTF8 and non-ASCII text a block
   could be over the 64 KB the server accepts. The limit is now in bytes of the
   connection charset, and 10 MB with a Firebird 3 or later server and client.
-- Russian messages (`Resources\Russian\FIB_Messages.inc`): an unknown DPB or
+- Russian messages (`Locales\ru\Errors.inc`): an unknown DPB or
   TPB constant raised an `EConvertError` ("Format ... invalid or incompatible
   with argument") instead of its message. The file was in code page 1251 and
   compiled to garbled text on a machine with another system code page; it is
-  now UTF-8.
+  now UTF-8. The message of `feCantEndSharedTransaction` said something else
+  than the English one, and `feCantUseField` had a grammar error.
+- English messages: typos ("functonality", "equel", "an Firebird 2"), the
+  space before the colon in "%s :Transaction is not active" and the others,
+  and "Column types ... is not array field".
 - A string over 32767 bytes for a `VARCHAR` parameter was sent as a blob of the
   column charset subtype, so the server reported "Filter not found to convert
   type 4 to type 1" instead of a string truncation.

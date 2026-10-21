@@ -213,7 +213,7 @@ begin
     Query.ParamByName('FIELD_NAME').AsString := FFieldName;
     Query.ExecQuery;
     if Query.Eof then
-      FIBErrorEx('Array column %s.%s not found', [FTableName, FFieldName]);
+      FIBError(feArrayColumnNotFound, [FTableName, FFieldName]);
     FElementType := Query.Fields[0].AsInteger;
     FElementLength := Query.Fields[1].AsInteger;
     FElementScale := Query.Fields[2].AsInteger;
@@ -322,7 +322,7 @@ function TFIBArray.SDLName(const Name: string): AnsiString;
 begin
   Result := EncodeString(Name, SDLCodePage);
   if Length(Result) > 255 then
-    FIBErrorEx('Array %s.%s: the name %s is too long', [FTableName, FFieldName, Name]);
+    FIBError(feArrayNameTooLong, [FTableName, FFieldName, Name]);
 end;
 
 // As gen_sdl of the client, but with the full names: writes look the column up by them
@@ -480,13 +480,12 @@ var
   i: Integer;
 begin
   if Length(Indexes) <> DimensionCount then
-    FIBErrorEx('Array %s.%s has %d dimension(s), %d index(es) given',
+    FIBError(feArrayIndexCount,
       [FTableName, FFieldName, DimensionCount, Length(Indexes)]);
   for i := 0 to DimensionCount - 1 do
     if (Indexes[i] < FBounds[i].Lower) or (Indexes[i] > FBounds[i].Upper) then
-      FIBErrorEx
-        ('Array %s.%s: index %d is out of the bounds %d:%d of dimension %d',
-          [FTableName, FFieldName, Indexes[i], FBounds[i].Lower, FBounds[i].Upper, i + 1]);
+      FIBError(feArrayIndexOutOfBounds,
+        [FTableName, FFieldName, Indexes[i], FBounds[i].Lower, FBounds[i].Upper, i + 1]);
 end;
 
 function TFIBArray.GetDimensionCount: Integer;
@@ -499,9 +498,8 @@ begin
   if (Index < 0) or (Index >= DimensionCount) then
     FIBError(feWrongDimension, [Index, FTableName + '.' + FFieldName]);
   if (FBounds[Index].Lower < Low(SmallInt)) or (FBounds[Index].Upper > High(SmallInt)) then
-    FIBErrorEx
-      ('Array %s.%s: the bounds %d:%d of dimension %d don''t fit TISC_ARRAY_BOUND',
-        [FTableName, FFieldName, FBounds[Index].Lower, FBounds[Index].Upper, Index + 1]);
+    FIBError(feArrayBoundsTooWide,
+      [FTableName, FFieldName, FBounds[Index].Lower, FBounds[Index].Upper, Index + 1]);
   Result.array_bound_lower := FBounds[Index].Lower;
   Result.array_bound_upper := FBounds[Index].Upper;
 end;
@@ -518,7 +516,7 @@ end;
 
 procedure TFIBArray.ConversionError(const Value: Variant);
 begin
-  FIBErrorEx('Array %s.%s: can''t convert "%s" to the element type', [FTableName, FFieldName, VarToStr(Value)]);
+  FIBError(feArrayCantConvert, [FTableName, FFieldName, VarToStr(Value)]);
 end;
 
 function TFIBArray.ReadElement(P: PAnsiChar): Variant;
@@ -601,7 +599,7 @@ begin
       end;
     blr_bool: Result := PByte(P)^ <> 0;
   else
-    FIBErrorEx('Array %s.%s: element type %d is not supported', [FTableName, FFieldName, FElementType]);
+    FIBError(feArrayElementType, [FTableName, FFieldName, FElementType]);
   end;
 end;
 
@@ -626,7 +624,7 @@ begin
       begin
         S := EncodeString(VarToStr(Value), FElementCodePage);
         if Length(S) > FElementLength then
-          FIBErrorEx('Array %s.%s: the string "%s" is longer than %d bytes',
+          FIBError(feArrayStringTooLong,
             [FTableName, FFieldName, VarToStr(Value), FElementLength]);
         if S <> '' then
           Move(S[1], P^, Length(S));
@@ -678,7 +676,7 @@ begin
       end;
     blr_bool: PByte(P)^ := Ord(Boolean(Value));
   else
-    FIBErrorEx('Array %s.%s: element type %d is not supported', [FTableName, FFieldName, FElementType]);
+    FIBError(feArrayElementType, [FTableName, FFieldName, FElementType]);
   end;
 end;
 
@@ -719,9 +717,9 @@ var
   P: PAnsiChar;
 begin
   if not VarIsArray(Value) then
-    FIBErrorEx('Array %s.%s: the value is not an array', [FTableName, FFieldName]);
+    FIBError(feArrayValueNotArray, [FTableName, FFieldName]);
   if VarArrayDimCount(Value) <> DimensionCount then
-    FIBErrorEx('Array %s.%s has %d dimension(s), the value has %d',
+    FIBError(feArrayDimensionCount,
       [FTableName, FFieldName, DimensionCount, VarArrayDimCount(Value)]);
   // elements are written in row-major order from the start of the array, so only the first
   // dimension may be shorter than declared
@@ -730,9 +728,8 @@ begin
     Count := VarArrayHighBound(Value, i + 1) - VarArrayLowBound(Value, i + 1) + 1;
     MaxCount := FBounds[i].Upper - FBounds[i].Lower + 1;
     if (Count > MaxCount) or ((i > 0) and (Count <> MaxCount)) then
-      FIBErrorEx
-        ('Array %s.%s: dimension %d has %d element(s), the value has %d',
-          [FTableName, FFieldName, i + 1, MaxCount, Count]);
+      FIBError(feArrayElementCount,
+        [FTableName, FFieldName, i + 1, MaxCount, Count]);
   end;
   // elements missing in the value are blank
   InitBuffer(Buffer);

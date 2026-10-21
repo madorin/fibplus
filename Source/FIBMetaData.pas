@@ -4406,7 +4406,7 @@ begin
     FFullLoaded := not OnlyNames
   end
   else
-    FIBErrorEx('%s:Can''t load metadata.', [CmpFullName(Self)]);
+    FIBError(feCantLoadMetadata, [CmpFullName(Self)]);
 end;
 
 function TFIBDBSchemaExtract.GetMetaDataBase: TMetaDataBase;

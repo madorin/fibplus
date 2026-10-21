@@ -84,13 +84,13 @@ end;
 
 procedure TfrmFIBDBLoginDlg.FormCreate(Sender: TObject);
 begin
-  Caption := SLoginDlgLoginCaption;
+  Caption := SLoginDlgCaption;
   Label1.Caption := SLoginDlgDatabase;
-  Label2.Caption := SDBEditUserName;
-  Label3.Caption := SDBEditPassword;
-  Label4.Caption := SDBEditSQLRole;
-  Button1.Caption := SOKButton;
-  Button2.Caption := SCancelButton;
+  Label2.Caption := SLoginDlgUserName;
+  Label3.Caption := SLoginDlgPassword;
+  Label4.Caption := SLoginDlgRole;
+  Button1.Caption := SLoginDlgOK;
+  Button2.Caption := SLoginDlgCancel;
 end;
 
 initialization

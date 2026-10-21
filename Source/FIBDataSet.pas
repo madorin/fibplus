@@ -4272,7 +4272,7 @@ begin
 
   sc := SortFieldsCount;
   if sc = 0 then
-    FIBErrorEx('%s:Can''t find or parse ORDER BY statement.', [CmpFullName(Self)]);
+    FIBError(feOrderByNotParsed, [CmpFullName(Self)]);
 
   EquelCondition := '';
 
@@ -8058,7 +8058,7 @@ begin
               if tf = nil then
                 begin
                   if FCacheModelOptions.FCacheModelKind = cmkLimitedBufferSize then
-                    FIBErrorEx('%s.' + sLineBreak + 'Field %s use in order, but not presented in fields section of SelectSQL',
+                    FIBError(feOrderFieldNotInSelect,
                       [CmpFullName(Self), tmpStr]);
                   FIsClientSorting := false;
                   FSortFields := Null;
@@ -8883,8 +8883,7 @@ begin
         cmkLimitedBufferSize:
           begin
             if VarIsNull(FSortFields) then
-              FIBErrorEx
-              ('%s.PrepareBookMarkSize:Can''t find or parse ORDER BY statement.', [CmpFullName(Self)]);
+              FIBError(feOrderByNotParsed, [CmpFullName(Self) + '.PrepareBookMarkSize']);
             oc := VarArrayHighBound(FSortFields, 1);
             for i := 0 to oc do
               begin

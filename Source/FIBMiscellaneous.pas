@@ -1650,7 +1650,7 @@ begin
     FBlobID.gds_quad_low := 0;
   end
   else if FDataSize <> FArrayInfo.ArraySize then
-    FIBErrorEx('Array %s.%s: the value has %d bytes instead of %d',
+    FIBError(feArrayDataSize,
       [FArrayInfo.TableName, FArrayInfo.FieldName, FDataSize, FArrayInfo.ArraySize])
   else
     FArrayInfo.PutSlice(FBuffer, FBlobID, DBHandle, UpdateTRHandle);

@@ -28,6 +28,8 @@
 // {$DEFINE USE_DEPRECATE_METHODS2}   // FIBDabase.DataSets -> FIBDabase.Bases
 // {$DEFINE DFM_VERSION1}             // save dfm in the old format (Conditions and FIBDataSet.Options)
 
+// The locale of the error messages and of the login dialog is set in FIBLocale.inc
+
 {$IF CompilerVersion < 20}
   {$MESSAGE FATAL 'FIBPlus 8 needs Delphi 2009 or later'}
 {$IFEND}

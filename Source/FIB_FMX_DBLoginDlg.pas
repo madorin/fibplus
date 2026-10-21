@@ -64,13 +64,13 @@ end;
 
 procedure TfmxFIBDBLoginDlg.FormCreate(Sender: TObject);
 begin
-  Caption := SLoginDlgLoginCaption;
+  Caption := SLoginDlgCaption;
   Label1.Text := SLoginDlgDatabase;
-  Label2.Text := SDBEditUserName;
-  Label3.Text := SDBEditPassword;
-  Label4.Text := SDBEditSQLRole;
-  Button1.Text := SOKButton;
-  Button2.Text := SCancelButton;
+  Label2.Text := SLoginDlgUserName;
+  Label3.Text := SLoginDlgPassword;
+  Label4.Text := SLoginDlgRole;
+  Button1.Text := SLoginDlgOK;
+  Button2.Text := SLoginDlgCancel;
 
 end;
 

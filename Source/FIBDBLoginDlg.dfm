@@ -1,9 +1,9 @@
 object frmFIBDBLoginDlg: TfrmFIBDBLoginDlg
   Left = 328
   Top = 272
-  Width = 293
+  Width = 331
   Height = 222
-  HorzScrollBar.Range = 280
+  HorzScrollBar.Range = 318
   VertScrollBar.Range = 185
   ActiveControl = EdPassword
   BorderStyle = bsDialog
@@ -23,14 +23,14 @@ object frmFIBDBLoginDlg: TfrmFIBDBLoginDlg
   object Bevel1: TBevel
     Left = 8
     Top = 8
-    Width = 271
+    Width = 309
     Height = 40
     Shape = bsFrame
   end
   object Bevel2: TBevel
     Left = 8
     Top = 53
-    Width = 271
+    Width = 309
     Height = 87
     Shape = bsFrame
   end
@@ -51,7 +51,7 @@ object frmFIBDBLoginDlg: TfrmFIBDBLoginDlg
   object lbDBName: TLabel
     Left = 11
     Top = 21
-    Width = 263
+    Width = 301
     Height = 15
     AutoSize = False
     Caption = 'lbDBName'
@@ -62,6 +62,7 @@ object frmFIBDBLoginDlg: TfrmFIBDBLoginDlg
     Width = 59
     Height = 13
     Caption = 'User Name :'
+    FocusControl = EdUserName
   end
   object Label3: TLabel
     Left = 16
@@ -69,6 +70,7 @@ object frmFIBDBLoginDlg: TfrmFIBDBLoginDlg
     Width = 52
     Height = 13
     Caption = 'Password :'
+    FocusControl = EdPassword
   end
   object Label4: TLabel
     Left = 16
@@ -76,9 +78,10 @@ object frmFIBDBLoginDlg: TfrmFIBDBLoginDlg
     Width = 28
     Height = 13
     Caption = 'Role :'
+    FocusControl = EdRole
   end
   object Button1: TButton
-    Left = 126
+    Left = 164
     Top = 150
     Width = 75
     Height = 25
@@ -88,7 +91,7 @@ object frmFIBDBLoginDlg: TfrmFIBDBLoginDlg
     TabOrder = 0
   end
   object Button2: TButton
-    Left = 206
+    Left = 244
     Top = 150
     Width = 75
     Height = 25
@@ -98,14 +101,14 @@ object frmFIBDBLoginDlg: TfrmFIBDBLoginDlg
     TabOrder = 1
   end
   object EdUserName: TEdit
-    Left = 92
+    Left = 130
     Top = 62
     Width = 179
     Height = 21
     TabOrder = 2
   end
   object EdPassword: TEdit
-    Left = 92
+    Left = 130
     Top = 86
     Width = 179
     Height = 21
@@ -113,7 +116,7 @@ object frmFIBDBLoginDlg: TfrmFIBDBLoginDlg
     TabOrder = 3
   end
   object EdRole: TEdit
-    Left = 92
+    Left = 130
     Top = 110
     Width = 179
     Height = 21
