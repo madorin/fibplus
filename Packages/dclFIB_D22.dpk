@@ -37,7 +37,7 @@ requires
   dbrtl,
   vclactnband,
   vclimg,
-  FIBPlus_D22;
+  FIB_D22;
 
 contains
   RegFIBPlusEditors in '..\Source\Editors\RegFIBPlusEditors.pas',
@@ -67,7 +67,7 @@ contains
   uFIBScriptForm in '..\Source\Editors\uFIBScriptForm.pas' {frmScript},
   IBSQLSyn in '..\Source\Editors\IBSQLSyn.pas',
   FIBSyntaxMemo in '..\Source\Editors\FIBSyntaxMemo.pas',
-  FIBDBLoginDlg in '..\Source\Editors\..\FIBDBLoginDlg.pas' {frmFIBDBLoginDlg},
+  FIBDBLoginDlg in '..\Source\FIBDBLoginDlg.pas' {frmFIBDBLoginDlg},
   uFIBEditorForm in '..\Source\Editors\uFIBEditorForm.pas',
   uFontEditor in '..\Source\Editors\uFontEditor.pas' {frmFontEditor};
 

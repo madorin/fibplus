@@ -38,7 +38,7 @@ requires
   dbrtl,
   vclactnband,
   vclimg,
-  FIBPlus_D24;
+  FIB_D24;
 
 contains
   RegFIBPlus in '..\Source\RegFIBPlus.pas',

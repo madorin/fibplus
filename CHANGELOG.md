@@ -41,35 +41,22 @@ The lists of old and new names, and what an application has to change, are in
   `IB_Services`), `TpFIBStatistics` is now `TFIBSQLLogger`, and
   `TSIBfibEventAlerter` in `SIBFIBEA` is now `TFIBEventAlerter` in
   `FIBEventAlerter`.
-- Most existing code compiles without a change: the old units (`pFIBDataSet`,
-  `pFIBDatabase`, `pFIBQuery`, `pFIBStoredProc`, `pFIBScripter`,
-  `pFIBErrorHandler`, `pFIBDataRefresh`, `pFIBProps`, `pFIBMetaData`,
-  `pFIBSQLLog`, `pFIBClientDataSet`, `pFIBArray`, `IB_Services`, `SIBFIBEA`)
-  stay as deprecated units, with the old names as deprecated aliases. The compiler
-  warns at the `uses` clause that names an old unit. Forms with the old class
-  names load as long as the old unit is linked, and are saved with the new
-  names. The old units and names will be removed in a later major version.
-- Not covered by the old units, so the code needs a change:
-  - The login dialog hook: the variable `pFIBLoginDialog` (unit `fib`) is now
-    `FIBLoginDialog`, its type is `TFIBLoginDialogFunc`, and the dialog
-    functions are `FIBLoginDialogEx` and `FIBLoginDialogFMX`.
-  - The property `FIBArray` of `TFIBXSQLVAR` and `TFIBArrayStream` is now
-    `ArrayInfo`.
-  - `TpFIBDBEventType`, `TpFIBTrEventType` and `TpSQLKind` were declared in
-    `FIBDatabase` and `FIBDataSet`; the old names are now only in
-    `pFIBDatabase` and `pFIBDataSet`.
-  - The writable defaults of `FIBProps` (`DefaultOptions`, `DefTPBMode` and
-    the others) and the typed constants of `FIBServices` are only in the new
-    units.
-  - The helper units (`pFIBDataInfo`, `pFIBLists`, `pFIBCacheQueries`,
-    `pFIBEventLists`, `pFIBFieldsDescr`, `pFIBExports`, `pFIBInterfaces`,
-    `pTestInfo`) stop the compilation with a message that names the new unit.
-    The repository cache classes of `FIBDataInfo` are renamed without aliases.
-  - The design-time units and editors are renamed without old names.
-- The IDE preferences of the dataset, query, database and transaction are
-  stored under registry keys without the `p` (`FIBDataSet`, `FIBQuery`,
-  `FIBDatabase`, `FIBTransaction`): set them again once in the FIBPlus
-  preferences.
+- Most existing code compiles without a change: the main old units
+  (`pFIBDataSet`, `pFIBDatabase`, `IB_Services`, `SIBFIBEA` and the others)
+  stay as deprecated units with the old names as deprecated aliases, and forms
+  with the old class names load while the old unit is linked. They will be
+  removed in a later major version.
+- Without an old name, so the code needs a change: the login dialog hook
+  (`pFIBLoginDialog` is now `FIBLoginDialog`), the property `FIBArray` of
+  `TFIBXSQLVAR` and `TFIBArrayStream` (now `ArrayInfo`), the writable defaults
+  of `FIBProps` and the typed constants of `FIBServices`, the helper units
+  (`pFIBDataInfo`, `pFIBLists` and the others stop the compilation with a
+  message that names the new unit), the design-time units and editors.
+  `TpFIBDBEventType`, `TpFIBTrEventType` and `TpSQLKind` are now only in
+  `pFIBDatabase` and `pFIBDataSet`.
+- The IDE preferences are stored under registry keys without the `p`
+  (`FIBDataSet`, `FIBQuery`, `FIBDatabase`, `FIBTransaction`): set them again
+  once in the FIBPlus preferences.
 
 #### Merged components
 
@@ -142,22 +129,19 @@ The lists of old and new names, and what an application has to change, are in
 - The compiler version symbols of `FIBPlus.inc` are named after
   `CompilerVersion`: `C21` (Delphi 2010) to `C37` (Delphi 13) replace `D2010+`,
   `D_XE`..`D_XE5` and `D_20`..`D_30`; `TWideDataSet` is removed (`C24` not
-  defined); see
-  [Upgrading](Docs/guide/upgrading.md#800).
-- Delphi 10.4 and later have one package per purpose for all versions, through
-  `{$LIBSUFFIX AUTO}`, and one project group `Packages\FIB.groupproj` instead
-  of `FIBPlus_D27` to `FIBPlus_D37`:
-  - runtime `FIB` (`FIB270.bpl` to `FIB370.bpl`) replaces `FIBPlus_D27` to
-    `FIBPlus_D37`;
-  - design time `dclFIB` (`dclFIB270.bpl` to `dclFIB370.bpl`) replaces
-    `DclFIBPlus_Dxx` and `FIBPlusEditors_Dxx`;
-  - `FIBTools` is now `dclFIBTools`, `FIBPlusFMX` is now `FIBFMX` and is also
-    built for Delphi 10.4 to 12.
-- Delphi 10 Seattle to 10.3 Rio keep `FIBPlus_D23` to `FIBPlus_D26`;
-  `DclFIBPlus_Dxx` and `FIBPlusEditors_Dxx` are merged into `dclFIB_D23` to
-  `dclFIB_D26`. The editors packages of older versions are renamed to
-  `dclFIB_xx`. Design time package names start with `dcl`, as in Delphi and
-  other libraries.
+  defined).
+- The packages are renamed: the runtime package is `FIB`, the design time
+  packages start with `dcl`, as in Delphi and other libraries, and the editors
+  packages are merged into them; the old and new names are in
+  [Upgrading](Docs/guide/upgrading.md#packages).
+  - Delphi 10.4 and later have one package of each kind for all versions,
+    through `{$LIBSUFFIX AUTO}`, in `Packages\FIB.groupproj`: `FIB`
+    (`FIB270.bpl` to `FIB370.bpl`), `dclFIB`, `dclFIBTools` (was `FIBTools`)
+    and `FIBFMX` (was `FIBPlusFMX`), which is also built for Delphi 10.4 to 12.
+  - Delphi 2009 to 10.3 Rio have `FIB_Dxx` and `dclFIB_Dxx`, named after the
+    package version, from `FIB_D12` (Delphi 2009) to `FIB_D26` (10.3 Rio), in
+    `FIB_Dxx.groupproj`. The duplicate packages of Delphi XE7 are merged into
+    `FIB_D21` and `dclFIB_D21`.
 
 ### Removed
 

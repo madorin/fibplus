@@ -20,90 +20,85 @@ Find the version you use now, then read every section above it, from the one jus
 |--------|------------|
 | Delphi 6, 7, 2005, 2006, 2007 and C++Builder 6 to 2007 are no longer supported; their packages are removed. Compiling with them stops with a fatal message. | Stay on 7.9.x, or move to Delphi 2009 or later. |
 | The compiler version symbols of `FIBPlus.inc` are renamed to `C<CompilerVersion>`: `D2010+` → `C21`, `D_XE` → `C22`, `D_XE2` → `C23`, `D_XE3` → `C24`, `D_XE4` → `C25`, `D_XE5` → `C26`, `D_20`..`D_29` → `C27`..`C36`, `D_30` → `C37`. `TWideDataSet` (Delphi 2009 to XE2) is removed: test `{$IFNDEF C24}`. | Only for code that includes `FIBPlus.inc` and tests these symbols: rename them. |
-| Delphi 10.4 and later: one project group `FIB.groupproj` and one package per purpose for all versions (`{$LIBSUFFIX AUTO}`). The runtime package `FIBPlus_D27`..`FIBPlus_D37` is now `FIB` (`FIB270.bpl`..`FIB370.bpl`). | Applications built with runtime packages: replace `FIBPlus_Dxx` with `FIB` in the runtime packages list and deploy `FIBxxx.bpl`. Packages that require `FIBPlus_Dxx` (your own, or third-party ones such as the EhLib and FastReport FIBPlus packages and the Data Abstract FIBPlus driver) must require `FIB` instead. |
-| The design time packages `DclFIBPlus_Dxx` and `FIBPlusEditors_Dxx` are merged into `dclFIB` (Delphi 10.4 and later, e.g. `dclFIB370.bpl`) or `dclFIB_Dxx` (older versions). `FIBTools` is renamed to `dclFIBTools`. | In **Component > Install Packages**, remove the old packages, then build and install the new ones from the project group. |
-| The runtime package `FIBPlusFMX` (Delphi 13) is renamed to `FIBFMX` (`FIBFMX370.bpl`) and is also built for Delphi 10.4 to 12 (`FIBFMX270.bpl` to `FIBFMX290.bpl`). | Replace `FIBPlusFMX` with `FIBFMX` in the requires list or the runtime packages of FireMonkey applications. |
 
-### Renamed and removed identifiers
+### Packages
+
+The runtime package is `FIB` and the design time packages start with `dcl`. Delphi 10.4 and later have one package of each kind for all versions (`{$LIBSUFFIX AUTO}`) in `FIB.groupproj`. Older versions have the [package version](https://docwiki.embarcadero.com/RADStudio/en/Compiler_Versions) in the name (`FIB_D12` for 120) and the project groups `FIB_Dxx.groupproj`.
+
+| Delphi | Old | New |
+|--------|-----|-----|
+| 10.4 to 13 | `FIBPlus_D27`..`FIBPlus_D37` | `FIB` (`FIB270.bpl`..`FIB370.bpl`) |
+| 10.4 to 13 | `FIBPlusFMX` (Delphi 13 only) | `FIBFMX` (`FIBFMX270.bpl`..`FIBFMX370.bpl`) |
+| 10.4 to 13 | `DclFIBPlus_Dxx`, `FIBPlusEditors_Dxx` | `dclFIB` (`dclFIB270.bpl`..`dclFIB370.bpl`) |
+| 10.4 to 13 | `FIBTools` | `dclFIBTools` |
+| XE6 to 10.3 | `FIBPlus_D20`..`FIBPlus_D26` | `FIB_D20`..`FIB_D26` |
+| XE2 to XE5, XE7 | `FIBPlus_XE2`..`FIBPlus_XE5`, `FIBPlus_XE7` | `FIB_D16`..`FIB_D19`, `FIB_D21` |
+| 2009, 2010, XE | `FIBPlus2009`, `FIBPlus2010`, `FIBPlus2011` | `FIB_D12`, `FIB_D14`, `FIB_D15` |
+| 2009 to 10.3 | `DclFIBPlus_Dxx`, `FIBPlusEditors...` | `dclFIB_Dxx` |
+
+- In **Component > Install Packages**, remove the old packages, then build and install the new ones from the project group.
+- Applications built with runtime packages: replace the old name in the runtime packages list and deploy the new BPL.
+- Packages that require the old runtime package (your own, or third-party ones such as the EhLib and FastReport FIBPlus packages and the Data Abstract FIBPlus driver) must require the new one.
+
+### Renamed classes and units
+
+Classes, types and units lost the `p` of their names. The old units below stay as deprecated units: a `uses` clause that names one compiles with a warning, and the old names are deprecated aliases declared in the old unit. Forms with the old component classes load while the old unit is linked, and the IDE writes the new class names the next time the form is saved. The old units and names are removed in a later major version.
+
+| Old unit | New unit | Old names → new names |
+|----------|----------|-----------------------|
+| `pFIBDataSet` | `FIBDataSet` | `TpFIBDataSet` → `TFIBDataSet`, `TpSQLKind` → `TFIBSQLKind`. Also exports `TLockStatus`, `TLockErrorEvent`, `TCachRefreshKind`, `TOnGetSQLTextProc`, `TIncludeFieldsToSQL`, `FieldInArray`. |
+| `pFIBDatabase` | `FIBDatabase` | `TpFIBDatabase` → `TFIBDatabase`, `TpFIBTransaction` → `TFIBTransaction`, `TpFIBDBEventType` → `TFIBDatabaseEventType`, `TpFIBTrEventType` → `TFIBTransactionEventType`, `TpFIBAcceptCacheSchema` → `TFIBAcceptCacheSchemaEvent`. Also exports `TFIBLoginEvent`, `TOnLostConnectActions` (`laTerminateApp` ...), `TFIBLostConnectEvent`, `TFIBRestoreConnectEvent`, `TOnSQLExecute`, `WriteDBParamsToAlias`. |
+| `pFIBQuery` | `FIBQuery`, `FIBDataSet` | `TpFIBQuery` → `TFIBQuery`, `TpFIBUpdateObject` → `TFIBUpdateObject` (in `FIBDataSet`). |
+| `pFIBStoredProc` | `FIBStoredProc` | `TpFIBStoredProc` → `TFIBStoredProc`. |
+| `pFIBScripter` | `FIBScripter` | `TpFIBScripter` → `TFIBScripter`, `TpFIBScriptParser` → `TFIBScriptParser`. |
+| `pFIBErrorHandler` | `FIBErrorHandler` | `TpFibErrorHandler` → `TFIBErrorHandler`. |
+| `pFIBDataRefresh` | `FIBDataRefresh` | `TpFIBTableChangesReader` → `TFIBTableChangesReader`. |
+| `pFIBProps` | `FIBProps` | `TpFIBDsOption(s)` → `TFIBDataSetOption(s)`, `TpPrepareOption(s)` → `TFIBPrepareOption(s)`, `TpFIBQueryOption(s)` → `TFIBQueryOption(s)`, `TpFIBExistObject` → `TFIBExistObject`, `TpFIBFieldInfo` → `TFIBFieldInfo` (also in handlers of `TDataSetsContainer.OnApplyFieldRepository`). Also exports the types, the values of the enumerated types (`poTrimCharFields`, `qoAutoCommit`, `tpbReadCommitted` ...) and the constants. |
+| `pFIBMetaData` | `FIBMetaData` | `TpFIBDBSchemaExtract` → `TFIBDBSchemaExtract`. Also exports the types, the values of the enumerated types, the constants and `FullExtractDDL`. |
+| `pFIBSQLLog` | `FIBSQLLog` | `TpFIBStatistics` → `TFIBSQLLogger`. |
+| `pFIBClientDataSet` | `FIBClientDataSet` | `TpFIBClientDataSet` → `TFIBClientDataSet`, `TpFIBDataSetProvider` → `TFIBDataSetProvider`, `TpFIBClientBCDField` → `TFIBClientBCDField`. |
+| `pFIBArray` | `FIBArray` | `TpFIBArray` → `TFIBArray`. |
+| `IB_Services` | `FIBServices` | `TpFIBCustomService`, `TpFIBServerProperties`, `TpFIBControlService`, `TpFIBControlAndQueryService`, `TpFIBConfigService`, `TpFIBLogService`, `TpFIBStatisticalService`, `TpFIBBackupRestoreService`, `TpFIBBackupService`, `TpFIBRestoreService`, `TpFIBNBackupService`, `TpFIBNRestoreService`, `TpFIBValidationService`, `TpFIBSecurityService` → the same names with `TFIB`. Also exports the types, the values of the enumerated types (`IgnoreLimbo`, `SweepDB`, `ActionAddUser` ...), `DefaultBufferSize` and `SPBPrefix`. |
+| `SIBFIBEA` | `FIBEventAlerter` | `TSIBfibEventAlerter` → `TFIBEventAlerter`. |
+
+These have no old name, so the code that uses them must change:
 
 | Old | New | What to do |
 |-----|-----|------------|
-| `StrUtil.CharInSet`, `FIBPlatforms.WideCompareStr` (declared only for compilers before Delphi 2009) | Removed | Nothing: `SysUtils` declares both. |
-| `IWideStringField` with its properties `WideDisplayText`/`WideText`, implemented by `TFIBMemoField` (`GetWideDisplayText`, `GetWideEditText`, `SetWideEditText`), for the TNT controls | Removed | Use `DisplayText`, `Text` or `AsString`. |
-| `FIBCharSets.DecodeWideString` | `DecodeString` | Rename; assign the result to a `WideString` if the type matters. |
-| `AsComp` of `TFIBBCDField`, `TFIBClientBCDField`, `TFIBXSQLVAR` (compiled only without `NO_USE_COMP`, which `FIBPlus.inc` always defined) | Removed | Use `AsBcd` or `AsInt64`. |
-| Unit `pFIBScripter` | `FIBScripter` | Change the `uses` clause. The old unit still compiles and gives a warning. |
-| `TpFIBScripter` | `TFIBScripter` | Rename. The old name is a deprecated alias of the same class. |
-| `TpFIBScriptParser` | `TFIBScriptParser` | Rename. The old name is a deprecated alias of the same class. |
-| Unit `pFIBStoredProc` | `FIBStoredProc` | Change the `uses` clause. The old unit still compiles and gives a warning. |
-| `TpFIBStoredProc` | `TFIBStoredProc` | Rename. The old name is a deprecated alias of the same class. |
-| Unit `pFIBErrorHandler` | `FIBErrorHandler` | Change the `uses` clause. The old unit still compiles and gives a warning. |
-| `TpFibErrorHandler` | `TFIBErrorHandler` | Rename. The old name is a deprecated alias of the same class. |
-| Unit `pFIBDataRefresh` | `FIBDataRefresh` | Change the `uses` clause. The old unit still compiles and gives a warning. |
-| `TpFIBTableChangesReader` | `TFIBTableChangesReader` | Rename. The old name is a deprecated alias of the same class. |
-| Unit `pFIBMetaData` | `FIBMetaData` | Change the `uses` clause. The old unit still compiles, gives a warning, and exports the types, the values of the enumerated types, the constants and `FullExtractDDL`. |
-| `TpFIBDBSchemaExtract` | `TFIBDBSchemaExtract` | Rename. The old name is a deprecated alias of the same class in `pFIBMetaData`. |
-| Unit `pFIBQuery` | `FIBQuery`, `FIBDataSet` | Change the `uses` clause. The old unit still compiles and gives a warning. |
-| `TpFIBQuery` | `TFIBQuery` | Rename. The old name is a deprecated alias of the same class. |
-| `TpFIBUpdateObject` | `TFIBUpdateObject` (unit `FIBDataSet`) | Rename. The old name is a deprecated alias of the same class. |
-| `TpFIBQueryOption`, `TpFIBQueryOptions` | `TFIBQueryOption`, `TFIBQueryOptions` | Rename. The old names are deprecated aliases of the same types in `pFIBProps`. |
+| Writable defaults of `pFIBProps`: `DefaultOptions`, `DefaultPrepareOptions`, `DefaultDetailConditions`, `DefTPBMode`, `DefTimeOutAction`, `DefQueryOptions`, `DefCharSet`, `DefSQLDialect`, the `RDef...` and `dDef...` formats and the others | The same names, only in `FIBProps` | Add `FIBProps` to the `uses` clause. The old unit cannot export a variable. |
+| `SPBConstantNames`, `SPBConstantValues` (`IB_Services`) | The same names, only in `FIBServices` | Add `FIBServices` to the `uses` clause. The old unit cannot export a typed constant. |
+| Variable `pFIBLoginDialog`, type `TpFIBLoginDialog` (unit `fib`), functions `pFIBLoginDialogEx` (`FIBDBLoginDlg`) and `pFIBLoginDialogFMX` (`FIB_FMX_DBLoginDlg`) | `FIBLoginDialog`, `TFIBLoginDialogFunc`, `FIBLoginDialogEx`, `FIBLoginDialogFMX` | Rename in code that installs its own login dialog, tests the variable or calls the functions. |
+| `TFIBXSQLVAR.FIBArray`, `TFIBArrayStream.FIBArray` | `ArrayInfo` | Rename. The property had the name of the new unit `FIBArray`. |
+| Units `pFIBDataInfo`, `pFIBLists`, `pFIBCacheQueries`, `pFIBEventLists`, `pFIBFieldsDescr`, `pFIBExports`, `pFIBInterfaces`, `pTestInfo`, include file `pFIBMacroComp.inc` | The same names without `p` (`FIBTestInfo` for `pTestInfo`) | Change the `uses` clause. The old units stop the compilation with a message that names the new unit. The names inside the units are the same, except those of the next row. |
+| `TpFIBTableInfo`, `TpFIBTableInfoCollect`, `TpDataSetInfo`, `TpDataSetInfoCollect`, `TpErrorMessage`, `TpErrorMessagesCollect` (`pFIBDataInfo`) | `TFIBTableInfo`, `TFIBTableInfoCache`, `TFIBDataSetInfo`, `TFIBDataSetInfoCache`, `TFIBErrorMessage`, `TFIBErrorMessageCache` (`FIBDataInfo`) | Rename. The variables `ListTableInfo`, `ListDataSetInfo` and `ListErrorMessages` keep their names. |
+| Design-time units `pFIBComponentEditors`, `pFIBAutoUpdEditor`, `pFIBConditionsEdit`, `pFIBDBEdit`, `pFIBDataSetOptions`, `pFIBEditorsConsts`, `pFIBPreferences`, `pFIBRepositoryOperations`, `pFIBSyntaxMemo`, `pFIBTrEdit` | The same names without `p` | Change the `uses` clause of design-time code. `FIBPreferences` is in the `dclFIBTools` package (Delphi 10.4 and later). |
+| Editors `TpFIBDataSetOptionsEditor`, `TpFIBDatabaseEditor`, `TpFIBTransactionEditor`, `TpFIBTRParamsEditor`, `TpFIBSQLPropEdit`, `TpFIBAutoUpdateOptionsEditor`, `TpFIBGeneratorsProperty`, `TpFIBDeltaReceiverEditor` | The same names with `TFIB` | Rename in design-time code that registers them. |
+| IDE preferences in the registry keys `pFIBDataSet`, `pFIBQuery`, `pFIBDataBase`, `pFIBTransaction` | Keys `FIBDataSet`, `FIBQuery`, `FIBDatabase`, `FIBTransaction` | The saved design-time defaults for new components are not read from the old keys. Set them again once in the FIBPlus preferences. |
+
+### Changed types and signatures
+
+| Old | New | What to do |
+|-----|-----|------------|
 | `TFIBQuery.FN` (missing column returned `nil`) | `TFIBQuery.FindField` | `FN` now raises for a missing column, as `TpFIBQuery.FN` did. Replace `FN` with `FindField` where you test the result for `nil`. |
-| IDE preferences of the query (registry key `pFIBQuery`) | registry key `FIBQuery` | The saved design-time defaults for new queries (`ParamCheck`, `GoToFirstRecordOnExecute`, `Options`) are not read from the old key. Set them again once in the FIBPlus preferences. |
-| Unit `pFIBDataSet` | `FIBDataSet` | Change the `uses` clause. The old unit still compiles and gives a warning. |
-| `TpFIBDataSet` | `TFIBDataSet` | Rename. The old name is a deprecated alias of the same class. |
-| `TLockStatus`, `TLockErrorEvent`, `TCachRefreshKind`, `TOnGetSQLTextProc`, `TIncludeFieldsToSQL`, `FieldInArray` (unit `pFIBDataSet`) | The same names in `FIBDataSet` | Change the `uses` clause. The old unit exports them as aliases. |
 | `TFIBUpdateObject.DataSet: TFIBDataSet` | `TFIBCustomDataSet` | Any FIBPlus dataset is accepted. Code that reads the property needs a cast to `TFIBDataSet` to use the published members, and `QSelect`, `Params`, `Prepared` and similar are protected in `TFIBCustomDataSet`. |
-| `TpFIBFieldInfo` (units `pFIBDataInfo`, `FIBDataSet`) | `TFIBFieldInfo` (unit `FIBProps`) | Rename, also in handlers of `TDataSetsContainer.OnApplyFieldRepository`. The old name is a deprecated alias in `pFIBProps`. |
-| `TOnBlobFieldProcessing` (`FIBDataSet`) | Declared in `FIBProps` | `FIBDataSet` exports it, so code that uses it compiles without a change. |
-| `TExtBoolean` (`pFIBDataInfo`) | Declared in `FIBProps` | Internal type. The `FIBDataInfo` routines that took `TFIBDataSet` now take `TFIBCustomDataSet`. |
-| `SFIBErrorNotDataSet`, `SFIBErrorNotDataSetDetail` (`FIBConsts`) | Removed | Nothing raises them any more. |
-| `TFIBTableInfo.TableName`, `TFIBFieldInfo.DefaultValue`, `DomainName`, `DisplayLabel`, `EditFormat`, `DisplayFormat` (`AnsiString`) | `string` | Nothing for most code. Assigning them to an `AnsiString` loses the characters outside the system code page, as before. `TFIBFieldInfo.LoadFromStream` has a new `UTF8` parameter (default `True`, the format `SaveToStream` writes now). |
-| `StrUtil.TFastStringStream` (an alias of `TStringStream` on Delphi XE5 and later, an own class before), parameter of `GenerateDDLText`, `GenerateObjectDDL` and the other DDL methods of `FIBMetaData` | `TStringStream` | Rename in descendants that override these methods. Create the stream with `TEncoding.Unicode`, as `GetAsDDL` does, to keep the characters outside the system code page. |
-| `TpFIBDataSetOptionsEditor` | `TFIBDataSetOptionsEditor` | Rename in design-time code that registers it. |
-| IDE preferences of the dataset (registry key `pFIBDataSet`) | registry key `FIBDataSet` | The saved design-time defaults for new datasets (`Options`, `PrepareOptions`, `DetailConditions`, default formats, generator name prefix and suffix) are not read from the old key. Set them again once in the FIBPlus preferences. |
-| Unit `pFIBDatabase` | `FIBDatabase` | Change the `uses` clause. The old unit still compiles and gives a warning. |
-| `TpFIBDatabase` | `TFIBDatabase` | Rename. The old name is a deprecated alias of the same class. |
-| `TpFIBTransaction` | `TFIBTransaction` | Rename. The old name is a deprecated alias of the same class. |
-| `TFIBLoginEvent`, `TOnLostConnectActions` (`laTerminateApp`, `laCloseConnect`, `laIgnore`, `laWaitRestore`), `TFIBLostConnectEvent`, `TFIBRestoreConnectEvent`, `TOnSQLExecute`, `WriteDBParamsToAlias` (unit `pFIBDatabase`) | The same names in `FIBDatabase` | Change the `uses` clause. The old unit exports them as aliases. |
-| `TpFIBAcceptCacheSchema` | `TFIBAcceptCacheSchemaEvent` (unit `FIBDatabase`) | Rename. The old unit keeps the old name as a deprecated alias. |
 | `TOnSQLExecute = procedure(Query: TFIBQuery; SQLType: TFIBSQLTypes) of object` | `procedure(Query: TComponent; SQLType: TFIBSQLTypes) of object` | Change the parameter type of the handlers you assign in code (`BeforeSQLExecute`, `AfterSQLExecute`, `AfterFirstFetch`). A handler bound in a form keeps working at run time; the IDE reports it as incompatible until you change it. |
 | `FIBDataSets[Index]: TFIBCustomDataSet`, `FIBQueries[Index]: TFIBQuery` (of `TpFIBDatabase` and `TpFIBTransaction`) | `FIBDataSets[Index]: TDataSet`, `FIBQueries[Index]: TComponent` | Cast the result to `TFIBCustomDataSet` or `TFIBQuery`. The items and their order are the same. |
-| `TFIBSQLTypes` and its 15 values (`SQLUnknown` ...) in `FIBQuery` | Declared in `FIBProps` | `FIBQuery` exports the type and the values, so code that uses only `FIBQuery` compiles without a change. |
-| `TpFIBDatabaseEditor`, `TpFIBTransactionEditor`, `TpFIBTRParamsEditor` | `TFIBDatabaseEditor`, `TFIBTransactionEditor`, `TFIBTRParamsEditor` | Rename in design-time code that registers them. |
-| IDE preferences of the database and the transaction (registry keys `pFIBDataBase`, `pFIBTransaction`) | registry keys `FIBDatabase`, `FIBTransaction` | The saved design-time defaults for new databases and transactions are not read from the old keys. Set them again once in the FIBPlus preferences. |
-| Unit `pFIBProps` | `FIBProps` | Change the `uses` clause. The old unit still compiles, gives a warning, and exports the types, the values of the enumerated types (`poTrimCharFields`, `qoAutoCommit`, `tpbReadCommitted` ...) and the constants. |
-| Writable defaults in `pFIBProps`: `DefaultOptions`, `DefaultPrepareOptions`, `DefaultDetailConditions`, `DefTPBMode`, `DefTimeOutAction`, `DefQueryOptions`, `DefCharSet`, `DefSQLDialect`, the `RDef...` and `dDef...` formats and the others | The same names, only in `FIBProps` | Add `FIBProps` to the `uses` clause of code that reads or sets them. The old unit cannot export a variable. |
-| `TpFIBDsOption`, `TpFIBDsOptions` | `TFIBDataSetOption`, `TFIBDataSetOptions` | Rename. The old names are deprecated aliases in `pFIBProps`; the values (`poTrimCharFields` ...) are the same. |
-| `TpPrepareOption`, `TpPrepareOptions` | `TFIBPrepareOption`, `TFIBPrepareOptions` | Rename. The old names are deprecated aliases in `pFIBProps`; the values (`pfImportDefaultValues` ...) are the same. |
-| `TpFIBExistObject` | `TFIBExistObject` | Rename. The old name is a deprecated alias in `pFIBProps`. |
-| `TpFIBDBEventType`, `TpFIBTrEventType` (unit `FIBDatabase`) | `TFIBDatabaseEventType`, `TFIBTransactionEventType` | Rename. The old names are deprecated aliases in `pFIBDatabase`, no longer in `FIBDatabase`. Calls like `AddEvent(Handler, detOnConnect)` do not name the type and need no change. |
-| `TpSQLKind` (unit `FIBDataSet`) | `TFIBSQLKind` | Rename. The old name is a deprecated alias in `pFIBDataSet`, no longer in `FIBDataSet`. |
-| Unit `pFIBSQLLog` | `FIBSQLLog` | Change the `uses` clause. The old unit still compiles and gives a warning. |
-| `TpFIBStatistics` | `TFIBSQLLogger` | Rename. The old name is a deprecated alias in `pFIBSQLLog`. |
-| Unit `pFIBDataInfo` | `FIBDataInfo` | Change the `uses` clause. The old unit stops the compilation with a message that names the new unit. |
-| `TpFIBTableInfo`, `TpFIBTableInfoCollect`, `TpDataSetInfo`, `TpDataSetInfoCollect`, `TpErrorMessage`, `TpErrorMessagesCollect` (`pFIBDataInfo`) | `TFIBTableInfo`, `TFIBTableInfoCache`, `TFIBDataSetInfo`, `TFIBDataSetInfoCache`, `TFIBErrorMessage`, `TFIBErrorMessageCache` (`FIBDataInfo`) | Rename. No aliases. The variables `ListTableInfo`, `ListDataSetInfo` and `ListErrorMessages` keep their names. |
-| Design-time units `pFIBComponentEditors`, `pFIBAutoUpdEditor` | `FIBComponentEditors`, `FIBAutoUpdEditor` | Change the `uses` clause of design-time code. There are no old units. |
-| `TpFIBSQLPropEdit`, `TpFIBAutoUpdateOptionsEditor`, `TpFIBGeneratorsProperty`, `TpFIBDeltaReceiverEditor` | `TFIBSQLPropEdit`, `TFIBAutoUpdateOptionsEditor`, `TFIBGeneratorsProperty`, `TFIBDeltaReceiverEditor` | Rename in design-time code that registers them. |
-| Units `pFIBLists`, `pFIBCacheQueries`, `pFIBEventLists`, `pFIBFieldsDescr`, `pFIBExports`, `pFIBInterfaces`, `pTestInfo` | `FIBLists`, `FIBCacheQueries`, `FIBEventLists`, `FIBFieldsDescr`, `FIBExports`, `FIBInterfaces`, `FIBTestInfo` | Change the `uses` clause. The old units stop the compilation with a message that names the new unit. The names inside the units are the same. |
-| Include file `pFIBMacroComp.inc` | `FIBMacroComp.inc` | Only for code that includes it. |
-| Design-time units `pFIBConditionsEdit`, `pFIBDBEdit`, `pFIBDataSetOptions`, `pFIBEditorsConsts`, `pFIBPreferences`, `pFIBRepositoryOperations`, `pFIBSyntaxMemo`, `pFIBTrEdit` | The same names without `p` | Change the `uses` clause of design-time code. There are no old units. `FIBPreferences` is in the `dclFIBTools` package (Delphi 10.4 and later). |
-| Unit `pFIBClientDataSet` | `FIBClientDataSet` | Change the `uses` clause. The old unit still compiles and gives a warning. |
-| `TpFIBClientDataSet`, `TpFIBDataSetProvider`, `TpFIBClientBCDField` | `TFIBClientDataSet`, `TFIBDataSetProvider`, `TFIBClientBCDField` | Rename. The old names are deprecated aliases of the same classes in `pFIBClientDataSet`. |
-| Unit `IB_Services` | `FIBServices` | Change the `uses` clause. The old unit still compiles, gives a warning, and exports the types, the values of the enumerated types (`IgnoreLimbo`, `SweepDB`, `ActionAddUser` ...), `DefaultBufferSize` and `SPBPrefix`. |
-| `TpFIBCustomService`, `TpFIBServerProperties`, `TpFIBControlService`, `TpFIBControlAndQueryService`, `TpFIBConfigService`, `TpFIBLogService`, `TpFIBStatisticalService`, `TpFIBBackupRestoreService`, `TpFIBBackupService`, `TpFIBRestoreService`, `TpFIBNBackupService`, `TpFIBNRestoreService`, `TpFIBValidationService`, `TpFIBSecurityService` | The same names with `TFIB` instead of `TpFIB` | Rename. The old names are deprecated aliases of the same classes in `IB_Services`. |
-| `TFIBLicensingService`, `TpFIBLicensingService`, `TLicensingAction` (`LicenseAdd`, `LicenseRemove`) | Removed | The service added and removed InterBase license keys; Firebird has none, and InterBase registers licenses with its License Manager. Delete the component from forms and code: a form that contains it no longer loads. |
-| Units `IB_Install`, `IB_InstallHeader`, `TpFIBInstall`, `TpFIBUnInstall`, `LoadIBInstallLibrary`, `FreeIBInstallLibrary`, `CheckIBInstallLoaded` and the `isc_install_...` variables (`IB_Intf`), symbol `IBINSTALL_SUPPORT`, `feInterBaseInstallMissing`, the messages `SCantLoadLibrary`, `SSuccess`, `SDelphiException`, `SNoOptionsSet`, `SNoDestinationDirectory`, `SNosourceDirectory`, `SNoUninstallFile`, `SOptionNeedsClient`, `SOptionNeedsServer`, `SInvalidOption`, `SInvalidOnErrorResult`, `SInvalidOnStatusResult` (`FIBConsts`) | Removed | They wrapped the InterBase 6 install library `ibinstall.dll`, which Firebird does not have. Remove them from the `uses` clause and the code. |
-| `SPBConstantNames`, `SPBConstantValues` (`IB_Services`) | The same names, only in `FIBServices` | Add `FIBServices` to the `uses` clause of code that reads them. The old unit cannot export a typed constant. |
+| `TFIBSQLTypes` and its values (`FIBQuery`), `TOnBlobFieldProcessing` (`FIBDataSet`), `TExtBoolean` (`pFIBDataInfo`) | Declared in `FIBProps` | `FIBQuery` and `FIBDataSet` export them, so code compiles without a change. The `FIBDataInfo` routines that took `TFIBDataSet` now take `TFIBCustomDataSet`. |
+| `TFIBTableInfo.TableName`, `TFIBFieldInfo.DefaultValue`, `DomainName`, `DisplayLabel`, `EditFormat`, `DisplayFormat` (`AnsiString`) | `string` | Nothing for most code. Assigning them to an `AnsiString` loses the characters outside the system code page, as before. `TFIBFieldInfo.LoadFromStream` has a new `UTF8` parameter (default `True`, the format `SaveToStream` writes now). |
+| `StrUtil.TFastStringStream` (an alias of `TStringStream` on Delphi XE5 and later, an own class before), parameter of `GenerateDDLText`, `GenerateObjectDDL` and the other DDL methods of `FIBMetaData` | `TStringStream` | Rename in descendants that override these methods. Create the stream with `TEncoding.Unicode`, as `GetAsDDL` does, to keep the characters outside the system code page. |
 | `TFIBSQLMonitorHook.ServiceAttach`, `ServiceDetach`, `ServiceQuery`, `ServiceStart` (parameter `TpFIBCustomService`) | Parameter `TFIBCustomService` | The same class; rename in descendants that override them. |
-| Unit `pFIBArray` | `FIBArray` | Change the `uses` clause. The old unit still compiles and gives a warning. |
-| `TpFIBArray` | `TFIBArray` | Rename. The old name is a deprecated alias of the same class in `pFIBArray`. |
-| `TFIBXSQLVAR.FIBArray`, `TFIBArrayStream.FIBArray` | `ArrayInfo` | Rename. The property had the name of the new unit `FIBArray`. There is no old name. |
-| Unit `SIBFIBEA` | `FIBEventAlerter` | Change the `uses` clause. The old unit still compiles and gives a warning. |
-| `TSIBfibEventAlerter` | `TFIBEventAlerter` | Rename. The old name is a deprecated alias of the same class in `SIBFIBEA`. |
-| Variable `pFIBLoginDialog`, type `TpFIBLoginDialog` (unit `fib`) | `FIBLoginDialog`, `TFIBLoginDialogFunc` | Rename in code that installs its own login dialog (`pFIBLoginDialog := MyLoginDialog`) or tests the variable. There are no old names: a variable cannot have a deprecated alias, so the old code does not compile. |
-| `pFIBLoginDialogEx` (`FIBDBLoginDlg`), `pFIBLoginDialogFMX` (`FIB_FMX_DBLoginDlg`) | `FIBLoginDialogEx`, `FIBLoginDialogFMX` | Rename in code that calls them. There are no old names. |
 
-Forms that contain one of the old component classes still load. The classes `TpFIBDataSet`, `TpFIBDatabase`, `TpFIBTransaction`, `TpFIBClientDataSet`, `TpFIBDataSetProvider`, the field class `TpFIBClientBCDField`, `TpFIBDBSchemaExtract`, `TSIBfibEventAlerter` and the service components are registered by the units `pFIBDataSet`, `pFIBDatabase`, `pFIBClientDataSet`, `pFIBMetaData`, `SIBFIBEA` and `IB_Services`, so keep them linked (in a `uses` clause) until the form is saved again. The next time you save the form, the IDE writes the new class name. The old unit and names are removed in a later major version.
+### Removed identifiers
+
+| Removed | What to do |
+|---------|------------|
+| `StrUtil.CharInSet`, `FIBPlatforms.WideCompareStr` (declared only for compilers before Delphi 2009) | Nothing: `SysUtils` declares both. |
+| `IWideStringField` with its properties `WideDisplayText`/`WideText`, implemented by `TFIBMemoField` (`GetWideDisplayText`, `GetWideEditText`, `SetWideEditText`), for the TNT controls | Use `DisplayText`, `Text` or `AsString`. |
+| `FIBCharSets.DecodeWideString` | Use `DecodeString`; assign the result to a `WideString` if the type matters. |
+| `AsComp` of `TFIBBCDField`, `TFIBClientBCDField`, `TFIBXSQLVAR` (compiled only without `NO_USE_COMP`, which `FIBPlus.inc` always defined) | Use `AsBcd` or `AsInt64`. |
+| `SFIBErrorNotDataSet`, `SFIBErrorNotDataSetDetail` (`FIBConsts`) | Nothing: nothing raises them any more. |
+| `TFIBLicensingService`, `TpFIBLicensingService`, `TLicensingAction` (`LicenseAdd`, `LicenseRemove`) | The service added and removed InterBase license keys; Firebird has none, and InterBase registers licenses with its License Manager. Delete the component from forms and code: a form that contains it no longer loads. |
+| Units `IB_Install`, `IB_InstallHeader`, `TpFIBInstall`, `TpFIBUnInstall`, `LoadIBInstallLibrary`, `FreeIBInstallLibrary`, `CheckIBInstallLoaded` and the `isc_install_...` variables (`IB_Intf`), symbol `IBINSTALL_SUPPORT`, `feInterBaseInstallMissing`, the messages `SCantLoadLibrary`, `SSuccess`, `SDelphiException`, `SNoOptionsSet`, `SNoDestinationDirectory`, `SNosourceDirectory`, `SNoUninstallFile`, `SOptionNeedsClient`, `SOptionNeedsServer`, `SInvalidOption`, `SInvalidOnErrorResult`, `SInvalidOnStatusResult` (`FIBConsts`) | They wrapped the InterBase 6 install library `ibinstall.dll`, which Firebird does not have. Remove them from the `uses` clause and the code. |
 
 ### Changed behavior
 

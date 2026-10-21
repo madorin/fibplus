@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{10420E8E-634B-4AE5-B0A6-267CA1AA5E9F}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="FIB_D20.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="dclFIB_D20.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="FIB_D20">
+        <MSBuild Projects="FIB_D20.dproj"/>
+    </Target>
+    <Target Name="FIB_D20:Clean">
+        <MSBuild Projects="FIB_D20.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="FIB_D20:Make">
+        <MSBuild Projects="FIB_D20.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="dclFIB_D20">
+        <MSBuild Projects="dclFIB_D20.dproj"/>
+    </Target>
+    <Target Name="dclFIB_D20:Clean">
+        <MSBuild Projects="dclFIB_D20.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="dclFIB_D20:Make">
+        <MSBuild Projects="dclFIB_D20.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="FIB_D20;dclFIB_D20"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="FIB_D20:Clean;dclFIB_D20:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="FIB_D20:Make;dclFIB_D20:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
