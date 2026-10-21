@@ -133,7 +133,7 @@ uses
 {$IFDEF C24}
   System.Types, // for inline funcs
 {$ENDIF}
-  fib, StdFuncs, StrUtil;
+  FIB, StdFuncs, StrUtil;
 
 type
 

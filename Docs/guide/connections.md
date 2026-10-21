@@ -82,7 +82,7 @@ Without such a unit, a connect with `UseLoginPrompt` raises an error that asks y
 
 The texts of both dialogs follow the language chosen in `FIBLocale.inc`; see [Localization](localization.md).
 
-To show your own dialog, assign a function of type `TFIBLoginDialogFunc` (unit `fib`) to the global variable `FIBLoginDialog`. It receives the database name and the current user name, password, and role, and returns `True` to continue.
+To show your own dialog, assign a function of type `TFIBLoginDialogFunc` (unit `FIB`) to the global variable `FIBLoginDialog`. It receives the database name and the current user name, password, and role, and returns `True` to continue.
 
 ```delphi
 function MyLoginDialog(const ADatabaseName: string;

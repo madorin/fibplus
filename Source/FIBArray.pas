@@ -20,7 +20,7 @@ unit FIBArray;
 interface
 
 uses
-  SysUtils, Classes, ibase, IB_Intf, ib_externals, DB, fib, FIBDatabase,
+  SysUtils, Classes, ibase, IB_Intf, ib_externals, DB, FIB, FIBDatabase,
   StdFuncs,
   FIBPlatforms, Variants;
 

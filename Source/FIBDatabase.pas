@@ -25,7 +25,7 @@ interface
 
 uses
   SysUtils, SyncObjs, Classes, DB, ibase, IB_Intf, IB_Externals,
-  FIBProps, IBBlobFilter, Fib, FIBEventLists, StdFuncs,
+  FIBProps, IBBlobFilter, FIB, FIBEventLists, StdFuncs,
   FIBInterfaces, FIBPlatforms, Variants
 {$IFDEF C23}
   , System.UITypes

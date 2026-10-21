@@ -22,7 +22,7 @@ interface
 uses
   Classes, SysUtils, ibase, DB,
   FIBDatabase, FIBQuery, FIBDataSet, FIBProps, StrUtil,
-  FIBInterfaces, fib, Variants;
+  FIBInterfaces, FIB, Variants;
 
 const
 

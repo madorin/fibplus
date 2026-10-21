@@ -37,7 +37,7 @@ contains
   RegFIB in '..\Source\RegFIB.pas',
   DBParsers in '..\Source\DBParsers.pas',
   DSContainer in '..\Source\DSContainer.pas',
-  fib in '..\Source\fib.pas',
+  FIB in '..\Source\FIB.pas',
   FIBCacheManage in '..\Source\FIBCacheManage.pas',
   FIBCloneComponents in '..\Source\FIBCloneComponents.pas',
   FIBConsts in '..\Source\FIBConsts.pas',

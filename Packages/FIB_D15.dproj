@@ -59,7 +59,7 @@
 			<DCCReference Include="..\Source\RegFIB.pas"/>
 			<DCCReference Include="..\Source\DBParsers.pas"/>
 			<DCCReference Include="..\Source\DSContainer.pas"/>
-			<DCCReference Include="..\Source\fib.pas"/>
+			<DCCReference Include="..\Source\FIB.pas"/>
 			<DCCReference Include="..\Source\FIBCacheManage.pas"/>
 			<DCCReference Include="..\Source\FIBCloneComponents.pas"/>
 			<DCCReference Include="..\Source\FIBConsts.pas"/>

@@ -590,7 +590,7 @@ function ReadUTF8StrFromStream(const Stream: TStream; UTF8: Boolean = True): str
 implementation
 
 uses
-  FIBDatabase, FIBDataSet, FIBQuery, fib, ibase, StrUtil, StdFuncs, SqlTxtRtns, FIBCharSets, FIBConsts;
+  FIBDatabase, FIBDataSet, FIBQuery, FIB, ibase, StrUtil, StdFuncs, SqlTxtRtns, FIBCharSets, FIBConsts;
 
 constructor TAutoUpdateOptions.Create;
 begin

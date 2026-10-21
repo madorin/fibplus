@@ -20,7 +20,7 @@ interface
 {$I FIB.inc}
 
 uses
-  SysUtils, Classes, fib, FIBDatabase, IB_ErrorCodes,
+  SysUtils, Classes, FIB, FIBDatabase, IB_ErrorCodes,
   ibase, IB_Intf, IB_Externals, DB, FIBDataInfo, FIBQuery;
 
 type

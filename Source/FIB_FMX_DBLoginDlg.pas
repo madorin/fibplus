@@ -33,7 +33,7 @@ function FIBLoginDialogFMX(const ADatabaseName: string; var AUserName, APassword
 implementation
 
 uses
-  fib, FIBConsts;
+  FIB, FIBConsts;
 
 {$R *.fmx}
 

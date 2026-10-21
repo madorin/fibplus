@@ -586,7 +586,7 @@ uses
 {$IFNDEF NO_MONITOR}
   FIBSQLMonitor,
 {$ENDIF}
-  fib;
+  FIB;
 
 // Lower case, without the 'isc_spb_' prefix, as in SPBConstantNames
 function NormalizeSPBName(const Name: String): String;

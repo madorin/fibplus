@@ -47,7 +47,7 @@
   [Upgrading](Docs/guide/upgrading.md#codes-of-client-errors).
 - The locale is set in `Source\FIBLocale.inc`, for example
   `FIBLocale = 'ro';` (`'en'` by default); an unknown code stops the build.
-  `FIBLocale` is also a constant of the unit `fib`.
+  `FIBLocale` is also a constant of the unit `FIB`.
   `Source\FIB_MESSAGES.INC` moved to `Locales\en\Errors.inc` and
   `Resources\Russian` to `Locales\ru`, so a translation is no longer copied
   over it, and the `Resources` folder is removed; see
@@ -155,6 +155,8 @@ The lists of old and new names, and what an application has to change, are in
 
 - `FIBPlus.inc` is renamed to `FIB.inc`, and `RegFIBPlus`, `RegFIBPlusEditors`
   and `RegFIBPlus.dcr` to `RegFIB`, `RegFIBEditors` and `RegFIB.dcr`.
+- The unit `fib` is renamed to `FIB` (`FIB.pas`), like the other units with the
+  `FIB` prefix. Delphi code compiles without a change.
 - The compiler version symbols of `FIB.inc` are named after
   `CompilerVersion`: `C21` (Delphi 2010) to `C37` (Delphi 13) replace `D2010+`,
   `D_XE`..`D_XE5` and `D_20`..`D_30`; `TWideDataSet` is removed (`C24` not

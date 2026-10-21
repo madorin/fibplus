@@ -145,7 +145,7 @@
         <DCCReference Include="..\Source\FIBEventLists.pas"/>
         <DCCReference Include="..\Source\FIBMiscellaneous.pas"/>
         <DCCReference Include="..\Source\FIBCacheQueries.pas"/>
-        <DCCReference Include="..\Source\fib.pas"/>
+        <DCCReference Include="..\Source\FIB.pas"/>
         <DCCReference Include="..\Source\SIBEABase.pas"/>
         <DCCReference Include="..\Source\pFIBDataSet.pas"/>
         <DCCReference Include="..\Source\DSContainer.pas"/>

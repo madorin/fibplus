@@ -19,7 +19,7 @@ interface
 
 uses
   SysUtils, Classes,
-  FIBTestInfo, FIBInterfaces, FIBDatabase, FIBProps, fib, StdFuncs,
+  FIBTestInfo, FIBInterfaces, FIBDatabase, FIBProps, FIB, StdFuncs,
   FIBQuery, FIBCacheQueries;
 
 type

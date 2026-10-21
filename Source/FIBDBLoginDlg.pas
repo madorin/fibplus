@@ -54,7 +54,7 @@ implementation
 {$R *.dfm}
 
 uses
-  fib, FIBConsts;
+  FIB, FIBConsts;
 
 function FIBLoginDialogEx(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
 var

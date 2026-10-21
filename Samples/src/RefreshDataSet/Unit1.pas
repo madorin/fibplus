@@ -3,7 +3,7 @@ unit Unit1;
 interface
 
 uses
-  fib,
+  FIB,
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, DB, FIBDataSet, FIBDatabase,
   ExtCtrls, StdCtrls, Grids, DBGrids, FIBErrorHandler, FIBSQLLog,

@@ -18,7 +18,7 @@ unit FIBConsts;
 interface
 
 uses
-  fib;
+  FIB;
 
 resourcestring
 

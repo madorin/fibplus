@@ -226,7 +226,7 @@ function DBPrimaryKeyFields(const TableName: string; aTransaction: TFIBTransacti
 implementation
 
 uses
-  StrUtil, FIBConsts, FIBCacheQueries, ibase, SqlTxtRtns, fib,
+  StrUtil, FIBConsts, FIBCacheQueries, ibase, SqlTxtRtns, FIB,
   StdFuncs, FIBCharSets
 {$IFDEF C24}
 {$IFDEF MACOS}

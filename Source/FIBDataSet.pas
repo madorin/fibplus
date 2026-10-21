@@ -20,7 +20,7 @@ interface
 {$I FIB.inc}
 
 uses
-  SysUtils, ibase, IB_Intf, ib_externals, fib,
+  SysUtils, ibase, IB_Intf, ib_externals, FIB,
   FIBPlatforms,
   FIBProps, FIBFieldsDescr, DB, FIBCacheManage,
   DBCommon, DbConsts, DBParsers,

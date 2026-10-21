@@ -21,7 +21,7 @@ interface
 
 uses
   SysUtils, Classes, ibase, IB_Intf, IB_Externals, FIBPlatforms,
-  DB, fib, FIBDatabase, StdFuncs, IB_ErrorCodes, SqlTxtRtns, FIBProps,
+  DB, FIB, FIBDatabase, StdFuncs, IB_ErrorCodes, SqlTxtRtns, FIBProps,
   FIBInterfaces
 {$IFDEF SUPPORT_ARRAY_FIELD}, FIBArray {$ENDIF}
   , FMTBcd, Variants, FIBTypes;

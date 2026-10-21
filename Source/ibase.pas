@@ -2115,7 +2115,7 @@ procedure add_spb_numeric(var p: PAnsiChar; data: Integer);
 implementation
 
 uses
-  IB_Intf, fib;
+  IB_Intf, FIB;
 
 function XSQLDA_LENGTH(n: Long): Long;
 (* The C-macro reads like this:

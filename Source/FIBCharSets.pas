@@ -39,7 +39,7 @@ function IsSystemCodePage(CodePage: Word): Boolean;
 implementation
 
 uses
-  fib
+  FIB
 {$IFNDEF C22}, Windows{$ENDIF};
 
 type

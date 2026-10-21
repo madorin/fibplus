@@ -24,7 +24,7 @@ uses
   Windows, // For Inline functions
 {$ENDIF}
   SysUtils, SyncObjs, Classes, ibase, IB_Intf, IB_Externals,
-  DB, fib, FIBDatabase, FIBQuery, StdFuncs, IB_ErrorCodes, FIBPlatforms
+  DB, FIB, FIBDatabase, FIBQuery, StdFuncs, IB_ErrorCodes, FIBPlatforms
 {$IFDEF SUPPORT_ARRAY_FIELD}, FIBArray{$ENDIF};
 
 const

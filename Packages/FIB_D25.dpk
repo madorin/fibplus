@@ -53,7 +53,7 @@ contains
   FIBEventLists in '..\Source\FIBEventLists.pas',
   FIBMiscellaneous in '..\Source\FIBMiscellaneous.pas',
   FIBCacheQueries in '..\Source\FIBCacheQueries.pas',
-  fib in '..\Source\fib.pas',
+  FIB in '..\Source\FIB.pas',
   SIBEABase in '..\Source\SIBEABase.pas',
   pFIBDataSet in '..\Source\pFIBDataSet.pas',
   DSContainer in '..\Source\DSContainer.pas',

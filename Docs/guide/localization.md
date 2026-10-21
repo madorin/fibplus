@@ -38,7 +38,7 @@ Technical names stay in English in every language: component, property and metho
    FIBLocale = 'ro';
    ```
 
-2. Rebuild the FIBPlus packages and your application with **Build**, so `fib.pas` and `FIBConsts.pas` are compiled again.
+2. Rebuild the FIBPlus packages and your application with **Build**, so `FIB.pas` and `FIBConsts.pas` are compiled again.
 
 With the value above, `TFIBQuery.FieldByName` with a missing field raises:
 
@@ -52,13 +52,13 @@ and the login dialog has the caption **Conectare la baza de date**, with the fie
 
 - One language per build. The language is chosen at compile time; an application can't switch it at run time.
 - A code that is not in the table, for example `'rus'`, stops the build with `Unknown FIBLocale in FIBLocale.inc`. The code is case-sensitive: `'RO'` is not `'ro'`.
-- `fib.pas` and `FIBConsts.pas` include the files from `..\Locales`, relative to their own folder. Keep the `Locales` folder next to `Source`; without it the build stops with `F1026 File not found`.
+- `FIB.pas` and `FIBConsts.pas` include the files from `..\Locales`, relative to their own folder. Keep the `Locales` folder next to `Source`; without it the build stops with `F1026 File not found`.
 - `FIBLocale.inc` is part of FIBPlus: when you update FIBPlus, set the value again if the new copy overwrote it, as for `FIB.inc`.
 - Every translation is in UTF-8 and compiles to the same text on any Windows code page.
 
 ### Read the locale at run time
 
-`FIBLocale` is a public constant of the unit `fib`, so an application can show or log the language it was built with:
+`FIBLocale` is a public constant of the unit `FIB`, so an application can show or log the language it was built with:
 
 ```delphi
 Writeln('FIBPlus messages: ', FIBLocale);
@@ -66,7 +66,7 @@ Writeln('FIBPlus messages: ', FIBLocale);
 
 ## Handle errors without the text
 
-Don't compare the message of an exception with a string: it changes with the language. Test the class and the code instead. For an error raised by FIBPlus, `SQLCode` is the ordinal of its `TFIBClientError` value (unit `fib`). In the sample, `Query` is a `TFIBQuery`.
+Don't compare the message of an exception with a string: it changes with the language. Test the class and the code instead. For an error raised by FIBPlus, `SQLCode` is the ordinal of its `TFIBClientError` value (unit `FIB`). In the sample, `Query` is a `TFIBQuery`.
 
 ```delphi
 try
@@ -104,7 +104,7 @@ The texts of `LoginDlg.inc` are `resourcestring` constants too (`SLoginDlgCaptio
    - in `LoginDlg.inc`, one `&` before a different letter in each caption of the dialog: it marks the hotkey of the field or button;
    - `''` for an apostrophe inside a string;
    - the files in UTF-8 with BOM and CRLF line ends.
-3. Add a `{$ELSEIF FIBLocale = '<code>'}` branch with the include of the file to `Source\fib.pas` (`Errors.inc`) and to `Source\FIBConsts.pas` (`LoginDlg.inc`), in the alphabetical order of the codes. Add the code to the list in the comment above `FIBLocale` in `Source\FIBLocale.inc`, to the [Languages](#languages) table of this article and to the language note of `README.md`.
+3. Add a `{$ELSEIF FIBLocale = '<code>'}` branch with the include of the file to `Source\FIB.pas` (`Errors.inc`) and to `Source\FIBConsts.pas` (`LoginDlg.inc`), in the alphabetical order of the codes. Add the code to the list in the comment above `FIBLocale` in `Source\FIBLocale.inc`, to the [Languages](#languages) table of this article and to the language note of `README.md`.
 4. Set `FIBLocale` to the new code, build and check a few messages and the login dialog, then send a pull request to the [FIBPlus repository](https://github.com/madorin/fibplus) with `FIBLocale` set back to `'en'`.
 
 A native speaker who uses FIBPlus is the best reviewer of a translation; corrections to the existing ones are welcome the same way.

@@ -13,7 +13,7 @@
 {  Please see the file License.txt for full license information }
 {***************************************************************}
 
-unit fib;
+unit FIB;
 
 {$I FIB.inc}
 {$T-}
