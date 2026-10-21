@@ -13,7 +13,7 @@
 {  Please see the file License.txt for full license information }
 {***************************************************************}
 
-unit FIBDBLoginDlg;
+unit FIBLoginDlg;
 
 {$I FIB.inc}
 
@@ -27,7 +27,7 @@ uses
   StdCtrls, ExtCtrls, Dialogs{$ENDIF};
 
 type
-  TfrmFIBDBLoginDlg = class(TForm)
+  TFIBLoginForm = class(TForm)
     Bevel1: TBevel;
     Label1: TLabel;
     lbDBName: TLabel;
@@ -58,10 +58,10 @@ uses
 
 function FIBLoginDialogEx(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
 var
-  frmFIBDBLoginDlg: TfrmFIBDBLoginDlg;
+  Form: TFIBLoginForm;
 begin
-  frmFIBDBLoginDlg := TfrmFIBDBLoginDlg.Create(nil);
-  with frmFIBDBLoginDlg do
+  Form := TFIBLoginForm.Create(nil);
+  with Form do
     try
       if Length(ADatabaseName) <= 45 then
         lbDBName.Caption := ADatabaseName
@@ -82,7 +82,7 @@ begin
     end
 end;
 
-procedure TfrmFIBDBLoginDlg.FormCreate(Sender: TObject);
+procedure TFIBLoginForm.FormCreate(Sender: TObject);
 begin
   Caption := SLoginDlgCaption;
   Label1.Caption := SLoginDlgDatabase;

@@ -75,10 +75,10 @@ The dialog is not part of `TFIBDatabase`; a dialog unit registers it when the pr
 
 | Framework | Unit |
 |-----------|------|
-| VCL | `FIBDBLoginDlg` |
-| FireMonkey | `FIB_FMX_DBLoginDlg` (package `FIBFMX`, *Delphi 10.4 and later*) |
+| VCL | `FIBLoginDlg` |
+| FireMonkey | `FIBLoginDlgFMX` (package `FIBFMX`, *Delphi 10.4 and later*) |
 
-Without such a unit, a connect with `UseLoginPrompt` raises an error that asks you to add `FIBDBLoginDlg` to the `uses` clause.
+Without such a unit, a connect with `UseLoginPrompt` raises an error that asks you to add `FIBLoginDlg` to the `uses` clause.
 
 The texts of both dialogs follow the language chosen in `FIBLocale.inc`; see [Localization](localization.md).
 
@@ -251,7 +251,7 @@ A non-zero timeout stored in a form makes the connect fail on a server without t
 - **Changing parameters while connected.** `DBName` and `DBParams` raise at run time while the database is connected, and `LibraryName` raises at any time. Call `Close` first.
 - **The password in the form.** `DBParams` is stored in the form with the password. Use `ddoNotSavePassword`, or set the password in code.
 - **A stored `Connected = True`.** The form connects while it loads. If the server is not reachable, the program raises an error at start-up. Turn off `ddoStoreConnected` for forms that must start without the server.
-- **Login prompt without a dialog unit.** `UseLoginPrompt` needs `FIBDBLoginDlg`, `FIB_FMX_DBLoginDlg`, or your own `FIBLoginDialog`.
+- **Login prompt without a dialog unit.** `UseLoginPrompt` needs `FIBLoginDlg`, `FIBLoginDlgFMX`, or your own `FIBLoginDialog`.
 - **Restore timer in old forms.** Forms saved by versions before 7.9.1 without a value set in the Object Inspector store `WaitForRestoreConnect = 0`, so `laWaitRestore` does nothing more than `laCloseConnect`. Remove the line or set the interval.
 - **Lost connection without an error handler.** `OnLostConnect` does not fire without a `TFIBErrorHandler` or a call to `ExTestConnected`.
 - **Idle timeouts.** A server idle timeout and the client-side `Timeout` both close the connection; they are different settings (see [Timeouts](timeouts.md)).

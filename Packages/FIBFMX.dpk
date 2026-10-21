@@ -36,6 +36,6 @@ requires
   FIB;
 
 contains
-  FIB_FMX_DBLoginDlg in '..\Source\FIB_FMX_DBLoginDlg.pas' {fmxFIBDBLoginDlg};
+  FIBLoginDlgFMX in '..\Source\FIBLoginDlgFMX.pas' {FIBLoginFormFMX};
 
 end.

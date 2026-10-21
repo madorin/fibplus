@@ -55,7 +55,7 @@ Available in the Object Inspector. When the component is dropped on a form at de
 | `LibraryName` | `string` | `fbclient.dll` (`libfbclient.dylib` on macOS) | Client library to load. Raises while connected. Stored in the form only when it differs from the default. On Windows, `fbclient.dll` without a path falls back to `gds32.dll` when it cannot be loaded. |
 | `LibraryName64` | `string` | | Client library for 64-bit Windows. Used instead of `LibraryName` when it is not empty. *Delphi XE2+* |
 | `OnCryptKeyRequest` | `TFIBCryptKeyRequestEvent` | | Called during connect when the server asks for a key of an encrypted database. `Key` starts as `CryptKey`. Runs in the connecting thread, inside the global connect lock. |
-| `UseLoginPrompt` | `Boolean` | `False` | Show the login dialog before connecting. Needs a login dialog unit in the application, for example `FIBDBLoginDlg`. |
+| `UseLoginPrompt` | `Boolean` | `False` | Show the login dialog before connecting. Needs a login dialog unit in the application, for example `FIBLoginDlg`. |
 
 ### Session and server
 

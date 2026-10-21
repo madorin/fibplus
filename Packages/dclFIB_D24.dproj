@@ -202,8 +202,8 @@
         </DCCReference>
         <DCCReference Include="IBSQLSyn.pas"/>
         <DCCReference Include="FIBSyntaxMemo.pas"/>
-        <DCCReference Include="..\Source\FIBDBLoginDlg.pas">
-            <Form>frmFIBDBLoginDlg</Form>
+        <DCCReference Include="..\Source\FIBLoginDlg.pas">
+            <Form>FIBLoginForm</Form>
         </DCCReference>
         <DCCReference Include="uFIBEditorForm.pas"/>
         <DCCReference Include="uFontEditor.pas">

@@ -36,7 +36,7 @@ FIBPlus 8 supports Delphi 2009 and later; use 7.9.x for Delphi 6 to 2007. Packag
 | `FIB` (`FIB_Dxx` before 10.4) | runtime | Components, required by the other packages |
 | `dclFIB` (`dclFIB_Dxx` before 10.4) | design time | Tool Palette registration, property and component editors, IDE login dialog |
 | `dclFIBTools` | design time, optional | **Tools > FIBPlus** menu; closes the design-time connections before the program runs from the IDE |
-| `FIBFMX` | runtime | FireMonkey login dialog (`FIB_FMX_DBLoginDlg`) |
+| `FIBFMX` | runtime | FireMonkey login dialog (`FIBLoginDlgFMX`) |
 
 `dclFIBTools` and `FIBFMX` exist for Delphi 10.4 and later, where each package is one `.dpk` for all versions and `{$LIBSUFFIX AUTO}` adds the version suffix to the BPL, e.g. `FIB370.bpl` for Delphi 13.
 

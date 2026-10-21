@@ -31,7 +31,7 @@ uses
   , System.UITypes
 {$ENDIF}
 {$IFDEF DIRECT_USE_DB_LOGIN_FORM}
-  , FIBDBLoginDlg // IS GUI
+  , FIBLoginDlg // IS GUI
 {$ENDIF}
   ;
 

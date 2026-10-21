@@ -65,7 +65,7 @@
 			<DCCReference Include="..\Source\FIBConsts.pas"/>
 			<DCCReference Include="..\Source\FIBDatabase.pas"/>
 			<DCCReference Include="..\Source\FIBDataSet.pas"/>
-			<DCCReference Include="..\Source\FIBDBLoginDlg.pas"/>
+			<DCCReference Include="..\Source\FIBLoginDlg.pas"/>
 			<DCCReference Include="..\Source\FIBMiscellaneous.pas"/>
 			<DCCReference Include="..\Source\FIBQuery.pas"/>
 			<DCCReference Include="..\Source\FIBSQLMonitor.pas"/>

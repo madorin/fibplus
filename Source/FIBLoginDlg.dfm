@@ -1,4 +1,4 @@
-object frmFIBDBLoginDlg: TfrmFIBDBLoginDlg
+object FIBLoginForm: TFIBLoginForm
   Left = 328
   Top = 272
   Width = 331

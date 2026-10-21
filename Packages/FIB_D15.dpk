@@ -43,7 +43,7 @@ contains
   FIBConsts in '..\Source\FIBConsts.pas',
   FIBDatabase in '..\Source\FIBDatabase.pas',
   FIBDataSet in '..\Source\FIBDataSet.pas',
-  FIBDBLoginDlg in '..\Source\FIBDBLoginDlg.pas',
+  FIBLoginDlg in '..\Source\FIBLoginDlg.pas',
   FIBMiscellaneous in '..\Source\FIBMiscellaneous.pas',
   FIBQuery in '..\Source\FIBQuery.pas',
   FIBSQLMonitor in '..\Source\FIBSQLMonitor.pas',

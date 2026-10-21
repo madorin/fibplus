@@ -157,6 +157,9 @@ The lists of old and new names, and what an application has to change, are in
   and `RegFIBPlus.dcr` to `RegFIB`, `RegFIBEditors` and `RegFIB.dcr`.
 - The unit `fib` is renamed to `FIB` (`FIB.pas`), like the other units with the
   `FIB` prefix. Delphi code compiles without a change.
+- The login dialog units `FIBDBLoginDlg` and `FIB_FMX_DBLoginDlg` are renamed
+  to `FIBLoginDlg` and `FIBLoginDlgFMX`, and their forms to `TFIBLoginForm` and
+  `TFIBLoginFormFMX`.
 - The compiler version symbols of `FIB.inc` are named after
   `CompilerVersion`: `C21` (Delphi 2010) to `C37` (Delphi 13) replace `D2010+`,
   `D_XE`..`D_XE5` and `D_20`..`D_30`; `TWideDataSet` is removed (`C24` not

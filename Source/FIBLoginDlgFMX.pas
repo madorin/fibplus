@@ -1,4 +1,4 @@
-unit FIB_FMX_DBLoginDlg;
+unit FIBLoginDlgFMX;
 
 interface
 
@@ -8,7 +8,7 @@ uses
   FMX.StdCtrls, FMX.Edit;
 
 type
-  TfmxFIBDBLoginDlg = class(TForm)
+  TFIBLoginFormFMX = class(TForm)
     Panel1: TPanel;
     Label1: TLabel;
     lbDBName: TLabel;
@@ -39,10 +39,10 @@ uses
 
 function FIBLoginDialogFMX(const ADatabaseName: string; var AUserName, APassword, ARoleName: string): Boolean;
 var
-  frmFIBDBLoginDlg: TfmxFIBDBLoginDlg;
+  Form: TFIBLoginFormFMX;
 begin
-  frmFIBDBLoginDlg := TfmxFIBDBLoginDlg.Create(nil);
-  with frmFIBDBLoginDlg do
+  Form := TFIBLoginFormFMX.Create(nil);
+  with Form do
     try
       if Length(ADatabaseName) <= 50 then
         lbDBName.Text := ADatabaseName
@@ -62,7 +62,7 @@ begin
     end
 end;
 
-procedure TfmxFIBDBLoginDlg.FormCreate(Sender: TObject);
+procedure TFIBLoginFormFMX.FormCreate(Sender: TObject);
 begin
   Caption := SLoginDlgCaption;
   Label1.Text := SLoginDlgDatabase;

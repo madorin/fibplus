@@ -141,8 +141,8 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="fmx.dcp"/>
-        <DCCReference Include="..\Source\FIB_FMX_DBLoginDlg.pas">
-            <Form>fmxFIBDBLoginDlg</Form>
+        <DCCReference Include="..\Source\FIBLoginDlgFMX.pas">
+            <Form>FIBLoginFormFMX</Form>
             <FormType>fmx</FormType>
         </DCCReference>
         <BuildConfiguration Include="Base">

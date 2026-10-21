@@ -72,7 +72,7 @@ resourcestring
   SFIBErrorAfterDisconnect              = 'Error of %s.AfterDisconnect. %s';
   SFIBErrorNoDBLoginDialog              = 'Unable to find Database login dialog. ';
   SFIBErrorInstallPropertyEditorPackage = 'Please, install package with property editors.';
-  SFIBErrorIncludeDBLoginDialog         = 'Please, add FIBDBLoginDlg into USES statement of your project.';
+  SFIBErrorIncludeDBLoginDialog         = 'Please, add FIBLoginDlg into USES statement of your project.';
   SFIBErrorCircularLinks                = 'Circular link is not allowed.';
   SFIBErrorParamNotExist                = 'Parameter "%s" does not exist in %s';
   SFIBErrorWideStringValueTooLong       = '%s. Value for WideString Parameter "%s" too long';

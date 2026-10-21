@@ -66,7 +66,7 @@ contains
   RegSynEditAlt in '..\Source\Editors\RegSynEditAlt.pas',
   uFIBScriptForm in '..\Source\Editors\uFIBScriptForm.pas' {frmScript},
   IBSQLSyn in '..\Source\Editors\IBSQLSyn.pas',
-  FIBDBLoginDlg in '..\Source\FIBDBLoginDlg.pas' {frmFIBDBLoginDlg};
+  FIBLoginDlg in '..\Source\FIBLoginDlg.pas' {FIBLoginForm};
 
 end.
 

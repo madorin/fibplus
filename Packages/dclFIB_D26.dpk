@@ -69,7 +69,7 @@ contains
   uFIBScriptForm in '..\Source\Editors\uFIBScriptForm.pas' {frmScript},
   IBSQLSyn in '..\Source\Editors\IBSQLSyn.pas',
   FIBSyntaxMemo in '..\Source\Editors\FIBSyntaxMemo.pas',
-  FIBDBLoginDlg in '..\Source\FIBDBLoginDlg.pas' {frmFIBDBLoginDlg},
+  FIBLoginDlg in '..\Source\FIBLoginDlg.pas' {FIBLoginForm},
   uFIBEditorForm in '..\Source\Editors\uFIBEditorForm.pas',
   uFontEditor in '..\Source\Editors\uFontEditor.pas' {frmFontEditor};
 
