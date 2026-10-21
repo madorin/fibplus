@@ -91,7 +91,7 @@
         <DCCReference Include="vclactnband.dcp"/>
         <DCCReference Include="vclimg.dcp"/>
         <DCCReference Include="FIB_D18.dcp"/>
-        <DCCReference Include="RegFIBPlusEditors.pas"/>
+        <DCCReference Include="RegFIBEditors.pas"/>
         <DCCReference Include="EdFieldInfo.pas">
             <Form>frmFields</Form>
         </DCCReference>

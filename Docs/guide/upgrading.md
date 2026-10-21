@@ -19,7 +19,8 @@ Find the version you use now, then read every section above it, from the one jus
 | Change | What to do |
 |--------|------------|
 | Delphi 6, 7, 2005, 2006, 2007 and C++Builder 6 to 2007 are no longer supported; their packages are removed. Compiling with them stops with a fatal message. | Stay on 7.9.x, or move to Delphi 2009 or later. |
-| The compiler version symbols of `FIBPlus.inc` are renamed to `C<CompilerVersion>`: `D2010+` → `C21`, `D_XE` → `C22`, `D_XE2` → `C23`, `D_XE3` → `C24`, `D_XE4` → `C25`, `D_XE5` → `C26`, `D_20`..`D_29` → `C27`..`C36`, `D_30` → `C37`. `TWideDataSet` (Delphi 2009 to XE2) is removed: test `{$IFNDEF C24}`. | Only for code that includes `FIBPlus.inc` and tests these symbols: rename them. |
+| The include file `FIBPlus.inc` is renamed to `FIB.inc`. | Change `{$I FIBPlus.inc}` to `{$I FIB.inc}` in code that includes it. |
+| The compiler version symbols of `FIB.inc` are renamed to `C<CompilerVersion>`: `D2010+` → `C21`, `D_XE` → `C22`, `D_XE2` → `C23`, `D_XE3` → `C24`, `D_XE4` → `C25`, `D_XE5` → `C26`, `D_20`..`D_29` → `C27`..`C36`, `D_30` → `C37`. `TWideDataSet` (Delphi 2009 to XE2) is removed: test `{$IFNDEF C24}`. | Only for code that includes `FIB.inc` and tests these symbols: rename them. |
 
 ### Packages
 
@@ -71,7 +72,7 @@ These have no old name, so the code that uses them must change:
 | `TFIBXSQLVAR.FIBArray`, `TFIBArrayStream.FIBArray` | `ArrayInfo` | Rename. The property had the name of the new unit `FIBArray`. |
 | Units `pFIBDataInfo`, `pFIBLists`, `pFIBCacheQueries`, `pFIBEventLists`, `pFIBFieldsDescr`, `pFIBExports`, `pFIBInterfaces`, `pTestInfo`, include file `pFIBMacroComp.inc` | The same names without `p` (`FIBTestInfo` for `pTestInfo`) | Change the `uses` clause. The old units stop the compilation with a message that names the new unit. The names inside the units are the same, except those of the next row. |
 | `TpFIBTableInfo`, `TpFIBTableInfoCollect`, `TpDataSetInfo`, `TpDataSetInfoCollect`, `TpErrorMessage`, `TpErrorMessagesCollect` (`pFIBDataInfo`) | `TFIBTableInfo`, `TFIBTableInfoCache`, `TFIBDataSetInfo`, `TFIBDataSetInfoCache`, `TFIBErrorMessage`, `TFIBErrorMessageCache` (`FIBDataInfo`) | Rename. The variables `ListTableInfo`, `ListDataSetInfo` and `ListErrorMessages` keep their names. |
-| Design-time units `pFIBComponentEditors`, `pFIBAutoUpdEditor`, `pFIBConditionsEdit`, `pFIBDBEdit`, `pFIBDataSetOptions`, `pFIBEditorsConsts`, `pFIBPreferences`, `pFIBRepositoryOperations`, `pFIBSyntaxMemo`, `pFIBTrEdit` | The same names without `p` | Change the `uses` clause of design-time code. `FIBPreferences` is in the `dclFIBTools` package (Delphi 10.4 and later). |
+| Design-time units `pFIBComponentEditors`, `pFIBAutoUpdEditor`, `pFIBConditionsEdit`, `pFIBDBEdit`, `pFIBDataSetOptions`, `pFIBEditorsConsts`, `pFIBPreferences`, `pFIBRepositoryOperations`, `pFIBSyntaxMemo`, `pFIBTrEdit`; `RegFIBPlus`, `RegFIBPlusEditors` | The same names without `p`; `RegFIB`, `RegFIBEditors` | Change the `uses` clause of design-time code. `FIBPreferences` is in the `dclFIBTools` package (Delphi 10.4 and later). |
 | Editors `TpFIBDataSetOptionsEditor`, `TpFIBDatabaseEditor`, `TpFIBTransactionEditor`, `TpFIBTRParamsEditor`, `TpFIBSQLPropEdit`, `TpFIBAutoUpdateOptionsEditor`, `TpFIBGeneratorsProperty`, `TpFIBDeltaReceiverEditor` | The same names with `TFIB` | Rename in design-time code that registers them. |
 | IDE preferences in the registry keys `pFIBDataSet`, `pFIBQuery`, `pFIBDataBase`, `pFIBTransaction` | Keys `FIBDataSet`, `FIBQuery`, `FIBDatabase`, `FIBTransaction` | The saved design-time defaults for new components are not read from the old keys. Set them again once in the FIBPlus preferences. |
 

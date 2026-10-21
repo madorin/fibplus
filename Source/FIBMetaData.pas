@@ -17,7 +17,7 @@ unit FIBMetaData;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   Classes, SysUtils, ibase, DB,

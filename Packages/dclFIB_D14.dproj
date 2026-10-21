@@ -60,7 +60,7 @@
 			<DCCReference Include="dbrtl.dcp"/>
 			<DCCReference Include="vclactnband.dcp"/>
 			<DCCReference Include="FIB_D14.dcp"/>
-			<DCCReference Include="..\Source\Editors\RegFIBPlusEditors.pas"/>
+			<DCCReference Include="..\Source\Editors\RegFIBEditors.pas"/>
 			<DCCReference Include="..\Source\Editors\EdFieldInfo.pas">
 				<Form>frmFields</Form>
 			</DCCReference>

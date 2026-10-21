@@ -2,7 +2,7 @@ unit Unit1;
 
 interface
 
-{$I FIBPlus.Inc}
+{$I FIB.inc}
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,

@@ -14,7 +14,7 @@
 
 unit FIBDBEdit;
 
-{$i ..\FIBPlus.inc}
+{$i ..\FIB.inc}
 
 interface
 

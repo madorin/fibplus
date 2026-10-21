@@ -17,7 +17,7 @@ unit EdDataSetInfo;
 interface
 
 uses
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
   Windows, Messages, Classes, SysUtils, Db,
 {$IFDEF C23}
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls,
@@ -94,7 +94,7 @@ procedure EditDSInfo(aDatabase: TComponent);
 implementation
 
 uses
-  TypInfo, RTTIRoutines, FIBEditorsConsts, FIBInterfaces, RegFIBPlusEditors,
+  TypInfo, RTTIRoutines, FIBEditorsConsts, FIBInterfaces, RegFIBEditors,
   RegistryUtils
 {$IFDEF USE_SYN_EDIT}
     SynEdit, SynDBEdit, SynHighlighterSQL

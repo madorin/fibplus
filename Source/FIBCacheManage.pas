@@ -20,7 +20,7 @@ interface
 uses
   SysUtils, FIBLists, Classes, FIBPlatforms;
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 type
 

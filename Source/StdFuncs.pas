@@ -20,7 +20,7 @@
 *)
 unit StdFuncs;
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 interface
 

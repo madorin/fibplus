@@ -2,7 +2,7 @@ unit uFIBScriptForm;
 
 interface
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 uses
   Windows, Messages, SysUtils, Classes,
@@ -14,7 +14,7 @@ uses
 {$ELSE}
   Graphics, Controls, Forms, Dialogs, ComCtrls, ExtCtrls, StdCtrls, Buttons,
 {$ENDIF}
-  FIBInterfaces, RegFIBPlusEditors, uFIBEditorForm;
+  FIBInterfaces, RegFIBEditors, uFIBEditorForm;
 
 type
   TfrmScript = class(TFIBEditorCustomForm)

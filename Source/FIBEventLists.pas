@@ -17,7 +17,7 @@ unit FIBEventLists;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   SyncObjs, SysUtils, Classes;

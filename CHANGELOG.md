@@ -126,7 +126,9 @@ The lists of old and new names, and what an application has to change, are in
 
 #### Build
 
-- The compiler version symbols of `FIBPlus.inc` are named after
+- `FIBPlus.inc` is renamed to `FIB.inc`, and `RegFIBPlus`, `RegFIBPlusEditors`
+  and `RegFIBPlus.dcr` to `RegFIB`, `RegFIBEditors` and `RegFIB.dcr`.
+- The compiler version symbols of `FIB.inc` are named after
   `CompilerVersion`: `C21` (Delphi 2010) to `C37` (Delphi 13) replace `D2010+`,
   `D_XE`..`D_XE5` and `D_20`..`D_30`; `TWideDataSet` is removed (`C24` not
   defined).

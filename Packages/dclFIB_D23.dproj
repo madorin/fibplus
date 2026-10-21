@@ -138,8 +138,8 @@
         <DCCReference Include="vclactnband.dcp"/>
         <DCCReference Include="vclimg.dcp"/>
         <DCCReference Include="FIB_D23.dcp"/>
-        <DCCReference Include="..\Source\RegFIBPlus.pas"/>
-        <DCCReference Include="RegFIBPlusEditors.pas"/>
+        <DCCReference Include="..\Source\RegFIB.pas"/>
+        <DCCReference Include="RegFIBEditors.pas"/>
         <DCCReference Include="EdFieldInfo.pas">
             <Form>frmFields</Form>
         </DCCReference>

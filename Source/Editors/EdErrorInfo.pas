@@ -16,7 +16,7 @@ unit EdErrorInfo;
 
 interface
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 uses
   TypInfo, Windows, Messages, SysUtils, Classes,
@@ -72,7 +72,7 @@ procedure ShowErrorInfo(aDataBase: TComponent);
 implementation
 
 uses
-  FIBInterfaces, RTTIRoutines, RegFIBPlusEditors;
+  FIBInterfaces, RTTIRoutines, RegFIBEditors;
 
 {$R *.dfm}
 

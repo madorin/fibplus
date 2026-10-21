@@ -2,7 +2,7 @@ unit pFIBArray deprecated 'Use FIBArray (TFIBArray)';
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   FIBArray;

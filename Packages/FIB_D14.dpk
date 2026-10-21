@@ -34,7 +34,7 @@ requires
   vcldb;
 
 contains
-  RegFIBPlus in '..\Source\RegFIBPlus.pas',
+  RegFIB in '..\Source\RegFIB.pas',
   DBParsers in '..\Source\DBParsers.pas',
   DSContainer in '..\Source\DSContainer.pas',
   fib in '..\Source\fib.pas',

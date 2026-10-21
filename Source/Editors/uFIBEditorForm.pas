@@ -2,7 +2,7 @@ unit uFIBEditorForm;
 
 interface
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 uses
   Windows, Classes, Variants, {$IFDEF C23}Vcl.Controls, Vcl.Forms{$ELSE}Controls, Forms{$ENDIF};

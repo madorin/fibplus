@@ -17,7 +17,7 @@ unit FIBFieldsDescr;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   Classes, IB_Externals;

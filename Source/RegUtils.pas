@@ -15,7 +15,7 @@
 
 unit RegUtils;
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 interface
 

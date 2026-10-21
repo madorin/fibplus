@@ -15,7 +15,7 @@
 
 unit fib;
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 {$T-}
 
 interface

@@ -17,7 +17,7 @@ unit FIBCacheQueries;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   SysUtils, Classes, FIBQuery, FIBDatabase, SyncObjs;

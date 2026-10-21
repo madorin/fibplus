@@ -17,7 +17,7 @@ unit FIBClientDataSet;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   FIBInterfaces, SysUtils, Classes,

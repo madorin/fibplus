@@ -15,7 +15,7 @@
 
 unit RegistryUtils;
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 interface
 

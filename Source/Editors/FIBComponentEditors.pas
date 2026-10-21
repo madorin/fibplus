@@ -2,7 +2,7 @@ unit FIBComponentEditors;
 
 interface
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 uses
   Classes, SysUtils,
@@ -162,7 +162,7 @@ implementation
 uses
   RegistryUtils, FIBEditorsConsts, FIBDBEdit, FIBInterfaces, FIBRepositoryOperations, EdFieldInfo, EdErrorInfo,
   FIBConditionsEdit, EdDataSetInfo, FIBTrEdit, FIBDataSetOptions,
-  FIBAutoUpdEditor, RegFIBPlusEditors, RTTIRoutines, FIBSQLEditor,
+  FIBAutoUpdEditor, RegFIBEditors, RTTIRoutines, FIBSQLEditor,
   EdParamToFields, FIBDataSQLEditor, uFIBScriptForm;
 
 { TFIBAliasEdit }

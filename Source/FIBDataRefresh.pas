@@ -17,7 +17,7 @@ unit FIBDataRefresh;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   SysUtils, Classes, FIBDataSet, DB, FIBQuery, FIBDatabase;

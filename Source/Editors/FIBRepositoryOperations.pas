@@ -2,7 +2,7 @@ unit FIBRepositoryOperations;
 
 interface
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 uses
   FIBInterfaces;

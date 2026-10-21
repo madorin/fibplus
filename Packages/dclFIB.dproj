@@ -136,8 +136,8 @@
         <DCCReference Include="vclx.dcp"/>
         <DCCReference Include="designide.dcp"/>
         <DCCReference Include="vclimg.dcp"/>
-        <DCCReference Include="..\Source\RegFIBPlus.pas"/>
-        <DCCReference Include="..\Source\Editors\RegFIBPlusEditors.pas"/>
+        <DCCReference Include="..\Source\RegFIB.pas"/>
+        <DCCReference Include="..\Source\Editors\RegFIBEditors.pas"/>
         <DCCReference Include="..\Source\Editors\EdFieldInfo.pas">
             <Form>frmFields</Form>
         </DCCReference>

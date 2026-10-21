@@ -13,11 +13,11 @@
 {  Please see the file License.txt for full license information }
 {***************************************************************}
 
-unit RegFIBPlus;
+unit RegFIB;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   Classes, Sysutils, DB, DSContainer,
@@ -38,7 +38,7 @@ const
   pnFIBPlus         = 'FIBPlus';
   pnFIBPlusServices = 'FIBPlusServices';
 
-{$R RegFIBPlus.dcr}
+{$R RegFIB.dcr}
 
 procedure Register;
 begin

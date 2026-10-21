@@ -15,7 +15,7 @@
 
 unit FIBDBLoginDlg;
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 interface
 

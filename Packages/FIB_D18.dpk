@@ -28,7 +28,7 @@ package FIB_D18;
 {$DESCRIPTION 'FIBPlus'}
 {$IMPLICITBUILD OFF}
 {$WARN UNIT_DEPRECATED OFF}
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 requires
   rtl,
@@ -91,7 +91,7 @@ contains
   FIBStoredProc in '..\Source\FIBStoredProc.pas',
   pFIBStoredProc in '..\Source\pFIBStoredProc.pas',
   IB_ErrorCodes in '..\Source\IB_ErrorCodes.pas',
-  RegFIBPlus in '..\Source\RegFIBPlus.pas',
+  RegFIB in '..\Source\RegFIB.pas',
   FIBCloneComponents in '..\Source\FIBCloneComponents.pas',
   FIBFieldsDescr in '..\Source\FIBFieldsDescr.pas',
   SIBAPI in '..\Source\SIBAPI.pas',

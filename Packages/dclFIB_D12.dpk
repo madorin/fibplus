@@ -38,7 +38,7 @@ requires
   xmlrtl;
 
 contains
-  RegFIBPlusEditors in '..\Source\Editors\RegFIBPlusEditors.pas',
+  RegFIBEditors in '..\Source\Editors\RegFIBEditors.pas',
   EdFieldInfo in '..\Source\Editors\EdFieldInfo.pas' {frmFields},
   EdDataSetInfo in '..\Source\Editors\EdDataSetInfo.pas' {frmEdDataSetInfo},
   FIBDBEdit in '..\Source\Editors\FIBDBEdit.pas' {DBEditForm},

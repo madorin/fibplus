@@ -8,7 +8,7 @@ Service components for the Firebird and InterBase Services API (`service_mgr`): 
 | Inherits from | `TFIBCustomService`, which inherits from `TComponent` |
 | Palette page | `FIBPlusServices` |
 
-The components exist only when `INC_SERVICE_SUPPORT` is defined, which `FIBPlus.inc` does by default.
+The components exist only when `INC_SERVICE_SUPPORT` is defined, which `FIB.inc` does by default.
 
 Ten classes are registered on the palette page: `TFIBServerProperties`, `TFIBConfigService`, `TFIBLogService`, `TFIBStatisticalService`, `TFIBBackupService`, `TFIBRestoreService`, `TFIBValidationService`, `TFIBSecurityService`, `TFIBNBackupService`, and `TFIBNRestoreService`. The base classes are not registered.
 

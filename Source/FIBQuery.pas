@@ -17,7 +17,7 @@ unit FIBQuery;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   SysUtils, Classes, ibase, IB_Intf, IB_Externals, FIBPlatforms,

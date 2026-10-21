@@ -17,7 +17,7 @@ unit FIBInterfaces;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   Types, Classes, DB, StrUtil;

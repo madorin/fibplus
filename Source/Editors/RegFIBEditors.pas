@@ -1,8 +1,8 @@
-unit RegFIBPlusEditors;
+unit RegFIBEditors;
 
 interface
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 uses
   Windows, Classes,

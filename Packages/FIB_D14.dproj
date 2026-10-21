@@ -54,7 +54,7 @@
 			<DCCReference Include="dbrtl.dcp"/>
 			<DCCReference Include="dsnap.dcp"/>
 			<DCCReference Include="vcldb.dcp"/>
-			<DCCReference Include="..\Source\RegFIBPlus.pas"/>
+			<DCCReference Include="..\Source\RegFIB.pas"/>
 			<DCCReference Include="..\Source\DBParsers.pas"/>
 			<DCCReference Include="..\Source\DSContainer.pas"/>
 			<DCCReference Include="..\Source\fib.pas"/>

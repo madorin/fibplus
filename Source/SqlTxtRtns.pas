@@ -15,7 +15,7 @@
 
 unit SqlTxtRtns;
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 interface
 

@@ -17,7 +17,7 @@ unit DBParsers;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   SysUtils, Classes, DB, DBCommon, DbConsts, Variants, FMTBcd;

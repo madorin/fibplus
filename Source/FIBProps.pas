@@ -17,7 +17,7 @@ unit FIBProps;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 {$J+}
 
 uses

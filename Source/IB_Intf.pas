@@ -18,7 +18,7 @@ unit IB_Intf;
 interface
 
 uses
-{$I FIBPlus.inc}
+{$I FIB.inc}
 {$T-}
 {$IFDEF WINDOWS} Windows, {$ENDIF}
   SyncObjs, Classes, Sysutils, ibase, IB_Externals,

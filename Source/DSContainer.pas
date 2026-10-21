@@ -17,7 +17,7 @@ unit DSContainer;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   SysUtils, Classes, DB, FIBProps;

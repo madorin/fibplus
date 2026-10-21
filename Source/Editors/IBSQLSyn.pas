@@ -31,7 +31,7 @@ const
 
 implementation
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 uses
 {$IFDEF C23}

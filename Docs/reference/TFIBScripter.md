@@ -97,7 +97,7 @@ A statement is handled by the scripter or sent to the server, depending on its f
 | `COMMIT`, `ROLLBACK` | Ends the transaction when it is active. |
 | `INPUT 'file'` | Runs the file with `ExecuteFromFile` and the terminator `;`. |
 | `DESCRIBE` | Sets the description of a domain, table, view, trigger, field, parameter, procedure, exception, function, UDF, generator, or package with an `UPDATE` of its `RDB$DESCRIPTION` column. Other object types raise an `Exception`. |
-| `BATCH START`, `BATCH EXECUTE` | Collects the statements between them and runs them as a batch. Needs the `SUPPORT_IB2007` compiler define, which is off in `FIBPlus.inc`; without it `BATCH EXECUTE` raises an `Exception`. |
+| `BATCH START`, `BATCH EXECUTE` | Collects the statements between them and runs them as a batch. Needs the `SUPPORT_IB2007` compiler define, which is off in `FIB.inc`; without it `BATCH EXECUTE` raises an `Exception`. |
 | `REINSERT` | Takes the text after `REINSERT` and appends it to the previous `INSERT` statement up to its `VALUES`, then runs the result. |
 | `SET TERM` | Changes the terminator. Not executed. See [Terminators](#terminators). |
 | `SET AUTODDL ON \| OFF` | Sets `AutoDDL`. |

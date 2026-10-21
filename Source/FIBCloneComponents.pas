@@ -17,7 +17,7 @@ unit FIBCloneComponents;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   SysUtils, Classes;

@@ -13,7 +13,7 @@
 {***************************************************************}
 
 unit EdFieldInfo;
-{$i ..\FIBPlus.inc}
+{$i ..\FIB.inc}
 
 interface
 
@@ -87,7 +87,7 @@ procedure ShowFieldInfo(aDataBase: TComponent);
 implementation
 
 uses
-  FIBEditorsConsts, RegFIBPlusEditors, TypInfo, RTTIRoutines,
+  FIBEditorsConsts, RegFIBEditors, TypInfo, RTTIRoutines,
   FIBRepositoryOperations;
 
 {$R *.dfm}

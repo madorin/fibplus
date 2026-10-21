@@ -3,7 +3,7 @@ unit RegSynEditAlt;
 interface
 
 uses
-  Windows, Classes, FIBSyntaxMemo, RegFIBPlusEditors;
+  Windows, Classes, FIBSyntaxMemo, RegFIBEditors;
 
 type
   TFIBSQLSyntaxEditor = class(TMPSyntaxMemo, IFIBSQLTextEditor)

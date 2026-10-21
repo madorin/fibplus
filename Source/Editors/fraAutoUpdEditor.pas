@@ -16,7 +16,7 @@ unit fraAutoUpdEditor;
 
 interface
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 uses
   Windows, SysUtils,
@@ -61,7 +61,7 @@ type
 implementation
 
 uses
-  TypInfo, FIBEditorsConsts, RTTIRoutines, RegFIBPlusEditors,
+  TypInfo, FIBEditorsConsts, RTTIRoutines, RegFIBEditors,
   FIBInterfaces, Variants;
 
 {$R *.dfm}

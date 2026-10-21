@@ -16,7 +16,7 @@ unit FIBConditionsEdit;
 
 interface
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 uses
   Windows, Messages, SysUtils, Classes,

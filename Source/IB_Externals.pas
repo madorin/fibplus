@@ -20,7 +20,7 @@ unit IB_Externals;
 interface
 
 uses
-{$I FIBPlus.inc}
+{$I FIB.inc}
   FIBPlatforms, StdFuncs;
 
 type

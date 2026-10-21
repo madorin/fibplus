@@ -13,7 +13,7 @@ unit FIBTypes;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   SysUtils, Math, FMTBcd, ibase;

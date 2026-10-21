@@ -17,7 +17,7 @@ unit FIBScripter;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 {$A2}
 
 uses

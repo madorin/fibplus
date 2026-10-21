@@ -17,7 +17,7 @@ unit FIBDatabase;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 {$IFDEF C23}
 {$UNDEF NO_GUI}
 {$UNDEF DIRECT_USE_DB_LOGIN_FORM}

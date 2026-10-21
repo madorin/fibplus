@@ -16,7 +16,7 @@ unit ToCodeEditor;
 
 interface
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 uses
   Classes, ToolsAPI, IStreams;

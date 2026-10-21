@@ -57,7 +57,7 @@ unit SIBEABase;
 //
 // 1.00     3/26/1999     Initial Release
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 {$T-}
 
 interface

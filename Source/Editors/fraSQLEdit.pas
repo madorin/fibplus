@@ -2,7 +2,7 @@ unit fraSQLEdit;
 
 interface
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 uses
 
@@ -15,7 +15,7 @@ uses
   Graphics, Controls, Menus, Forms, Dialogs,
   Buttons, ExtCtrls, StdCtrls, Grids, DBGrids, DB, DBCtrls, Mask, ComCtrls,
 {$ENDIF}
-  FIBInterfaces, RegFIBPlusEditors, uFIBEditorForm, Variants
+  FIBInterfaces, RegFIBEditors, uFIBEditorForm, Variants
 
     ;
 

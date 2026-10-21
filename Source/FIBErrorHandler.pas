@@ -17,7 +17,7 @@ unit FIBErrorHandler;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   SysUtils, Classes, fib, FIBDatabase, IB_ErrorCodes,

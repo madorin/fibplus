@@ -12,7 +12,7 @@ unit FIBSyntaxMemo;
 
 interface
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 {$WARNINGS OFF}
 
 uses

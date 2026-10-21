@@ -1,6 +1,6 @@
 unit RTTIRoutines;
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 interface
 

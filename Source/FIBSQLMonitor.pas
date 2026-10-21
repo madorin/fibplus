@@ -17,7 +17,7 @@ unit FIBSQLMonitor;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 {$IFNDEF NO_MONITOR}
 uses
 

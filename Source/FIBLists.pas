@@ -19,7 +19,7 @@ interface
 
 uses
   SysUtils, Classes, FIBPlatforms;
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 type
 {$IFDEF C23}

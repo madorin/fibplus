@@ -5,7 +5,7 @@ unit SIBAPI;
 // dhbecker@jps.net
 // www.jps.net/dhbecker/superib
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 interface
 

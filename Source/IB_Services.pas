@@ -2,7 +2,7 @@ unit IB_Services deprecated 'Use FIBServices';
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   FIBServices;

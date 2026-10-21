@@ -16,7 +16,7 @@ unit FIBSQLEditor;
 
 interface
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 uses
   Windows, Messages, SysUtils, Classes,
@@ -56,7 +56,7 @@ implementation
 uses
 {$IFDEF CODEEDITOR} ToCodeEditor, {$ENDIF} TypInfo, RTTIRoutines, IBSQLSyn,
   FIBInterfaces,
-  RegFIBPlusEditors;
+  RegFIBEditors;
 
 function ShowSQLEdit(aQuery: TComponent): boolean;
 var

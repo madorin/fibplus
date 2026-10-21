@@ -2,7 +2,7 @@ unit FIBExports;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   SysUtils, FIBPlatforms, Classes,

@@ -16,7 +16,7 @@ unit FIBDataSetOptions;
 
 interface
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 uses
   Classes,

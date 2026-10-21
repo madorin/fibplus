@@ -17,7 +17,7 @@ unit FIBMiscellaneous;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
 {$IFDEF WINDOWS}

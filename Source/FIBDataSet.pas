@@ -17,7 +17,7 @@ unit FIBDataSet;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   SysUtils, ibase, IB_Intf, ib_externals, fib,

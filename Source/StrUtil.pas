@@ -25,7 +25,7 @@ unit StrUtil;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   SysUtils, Classes {$IFDEF WINDOWS}, Windows {$ENDIF};

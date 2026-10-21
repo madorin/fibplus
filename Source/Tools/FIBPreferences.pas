@@ -2,7 +2,7 @@ unit FIBPreferences;
 
 interface
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 uses
   System.SysUtils, System.Classes, System.Variants, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls,

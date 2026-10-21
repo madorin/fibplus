@@ -2,7 +2,7 @@ unit fraDSSQLEdit;
 
 interface
 
-{$I ..\FIBPlus.inc}
+{$I ..\FIB.inc}
 
 uses
   Windows, Messages, SysUtils, Classes,
@@ -97,7 +97,7 @@ const
 implementation
 
 uses
-  RegistryUtils, TypInfo, Variants, RegFIBPlusEditors, FIBEditorsConsts,
+  RegistryUtils, TypInfo, Variants, RegFIBEditors, FIBEditorsConsts,
   RTTIRoutines, IBSQLSyn;
 
 {$R *.dfm}

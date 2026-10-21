@@ -4,7 +4,7 @@ A BLOB column holds binary or text data of any size. An array column holds a fix
 
 ## Requirements and limits
 
-- Array support is compiled in by default (`SUPPORT_ARRAY_FIELD` in `FIBPlus.inc`). Without it, the array members in this article do not exist.
+- Array support is compiled in by default (`SUPPORT_ARRAY_FIELD` in `FIB.inc`). Without it, the array members in this article do not exist.
 - A BLOB or array is read and written in the transaction of its query or dataset. That transaction must be active, or the query must have `qoStartTransaction` in `Options`.
 
 ## BLOB basics

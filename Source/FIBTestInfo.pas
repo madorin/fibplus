@@ -15,7 +15,7 @@
 
 unit FIBTestInfo;
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 interface
 

@@ -12,7 +12,7 @@ unit FIBCharSets;
 
 interface
 
-{$I FIBPlus.inc}
+{$I FIB.inc}
 
 uses
   FIBPlatforms;
