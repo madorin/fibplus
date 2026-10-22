@@ -53,9 +53,9 @@ FIBPlus 8 supports Delphi 2009 and later; use 7.9.x for Delphi 6 to 2007. Packag
 
 ### 📝 Notes
 
-- Applications compile FIBPlus from `Source` for any target platform (Win32, Win64, ...). Build `FIB` and `FIBFMX` for a platform only if your application uses runtime packages.
-- The DCU files go to `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`, separate for each Delphi version. Adding this folder to the library path, before `Source`, avoids recompiling FIBPlus in each project; `Source` stays needed for the form and resource files.
-- **Language**: `Locales` has the error messages and the login dialog in English (`en`, the default), Czech (`cs`), German (`de`), Spanish (`es`), Polish (`pl`), Portuguese (Brazil) (`pt-BR`), Romanian (`ro`), Russian (`ru`) and Ukrainian (`uk`). Set the code in `Source\FIBLocale.inc`, for example `FIBLocale = 'ro';`, and rebuild the packages and your application (with **Build**, so FIBPlus is compiled again). See [Localization](Docs/guide/localization.md). This translates the errors raised by FIBPlus itself (`EFIBClientError`) and the login dialog; other FIBPlus exceptions and the server messages stay in English.
+- Build `FIB` and `FIBFMX` for other platforms only if your application uses runtime packages.
+- DCUs go to `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`. Add this folder to the library path before `Source` to avoid recompiling FIBPlus in each project.
+- **Language**: messages and the login dialog are in English by default. To switch, set e.g. `FIBLocale = 'ro';` in `Source\FIBLocale.inc` and rebuild. See [Localization](Docs/guide/localization.md) for the available languages.
 
 
 ## ❤️ Support FIBPlus
