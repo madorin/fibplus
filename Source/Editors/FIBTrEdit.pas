@@ -116,7 +116,7 @@ begin
     if b then
     begin
       v := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBTrKinds, IntToStr(cmbProps.ItemIndex)], ['Params']);
-      b := (VarType(v) <> varBoolean) and (VarType(v[1, 0]) = varBoolean) and v[1, 0];
+      b := VarIsArray(v) and (VarType(v[1, 0]) = varBoolean) and Boolean(v[1, 0]);
       if b then
         Text := VarToStr(v[0, 0])
     end;

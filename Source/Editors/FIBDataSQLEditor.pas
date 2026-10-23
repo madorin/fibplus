@@ -163,7 +163,7 @@ var
 begin
 {$IFNDEF NO_REGISTRY}
   v := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBSQLEdOptions], ['Origins']);
-  if (VarType(v) <> varBoolean) and v[1, 0] then
+  if VarIsArray(v) and Boolean(v[1, 0]) then
     fSQLsEdit.chFieldOrigin.Checked := v[0, 0];
   fSQLsEdit.ReadOptions;
 
