@@ -54,7 +54,7 @@ FIBPlus 8 supports Delphi 2009 and later; use 7.9.x for Delphi 6 to 2007. Packag
 ### 📝 Notes
 
 - Build `FIB` and `FIBFMX` for other platforms only if your application uses runtime packages.
-- DCUs go to `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`. Add this folder to the library path before `Source` to avoid recompiling FIBPlus in each project.
+- DCUs go to `$(BDSCOMMONDIR)\Dcu\FIB\$(Platform)\$(Config)`. Add this folder to the library path before `Source` to avoid recompiling FIBPlus in each project.
 - **Language**: messages and the login dialog are in English by default. To switch, set e.g. `FIBLocale = 'ro';` in `Source\FIBLocale.inc` and rebuild. See [Localization](Docs/guide/localization.md) for the available languages.
 
 

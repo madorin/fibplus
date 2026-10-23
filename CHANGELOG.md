@@ -176,6 +176,8 @@ The lists of old and new names, and what an application has to change, are in
     package version, from `FIB_D12` (Delphi 2009) to `FIB_D26` (10.3 Rio), in
     `FIB_Dxx.groupproj`. The duplicate packages of Delphi XE7 are merged into
     `FIB_D21` and `dclFIB_D21`.
+- The packages write DCU files to `$(BDSCOMMONDIR)\Dcu\FIB\$(Platform)\$(Config)`
+  instead of `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`.
 
 ### Removed
 

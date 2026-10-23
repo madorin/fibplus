@@ -24,6 +24,7 @@ Find the version you use now, then read every section above it, from the one jus
 | The login dialog units `FIBDBLoginDlg` and `FIB_FMX_DBLoginDlg` are renamed to `FIBLoginDlg` and `FIBLoginDlgFMX`. The form classes `TfrmFIBDBLoginDlg` and `TfmxFIBDBLoginDlg` are now `TFIBLoginForm` and `TFIBLoginFormFMX`. | Change the `uses` clause: `FIBDBLoginDlg` → `FIBLoginDlg`, `FIB_FMX_DBLoginDlg` → `FIBLoginDlgFMX`. |
 | `Source\FIB_MESSAGES.INC` moved to `Locales\en\Errors.inc`, and `Resources\Russian` to `Locales\ru`. The language of the messages and of the login dialog is set in `Source\FIBLocale.inc`, for example `FIBLocale = 'ru';`; see [Localization](localization.md). | If you copied a translation over `Source\FIB_MESSAGES.INC`, set its code in `FIBLocale.inc` instead. `FIB.pas` and `FIBConsts.pas` include the files from `..\Locales`, so keep the `Locales` folder next to `Source`. |
 | The compiler version symbols of `FIB.inc` are renamed to `C<CompilerVersion>`: `D2010+` → `C21`, `D_XE` → `C22`, `D_XE2` → `C23`, `D_XE3` → `C24`, `D_XE4` → `C25`, `D_XE5` → `C26`, `D_20`..`D_29` → `C27`..`C36`, `D_30` → `C37`. `TWideDataSet` (Delphi 2009 to XE2) is removed: test `{$IFNDEF C24}`. | Only for code that includes `FIB.inc` and tests these symbols: rename them. |
+| The packages write DCU files to `$(BDSCOMMONDIR)\Dcu\FIB\$(Platform)\$(Config)` instead of `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`. | If the Library path has the old folder, replace it with the new one, and delete the old folder. |
 
 ### Packages
 
