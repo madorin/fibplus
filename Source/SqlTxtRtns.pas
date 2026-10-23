@@ -1833,14 +1833,14 @@ begin
     if FastTrim(Value) = '' then
       Result := SQLText
     else
-      Result := FastTrim(SQLText) + CLRF + 'ORDER BY ' + Value;
+      Result := FastTrim(SQLText) + sLineBreak + 'ORDER BY ' + Value;
   end
   else
   begin
     if FastTrim(Value) = '' then
       Result := FastCopy(SQLText, 1, StartPos - 1)
     else if SQLText[StartPos - 1] <> #10 then
-      Result := FastCopy(SQLText, 1, StartPos - 1) + CLRF + 'ORDER BY ' + Value
+      Result := FastCopy(SQLText, 1, StartPos - 1) + sLineBreak + 'ORDER BY ' + Value
     else
       Result := FastCopy(SQLText, 1, StartPos - 1) + 'ORDER BY ' + Value
   end;
@@ -1908,10 +1908,10 @@ begin
           OrderText(StartPosO, EndPosO);
       end;
       if StartPosO = 0 then
-        Result := FastTrim(SQLText) + CLRF + 'GROUP BY ' + Value
+        Result := FastTrim(SQLText) + sLineBreak + 'GROUP BY ' + Value
       else
-        Result := FastTrim(FastCopy(SQLText, 1, StartPosO - 1)) + CLRF +
-          'GROUP BY ' + Value + CLRF + FastCopy(SQLText, StartPosO, MaxInt)
+        Result := FastTrim(FastCopy(SQLText, 1, StartPosO - 1)) + sLineBreak +
+          'GROUP BY ' + Value + sLineBreak + FastCopy(SQLText, StartPosO, MaxInt)
     end;
   end
   else if FastTrim(Value) = '' then
@@ -1919,7 +1919,7 @@ begin
   else
   begin
     if SQLText[StartPos - 1] <> #10 then
-      Result := FastCopy(SQLText, 1, StartPos - 1) + CLRF + 'GROUP BY ' + Value
+      Result := FastCopy(SQLText, 1, StartPos - 1) + sLineBreak + 'GROUP BY ' + Value
     else
       Result := FastCopy(SQLText, 1, StartPos - 1) + 'GROUP BY ' + Value
   end;
@@ -1955,7 +1955,7 @@ begin
   begin
     pe := DispositionMainFrom.X;
     pb := FFirstPos + 5;
-    Result := FastCopy(SQLText, 1, pb) + CLRF + NewFields + CLRF + FastCopy(SQLText, pe, MaxInt);
+    Result := FastCopy(SQLText, 1, pb) + sLineBreak + NewFields + sLineBreak + FastCopy(SQLText, pe, MaxInt);
   end;
 end;
 
@@ -2006,15 +2006,15 @@ begin
   else
   begin
     if IsEmptyStr(Value) then
-      Result := FastCopy(SQLText, 1, StartPos - 1) + CLRF + FastCopy(SQLText, EndPos + 1, MaxInt)
+      Result := FastCopy(SQLText, 1, StartPos - 1) + sLineBreak + FastCopy(SQLText, EndPos + 1, MaxInt)
     else
     begin
       if SQLText[StartPos - 1] <> #10 then
-        Result := FastCopy(SQLText, 1, StartPos - 1) + CLRF + 'WHERE ' + Value
+        Result := FastCopy(SQLText, 1, StartPos - 1) + sLineBreak + 'WHERE ' + Value
       else
         Result := FastCopy(SQLText, 1, StartPos - 1) + 'WHERE ' + Value;
       if SQLText[EndPos + 1] <> #13 then
-        Result := Result + CLRF + FastCopy(SQLText, EndPos + 1, MaxInt)
+        Result := Result + sLineBreak + FastCopy(SQLText, EndPos + 1, MaxInt)
       else
         Result := Result + FastCopy(SQLText, EndPos + 1, MaxInt);
     end;
@@ -2137,11 +2137,11 @@ begin
     begin
       Result := FastCopy(SQLText, 1, StartPos - 1);
       if Result[Length(Result)] <> #10 then
-        Result := Result + CLRF;
-      Result := Result + 'PLAN ' + Text + CLRF + FastCopy(SQLText, StartPos, MaxInt)
+        Result := Result + sLineBreak;
+      Result := Result + 'PLAN ' + Text + sLineBreak + FastCopy(SQLText, StartPos, MaxInt)
     end
     else if SQLText[Length(SQLText)] <> #10 then
-      Result := SQLText + CLRF + 'PLAN ' + Text
+      Result := SQLText + sLineBreak + 'PLAN ' + Text
     else
       Result := SQLText + 'PLAN ' + Text
   end;
@@ -2180,9 +2180,9 @@ function TSQLParser.AddToMainWhere(const NewClause: string; ForceCLRF: boolean):
 var
   p: integer;
   StartPos, EndPos: integer;
-  CLRF: string;
+  sLineBreak: string;
 begin
-  CLRF := iifStr(ForceCLRF, ForceNewStr, '');
+  sLineBreak := iifStr(ForceCLRF, ForceNewStr, '');
   if IsBlank(NewClause) then
   begin
     Result := SQLText;
@@ -2193,13 +2193,13 @@ begin
   begin
     WhereClause(p, StartPos, EndPos);
     Result := FastCopy(SQLText, 1, StartPos + 4) + '( ' +
-      FastCopy(SQLText, StartPos + 5, EndPos - StartPos - 4) + CLRF +
-      ' ) and ( ' + NewClause + ' )' + CLRF + FastCopy(SQLText, EndPos + 1, MaxInt);
+      FastCopy(SQLText, StartPos + 5, EndPos - StartPos - 4) + sLineBreak +
+      ' ) and ( ' + NewClause + ' )' + sLineBreak + FastCopy(SQLText, EndPos + 1, MaxInt);
   end
   else
   begin
     p := DispositionMainFrom.Y;
-    Result := FastCopy(SQLText, 1, p) + #13#10 + BeginWhere + CLRF + NewClause +
+    Result := FastCopy(SQLText, 1, p) + #13#10 + BeginWhere + sLineBreak + NewClause +
       #13#10 + FastCopy(SQLText, p + 1, MaxInt)
   end
 end;

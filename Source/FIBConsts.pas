@@ -25,7 +25,7 @@ resourcestring
   SCantFindApiProc            = 'Can''t find procedure %s in %s';
   SCantLoadLibrary            = 'Can''t load library %s ';
   SUnknownClientLibrary       = 'Can''t perform operation %s. Unknown client library';
-  STransactionForOtherLibrary = '%s.' + CLRF + 'Transaction can''t work with different client library.';
+  STransactionForOtherLibrary = '%s.' + sLineBreak + 'Transaction can''t work with different client library.';
   SCryptKeyTooLong            = 'The crypt key has %d bytes, but the server accepts at most %d';
 
   SEdErrorPrefix       = 'Error of record updating:';
@@ -50,7 +50,7 @@ resourcestring
   SCompEditDataSet_ID = '.DataSet_ID should be greater than 0';
 
   SCompEditDataSetInfoNotExists   = 'Table FIB$DATASETS_INFO does not exist.';
-  SCompEditDataSetInfoForbid      = 'Can''t use FIB$DATASETS_INFO.' + CLRF + 'urDataSetInfo not included into Database.UseRepositories.';
+  SCompEditDataSetInfoForbid      = 'Can''t use FIB$DATASETS_INFO.' + sLineBreak + 'urDataSetInfo not included into Database.UseRepositories.';
   SCompEditUnableInsertInfoRecord = 'Error of inserting new information record';
   SCompEditFieldInfoLoadError     = 'Error of loading FieldInfo from stream';
 

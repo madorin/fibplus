@@ -3017,7 +3017,7 @@ begin
       end;
     FIBDataSet.skDelete:
       begin
-        Result := 'Delete from ' + FormatTableName + ' ' + vAliasTableName + CLRF + 'where ' + pWhereClause;
+        Result := 'Delete from ' + FormatTableName + ' ' + vAliasTableName + sLineBreak + 'where ' + pWhereClause;
         Exit;
       end;
     skRefresh:
@@ -3106,7 +3106,7 @@ begin
   else
     case SK of
       skModify: Result := Result + ' where ' + pWhereClause;
-      FIBDataSet.skInsert: Result := Result + CLRF + ')' + InsValuesStr + ')';
+      FIBDataSet.skInsert: Result := Result + sLineBreak + ')' + InsValuesStr + ')';
     end;
 end;
 
@@ -3279,7 +3279,7 @@ begin
       end;
     FIBDataSet.skDelete:
       begin
-        Result := 'Delete from ' + FormatTableName + ' ' + vAliasTableName + CLRF + 'where ' + pWhereClause;
+        Result := 'Delete from ' + FormatTableName + ' ' + vAliasTableName + sLineBreak + 'where ' + pWhereClause;
         Exit;
       end;
     skRefresh:
@@ -3373,8 +3373,8 @@ begin
     if (vFi = nil) or (vFi.IsComputed and not(psCanEditComputedFields in PrepareOptions)) then
       Continue;
     Inc(AcceptCount);
-    Result := Result + iifStr(AcceptCount = 1, '', ',') + CLRF;
-    InsValuesStr := InsValuesStr + iifStr(AcceptCount = 1, '', ',') + CLRF;
+    Result := Result + iifStr(AcceptCount = 1, '', ',') + sLineBreak;
+    InsValuesStr := InsValuesStr + iifStr(AcceptCount = 1, '', ',') + sLineBreak;
     case SK of
       skModify:
         begin
@@ -3403,16 +3403,16 @@ begin
   end
   else
     case SK of
-      skModify: Result := Result + CLRF + 'where ' + pWhereClause;
-      FIBDataSet.skInsert: Result := Result + CLRF + ')' + CLRF + InsValuesStr + CLRF + ')';
+      skModify: Result := Result + sLineBreak + 'where ' + pWhereClause;
+      FIBDataSet.skInsert: Result := Result + sLineBreak + ')' + sLineBreak + InsValuesStr + sLineBreak + ')';
     end;
   if Length(sReturningFields) > 0 then
   begin
     SetLength(sReturningFields, Length(sReturningFields) - 1);
-    Result := Result + CLRF + 'RETURNING ' + sReturningFields
+    Result := Result + sLineBreak + 'RETURNING ' + sReturningFields
   end;
   if FAutoUpdateOptions.UseRowsClause then
-    Result := Result + CLRF + ' ROWS 1'
+    Result := Result + sLineBreak + ' ROWS 1'
 end;
 
 function TpFIBDataSet.GenerateSQLTextWA(const TableName: string; SK: TpSQLKind;

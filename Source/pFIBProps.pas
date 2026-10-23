@@ -1124,8 +1124,8 @@ begin
   for I := 0 to c do
     if TCondition(Objects[I]).Enabled and not IsBlank(Strings[I]) then
     begin
-      result := result + '(' + ValueFromStr(Strings[I]) + ')' + CLRF;
-      result := result + CLRF + ' and ';
+      result := result + '(' + ValueFromStr(Strings[I]) + ')' + sLineBreak;
+      result := result + sLineBreak + ' and ';
     end;
   if not IsBlank(result) then
     SetLength(result, Length(result) - 7);
@@ -1149,7 +1149,7 @@ begin
       begin
         Wh := GetMainWhereClause;
         if Wh <> '' then
-          Wh := Wh + CLRF + 'and ' + Wh1
+          Wh := Wh + sLineBreak + 'and ' + Wh1
         else
           Wh := Wh1;
         SetMainWhereClause(Wh);

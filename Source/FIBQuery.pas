@@ -4449,9 +4449,9 @@ var
         with vParams[j] do
         begin
           if (FXSQLVAR^.SQLType and (not 1) <> SQL_ARRAY) and (FXSQLVAR^.SQLType and (not 1) <> SQL_BLOB) then
-            st := st + CLRF + 'Params[' + IntToStr(j) + ']=''' + AsString + ''''
+            st := st + sLineBreak + 'Params[' + IntToStr(j) + ']=''' + AsString + ''''
           else
-            st := st + CLRF + 'Params[' + IntToStr(j) + ']=(' + IntToStr(vParams[j].AsQuad.gds_quad_high) + ',' +
+            st := st + sLineBreak + 'Params[' + IntToStr(j) + ']=(' + IntToStr(vParams[j].AsQuad.gds_quad_high) + ',' +
               IntToStr(vParams[j].AsQuad.gds_quad_low) + ')'
         end;
 

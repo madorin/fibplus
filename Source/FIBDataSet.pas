@@ -1900,7 +1900,7 @@ const
 procedure TFIBStringField.SetAsNativeData(const Value: FIBByteString);
 begin
   if FieldKind <> fkData then
-    raise Exception.Create('Method TFIBStringField.SetAsNativeData:' + CLRF +
+    raise Exception.Create('Method TFIBStringField.SetAsNativeData:' + sLineBreak +
       'DataSet ' + CmpFullName(Self) + ' field "' + FieldName +
       '" is not data field');
   Include(TFIBCustomDataSet(DataSet).FRunState, drsInFieldAsData);
@@ -2108,7 +2108,7 @@ end;
 procedure TFIBWideStringField.SetAsNativeData(const Value: FIBByteString);
 begin
   if FieldKind <> fkData then
-    raise Exception.Create('Method TFIBWideStringField.SetAsNativeData:' + CLRF +
+    raise Exception.Create('Method TFIBWideStringField.SetAsNativeData:' + sLineBreak +
       'DataSet ' + CmpFullName(Self) + ' field "' + FieldName +
       '" is not data field');
   Include(TFIBCustomDataSet(DataSet).FRunState, drsInFieldAsData);
@@ -3485,9 +3485,9 @@ begin
         if Assigned(OnValidate) then
           raise
         else if Self.Name = '' then
-          raise Exception.Create(CmpFullName(Self) + '.' + FieldName + CLRF + E.Message)
+          raise Exception.Create(CmpFullName(Self) + '.' + FieldName + sLineBreak + E.Message)
         else
-          raise Exception.Create(CmpFullName(Self) + CLRF + E.Message)
+          raise Exception.Create(CmpFullName(Self) + sLineBreak + E.Message)
     end
 end;
 
@@ -3655,9 +3655,9 @@ begin
     on E: Exception do
       begin
         if Self.Name = '' then
-          raise Exception.Create(CmpFullName(Self) + '.' + FieldName + CLRF + E.Message)
+          raise Exception.Create(CmpFullName(Self) + '.' + FieldName + sLineBreak + E.Message)
         else
-          raise Exception.Create(CmpFullName(Self) + CLRF + E.Message)
+          raise Exception.Create(CmpFullName(Self) + sLineBreak + E.Message)
       end;
   end;
 {$IFDEF D_XE3}
@@ -6479,7 +6479,7 @@ begin
     [psUseBooleanField, psUseGuidField, psSQLINT64ToBCD, psUseLargeIntField] <> []) then
     begin
       CheckDatasetClosed
-      ('change psUseBooleanField, psUseGuidField, psSQLINT64ToBCD or psUseLargeIntField' + CLRF);
+      ('change psUseBooleanField, psUseGuidField, psSQLINT64ToBCD or psUseLargeIntField' + sLineBreak);
       if Prepared then
         begin
           FPrepareOptions := Value;
@@ -7756,7 +7756,7 @@ begin
           if tf = nil then
             begin
               if FCacheModelOptions.FCacheModelKind = cmkLimitedBufferSize then
-                FIBErrorEx('%s.' + CLRF + 'Field %s use in order, but not presented in fields section of SelectSQL',
+                FIBErrorEx('%s.' + sLineBreak + 'Field %s use in order, but not presented in fields section of SelectSQL',
                   [CmpFullName(Self), tmpStr]);
               FSortFields := Null;
               Exit

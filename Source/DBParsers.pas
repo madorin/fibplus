@@ -69,7 +69,7 @@ begin
   except
     on e: Exception do
       begin
-        e.Message := 'Can''t parse Filter for: ' + CLRF + e.Message;
+        e.Message := 'Can''t parse Filter for: ' + sLineBreak + e.Message;
         raise;
       end;
   end;

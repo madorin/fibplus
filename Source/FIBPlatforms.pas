@@ -30,15 +30,10 @@ uses
 Classes, SysUtils, Macapi.CoreServices, Macapi.Mach, Macapi.Foundation,
   Macapi.AppKit, Macapi.CocoaTypes;
 {$ENDIF MACOS}
-{$IFDEF WINDOWS}
 
 const
-  CLRF = #13#10;
-{$ELSE}
-
-const
-  CLRF = #10;
-{$ENDIF}
+  // kept for user code; the library uses sLineBreak
+  CLRF = sLineBreak;
 
 type
 

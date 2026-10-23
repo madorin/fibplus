@@ -479,7 +479,7 @@ begin
           if (vSQLMessage[1] >= 'a') and (vSQLMessage[1] <= 'z') then
             Dec(vSQLMessage[1], 32);
           if (vSQLMessage[Length(vSQLMessage)] <> '.') then
-            vSQLMessage := vSQLMessage + '.' + CLRF;
+            vSQLMessage := vSQLMessage + '.' + sLineBreak;
         end;
     end;
   (*
@@ -487,7 +487,7 @@ begin
   *)
   vIBMessage := '';
   if (ShowSQLState in IBErrorMessages) and (Length(vSQLState) > 0) then
-    vIBMessage := 'SQL error state =' + vSQLState + CLRF
+    vIBMessage := 'SQL error state =' + vSQLState + sLineBreak
   else
     vIBMessage := '';
   if (ShowIBMessage in IBErrorMessages) then
@@ -607,7 +607,7 @@ var
 begin
   sn := '';
   if (ShowRaiserName in IBErrorMessages) and (Length(FRaiserName) > 1) then
-    sn := FRaiserName + ':' + CLRF;
+    sn := FRaiserName + ':' + sLineBreak;
   if (ShowSQLMessage in IBErrorMessages) then
     sn := sn + FSQLMessage;
   if (ShowIBMessage in IBErrorMessages) then

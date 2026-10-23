@@ -124,7 +124,7 @@ begin
       SQLText := SQLText + ',?P' + IntToStr(i);
     SQLText := SQLText + ')';
   end;
-  if SQL.Text <> SQLText + CLRF then
+  if SQL.Text <> SQLText + sLineBreak then
     SQL.Text := SQLText;
   if not Prepared then
     Prepare;
