@@ -1,4 +1,6 @@
-# FIBPlus Library
+<p align="center">
+  <img src="Docs/images/fibplus-banner.png" width="1280" alt="FIBPlus: Firebird &amp; InterBase components for Delphi and C++Builder">
+</p>
 
 FIBPlus is a fast, easy-to-use component library for Delphi and C++Builder that works with Firebird and InterBase directly through the native client API, with no extra data access layers in between.
 
@@ -12,40 +14,35 @@ See the [documentation](Docs/README.md): a guide to features such as transaction
 
 ## 📦 Installation
 
-The `Packages` folder contains a project group `FIBPlus_Dxx.groupproj` for each supported Delphi version, where `xx` is the product version:
+FIBPlus 7.9 supports Delphi 6 to 13. The packages are in the `Packages` folder:
 
-| Delphi | Suffix |
-|--------|--------|
-| 13 Florence | D37 |
-| 12 Athens | D29 |
-| 11 Alexandria | D28 |
-| 10.4 Sydney | D27 |
-| 10.3 Rio | D26 |
-| 10.2 Tokyo | D25 |
-| 10.1 Berlin | D24 |
-| 10 Seattle | D23 |
-
-Each group contains these packages:
+| Delphi | Open |
+|--------|------|
+| 10 Seattle to 13 Florence | `FIBPlus_Dxx.groupproj`: D23 (10), D24 (10.1), D25 (10.2), D26 (10.3), D27 (10.4), D28 (11), D29 (12), D37 (13) |
+| XE2 to XE7 | `FIBPlus_XE2.groupproj` .. `FIBPlus_XE5.groupproj`, `FIBPlus_XE7.groupproj` |
+| XE6, XE8 | `FIBPlus_D20.dpk` and `FIBPlusEditors_D20.dpk` (XE6), `FIBPlus_D22.dpk` and `FIBPlusEditors_D22.dpk` (XE8) |
+| 6 to XE | `FIBPlusNN` and `FIBPlusEditorsNN`, where `NN` is 6, 7, 2005, 2006, 2007, 2009, 2010 or 2011 (XE) |
 
 | Package | Type | Purpose |
 |---------|------|---------|
-| `FIBPlus_Dxx` | runtime | Components, required by the other packages |
-| `DclFIBPlus_Dxx` | design time | Registers the components in the Tool Palette |
-| `FIBPlusEditors_Dxx` | design time | Property and component editors, VCL login dialog for the IDE |
-| `FIBPlusFMX` | runtime | FireMonkey login dialog (`FIB_FMX_DBLoginDlg`), Delphi 13 and later |
+| `FIBPlus*` | runtime | Components, required by the other packages; before Delphi 10 Seattle it also registers them in the Tool Palette |
+| `DclFIBPlus_Dxx` | design time | Tool Palette registration, Delphi 10 Seattle and later |
+| `FIBPlusEditors*` | design time | Property and component editors, IDE login dialog |
+| `FIBPlusFMX` | runtime | FireMonkey login dialog (`FIB_FMX_DBLoginDlg`), Delphi 13 |
 
 ### 🛠️ Steps
 
-1. Open `Packages\FIBPlus_Dxx.groupproj` for your Delphi version.
-2. In Project Manager, select the **Win32** platform (**Win64x** for the 64-bit IDE) for all packages.
-3. Right-click `FIBPlus_Dxx` and choose **Build**. It is a never-build package (`{$IMPLICITBUILD OFF}`), so it must be built explicitly before the design packages. Skipping this step causes *E2225 Never-build package 'FIBPlus_Dxx' must be recompiled*.
-4. Right-click `DclFIBPlus_Dxx`, choose **Build**, then **Install**.
-5. Right-click `FIBPlusEditors_Dxx`, choose **Build**, then **Install**.
-6. In **Tools > Options > Language > Delphi > Library**, add the `Source` folder to the **Library path** for every target platform you use (Win32, Win64, ...).
+1. Open the project group or the packages and select the **Win32** platform.
+2. Build `FIBPlus*` first (it is a never-build package), then the other packages; in a project group **Build All** does this.
+3. Install `DclFIBPlus_Dxx` (before Delphi 10 Seattle: `FIBPlus*`) and `FIBPlusEditors*`.
+4. In the library options of the IDE, add the `Source` folder to the **Library path** of every target platform you use.
 
-The runtime package itself does not need to be installed. The design packages exist only for the IDE platform (Win32, or Win64x for the 64-bit IDE), as the IDE loads them; for Win64 applications it is enough to set the library path, as in step 6. Build `FIBPlus_Dxx` for Win64 only if your application is built with runtime packages. `FIBPlusFMX` is needed only by FireMonkey applications built with runtime packages; otherwise add `FIB_FMX_DBLoginDlg` to the uses clause.
+### 📝 Notes
 
-The packages write their DCU files to `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`, e.g. `C:\Users\Public\Documents\Embarcadero\Studio\37.0\Dcu\FIBPlus\Win32\Release`. This folder is separate for each Delphi version, so several versions installed on the same machine don't overwrite each other's DCU files. Adding this folder to the library path, before `Source`, is optional and only avoids recompiling FIBPlus in each project; `Source` stays needed for the form and resource files.
+- The packages are for the 32-bit IDE. For the 64-bit IDE of Delphi 12.3 and later, use FIBPlus 8 (the `master` branch).
+- Build `FIBPlus*` and `FIBPlusFMX` for other platforms only if your application uses runtime packages.
+- From Delphi 2007, DCUs go to `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`. Add this folder to the library path before `Source` to avoid recompiling FIBPlus in each project.
+- **Language**: messages are in English. For Russian, copy `Resources\Russian\FIB_Messages.inc` over `Source\FIB_MESSAGES.INC` and rebuild.
 
 
 ## ❤️ Support FIBPlus

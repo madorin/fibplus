@@ -29,19 +29,19 @@
     '%s: Cannot perform operation -- DB is not open.',
     'Cannot perform operation -- DB is currently open.',
     'Database name is missing.',
-    '%s :Transaction is not active.',
-    '%s :Transaction is active.',
+    '%s: Transaction is not active.',
+    '%s: Transaction is active.',
     'Timeout values cannot be negative.',
-    '%s :No databases are listed in transaction component.', // Changed
-    '%s :Updating wrong database.', // Changed
-    '%s :Updating wrong transaction.', // Changed
+    '%s: No databases are listed in transaction component.', // Changed
+    '%s: Updating wrong database.', // Changed
+    '%s: Updating wrong transaction.', // Changed
     'Database not assigned for %s.',
     'Transaction not assigned for %s.',
     'XSQLDA index out of range.',
     'XSQLDA name does not exist (%s).',
     'End of file.',
     'Beginning of file.',
-    '%s:Invalid statement handle.', // Changed
+    '%s: Invalid statement handle.', // Changed
     'Can''t %s because %s dataset open.',
     'Can''t %s because %s dataset closed.',
     'Unknown SQL Data type (%d).',
@@ -51,20 +51,20 @@
     'Column cannot be set to null (%s)',
     'Blob stream cannot be read.',
     'Blob stream cannot be written.',
-    'Can''t %s , because  query is empty',
+    'Can''t %s, because query is empty.',
     'Can''t "open" a non-select statement. Use ExecQuery.',
     'No access to field "%s".',
     'Field "%s" is read-only.',
     'Field "%s" not found.',
-    'DataSet not in Edit or Insert mode.(%s)',
+    'DataSet not in Edit or Insert mode. (%s)',
     'Not editing.',
     'Can''t insert into dataset. (%s)',
-    'Can''t post. (%s) ',
+    'Can''t post. (%s)',
     'Can''t update. (%s)',
     'Can''t delete from dataset. (%s)',
     'Can''t refresh row. (%s)',
     'Buffer not set.',
-    'Circular references not permitted.(%s)',
+    'Circular references not permitted. (%s)',
     'SQL Parse Error in '+':%s ' + CRLF + CRLF + '%s',
     'User abort.',
     'Data set is uni-directional.',
@@ -73,11 +73,11 @@
     'Column lists do not match.',
     'Column types don''t match. (From index: %d, To index: %d)',
     'Can''t end a shared transaction unless it is forced and equal to the transaction''s TimeoutAction.',
-    'Column types "%s" is not array field', // feNotIsArrayField
-    'Dimension %d don''t exist in "%s" ', // feWrongDimension
+    'Column "%s" is not an array field', // feNotIsArrayField
+    'Dimension %d doesn''t exist in "%s"', // feWrongDimension
     'SQL Dialect invalid', // feSQLDialectInvalid
     'Firebird client library not found. Install the Firebird client to use this functionality', // feIBMissing
-    '%s is an InterBase6 function. Please upgrade to InterBase6 to use this functonality',
+    '%s is an InterBase 6 function. Please upgrade to InterBase 6 to use this functionality',
     'InterBase Install DLL ibinstall.dll not found in the path. Please install InterBase 6 to use this functionality',
     'Cannot perform operation -- service is not attached',
     'Cannot perform operation -- service is attached',
@@ -91,13 +91,13 @@
     'Field Size too small. Field %s.%s',
     '%s. Can''t use limited cache. '#13#10 +
       'CachedUpdates must be False,'#13#10 +
-      'Select must have "Order by" clause ,'#13#10 +
+      'Select must have "Order by" clause,'#13#10 +
       'All order fields must exist in fields section'#13#10 +
       'Select can''t use params with prefix "NEW_"'#13#10 +
-      'UpdateTransaction must be equel Transaction or AutoCommit=True ',
+      'UpdateTransaction must be equal to Transaction or AutoCommit=True',
     'Error in %s. FieldList is empty.',
     '%s can''t use field "%s"',
-    '%s is an Firebird 2 function. Please upgrade to Firebird 2 to use this functonality',
+    '%s is a Firebird 2 function. Please upgrade to Firebird 2 to use this functionality',
     '%s is not supported by %s'
   );
 

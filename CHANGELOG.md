@@ -74,6 +74,11 @@
   defaults and procedure bodies became `?`, and a DDL under 10 KB was padded
   with `#0` to 10240 characters. The DDL stream is now created with
   `TEncoding.Unicode`.
+- Transaction editor: a saved transaction kind whose parameters were missing
+  from the registry could raise "Variant is not an array"; the check no longer
+  depends on Delphi short-circuiting a `Variant` expression.
+- Typos and stray blanks in the English and Russian messages; two Russian
+  messages (`feCantUseField`, `feFeatureNotSupported`) had a wrong grammar.
 
 ## [7.9.1] - 2026-10-09
 
