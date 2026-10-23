@@ -1,7 +1,7 @@
 ﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
 			<ProjectGuid>{ff48eab1-ce8d-45ff-9b6b-3d949b000333}</ProjectGuid>
-			<MainSource>FIBPlusEditors2011.dpk</MainSource>
+			<MainSource>FIBPlusEditors_XE.dpk</MainSource>
 			<Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
 			<ProjectVersion>12.2</ProjectVersion>
@@ -53,7 +53,7 @@
 			<DCC_Define>RELEASE</DCC_Define>
 		</PropertyGroup>
 		<ItemGroup>
-			<DelphiCompile Include="FIBPlusEditors2011.dpk">
+			<DelphiCompile Include="FIBPlusEditors_XE.dpk">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
 			<DCCReference Include="vcl.dcp"/>
@@ -63,7 +63,7 @@
 			<DCCReference Include="rtl.dcp"/>
 			<DCCReference Include="dbrtl.dcp"/>
 			<DCCReference Include="vclactnband.dcp"/>
-			<DCCReference Include="fibplus2011.dcp"/>
+			<DCCReference Include="FIBPlus_XE.dcp"/>
 			<DCCReference Include="..\Source\Editors\RegFIBPlusEditors.pas"/>
 			<DCCReference Include="..\Source\Editors\EdFieldInfo.pas">
 				<Form>frmFields</Form>
@@ -187,7 +187,7 @@
 						<VersionInfoKeys Name="Comments"/>
 					</VersionInfoKeys>
 					<Source>
-						<Source Name="MainSource">FIBPlusEditors2011.dpk</Source>
+						<Source Name="MainSource">FIBPlusEditors_XE.dpk</Source>
 					</Source>
 					<Excluded_Packages>
 						<Excluded_Packages Name="$(BDSBIN)\bcboffice2k140.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>

@@ -1,4 +1,4 @@
-package FIBPlusEditors2011;
+package FIBPlusEditors_XE;
 
 {$R *.res}
 {$ALIGN 8}
@@ -34,7 +34,7 @@ requires
   rtl,
   dbrtl,
   vclactnband,
-  fibplus2011;
+  FIBPlus_XE;
 
 contains
   RegFIBPlusEditors in '..\Source\Editors\RegFIBPlusEditors.pas',

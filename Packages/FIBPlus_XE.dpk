@@ -1,4 +1,4 @@
-package FIBPlus2011;
+package FIBPlus_XE;
 
 {$R *.res}
 {$ALIGN 8}

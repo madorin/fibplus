@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{91D6842F-4245-48AC-A3AD-893F90BCBB1A}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="FIBPlus_XE.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="FIBPlusEditors_XE.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="FIBPlus_XE">
+        <MSBuild Projects="FIBPlus_XE.dproj"/>
+    </Target>
+    <Target Name="FIBPlus_XE:Clean">
+        <MSBuild Projects="FIBPlus_XE.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="FIBPlus_XE:Make">
+        <MSBuild Projects="FIBPlus_XE.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="FIBPlusEditors_XE">
+        <MSBuild Projects="FIBPlusEditors_XE.dproj"/>
+    </Target>
+    <Target Name="FIBPlusEditors_XE:Clean">
+        <MSBuild Projects="FIBPlusEditors_XE.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="FIBPlusEditors_XE:Make">
+        <MSBuild Projects="FIBPlusEditors_XE.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="FIBPlus_XE;FIBPlusEditors_XE"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="FIBPlus_XE:Clean;FIBPlusEditors_XE:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="FIBPlus_XE:Make;FIBPlusEditors_XE:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

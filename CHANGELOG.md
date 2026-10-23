@@ -4,11 +4,12 @@
 
 ### Changed
 
-- The Delphi XE6 and XE8 packages are named `FIBPlus_XE6`, `FIBPlusEditors_XE6`,
-  `FIBPlus_XE8` and `FIBPlusEditors_XE8` (before: `FIBPlus_D20`, `FIBPlus_D22`
-  and the editors), and have project groups like XE2 to XE7. The duplicate
-  `FIBPlus_D21` and `FIBPlusEditors_D21` of the XE7 packages are removed.
-  Packages that require `FIBPlus_D20` or `FIBPlus_D22` must require the new name.
+- The Delphi XE, XE6 and XE8 packages are named like those of XE2 to XE7:
+  `FIBPlus_XE`, `FIBPlus_XE6` and `FIBPlus_XE8` (before: `FIBPlus2011`,
+  `FIBPlus_D20` and `FIBPlus_D22`), with the editors `FIBPlusEditors_XE`,
+  `FIBPlusEditors_XE6` and `FIBPlusEditors_XE8`, and have project groups. The
+  duplicate `FIBPlus_D21` and `FIBPlusEditors_D21` of the XE7 packages are
+  removed. Packages that require an old name must require the new one.
 
 ### Fixed
 
