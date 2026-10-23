@@ -1,4 +1,4 @@
-package FIBPlusEditors_D21;
+package FIBPlusEditors_XE8;
 
 {$R *.res}
 {$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
@@ -37,7 +37,7 @@ requires
   dbrtl,
   vclactnband,
   vclimg,
-  FIBPlus_D21;
+  FIBPlus_XE8;
 
 contains
   RegFIBPlusEditors in '..\Source\Editors\RegFIBPlusEditors.pas',
@@ -71,8 +71,10 @@ contains
   uFrmSearchResult in '..\Source\Editors\uFrmSearchResult.pas' {frmCompSearchResult},
   FIBToolsConsts in '..\Source\Editors\FIBToolsConsts.pas',
   pFIBSyntaxMemo in '..\Source\Editors\pFIBSyntaxMemo.pas',
-  FIBDBLoginDlg in '..\Source\Editors\..\FIBDBLoginDlg.pas' {frmFIBDBLoginDlg},
+  FIBDBLoginDlg in '..\Source\FIBDBLoginDlg.pas' {frmFIBDBLoginDlg},
   uFIBEditorForm in '..\Source\Editors\uFIBEditorForm.pas',
   uFontEditor in '..\Source\Editors\uFontEditor.pas' {frmFontEditor};
 
 end.
+
+

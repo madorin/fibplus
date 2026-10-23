@@ -1,4 +1,4 @@
-package FIBPlus_D22;
+package FIBPlus_XE6;
 
 {$R *.res}
 {$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}

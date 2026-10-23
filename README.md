@@ -19,8 +19,7 @@ FIBPlus 7.9 supports Delphi 6 to 13. The packages are in the `Packages` folder:
 | Delphi | Open |
 |--------|------|
 | 10 Seattle to 13 Florence | `FIBPlus_Dxx.groupproj`: D23 (10), D24 (10.1), D25 (10.2), D26 (10.3), D27 (10.4), D28 (11), D29 (12), D37 (13) |
-| XE2 to XE7 | `FIBPlus_XE2.groupproj` .. `FIBPlus_XE5.groupproj`, `FIBPlus_XE7.groupproj` |
-| XE6, XE8 | `FIBPlus_D20.dpk` and `FIBPlusEditors_D20.dpk` (XE6), `FIBPlus_D22.dpk` and `FIBPlusEditors_D22.dpk` (XE8) |
+| XE2 to XE8 | `FIBPlus_XEn.groupproj`, where `n` is 2 to 8 |
 | 6 to XE | `FIBPlusNN` and `FIBPlusEditorsNN`, where `NN` is 6, 7, 2005, 2006, 2007, 2009, 2010 or 2011 (XE) |
 
 | Package | Type | Purpose |

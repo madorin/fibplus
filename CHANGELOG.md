@@ -2,6 +2,14 @@
 
 ## [7.9.2] - Unreleased
 
+### Changed
+
+- The Delphi XE6 and XE8 packages are named `FIBPlus_XE6`, `FIBPlusEditors_XE6`,
+  `FIBPlus_XE8` and `FIBPlusEditors_XE8` (before: `FIBPlus_D20`, `FIBPlus_D22`
+  and the editors), and have project groups like XE2 to XE7. The duplicate
+  `FIBPlus_D21` and `FIBPlusEditors_D21` of the XE7 packages are removed.
+  Packages that require `FIBPlus_D20` or `FIBPlus_D22` must require the new name.
+
 ### Fixed
 
 - `TpFIBScripter` cut a statement at a `--` comment when the script was added
