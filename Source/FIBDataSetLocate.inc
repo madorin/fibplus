@@ -141,12 +141,12 @@ var
   vSortInfos     : array of TSortFieldInfo;
   FinishSearch:boolean;
   NowInFetched:boolean;
-  vDateAdjusted:boolean;
 
   WideValue:WideString;
   WideKey:WideString;
   vCalcBuffer:PAnsiChar;
   CodePages: array of Word;
+  DateAdjusted: array of Boolean;
 
 // To compare a string field as Unicode; 0: as bytes
 function LocateCodePage(Field: TField): Word;
@@ -305,6 +305,7 @@ var
 begin
   CalcSize:=0;
   SetLength(CodePages, fl.Count);
+  SetLength(DateAdjusted, fl.Count);
   for i:=Pred(fl.Count) downto 0 do
   begin
      CodePages[i] := LocateCodePage(TField(fl.List^[i]));
@@ -407,7 +408,7 @@ begin
       begin
        // a text key has no milliseconds; a Double key (EncodeDate + EncodeTime) is a TDateTime
        if VarIsStr(KeyValues[i]) then
-         vDateAdjusted := True;
+         DateAdjusted[i] := True;
        // compared in milliseconds: two TDateTime of the same instant can differ in the last bits
        MSecsKey := TimeStampToMSecs(DateTimeToTimeStamp(VarAsType(KeyValues[i], varDate)));
        KeyValues[i] := MSecsKey;
@@ -627,7 +628,7 @@ var
                ftDateTime :
                begin
                 ts := MSecsToTimeStamp(Round(PDouble(P)^));
-                if vDateAdjusted then
+                if DateAdjusted[i] then
                   ts.Time := ts.Time - (ts.Time mod 1000);
                 dv := TimeStampToMSecs(ts);
                 if dv = TVarData(KeyValues[i]).VDouble then
@@ -965,7 +966,6 @@ begin
      Exit;
 
 
-    vDateAdjusted:=False;     
     Result      := False;
 
     AdjustKeys;

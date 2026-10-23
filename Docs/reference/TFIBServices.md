@@ -362,7 +362,7 @@ Restores a database from a backup with the server's restore service.
 
 ## TFIBNBackupService
 
-Incremental backup. Tested with Firebird 3, 4, and 5; the source comment that marks this class as *Firebird 2.5 only* is out of date.
+Incremental backup. Firebird 2.5 and later; tested with Firebird 3, 4, and 5.
 
 | | |
 |---|---|
@@ -384,7 +384,7 @@ Incremental backup. Tested with Firebird 3, 4, and 5; the source comment that ma
 
 ## TFIBNRestoreService
 
-Restores a database from incremental backup files into a new file; the start raises when the file exists. Tested with Firebird 3, 4, and 5; the source comment that marks this class as *Firebird 2.5 only* is out of date.
+Restores a database from incremental backup files into a new file; the start raises when the file exists. Firebird 2.5 and later; tested with Firebird 3, 4, and 5.
 
 | | |
 |---|---|

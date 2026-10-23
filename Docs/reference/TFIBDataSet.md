@@ -133,7 +133,7 @@ Each flag of `Options`, `PrepareOptions`, and `DetailConditions` is stored in th
 | `poFreeHandlesAfterClose` | `oFreeHandlesAfterClose` | Release the prepared statements on the server (`UnPrepare`) after the dataset closes. |
 | `poKeepSorting` | `oKeepSorting` | When a row is posted and the dataset is sorted, move the row to the place its sort fields give. Without it, posting a row clears the sort information, and `Sorted` becomes `False`. With `cmkLimitedBufferSize` the order is always kept. |
 | `poNoForceIsNull` | `oNoForceIsNull` | Sets `qoNoForceIsNull` on `QSelect`, `QInsert`, `QUpdate`, and `QDelete`: a null parameter is not rewritten to `IS NULL`. `QRefresh` is not changed. |
-| `poPersistentSorting` | `oPersistentSorting` | When the dataset opens again after a client sort (`DoSort`), sort the new rows in the same way. When the `SelectSQL` text changed, the sort is kept only if its fields are still in the dataset. Without the option, the sort information is dropped when the text changed. |
+| `poPersistentSorting` | `oPersistentSorting` | When the dataset opens again after a client sort (`DoSort`), sort the new rows in the same way. When the `SelectSQL` text changed, the sort is kept only if its fields are still in the dataset. Without the option, the local sort ends when the dataset is closed: after the open, the sort information is the `ORDER BY` of the query with `psGetOrderInfo`, or empty. |
 | `poProtectedEdit` | `oProtectedEdit` | Pessimistic locking. Before the first edit of a row, lock it on the server (see [LockRecord](#locking)) and read it again with `RefreshSQL`. When `RefreshSQL` or `UpdateSQL` is empty and `AutoReWriteSqls` or `UpdateOnlyModifiedFields` is set, the statement is generated first. Without `CachedUpdates` and `AutoCommit`, a posted row keeps the modified status until the update transaction commits, so editing it again does not lock it again. |
 | `poRefreshAfterDelete` | `oRefreshAfterDelete` | After the delete statement runs, read the row again with `RefreshSQL`. The row stays in the cache when `RefreshSQL` still returns it (a logical delete); otherwise it is removed. Without the option, the row is always removed. |
 | `poRefreshAfterPost` | `oRefreshAfterPost` | After an insert or update is sent to the server, read the row again with `RefreshSQL`, so values set by triggers and defaults appear. With `cmkStandard` it needs a non-empty `RefreshSQL`. With `cmkLimitedBufferSize` the option starts the refresh of the cache part (`DoInternalRefresh`) after each post. |
@@ -147,7 +147,7 @@ Each flag of `Options`, `PrepareOptions`, and `DetailConditions` is stored in th
 
 `PrepareOptions` is a set of `TFIBPrepareOption`. It tells the dataset what to read from the metadata. The standard default is `[pfImportDefaultValues, psGetOrderInfo, psUseBooleanField, psSetEmptyStrToNull]`.
 
-Changing `psUseBooleanField`, `psSQLINT64ToBCD`, or `psUseLargeIntField` needs a closed dataset; when the dataset is already prepared, its field definitions are read again.
+Changing `psUseBooleanField`, `psUseGuidField`, `psSQLINT64ToBCD`, or `psUseLargeIntField` needs a closed dataset; when the dataset is already prepared, its field definitions are read again.
 
 | Value | DFM entry | Effect |
 |-------|-----------|--------|

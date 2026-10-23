@@ -407,7 +407,7 @@ type
     property Options: TRestoreOptions read FOptions write FOptions default [CreateNewDB];
   end;
 
-  // Firebird 2.5 only
+  // Firebird 2.5 and later
   TFIBNBackupService = class(TFIBControlAndQueryService)
   private
     FDatabaseName: String;
@@ -423,7 +423,7 @@ type
     property Level: Integer read FLevel write FLevel default 0;
   end;
 
-  // Firebird 2.5 only
+  // Firebird 2.5 and later
   TFIBNRestoreService = class(TFIBControlAndQueryService)
   private
     FDatabaseName: string;

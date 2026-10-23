@@ -407,7 +407,7 @@ DataSet.Open;
 DataSet.Append; // the GUID field already has a new value
 ```
 
-Set `psUseGuidField` before the dataset is prepared for the first time. A dataset that was opened once keeps its field definitions, and setting the option later, even after `Close`, has no effect on them.
+Change `psUseGuidField` and `psUseBooleanField` only while the dataset is closed: the dataset reads its field definitions again, and on an open dataset the change raises an error. Persistent fields created with the old type must be created again.
 
 ## Query cache
 
@@ -481,7 +481,6 @@ When `OnAcceptCacheSchema` is assigned and `ValidateAfterLoad` is `True`, the lo
 - **`RecordCount` with a filter.** It counts all cached rows. Use `VisibleRecordCount`, or set `poVisibleRecno`.
 - **A locked row stays locked after `Cancel`.** With `poProtectedEdit` the lock ends only with the update transaction. See [Lock a row while it is edited](#lock-a-row-while-it-is-edited).
 - **A dataset opened with `CacheOpen` is read-only.** Use the `Cache...` methods, or `CachedUpdates` with `OnUpdateRecord`. See [A table in memory](#a-table-in-memory).
-- **`psUseGuidField` set too late.** Set it before the first `Open`.
 
 ## See also
 
