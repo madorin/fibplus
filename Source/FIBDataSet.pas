@@ -4861,6 +4861,11 @@ var
   up1, up2: Boolean;
   S1, S2: string;
 begin
+  if VarIsNull(val1) or VarIsNull(val2) then
+    begin
+      Result := StdCompareValues(Field, val1, val2);
+      Exit;
+    end;
   if Field.DataType in [ftString, ftFixedChar] then
     begin
       S1 := val1;
@@ -4899,7 +4904,7 @@ begin
           end;
     end
   else
-    Result := StdCompareValues(Field, S1, S2);
+    Result := StdCompareValues(Field, val1, val2);
 end;
 
 procedure TFIBCustomDataSet.CopyRecordBuffer(Source, Dest: Pointer);
@@ -6468,13 +6473,13 @@ end;
 
 procedure TFIBCustomDataSet.SetPrepareOptions(Value: TpPrepareOptions);
 begin
-  if not(csReading in ComponentState) and (((psUseBooleanField in Value - FPrepareOptions) or (psUseBooleanField
-    in FPrepareOptions - Value)) or ((psSQLINT64ToBCD in Value - FPrepareOptions) or (psSQLINT64ToBCD
-    in FPrepareOptions - Value))) or ((psUseLargeIntField in Value - FPrepareOptions) or
-    (psUseLargeIntField in FPrepareOptions - Value)) then
+  // these options change the field types, so the field definitions are read again
+  if not (csReading in ComponentState) and
+    (((Value - FPrepareOptions) + (FPrepareOptions - Value)) *
+    [psUseBooleanField, psUseGuidField, psSQLINT64ToBCD, psUseLargeIntField] <> []) then
     begin
       CheckDatasetClosed
-      ('change psUseBooleanField or psSQLINT64ToBCD or psUseLargeIntField' + CLRF);
+      ('change psUseBooleanField, psUseGuidField, psSQLINT64ToBCD or psUseLargeIntField' + CLRF);
       if Prepared then
         begin
           FPrepareOptions := Value;
@@ -7710,65 +7715,62 @@ begin
 
   if (poPersistentSorting in Options) and not VarIsNull(FSortFields) and FIsClientSorting then
     Exit;
-  if VarIsNull(FSortFields) or not FIsClientSorting then
-    begin
-      SQLText := ReadySelectText;
-      FSortFields := GetOrderInfo(SQLText, Database.IsFB21OrMore);
+  // a local sort without poPersistentSorting ends with the open
+  FIsClientSorting := False;
+  SQLText := ReadySelectText;
+  FSortFields := GetOrderInfo(SQLText, Database.IsFB21OrMore);
 
-      if VarIsNull(FSortFields) then
-        Exit;
-      oc := VarArrayHighBound(FSortFields, 1);
-      for i := 0 to oc do
+  if VarIsNull(FSortFields) then
+    Exit;
+  oc := VarArrayHighBound(FSortFields, 1);
+  for i := 0 to oc do
+    begin
+      fi := StrToIntDef(FSortFields[i, 0], 0);
+      if fi > 0 then
         begin
-          fi := StrToIntDef(FSortFields[i, 0], 0);
-          if fi > 0 then
+          tf := FieldByNumber(fi);
+          if tf <> nil then
             begin
-              tf := FieldByNumber(fi);
-              if tf <> nil then
-                begin
-                  FSortFields[i, 0] := tf.FieldName
-                end
-              else
-                FSortFields[i, 0] := 'NotPresented'
+              FSortFields[i, 0] := tf.FieldName
+            end
+          else
+            FSortFields[i, 0] := 'NotPresented'
+        end
+      else
+        begin
+          tmpStr := FSortFields[i, 0];
+
+          fi := PosCh('.', tmpStr);
+          if fi <> 0 then
+            begin
+              tf := FieldByOrigin(tmpStr);
+              if tf = nil then
+                tf := FieldByOrigin(FullFieldName(SQLText, tmpStr));
             end
           else
             begin
-              tmpStr := FSortFields[i, 0];
-
-              fi := PosCh('.', tmpStr);
-              if fi <> 0 then
-                begin
-                  tf := FieldByOrigin(tmpStr);
-                  if tf = nil then
-                    tf := FieldByOrigin(FullFieldName(SQLText, tmpStr));
-                end
-              else
-                begin
-                  tf := FindField(tmpStr);
-                  if tf = nil then
-                    tf := FieldByRelName(tmpStr);
-                end;
+              tf := FindField(tmpStr);
               if tf = nil then
-                begin
-                  if FCacheModelOptions.FCacheModelKind = cmkLimitedBufferSize then
-                    FIBErrorEx('%s.' + CLRF + 'Field %s use in order, but not presented in fields section of SelectSQL',
-                      [CmpFullName(Self), tmpStr]);
-                  FIsClientSorting := false;
-                  FSortFields := Null;
-                  Exit
-                end
-              else
-                begin
-                  FSortFields[i, 0] := tf.FieldName;
+                tf := FieldByRelName(tmpStr);
+            end;
+          if tf = nil then
+            begin
+              if FCacheModelOptions.FCacheModelKind = cmkLimitedBufferSize then
+                FIBErrorEx('%s.' + CLRF + 'Field %s use in order, but not presented in fields section of SelectSQL',
+                  [CmpFullName(Self), tmpStr]);
+              FSortFields := Null;
+              Exit
+            end
+          else
+            begin
+              FSortFields[i, 0] := tf.FieldName;
 
-                  { FSortFields[i,1]:=True;
-            FSortFields[i,2]:=True; // NULLS FIRST OR LAST }
+              { FSortFields[i,1]:=True;
+        FSortFields[i,2]:=True; // NULLS FIRST OR LAST }
 
-                end;
             end;
         end;
     end;
-  FIsClientSorting := false;
 end;
 
 procedure TFIBCustomDataSet.DoBeforeOpen; // override;
@@ -7865,8 +7867,12 @@ begin
       DoSort(arr1, arr2);
       First;
     end
-  else if not(psGetOrderInfo in PrepareOptions) then
-    FSortFields := Null;
+  else
+    begin
+      FIsClientSorting := False;
+      if not (psGetOrderInfo in PrepareOptions) then
+        FSortFields := Null;
+    end;
 
   if vAfterOpenEvents.Count > 0 then
     for i := 0 to Pred(vAfterOpenEvents.Count) do

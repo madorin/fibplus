@@ -88,6 +88,21 @@
   depends on Delphi short-circuiting a `Variant` expression.
 - Typos and stray blanks in the English and Russian messages; two Russian
   messages (`feCantUseField`, `feFeatureNotSupported`) had a wrong grammar.
+- `AnsiCompareString` as `OnCompareFieldValues` took every field that is not
+  `ftString` or `ftFixedChar` (e.g. a UTF8 column) for equal, so `DoSort` gave
+  a random order. A NULL in a string field was also taken for equal
+  to every value. These fields and NULLs are now compared as by
+  `StdCompareValues`.
+- `Locate` with several `TIMESTAMP` keys: a text key for one of them made the
+  others ignore the milliseconds of the row, so a `TDateTime` key with
+  milliseconds was not found. Only the field of the text key ignores them now.
+- After `DoSort`, reopening the dataset without `poPersistentSorting` kept
+  `Sorted` and `SortedFields` of the local sort, while the rows came in the
+  server order. With `psGetOrderInfo` they are now read again from the `ORDER BY`
+  of the query.
+- Changing `psUseGuidField` in `PrepareOptions` after the first open had no
+  effect: the field stayed a `TFIBStringField`. The field definitions are now
+  read again, as for `psUseBooleanField`.
 
 ## [7.9.1] - 2026-10-09
 
