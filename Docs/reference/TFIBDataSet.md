@@ -18,7 +18,7 @@ if DataSet.Locate('NAME', 'Smith', [loCaseInsensitive, loPartialKey]) then
   ShowMessage(DataSet.FBN('ID').AsString);
 ```
 
-In the example, `DataSet` is a `TFIBDataSet` (or `TpFIBDataSet`), and `Database` and `Transaction` are the `TFIBDatabase` and `TFIBTransaction` it uses.
+In the example, `DataSet` is a `TFIBDataSet` (or `TpFIBDataSet`), and `Database` and `Transaction` are the `TFIBDatabase` and `TFIBTransaction` it uses. `TFIBDataSet` only reads: its `Post` writes nothing to the server, so use `TpFIBDataSet` to edit rows.
 
 This page lists what `TFIBDataSet` and `TFIBCustomDataSet` add to `TDataSet`. Members inherited from `TDataSet` (`Open`, `Close`, `Fields`, `Bookmark`, `Filter`, and so on) are not repeated.
 
