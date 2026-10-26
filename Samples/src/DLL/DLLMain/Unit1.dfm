@@ -95,9 +95,7 @@ object Form1: TForm1
     TitleFont.Style = []
   end
   object db: TFIBDatabase
-    DBName = 
-      'localhost:G:\Program Files\Firebird\examples\empbuild\EMPLOYEE.F' +
-      'DB'
+    DBName = 'localhost:fibplus_samples'
     DBParams.Strings = (
       'lc_ctype=UNICODE_FSS'
       'user_name=SYSDBA'

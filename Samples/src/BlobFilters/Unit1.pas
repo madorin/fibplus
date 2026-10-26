@@ -39,78 +39,39 @@ implementation
 {$R *.dfm}
 
 uses
-  IBBlobFilter, zStream
-  // , DIUclStreams
-  ;
+  IBBlobFilter, ZLib;
 
 {$I FIBExamples.inc}
-{
-  function UclCompressStream(const AInStream, AOutStream: TStream;
-  const ACompressionLevel: Integer = 10;
-  const ABufferSize: Cardinal = $1000;
-  const AOnProgress: TUclProgress = nil;
-  const AUser: Pointer = nil): Boolean;
 
-  function UclDeCompressStream(const AInStream, AOutStream: TStream;
-  const ABufferSize: Cardinal = $1000;
-  const AOnProgress: TUclProgress = nil;
-  const AUser: Pointer = nil): Boolean;
-}
-
-procedure PackBuffer(var Buffer: PChar; var BufSize: LongInt);
+// The library passes the buffer pointer and frees the buffer with FreeMem
+procedure PackBuffer(var Buffer: Pointer; var BufSize: LongInt);
 var
-  srcStream, dstStream: TStream;
+  Data: Pointer;
+  Size: Integer;
 begin
-  srcStream := TMemoryStream.Create;
-  dstStream := TMemoryStream.Create;
-  try
-    srcStream.WriteBuffer(Buffer^, BufSize);
-    srcStream.Position := 0;
-    // UclCompressStream(srcStream, dstStream);
-    GZipStream(srcStream, dstStream, 6);
-    srcStream.Free;
-    srcStream := nil;
-    BufSize := dstStream.Size;
-    dstStream.Position := 0;
-    ReallocMem(Buffer, BufSize);
-    dstStream.ReadBuffer(Buffer^, BufSize);
-  finally
-    if Assigned(srcStream) then
-      srcStream.Free;
-    dstStream.Free;
-  end;
+  ZCompress(Buffer, BufSize, Data, Size);
+  FreeMem(Buffer);
+  Buffer := Data;
+  BufSize := Size;
 end;
 
-procedure UnpackBuffer(var Buffer: PChar; var BufSize: LongInt);
+procedure UnpackBuffer(var Buffer: Pointer; var BufSize: LongInt);
 var
-  srcStream, dstStream: TStream;
+  Data: Pointer;
+  Size: Integer;
 begin
-  srcStream := TMemoryStream.Create;
-  dstStream := TMemoryStream.Create;
-  try
-    srcStream.WriteBuffer(Buffer^, BufSize);
-    srcStream.Position := 0;
-    // UclDeCompressStream(srcStream, dstStream);
-    GunZipStream(srcStream, dstStream);
-    srcStream.Free;
-    srcStream := nil;
-    BufSize := dstStream.Size;
-    dstStream.Position := 0;
-    ReallocMem(Buffer, BufSize);
-    dstStream.ReadBuffer(Buffer^, BufSize);
-  finally
-    if Assigned(srcStream) then
-      srcStream.Free;
-    dstStream.Free;
-  end;
+  ZDecompress(Buffer, BufSize, Data, Size);
+  FreeMem(Buffer);
+  Buffer := Data;
+  BufSize := Size;
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  DB.RegisterBlobFilter(-15, @PackBuffer, @UnpackBuffer);
+  DB.RegisterBlobFilter(-15, PIBBlobFilterProc(@PackBuffer), PIBBlobFilterProc(@UnpackBuffer));
 
   Caption := 'FIBPlus Example - ' + Application.Title;
-  DB.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\' + DemoDB;
+  DB.DBName := DemoDB;
 {$IFDEF FBCLIENT.DLL}
   DB.LibraryName := 'fbclient.dll';
 {$ENDIF}

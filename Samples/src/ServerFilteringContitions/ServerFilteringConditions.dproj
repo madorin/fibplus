@@ -20,9 +20,9 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
-			<DCC_ExeOutput>..\..\dcu</DCC_ExeOutput>
+			<DCC_ExeOutput>..\..\</DCC_ExeOutput>
 			<DCC_UnitSearchPath>..\;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-			<DCC_DependencyCheckOutputName>..\..\dcu\ServerFilteringConditions.exe</DCC_DependencyCheckOutputName>
+			<DCC_DependencyCheckOutputName>..\..\ServerFilteringConditions.exe</DCC_DependencyCheckOutputName>
 			<DCC_DcuOutput>..\..\dcu</DCC_DcuOutput>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
 			<DCC_Platform>x86</DCC_Platform>

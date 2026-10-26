@@ -18,20 +18,12 @@ It is built for database application developers and has grown from their real-wo
 
 See the [documentation](Docs/README.md): a guide to features such as transactions and timeouts, and a reference of classes, properties, methods and events.
 
+The [samples](Samples/README.md) are small applications that show one feature each, with a demo database.
+
 
 ## 📦 Installation
 
-The project groups are in the `Packages` folder:
-
-| Delphi | Project group |
-|--------|---------------|
-| 10.4 Sydney and later | `FIB.groupproj` |
-| 10.3 Rio | `FIB_D26.groupproj` |
-| 10.2 Tokyo | `FIB_D25.groupproj` |
-| 10.1 Berlin | `FIB_D24.groupproj` |
-| 10 Seattle | `FIB_D23.groupproj` |
-
-FIBPlus 8 supports Delphi 2009 and later; use 7.9.x for Delphi 6 to 2007. Packages before Delphi 10.4 are named after the [package version](https://docwiki.embarcadero.com/RADStudio/en/Compiler_Versions), from `FIB_D12` (Delphi 2009) to `FIB_D26` (10.3 Rio).
+FIBPlus 8 supports Delphi 2009 and later; use 7.9.x for Delphi 6 to 2007. The project groups are in the `Packages` folder: `FIB.groupproj` for Delphi 10.4 and later, and `FIB_Dxx.groupproj` for older versions, where `xx` is the [package version](https://docwiki.embarcadero.com/RADStudio/en/Compiler_Versions), from `FIB_D12` (Delphi 2009) to `FIB_D26` (10.3 Rio).
 
 | Package | Type | Purpose |
 |---------|------|---------|

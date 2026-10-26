@@ -188,7 +188,7 @@ object Form1: TForm1
     end
   end
   object db: TFIBDatabase
-    DBName = 'localhost:D:\home\devrace\FIBPlusExamples\db\EMPLOYEE.FDB'
+    DBName = 'localhost:fibplus_samples'
     DBParams.Strings = (
       'lc_ctype=NONE'
       'user_name=SYSDBA'

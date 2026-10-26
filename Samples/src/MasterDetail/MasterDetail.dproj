@@ -20,7 +20,7 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
-			<DCC_ExeOutput>..\..</DCC_ExeOutput>
+			<DCC_ExeOutput>..\..\</DCC_ExeOutput>
 			<DCC_UnitSearchPath>..\;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<DCC_DependencyCheckOutputName>..\..\MasterDetail.exe</DCC_DependencyCheckOutputName>
 			<DCC_DcuOutput>..\..\dcu</DCC_DcuOutput>

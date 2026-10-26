@@ -97,9 +97,7 @@ object Form1: TForm1
     TitleFont.Style = []
   end
   object db: TFIBDatabase
-    DBName = 
-      'localhost:D:\serge\Plus_demos\Voinov\FIBPlusExamples\db\EMPLOYEE' +
-      '.FDB'
+    DBName = 'localhost:fibplus_samples'
     DBParams.Strings = (
       'lc_ctype=WIN1251'
       'user_name=SYSDBA'

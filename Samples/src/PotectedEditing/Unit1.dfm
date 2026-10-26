@@ -155,7 +155,7 @@ object Form1: TForm1
     OnClick = Button2Click
   end
   object db: TFIBDatabase
-    DBName = 'localhost:D:\home\devrace\FIBPlusExamples\db\EMPLOYEE.FDB'
+    DBName = 'localhost:fibplus_samples'
     DBParams.Strings = (
       'lc_ctype=NONE'
       'user_name=SYSDBA'
@@ -283,7 +283,7 @@ object Form1: TForm1
     Top = 40
   end
   object dbOther: TFIBDatabase
-    DBName = 'localhost:D:\home\devrace\FIBPlusExamples\db\EMPLOYEE.FDB'
+    DBName = 'localhost:fibplus_samples'
     DBParams.Strings = (
       'lc_ctype=NONE'
       'user_name=SYSDBA'

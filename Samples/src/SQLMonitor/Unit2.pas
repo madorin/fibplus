@@ -105,7 +105,7 @@ end;
 
 procedure TForm2.chkExecuteClick(Sender: TObject);
 begin
-  if chkPrepare.Checked then
+  if chkExecute.Checked then
     FIBSQLMonitor1.TraceFlags := FIBSQLMonitor1.TraceFlags + [tfQExecute]
   else
     FIBSQLMonitor1.TraceFlags := FIBSQLMonitor1.TraceFlags - [tfQExecute];
