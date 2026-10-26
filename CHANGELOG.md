@@ -312,6 +312,9 @@ The lists of old and new names, and what an application has to change, are in
 - Changing `psUseGuidField` in `PrepareOptions` after the first open had no
   effect: the field stayed a `TFIBStringField`. The field definitions are now
   read again, as for `psUseBooleanField`.
+- `StopFetching` in `TFIBQuery.OnSQLFetch` and `BeforeFetchRecord` made `Next`
+  return `nil` but left `Eof` at `False`, so a `while not Eof` loop did not end.
+  It is now a final stop: `Eof` is set as at the end of the data.
 
 ## [7.9.1] - 2026-10-09
 

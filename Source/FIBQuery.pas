@@ -4802,10 +4802,13 @@ begin
     begin
       StopFetching := False;
       FOnSQLFetch(FRecordCount, StopFetching);
-      if StopFetching and not(csLoading in ComponentState) then
-        // Abort;
-        Exit;
+      // A final stop: the cursor ends as at the end of the data
+      if StopFetching and not (csLoading in ComponentState) then
+        FEof := True;
     end;
+  end;
+  if not FEof then
+  begin
     // Go to the next record...
     Set8087CW(Default8087CW);
     // vLib:=FBase.Database.ClientLibrary;

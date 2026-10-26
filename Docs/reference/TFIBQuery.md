@@ -199,7 +199,7 @@ Each flag is saved in the form file as its own `qoXxx` entry.
 | `OnExecuteError` | `ExecQuery` raised an `EFIBError`. Set `Action` to choose what happens, see [Handling execution errors](#handling-execution-errors). |
 | `AfterFirstFetch` | On the first `Next` after an execute, also when the result is empty. With `GoToFirstRecordOnExecute` set to `False` it fires on the first explicit `Next`. |
 | `OnSQLChanging` | The `SQL` text is about to change. |
-| `OnSQLFetch` | Before each fetch. `RecordNumber` is the number of rows fetched so far. Set `StopFetching` to make `Next` return `nil` without fetching; `Eof` stays `False`. |
+| `OnSQLFetch` | Before each fetch. `RecordNumber` is the number of rows fetched so far. Set `StopFetching` to end the fetch: `Next` returns `nil` without fetching and `Eof` is set, as at the end of the data (with `qoAutoCommit` or `qoFreeHandleAfterExecute` the query is closed). To pause, stop calling `Next`; the cursor stays where it is. |
 | `TransactionEnding` / `TransactionEnded` | Not called by the library. An open cursor is closed automatically when its transaction commits or rolls back. |
 | `OnBatching` | During a batch operation, for each row. Set `BatchAction`: continue, stop, or skip. |
 | `OnBatchError` | A batch row failed. Set `BatchErrorAction`: fail, abort, retry, or ignore. |
