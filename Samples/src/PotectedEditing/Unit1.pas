@@ -5,8 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, ComCtrls, DB, FIBDataSet, pFIBDataSet, FIBDatabase, pFIBDatabase,
-  ExtCtrls, StdCtrls, Grids, DBGrids, pFIBProps, FIBQuery, pFIBQuery,
-  DBClient, pFIBClientDataSet, Provider, IBDatabase, ibase;
+  ExtCtrls, StdCtrls, Grids, DBGrids, pFIBProps, FIBQuery, pFIBQuery;
 
 type
   TForm1 = class(TForm)
@@ -54,14 +53,14 @@ procedure TForm1.FormCreate(Sender: TObject);
 begin
   dt.PrepareOptions := dt.PrepareOptions;
   Caption := 'FIBPlus Example - ' + Application.Title;
-  DB.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\' + DemoDB;
+  DB.DBName := DemoDB;
 {$IFDEF FBCLIENT.DLL}
   DB.LibraryName := 'fbclient.dll';
 {$ENDIF}
   DB.Connected := True;
   dt.Open;
   dt.Options := dt.Options + [poUseSelectForLock];
-  dbOther.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\' + DemoDB;
+  dbOther.DBName := DemoDB;
 {$IFDEF FBCLIENT.DLL}
   dbOther.LibraryName := 'fbclient.dll';
 {$ENDIF}

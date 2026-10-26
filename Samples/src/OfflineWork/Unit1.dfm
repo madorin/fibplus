@@ -116,9 +116,7 @@ object Form1: TForm1
   end
   object db: TpFIBDatabase
     AutoReconnect = True
-    DBName = 
-      'localhost:D:\serge\Plus_demos\Voinov\FIBPlusExamples\db\EMPLOYEE' +
-      '21.FDB'
+    DBName = 'localhost:fibplus_samples'
     DBParams.Strings = (
       'lc_ctype=UTF8'
       'user_name=SYSDBA'

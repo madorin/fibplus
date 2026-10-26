@@ -169,7 +169,7 @@ object Form1: TForm1
     end
   end
   object db: TpFIBDatabase
-    DBName = 'localhost:I:\Tiburon\FIBPlusExamples\db\EMPLOYEE.FDB'
+    DBName = 'localhost:fibplus_samples'
     DBParams.Strings = (
       'lc_ctype=UNICODE_FSS'
       'user_name=SYSDBA'

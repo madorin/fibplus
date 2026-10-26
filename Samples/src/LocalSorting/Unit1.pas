@@ -96,7 +96,7 @@ end;
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   Caption := 'FIBPlus Example - ' + Application.Title;
-  Db.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\' + DemoDB;
+  Db.DBName := DemoDB;
 {$IFDEF FBCLIENT.DLL}
   Db.LibraryName := 'fbclient.dll';
 {$ENDIF}

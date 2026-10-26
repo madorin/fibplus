@@ -161,7 +161,7 @@ object Form1: TForm1
     TabOrder = 5
   end
   object db: TpFIBDatabase
-    DBName = 'localhost:D:\home\devrace\FIBPlusExamples\db\EMPLOYEE.FDB'
+    DBName = 'localhost:fibplus_samples'
     DBParams.Strings = (
       'lc_ctype=NONE'
       'user_name=SYSDBA'

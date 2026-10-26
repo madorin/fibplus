@@ -36,10 +36,12 @@ implementation
 
 {$R *.dfm}
 
+{$I FIBExamples.inc}
+
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   Caption := 'FIBPlus Example - ' + Application.Title;
-  DB.DBName := 'localhost:' + ExtractFileDir(Application.ExeName) + '\db\employee.fdb';
+  DB.DBName := DemoDB;
   DB.Connected := True;
   Button1Click(nil);
   // dt.Open;

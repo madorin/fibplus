@@ -1,3 +1,3 @@
 // {$DEFINE FBCLIENT.DLL}
 const
-  DemoDB = 'employee.fdb';
+  DemoDB = 'localhost:fibplus_samples';

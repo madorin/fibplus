@@ -165,7 +165,7 @@ object Form1: TForm1
     TitleFont.Style = []
   end
   object db: TpFIBDatabase
-    DBName = 'localhost:D:\home\devrace\FIBPlusExamples\db\EMPLOYEE.FDB'
+    DBName = 'localhost:fibplus_samples'
     DBParams.Strings = (
       'lc_ctype=WIN1251'
       'user_name=SYSDBA'

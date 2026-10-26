@@ -138,9 +138,7 @@ object Form1: TForm1
     OnClick = Button1Click
   end
   object db: TpFIBDatabase
-    DBName = 
-      'localhost:E:\nv\documents\0000\devrace\FIBPlusExamples\db\EMPLOY' +
-      'EE.FDB'
+    DBName = 'localhost:fibplus_samples'
     DBParams.Strings = (
       'lc_ctype=NONE'
       'user_name=SYSDBA'

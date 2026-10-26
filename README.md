@@ -11,6 +11,8 @@ It is built for database application developers and has grown from their real-wo
 
 See the [documentation](Docs/README.md): a guide to features such as transactions and timeouts, and a reference of classes, properties, methods and events.
 
+The [samples](Samples/README.md) are small applications that show one feature each, with a demo database.
+
 
 ## 📦 Installation
 
