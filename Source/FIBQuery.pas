@@ -3071,6 +3071,7 @@ begin
               FXSQLVARs^[i].InternalSetAsString(@FXSQLVARs^[i].FWideTempValue, True, True);
         end;
       end;
+      FXSQLVARs^[i].FIsDefferedSetting := False;
     end;
   FHasDefferedSettings := False
 end;
