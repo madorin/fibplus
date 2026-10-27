@@ -106,12 +106,12 @@ type
     FUpdateSQL: TStrings;
     FDeleteSQL: TStrings;
     FRefreshSQL: TStrings;
-    FKeyField: Ansistring;
-    FGeneratorName: Ansistring;
-    FDescription: Ansistring;
-    FUpdateTableName: Ansistring;
+    FKeyField: string;
+    FGeneratorName: string;
+    FDescription: string;
+    FUpdateTableName: string;
     FUpdateOnlyModifiedFields: boolean;
-    FConditions: Ansistring;
+    FConditions: string;
     FNonValidated: boolean;
 
   public
@@ -166,12 +166,12 @@ type
 
   TFIBErrorMessage = class
   private
-    FErrorMsg: Ansistring;
+    FErrorMsg: string;
     FVersion: integer;
   public
     constructor Create(const aErrorMsg: string; aVersion: integer);
   public
-    property ErrorMsg: Ansistring read FErrorMsg;
+    property ErrorMsg: string read FErrorMsg;
     property Version: integer read FVersion;
   end;
 
@@ -239,8 +239,10 @@ const
   // 7: the text of the table info in UTF-8
   CurStreamVersion = 7;
   MinStreamVersion = 6;
-  // 2: DBName of the dataset info in UTF-8
-  DSCurStreamVersion = 2;
+  // 2: DBName of the dataset info in UTF-8; 3: all the texts in UTF-8
+  DSCurStreamVersion = 3;
+  // 2: the texts of the error messages in UTF-8
+  ErrCurStreamVersion = 2;
 
 type
   TFriendDatabase = class(TFIBDataBase);
@@ -1666,8 +1668,8 @@ begin
     if tn <> Signature then
       Exit;
     ReadBuffer(StreamVersion, SizeOf(integer));
-    if StreamVersion < MinStreamVersion then
-      Exit; // old style cache
+    if (StreamVersion < MinStreamVersion) or (StreamVersion > CurStreamVersion) then
+      Exit;
 
     ReadBuffer(tc, SizeOf(integer));
     if (DB <> nil) then
@@ -2667,30 +2669,32 @@ procedure TFIBErrorMessageCache.LoadFromStream(Stream: TStream);
 var
   ver, i, j, c, c1: integer;
   st: Ansistring;
-  ADBName, aErrorName, aErrorMsg: Ansistring;
+  UTF8: Boolean;
+  ADBName, aErrorName, aErrorMsg: string;
   aVersion: integer;
 begin
   with Stream do
   begin
     Position := 0;
     ReadBuffer(ver, SizeOf(integer));
-    if ver <> 1 then
+    if (ver < 1) or (ver > ErrCurStreamVersion) then
       Exit;
     ReadStrFromStream(Stream, st);
     if st <> ErrSignature then
       Exit;
+    UTF8 := ver >= 2;
     ReadBuffer(FMaxVersion, SizeOf(integer));
     Clear;
     ReadBuffer(c, SizeOf(integer));
     for i := 0 to c - 1 do
     begin
-      ReadStrFromStream(Stream, ADBName);
+      ADBName := ReadUTF8StrFromStream(Stream, UTF8);
       ReadBuffer(c1, SizeOf(integer));
       for j := 0 to c1 - 1 do
       begin
         ReadBuffer(aVersion, SizeOf(integer));
-        ReadStrFromStream(Stream, aErrorName);
-        ReadStrFromStream(Stream, aErrorMsg);
+        aErrorName := ReadUTF8StrFromStream(Stream, UTF8);
+        aErrorMsg := ReadUTF8StrFromStream(Stream, UTF8);
         AddErrorMessage(ADBName, aErrorName, aErrorMsg, aVersion)
       end;
     end;
@@ -2725,23 +2729,23 @@ var
 begin
   with Stream do
   begin
-    ver := 1;
-    WriteBuffer(ver, SizeOf(integer)); // Version of Stream format
+    ver := ErrCurStreamVersion;
+    WriteBuffer(ver, SizeOf(integer));
     WriteStrToStream(ErrSignature, Stream);
     WriteBuffer(FMaxVersion, SizeOf(integer));
     L := FDatabases.Count;
     WriteBuffer(L, SizeOf(integer));
     for i := 0 to FDatabases.Count - 1 do
     begin
-      WriteStrToStream(FDatabases[i], Stream);
+      WriteUTF8StrToStream(FDatabases[i], Stream);
       L := TStrings(FDatabases.Objects[i]).Count;
       WriteBuffer(L, SizeOf(integer));
       with TStrings(FDatabases.Objects[i]) do
         for j := 0 to Count - 1 do
         begin
           WriteBuffer(TFIBErrorMessage(Objects[j]).FVersion, SizeOf(integer));
-          WriteStrToStream(Strings[j], Stream);
-          WriteStrToStream(TFIBErrorMessage(Objects[j]).ErrorMsg, Stream);
+          WriteUTF8StrToStream(Strings[j], Stream);
+          WriteUTF8StrToStream(TFIBErrorMessage(Objects[j]).ErrorMsg, Stream);
         end;
     end;
   end;
@@ -2749,47 +2753,39 @@ end;
 
 procedure TFIBDataSetInfo.LoadFromStream(Stream: TStream);
 var
-  s: Ansistring;
+  UTF8: Boolean;
 begin
-  ReadStrFromStream(Stream, s);
-  if FStreamVersion >= 2 then
-    FDBName := UTF8ToString(s)
-  else
-    FDBName := string(s);
+  FDBName := ReadUTF8StrFromStream(Stream, FStreamVersion >= 2);
   Stream.ReadBuffer(FVersion, SizeOf(integer));
-  ReadStrFromStream(Stream, s);
-  FSelectSQL.Text := s;
-  ReadStrFromStream(Stream, s);
-  FInsertSQL.Text := s;
-  ReadStrFromStream(Stream, s);
-  FUpdateSQL.Text := s;
-  ReadStrFromStream(Stream, s);
-  FDeleteSQL.Text := s;
-  ReadStrFromStream(Stream, s);
-  FRefreshSQL.Text := s;
-  ReadStrFromStream(Stream, FKeyField);
-  ReadStrFromStream(Stream, FGeneratorName);
-  ReadStrFromStream(Stream, FDescription);
-  ReadStrFromStream(Stream, FUpdateTableName);
-  ReadStrFromStream(Stream, FConditions);
+  UTF8 := FStreamVersion >= 3;
+  FSelectSQL.Text := ReadUTF8StrFromStream(Stream, UTF8);
+  FInsertSQL.Text := ReadUTF8StrFromStream(Stream, UTF8);
+  FUpdateSQL.Text := ReadUTF8StrFromStream(Stream, UTF8);
+  FDeleteSQL.Text := ReadUTF8StrFromStream(Stream, UTF8);
+  FRefreshSQL.Text := ReadUTF8StrFromStream(Stream, UTF8);
+  FKeyField := ReadUTF8StrFromStream(Stream, UTF8);
+  FGeneratorName := ReadUTF8StrFromStream(Stream, UTF8);
+  FDescription := ReadUTF8StrFromStream(Stream, UTF8);
+  FUpdateTableName := ReadUTF8StrFromStream(Stream, UTF8);
+  FConditions := ReadUTF8StrFromStream(Stream, UTF8);
   Stream.ReadBuffer(FUpdateOnlyModifiedFields, SizeOf(boolean));
   FNonValidated := True;
 end;
 
 procedure TFIBDataSetInfo.SaveToStream(Stream: TStream);
 begin
-  WriteStrToStream(UTF8Encode(FDBName), Stream);
+  WriteUTF8StrToStream(FDBName, Stream);
   Stream.WriteBuffer(FVersion, SizeOf(integer));
-  WriteStrToStream(FSelectSQL.Text, Stream);
-  WriteStrToStream(FInsertSQL.Text, Stream);
-  WriteStrToStream(FUpdateSQL.Text, Stream);
-  WriteStrToStream(FDeleteSQL.Text, Stream);
-  WriteStrToStream(FRefreshSQL.Text, Stream);
-  WriteStrToStream(FKeyField, Stream);
-  WriteStrToStream(FGeneratorName, Stream);
-  WriteStrToStream(FDescription, Stream);
-  WriteStrToStream(FUpdateTableName, Stream);
-  WriteStrToStream(FConditions, Stream);
+  WriteUTF8StrToStream(FSelectSQL.Text, Stream);
+  WriteUTF8StrToStream(FInsertSQL.Text, Stream);
+  WriteUTF8StrToStream(FUpdateSQL.Text, Stream);
+  WriteUTF8StrToStream(FDeleteSQL.Text, Stream);
+  WriteUTF8StrToStream(FRefreshSQL.Text, Stream);
+  WriteUTF8StrToStream(FKeyField, Stream);
+  WriteUTF8StrToStream(FGeneratorName, Stream);
+  WriteUTF8StrToStream(FDescription, Stream);
+  WriteUTF8StrToStream(FUpdateTableName, Stream);
+  WriteUTF8StrToStream(FConditions, Stream);
   Stream.WriteBuffer(FUpdateOnlyModifiedFields, SizeOf(boolean));
 end;
 
@@ -2814,8 +2810,8 @@ begin
     if tn <> DSSignature then
       Exit;
     ReadBuffer(StreamVersion, SizeOf(integer));
-    if StreamVersion < 1 then
-      Exit; // old style cache
+    if (StreamVersion < 1) or (StreamVersion > DSCurStreamVersion) then
+      Exit;
     ReadBuffer(c, SizeOf(integer));
     for i := 0 to Pred(c) do
     begin

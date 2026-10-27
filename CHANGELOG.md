@@ -273,14 +273,17 @@ The lists of old and new names, and what an application has to change, are in
   `isc_dpb_version2` (4-byte lengths) when a value needs it; otherwise, and for
   long lock table names in `TRParams` and values in the `TFIBServices` `Params`,
   a clear error names the parameter.
-- The metadata and dataset info caches (`ListTableInfo`, `ListDataSetInfo`)
-  kept the database name in the system code page: with a name outside it no
-  entry was found, and each `GetTableInfo` read the metadata again and added
-  an entry. The metadata cache also lost table and column names, primary key
-  fields, defaults, labels and formats outside it (a non-ASCII default value
-  of a column came back as `?`). They are now kept as `string` and the cache
-  files are saved in UTF-8; files saved by older versions are still read
-  ([Upgrading](Docs/guide/upgrading.md#800)).
+- The metadata, dataset info and error message caches (`ListTableInfo`,
+  `ListDataSetInfo`, `ListErrorMessages`) kept the database name in the system
+  code page: with a name outside it no entry was found, and each
+  `GetTableInfo` read the metadata again and added an entry. They also lost
+  the texts outside it: table and column names, primary key fields, defaults,
+  labels and formats of the metadata cache (a non-ASCII default value of a
+  column came back as `?`), the SQL texts, key field, generator, update table,
+  description and conditions of `FIB$DATASETS_INFO` and the constraint names
+  and messages of `FIB$ERROR_MESSAGES`. They are now kept as `string` and the
+  cache files are saved in UTF-8; files saved by older versions are still read
+  ([Upgrading](Docs/guide/upgrading.md#schema-cache-files)).
 - `EFIBClientError.IBErrorCode` had the code of an earlier server error of the
   thread: after a statement timeout a client error had `isc_cancelled`, so
   `TFIBErrorHandler` took it for a cancelled statement. It is now 0.

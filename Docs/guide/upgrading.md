@@ -90,7 +90,7 @@ These have no old name, so the code that uses them must change:
 | `TOnSQLExecute = procedure(Query: TFIBQuery; SQLType: TFIBSQLTypes) of object` | `procedure(Query: TComponent; SQLType: TFIBSQLTypes) of object` | Change the parameter type of the handlers you assign in code (`BeforeSQLExecute`, `AfterSQLExecute`, `AfterFirstFetch`). A handler bound in a form keeps working at run time; the IDE reports it as incompatible until you change it. |
 | `FIBDataSets[Index]: TFIBCustomDataSet`, `FIBQueries[Index]: TFIBQuery` (of `TpFIBDatabase` and `TpFIBTransaction`) | `FIBDataSets[Index]: TDataSet`, `FIBQueries[Index]: TComponent` | Cast the result to `TFIBCustomDataSet` or `TFIBQuery`. The items and their order are the same. |
 | `TFIBSQLTypes` and its values (`FIBQuery`), `TOnBlobFieldProcessing` (`FIBDataSet`), `TExtBoolean` (`pFIBDataInfo`) | Declared in `FIBProps` | `FIBQuery` and `FIBDataSet` export them, so code compiles without a change. The `FIBDataInfo` routines that took `TFIBDataSet` now take `TFIBCustomDataSet`. |
-| `TFIBTableInfo.TableName`, `TFIBFieldInfo.DefaultValue`, `DomainName`, `DisplayLabel`, `EditFormat`, `DisplayFormat` (`AnsiString`) | `string` | Nothing for most code. Assigning them to an `AnsiString` loses the characters outside the system code page, as before. `TFIBFieldInfo.LoadFromStream` has a new `UTF8` parameter (default `True`, the format `SaveToStream` writes now). |
+| `TFIBTableInfo.TableName`, `TFIBFieldInfo.DefaultValue`, `DomainName`, `DisplayLabel`, `EditFormat`, `DisplayFormat`, `TFIBErrorMessage.ErrorMsg` (`AnsiString`) | `string` | Nothing for most code. Assigning them to an `AnsiString` loses the characters outside the system code page, as before. `TFIBFieldInfo.LoadFromStream` has a new `UTF8` parameter (default `True`, the format `SaveToStream` writes now). |
 | `StrUtil.TFastStringStream` (an alias of `TStringStream` on Delphi XE5 and later, an own class before), parameter of `GenerateDDLText`, `GenerateObjectDDL` and the other DDL methods of `FIBMetaData` | `TStringStream` | Rename in descendants that override these methods. Create the stream with `TEncoding.Unicode`, as `GetAsDDL` does, to keep the characters outside the system code page. |
 | `TFIBSQLMonitorHook.ServiceAttach`, `ServiceDetach`, `ServiceQuery`, `ServiceStart` (parameter `TpFIBCustomService`) | Parameter `TFIBCustomService` | The same class; rename in descendants that override them. |
 
@@ -161,6 +161,10 @@ The transaction of the SQL logger uses `nowait` and no longer the server default
 #### Role name in quotes
 
 `TFIBDatabase` now sends `SQLDialect` in the DPB (`isc_dpb_sql_dialect`). Without it the server took dialect 1 for the attachment and uppercased the role name even inside quotes. A role written without quotes (`sql_role_name=MyRole`) is still uppercased (`MYROLE`), as before. A role written in quotes keeps its case: `sql_role_name="MyRole"` now selects a role created as `CREATE ROLE "MyRole"`. If the role was created without quotes (stored as `MYROLE`) and `DBParams` has it in quotes with other case, the connection now has no role (`CURRENT_ROLE` is `NONE`), without an error. Remove the quotes, write the name in uppercase, or add `sql_dialect=1` to `DBParams` for the old behavior.
+
+#### Schema cache files
+
+The schema cache files (`CacheSchemaOptions.LocalCacheFile` and its `.dt` and `.err` files, `SaveSchemaToFile`) keep their texts in UTF-8. Files saved by older versions are still read. Older versions read the new files as text in the system code page and garble the characters outside ASCII (SQL texts, defaults, labels, error messages), so delete these files when you go back to an older version.
 
 #### Codes of client errors
 
