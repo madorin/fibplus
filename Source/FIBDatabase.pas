@@ -184,7 +184,7 @@ type
 {$ENDIF}
     FRestoreConnectTimer: TFIBTimer;
     FWaitForRestoreConnect: Cardinal;
-    FAliasName: AnsiString;
+    FAliasName: string;
     FSaveAliasParamsAfterConnect: Boolean;
     FBeforeConnect: TFIBLoginEvent;
     FOnLostConnect: TFIBLostConnectEvent;
@@ -196,7 +196,7 @@ type
     FAfterEndTransaction: TEndTrEvent;
     FCacheSchemaOptions: TCacheSchemaOptions;
     FOnAcceptCacheSchema: TFIBAcceptCacheSchemaEvent;
-    procedure SetAliasName(const Value: AnsiString);
+    procedure SetAliasName(const Value: string);
     procedure SetWaitForRestoreConnect(Value: Cardinal);
     procedure SetCacheSchemaOptions(Value: TCacheSchemaOptions);
     function GetFIBDataSet(Index: Integer): TDataSet;
@@ -311,8 +311,8 @@ type
     // Database Info procedures -- Advanced stuff (translated from isc_database_info)
     function GetAllocation: Long; // isc_info_allocation
     function GetBaseLevel: Long; // isc_info_base_level
-    function GetDBFileName: AnsiString; // isc_info_db_id
-    function GetDBSiteName: AnsiString; // isc_info_db_id
+    function GetDBFileName: string; // isc_info_db_id
+    function GetDBSiteName: string; // isc_info_db_id
     function GetIsRemoteConnect: Boolean; // isc_info_db_id
 
     function GetDBImplementationNo: Long; // isc_info_implementation
@@ -563,8 +563,8 @@ type
     property ConnectionSerial: Integer read FConnectionSerial;
     property Allocation: Long read GetAllocation; // isc_info_allocation
     property BaseLevel: Long read GetBaseLevel; // isc_info_base_level
-    property DBFileName: AnsiString read GetDBFileName; // isc_info_db_id
-    property DBSiteName: AnsiString read GetDBSiteName;
+    property DBFileName: string read GetDBFileName; // isc_info_db_id
+    property DBSiteName: string read GetDBSiteName;
     property IsRemoteConnect: Boolean read GetIsRemoteConnect;
     property DBImplementationNo: Long read GetDBImplementationNo;
     // isc_info_implementation
@@ -752,7 +752,7 @@ type
   published
     property MemoSubtypes: string read GetMemoSubtypes write SetMemoSubtypes;
     property CacheSchemaOptions: TCacheSchemaOptions read FCacheSchemaOptions write SetCacheSchemaOptions;
-    property AliasName: AnsiString read FAliasName write SetAliasName;
+    property AliasName: string read FAliasName write SetAliasName;
     property WaitForRestoreConnect: Cardinal read FWaitForRestoreConnect write SetWaitForRestoreConnect default 30000;
     property SaveAliasParamsAfterConnect: Boolean read FSaveAliasParamsAfterConnect write FSaveAliasParamsAfterConnect default True;
     property BeforeConnect: TFIBLoginEvent read FBeforeConnect write FBeforeConnect;
@@ -836,7 +836,7 @@ type
 
     FBeforeEndTransactionEvents: TCallBackList;
     FAfterEndTransactionEvents: TCallBackList;
-    FDatabaseTRParams: array of AnsiString;
+    FDatabaseTRParams: array of string;
     FDatabaseTPBs: array of AnsiString;
     FTransactionRunStates: TTransactionRunStates;
     FHasUncommitedUpdates: Boolean;
@@ -1895,13 +1895,10 @@ begin
 end;
 
 {$IFDEF USE_DEPRECATE_METHODS1}
-{$WARNINGS OFF}
-
 function TFIBDatabase.AddDataSet(ds: TFIBBase): Integer;
 begin
   Result := AddFIBBase(ds);
 end;
-{$WARNINGS ON}
 {$ENDIF}
 
 function TFIBDatabase.AddFIBBase(ds: TFIBBase): Integer;
@@ -1945,7 +1942,7 @@ begin
   OnConnect := Method
 end;
 
-procedure TFIBDatabase.SetAliasName(const Value: AnsiString);
+procedure TFIBDatabase.SetAliasName(const Value: string);
 begin
   if not(csLoading in ComponentState) then
     CheckInactive;
@@ -3181,13 +3178,10 @@ begin
 end;
 
 {$IFDEF USE_DEPRECATE_METHODS1}
-{$WARNINGS OFF}
-
 procedure TFIBDatabase.RemoveDataSet(Idx: Integer);
 begin
   RemoveFIBBase(Idx);
 end;
-{$WARNINGS ON}
 {$ENDIF}
 
 procedure TFIBDatabase.RemoveFIBBase(Idx: Integer);
@@ -3210,13 +3204,10 @@ begin
     end;
 end;
 {$IFDEF USE_DEPRECATE_METHODS1}
-{$WARNINGS OFF}
-
 procedure TFIBDatabase.RemoveDataSets;
 begin
   RemoveFIBBases
 end;
-{$WARNINGS ON}
 {$ENDIF}
 
 procedure TFIBDatabase.RemoveFIBBases;
@@ -3255,8 +3246,6 @@ begin
 end;
 
 procedure TFIBDatabase.LoadLibrary;
-var
-  XLibraryName: AnsiString;
 begin
 {$IFDEF C23}
 {$IFDEF WIN64}
@@ -3266,8 +3255,7 @@ begin
 {$ENDIF}
   if not FClientLibLoaded then
     begin
-      XLibraryName := FLibraryName;
-      FClientLibrary := IB_Intf.GetClientLibrary(XLibraryName);
+      FClientLibrary := IB_Intf.GetClientLibrary(FLibraryName);
       FClientLibLoaded := Assigned(FClientLibrary);
     end;
   if not FClientLibrary.LibraryLoaded then
@@ -3490,7 +3478,7 @@ begin
   GetMem(p, 100);
   try
     FClientLibrary.isc_get_client_version(p);
-    Result := p;
+    Result := string(p);
   finally
     FreeMem(p, 100)
   end
@@ -3775,7 +3763,7 @@ begin
   Result := FClientLibrary.isc_vax_integer(@local_buffer[4], 1);
 end;
 
-function TFIBDatabase.GetDBFileName: AnsiString;
+function TFIBDatabase.GetDBFileName: string;
 var
   local_buffer: array [0 .. FIBLocalBufferLength - 1] of AnsiChar;
   DBInfoCommand: AnsiChar;
@@ -3786,15 +3774,14 @@ begin
       DBInfoCommand := AnsiChar(isc_info_db_id);
       Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1,
         @DBInfoCommand, FIBLocalBufferLength, local_buffer), True);
-      local_buffer[5 + Int(local_buffer[4])] := #0;
-      Result := PAnsiChar(@local_buffer[5]);
+      Result := DecodeServerText(@local_buffer[5], Int(local_buffer[4]));
       FDBFileName := Result
     end
   else
     Result := FDBFileName
 end;
 
-function TFIBDatabase.GetDBSiteName: AnsiString;
+function TFIBDatabase.GetDBSiteName: string;
 var
   local_buffer: array [0 .. FIBBigLocalBufferLength - 1] of AnsiChar;
   p: PAnsiChar;
@@ -3805,9 +3792,7 @@ begin
   Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1,
     @DBInfoCommand, FIBLocalBufferLength, local_buffer), True);
   p := @local_buffer[5 + Int(local_buffer[4])]; // DBSiteName Length
-  p := p + Int(p^) + 1; // End of DBSiteName
-  p^ := #0; // Null it.
-  Result := PAnsiChar(@local_buffer[6 + Int(local_buffer[4])]);
+  Result := DecodeServerText(p + 1, Int(p^));
 end;
 
 function TFIBDatabase.GetIsRemoteConnect: Boolean;
@@ -3864,10 +3849,7 @@ begin
   Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1,
     @DBInfoCommand, FIBLocalBufferLength, local_buffer), True);
   if DBInfoCommand = local_buffer[0] then
-    begin
-      local_buffer[5 + Int(local_buffer[4])] := #0;
-      Result := PAnsiChar(@local_buffer[5]);
-    end
+    Result := DecodeServerText(@local_buffer[5], Int(local_buffer[4]))
   else
     Result := '';
 end;
@@ -4043,8 +4025,7 @@ begin
 
   Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1,
     @DBInfoCommand, FIBBigLocalBufferLength, local_buffer), True);
-  local_buffer[5 + Int(local_buffer[4])] := #0;
-  Result := PAnsiChar(@local_buffer[5]);
+  Result := DecodeServerText(@local_buffer[5], Int(local_buffer[4]));
 end;
 
 function TFIBDatabase.GetCurrentMemory: Long;
@@ -4075,7 +4056,6 @@ end;
 function TFIBDatabase.GetUserNames: TStringList;
 var
   local_buffer: array [0 .. FIBHugeLocalBufferLength - 1] of AnsiChar;
-  temp_buffer: array [0 .. FIBLocalBufferLength - 2] of AnsiChar;
   DBInfoCommand: AnsiChar;
   i, user_length: Integer;
 begin
@@ -4093,10 +4073,8 @@ begin
       // skip "isc_info_user_names byte" & two unknown bytes of structure (see below)
       user_length := Long(local_buffer[i]);
       Inc(i, 1);
-      Move(local_buffer[i], temp_buffer[0], user_length);
+      FUserNames.Add(DecodeServerText(@local_buffer[i], user_length));
       Inc(i, user_length);
-      temp_buffer[user_length] := #0;
-      FUserNames.Add(AnsiString(temp_buffer));
     end;
 end;
 
@@ -4382,8 +4360,7 @@ begin
   _DBInfoCommand := AnsiChar(DBInfoCommand);
   Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1,
     @_DBInfoCommand, FIBBigLocalBufferLength, local_buffer), True);
-  local_buffer[4 + Int(local_buffer[3])] := #0;
-  Result := PAnsiChar(@local_buffer[4]);
+  Result := DecodeServerText(@local_buffer[4], Int(local_buffer[3]));
 end;
 
 function TFIBDatabase.GetInt64DBInfo(DBInfoCommand: Integer): Int64;
@@ -5369,13 +5346,10 @@ begin
 end;
 
 {$IFDEF USE_DEPRECATE_METHODS1}
-{$WARNINGS OFF }
-
 procedure TFIBTransaction.RemoveDataSet(Idx: Integer);
 begin
   RemoveFIBBase(Idx);
 end;
-{$WARNINGS ON }
 {$ENDIF}
 
 procedure TFIBTransaction.RemoveFIBBase(Idx: Integer);
@@ -5398,13 +5372,10 @@ begin
     end;
 end;
 {$IFDEF USE_DEPRECATE_METHODS1}
-{$WARNINGS OFF }
-
 procedure TFIBTransaction.RemoveDataSets;
 begin
   RemoveFIBBases
 end;
-{$WARNINGS ON }
 {$ENDIF}
 
 procedure TFIBTransaction.RemoveFIBBases;
@@ -5521,7 +5492,7 @@ begin
   *)
   if FTRParamsChanged then
     begin
-      GenerateTPB(FTRParams, TPB, FTPBLength, vIsFB21orMore);
+      GenerateTPB(FTRParams, TPB, FTPBLength, vIsFB21orMore, MainDatabase.Capabilities.MetadataCodePage);
       FIBAlloc(FTPB, 0, FTPBLength);
       Move(TPB[1], FTPB[0], FTPBLength);
       FReadConsistencyParams := HasParamsLine(FTRParams, 'read_consistency');
@@ -5548,7 +5519,8 @@ begin
             ReadConsistency := HasParamsLine(vTRParams1, 'read_consistency');
 
             SetLength(FDatabaseTPBs, i + 1);
-            GenerateTPB(vTRParams1, FDatabaseTPBs[i], vTPBLength, vIsFB21orMore);
+            GenerateTPB(vTRParams1, FDatabaseTPBs[i], vTPBLength, vIsFB21orMore,
+              Databases[i].Capabilities.MetadataCodePage);
             if Length(FDatabaseTPBs[i]) > 0 then
               begin
                 pteb^[i].tpb_address := @FDatabaseTPBs[i][1];

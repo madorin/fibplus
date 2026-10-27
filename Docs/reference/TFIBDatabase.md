@@ -107,7 +107,7 @@ Available in the Object Inspector. When the component is dropped on a form at de
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `AliasName` | `AnsiString` | | Name of a connection alias. Setting a non-empty name reads the alias, see [Aliases](#aliases). Raises while connected, except while the form loads. |
+| `AliasName` | `string` | | Name of a connection alias. Setting a non-empty name reads the alias, see [Aliases](#aliases). Raises while connected, except while the form loads. |
 | `CacheSchemaOptions` | `TCacheSchemaOptions` | | Loading and saving of the schema cache file, see [Schema cache](#schema-cache). Assigning a value in code copies its values into the existing object. |
 | `SaveAliasParamsAfterConnect` | `Boolean` | `True` | After a successful `Open`, write the connection parameters to the alias, if `AliasName` is not empty. |
 | `WaitForRestoreConnect` | `Cardinal` | `30000` | Interval in milliseconds of the timer that tries to restore a lost connection, see [Lost connection](#lost-connection). The timer is created when the first wait starts. `0` turns the restore timer off and stops a wait in progress. Forms saved by versions before 7.9.1 without a value set in the Object Inspector store `WaitForRestoreConnect = 0`, which keeps the timer off; remove the line to use the default. |
@@ -264,7 +264,7 @@ Values come from the server while connected.
 |------|------|-------------|
 | `BaseLevel`, `DBSQLDialect`, `ReadOnly`, `NoReserve` | `Long`, `Word`, `Long`, `Long` | Base level, database dialect, read-only flag, and page reserve of the database. |
 | `CreationDate` | `TDateTime` | Date the database was created, as the server reports it. `0` if the server does not report it. |
-| `DBFileName`, `DBSiteName`, `IsRemoteConnect` | `AnsiString`, `AnsiString`, `Boolean` | File and host from `isc_info_db_id`, and whether the connection is remote. |
+| `DBFileName`, `DBSiteName`, `IsRemoteConnect` | `string`, `string`, `Boolean` | File and host from `isc_info_db_id`, and whether the connection is remote. The server sends the names in the code page of its system: they are decoded as UTF-8 when the bytes are valid UTF-8 (a Linux server), else in the system code page (a Windows server). |
 | `DBImplementationClass`, `DBImplementationNo` | `Long` | Server implementation and class. |
 | `DifferenceTime` | `Double` | Client clock minus server time, in days, measured at connect when `SynchronizeTime` is `True`; otherwise `0`. |
 | `FBVersion` | `string` | Firebird version string of the server. |
@@ -285,7 +285,7 @@ Statistics and tuning values, each read with the matching `isc_info_*` item:
 | `BackoutCount`, `DeleteCount`, `ExpungeCount`, `InsertCount`, `PurgeCount`, `ReadIdxCount`, `ReadSeqCount`, `UpdateCount` | `TStringList` (one `TableID=Count` line per table) |
 | `DeletesCount[Table]`, `IndexedReadCount[Table]`, `InsertsCount[Table]`, `NonIndexedReadCount[Table]`, `UpdatesCount[Table]` | `Integer` |
 | `AllModifications` | `Integer` |
-| `UserNames` | `TStringList` |
+| `UserNames` | `TStringList` (decoded as `DBFileName`; *Firebird 3+* sends UTF-8) |
 
 Write-ahead log values (`LogFile`, `CurLogFileName`, `CurLogPartitionOffset`, `NumWALBuffers`, `WALBufferSize`, `WALCheckpointLength`, `WALCurCheckpointInterval`, `WALPrvCheckpointFilename`, `WALPrvCheckpointPartOffset`, `WALGroupCommitWaitUSecs`, `WALNumIO`, `WALAverageIOSize`, `WALNumCommits`, `WALAverageGroupCommitSize`) read the matching `isc_info_*` items.
 

@@ -476,6 +476,21 @@ The lists of old and new names, and what an application has to change, are in
   the attachment) are now sent in the system code page, which the client converts; a character
   outside it raises "Cannot transliterate" instead of being sent as `?`. An older client library
   does not convert: with it the server gets the names in the system code page of the client.
+- Text the server sends back was decoded in the system code page: the output of the services
+  (`GetNextLine`, `GetNextChunk`), `TFIBSecurityService.UserInfo`, the attached database names
+  and the other strings of `TFIBServerProperties`, and `TFIBDatabase.DBFileName`, `DBSiteName`,
+  `UserNames` and `Version`. A Linux server sends file names in UTF-8 and Firebird 3+ user
+  names are UTF-8, so non-ASCII names were garbled. They are now decoded as UTF-8 when the bytes
+  are valid UTF-8, else in the system code page (a Windows server).
+- `lock_read`/`lock_write` table names in `TRParams` were sent in the system code page; the
+  server takes them in the charset of the connection, so a non-ASCII table name was not found or
+  was a malformed string. They are now sent in the metadata code page of the connection
+  (Firebird 2.5 still takes them in UNICODE_FSS only).
+- `TFIBQuery` fields and parameters of a date, time, number or boolean type: `AsString` passed
+  the formatted text through the system code page, so locale texts outside it (for example the
+  AM/PM designators) became `?`.
+- `LibraryName` of `TFIBDatabase` went through the system code page: a client library in a
+  folder with a name outside it could not be loaded.
 
 ## [7.9.1] - 2026-10-09
 

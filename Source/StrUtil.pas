@@ -158,7 +158,7 @@ function FindInDiapazon(SL: TStringList; const S: String;
   var Index: Integer): Boolean;
 function NonAnsiIndexOf(SL: TStringList; const S: string): Integer; // Non Ansi
 
-procedure GetNameAndValue(const S: string; var Name, Value: AnsiString);
+procedure GetNameAndValue(const S: string; var Name, Value: string);
 
 function StrToDateFmt(const ADate, Fmt: string): TDateTime;
 function DateToSQLStr(const ADate: TDateTime): string;
@@ -2037,7 +2037,7 @@ begin
     end
 end;
 
-procedure GetNameAndValue(const S: string; var Name, Value: AnsiString);
+procedure GetNameAndValue(const S: string; var Name, Value: string);
 var
   pEq: Integer;
 begin

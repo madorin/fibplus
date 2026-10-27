@@ -700,7 +700,7 @@ begin
 end;
 
 // The WI-V numbers are InterBase compatible (6.3 on Firebird), Firebird appends its version
-function ParseClientVersion(const S: AnsiString): TFIBVersion;
+function ParseClientVersion(const S: string): TFIBVersion;
 var
   Api: array [0 .. 3] of Integer;
   Product: array [0 .. 1] of Integer;
@@ -715,7 +715,7 @@ var
     begin
       if S[I] = '.' then
         Inc(n)
-      else if S[I] in ['0' .. '9'] then
+      else if CharInSet(S[I], ['0' .. '9']) then
         Numbers[n] := Numbers[n] * 10 + Ord(S[I]) - Ord('0')
       else
         Break;
@@ -1794,7 +1794,8 @@ begin
     FIBClientMinorVersion := Fisc_get_client_minor_version;
     FillChar(VersionBuffer, SizeOf(VersionBuffer), 0);
     Fisc_get_client_version(@VersionBuffer[0]);
-    FVersion := ParseClientVersion(AnsiString(PAnsiChar(@VersionBuffer[0])));
+    // the version text is ASCII
+    FVersion := ParseClientVersion(string(PAnsiChar(@VersionBuffer[0])));
     // IB2007
     Fisc_dsql_batch_execute_immed :=
       TryGetProcAddr('isc_dsql_batch_execute_immed');

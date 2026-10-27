@@ -61,6 +61,8 @@ type
   private
     function GetAsBoolean: boolean;
     procedure SetAsBoolean(const Value: boolean);
+    function FormatValue: string;
+    function ValueText: string;
   protected
     FIndex: integer;
     FModified: boolean;
@@ -353,6 +355,7 @@ type
     FParams: TFIBXSQLDA;
     FState: TBatchState;
     FVersion: integer;
+    // name of the connection charset, ASCII bytes in the raw file
     FCharset: Ansistring;
   public
     procedure ReadyStream; virtual; abstract;
@@ -549,8 +552,8 @@ type
     function BatchInput(InputObject: TFIBBatchInputStream): boolean;
     function BatchOutput(OutputObject: TFIBBatchOutputStream): Boolean;
 
-    procedure BatchInputRawFile(const FileName: Ansistring);
-    procedure BatchOutputRawFile(const FileName: Ansistring; Version: integer = 3);
+    procedure BatchInputRawFile(const FileName: string);
+    procedure BatchOutputRawFile(const FileName: string; Version: integer = 3);
 
     procedure BatchToQuery(ToQuery: TFIBQuery; Mappings: TStrings);
   public
@@ -788,8 +791,6 @@ begin
   inherited Destroy;
   FreeAndNil(FStreamValue);
 end;
-
-{$WARNINGS OFF}
 
 procedure TFIBXSQLVAR.Assign(Source: TFIBXSQLVAR);
 var
@@ -1450,36 +1451,60 @@ begin
             SetStringCodePage(byteStr, TextCodePage);
           Result := byteStr;
         end;
-      SQL_TYPE_DATE: Result := DateToStr(AsDateTime);
-      SQL_TIMESTAMP: Result := DateTimeToStr(AsDateTime);
-      SQL_TYPE_TIME: Result := TimeToStr(AsTime);
-      SQL_SHORT, SQL_LONG:
-        if FXSQLVAR^.sqlscale <> 0 then
-          Result := FloatToStr(AsDouble)
-        else
-          Result := IntToStr(AsLong);
-      SQL_INT64:
-        if FXSQLVAR^.sqlscale = 0 then
-          Result := IntToStr(AsInt64)
-        else
-          with FXSQLVAR^ do
-{$IFDEF C24}with FormatSettings do {$ENDIF}
-            begin
-              Result := Int64WithScaleToStr(PInt64(sqldata)^, -sqlscale, DecimalSeparator)
-            end;
-      SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT: Result := FloatToStr(AsDouble);
-      SQL_INT128: Result := Ansistring(FBDecimalToPlainStr(GetDecimalValue, LocalDecimalSeparator));
-      SQL_DEC16, SQL_DEC34: Result := Ansistring(FBDecimalToStr(GetDecimalValue, LocalDecimalSeparator));
-      SQL_TIME_TZ, SQL_TIME_TZ_EX: Result := Ansistring(TimeToStr(AsDateTime) + ' ' + AsTimeZoneName);
-      SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX: Result := Ansistring(DateTimeToStr(AsDateTime) + ' ' + AsTimeZoneName);
-      IB_SQL_BOOLEAN, SQL_BOOLEAN:
-        if AsBoolean then
-          Result := TrueStr
-        else
-          Result := FalseStr;
-      SQL_NULL: Result := '';
     else
-      FIBError(feInvalidDataConversion, [nil]);
+      // the system code page of an AnsiString
+      Result := Ansistring(FormatValue);
+    end;
+end;
+
+// Text of a value of a type that is not a string
+function TFIBXSQLVAR.FormatValue: string;
+begin
+  case FXSQLVAR^.SQLType and (not 1) of
+    SQL_TYPE_DATE: Result := DateToStr(AsDateTime);
+    SQL_TIMESTAMP: Result := DateTimeToStr(AsDateTime);
+    SQL_TYPE_TIME: Result := TimeToStr(AsTime);
+    SQL_SHORT, SQL_LONG:
+      if FXSQLVAR^.sqlscale <> 0 then
+        Result := FloatToStr(AsDouble)
+      else
+        Result := IntToStr(AsLong);
+    SQL_INT64:
+      if FXSQLVAR^.sqlscale = 0 then
+        Result := IntToStr(AsInt64)
+      else
+        with FXSQLVAR^ do
+{$IFDEF C24}with FormatSettings do {$ENDIF}
+          begin
+            Result := Int64WithScaleToStr(PInt64(sqldata)^, -sqlscale, DecimalSeparator)
+          end;
+    SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT: Result := FloatToStr(AsDouble);
+    SQL_INT128: Result := FBDecimalToPlainStr(GetDecimalValue, LocalDecimalSeparator);
+    SQL_DEC16, SQL_DEC34: Result := FBDecimalToStr(GetDecimalValue, LocalDecimalSeparator);
+    SQL_TIME_TZ, SQL_TIME_TZ_EX: Result := TimeToStr(AsDateTime) + ' ' + AsTimeZoneName;
+    SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX: Result := DateTimeToStr(AsDateTime) + ' ' + AsTimeZoneName;
+    IB_SQL_BOOLEAN, SQL_BOOLEAN:
+      if AsBoolean then
+        Result := TrueStr
+      else
+        Result := FalseStr;
+    SQL_NULL: Result := '';
+  else
+    FIBError(feInvalidDataConversion, [nil]);
+  end;
+end;
+
+// Strings through the code page of their bytes, other values formatted
+function TFIBXSQLVAR.ValueText: string;
+begin
+  if IsNull then
+    Result := ''
+  else
+    case FXSQLVAR^.SQLType and (not 1) of
+      SQL_TEXT, SQL_VARYING, SQL_BLOB, SQL_ARRAY:
+        Result := string(GetAsAnsiString);
+    else
+      Result := FormatValue;
     end;
 end;
 
@@ -2262,6 +2287,7 @@ var
   sSubType, sSQLScale: Short;
   sSQLType, vSQLType, vSize: integer;
   vValue: Ansistring;
+  vText: string;
   B: boolean;
 
   function ServerBlobCodePage(SubType, CharSetID: Short): Word;
@@ -2423,10 +2449,11 @@ begin
     begin
       if not IsMacro and IsNumericType(sSQLType) then
       begin
-        // Avoid  bug in  CAST
-        vValue := ReplaceStr(vValue, ',', SQLDecimalSeparator);
+        // Avoid  bug in  CAST; a number is in the system code page
+        vText := ReplaceStr(string(vValue), ',', SQLDecimalSeparator);
         if not CharInSet(DecimalSeparator, [SQLDecimalSeparator, ',']) then
-          vValue := ReplaceStr(vValue, DecimalSeparator, SQLDecimalSeparator);
+          vText := ReplaceStr(vText, DecimalSeparator, SQLDecimalSeparator);
+        vValue := Ansistring(vText);
       end;
       SetValue(vSQLType, vSize, tspValue, vValue[1], @FWideTempValue)
     end
@@ -2521,10 +2548,10 @@ begin
           end;
 
       else
-        Result := GetAsAnsiString;
+        Result := ValueText;
       end
   else
-    Result := GetAsAnsiString;
+    Result := ValueText;
 end;
 
 procedure TFIBXSQLVAR.SetAsVariant(Value: Variant);
@@ -2587,7 +2614,7 @@ begin
         end;
       varOleStr, varUString:
         AsWideString := Value;
-      varString: AsAnsiString := Value;
+      varString: AsAnsiString := Ansistring(Value);
       varArray:
 {$IFDEF SUPPORT_ARRAY_FIELD}
         if IsArrayParamValue(Value, sSQLType) then
@@ -3432,7 +3459,7 @@ begin
   // Self.FUserSQLParams.Initialize;
   InputObject.ReadyStream;
   Result := InputObject.State = bsFileReady;
-  if Result and (InputObject.FVersion > 2) and (InputObject.FCharset <> Database.ConnectParams.Charset) then
+  if Result and (InputObject.FVersion > 2) and (string(InputObject.FCharset) <> Database.ConnectParams.Charset) then
     raise Exception.Create(Format(SErrorInProc, [CmpFullName(Self),
       'BatchInput']) + Format(SEInvalidCharsetData, [InputObject.FCharset, Database.ConnectParams.Charset]));
 
@@ -3521,7 +3548,7 @@ begin
   end;
 end;
 
-procedure TFIBQuery.BatchInputRawFile(const FileName: Ansistring);
+procedure TFIBQuery.BatchInputRawFile(const FileName: string);
 var
   RawInput: TFIBInputRawFile;
 begin
@@ -3534,7 +3561,7 @@ begin
   end;
 end;
 
-procedure TFIBQuery.BatchOutputRawFile(const FileName: Ansistring; Version: integer = 3);
+procedure TFIBQuery.BatchOutputRawFile(const FileName: string; Version: integer = 3);
 var
   RawOutput: TFIBOutputRawFile;
 begin

@@ -383,7 +383,9 @@ procedure GenerateDPB(sl: TStrings; var DPB: AnsiString; var DPBLength: Short; I
 function DPBUsesUTF8(sl: TStrings; IsFirebird: Boolean): Boolean;
 // Name in DBParams of a DPB code, '' when unknown
 function DPBConstantName(Code: Integer): string;
-procedure GenerateTPB(sl: TStrings; var TPB: AnsiString; var TPBLength: Short; IsFB21orMore: Boolean);
+// lock_read/lock_write table names in NameCodePage (FIBCharSets, 0 the system code page)
+procedure GenerateTPB(sl: TStrings; var TPB: AnsiString; var TPBLength: Short; IsFB21orMore: Boolean;
+  NameCodePage: Word = 0);
 // Manage global options
 procedure SetIBErrorMessages(Value: TIBErrorMessages);
 function GetIBErrorMessages: TIBErrorMessages;
@@ -587,7 +589,7 @@ begin
   *)
   vIBMessage := '';
   if (ShowSQLState in IBErrorMessages) and (Length(vSQLState) > 0) then
-    vIBMessage := 'SQL error state =' + vSQLState + sLineBreak
+    vIBMessage := 'SQL error state =' + string(vSQLState) + sLineBreak
   else
     vIBMessage := '';
   if (ShowIBMessage in IBErrorMessages) then
@@ -813,10 +815,10 @@ begin
   Create(ASQLCode, '' { sn - IMS } , Sender);
 end;
 
-function GetDPBShutParamValue(const ParamString: AnsiString): Integer;
+function GetDPBShutParamValue(const ParamString: string): Integer;
 var
   i, j: Integer;
-  s: AnsiString;
+  s: string;
 
   function CurParamValue: Integer;
   begin
@@ -861,12 +863,11 @@ begin
   j := 1;
   for i := 1 to Length(ParamString) do
     begin
-      if ParamString[i] in [',', ';'] then
+      if CharInSet(ParamString[i], [',', ';']) then
         begin
           if (i - j > 0) then
             begin
-              SetLength(s, i - j);
-              Move(ParamString[j], s[1], i - j);
+              s := Copy(ParamString, j, i - j);
               Result := Result or CurParamValue
             end;
           j := i + 1;
@@ -876,8 +877,7 @@ begin
   if j < i then
     begin
       i := Length(ParamString);
-      SetLength(s, i - j + 1);
-      Move(ParamString[j], s[1], i - j + 1);
+      s := Copy(ParamString, j, i - j + 1);
       Result := Result or CurParamValue
     end;
 end;
@@ -916,7 +916,8 @@ var
   i: Integer;
   j, DPBVal: Integer;
   HasDialect: Boolean;
-  param_name, param_value: AnsiString;
+  param_name: string;
+  param_value: AnsiString;
   config: AnsiString;
   Line, Value: string;
   UTF8: Boolean;
@@ -995,7 +996,7 @@ begin
       j := Pos('=', Line);
       if j = 0 then
         j := Length(Line) + 1;
-      param_name := AnsiString(Copy(Line, 1, j - 1));
+      param_name := Copy(Line, 1, j - 1);
       Value := Copy(Line, j + 1, MaxInt);
       if UTF8 then
         begin
@@ -1070,15 +1071,15 @@ begin
         isc_dpb_num_buffers, isc_dpb_dbkey_scope, isc_dpb_force_write,
           isc_dpb_no_reserve, isc_dpb_damaged, isc_dpb_verify, isc_dpb_dummy_packet_interval, isc_dpb_connect_timeout,
           isc_dpb_online_dump, isc_dpb_overwrite, isc_dpb_old_file_size, isc_dpb_shutdown_delay:
-          ApplyIntParam(StrToInt(param_value));
+          ApplyIntParam(StrToInt(Value));
         isc_dpb_sweep:
           AddClumplet(DPBVal, AnsiChar(isc_dpb_records));
         isc_dpb_sweep_interval:
-          ApplyIntParam(StrToInt(param_value));
+          ApplyIntParam(StrToInt(Value));
         isc_dpb_parallel_workers:
           begin
             if IsFirebird then
-              ApplyIntParam(StrToInt(param_value));
+              ApplyIntParam(StrToInt(Value));
           end;
         isc_dpb_activate_shadow, isc_dpb_delete_shadow, isc_dpb_begin_log, isc_dpb_quit_log:
           AddClumplet(DPBVal, #0);
@@ -1105,7 +1106,7 @@ begin
             if Length(param_value) = 0 then
               AddClumplet(DPBVal, '')
             else
-              AddClumplet(DPBVal, AnsiChar(GetDPBShutParamValue(param_value)));
+              AddClumplet(DPBVal, AnsiChar(GetDPBShutParamValue(Value)));
           end;
         isc_dpb_online:
           AddClumplet(DPBVal, '');
@@ -1143,10 +1144,12 @@ end;
   *  parameter buffer, and return it and its length in
   *  TPB and TPBLength, respectively.
 *)
-procedure GenerateTPB(sl: TStrings; var TPB: AnsiString; var TPBLength: Short; IsFB21orMore: Boolean);
+procedure GenerateTPB(sl: TStrings; var TPB: AnsiString; var TPBLength: Short; IsFB21orMore: Boolean;
+  NameCodePage: Word);
 var
   i, j, TPBVal, ParamLength: Integer;
-  param_name, param_value: AnsiString;
+  param_name, param_value: string;
+  TableName: FIBByteString;
   Line: string;
   LT: Word;
 begin
@@ -1188,11 +1191,12 @@ begin
           begin
             TPB := TPB + AnsiChar(TPBVal);
             // Now set the string parameter
-            ParamLength := Length(param_value);
+            TableName := EncodeString(param_value, NameCodePage);
+            ParamLength := Length(TableName);
             if ParamLength > 255 then
-              FIBError(feParamValueTooLong, [string(param_name), ParamLength, 255]);
+              FIBError(feParamValueTooLong, [param_name, ParamLength, 255]);
             Inc(TPBLength, ParamLength + 1);
-            TPB := TPB + AnsiChar(ParamLength) + param_value;
+            TPB := TPB + AnsiChar(ParamLength) + TableName;
           end;
         else
           begin
