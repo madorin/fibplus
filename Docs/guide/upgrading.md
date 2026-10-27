@@ -94,6 +94,8 @@ These have no old name, so the code that uses them must change:
 | `StrUtil.TFastStringStream` (an alias of `TStringStream` on Delphi XE5 and later, an own class before), parameter of `GenerateDDLText`, `GenerateObjectDDL` and the other DDL methods of `FIBMetaData` | `TStringStream` | Rename in descendants that override these methods. Create the stream with `TEncoding.Unicode`, as `GetAsDDL` does, to keep the characters outside the system code page. |
 | `TFIBSQLMonitorHook.ServiceAttach`, `ServiceDetach`, `ServiceQuery`, `ServiceStart` (parameter `TpFIBCustomService`) | Parameter `TFIBCustomService` | The same class; rename in descendants that override them. |
 | `ListErrorMessages.ErrorMessage(Tr, ErrorName)` (`TFIBErrorMessageCache`) | `ErrorMessage(DB, Tr, ErrorName)` | Pass the database whose `FIB$ERROR_MESSAGES` is read; it must be one of the databases of `Tr`. |
+| `TFIBDataSet.FetchNext(FetchCount: DWORD)` | `FetchNext(FetchCount: Integer)` | Nothing for most code. A negative count fetches no row; it fetched all the rows: call `FetchAll` instead. |
+| `FixStartTime: Integer` of `ISQLStatMaker` and `TTestInfo` | `FixStartTime: Cardinal` | Change the result type in classes that implement `ISQLStatMaker`. |
 
 ### Removed identifiers
 

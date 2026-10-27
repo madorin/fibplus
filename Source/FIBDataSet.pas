@@ -1221,7 +1221,7 @@ type
     function CanCloneFromDataSet(DataSet: TFIBCustomDataSet): Boolean;
 
     function PrimaryKeyFields(const TableName: string; RelFieldName: Boolean = false): string;
-    function FetchNext(FetchCount: DWORD): Integer;
+    function FetchNext(FetchCount: Integer): Integer;
     procedure ReopenLocate(const LocateFieldNames: string);
     function AllFieldValues: Variant;
     procedure ExportDataToScript(OutPut: TStrings; TableName: string = ''; AllFields: Boolean = false);
@@ -4604,7 +4604,7 @@ end;
 
 {$WARNINGS OFF}
 
-function TFIBCustomDataSet.FetchNext(FetchCount: DWORD): Integer;
+function TFIBCustomDataSet.FetchNext(FetchCount: Integer): Integer;
 var
   Buffer: TRecordBuffer;
   iCurScreenState: Integer;

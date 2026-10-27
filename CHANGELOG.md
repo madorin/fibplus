@@ -201,9 +201,16 @@ The lists of old and new names, and what an application has to change, are in
     `FIB_D21` and `dclFIB_D21`.
 - The packages write DCU files to `$(BDSCOMMONDIR)\Dcu\FIB\$(Platform)\$(Config)`
   instead of `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`.
+
+#### Types and signatures
+
 - On Delphi XE6 and later `TFIBDataSet` no longer redeclares `DefaultFields`:
   the `TDataSet` function gives the same result and the compiler reports it as
   deprecated, use `Fields.LifeCycles`. Delphi 2009 to XE5 keep the property.
+- `TFIBDataSet.FetchNext` takes an `Integer` count (was `DWORD`), like
+  `RecordCount`: a negative count fetches no row (it fetched all the rows).
+  `ISQLStatMaker.FixStartTime` and `TTestInfo.FixStartTime` return the tick
+  count as `Cardinal` (was `Integer`).
 
 #### Schema extract
 

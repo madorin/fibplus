@@ -52,7 +52,7 @@ type
   ISQLStatMaker = interface
     ['{39477B70-12C9-4F70-993E-0E1067A8D649}']
     // For Statistics
-    function FixStartTime(const ObjName, VarName: string): integer;
+    function FixStartTime(const ObjName, VarName: string): Cardinal;
     function FixEndTime(const ObjName, VarName: string): integer;
     function GetVarInt(const ObjName, VarName: string): integer;
     function GetVarStr(const ObjName, VarName: string): string;

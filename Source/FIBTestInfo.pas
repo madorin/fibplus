@@ -51,7 +51,7 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    function FixStartTime(const ObjName, VarName: string): Integer;
+    function FixStartTime(const ObjName, VarName: string): Cardinal;
     function FixEndTime(const ObjName, VarName: string): Integer;
     function GetVarInt(const ObjName, VarName: string): Integer;
     function GetVarStr(const ObjName, VarName: string): string;
@@ -83,7 +83,7 @@ type
   TTestVarValues = class(TCallObject)
   private
     FValue: Integer;
-    FBufValue: Integer;
+    FBufValue: Cardinal;
     FStringVal: string;
     FLogStrValue: boolean;
     FDoLog: boolean;
@@ -311,7 +311,7 @@ begin
   end
 end;
 
-function TTestInfo.FixStartTime(const ObjName, VarName: string): Integer;
+function TTestInfo.FixStartTime(const ObjName, VarName: string): Cardinal;
 var
   b: boolean;
   tv: TTestVarValues;
@@ -326,23 +326,20 @@ begin
   end
 end;
 
-{$WARNINGS OFF}
-
 function TTestInfo.FixEndTime(const ObjName, VarName: string): Integer;
 var
   b: boolean;
   tv: TTestVarValues;
 begin
-
   tv := GetVariable(ObjName, VarName, b);
   with tv do
   begin
+    // Right also when the tick count wrapped around ($Q- in FIB.inc)
     FValue := FIBGetTickCount - FBufValue;
     Result := FValue;
     FLogStrValue := false;
   end;
 end;
-{$WARNINGS ON}
 
 function TTestInfo.GetVarStr(const ObjName, VarName: string): string;
 var

@@ -30,14 +30,14 @@ function NeedCastForCompare(const v, v1: Variant): boolean;
 function CompareVariantsEQ(const v, v1: Variant): boolean;
 function CompareVariants(const v, v1: Variant): integer;
 
-function ComparePDoubleAndVariant(P: PDouble; const v: Variant): integer;
+function ComparePDoubleAndVariant(P: PDouble; const V: Variant): Integer;
 function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
-function ComparePInt64AndVariant(P: PInt64; const v: Variant): integer;
+function ComparePInt64AndVariant(P: PInt64; const V: Variant): Integer;
 function ComparePByteAndVariant(P: PByte; const v: Variant): integer;
-function ComparePDateAndVariant(P: PDateTime; const v: Variant): integer;
+function ComparePDateAndVariant(P: PDateTime; const V: Variant): Integer;
 function ComparePSmallAndVariant(P: PSmallInt; const v: Variant): integer;
 function CompareWideStringAndVariant(P: Pointer; const v: Variant): integer;
-function ComparePCurrencyAndVariant(P: PCurrency; const v: Variant): integer;
+function ComparePCurrencyAndVariant(P: PCurrency; const V: Variant): Integer;
 function ComparePShortAndVariant(P: PShortInt; const v: Variant): integer;
 
 implementation
@@ -72,34 +72,72 @@ begin
 end;
 
 {$DEFINE BODY_NUMERIC_COMPARE_EQ}
-{$WARNINGS OFF}
 
-function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
+// P^ holds a value of an integer type up to 32 bits; strings are parsed as floats
+function CompareWidenedIntegerAndVariant(P: PInt64; const V: Variant): Integer;
 {$I VarFnc.inc}
-  function ComparePSmallAndVariant(P: PSmallInt; const v: Variant): integer;
+function ComparePSingleAndVariant(P: PSingle; const V: Variant): Integer;
 {$I VarFnc.inc}
-    function ComparePSingleAndVariant(P: PSingle; const v: Variant): integer;
+function ComparePDoubleAndVariant(P: PDouble; const V: Variant): Integer;
 {$I VarFnc.inc}
-      function ComparePDoubleAndVariant(P: PDouble; const v: Variant): integer;
+function ComparePCurrencyAndVariant(P: PCurrency; const V: Variant): Integer;
 {$I VarFnc.inc}
-        function ComparePCurrencyAndVariant(P: PCurrency; const v: Variant): integer;
+function ComparePDateAndVariant(P: PDateTime; const V: Variant): Integer;
 {$I VarFnc.inc}
-          function ComparePDateAndVariant(P: PDateTime; const v: Variant): integer;
-{$I VarFnc.inc}
-            function ComparePInt64AndVariant(P: PInt64; const v: Variant): integer;
+function ComparePInt64AndVariant(P: PInt64; const V: Variant): Integer;
 {$DEFINE C_INT64}
 {$I VarFnc.inc}
 {$UNDEF C_INT64}
-              function ComparePByteAndVariant(P: PByte; const v: Variant): integer;
-{$I VarFnc.inc}
-                function ComparePShortAndVariant(P: PShortInt; const v: Variant): integer;
-{$I VarFnc.inc}
-                  function ComparePWordAndVariant(P: PWord; const v: Variant): integer;
-{$I VarFnc.inc}
-                    function ComparePLongWordAndVariant(P: PLongWord; const v: Variant): integer;
-{$I VarFnc.inc}
-{$WARNINGS ON}
 {$UNDEF BODY_NUMERIC_COMPARE_EQ}
+
+function ComparePIntegerAndVariant(P: PInteger; const V: Variant): Integer;
+var
+  Value: Int64;
+begin
+  Value := P^;
+  Result := CompareWidenedIntegerAndVariant(@Value, V);
+end;
+
+function ComparePSmallAndVariant(P: PSmallInt; const V: Variant): Integer;
+var
+  Value: Int64;
+begin
+  Value := P^;
+  Result := CompareWidenedIntegerAndVariant(@Value, V);
+end;
+
+function ComparePByteAndVariant(P: PByte; const V: Variant): Integer;
+var
+  Value: Int64;
+begin
+  Value := P^;
+  Result := CompareWidenedIntegerAndVariant(@Value, V);
+end;
+
+function ComparePShortAndVariant(P: PShortInt; const V: Variant): Integer;
+var
+  Value: Int64;
+begin
+  Value := P^;
+  Result := CompareWidenedIntegerAndVariant(@Value, V);
+end;
+
+function ComparePWordAndVariant(P: PWord; const V: Variant): Integer;
+var
+  Value: Int64;
+begin
+  Value := P^;
+  Result := CompareWidenedIntegerAndVariant(@Value, V);
+end;
+
+function ComparePLongWordAndVariant(P: PLongWord; const V: Variant): Integer;
+var
+  Value: Int64;
+begin
+  Value := P^;
+  Result := CompareWidenedIntegerAndVariant(@Value, V);
+end;
+
                       function CompareWideStringAndVariantEQ(P: Pointer; const v: Variant): boolean;
                       begin
                         case VarType(v) of
