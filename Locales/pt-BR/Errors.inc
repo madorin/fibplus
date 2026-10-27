@@ -118,5 +118,6 @@
     'Não é possível converter o caractere entre conjuntos de caracteres: "%s" para a página de código %d',
     '%s: Não foi possível encontrar ou analisar a cláusula ORDER BY.',
     '%s.' + CRLF + 'O campo %s é usado na ordenação, mas não está nos campos do SelectSQL',
-    '%s: Não é possível carregar os metadados.'
+    '%s: Não é possível carregar os metadados.',
+    'O valor de %s tem %d bytes, o máximo é %d'
   );

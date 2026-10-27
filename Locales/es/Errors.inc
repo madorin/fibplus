@@ -118,5 +118,6 @@
     'No se puede convertir el carácter entre juegos de caracteres: "%s" a la página de códigos %d',
     '%s: No se encontró o no se pudo analizar la cláusula ORDER BY.',
     '%s.' + CRLF + 'El campo %s se usa en la ordenación, pero no está en los campos de SelectSQL',
-    '%s: No se pueden cargar los metadatos.'
+    '%s: No se pueden cargar los metadatos.',
+    'El valor de %s tiene %d bytes, el máximo es %d'
   );

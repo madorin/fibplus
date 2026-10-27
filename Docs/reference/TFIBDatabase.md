@@ -152,6 +152,8 @@ Events are listed in [Events](#events).
 
 `DBParams` holds one entry per line, in the form `Name=Value` or `Name` alone. The names are the DPB parameter names, such as `user_name`, `password`, `lc_ctype`, `sql_role_name`. A line `config=Name=Value` passes a configuration value to the client (for example `config=WireCompression=true`); `ConfigParam` reads and writes these lines.
 
+All `config=` lines go into one DPB value. A value can be longer than 255 bytes only when `ConnectParams.IsFirebird` is `True` and the client library is *Firebird 3+*: the DPB is then sent as `isc_dpb_version2`, which *Firebird 2.5* servers do not read. Otherwise `Open` raises "The value of *name* has *N* bytes, the maximum is 255". With `utf8_filename` the length counts UTF-8 bytes.
+
 `DBParams` is also the text that `CreateDatabase` appends to `CREATE DATABASE`, and the source of the parameters of `ShutDown` and `Online`.
 
 ## Capabilities

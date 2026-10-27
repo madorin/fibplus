@@ -919,6 +919,7 @@ const
   // Database parameter block stuff
 
   isc_dpb_version1              = 1;
+  isc_dpb_version2              = 2;
   isc_dpb_cdd_pathname          = 1;
   isc_dpb_allocation            = 2;
   isc_dpb_journal               = 3;

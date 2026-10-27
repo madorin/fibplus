@@ -118,5 +118,6 @@
     'Znak nelze převést mezi znakovými sadami: "%s" do kódové stránky %d',
     '%s: Klauzuli ORDER BY nelze najít nebo zpracovat.',
     '%s.' + CRLF + 'Pole %s je použito v řazení, ale není v polích SelectSQL',
-    '%s: Metadata nelze načíst.'
+    '%s: Metadata nelze načíst.',
+    'Hodnota %s má %d bajtů, maximum je %d'
   );

@@ -118,5 +118,6 @@
     'Cannot transliterate character between character sets: "%s" to code page %d',
     '%s: Can''t find or parse ORDER BY statement.',
     '%s.' + CRLF + 'Field %s is used in the order, but is not in the fields of SelectSQL',
-    '%s: Can''t load metadata.'
+    '%s: Can''t load metadata.',
+    'The value of %s has %d bytes, the maximum is %d'
   );

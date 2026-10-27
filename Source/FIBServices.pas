@@ -984,6 +984,7 @@ var
   i, j: Integer;
   SPBVal, SPBServerVal: UShort;
   param_name, param_value: String;
+  AnsiValue: AnsiString;
   pval: Integer;
 begin
   { The SPB is initially empty, with the exception that
@@ -1019,8 +1020,11 @@ begin
     case SPBVal of
       isc_spb_command_line, isc_spb_user_name, isc_spb_password, isc_spb_sql_role_name:
         begin
-          SPB := SPB + AnsiChar(SPBServerVal) + AnsiChar(Length(param_value)) + param_value;
-          Inc(SPBLength, 2 + Length(param_value));
+          AnsiValue := AnsiString(param_value);
+          if Length(AnsiValue) > 255 then
+            FIBError(feParamValueTooLong, [param_name, Length(AnsiValue), 255]);
+          SPB := SPB + AnsiChar(SPBServerVal) + AnsiChar(Length(AnsiValue)) + AnsiValue;
+          Inc(SPBLength, 2 + Length(AnsiValue));
         end;
       isc_spb_connect_timeout, isc_spb_dummy_packet_interval:
         begin
@@ -1032,10 +1036,10 @@ begin
 
     else
       begin
-        if (SPBVal > 0) and (SPBVal <= isc_dpb_last_dpb_constant) then
+        if (SPBVal > 0) and (SPBVal <= isc_spb_last_spb_constant) then
           FIBError(feSPBConstantNotSupported, [SPBConstantNames[SPBVal]])
         else
-          FIBError(feSPBConstantUnknown, [SPBVal]);
+          FIBError(feSPBConstantUnknown, [param_name]);
       end;
     end;
   end;

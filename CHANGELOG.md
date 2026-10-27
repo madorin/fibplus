@@ -267,6 +267,12 @@ The lists of old and new names, and what an application has to change, are in
   dialect 1 and uppercases it. `SQLDialect` is now sent in the DPB, unless
   `DBParams` has `sql_dialect`. A role without quotes is still uppercased; see
   [Upgrading](Docs/guide/upgrading.md#role-name-in-quotes).
+- A `DBParams` value over 255 bytes (several `config=` lines, or a long non-ASCII
+  password with `utf8_filename`) had its one-byte length wrapped and made a
+  corrupt DPB. With a Firebird 3+ client the DPB is now sent as
+  `isc_dpb_version2` (4-byte lengths) when a value needs it; otherwise, and for
+  long lock table names in `TRParams` and values in the `TFIBServices` `Params`,
+  a clear error names the parameter.
 - The metadata and dataset info caches (`ListTableInfo`, `ListDataSetInfo`)
   kept the database name in the system code page: with a name outside it no
   entry was found, and each `GetTableInfo` read the metadata again and added

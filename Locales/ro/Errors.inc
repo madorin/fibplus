@@ -118,5 +118,6 @@
     'Caracterul nu poate fi convertit între seturile de caractere: "%s" în pagina de cod %d',
     '%s: Clauza ORDER BY nu a fost găsită sau nu a putut fi analizată.',
     '%s.' + CRLF + 'Câmpul %s este folosit în sortare, dar nu se află în câmpurile din SelectSQL',
-    '%s: Metadatele nu au putut fi încărcate.'
+    '%s: Metadatele nu au putut fi încărcate.',
+    'Valoarea %s are %d octeți, maximul este %d'
   );

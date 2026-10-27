@@ -118,5 +118,6 @@
     'Nie można przekonwertować znaku między zestawami znaków: "%s" na stronę kodową %d',
     '%s: Nie można znaleźć lub przeanalizować klauzuli ORDER BY.',
     '%s.' + CRLF + 'Pole %s jest użyte w sortowaniu, ale nie ma go w polach SelectSQL',
-    '%s: Nie można załadować metadanych.'
+    '%s: Nie można załadować metadanych.',
+    'Wartość %s ma %d bajtów, maksimum to %d'
   );

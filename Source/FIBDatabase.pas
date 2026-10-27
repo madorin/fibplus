@@ -1765,6 +1765,8 @@ begin
       FLibraryName := LibName;
       FClientLibrary := nil;
       FClientLibLoaded := False;
+      // the DPB version depends on the client
+      FDBParamsChanged := True;
       { if Length(FLibraryName)>0 then
       LoadLibrary }
     end;
@@ -3071,13 +3073,9 @@ begin
     if FDBParamsChanged then
       begin
         FDBParamsChanged := False;
-        GenerateDPB(FDBParams, DPB, FDPBLength, FConnectParams.IsFirebird);
-        // without it the server takes dialect 1 and uppercases a quoted role name
-        if IndexOfDBConst(DPBConstantNames[isc_dpb_sql_dialect]) < 0 then
-          begin
-            DPB := DPB + AnsiChar(isc_dpb_sql_dialect) + #1 + AnsiChar(FSQLDialect);
-            Inc(FDPBLength, 3);
-          end;
+        // without sql_dialect the server takes dialect 1 and uppercases a quoted role name
+        GenerateDPB(FDBParams, DPB, FDPBLength, FConnectParams.IsFirebird, FSQLDialect,
+          (FClientLibrary.Version.Product = fpFirebird) and (FClientLibrary.Version.Major >= 3));
         FIBAlloc(FDPB, 0, FDPBLength);
         Move(DPB[1], FDPB[0], FDPBLength);
       end;
@@ -3143,7 +3141,6 @@ begin
   FInternalTransaction.Timeout := 1000;
   FStreammedConnectFail := False;
   AttachmentID;
-  DPB := FDPB;
 
 {$IFNDEF NO_MONITOR}
   if MonitoringEnabled then
