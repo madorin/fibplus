@@ -78,7 +78,7 @@ Common base class. It owns the connection to the service manager. It does not st
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | `Active` | `Boolean` | `False` | `True` while attached. Setting it calls `Attach` or `Detach`. While the form loads, the value is applied after loading; at design time an error is shown instead of raised. |
-| `ServerName` | `AnsiString` | | Server host. Setting a name while `Protocol` is `Local` changes `Protocol` to `TCP`; clearing it changes `Protocol` to `Local`. Raises when the component is attached. |
+| `ServerName` | `string` | | Server host. Setting a name while `Protocol` is `Local` changes `Protocol` to `TCP`; clearing it changes `Protocol` to `Local`. Raises when the component is attached. |
 | `Protocol` | `TProtocol` | `Local` | `TCP`, `SPX`, `NamedPipe`, or `Local`. Setting `Local` clears `ServerName`. Raises when the component is attached. |
 | `LibraryName` | `string` | the default client library | Client library to load. Stored in the form only when changed. Raises when the component is attached. |
 | `Params` | `TStrings` | | Service parameters as `name=value` lines, see [Params](#params). Raises on change when the component is attached. |
@@ -205,11 +205,13 @@ Base class of services that return text, such as backup, restore, statistics, an
 |------|------|-------------|
 | `Eof` | `Boolean` | `True` when all output is read. Reset by each start. |
 | `GetNextLine` | `String` | Next output line. Returns an empty string and sets `Eof` when there is no more output. |
-| `GetNextChunk` | `String` | Next block of output. Sets `Eof` when the server reports the end. |
-| `GetNextBuf` | `AnsiString` | Like `GetNextChunk`, but returns the bytes as read, without cutting at a zero byte. |
+| `GetNextChunk` | `String` | Next block of output. Sets `Eof` when the server reports the end. A character cut at the end of a block is returned with the next block. |
+| `GetNextBuf` | `AnsiString` | Like `GetNextChunk`, but returns the bytes as read, not decoded. |
 | `ServiceStart` | method | Starts the action. When `OnTextNotify` is assigned, it then reads all output and calls the event for each line before returning. |
 
 Calling `GetNextLine`, `GetNextChunk`, or `GetNextBuf` before an action was started raises `feQueryParamsError`.
+
+The server writes the output, the user names, and the database and file names in the code page of its system. `GetNextLine`, `GetNextChunk`, and the string results of the query services decode them as UTF-8 when the bytes are valid UTF-8 (a Linux server, user names of *Firebird 3+*), else in the system code page (a Windows server). Database and file names, user names, and the other text parameters are sent in the system code page, which a *Firebird 3+* client library converts to UTF-8; a character outside it raises `feCantTransliterate`.
 
 ### Events
 
@@ -338,7 +340,7 @@ Restores a database from a backup with the server's restore service.
 | `DatabaseName` | `TStrings` | | Database files to create, one per line: a file name, or `name=length`. Empty lines are skipped. |
 | `PageSize` | `Integer` | `4096` | Page size of the new database. Sent only when greater than `0`, so with the default a database with larger pages is restored with 4096-byte pages. `0` keeps the page size of the backup. |
 | `PageBuffers` | `Integer` | | Page buffers. Sent only when greater than `0`. |
-| `FixCharset` | `AnsiString` | | Character set name for `FixFssMetadata` and `FixFssData`. Both flags are sent only when this is not empty. |
+| `FixCharset` | `string` | | Character set name for `FixFssMetadata` and `FixFssData`. Both flags are sent only when this is not empty. |
 | `Options` | `TRestoreOptions` | `[CreateNewDB]` | Restore flags, see below. |
 | `ParallelWorkers` | `Integer` | `0` | *Firebird 5+*. Parallel workers for the restore. Sent only when greater than `0`; the server limits it to `MaxParallelWorkers`. |
 | `Verbose` | `Boolean` | `False` | Ask the server to list each step in the output. |
@@ -482,7 +484,7 @@ end;
 | `Password` | `string` | | Password. |
 | `SecAdmin` | `Boolean` | `False` | Marks the user as a security administrator. Sent only when set since the last action, also to `False` to revoke the rights. |
 
-Text values are sent UTF-8 encoded. When modifying, only the properties set since the last action are sent. `UserID` and `GroupID` are always sent when adding. After a successful `ServiceStart` (also through `AddUser`, `ModifyUser`, and `DeleteUser`), and when the component finishes loading, `FirstName`, `MiddleName`, `LastName`, `UserID`, `GroupID`, `Password`, and `SecAdmin` are cleared; `UserName` and `SQlRole` are kept. When the call fails they are kept, so it can be retried; a server error detaches the service, so call `Attach` again first.
+Text values are sent in the system code page, which a *Firebird 3+* client library converts to UTF-8; a character outside the system code page raises `feCantTransliterate`. When modifying, only the properties set since the last action are sent. `UserID` and `GroupID` are always sent when adding. After a successful `ServiceStart` (also through `AddUser`, `ModifyUser`, and `DeleteUser`), and when the component finishes loading, `FirstName`, `MiddleName`, `LastName`, `UserID`, `GroupID`, `Password`, and `SecAdmin` are cleared; `UserName` and `SQlRole` are kept. When the call fails they are kept, so it can be retried; a server error detaches the service, so call `Attach` again first.
 
 ### Run-time properties and methods
 

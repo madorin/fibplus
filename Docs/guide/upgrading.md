@@ -97,6 +97,7 @@ These have no old name, so the code that uses them must change:
 | `TFIBDataSet.FetchNext(FetchCount: DWORD)` | `FetchNext(FetchCount: Integer)` | Nothing for most code. A negative count fetches no row; it fetched all the rows: call `FetchAll` instead. |
 | `FixStartTime: Integer` of `ISQLStatMaker` and `TTestInfo` | `FixStartTime: Cardinal` | Change the result type in classes that implement `ISQLStatMaker`. |
 | `DataConvert(Field, Source, Dest: Pointer; ToNative)` of `TFIBCustomDataSet` (public) and `TFIBClientDataSet`, `GetCalcFields(Buffer: TRecordBuffer)` of `TFIBCustomDataSet` | Delphi XE3 and later: `DataConvert(Field, Source: TValueBuffer; var Dest: TValueBuffer; ToNative)`; XE4 and later: `GetCalcFields(Buffer: TRecBuf)` | Override the new overloads in descendants. Code calling the deprecated `TField.GetData`/`SetData` with a pointer and `NativeFormat = False` gets the `TDataSet` conversion. |
+| `TFIBControlService.ServiceStartAddParam(Value: AnsiString; Param)` (protected) | `ServiceStartAddParam(const Value: string; Param)` | The value is encoded in the system code page. A `UTF8String` (`UTF8Encode`) still converts right; an `AnsiString` filled with UTF-8 bytes does not: pass the text, the Firebird 3+ client converts the system code page to UTF-8 itself. |
 
 ### Removed identifiers
 

@@ -469,6 +469,13 @@ The lists of old and new names, and what an application has to change, are in
   could take a packaged or PSQL function. `CREATE FUNCTION` and `RETURNS` had
   two spaces. The script has no empty `UNIQUE`, `CHECKS` or `TRIGGERS`
   sections.
+- Security service (`TFIBSecurityService`) with a Firebird 3+ client library: the user name,
+  password, first, middle and last name and role were encoded in UTF-8 and then converted again
+  by the client from the system code page, so every non-ASCII character was stored garbled (`é`
+  as `Ã©`). The text parameters of the services (also database and file names, and `Params` of
+  the attachment) are now sent in the system code page, which the client converts; a character
+  outside it raises "Cannot transliterate" instead of being sent as `?`. An older client library
+  does not convert: with it the server gets the names in the system code page of the client.
 
 ## [7.9.1] - 2026-10-09
 
