@@ -13,7 +13,6 @@ unit FIBSyntaxMemo;
 interface
 
 {$I ..\FIB.inc}
-{$WARNINGS OFF}
 
 uses
   Windows, Messages, SysUtils, Classes,
@@ -3009,7 +3008,7 @@ end;
 // FillOutput() Fills the output text depending on the section manager options
 procedure TMPSynMemoSections.FillOutput(const Sl: TStringList);
 const
-  pm: array [Boolean] of string[4] = ('{<+}', '{<-}');
+  pm: array [Boolean] of string = ('{<+}', '{<-}');
   { }
   procedure MarkSection(Sec: TMPSynMemoSection);
   var
@@ -3628,7 +3627,8 @@ begin
   if not(smoSkipSectionsOnCopy in fRichMemo.Options) and (fStart.Y <> fEnd.Y) then
     begin
       s := GetMarkedText;
-      sa := s;
+      // the ANSI code page of the clipboard when the text survives it
+      sa := AnsiString(s);
 
       // Open the clipboard
       OpenClipboard(Application.Handle);
@@ -3639,7 +3639,7 @@ begin
           // Get a pointer to it
           DataPtr := GlobalLock(Data);
           try
-            if s = sa then
+            if s = string(sa) then
               Move(PAnsiChar(sa)^, DataPtr^, Length(s) * SizeOf(AnsiChar) + SizeOf(AnsiChar))
             else
               Move(PChar(s)^, DataPtr^, Length(s) * SizeOf(Char) + SizeOf(Char));
@@ -3688,10 +3688,10 @@ begin
           p := GlobalLock(Data);
           s := PChar(p);
           sa := PAnsiChar(p);
-          if sa = s then
+          if string(sa) = s then
             SetMarkedText(s)
           else
-            SetMarkedText(sa);
+            SetMarkedText(string(sa));
         finally
           GlobalUnlock(Data);
           CloseClipboard;
@@ -5022,11 +5022,12 @@ begin
       Font.Assign(Self.Font);
       fCharHeight := -Font.Height + 3;
       Font.Style := [];
+      // by code point, as CharPosToPixOffset looks them up (not the ANSI character of the byte)
       for c := Low(fCharWidths[False]) to High(fCharWidths[False]) do
-        fCharWidths[False][c] := Byte(TextWidth(c));
+        fCharWidths[False][c] := Byte(TextWidth(Char(Ord(c))));
       Font.Style := [fsBold];
       for c := Low(fCharWidths[True]) to High(fCharWidths[True]) do
-        fCharWidths[True][c] := Byte(TextWidth(c));
+        fCharWidths[True][c] := Byte(TextWidth(Char(Ord(c))));
     end;
 
 end;

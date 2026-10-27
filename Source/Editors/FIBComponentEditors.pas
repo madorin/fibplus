@@ -205,7 +205,7 @@ var
   pValue: string;
 
 begin
-  pName := GetPropInfo^.Name;
+  pName := GetName;
   pValue := GetValue;
   FileOpen := TOpenDialog.Create(Application);
   try
@@ -437,7 +437,7 @@ var
   DataSets: array of TDataSet;
   k: Integer;
 begin
-  pName := GetPropInfo^.Name;
+  pName := GetName;
   SetLength(DataSets, PropCount);
   for k := 0 to PropCount - 1 do
   begin
@@ -1203,7 +1203,7 @@ var
   pName: string;
   KindSQL: Integer;
 begin
-  pName := GetPropInfo^.Name;
+  pName := GetName;
   if pName = 'SelectSQL' then
     KindSQL := 0
   else if pName = 'UpdateSQL' then

@@ -506,6 +506,9 @@ The lists of old and new names, and what an application has to change, are in
   `BatchOutputRawFile` could not use a file name outside the system code page.
 - `CompareVariantsEQ` (`VariantRtn`) returned `False` for two equal `AnsiString` (`varString`)
   variants.
+- SQL editor: the characters U+0080 to U+00FF were measured as the character of the same byte in
+  the system code page (all of them on a Central European or Cyrillic Windows), so the text after
+  them was drawn at a wrong offset.
 
 ## [7.9.1] - 2026-10-09
 
