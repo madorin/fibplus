@@ -311,6 +311,16 @@ The lists of old and new names, and what an application has to change, are in
   them while another read them. They are now kept per thread.
 - Creating a second `TFIBErrorHandler` raised, and also unregistered the first
   one, which then no longer handled any error.
+- `TFIBErrorHandler`: in a transaction over several databases, a violation in
+  a database other than the default one of the transaction was looked up in
+  `FIB$ERROR_MESSAGES` of the default database (with its `UseRepositories`)
+  and cached under it. The lookup now uses the database of the failing
+  statement; `ListErrorMessages.ErrorMessage` takes the database as its first
+  parameter, and `GetQueryForUse` has an overload with the database.
+  The server version that decides whether `ExceptionName` is read was also
+  taken from the default database; without one, and for a user exception
+  raised on commit, `ExceptionName` was `Unknown` and the message kept the
+  name and the stack trace.
 - A schema cache file that could not be written completely (disk full, ...)
   was left truncated, and the next `Open` with `AutoLoadFromFile` failed
   reading it. The file is now deleted instead.

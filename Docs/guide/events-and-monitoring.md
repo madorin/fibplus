@@ -161,7 +161,7 @@ For `keLostConnect`, `DoRaise := False` ends the call with a silent `EAbort`, un
 
 ### Custom messages for constraints
 
-With `oeForeignKey`, `oeCheck`, or `oeUniqueViolation`, the handler looks up the constraint name in the table `FIB$ERROR_MESSAGES` of the database. A row has a `CONSTRAINT_NAME` and a `MESSAGE_STRING`.
+With `oeForeignKey`, `oeCheck`, or `oeUniqueViolation`, the handler looks up the constraint name in the table `FIB$ERROR_MESSAGES` of the database of the failing statement (in a transaction over several databases, not the default one of the transaction). A row has a `CONSTRAINT_NAME` and a `MESSAGE_STRING`.
 
 ```sql
 INSERT INTO FIB$ERROR_MESSAGES (CONSTRAINT_NAME, MESSAGE_STRING)

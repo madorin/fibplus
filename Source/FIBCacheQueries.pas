@@ -22,7 +22,8 @@ interface
 uses
   SysUtils, Classes, FIBQuery, FIBDatabase, SyncObjs;
 
-function GetQueryForUse(aTransaction: TFIBTransaction; const SQLText: string): TFIBQuery;
+function GetQueryForUse(aTransaction: TFIBTransaction; const SQLText: string): TFIBQuery; overload;
+function GetQueryForUse(Database: TFIBDataBase; Transaction: TFIBTransaction; const SQLText: string): TFIBQuery; overload;
 procedure FreeQueryForUse(aFIBQuery: TFIBQuery);
 procedure FreeHandleCachedQuery(DB: TFIBDataBase; const SQLText: string);
 procedure ClearQueryCacheList(DB: TFIBDataBase);
@@ -67,7 +68,8 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
 
-    function UseQuery(aTransaction: TFIBTransaction; const SQLText: string): TFIBQuery;
+    function UseQuery(aTransaction: TFIBTransaction; const SQLText: string): TFIBQuery; overload;
+    function UseQuery(Database: TFIBDataBase; Transaction: TFIBTransaction; const SQLText: string): TFIBQuery; overload;
     procedure UnUseQuery(aFIBQuery: TFIBQuery);
   end;
 
@@ -313,10 +315,17 @@ begin
       Exit;
     DB := aTransaction.Databases[0];
   end;
+  Result := UseQuery(DB, aTransaction, SQLText);
+end;
 
+function TCacheList.UseQuery(Database: TFIBDataBase; Transaction: TFIBTransaction; const SQLText: string): TFIBQuery;
+begin
+  Result := nil;
+  if (Database = nil) or (Transaction = nil) then
+    Exit;
   FLock.Acquire;
   try
-    Result := GetCacheForDB(DB).UseQuery(aTransaction, SQLText);
+    Result := GetCacheForDB(Database).UseQuery(Transaction, SQLText);
   finally
     FLock.Release;
   end;
@@ -326,6 +335,13 @@ end;
 function GetQueryForUse(aTransaction: TFIBTransaction; const SQLText: string): TFIBQuery;
 begin
   Result := CacheList.UseQuery(aTransaction, SQLText);
+  if (Result <> nil) and Result.Open then
+    Result.Close;
+end;
+
+function GetQueryForUse(Database: TFIBDataBase; Transaction: TFIBTransaction; const SQLText: string): TFIBQuery;
+begin
+  Result := CacheList.UseQuery(Database, Transaction, SQLText);
   if (Result <> nil) and Result.Open then
     Result.Close;
 end;

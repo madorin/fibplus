@@ -250,7 +250,6 @@ procedure TFIBErrorHandler.DefaultOnError(Sender: TObject; ErrorValue: EFIBError
 var
   p: integer;
   RepositoryText, AtLexem, LowerMessage: string;
-  CurTr: TFIBTransaction;
   vDB: THackDatabase;
   LostCode: ISC_STATUS;
 begin
@@ -297,10 +296,10 @@ begin
                 HandledError.ExceptionNumber := StrToInt(FastCopy(Message, 1, p - 1));
                 Message := TrimCLRF(FastCopy(Message, p + 1, MaxInt));
                 HandledError.ExceptionName := 'Unknown';
-                CurTr := GetTr(Sender);
-                if CurTr <> nil then
+                vDB := FindDatabaseForObject(Sender);
+                if vDB <> nil then
                 begin
-                  if CurTr.DefaultDatabase.IsFirebirdConnect and (CurTr.DefaultDatabase.ServerMajorVersion >= 2) then
+                  if vDB.IsFirebirdConnect and (vDB.ServerMajorVersion >= 2) then
                   begin
                     p := PosCh('.', Message);
                     if p > 0 then
@@ -515,15 +514,20 @@ end;
 function TFIBErrorHandler.RepositoryMessage(Sender: TObject; const ConstraintName: string): string;
 var
   Tr: TFIBTransaction;
+  DB: TFIBDatabase;
 begin
   Result := '';
   Tr := GetTr(Sender);
   if (Tr = nil) or not Tr.InTransaction then
     Exit;
+  // the database of the failing object, not the default one of a transaction over several databases
+  DB := FindDatabaseForObject(Sender);
+  if (DB = nil) or (Tr.FindDatabase(DB) < 0) then
+    Exit;
   InRepositoryLookup := True;
   try
     try
-      Result := ListErrorMessages.ErrorMessage(Tr, ConstraintName);
+      Result := ListErrorMessages.ErrorMessage(DB, Tr, ConstraintName);
     except
       Result := '';
     end;

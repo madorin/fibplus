@@ -195,7 +195,7 @@ type
     procedure LoadFromFile(const FileName: string);
   public
     procedure AddErrorMessage(const DBName, ErrorName, ErrorMsg: string; Version: Integer);
-    function ErrorMessage(Tr: TFIBTransaction; const ErrorName: string): string;
+    function ErrorMessage(DB: TFIBDataBase; Tr: TFIBTransaction; const ErrorName: string): string;
   end;
 
 var
@@ -2661,19 +2661,18 @@ begin
   end;
 end;
 
-function TFIBErrorMessageCache.ErrorMessage(Tr: TFIBTransaction; const ErrorName: string): string;
+// The message of ErrorName in FIB$ERROR_MESSAGES of DB, read in Tr
+function TFIBErrorMessageCache.ErrorMessage(DB: TFIBDataBase; Tr: TFIBTransaction; const ErrorName: string): string;
 var
-  DB: TFIBDataBase;
   Version: Integer;
   q: TFIBQuery;
 begin
   Result := '';
-  DB := Tr.DefaultDatabase;
   if not (urErrorMessagesInfo in DB.UseRepositories) or not ExistERepositaryTable(DB) then
     Exit;
   if not IsValidated(DB.DBName) then
   begin
-    q := GetQueryForUse(Tr, 'SELECT MAX(FIB$VERSION) FROM FIB$ERROR_MESSAGES');
+    q := GetQueryForUse(DB, Tr, 'SELECT MAX(FIB$VERSION) FROM FIB$ERROR_MESSAGES');
     try
       q.ExecQuery;
       Validate(DB.DBName, q.Fields[0].AsInteger);
@@ -2683,7 +2682,7 @@ begin
   end;
   if FindErrorMessage(DB.DBName, ErrorName, Result) then
     Exit;
-  q := GetQueryForUse(Tr, 'SELECT MESSAGE_STRING, FIB$VERSION FROM FIB$ERROR_MESSAGES WHERE CONSTRAINT_NAME=?CN');
+  q := GetQueryForUse(DB, Tr, 'SELECT MESSAGE_STRING, FIB$VERSION FROM FIB$ERROR_MESSAGES WHERE CONSTRAINT_NAME=?CN');
   try
     q.Options := q.Options + [qoTrimCharFields];
     q.Params[0].AsString := ErrorName;
