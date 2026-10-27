@@ -715,7 +715,7 @@ type
 
     function StoreUpdTransaction: Boolean;
     procedure SetOnEndScroll(Event: TDataSetNotifyEvent);
-    function GetDefaultFields: Boolean;
+    function HasDefaultFields: Boolean;
     procedure ClearFieldStreamList;
 
     function CreateInternalQuery(const QName: string): TFIBQuery;
@@ -1200,10 +1200,10 @@ type
     function CanInsert: Boolean; virtual;
     function CanDelete: Boolean; virtual;
     function IsSequenced: Boolean; override; // Scroll bar
-    // Before XE6 TDataSet.DefaultFields is a flag that is stale while the dataset is inactive
-{$IFDEF C27}{$WARN HIDING_MEMBER OFF}{$ENDIF}
-    property DefaultFields: Boolean read GetDefaultFields;
-{$IFDEF C27}{$WARN HIDING_MEMBER DEFAULT}{$ENDIF}
+{$IFNDEF C27}
+    // TDataSet.DefaultFields is a flag that is stale while the dataset is inactive; XE6+ computes it
+    property DefaultFields: Boolean read HasDefaultFields;
+{$ENDIF}
   public
 {$IFDEF CSMonitor}
     procedure SetCSMonitorSupportToQ;
@@ -6708,7 +6708,7 @@ begin
     if Active then
       begin
         // Keep automatic fields alive across the reopen
-        OldDefaultFields := DefaultFields;
+        OldDefaultFields := HasDefaultFields;
         if OldDefaultFields then
           SetDefaultFields(false);
         try
@@ -7156,7 +7156,7 @@ begin
       Size := aSize;
       FieldName := aFieldName;
       Name := aName;
-      if DefaultFields then
+      if HasDefaultFields then
         Include(FRunState, drsForceCreateCalcFields);
       try
         DataSet := Self;
@@ -7824,7 +7824,7 @@ begin
       FieldDefs.Assign(Source.FieldDefs);
       DestroyFields;
       CreateFields;
-      if not Source.DefaultFields then
+      if not Source.HasDefaultFields then
         begin
           for i := FieldCount - 1 downto 0 do
             if Source.FindField(Fields[i].FieldName) = nil then
@@ -7893,7 +7893,7 @@ end;
 
 procedure TFIBCustomDataSet.OpenAsClone(DataSet: TFIBCustomDataSet);
 begin
-  if DefaultFields then
+  if HasDefaultFields then
     Clone(DataSet, True)
   else
     begin
@@ -8101,7 +8101,7 @@ procedure TFIBCustomDataSet.DoBeforeClose; // override;
 var
   i: Integer;
 begin
-  if DefaultFields and Assigned(FFilterParser) then
+  if HasDefaultFields and Assigned(FFilterParser) then
     FFilterParser.ResetFields;
 
   if DisableCOCount > 0 then
@@ -8110,7 +8110,7 @@ begin
     GlobalContainer.DataSetEvent(Self, deBeforeClose);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deBeforeClose);
-  if DefaultFields then
+  if HasDefaultFields then
     begin
       FFNFields.Clear;
       if Assigned(FFilterParser) then
@@ -10356,7 +10356,7 @@ begin
   FRecordsCache.Free;
   FRecordsCache := nil;
   BindFields(false); // Unbind the fields
-  if DefaultFields then
+  if HasDefaultFields then
     DestroyFields;
   vFieldDescrList.Clear;
   FCachedActive := false;
@@ -11303,7 +11303,7 @@ begin
       begin
         vForceCreateFields := drsForceCreateCalcFields in FRunState;
         Exclude(FRunState, drsForceCreateCalcFields);
-        if DefaultFields then
+        if HasDefaultFields then
           CreateFields
         else if vForceCreateFields then
           begin
@@ -11842,11 +11842,15 @@ begin
 
 end;
 
-function TFIBCustomDataSet.GetDefaultFields: Boolean;
+// The field list is generated, not persistent; also correct while the dataset is inactive
+function TFIBCustomDataSet.HasDefaultFields: Boolean;
 begin
-  Result := not Active and (FieldCount = 0);
-  if not Result then
-    Result := inherited DefaultFields;
+{$IFDEF C27}
+  // Same as the deprecated TDataSet.DefaultFields
+  Result := (FieldOptions.AutoCreateMode <> acExclusive) or not (lcPersistent in Fields.LifeCycles);
+{$ELSE}
+  Result := not Active and (FieldCount = 0) or inherited DefaultFields;
+{$ENDIF}
 end;
 
 // Filter works
@@ -15009,7 +15013,6 @@ var
     CharSetName: string;
     Bytes: FIBByteString;
   begin
-    CharSetName := '';
     if (S <> '') and (Database.Capabilities.AttachmentCharSetID = 0) and Database.IsFirebirdConnect and
       ((Database.ServerMajorVersion > 2) or (Database.ServerMajorVersion = 2) and (Database.ServerMinorVersion >= 5)) then
     begin
@@ -15024,15 +15027,16 @@ var
         CodePage := StringFieldCodePage(Field);
       end;
       if (CharSetID >= 0) and not IsSystemCodePage(CodePage) then
+      begin
         CharSetName := FirebirdCharSetName(CharSetID);
+        if CharSetName <> '' then
+        begin
+          Bytes := EncodeString(S, CodePage);
+          Exit('_' + CharSetName + ' ' + SQLHexLiteral(Pointer(Bytes)^, Length(Bytes)));
+        end;
+      end;
     end;
-    if CharSetName = '' then
-      Result := SQLStringLiteral(S)
-    else
-    begin
-      Bytes := EncodeString(S, CodePage);
-      Result := '_' + CharSetName + ' ' + SQLHexLiteral(Pointer(Bytes)^, Length(Bytes));
-    end;
+    Result := SQLStringLiteral(S);
   end;
 
   function FieldValueToStr(Field: TField; Old: boolean): string;

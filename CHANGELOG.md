@@ -201,6 +201,9 @@ The lists of old and new names, and what an application has to change, are in
     `FIB_D21` and `dclFIB_D21`.
 - The packages write DCU files to `$(BDSCOMMONDIR)\Dcu\FIB\$(Platform)\$(Config)`
   instead of `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`.
+- On Delphi XE6 and later `TFIBDataSet` no longer redeclares `DefaultFields`:
+  the `TDataSet` function gives the same result and the compiler reports it as
+  deprecated, use `Fields.LifeCycles`. Delphi 2009 to XE5 keep the property.
 
 #### Schema extract
 
@@ -267,6 +270,8 @@ The lists of old and new names, and what an application has to change, are in
   number after a keyword was drawn in bold.
 - SQL editor: selecting with the mouse in an editor without lines raised an
   "index out of bounds" error.
+- SQL editor: a code completion item chosen on the empty line after the last
+  line was sometimes not inserted.
 - `TFIBScripter` cut a statement at a `--` comment when the script was added
   as one item with several lines (e.g. `Script.Add` of a multi-line string):
   the comment ran to the end of the item, not of the line

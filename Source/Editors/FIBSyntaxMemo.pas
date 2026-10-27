@@ -150,7 +150,7 @@ type
   public
     constructor Create(Owner: TMPCustomSyntaxMemo);
     procedure Assign(Friend: TMPSyntaxAttributes);
-    function Equals(const T1, T2: TToken): Boolean;
+    function EqualStyles(const T1, T2: TToken): Boolean;
     procedure SaveToFile(const FileName: string);
     procedure LoadFromFile(const FileName: string);
     procedure CopyAttrs(const SrcToken: TToken; DstTokArray: array of TToken);
@@ -1039,7 +1039,7 @@ begin
 end;
 
 // Returns True if the visual attributes of the tokens are equal
-function TMPSyntaxAttributes.Equals(const T1, T2: TToken): Boolean;
+function TMPSyntaxAttributes.EqualStyles(const T1, T2: TToken): Boolean;
 begin
   Result := (fTokenStyles[T1].tsForeground = fTokenStyles[T2].tsForeground) and
     (fTokenStyles[T1].tsBackground = fTokenStyles[T2].tsBackground) and
@@ -7568,9 +7568,9 @@ begin
 
     end;
 
+  Success := False;
   if Range.PosY < Lines.Count then
     begin
-      Success := False;
       XPos := Range.PosX;
 
       CurParser := Lines.Parser[Range.PosY];
@@ -7613,12 +7613,8 @@ begin
                 end;
               Break
             end
-    end
-  else if Range.PosY = 0 then
-    begin
-      Success := True;
-      Range.SetTextEx(DestStr, ukRangeInserted);
     end;
+  // No word under the caret, or the caret on the line after the last one
   if not Success then
     begin
       Range.SetTextEx(DestStr, ukRangeInserted);

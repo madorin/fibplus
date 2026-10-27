@@ -307,7 +307,7 @@ If you come from an older version, apply these changes first, then the sections 
 | Old | New | What to do |
 |-----|-----|------------|
 | `FIBPlusVersion`, `FIBPlusBuild`, `FIBCustomBuild`, `FIBPlusBuildDate` | `FIBMajorVersion`, `FIBMinorVersion`, `FIBRelease`, `FIBBuildDate`, `FIBVersionString` | Replace. The old build numbers do not map one to one to the new constants. The 7.9.1 section renames `FIBRelease` and `FIBBuildDate` again. |
-| `qDefaultFields` | `DefaultFields` | Rename. |
+| `qDefaultFields` | `DefaultFields` | Rename. On Delphi XE6 and later `TDataSet.DefaultFields` is deprecated: use `Fields.LifeCycles`. |
 | `TpStoredProcCollect` | `TFIBStoredProcMetadataCache` | Rename. |
 | `CycleReadArray`, `CycleWriteArray` of `VariantRtn` | Removed | Use another way to read and write arrays. |
 | Mirror Dataset Tools (MDT) | Removed | Remove it from the application. |

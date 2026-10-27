@@ -431,7 +431,7 @@ With `AutoCommit` and `CachedUpdates`, each `Post` and `Delete` runs `ApplyUpdTo
 | `CacheSize` | `Integer` | Size of the record cache in bytes (allocated blocks times block size). |
 | `CountUpdatesPending` | `Integer` | Number of rows with pending cached updates. |
 | `DBHandle`, `TRHandle` | pointers | Native database and transaction handles. |
-| `DefaultFields` | `Boolean` | `True` when the field list is generated and not defined in the form. Unlike the `TDataSet` flag before Delphi XE6, it is correct also while the dataset is inactive. |
+| `DefaultFields` | `Boolean` | Delphi 2009 to XE5: `True` when the field list is generated and not defined in the form. Unlike the `TDataSet` flag, it is correct also while the dataset is inactive. On XE6 and later the deprecated `TDataSet.DefaultFields` gives the same result; use `Fields.LifeCycles`. |
 | `Prepared` | `Boolean` | `True` after `Prepare`. |
 | `StatementType` | `TFIBSQLTypes` | Type of the `SelectSQL` statement as reported by the server. |
 | `UpdatesPending` | `Boolean` | `True` when cached updates are waiting. |
