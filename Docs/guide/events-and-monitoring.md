@@ -174,7 +174,7 @@ The messages, and the constraints without a row, are cached in the application f
 
 ### Lost connection
 
-A lost connection is detected from the server error code. After a failed cursor reopen (a *Firebird 3+* client defers the cursor close) the handler also pings the attachment to find out whether it is lost. With `oeLostConnect`, the handler calls `OnLostConnect` of the `TFIBDatabase` of the failing object: a database, a query, a transaction, or a BLOB stream. Other databases are not touched. If the object gives no database (BLOB routines called without a sender, service components), the handler pings each connected database and calls the event of those that report a lost connection; a lost service connection closes no database.
+A lost connection is detected from the server error code. After a failed cursor reopen (a *Firebird 3+* client defers the cursor close) the handler also pings the attachment to find out whether it is lost. With `oeLostConnect`, the handler calls `OnLostConnect` of the `TFIBDatabase` of the failing object: a database, a query, a transaction, a BLOB stream, or an array field. Other databases are not touched. If the object gives no database (BLOB routines called without a sender, service components), the handler pings each connected database and calls the event of those that report a lost connection; a lost service connection closes no database.
 
 Set `Actions` in the event. `laCloseConnect` is the value when you do not change it.
 

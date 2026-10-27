@@ -321,6 +321,16 @@ The lists of old and new names, and what an application has to change, are in
   taken from the default database; without one, and for a user exception
   raised on commit, `ExceptionName` was `Unknown` and the message kept the
   name and the stack trace.
+- Server error messages (`Message`, `IBMessage`), `EFIBError.ErrorArgument`
+  and `TFIBErrorHandler.ConstraintName` and `ExceptionName` were decoded in the
+  system code page, so non-ASCII names and exception texts were garbled
+  outside it. They are now decoded in the charset of the connection (UTF-8 on
+  a `NONE` connection, where the server sends the metadata charset). Firebird
+  2.5 sends the names in UTF-8 and the exception texts in the charset of the
+  connection, so on a connection that is not `UTF8` or `NONE` the names stay
+  garbled there. The server errors of array fields and of
+  `TFIBBlobStream.BlobToFile` now also give their database, for the decoding
+  and for `OnLostConnect`.
 - A schema cache file that could not be written completely (disk full, ...)
   was left truncated, and the next `Open` with `AutoLoadFromFile` failed
   reading it. The file is now deleted instead.

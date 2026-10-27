@@ -173,6 +173,10 @@ The errors of array fields and parameters, of the conversion to a code page, of 
 
 A feature that the client library doesn't support raises `feClientFeatureNotSupported` ("... is not supported by the client library ..."), no longer `feFeatureNotSupported`, which stays for a feature that the server doesn't support.
 
+#### Non-ASCII text in server errors
+
+`Message`, `IBMessage` and `ErrorArgument` of a server error and `TFIBErrorHandler.ConstraintName` and `ExceptionName` are decoded in the charset of the connection, no longer in the system code page. Code that decoded them again (for example `UTF8ToString(RawByteString(E.Message))` on a UTF8 connection) must stop doing so.
+
 ## 7.9.1
 
 ### Build

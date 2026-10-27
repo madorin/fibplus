@@ -111,11 +111,13 @@ type
   end;
 
 function IsConnectionLost(const IBErrorCode: integer): boolean;
+// The database of the object that raised an error, nil when unknown
+function FindDatabaseForObject(Sender: TObject): TFIBDatabase;
 
 implementation
 
 uses
-  FIBConsts, FIBMiscellaneous, FIBPlatforms, StrUtil;
+  FIBConsts, FIBMiscellaneous, FIBPlatforms, StrUtil{$IFDEF SUPPORT_ARRAY_FIELD}, FIBArray{$ENDIF};
 
 threadvar
   InRepositoryLookup: Boolean;
@@ -214,16 +216,20 @@ end;
 type
   THackDatabase = class(TFIBDatabase);
 
-function FindDatabaseForObject(Sender: TObject): THackDatabase;
+function FindDatabaseForObject(Sender: TObject): TFIBDatabase;
 begin
   if Sender is TFIBDatabase then
-    Result := THackDatabase(Sender)
+    Result := TFIBDatabase(Sender)
   else if Sender is TFIBQuery then
-    Result := THackDatabase(TFIBQuery(Sender).DataBase)
+    Result := TFIBQuery(Sender).DataBase
   else if Sender is TFIBTransaction then
-    Result := THackDatabase(TFIBTransaction(Sender).MainDatabase)
+    Result := TFIBTransaction(Sender).MainDatabase
   else if Sender is TFIBFieldStream then
-    Result := THackDatabase(TFIBFieldStream(Sender).Database)
+    Result := TFIBFieldStream(Sender).Database
+{$IFDEF SUPPORT_ARRAY_FIELD}
+  else if Sender is TFIBArray then
+    Result := TFIBArray(Sender).Database
+{$ENDIF}
   else
     Result := nil;
 end;
@@ -296,7 +302,7 @@ begin
                 HandledError.ExceptionNumber := StrToInt(FastCopy(Message, 1, p - 1));
                 Message := TrimCLRF(FastCopy(Message, p + 1, MaxInt));
                 HandledError.ExceptionName := 'Unknown';
-                vDB := FindDatabaseForObject(Sender);
+                vDB := THackDatabase(FindDatabaseForObject(Sender));
                 if vDB <> nil then
                 begin
                   if vDB.IsFirebirdConnect and (vDB.ServerMajorVersion >= 2) then
@@ -364,7 +370,7 @@ begin
             HandledError.Kind := keCancelled;
           Exit;
         end;
-        vDB := FindDatabaseForObject(Sender);
+        vDB := THackDatabase(FindDatabaseForObject(Sender));
         if IsConnectionLost(IBErrorCode) or ((SQLCode = sqlcode_902) and (IBErrorCode = isc_network_error)) then
           LostCode := IBErrorCode
         else
@@ -598,7 +604,7 @@ begin
     FOnFIBErrorEvent(Sender, ErrorValue, Kind, DoRaise);
     if (Kind = keLostConnect) and (not DoRaise) then
     begin
-      vDB := FindDatabaseForObject(Sender);
+      vDB := THackDatabase(FindDatabaseForObject(Sender));
       if not(Assigned(vDB) and vDB.InRestoreConnect) then
         Abort;
     end;

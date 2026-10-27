@@ -96,6 +96,7 @@ type
     procedure PutSlice(Buffer: PAnsiChar; var ID: TISC_QUAD; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE);
 
     property ArrayType: TFieldType read FArrayType;
+    property Database: TFIBDatabase read FDatabase;
     property TableName: string read FTableName;
     property FieldName: string read FFieldName;
     property DimensionCount: Integer read GetDimensionCount;

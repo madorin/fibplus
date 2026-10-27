@@ -166,7 +166,7 @@ All `config=` lines go into one DPB value. A value can be longer than 255 bytes 
 | `BlobCodePage(CharSetID)` | `Word` | Code page of a text BLOB whose character set ID is `CharSetID` (the `sqlscale` of the column). |
 | `CodePage` | `Word` | Code page of the SQL text and of text values in the attachment character set. |
 | `MaxIdentifierLength` | `Integer` | Characters allowed in a metadata name: `63` on *Firebird 4+*, otherwise `31`. `0` when not connected. |
-| `MetadataCodePage` | `Word` | Code page of DDL and of the names the server sends. UTF-8 when metadata is sent in UTF-8 (a `NONE` or Unicode attachment on *Firebird 2.1+* with ODS 11.1 or later); otherwise `CodePage`. |
+| `MetadataCodePage` | `Word` | Code page of DDL, of the names the server sends and of the texts of server errors. UTF-8 when metadata is sent in UTF-8 (a `NONE` or Unicode attachment on *Firebird 2.1+* with ODS 11.1 or later); otherwise `CodePage`. |
 | `ReadConsistency` | `Boolean` | `True` on a *Firebird 4+* server: `TFIBTransaction.TPBMode` `tpbReadConsistency` and `read_consistency` in `TRParams` work. |
 | `SessionTimeouts` | `Boolean` | `True` on a *Firebird 4+* server: `Session.StatementTimeout` and `Session.IdleTimeout` work. |
 | `StatementTimeout` | `Boolean` | `True` when `SessionTimeouts` is `True` and the client library supports per-statement timeouts (`fbclient` 4+): `TFIBQuery.StatementTimeout` and `TFIBDataSet.StatementTimeout` work. |

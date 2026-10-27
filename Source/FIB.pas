@@ -48,7 +48,7 @@ type
     FMsg: string;
     FSQLState: FIBByteString;
     SenderObj: TObject;
-    procedure ReadStatusVector(Status: PISC_STATUS);
+    procedure ReadStatusVector(Status: PISC_STATUS; CodePage: Word);
     procedure RebuildMessage; // IMS
     procedure SetSQLMessage(Value: string); // IMS
     procedure SetIBMessage(Value: string); // IMS
@@ -394,7 +394,7 @@ var
 implementation
 
 uses
-  IB_ErrorCodes, FIBErrorHandler, StdFuncs, StrUtil;
+  IB_ErrorCodes, FIBErrorHandler, StdFuncs, StrUtil, FIBDatabase, FIBCharSets;
 
 var
   IBErrorHandler: TFIBErrorHandler;
@@ -460,7 +460,7 @@ end;
 *)
 
 // Every gds code of the status vector and the string arguments that follow it; warnings are skipped
-procedure EFIBError.ReadStatusVector(Status: PISC_STATUS);
+procedure EFIBError.ReadStatusVector(Status: PISC_STATUS; CodePage: Word);
 var
   Count, Target, Len: Integer;
   Argument: AnsiString;
@@ -473,7 +473,7 @@ var
       Exit;
     Last := Length(FErrorArguments[Target]);
     SetLength(FErrorArguments[Target], Last + 1);
-    FErrorArguments[Target][Last] := string(Argument);
+    FErrorArguments[Target][Last] := DecodeString(PAnsiChar(Argument), Length(Argument), CodePage);
   end;
 
 begin
@@ -519,6 +519,18 @@ begin
     end;
 end;
 
+// Firebird 3+ sends the status vector strings in the attachment charset, in UTF-8 (metadata) on NONE
+function StatusVectorCodePage(Sender: TObject): Word;
+var
+  DB: TFIBDatabase;
+begin
+  DB := FindDatabaseForObject(Sender);
+  if (DB <> nil) and DB.Connected and IsCodePageAvailable(DB.Capabilities.MetadataCodePage) then
+    Result := DB.Capabilities.MetadataCodePage
+  else
+    Result := FIBCodePageSystem;
+end;
+
 procedure IBError(ClientLibrary: IIbClientLibrary; Sender: TObject);
 var
   SQLCode: Long;
@@ -531,9 +543,10 @@ var
 
   vEFIBInterBaseError: EFIBInterBaseError;
   vRaiseExcept: Boolean;
-  tmpStr: AnsiString;
+  tmpStr: string;
   L: Integer;
   vSQLState: FIBByteString;
+  CodePage: Word;
 begin
   (*
     * Initialize the working user message.
@@ -546,6 +559,7 @@ begin
   SQLCode := ClientLibrary.isc_sqlcode(status_vector);
   // FillChar(vFbSQLState,FB_sqlstate_bufSize,0);
   vSQLState := ClientLibrary.fb_sqlstate(status_vector);
+  CodePage := StatusVectorCodePage(Sender);
   vIBMessage := '';
   vSQLMessage := '';
   (*
@@ -581,8 +595,7 @@ begin
       L := ClientLibrary.fb_Interpret(local_buffer, FIBHugeLocalBufferLength, @status_vector);
       while (L > 0) do
         begin
-          SetLength(tmpStr, L);
-          Move(local_buffer[0], tmpStr[1], L);
+          tmpStr := DecodeString(local_buffer, L, CodePage);
 
           if Length(tmpStr) > 0 then
             begin
@@ -602,7 +615,7 @@ begin
   vRaiseExcept := true;
   vEFIBInterBaseError := EFIBInterBaseError.CreateEx(SQLCode, vIBMessage, vSQLMessage, '', Sender); // '' by IMS
   vEFIBInterBaseError.FSQLState := vSQLState;
-  vEFIBInterBaseError.ReadStatusVector(StatusVector);
+  vEFIBInterBaseError.ReadStatusVector(StatusVector, CodePage);
   try
     if ErrorHandlerRegistered then
       IBErrorHandler.DoOnErrorEvent(Sender, vEFIBInterBaseError, vRaiseExcept);
