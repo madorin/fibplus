@@ -22,6 +22,7 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_UNIT_DEPRECATED>false</DCC_UNIT_DEPRECATED>
 			<DCC_DcuOutput>$(BDSCOMMONDIR)\Dcu\FIB\$(Platform)\$(Config)</DCC_DcuOutput>
 			<DCC_SymbolReferenceInfo>1</DCC_SymbolReferenceInfo>
 			<DCC_ImageBase>00400000</DCC_ImageBase>

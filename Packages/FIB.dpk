@@ -29,7 +29,6 @@ package FIB;
 {$RUNONLY}
 {$LIBSUFFIX AUTO}
 {$IMPLICITBUILD OFF}
-{$WARN UNIT_DEPRECATED OFF}
 
 requires
   dbrtl,

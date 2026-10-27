@@ -28,7 +28,6 @@ package FIB_D24;
 {$DESCRIPTION 'FIBPlus'}
 {$RUNONLY}
 {$IMPLICITBUILD OFF}
-{$WARN UNIT_DEPRECATED OFF}
 
 requires
   rtl,

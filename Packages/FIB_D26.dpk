@@ -28,7 +28,6 @@ package FIB_D26;
 {$DESCRIPTION 'FIBPlus Access Components'}
 {$RUNONLY}
 {$IMPLICITBUILD OFF}
-{$WARN UNIT_DEPRECATED OFF}
 
 requires
   rtl,
