@@ -75,6 +75,7 @@ type
     procedure DefaultOnError(Sender: TObject; ErrorValue: EFIBError; var DoRaise: boolean);
     function GetConstraintName(const Msg: string): string;
     function GetTr(Sender: TObject): TFIBTransaction;
+    function RepositoryMessage(Sender: TObject; const ConstraintName: string): string;
     procedure SetErrorLexems(const Value: TErrorLexems);
   public
     constructor Create(AOwner: TComponent); override;
@@ -129,6 +130,9 @@ begin
   end;
 end;
 
+threadvar
+  InRepositoryLookup: Boolean;
+
 type
   THackDatabase = class(TFIBDatabase);
 
@@ -166,7 +170,7 @@ end;
 procedure TFIBErrorHandler.DefaultOnError(Sender: TObject; ErrorValue: EFIBError; var DoRaise: boolean);
 var
   p: integer;
-  s, AtLexem, LowerMessage: string;
+  s, AtLexem, LowerMessage, Constraint: string;
   CurTr: TFIBTransaction;
   vDB: THackDatabase;
   LostCode: ISC_STATUS;
@@ -185,15 +189,12 @@ begin
                 FLastError := keUniqueViolation;
                 if oeUniqueViolation in Options then
                 begin
-                  FConstraintName := GetConstraintName(ErrorValue.IBMessage);
-                  if (GetTr(Sender) <> nil) then
-                    s := ListErrorMessages.ErrorMessage(GetTr(Sender), FConstraintName);
-                  if s <> '' then
-                  begin
-                    ErrorValue.Message := s;
-                    Exit;
-                  end;
-                  ErrorValue.Message := ErrorValue.IBMessage;
+                  Constraint := GetConstraintName(ErrorValue.IBMessage);
+                  FConstraintName := Constraint;
+                  s := RepositoryMessage(Sender, Constraint);
+                  if s = '' then
+                    s := ErrorValue.IBMessage;
+                  ErrorValue.Message := s;
                 end;
               end;
           end;
@@ -252,10 +253,11 @@ begin
           begin
             // Is Foreign Key
             FLastError := keForeignKey;
-            FConstraintName := GetConstraintName(ErrorValue.IBMessage);
-            if (oeForeignKey in Options) and (GetTr(Sender) <> nil) then
+            Constraint := GetConstraintName(ErrorValue.IBMessage);
+            FConstraintName := Constraint;
+            if oeForeignKey in Options then
             begin
-              s := ListErrorMessages.ErrorMessage(GetTr(Sender), FConstraintName);
+              s := RepositoryMessage(Sender, Constraint);
               if s <> '' then
                 ErrorValue.Message := s;
             end;
@@ -267,15 +269,12 @@ begin
           FLastError := keCheck;
           if oeCheck in Options then
           begin
-            FConstraintName := GetConstraintName(ErrorValue.IBMessage);
-            if (GetTr(Sender) <> nil) then
-              s := ListErrorMessages.ErrorMessage(GetTr(Sender), FConstraintName);
-            if s <> '' then
-            begin
-              ErrorValue.Message := s;
-              Exit;
-            end;
-            ErrorValue.Message := ErrorValue.IBMessage;
+            Constraint := GetConstraintName(ErrorValue.IBMessage);
+            FConstraintName := Constraint;
+            s := RepositoryMessage(Sender, Constraint);
+            if s = '' then
+              s := ErrorValue.IBMessage;
+            ErrorValue.Message := s;
           end
         end;
     else
@@ -352,6 +351,27 @@ begin
     Result := nil;
 end;
 
+// The message of FIB$ERROR_MESSAGES for ConstraintName; a failed lookup must not replace the error
+function TFIBErrorHandler.RepositoryMessage(Sender: TObject; const ConstraintName: string): string;
+var
+  Tr: TFIBTransaction;
+begin
+  Result := '';
+  Tr := GetTr(Sender);
+  if (Tr = nil) or not Tr.InTransaction then
+    Exit;
+  InRepositoryLookup := True;
+  try
+    try
+      Result := ListErrorMessages.ErrorMessage(Tr, ConstraintName);
+    except
+      Result := '';
+    end;
+  finally
+    InRepositoryLookup := False;
+  end;
+end;
+
 procedure TFIBErrorHandler.DoOnLostConnect(DataBase: TFIBDatabase; ErrorValue: EFIBError; var DoRaise: boolean);
 var
   i: integer;
@@ -400,6 +420,9 @@ procedure TFIBErrorHandler.DoOnErrorEvent(Sender: TObject; ErrorValue: EFIBError
 var
   vDB: TFIBDatabase;
 begin
+  // an error of the repository lookup goes back to RepositoryMessage untouched
+  if InRepositoryLookup then
+    Exit;
   DefaultOnError(Sender, ErrorValue, DoRaise);
   if Assigned(FOnFIBErrorEvent) then
   begin

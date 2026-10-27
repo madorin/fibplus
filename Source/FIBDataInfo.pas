@@ -2517,7 +2517,7 @@ begin
 end;
 
 type
-  // The messages of one database, sorted by constraint name
+  // The messages of one database, by the exact constraint name as FIB$ERROR_MESSAGES compares it
   TFIBDatabaseErrorMessages = class(TStringList)
   private
     FMaxVersion: Integer;
@@ -2530,6 +2530,7 @@ type
 constructor TFIBDatabaseErrorMessages.Create;
 begin
   inherited Create;
+  CaseSensitive := True;
   Sorted := True;
   Duplicates := dupIgnore;
   OwnsObjects := True;

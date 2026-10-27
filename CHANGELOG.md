@@ -290,7 +290,13 @@ The lists of old and new names, and what an application has to change, are in
   file, `FIB$VERSION` was checked once per process for all databases, so the
   stale messages of a second database, or of a file loaded later, were shown;
   each database is now checked on its first use and after a load, and also
-  after a restore that lowered its versions.
+  after a restore that lowered its versions. Constraint names that differ only
+  in case no longer share one cached message.
+- `TFIBErrorHandler`: when the lookup of a constraint in `FIB$ERROR_MESSAGES`
+  failed (the table dropped, a transaction that is not active), its error
+  replaced the violation, with its own `LastError`, `ConstraintName` and
+  `OnFIBErrorEvent`. The violation now keeps the message it has without a row
+  in the table.
 - A schema cache file that could not be written completely (disk full, ...)
   was left truncated, and the next `Open` with `AutoLoadFromFile` failed
   reading it. The file is now deleted instead.

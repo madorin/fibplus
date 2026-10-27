@@ -168,7 +168,9 @@ INSERT INTO FIB$ERROR_MESSAGES (CONSTRAINT_NAME, MESSAGE_STRING)
 VALUES ('UNQ_CUSTOMER_NAME', 'A customer with this name already exists.');
 ```
 
-The lookup needs the table to exist and `urErrorMessagesInfo` to be in `TFIBDatabase.UseRepositories` (it is by default). Found messages are cached in the application. Without a row for the constraint, a foreign key violation keeps its message; a unique or check violation gets the server message only.
+The lookup needs the table to exist and `urErrorMessagesInfo` to be in `TFIBDatabase.UseRepositories` (it is by default). `CONSTRAINT_NAME` must be the name as the server reports it, in the same case (upper case for a name created without quotes). Without a row for the constraint, a foreign key violation keeps its message; a unique or check violation gets the server message only. If the lookup itself fails, for example without an active transaction, the error is handled as if there were no row.
+
+The messages, and the constraints without a row, are cached in the application for each database. The cache is checked against the `FIB$VERSION` column once per database: at the first lookup and after `LoadSchemaFromFile`. A row added or changed later is used after `ListErrorMessages.Clear` (unit `FIBDataInfo`) or a restart of the application.
 
 ### Lost connection
 
