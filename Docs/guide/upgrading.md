@@ -106,6 +106,7 @@ These have no old name, so the code that uses them must change:
 | `SFIBErrorNotDataSet`, `SFIBErrorNotDataSetDetail` (`FIBConsts`) | Nothing: nothing raises them any more. |
 | `SCodePageNotAvailable`, `SCannotTransliterate` (`FIBConsts`) | The errors are `feCodePageNotAvailable` and `feCantTransliterate` now; see [Codes of client errors](#codes-of-client-errors). |
 | `TFIBLicensingService`, `TpFIBLicensingService`, `TLicensingAction` (`LicenseAdd`, `LicenseRemove`) | The service added and removed InterBase license keys; Firebird has none, and InterBase registers licenses with its License Manager. Delete the component from forms and code: a form that contains it no longer loads. |
+| `TMetaTable.GenerateDDLTextOnlyTable` (protected) | Call `GenerateObjectDDL`, then write the terminator. |
 | Units `IB_Install`, `IB_InstallHeader`, `TpFIBInstall`, `TpFIBUnInstall`, `LoadIBInstallLibrary`, `FreeIBInstallLibrary`, `CheckIBInstallLoaded` and the `isc_install_...` variables (`IB_Intf`), symbol `IBINSTALL_SUPPORT`, `feInterBaseInstallMissing`, the messages `SCantLoadLibrary`, `SSuccess`, `SDelphiException`, `SNoOptionsSet`, `SNoDestinationDirectory`, `SNosourceDirectory`, `SNoUninstallFile`, `SOptionNeedsClient`, `SOptionNeedsServer`, `SInvalidOption`, `SInvalidOnErrorResult`, `SInvalidOnStatusResult` (`FIBConsts`) | They wrapped the InterBase 6 install library `ibinstall.dll`, which Firebird does not have. Remove them from the `uses` clause and the code. |
 
 ### Changed behavior
@@ -172,6 +173,12 @@ The schema cache files (`CacheSchemaOptions.LocalCacheFile` and its `.dt` and `.
 The errors of array fields and parameters, of the conversion to a code page, of the `ORDER BY` of a dataset with a limited cache and of the metadata load had `SQLCode` -1 and an English text. They now have their own value in `TFIBClientError` (`feArrayColumnNotFound` to `feCantLoadMetadata`), `SQLCode` is its ordinal, and the text follows `FIBLocale`. Code that tested `SQLCode = -1` for them must test the new value, for example `E.SQLCode = Ord(feArrayValueNotArray)`.
 
 A feature that the client library doesn't support raises `feClientFeatureNotSupported` ("... is not supported by the client library ..."), no longer `feFeatureNotSupported`, which stays for a feature that the server doesn't support.
+
+#### Schema extract
+
+- `GetDDLText`, `GetObjectDDL`, `AsDDL` and `FullExtractDDL` write the descriptions as `COMMENT ON` statements; see the [changelog](../../CHANGELOG.md). `TFIBDBSchemaExtract.DDLTextOptions` is `[dtoIncludeComments]` by default, and `DefDDLTextOptions` of `TMetaDataBase` has it too. A form saved before has `DDLTextOptions = []` stored and writes no comments: add `dtoIncludeComments` in the Object Inspector. Remove the option to get the old output.
+- `DDLTextOptions` of the component is kept by its meta database (`GetMetaDataBase.DDLTextOptions`); the protected field `FDDLTextOptions` is removed. Descendants use the property.
+- `LoadMetaData`, `Clear` and a new `Database` free the meta objects of the previous load; they were leaked before. Don't keep a `TMetaTable`, `TMetaProcedure` or other meta object across these calls: take it again from `Tables`, `Procedures` or `ObjectByName`.
 
 #### Non-ASCII text in server errors
 

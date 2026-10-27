@@ -125,7 +125,8 @@ type
 
   TNotifyLoadMetaData = procedure(Sender: TObject; const Message: string; var Stop: boolean) of object;
 
-  TDDLTextOption = (dtoUseCreateDB, dtoUseSetClientLib, dtoUseSetTerm, dtoDecodeDomains, dtoIncludeGrants);
+  TDDLTextOption = (dtoUseCreateDB, dtoUseSetClientLib, dtoUseSetTerm, dtoDecodeDomains, dtoIncludeGrants,
+    dtoIncludeComments);
   TDDLTextOptions = set of TDDLTextOption;
 
 const
@@ -134,6 +135,8 @@ const
   DefTableChilds = [soTableFields, soPrimaryKey, soForeignKey, soTableTriggers,
     soUniqueConstr, soIndex, soCheckConstr];
   DefViewChilds = [soViewFields, soViewTriggers];
+  DefDDLTextOptions = [dtoUseCreateDB, dtoUseSetTerm, dtoIncludeComments];
+  DefSchemaExtractDDLTextOptions = [dtoIncludeComments];
 
 type
   TCustomMetaObject = class;
@@ -141,6 +144,7 @@ type
 
   TMetaDomain = class;
   TMetaTable = class;
+  TMetaDataBase = class;
 
   TMetaDataItem = record
     Childs: TList;
@@ -151,6 +155,7 @@ type
   private
     FName: string;
     FFormatName: string;
+    FDescription: string;
     FOwner: TCustomMetaObject;
     FItems: array of TMetaDataItem;
     FItemsCount: Integer;
@@ -158,15 +163,25 @@ type
     function GetChildObject(const ClassIndex, Index: Integer): TCustomMetaObject;
     function GetChildObjectByName(const ClassIndex: Integer; const ObjectName: string): TCustomMetaObject;
     function GetChildsCount(const ClassIndex: Integer): Integer;
+    procedure ClearChilds(const ClassIndex: Integer);
     function GetAsDDL: string;
     procedure AddClass(ClassID: TMetaObjectClass);
 
     function GenerateChildDDL(Stream: TStringStream; ChildType: Integer): Integer;
+    procedure GenerateChildCommentDDL(Stream: TStringStream; ChildType: Integer);
     function GetAsObjectDDL: string;
     procedure SetName(const Value: string);
     function GetItems(const Index: Integer): TMetaDataItem;
+    function GetMetaDataBase: TMetaDataBase;
   protected
+    procedure LoadDescription(Query: TFIBQuery);
     procedure GenerateObjectDDL(Stream: TStringStream); virtual;
+    // Keyword of COMMENT ON for the object; empty when it cannot have a comment
+    function CommentKeyword: string; virtual;
+    function CommentTarget: string; virtual;
+    // COMMENT ON for the object and its sub-objects
+    procedure GenerateCommentDDL(Stream: TStringStream); virtual;
+    property MetaDataBase: TMetaDataBase read GetMetaDataBase;
   public
     constructor Create(AOwner: TCustomMetaObject; aName: string = ''); virtual;
     destructor Destroy; override;
@@ -176,6 +191,7 @@ type
 
     procedure GenerateDDLText(Stream: TStringStream); virtual;
     property Name: string read FName write SetName;
+    property Description: string read FDescription;
     property AsDDL: string read GetAsDDL;
     property AsObjectDDL: string read GetAsObjectDDL;
     property ItemsCount: Integer read FItemsCount;
@@ -250,9 +266,10 @@ type
   TMetaGenerator = class(TCustomMetaObject)
   private
     FValue: Integer;
-    procedure LoadFromDataBase(Transaction: TFIBTransaction; const aName: string);
+    procedure LoadFromDataBase(QName: TFIBQuery);
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
+    function CommentKeyword: string; override;
   public
     class function ClassIndex: Integer; override;
     property Value: Integer read FValue;
@@ -297,6 +314,8 @@ type
     procedure LoadFromDataBase(QField, QCharset: TFIBQuery); override;
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
+    function CommentKeyword: string; override;
+    function CommentTarget: string; override;
   public
     class function ClassIndex: Integer; override;
     property SegmentLength;
@@ -314,6 +333,7 @@ type
     procedure DoLoadFromQuery(QField, QCharset: TFIBQuery; CanUseParamDomain, CanUseProcParamRelation: boolean);
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
+    function CommentKeyword: string; override;
   end;
 
   TMetaProcInField = class(TMetaProcField)
@@ -349,10 +369,11 @@ type
   TMetaDomain = class(TMetaTableField)
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
+    function CommentKeyword: string; override;
+    function CommentTarget: string; override;
   public
     class function ClassIndex: Integer; override;
     class function IsSubObject: boolean; override;
-    procedure GenerateDDLText(Stream: TStringStream); override;
   end;
 
   TMetaConstraint = class(TCustomMetaObject)
@@ -419,6 +440,7 @@ type
     FOrder: TIndexOrder;
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
+    function CommentKeyword: string; override;
   public
     class function ClassIndex: Integer; override;
     property Unique: boolean read FUnique;
@@ -440,6 +462,7 @@ type
     procedure GenerateObjectDDL(Stream: TStringStream); override;
     procedure SaveFakeDDL(Stream: TStringStream); // For Views
     procedure SaveAlterDDL(Stream: TStringStream);
+    function CommentKeyword: string; override;
   public
     class function IsSubObject: boolean; override;
     property Prefix: TTriggerType read FPrefix;
@@ -492,7 +515,8 @@ type
 
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
-    procedure GenerateDDLTextOnlyTable(Stream: TStringStream);
+    function CommentKeyword: string; override;
+    procedure GenerateCommentDDL(Stream: TStringStream); override;
   public
     constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
@@ -536,6 +560,8 @@ type
 
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
+    function CommentKeyword: string; override;
+    procedure GenerateCommentDDL(Stream: TStringStream); override;
   public
     constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
@@ -564,6 +590,8 @@ type
     procedure SaveToAlterDDL(Stream: TStringStream);
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
+    function CommentKeyword: string; override;
+    procedure GenerateCommentDDL(Stream: TStringStream); override;
 
   public
     constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
@@ -591,6 +619,8 @@ type
     procedure SaveEmptyDDL(Stream: TStringStream);
     procedure SaveAlterDDL(Stream: TStringStream);
     procedure GenerateObjectDDL(Stream: TStringStream); override;
+    function CommentKeyword: string; override;
+    procedure GenerateCommentDDL(Stream: TStringStream); override;
   public
     constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
@@ -610,6 +640,7 @@ type
     procedure SaveBodyDDL(Stream: TStringStream);
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
+    function CommentKeyword: string; override;
   public
     class function ClassIndex: Integer; override;
     property SpecSource: string read FSpec;
@@ -623,6 +654,7 @@ type
     procedure LoadFromDataBase(QName: TFIBQuery);
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
+    function CommentKeyword: string; override;
   public
     class function ClassIndex: Integer; override;
     property Message: string read FMessage;
@@ -652,6 +684,7 @@ type
     function GetFieldsCount: Integer;
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
+    function CommentKeyword: string; override;
   public
     constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
@@ -668,6 +701,7 @@ type
   protected
     procedure LoadFromDataBase(QName: TFIBQuery);
     procedure GenerateObjectDDL(Stream: TStringStream); override;
+    function CommentKeyword: string; override;
     function GetGrants(const Index: Integer): TCustomMetaGrant;
     function GetGrantsCount: Integer;
 
@@ -694,6 +728,7 @@ type
     FStoredFunctionsSupports: boolean;
     FPackagesSupports: boolean;
     FTabRelTypeSupports: boolean;
+    FCommentsSupports: boolean;
 
     FSQLDialect: Integer;
     //
@@ -730,6 +765,9 @@ type
     function GetRolesCount: Integer;
     function GetPackageCount: Integer;
     function GetPackages(const Index: Integer): TMetaPackage;
+    procedure DetectServerFeatures;
+    procedure SetOptionalColumns(Query: TFIBQuery; ObjectType: TDBObjectType);
+    function CommentsIncluded(Options: TDDLTextOptions): boolean;
   public
     constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
     destructor Destroy; override;
@@ -739,7 +777,7 @@ type
     procedure LoadFromDataBase(DB: TFIBDatabase; OnlyNames: boolean = False);
 
     procedure GenerateDDLText(Stream: TStringStream); override;
-    procedure ExtGenerateDDLText(Stream: TStringStream; Options: TDDLTextOptions = [dtoUseCreateDB, dtoUseSetTerm]);
+    procedure ExtGenerateDDLText(Stream: TStringStream; Options: TDDLTextOptions = DefDDLTextOptions);
 
     function GetDBObject(DB: TFIBDatabase; ObjectType: TDBObjectType;
       const ObjectName: string; ForceLoad: boolean = True): TCustomMetaObject;
@@ -802,7 +840,6 @@ type
   protected
     FDatabase: TFIBDatabase;
     FOnLoadMetaData: TNotifyLoadMetaData;
-    FDDLTextOptions: TDDLTextOptions;
     FLoadOptions: TLoadOptions;
     FMetaDatabase: TMetaDataBase;
     FFullLoaded: boolean;
@@ -830,6 +867,8 @@ type
   private
     function GetPackageCount: Integer;
     function GetPackages(const Index: Integer): TMetaPackage;
+    function GetDDLTextOptions: TDDLTextOptions;
+    procedure SetDDLTextOptions(const Value: TDDLTextOptions);
   protected
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     procedure DoOnLoadMetaData(Sender: TObject; const Message: string; var Stop: boolean);
@@ -877,7 +916,8 @@ type
     property NamesLoaded: boolean read GetNamesLoaded;
   published
     property Database: TFIBDatabase read FDatabase write SetDatabase;
-    property DDLTextOptions: TDDLTextOptions read FDDLTextOptions write FDDLTextOptions;
+    property DDLTextOptions: TDDLTextOptions read GetDDLTextOptions write SetDDLTextOptions
+      default DefSchemaExtractDDLTextOptions;
     property LoadOptions: TLoadOptions read FLoadOptions write SetLoadOptions;
     property OnLoadMetaData: TNotifyLoadMetaData read FOnLoadMetaData write FOnLoadMetaData;
   end;
@@ -907,6 +947,25 @@ begin
   Result := Trim(Source);
   if Result <> '' then
     Result := Copy(Result, 9, System.Length(Result) - 8);
+end;
+
+procedure WriteCommentDDL(Stream: TStringStream; const Target, Text: string);
+begin
+  Stream.WriteString('COMMENT ON ' + Target + ' IS ' + QuotedStr(Text) + DefTerminator + sLineBreak);
+end;
+
+function CreateQuery(const SQLText: string; Transaction: TFIBTransaction): TFIBQuery;
+begin
+  Result := TFIBQuery.Create(nil);
+  try
+    Result.Database := Transaction.MainDatabase;
+    Result.Transaction := Transaction;
+    Result.Options := [qoTrimCharFields, qoNoForceIsNull, qoStartTransaction];
+    Result.SQL.Text := SQLText;
+  except
+    Result.Free;
+    raise;
+  end;
 end;
 
 function SavedMetaObjectName(const MetaObjectName: string): string;
@@ -955,68 +1014,57 @@ const
     'TIMESTAMP WITH TIME ZONE'
   );
 
-  QRYDB_INFO = 'SELECT RDB$CHARACTER_SET_NAME FROM RDB$DATABASE DBP ';
+  QRYDB_INFO = 'SELECT RDB$CHARACTER_SET_NAME, RDB$DESCRIPTION FROM RDB$DATABASE';
 
-  QRY_PACKAGE_SUPPORTS = ' SELECT 1 FROM RDB$RELATIONS RF WHERE RF.RDB$RELATION_NAME = ''RDB$PACKAGES''';
+  // One row: 1 when the system column of a feature exists, else 0
+  QRY_SERVER_FEATURES = 'SELECT ' +
+    '(SELECT COUNT(*) FROM RDB$RELATION_FIELDS WHERE RDB$RELATION_NAME = ''RDB$FUNCTIONS'' AND ' +
+    'RDB$FIELD_NAME = ''RDB$FUNCTION_SOURCE'') AS STORED_FUNCTIONS, ' +
+    '(SELECT COUNT(*) FROM RDB$RELATION_FIELDS WHERE RDB$RELATION_NAME = ''RDB$PACKAGES'' AND ' +
+    'RDB$FIELD_NAME = ''RDB$PACKAGE_NAME'') AS PACKAGES, ' +
+    '(SELECT COUNT(*) FROM RDB$RELATION_FIELDS WHERE RDB$RELATION_NAME = ''RDB$RELATION_FIELDS'' AND ' +
+    'RDB$FIELD_NAME = ''RDB$IDENTITY_TYPE'') AS IDENTITY_FIELDS, ' +
+    '(SELECT COUNT(*) FROM RDB$RELATION_FIELDS WHERE RDB$RELATION_NAME = ''RDB$RELATIONS'' AND ' +
+    'RDB$FIELD_NAME = ''RDB$RELATION_TYPE'') AS RELATION_TYPE, ' +
+    '(SELECT COUNT(*) FROM RDB$RELATION_FIELDS WHERE RDB$RELATION_NAME = ''RDB$PROCEDURE_PARAMETERS'' AND ' +
+    'RDB$FIELD_NAME = ''RDB$PARAMETER_MECHANISM'') AS PARAM_DOMAINS, ' +
+    '(SELECT COUNT(*) FROM RDB$RELATION_FIELDS WHERE RDB$RELATION_NAME = ''RDB$PROCEDURE_PARAMETERS'' AND ' +
+    'RDB$FIELD_NAME = ''RDB$RELATION_NAME'') AS PARAM_RELATIONS, ' +
+    // COMMENT ON came with Firebird 2.0, as the descriptions of generators and roles
+    '(SELECT COUNT(*) FROM RDB$RELATION_FIELDS WHERE RDB$RELATION_NAME = ''RDB$GENERATORS'' AND ' +
+    'RDB$FIELD_NAME = ''RDB$DESCRIPTION'') AS COMMENTS ' +
+    'FROM RDB$DATABASE';
 
-  QRY_PROC_PARAMDOMAINS_SUPPORTS = 'SELECT 1 AS RESULT FROM RDB$DATABASE RD WHERE EXISTS (' +
-    '  SELECT RF.*' +
-    '  FROM RDB$RELATION_FIELDS RF' +
-    '  WHERE (RF.RDB$RELATION_NAME = ''RDB$PROCEDURE_PARAMETERS'') AND' +
-    '        (RF.RDB$FIELD_NAME = ''RDB$PARAMETER_MECHANISM'')' +
-    '  )';
-  QRY_PROC_PARAMRELATION_SUPPORTS = 'SELECT 1 AS RESULT FROM RDB$DATABASE RD WHERE EXISTS (' +
-    '  SELECT RF.*' +
-    '  FROM RDB$RELATION_FIELDS RF' +
-    '  WHERE (RF.RDB$RELATION_NAME = ''RDB$PROCEDURE_PARAMETERS'') AND' +
-    '        (RF.RDB$FIELD_NAME = ''RDB$RELATION_NAME'')' +
-    '  )';
-
-  QRY_TAB_RELATION_TYPE_SUPPORTS = 'SELECT 1 AS RESULT FROM RDB$DATABASE RD WHERE EXISTS (' +
-    '  SELECT RF.*' +
-    '  FROM RDB$RELATION_FIELDS RF' +
-    '  WHERE (RF.RDB$RELATION_NAME = ''RDB$RELATIONS'') AND' +
-    '        (RF.RDB$FIELD_NAME = ''RDB$RELATION_TYPE'')' +
-    '  )';
-
-  QRY_FLD_BY_IDENTITY_SUPPORTS = 'SELECT 1 AS RESULT FROM RDB$DATABASE RD WHERE EXISTS (' +
-    'SELECT RF.*' +
-    ' FROM RDB$RELATION_FIELDS RF' +
-    ' WHERE (RF.RDB$RELATION_NAME = ''RDB$RELATION_FIELDS'')' +
-    ' AND            (RF.RDB$FIELD_NAME = ''RDB$IDENTITY_TYPE'')' +
-    ' )';
-
-  QRY_STORED_FUNCS_SUPPORTS = 'SELECT 1 AS RESULT FROM RDB$DATABASE RD WHERE EXISTS (' +
-    'SELECT RF.*' +
-    ' FROM RDB$RELATION_FIELDS RF' +
-    ' WHERE (RF.RDB$RELATION_NAME = ''RDB$FUNCTIONS'')' +
-    ' AND            (RF.RDB$FIELD_NAME = ''RDB$FUNCTION_SOURCE'')' +
-    ' )';
+  // Optional columns, filled by the server features
+  DescriptionMacro = '@@DESCRIPTION@';
+  DescriptionColumn = ', RDB$DESCRIPTION';
+  PackageNameMacro = '@@PACK_NAME@';
+  PackageNameColumn = ', RDB$PACKAGE_NAME';
 
   // FB3^^^^
-  QRYGenerators = 'SELECT RDB$GENERATOR_NAME FROM RDB$GENERATORS GEN WHERE ' +
+  QRYGenerators = 'SELECT RDB$GENERATOR_NAME ' + DescriptionMacro + ' FROM RDB$GENERATORS GEN WHERE ' +
     '(NOT GEN.RDB$GENERATOR_NAME STARTING WITH ''RDB$'') AND ' +
     '(NOT GEN.RDB$GENERATOR_NAME STARTING WITH ''SQL$'') AND ' +
     '((GEN.RDB$SYSTEM_FLAG IS NULL) OR (GEN.RDB$SYSTEM_FLAG <> 1)) ' +
     'ORDER BY GEN.RDB$GENERATOR_NAME';
 
-  QRYTables = 'SELECT REL.RDB$RELATION_NAME FROM RDB$RELATIONS REL WHERE ' +
+  QRYTables = 'SELECT REL.RDB$RELATION_NAME, REL.RDB$DESCRIPTION FROM RDB$RELATIONS REL WHERE ' +
     '(REL.RDB$SYSTEM_FLAG <> 1 OR REL.RDB$SYSTEM_FLAG IS NULL) AND ' +
     '(NOT REL.RDB$FLAGS IS NULL) AND ' + '(REL.RDB$VIEW_BLR IS NULL) AND ' +
     '(REL.RDB$SECURITY_CLASS STARTING WITH ''SQL$'') ' +
     'ORDER BY REL.RDB$RELATION_NAME';
 
-  QRYTablesRel = 'SELECT REL.RDB$RELATION_NAME,REL.RDB$RELATION_TYPE FROM RDB$RELATIONS REL WHERE ' +
+  QRYTablesRel = 'SELECT REL.RDB$RELATION_NAME, REL.RDB$RELATION_TYPE, REL.RDB$DESCRIPTION FROM RDB$RELATIONS REL WHERE ' +
     '(REL.RDB$SYSTEM_FLAG <> 1 OR REL.RDB$SYSTEM_FLAG IS NULL) AND ' +
     '(NOT REL.RDB$FLAGS IS NULL) AND ' +
     '(REL.RDB$VIEW_BLR IS NULL) AND ' +
     '(REL.RDB$SECURITY_CLASS STARTING WITH ''SQL$'') ' +
     'ORDER BY REL.RDB$RELATION_NAME';
 
-  QRYSysTables = 'SELECT REL.RDB$RELATION_NAME FROM RDB$RELATIONS REL ' +
+  QRYSysTables = 'SELECT REL.RDB$RELATION_NAME, REL.RDB$DESCRIPTION FROM RDB$RELATIONS REL ' +
     'WHERE REL.RDB$VIEW_BLR IS NULL ORDER BY REL.RDB$RELATION_NAME';
 
-  QRYSysTablesRel = 'SELECT REL.RDB$RELATION_NAME,REL.RDB$RELATION_TYPE  FROM RDB$RELATIONS REL ' +
+  QRYSysTablesRel = 'SELECT REL.RDB$RELATION_NAME, REL.RDB$RELATION_TYPE, REL.RDB$DESCRIPTION FROM RDB$RELATIONS REL ' +
     'WHERE REL.RDB$VIEW_BLR IS NULL ORDER BY REL.RDB$RELATION_NAME';
 
   QRYTableFields = 'SELECT FLD.RDB$FIELD_TYPE, FLD.RDB$FIELD_SCALE, ' +
@@ -1024,7 +1072,7 @@ const
     'FLD.RDB$CHARACTER_SET_ID, FLD.RDB$FIELD_SUB_TYPE, RFR.RDB$FIELD_NAME, ' +
     'FLD.RDB$SEGMENT_LENGTH, RFR.RDB$NULL_FLAG, RFR.RDB$DEFAULT_SOURCE, ' +
     'RFR.RDB$FIELD_SOURCE , FLD.RDB$COMPUTED_SOURCE, ' +
-    '(Select Count(*) from  RDB$FIELD_DIMENSIONS  DIM where   DIM.rdb$field_name= RFR.RDB$FIELD_SOURCE)    is_Array ' +
+    '(Select Count(*) from  RDB$FIELD_DIMENSIONS  DIM where   DIM.rdb$field_name= RFR.RDB$FIELD_SOURCE)    is_Array, RFR.RDB$DESCRIPTION ' +
     'FROM RDB$RELATIONS REL, RDB$RELATION_FIELDS RFR, RDB$FIELDS FLD ' +
     'WHERE (RFR.RDB$FIELD_SOURCE = FLD.RDB$FIELD_NAME) AND ' +
     '(RFR.RDB$RELATION_NAME = REL.RDB$RELATION_NAME) AND ' +
@@ -1037,7 +1085,7 @@ const
     'FLD.RDB$SEGMENT_LENGTH, RFR.RDB$NULL_FLAG, RFR.RDB$DEFAULT_SOURCE, ' +
     'RFR.RDB$FIELD_SOURCE , FLD.RDB$COMPUTED_SOURCE, ' +
     '(Select Count(*) from  RDB$FIELD_DIMENSIONS  DIM where   DIM.rdb$field_name= RFR.RDB$FIELD_SOURCE)    is_Array, ' +
-    'RFR.RDB$IDENTITY_TYPE ' +
+    'RFR.RDB$IDENTITY_TYPE, RFR.RDB$DESCRIPTION ' +
     'FROM RDB$RELATIONS REL, RDB$RELATION_FIELDS RFR, RDB$FIELDS FLD ' +
     'WHERE (RFR.RDB$FIELD_SOURCE = FLD.RDB$FIELD_NAME) AND ' +
     '(RFR.RDB$RELATION_NAME = REL.RDB$RELATION_NAME) AND ' +
@@ -1061,7 +1109,7 @@ const
     'ORDER BY IDX.RDB$FIELD_POSITION';
 
   QRYIndex = 'SELECT IDX.RDB$INDEX_NAME, ISG.RDB$FIELD_NAME, IDX.RDB$UNIQUE_FLAG, ' +
-    'IDX.RDB$INDEX_INACTIVE, IDX.RDB$INDEX_TYPE FROM RDB$INDICES IDX ' +
+    'IDX.RDB$INDEX_INACTIVE, IDX.RDB$INDEX_TYPE, IDX.RDB$DESCRIPTION FROM RDB$INDICES IDX ' +
     'LEFT JOIN RDB$INDEX_SEGMENTS ISG ON ISG.RDB$INDEX_NAME = IDX.RDB$INDEX_NAME ' +
     'WHERE  NOT  EXISTS(SELECT * FROM RDB$RELATION_CONSTRAINTS C WHERE IDX.RDB$INDEX_NAME = C.RDB$INDEX_NAME) ' +
     ' AND (IDX.RDB$RELATION_NAME = ?RN) ' +
@@ -1088,50 +1136,52 @@ const
     '(C.RDB$TRIGGER_TYPE = 1) ' + 'AND (A.RDB$RELATION_NAME = ?RN)';
 
   QRYTrigger = 'SELECT T.RDB$TRIGGER_NAME, T.RDB$TRIGGER_SOURCE, T.RDB$TRIGGER_SEQUENCE, ' +
-    'T.RDB$TRIGGER_TYPE, T.RDB$TRIGGER_INACTIVE, T.RDB$SYSTEM_FLAG ' +
+    'T.RDB$TRIGGER_TYPE, T.RDB$TRIGGER_INACTIVE, T.RDB$SYSTEM_FLAG, T.RDB$DESCRIPTION ' +
     'from RDB$TRIGGERS T left join RDB$CHECK_CONSTRAINTS C ON C.RDB$TRIGGER_NAME = ' +
     'T.RDB$TRIGGER_NAME where ((T.RDB$SYSTEM_FLAG = 0) or (T.RDB$SYSTEM_FLAG is null)) ' +
     'and (c.rdb$trigger_name is null) and (T.RDB$RELATION_NAME = ?RN) ' +
     'order by T.RDB$TRIGGER_NAME';
 
   QRYDBTriggers = 'SELECT T.RDB$TRIGGER_NAME, T.RDB$TRIGGER_SOURCE, T.RDB$TRIGGER_SEQUENCE, ' +
-    'T.RDB$TRIGGER_TYPE, T.RDB$TRIGGER_INACTIVE, T.RDB$SYSTEM_FLAG ' +
+    'T.RDB$TRIGGER_TYPE, T.RDB$TRIGGER_INACTIVE, T.RDB$SYSTEM_FLAG, T.RDB$DESCRIPTION ' +
     'from RDB$TRIGGERS T left join RDB$CHECK_CONSTRAINTS C ON C.RDB$TRIGGER_NAME = ' +
     'T.RDB$TRIGGER_NAME where ((T.RDB$SYSTEM_FLAG = 0) or (T.RDB$SYSTEM_FLAG is null)) ' +
     'and (c.rdb$trigger_name is null) and (T.RDB$RELATION_NAME  IS NULL) ' +
     'order by T.RDB$TRIGGER_NAME';
 
   QRYSysTrigger = 'SELECT T.RDB$TRIGGER_NAME, T.RDB$TRIGGER_SOURCE, T.RDB$TRIGGER_SEQUENCE, ' +
-    'T.RDB$TRIGGER_TYPE, T.RDB$TRIGGER_INACTIVE, T.RDB$SYSTEM_FLAG ' +
+    'T.RDB$TRIGGER_TYPE, T.RDB$TRIGGER_INACTIVE, T.RDB$SYSTEM_FLAG, T.RDB$DESCRIPTION ' +
     'FROM RDB$TRIGGERS T LEFT JOIN RDB$CHECK_CONSTRAINTS C ON C.RDB$TRIGGER_NAME = ' +
     'T.RDB$TRIGGER_NAME WHERE (T.RDB$RELATION_NAME = ?RN) ORDER BY T.RDB$TRIGGER_NAME';
 
-  QRYViews = 'SELECT REL.RDB$RELATION_NAME, REL.RDB$VIEW_SOURCE FROM RDB$RELATIONS REL WHERE ' +
+  QRYViews = 'SELECT REL.RDB$RELATION_NAME, REL.RDB$VIEW_SOURCE, REL.RDB$DESCRIPTION FROM RDB$RELATIONS REL WHERE ' +
     '(REL.RDB$SYSTEM_FLAG <> 1 OR REL.RDB$SYSTEM_FLAG IS NULL) AND ' +
     '(NOT REL.RDB$FLAGS IS NULL) AND ' +
     '(NOT REL.RDB$VIEW_BLR IS NULL) AND ' +
     '(REL.RDB$SECURITY_CLASS STARTING WITH ''SQL$'') ' +
     'ORDER BY REL.RDB$RELATION_ID';
 
-  QRYDomains = 'select RDB$FIELD_TYPE, RDB$FIELD_SCALE, RDB$FIELD_LENGTH, ' +
+  // The column order is read by TMetaTableField.LoadFromDataBase
+  QRYSysDomains = 'select RDB$FIELD_TYPE, RDB$FIELD_SCALE, RDB$FIELD_LENGTH, ' +
     'RDB$FIELD_PRECISION, RDB$CHARACTER_SET_ID, RDB$FIELD_SUB_TYPE, ' +
     'RDB$FIELD_NAME, RDB$SEGMENT_LENGTH, RDB$NULL_FLAG, RDB$DEFAULT_SOURCE, RDB$COMPUTED_SOURCE, ' +
     'RDB$VALIDATION_SOURCE AS CHECK_CONSTRAINT, ' +
-    ' (Select Count(*) from  RDB$FIELD_DIMENSIONS  DIM where   DIM.rdb$field_name= RDB$FIELDS.rdb$field_name)    is_Array ' +
-    'FROM RDB$FIELDS WHERE NOT (RDB$FIELD_NAME STARTING WITH ''RDB$'') AND ' +
-    'NOT (RDB$FIELD_NAME STARTING WITH ''SEC$'')';
+    ' (Select Count(*) from  RDB$FIELD_DIMENSIONS  DIM where   DIM.rdb$field_name= RDB$FIELDS.rdb$field_name)    is_Array, ' +
+    'RDB$DESCRIPTION ' +
+    'FROM RDB$FIELDS';
 
-  QRYSysDomains = 'select RDB$FIELD_TYPE, RDB$FIELD_SCALE, RDB$FIELD_LENGTH, ' +
-    'RDB$FIELD_PRECISION, RDB$CHARACTER_SET_ID, RDB$FIELD_SUB_TYPE, ' +
-    'RDB$FIELD_NAME, RDB$SEGMENT_LENGTH, RDB$NULL_FLAG, RDB$DEFAULT_SOURCE, RDB$COMPUTED_SOURCE ' +
-    'from RDB$FIELDS';
+  // The system flag also excludes the MON$ domains of Firebird 4 and later
+  QRYDomains = QRYSysDomains + ' WHERE NOT (RDB$FIELD_NAME STARTING WITH ''RDB$'') AND ' +
+    'NOT (RDB$FIELD_NAME STARTING WITH ''SEC$'') AND ' +
+    '(RDB$SYSTEM_FLAG IS NULL OR RDB$SYSTEM_FLAG = 0)';
 
   QRYProcedures =
   // 'SELECT RDB$PROCEDURE_NAME, RDB$PROCEDURE_SOURCE FROM  RDB$PROCEDURES ORDER BY RDB$PROCEDURE_NAME';
-    'SELECT RDB$PROCEDURE_NAME, RDB$PROCEDURE_SOURCE @@PACK_NAME@ FROM  RDB$PROCEDURES ORDER BY RDB$PROCEDURE_NAME';
+    'SELECT RDB$PROCEDURE_NAME, RDB$PROCEDURE_SOURCE, RDB$DESCRIPTION ' + PackageNameMacro +
+    ' FROM  RDB$PROCEDURES ORDER BY RDB$PROCEDURE_NAME';
 
   QRYProcFields = 'SELECT FS.RDB$FIELD_TYPE, FS.RDB$FIELD_SCALE, FS.RDB$FIELD_LENGTH, FS.RDB$FIELD_PRECISION, ' +
-    'FS.RDB$CHARACTER_SET_ID, FS.RDB$FIELD_SUB_TYPE, PP.RDB$PARAMETER_NAME, FS.RDB$SEGMENT_LENGTH ' +
+    'FS.RDB$CHARACTER_SET_ID, FS.RDB$FIELD_SUB_TYPE, PP.RDB$PARAMETER_NAME, FS.RDB$SEGMENT_LENGTH, PP.RDB$DESCRIPTION ' +
     'FROM RDB$PROCEDURES PR LEFT JOIN RDB$PROCEDURE_PARAMETERS PP ' +
     'ON PP.RDB$PROCEDURE_NAME = PR.RDB$PROCEDURE_NAME LEFT JOIN RDB$FIELDS FS ON ' +
     'FS.RDB$FIELD_NAME = PP.RDB$FIELD_SOURCE LEFT JOIN RDB$CHARACTER_SETS CR ON ' +
@@ -1149,7 +1199,8 @@ const
     'F.RDB$SEGMENT_LENGTH AS SEGMENT_SIZE,' +
 
     'PP.rdb$parameter_mechanism AS MECHANIZM,' +
-    'PP.rdb$field_source AS F_BASED_ON_DOMAIN, ' + 'F.RDB$DEFAULT_SOURCE ' +
+    'PP.rdb$field_source AS F_BASED_ON_DOMAIN, ' + 'F.RDB$DEFAULT_SOURCE, ' +
+    'PP.RDB$DESCRIPTION ' +
 
     'FROM RDB$PROCEDURE_PARAMETERS PP ' +
     'JOIN RDB$FIELDS F ON F.RDB$FIELD_NAME = PP.RDB$FIELD_SOURCE ' +
@@ -1167,7 +1218,8 @@ const
 
     'PP.rdb$parameter_mechanism AS MECHANIZM,' +
     'PP.rdb$field_source AS F_BASED_ON_DOMAIN, ' + 'F.RDB$DEFAULT_SOURCE,' +
-    'PP.RDB$RELATION_NAME, ' + 'PP.RDB$FIELD_NAME ' +
+    'PP.RDB$RELATION_NAME, ' + 'PP.RDB$FIELD_NAME, ' +
+    'PP.RDB$DESCRIPTION ' +
 
     'FROM RDB$PROCEDURE_PARAMETERS PP ' +
     'JOIN RDB$FIELDS F ON F.RDB$FIELD_NAME = PP.RDB$FIELD_SOURCE ' +
@@ -1175,11 +1227,11 @@ const
     'AND        PP.RDB$PARAMETER_TYPE = :RT ' +
     'ORDER BY PP.RDB$PARAMETER_NUMBER';
 
-  QRYExceptions = 'SELECT RDB$EXCEPTION_NAME, RDB$MESSAGE, RDB$EXCEPTION_NUMBER FROM RDB$EXCEPTIONS ORDER BY RDB$EXCEPTION_NAME';
+  QRYExceptions = 'SELECT RDB$EXCEPTION_NAME, RDB$MESSAGE, RDB$EXCEPTION_NUMBER, RDB$DESCRIPTION FROM RDB$EXCEPTIONS ORDER BY RDB$EXCEPTION_NAME';
 
   QRYExceptionNames = 'SELECT RDB$EXCEPTION_NAME FROM RDB$EXCEPTIONS ORDER BY RDB$EXCEPTION_NAME';
 
-  QRYUDFs = 'SELECT RDB$FUNCTION_NAME, RDB$MODULE_NAME, RDB$ENTRYPOINT, RDB$RETURN_ARGUMENT ' +
+  QRYUDFs = 'SELECT RDB$FUNCTION_NAME, RDB$MODULE_NAME, RDB$ENTRYPOINT, RDB$RETURN_ARGUMENT, RDB$DESCRIPTION ' +
     'FROM RDB$FUNCTIONS WHERE (RDB$SYSTEM_FLAG IS NULL) OR (RDB$SYSTEM_FLAG =0) ORDER BY RDB$FUNCTION_NAME';
 
   QRYUDFFields = 'SELECT RDB$FIELD_TYPE, RDB$FIELD_SCALE, RDB$FIELD_LENGTH, RDB$FIELD_PRECISION, ' +
@@ -1188,12 +1240,12 @@ const
     'ORDER BY RDB$ARGUMENT_POSITION';
 
   /// //FB3
-  QRYUDFsFB3 = 'SELECT RDB$FUNCTION_NAME, RDB$MODULE_NAME, RDB$ENTRYPOINT, RDB$RETURN_ARGUMENT ' +
+  QRYUDFsFB3 = 'SELECT RDB$FUNCTION_NAME, RDB$MODULE_NAME, RDB$ENTRYPOINT, RDB$RETURN_ARGUMENT, RDB$DESCRIPTION ' +
     'FROM RDB$FUNCTIONS WHERE (RDB$SYSTEM_FLAG IS NULL) OR (RDB$SYSTEM_FLAG =0) AND RDB$FUNCTION_SOURCE IS NULL  ' +
     'AND RDB$PACKAGE_NAME IS NULL ' +
     'ORDER BY RDB$FUNCTION_NAME';
 
-  QRYStoredFuncsFB3 = 'SELECT RDB$FUNCTION_NAME, RDB$FUNCTION_SOURCE, RDB$RETURN_ARGUMENT,RDB$PACKAGE_NAME ' +
+  QRYStoredFuncsFB3 = 'SELECT RDB$FUNCTION_NAME, RDB$FUNCTION_SOURCE, RDB$RETURN_ARGUMENT, RDB$PACKAGE_NAME, RDB$DESCRIPTION ' +
     'FROM RDB$FUNCTIONS WHERE (RDB$SYSTEM_FLAG IS NULL) OR (RDB$SYSTEM_FLAG =0) AND NOT RDB$FUNCTION_SOURCE IS NULL ' +
     ' ORDER BY RDB$FUNCTION_NAME';
 
@@ -1207,7 +1259,7 @@ const
     ' F.RDB$SEGMENT_LENGTH AS SEGMENT_SIZE,  ' + ' PP.RDB$ARGUMENT_MECHANISM ,' +
     ' PP.rdb$field_source AS F_BASED_ON_DOMAIN, ' +
     ' F.RDB$DEFAULT_SOURCE,                    ' + 'PP.RDB$RELATION_NAME, ' +
-    'PP.RDB$FIELD_NAME ' + 'FROM RDB$FUNCTION_ARGUMENTS PP             ' +
+    'PP.RDB$FIELD_NAME, PP.RDB$DESCRIPTION ' + 'FROM RDB$FUNCTION_ARGUMENTS PP ' +
     ' JOIN RDB$FUNCTIONS F1 ON PP.RDB$FUNCTION_NAME= F1.RDB$FUNCTION_NAME and F1.RDB$RETURN_ARGUMENT=PP. RDB$ARGUMENT_POSITION ' +
     ' JOIN RDB$FIELDS F ON F.RDB$FIELD_NAME = PP.RDB$FIELD_SOURCE ' +
     ' WHERE PP.RDB$FUNCTION_NAME = ?FN ' +
@@ -1224,7 +1276,7 @@ const
     ' F.RDB$SEGMENT_LENGTH AS SEGMENT_SIZE,  ' + ' PP.RDB$ARGUMENT_MECHANISM ,' +
     ' PP.rdb$field_source AS F_BASED_ON_DOMAIN, ' +
     ' F.RDB$DEFAULT_SOURCE,                    ' + 'PP.RDB$RELATION_NAME, ' +
-    'PP.RDB$FIELD_NAME ' + 'FROM RDB$FUNCTION_ARGUMENTS PP             ' +
+    'PP.RDB$FIELD_NAME, PP.RDB$DESCRIPTION ' + 'FROM RDB$FUNCTION_ARGUMENTS PP ' +
     ' JOIN RDB$FUNCTIONS F1 ON PP.RDB$FUNCTION_NAME= F1.RDB$FUNCTION_NAME and F1.RDB$RETURN_ARGUMENT<>PP. RDB$ARGUMENT_POSITION ' +
     ' JOIN RDB$FIELDS F ON F.RDB$FIELD_NAME = PP.RDB$FIELD_SOURCE ' +
     ' WHERE PP.RDB$FUNCTION_NAME = ?FN AND F1.RDB$PACKAGE_NAME IS NULL' +
@@ -1241,19 +1293,19 @@ const
     ' F.RDB$SEGMENT_LENGTH AS SEGMENT_SIZE,  ' + ' PP.RDB$ARGUMENT_MECHANISM ,' +
     ' PP.rdb$field_source AS F_BASED_ON_DOMAIN, ' +
     ' F.RDB$DEFAULT_SOURCE,                    ' + 'PP.RDB$RELATION_NAME, ' +
-    'PP.RDB$FIELD_NAME ' + 'FROM RDB$FUNCTION_ARGUMENTS PP             ' +
+    'PP.RDB$FIELD_NAME, PP.RDB$DESCRIPTION ' + 'FROM RDB$FUNCTION_ARGUMENTS PP ' +
     ' JOIN RDB$FUNCTIONS F1 ON PP.RDB$FUNCTION_NAME= F1.RDB$FUNCTION_NAME ' +
     ' AND coalesce(PP.RDB$PACKAGE_NAME,''#'')=coalesce(F1.RDB$PACKAGE_NAME,''#'')' +
     ' JOIN RDB$FIELDS F ON F.RDB$FIELD_NAME = PP.RDB$FIELD_SOURCE ' +
     ' WHERE PP.RDB$FUNCTION_NAME = ?FN ' +
     '   ORDER BY PP. RDB$ARGUMENT_POSITION ';
 
-  QRYPackages = 'Select RDB$PACKAGE_NAME, RDB$PACKAGE_HEADER_SOURCE, RDB$PACKAGE_BODY_SOURCE,RDB$DESCRIPTION from RDB$PACKAGES ' +
+  QRYPackages = 'Select RDB$PACKAGE_NAME, RDB$PACKAGE_HEADER_SOURCE, RDB$PACKAGE_BODY_SOURCE, RDB$DESCRIPTION from RDB$PACKAGES ' +
     'WHERE (RDB$SYSTEM_FLAG IS NULL) OR (RDB$SYSTEM_FLAG =0)';
 
   // ^^^^^FB3
 
-  QRYRoles = 'SELECT RDB$ROLE_NAME, RDB$OWNER_NAME FROM RDB$ROLES';
+  QRYRoles = 'SELECT RDB$ROLE_NAME, RDB$OWNER_NAME ' + DescriptionMacro + ' FROM RDB$ROLES';
 
   QRYGrant = 'Select ' + 'P.RDB$USER,' + 'P.RDB$PRIVILEGE,' +
     'P.RDB$GRANT_OPTION,' + 'P.RDB$FIELD_NAME,' + 'P.RDB$USER_TYPE,' +
@@ -1274,12 +1326,11 @@ end;
 
 destructor TCustomMetaObject.Destroy;
 var
-  I, J: Integer;
+  I: Integer;
 begin
   for I := 0 to FItemsCount - 1 do
   begin
-    for J := 0 to FItems[I].Childs.Count - 1 do
-      TObject(FItems[I].Childs[J]).Free;
+    ClearChilds(I);
     FItems[I].Childs.Free;
     FItems[I].Childs := nil;
   end;
@@ -1288,28 +1339,87 @@ end;
 
 procedure TCustomMetaObject.Clear;
 var
-  I, J: Integer;
+  I: Integer;
 begin
   for I := 0 to FItemsCount - 1 do
-  begin
-    for J := 0 to FItems[I].Childs.Count - 1 do
-      TObject(FItems[I].Childs[J]).Free;
-    FItems[I].Childs.Clear;
-  end;
+    ClearChilds(I);
   FLoaded := False
+end;
+
+procedure TCustomMetaObject.ClearChilds(const ClassIndex: Integer);
+var
+  Childs: TList;
+  I: Integer;
+begin
+  Childs := FItems[ClassIndex].Childs;
+  for I := 0 to Childs.Count - 1 do
+    TObject(Childs[I]).Free;
+  Childs.Clear;
 end;
 
 function TCustomMetaObject.GetAsDDL: string;
 var
   Stream: TStringStream;
+  DataBase: TMetaDataBase;
 begin
+  DataBase := MetaDataBase;
   Stream := TStringStream.Create('', TEncoding.Unicode);
   try
     GenerateDDLText(Stream);
+    if (DataBase = nil) or DataBase.CommentsIncluded(DataBase.DDLTextOptions) then
+      GenerateCommentDDL(Stream);
     Result := Stream.DataString;
   finally
     Stream.Free;
   end;
+end;
+
+function TCustomMetaObject.GetMetaDataBase: TMetaDataBase;
+var
+  Root: TCustomMetaObject;
+begin
+  Root := Self;
+  while Root.FOwner <> nil do
+    Root := Root.FOwner;
+  if Root is TMetaDataBase then
+    Result := TMetaDataBase(Root)
+  else
+    Result := nil;
+end;
+
+procedure TCustomMetaObject.LoadDescription(Query: TFIBQuery);
+var
+  Field: TFIBXSQLVAR;
+begin
+  Field := Query.FindField('RDB$DESCRIPTION');
+  if (Field <> nil) and not Field.IsNull then
+    FDescription := Field.AsString
+  else
+    FDescription := '';
+end;
+
+function TCustomMetaObject.CommentKeyword: string;
+begin
+  Result := '';
+end;
+
+function TCustomMetaObject.CommentTarget: string;
+begin
+  Result := FormatName;
+end;
+
+procedure TCustomMetaObject.GenerateCommentDDL(Stream: TStringStream);
+begin
+  if (FDescription <> '') and (CommentKeyword <> '') then
+    WriteCommentDDL(Stream, CommentKeyword + ' ' + CommentTarget, FDescription);
+end;
+
+procedure TCustomMetaObject.GenerateChildCommentDDL(Stream: TStringStream; ChildType: Integer);
+var
+  I: Integer;
+begin
+  for I := 0 to GetChildsCount(ChildType) - 1 do
+    GetChildObject(ChildType, I).GenerateCommentDDL(Stream);
 end;
 
 function TCustomMetaObject.GetChildObject(const ClassIndex, Index: Integer): TCustomMetaObject;
@@ -1422,17 +1532,14 @@ end;
 
 { TMetaGenerator }
 
-procedure TMetaGenerator.LoadFromDataBase(Transaction: TFIBTransaction; const aName: string);
+procedure TMetaGenerator.LoadFromDataBase(QName: TFIBQuery);
 var
   Query: TFIBQuery;
 begin
-  Query := TFIBQuery.Create(nil);
-  Query.Transaction := Transaction;
-  Query.GoToFirstRecordOnExecute := True;
-  Query.Options := [qoTrimCharFields, qoNoForceIsNull];
+  Name := Trim(QName.Fields[0].AsString);
+  LoadDescription(QName);
+  Query := CreateQuery(Format('select gen_id(%s, 0) from rdb$database', [FormatName]), QName.Transaction);
   try
-    Name := aName;
-    Query.SQL.Text := Format('select gen_id(%s, 0) from rdb$database', [FormatName]);
     Query.ExecQuery;
     if not Query.Eof then
       FValue := Query.Fields[0].AsInteger
@@ -1445,6 +1552,11 @@ end;
 procedure TMetaGenerator.GenerateObjectDDL(Stream: TStringStream);
 begin
   Stream.WriteString(Format('CREATE GENERATOR %s;%sSET GENERATOR %0:s TO %2:d', [FormatName, sLineBreak, FValue]));
+end;
+
+function TMetaGenerator.CommentKeyword: string;
+begin
+  Result := 'GENERATOR';
 end;
 
 class function TMetaGenerator.ClassIndex: Integer;
@@ -1518,12 +1630,14 @@ procedure TMetaTable.LoadFromDataBase(QNames, QFields: TFIBQuery;
   ChildTypes: TTableChildTypes);
 var
   CurName: string;
+  RelationType: TFIBXSQLVAR;
 begin
   // Fields
   Name := QNames.Fields[0].AsString;
-  if (QNames.FieldCount > 1) and QNames.Fields[1].IsNumericType
-    (QNames.Fields[1].SQLType) then
-    FRelationType := QNames.Fields[1].AsInteger;
+  LoadDescription(QNames);
+  RelationType := QNames.FindField('RDB$RELATION_TYPE');
+  if RelationType <> nil then
+    FRelationType := RelationType.AsInteger;
 
   if soTableFields in ChildTypes then
   begin
@@ -1567,6 +1681,7 @@ begin
               FOrder := IoAscending
             else
               FOrder := IoDescending;
+            LoadDescription(QIndex);
             CurName := QIndex.Fields[0].AsString;
             FLoaded := True
           end
@@ -1656,9 +1771,17 @@ begin
     Stream.WriteString(sLineBreak);
 end;
 
-procedure TMetaTable.GenerateDDLTextOnlyTable(Stream: TStringStream);
+function TMetaTable.CommentKeyword: string;
 begin
-  inherited GenerateDDLText(Stream);
+  Result := 'TABLE';
+end;
+
+procedure TMetaTable.GenerateCommentDDL(Stream: TStringStream);
+begin
+  inherited GenerateCommentDDL(Stream);
+  GenerateChildCommentDDL(Stream, Ord(soTableFields));
+  GenerateChildCommentDDL(Stream, Ord(soIndex));
+  GenerateChildCommentDDL(Stream, Ord(soTableTriggers));
 end;
 
 function TMetaTable.GetIndices(const Index: Integer): TMetaIndex;
@@ -1754,6 +1877,8 @@ end;
 { TCustomMetaField }
 
 procedure TCustomMetaField.LoadFromDataBase(QField, QCharset: TFIBQuery);
+var
+  Identity: TFIBXSQLVAR;
 
   procedure GetCharsetInfo(const Id: Integer; var CharSet: string; var Count: Smallint);
   begin
@@ -1819,12 +1944,12 @@ begin
     FBytesPerCharacter := 1;
 
   FSubType := QField.Fields[5].AsInteger;
-  if QField.FieldCount <= 13 then
-    FIdentity := -1
-  else if QField.Fields[13].IsNull then
+  Identity := QField.FindField('RDB$IDENTITY_TYPE');
+  if (Identity = nil) or Identity.IsNull then
     FIdentity := -1
   else
-    FIdentity := QField.Fields[13].AsInteger;
+    FIdentity := Identity.AsInteger;
+  LoadDescription(QField);
   FLoaded := True
 end;
 
@@ -1898,15 +2023,6 @@ end;
 
 { TMetaDataBase }
 
-procedure CreateQuery(var Q: TFIBQuery; const SQLText: string; Transaction: TFIBTransaction);
-begin
-  Q := TFIBQuery.Create(nil);
-  Q.Database := Transaction.MainDatabase;
-  Q.Transaction := Transaction;
-  Q.Options := [qoTrimCharFields, qoNoForceIsNull, qoStartTransaction];
-  Q.SQL.Text := SQLText;
-end;
-
 constructor TMetaDataBase.Create(AOwner: TCustomMetaObject; aName: string = '');
 begin
   inherited Create(nil);
@@ -1932,7 +2048,7 @@ begin
   FLoadObjects := DefObjects;
   FLoadTableChilds := DefTableChilds;
   FLoadViewChilds := DefViewChilds;
-  FDDLTextOptions := [dtoUseCreateDB, dtoUseSetTerm];
+  FDDLTextOptions := DefDDLTextOptions;
 end;
 
 destructor TMetaDataBase.Destroy;
@@ -1953,6 +2069,8 @@ var
   Transaction: TFIBTransaction;
   CurObject: TCustomMetaObject;
 begin
+  // Also the objects of the types not loaded now, left by GetDBObject
+  Clear;
   FName := DB.DatabaseName;
   Transaction := FInternalTransaction;
   if Transaction.Active then
@@ -1962,83 +2080,46 @@ begin
   try
 
     Stop := False;
-    CreateQuery(QNames, '', Transaction);
-    if FSysInfos then
-      CreateQuery(QTrigger, QRYSysTrigger, Transaction)
-    else
-      CreateQuery(QTrigger, QRYTrigger, Transaction);
-    CreateQuery(QCharset, QRYCharset, Transaction);
-    CreateQuery(QFields, QRYUDFFields, Transaction);
-    CreateQuery(QStorFuncFields, QRYStoredFuncFieldsFB3Out, Transaction);
-    CreateQuery(QPrimary, QRYUnique, Transaction);
-    CreateQuery(QIndex, QRYIndex, Transaction);
-    CreateQuery(QForeign, QRYForeign, Transaction);
-    CreateQuery(QCheck, QRYCheck, Transaction);
-    CreateQuery(QGrants, QRYGrant, Transaction);
-
+    QNames := nil;
+    QTrigger := nil;
+    QCharset := nil;
+    QFields := nil;
+    QStorFuncFields := nil;
+    QPrimary := nil;
+    QIndex := nil;
+    QForeign := nil;
+    QCheck := nil;
+    QGrants := nil;
     try
+      QNames := CreateQuery('', Transaction);
+      if FSysInfos then
+        QTrigger := CreateQuery(QRYSysTrigger, Transaction)
+      else
+        QTrigger := CreateQuery(QRYTrigger, Transaction);
+      QCharset := CreateQuery(QRYCharset, Transaction);
+      QFields := CreateQuery(QRYUDFFields, Transaction);
+      QStorFuncFields := CreateQuery(QRYStoredFuncFieldsFB3Out, Transaction);
+      QPrimary := CreateQuery(QRYUnique, Transaction);
+      QIndex := CreateQuery(QRYIndex, Transaction);
+      QForeign := CreateQuery(QRYForeign, Transaction);
+      QCheck := CreateQuery(QRYCheck, Transaction);
+      QGrants := CreateQuery(QRYGrant, Transaction);
 
       FPageSize := Transaction.DefaultDatabase.PageSize;
-      FDefaultCharset := Trim(Transaction.DefaultDatabase.QueryValueAsStr(QRYDB_INFO, 0));
+      QNames.SQL.Text := QRYDB_INFO;
+      QNames.ExecQuery;
+      FDefaultCharset := Trim(QNames.Fields[0].AsString);
+      LoadDescription(QNames);
+      QNames.Close;
       FSQLDialect := Transaction.DefaultDatabase.SQLDialect;
       FConnectCharset := Transaction.DefaultDatabase.ConnectParams.CharSet;
       FClientLib := Transaction.DefaultDatabase.LibraryName;
 
-      // Supports
-      QNames.SQL.Text := QRY_STORED_FUNCS_SUPPORTS;
-      QNames.ExecQuery;
-      if QNames.RecordCount > 0 then
-        FStoredFunctionsSupports := boolean(QNames.Fields[0].AsInteger)
-      else
-        FStoredFunctionsSupports := False;
-      QNames.Close;
-
-      QNames.SQL.Text := QRY_PACKAGE_SUPPORTS;
-      QNames.ExecQuery;
-      if QNames.RecordCount > 0 then
-        FPackagesSupports := boolean(QNames.Fields[0].AsInteger)
-      else
-        FPackagesSupports := False;
-      QNames.Close;
-
-      QNames.SQL.Text := QRY_FLD_BY_IDENTITY_SUPPORTS;
-      QNames.ExecQuery;
-      if QNames.RecordCount > 0 then
-        FIdentityFieldsSupports := boolean(QNames.Fields[0].AsInteger)
-      else
-        FIdentityFieldsSupports := False;
-      QNames.Close;
-
-      QNames.SQL.Text := QRY_TAB_RELATION_TYPE_SUPPORTS;
-      QNames.ExecQuery;
-      if QNames.RecordCount > 0 then
-        FTabRelTypeSupports := boolean(QNames.Fields[0].AsInteger)
-      else
-        FTabRelTypeSupports := False;
-      QNames.Close;
-
-      QNames.SQL.Text := QRY_PROC_PARAMDOMAINS_SUPPORTS;
-      QNames.ExecQuery;
-      if QNames.RecordCount > 0 then
-        FProcParamDomainSupports := boolean(QNames.Fields[0].AsInteger)
-      else
-        FProcParamDomainSupports := False;
-      QNames.Close;
-
-      QNames.SQL.Text := QRY_PROC_PARAMRELATION_SUPPORTS;
-      QNames.ExecQuery;
-      if QNames.RecordCount > 0 then
-        FProcParamRelationSupports := boolean(QNames.Fields[0].AsInteger)
-      else
-        FProcParamRelationSupports := False;
-      QNames.Close;
-
-      // End Supports
+      DetectServerFeatures;
 
       // DOMAINS
       if otDomain in FLoadObjects then
       begin
-        FItems[Ord(otDomain)].Childs.Clear;
         if FSysInfos then
           QNames.SQL.Text := QRYSysDomains
         else
@@ -2063,8 +2144,8 @@ begin
       // GENERATORS
       if otGenerator in FLoadObjects then
       begin
-        FItems[Ord(otGenerator)].Childs.Clear;
         QNames.SQL.Text := QRYGenerators;
+        SetOptionalColumns(QNames, otGenerator);
         QNames.ExecQuery;
         while not QNames.Eof do
         begin
@@ -2076,7 +2157,7 @@ begin
           end;
           with TMetaGenerator.Create(Self, QNames.Fields[0].AsString) do
             if not OnlyNames then
-              LoadFromDataBase(Transaction, Trim(QNames.Fields[0].AsString));
+              LoadFromDataBase(QNames);
           QNames.Next;
         end;
         QNames.Close;
@@ -2108,7 +2189,6 @@ begin
       // UDF
       if otUDF in FLoadObjects then
       begin
-        FItems[Ord(otUDF)].Childs.Clear;
         if not FStoredFunctionsSupports then
           QNames.SQL.Text := QRYUDFs
         else
@@ -2134,7 +2214,6 @@ begin
       // TABLES
       if otTable in FLoadObjects then
       begin
-        FItems[Ord(otTable)].Childs.Clear;
 
         if FTabRelTypeSupports then
         begin
@@ -2151,7 +2230,10 @@ begin
             QNames.SQL.Text := QRYTables;
         end;
         QNames.ExecQuery;
-        QFields.SQL.Text := QRYTableFields;
+        if FIdentityFieldsSupports then
+          QFields.SQL.Text := QRYTableFieldsFB3
+        else
+          QFields.SQL.Text := QRYTableFields;
 
         while not QNames.Eof do
         begin
@@ -2247,7 +2329,6 @@ begin
       // VIEWS
       if otView in FLoadObjects then
       begin
-        FItems[Ord(otView)].Childs.Clear;
         QNames.SQL.Text := QRYViews;
         QNames.ExecQuery;
         while not QNames.Eof do
@@ -2279,13 +2360,10 @@ begin
       if otProcedure in FLoadObjects then
       begin
 
-        FItems[Ord(otProcedure)].Childs.Clear;
         QNames.SQL.Text := QRYProcedures;
         if FPackagesSupports then
-        begin
-          QNames.MainWhereClause := QNames.MainWhereClause + ' RDB$PACKAGE_NAME IS NULL ';
-          QNames.ParamByName('PACK_NAME').AsString := 'RDB$PACKAGE_NAME';
-        end;
+          QNames.MainWhereClause := 'RDB$PACKAGE_NAME IS NULL';
+        SetOptionalColumns(QNames, otProcedure);
         if not FProcParamDomainSupports then
           QFields.SQL.Text := QRYProcFields
         else if not FProcParamRelationSupports then
@@ -2322,7 +2400,6 @@ begin
       // EXCEPTION
       if otException in FLoadObjects then
       begin
-        FItems[Ord(otException)].Childs.Clear;
         if OnlyNames then
           QNames.SQL.Text := QRYExceptionNames
         else
@@ -2348,7 +2425,6 @@ begin
       // DBTriggers
       if otDBTrigger in FLoadObjects then
       begin
-        FItems[Ord(otDBTrigger)].Childs.Clear;
         QNames.SQL.Text := QRYDBTriggers;
         QNames.ExecQuery;
         while not QNames.Eof do
@@ -2370,7 +2446,6 @@ begin
 
       if FPackagesSupports and (otPackage in FLoadObjects) then
       begin
-        FItems[Ord(otPackage)].Childs.Clear;
         QNames.SQL.Text := QRYPackages;
         QNames.ExecQuery;
         while not QNames.Eof do
@@ -2393,8 +2468,8 @@ begin
       // ROLES
       if otRole in FLoadObjects then
       begin
-        FItems[Ord(otRole)].Childs.Clear;
         QNames.SQL.Text := QRYRoles;
+        SetOptionalColumns(QNames, otRole);
         QNames.ExecQuery;
         while not QNames.Eof do
         begin
@@ -2439,7 +2514,7 @@ begin
   end
 end;
 
-procedure TMetaDataBase.ExtGenerateDDLText(Stream: TStringStream; Options: TDDLTextOptions = [dtoUseCreateDB, dtoUseSetTerm]);
+procedure TMetaDataBase.ExtGenerateDDLText(Stream: TStringStream; Options: TDDLTextOptions = DefDDLTextOptions);
 var
   I: Integer;
 
@@ -2497,16 +2572,15 @@ var
         begin
           Stream.WriteString(sLineBreak + sLineBreak);
         end;
+        // Only the object; its constraints, triggers and bodies follow in their own sections
         if CurObj is TMetaProcedure then
           TMetaProcedure(CurObj).SaveToPostDDL(Stream)
         else if CurObj is TMetaPackage then
           TMetaPackage(CurObj).SaveSpecDDL(Stream)
         else if CurObj is TMetaStoredFunc then
           TMetaStoredFunc(CurObj).SaveEmptyDDL(Stream)
-        else if CurObj is TMetaTable then
-          TMetaTable(CurObj).GenerateDDLTextOnlyTable(Stream)
         else
-          CurObj.GenerateDDLText(Stream);
+          CurObj.GenerateObjectDDL(Stream);
         Stream.WriteString(Separator);
       end;
       Stream.WriteString(sLineBreak + sLineBreak);
@@ -2518,6 +2592,31 @@ var
         Stream.WriteString(sLineBreak);
       end;
 
+    end;
+  end;
+
+  procedure SaveComments;
+  const
+    // The order of the script
+    CommentedObjects: array [0 .. 10] of TDBObjectType = (otRole, otUDF, otDomain, otGenerator, otException,
+      otProcedure, otStoredFunctions, otPackage, otTable, otView, otDBTrigger);
+  var
+    Comments: TStringStream;
+    ObjType: TDBObjectType;
+    I: Integer;
+  begin
+    Comments := TStringStream.Create('', TEncoding.Unicode);
+    try
+      if FDescription <> '' then
+        WriteCommentDDL(Comments, 'DATABASE', FDescription);
+      for ObjType in CommentedObjects do
+        for I := 0 to GetChildsCount(Ord(ObjType)) - 1 do
+          GetChildObject(Ord(ObjType), I).GenerateCommentDDL(Comments);
+      if Comments.Size > 0 then
+        Stream.WriteString(sLineBreak + '/* COMMENTS */' + sLineBreak + sLineBreak + Comments.DataString +
+          sLineBreak);
+    finally
+      Comments.Free;
     end;
   end;
 
@@ -2659,6 +2758,8 @@ begin
 
   if dtoUseSetTerm in Options then
     Stream.WriteString('SET TERM ;^' + sLineBreak + sLineBreak);
+  if CommentsIncluded(Options) then
+    SaveComments;
   Stream.WriteString('COMMIT WORK;');
 
   if dtoIncludeGrants in Options then
@@ -2794,17 +2895,44 @@ end;
 
 procedure TMetaDataBase.Clear;
 begin
-  FItems[Ord(otDomain)].Childs.Clear;
-  FItems[Ord(otGenerator)].Childs.Clear;
-  FItems[Ord(otTable)].Childs.Clear;
-  FItems[Ord(otView)].Childs.Clear;
-  FItems[Ord(otProcedure)].Childs.Clear;
-  FItems[Ord(otException)].Childs.Clear;
-  FItems[Ord(otUDF)].Childs.Clear;
-  FItems[Ord(otDBTrigger)].Childs.Clear;
-  FItems[Ord(otStoredFunctions)].Childs.Clear;
-  FItems[Ord(otPackage)].Childs.Clear;
+  inherited Clear;
   FNamesLoaded := False;
+end;
+
+procedure TMetaDataBase.DetectServerFeatures;
+var
+  Query: TFIBQuery;
+begin
+  Query := CreateQuery(QRY_SERVER_FEATURES, FInternalTransaction);
+  try
+    Query.ExecQuery;
+    FStoredFunctionsSupports := Query.FieldByName('STORED_FUNCTIONS').AsInteger > 0;
+    FPackagesSupports := Query.FieldByName('PACKAGES').AsInteger > 0;
+    FIdentityFieldsSupports := Query.FieldByName('IDENTITY_FIELDS').AsInteger > 0;
+    FTabRelTypeSupports := Query.FieldByName('RELATION_TYPE').AsInteger > 0;
+    FProcParamDomainSupports := Query.FieldByName('PARAM_DOMAINS').AsInteger > 0;
+    FProcParamRelationSupports := Query.FieldByName('PARAM_RELATIONS').AsInteger > 0;
+    FCommentsSupports := Query.FieldByName('COMMENTS').AsInteger > 0;
+  finally
+    Query.Free;
+  end;
+end;
+
+procedure TMetaDataBase.SetOptionalColumns(Query: TFIBQuery; ObjectType: TDBObjectType);
+begin
+  case ObjectType of
+    otGenerator, otRole:
+      if FCommentsSupports then
+        Query.ParamByName('DESCRIPTION').AsString := DescriptionColumn;
+    otProcedure:
+      if FPackagesSupports then
+        Query.ParamByName('PACK_NAME').AsString := PackageNameColumn;
+  end;
+end;
+
+function TMetaDataBase.CommentsIncluded(Options: TDDLTextOptions): boolean;
+begin
+  Result := (dtoIncludeComments in Options) and FCommentsSupports;
 end;
 
 procedure TMetaDataBase.GenerateDDLText(Stream: TStringStream);
@@ -2860,7 +2988,7 @@ const
     TMetaException,
     TMetaUDF,
     TMetaRole,
-    TCustomMetaTrigger,
+    TMetaDBTrigger,
     TMetaStoredFunc,
     TMetaPackage,
     TMetaDataBase
@@ -2887,45 +3015,34 @@ begin
   begin
     if (Result <> nil) and Result.Loaded then
       Result.Clear;
+    QNames := nil;
     QCharset := nil;
     QFields := nil;
+    QPrimary := nil;
+    QIndex := nil;
+    QForeign := nil;
+    QCheck := nil;
+    QTrigger := nil;
     if FInternalTransaction.Active then
       FInternalTransaction.Commit;
     FInternalTransaction.DefaultDatabase := DB;
-    if ObjectType <> otTable then
-      CreateQuery(QNames, QRY_NAMES[ObjectType], FInternalTransaction)
-    else
-    begin
-      FTabRelTypeSupports := not VarIsNull(FInternalTransaction.DefaultDatabase.QueryValue
-        (QRY_TAB_RELATION_TYPE_SUPPORTS, 0));
-      if FTabRelTypeSupports then
-        CreateQuery(QNames, QRYSysTablesRel, FInternalTransaction)
-      else
-        CreateQuery(QNames, QRY_NAMES[ObjectType], FInternalTransaction);
-    end;
-    QNames.MainWhereClause := QRY_NAMES_Where[ObjectType];
-
     try
+      DetectServerFeatures;
+      if (ObjectType = otTable) and FTabRelTypeSupports then
+        QNames := CreateQuery(QRYSysTablesRel, FInternalTransaction)
+      else
+        QNames := CreateQuery(QRY_NAMES[ObjectType], FInternalTransaction);
+      QNames.MainWhereClause := QRY_NAMES_Where[ObjectType];
+      if FPackagesSupports and (ObjectType in [otProcedure, otStoredFunctions]) then
+        QNames.MainWhereClause := QNames.MainWhereClause + ' and RDB$PACKAGE_NAME IS NULL';
+      SetOptionalColumns(QNames, ObjectType);
       QNames.ParamByName('N').AsString := SavedName;
-
-      if FPackagesSupports then
-        case ObjectType of
-          otProcedure:
-            begin
-              QNames.MainWhereClause := QNames.MainWhereClause + ' and RDB$PACKAGE_NAME IS NULL ';
-              QNames.ParamByName('PACK_NAME').AsString := ',RDB$PACKAGE_NAME ';
-            end;
-          otStoredFunctions:
-            begin
-              QNames.MainWhereClause := QNames.MainWhereClause + ' and RDB$PACKAGE_NAME IS NULL ';
-            end;
-        end;
 
       QNames.ExecQuery;
       if not QNames.Eof then
       begin
         if ObjectType in [otDomain, otUDF, otTable, otView, otProcedure, otStoredFunctions] then
-          CreateQuery(QCharset, QRYCharset, FInternalTransaction);
+          QCharset := CreateQuery(QRYCharset, FInternalTransaction);
 
         ClassOfNode := MetaNodeClasses[ObjectType];
         if not Assigned(Result) then
@@ -2936,45 +3053,39 @@ begin
           otTable:
             begin
               if FIdentityFieldsSupports then
-                CreateQuery(QFields, QRYTableFieldsFB3, FInternalTransaction)
+                QFields := CreateQuery(QRYTableFieldsFB3, FInternalTransaction)
               else
-                CreateQuery(QFields, QRYTableFields, FInternalTransaction);
-              CreateQuery(QPrimary, QRYUnique, FInternalTransaction);
-              CreateQuery(QIndex, QRYIndex, FInternalTransaction);
-              CreateQuery(QForeign, QRYForeign, FInternalTransaction);
-              CreateQuery(QCheck, QRYCheck, FInternalTransaction);
-              CreateQuery(QTrigger, QRYTrigger, FInternalTransaction);
+                QFields := CreateQuery(QRYTableFields, FInternalTransaction);
+              QPrimary := CreateQuery(QRYUnique, FInternalTransaction);
+              QIndex := CreateQuery(QRYIndex, FInternalTransaction);
+              QForeign := CreateQuery(QRYForeign, FInternalTransaction);
+              QCheck := CreateQuery(QRYCheck, FInternalTransaction);
+              QTrigger := CreateQuery(QRYTrigger, FInternalTransaction);
               TMetaTable(Result).LoadFromDataBase(QNames, QFields, QCharset,
                 QPrimary, QIndex, QForeign, QCheck, QTrigger, [soTableFields, soTableFields, soPrimaryKey, soForeignKey,
                 soTableTriggers, soUniqueConstr, soIndex, soCheckConstr])
             end;
 
-          otGenerator: TMetaGenerator(Result).LoadFromDataBase(FInternalTransaction, SavedName);
+          otGenerator: TMetaGenerator(Result).LoadFromDataBase(QNames);
           otUDF:
             begin
-              CreateQuery(QFields, QRYUDFFields, FInternalTransaction);
+              QFields := CreateQuery(QRYUDFFields, FInternalTransaction);
               TMetaUDF(Result).LoadFromDataBase(QNames, QFields, QCharset);
             end;
           otView:
             begin
-              CreateQuery(QFields, QRYTableFields, FInternalTransaction);
-              CreateQuery(QTrigger, QRYTrigger, FInternalTransaction);
+              QFields := CreateQuery(QRYTableFields, FInternalTransaction);
+              QTrigger := CreateQuery(QRYTrigger, FInternalTransaction);
               TMetaView(Result).LoadFromDataBase(QNames, QFields, QTrigger, QCharset, [soViewFields, soViewTriggers])
             end;
           otProcedure:
             begin
-
-              FProcParamDomainSupports := not VarIsNull(FInternalTransaction.DefaultDatabase.QueryValue
-                (QRY_PROC_PARAMDOMAINS_SUPPORTS, 0));
-              FProcParamRelationSupports := not VarIsNull(FInternalTransaction.DefaultDatabase.QueryValue
-                (QRY_PROC_PARAMRELATION_SUPPORTS, 0));
-
               if not FProcParamDomainSupports then
-                CreateQuery(QFields, QRYProcFields, FInternalTransaction)
+                QFields := CreateQuery(QRYProcFields, FInternalTransaction)
               else if not FProcParamRelationSupports then
-                CreateQuery(QFields, QRYProcFieldsDomain, FInternalTransaction)
+                QFields := CreateQuery(QRYProcFieldsDomain, FInternalTransaction)
               else
-                CreateQuery(QFields, QRYProcFieldsRelation, FInternalTransaction);
+                QFields := CreateQuery(QRYProcFieldsRelation, FInternalTransaction);
 
               TMetaProcedure(Result).LoadFromDataBase(QNames, QFields, QCharset,
                 FProcParamDomainSupports, FProcParamRelationSupports)
@@ -2984,19 +3095,12 @@ begin
           otDBTrigger: TCustomMetaTrigger(Result).LoadFromDataBase(QNames);
           otStoredFunctions:
             begin
-              if QFields = nil then
-                CreateQuery(QFields, QRYStoredFuncFieldsFB3Out, FInternalTransaction)
-              else
-                QFields.SQL.Text := QRYStoredFuncFieldsFB3Out;
+              // LoadFromDataBase sets the SQL of the parameters
+              QFields := CreateQuery('', FInternalTransaction);
               TMetaStoredFunc(Result).LoadFromDataBase(QNames, QFields, QCharset);
             end;
-          otPackage:
-            begin
-              TMetaPackage(Result).LoadFromDataBase(QNames);
-            end;
-
+          otPackage: TMetaPackage(Result).LoadFromDataBase(QNames);
         end;
-        //
       end
     finally
       if FInternalTransaction.Active then
@@ -3106,6 +3210,11 @@ begin
   Result := Ord(soIndex)
 end;
 
+function TMetaIndex.CommentKeyword: string;
+begin
+  Result := 'INDEX';
+end;
+
 procedure TMetaIndex.GenerateObjectDDL(Stream: TStringStream);
 var
   I: Integer;
@@ -3116,7 +3225,7 @@ begin
   if FOrder = IoDescending then
     Order := ' DESCENDING';
 
-  Stream.WriteString(Format('CREATE%s%s INDEX %s ON %s (', [Order, Unique, FName, TMetaTable(FOwner).FormatName]));
+  Stream.WriteString(Format('CREATE%s%s INDEX %s ON %s (', [Order, Unique, FormatName, TMetaTable(FOwner).FormatName]));
 
   for I := 0 to FieldsCount - 1 do
   begin
@@ -3144,7 +3253,7 @@ end;
 
 function TMetaForeignKey.GetForTable: TMetaTable;
 begin
-  Result := TMetaDataBase(FOwner.FOwner).Tables[FForTable];
+  Result := MetaDataBase.Tables[FForTable];
 end;
 
 procedure TMetaForeignKey.GenerateObjectDDL(Stream: TStringStream);
@@ -3240,7 +3349,13 @@ begin
   FPrefix := DecodePrefix(Q.Fields[3].AsInteger);
   FSuffix := DecodeSuffixes(Q.Fields[3].AsInteger);
   FActive := Q.Fields[4].AsInteger = 0;
+  LoadDescription(Q);
   FLoaded := True
+end;
+
+function TCustomMetaTrigger.CommentKeyword: string;
+begin
+  Result := 'TRIGGER';
 end;
 
 procedure TCustomMetaTrigger.SaveFakeDDL(Stream: TStringStream);
@@ -3251,11 +3366,11 @@ begin
   // For Updateble View
   if FPrefix <> ttON then
   begin
-    Stream.WriteString(Format('CREATE TRIGGER %s FOR %s%s', [Name, TCustomMetaObject(FOwner).Name, sLineBreak]));
+    Stream.WriteString(Format('CREATE TRIGGER %s FOR %s%s', [FormatName, FOwner.FormatName, sLineBreak]));
   end
   else
   begin
-    Stream.WriteString(Format('CREATE TRIGGER %s%s', [Name, sLineBreak]));
+    Stream.WriteString(Format('CREATE TRIGGER %s%s', [FormatName, sLineBreak]));
   end;
 
   if FActive then
@@ -3276,7 +3391,7 @@ end;
 
 procedure TCustomMetaTrigger.SaveAlterDDL(Stream: TStringStream);
 begin
-  Stream.WriteString(Format('ALTER TRIGGER %s%s', [Name, sLineBreak]));
+  Stream.WriteString(Format('ALTER TRIGGER %s%s', [FormatName, sLineBreak]));
   if FActive then
     Stream.WriteString('ACTIVE ');
   Stream.WriteString(Format(' %s%s', [sLineBreak, FSource]));
@@ -3294,7 +3409,7 @@ var
 begin
   if FPrefix <> ttON then
   begin
-    Stream.WriteString(Format('CREATE TRIGGER %s FOR %s%s', [Name, TCustomMetaObject(FOwner).FormatName, sLineBreak]));
+    Stream.WriteString(Format('CREATE TRIGGER %s FOR %s%s', [FormatName, FOwner.FormatName, sLineBreak]));
   end
   else
   begin
@@ -3404,8 +3519,8 @@ end;
 procedure TMetaView.LoadFromDataBase(QName, QFields, QTriggers: TFIBQuery; QCharset: TFIBQuery; ChildTypes: TViewChildTypes);
 begin
   Name := QName.Fields[0].AsString;
-  FSource := QName.Fields[1].AsString;
-  FSource := Trim(FSource);
+  FSource := Trim(QName.Fields[1].AsString);
+  LoadDescription(QName);
 
   // FIELD
   if soViewFields in ChildTypes then
@@ -3470,12 +3585,19 @@ begin
   Result := Ord(otView)
 end;
 
-{ TMetaDomain }
-
-procedure TMetaDomain.GenerateDDLText(Stream: TStringStream);
+function TMetaView.CommentKeyword: string;
 begin
-  GenerateObjectDDL(Stream);
+  Result := 'VIEW';
 end;
+
+procedure TMetaView.GenerateCommentDDL(Stream: TStringStream);
+begin
+  inherited GenerateCommentDDL(Stream);
+  GenerateChildCommentDDL(Stream, Ord(soViewFields));
+  GenerateChildCommentDDL(Stream, Ord(soViewTriggers));
+end;
+
+{ TMetaDomain }
 
 procedure TMetaDomain.GenerateObjectDDL(Stream: TStringStream);
 begin
@@ -3493,6 +3615,16 @@ end;
 class function TMetaDomain.IsSubObject: boolean;
 begin
   Result := False
+end;
+
+function TMetaDomain.CommentKeyword: string;
+begin
+  Result := 'DOMAIN';
+end;
+
+function TMetaDomain.CommentTarget: string;
+begin
+  Result := FormatName;
 end;
 { TMetaProcedure }
 
@@ -3566,6 +3698,7 @@ begin
   f := QNames.FindField('RDB$PACKAGE_NAME');
   if f <> nil then
     FPackageName := f.AsString;
+  LoadDescription(QNames);
 
   QFields.Params[0].AsString := FName;
 
@@ -3627,6 +3760,18 @@ begin
   Result := Ord(otProcedure)
 end;
 
+function TMetaProcedure.CommentKeyword: string;
+begin
+  Result := 'PROCEDURE';
+end;
+
+procedure TMetaProcedure.GenerateCommentDDL(Stream: TStringStream);
+begin
+  inherited GenerateCommentDDL(Stream);
+  GenerateChildCommentDDL(Stream, Ord(soProcFieldIn));
+  GenerateChildCommentDDL(Stream, Ord(soProcFieldOut));
+end;
+
 { TMetaException }
 
 procedure TMetaException.LoadFromDataBase(QName: TFIBQuery);
@@ -3634,46 +3779,18 @@ begin
   Name := QName.Fields[0].AsString;
   FMessage := QName.Fields[1].AsString;
   FNumber := QName.Fields[2].AsInteger;
+  LoadDescription(QName);
   FLoaded := True
 end;
 
-function DoDoubleQuote(const s: string): string;
-var
-  L, J, QC: Integer;
+procedure TMetaException.GenerateObjectDDL(Stream: TStringStream);
 begin
-  L := Length(s);
-  QC := 0;
-  for J := 1 to L do
-    if s[J] = '''' then
-    begin
-      Inc(QC);
-    end;
-  if QC = 0 then
-    Result := s
-  else
-  begin
-    SetLength(Result, L + QC);
-    QC := 0;
-    for J := 1 to L do
-    begin
-      Result[J + QC] := s[J];
-      if s[J] = '''' then
-      begin
-        Inc(QC);
-        Result[J + QC] := s[J];
-      end;
-    end;
-
-  end;
+  Stream.WriteString(' CREATE EXCEPTION ' + FormatName + ' ' + QuotedStr(FMessage) + ' ');
 end;
 
-procedure TMetaException.GenerateObjectDDL(Stream: TStringStream);
-var
-  s: string;
+function TMetaException.CommentKeyword: string;
 begin
-  s := DoDoubleQuote(FMessage);
-  s := Format(' CREATE EXCEPTION %s ''%s'' ', [FormatName, s]);
-  Stream.WriteString(s)
+  Result := 'EXCEPTION';
 end;
 
 class function TMetaException.ClassIndex: Integer;
@@ -3737,6 +3854,7 @@ begin
   FModule := QNames.Fields[1].AsString;
   FEntry := Trim(QNames.Fields[2].AsString);
   FReturn := QNames.Fields[3].AsInteger;
+  LoadDescription(QNames);
 
   QFields.Params[0].AsString := QNames.Fields[0].AsString;
   QFields.ExecQuery;
@@ -3764,12 +3882,17 @@ begin
   Result := Ord(otUDF)
 end;
 
+function TMetaUDF.CommentKeyword: string;
+begin
+  Result := 'EXTERNAL FUNCTION';
+end;
+
 { TMetaTableField }
 
 function TMetaTableField.GetDomain: TMetaDomain;
 begin
   if FDomain >= 0 then
-    Result := TMetaDataBase(FOwner.FOwner).Domains[FDomain]
+    Result := MetaDataBase.Domains[FDomain]
   else
     Result := nil;
 end;
@@ -3789,11 +3912,10 @@ begin
   FDomain := -1;
   if not(Self is TMetaDomain) then
   begin
-    // if otDomain in TMetaDataBase(FOwner.FOwner).FObjectTypes then
     if not(Q.Fields[10].IsNull or (Copy(Q.Fields[10].AsString, 1, 4) = 'RDB$')) then
     begin
       FDomainName := Q.Fields[10].AsString;
-      FDomain := TMetaDataBase(FOwner.FOwner).FindDomainIndex(FDomainName);
+      FDomain := MetaDataBase.FindDomainIndex(FDomainName);
     end;
     FComputedSource := Q.Fields[11].AsString;
 
@@ -3808,7 +3930,7 @@ begin
 
   if FIsArray then
   begin
-    CreateQuery(QDims, QRYFieldDimensions, Q.Transaction);
+    QDims := CreateQuery(QRYFieldDimensions, Q.Transaction);
     try
       if not(Self is TMetaDomain) then
         QDims.Params[0].AsString := Q.Fields[10].AsString
@@ -3834,7 +3956,7 @@ end;
 
 procedure TMetaTableField.GenerateObjectDDL(Stream: TStringStream);
 begin
-  if (FDomainName <> '') and not(dtoDecodeDomains in TMetaDataBase(FOwner.FOwner).DDLTextOptions) then
+  if (FDomainName <> '') and not(dtoDecodeDomains in MetaDataBase.DDLTextOptions) then
   begin
     Stream.WriteString(FormatName + ' ');
     Stream.WriteString(FormatIdentifier(3, FDomainName))
@@ -3887,6 +4009,16 @@ begin
   Result := Ord(soViewFields)
 end;
 
+function TMetaField.CommentKeyword: string;
+begin
+  Result := 'COLUMN';
+end;
+
+function TMetaField.CommentTarget: string;
+begin
+  Result := FOwner.FormatName + '.' + FormatName;
+end;
+
 { TMetaUDFField }
 
 procedure TMetaUDFField.LoadFromDataBase(QField, QCharset: TFIBQuery);
@@ -3923,12 +4055,18 @@ procedure TMetaRole.LoadFromDataBase(QName: TFIBQuery);
 begin
   Name := QName.Fields[0].AsString;
   FOwner := QName.Fields[1].AsString;
+  LoadDescription(QName);
   FLoaded := True
+end;
+
+function TMetaRole.CommentKeyword: string;
+begin
+  Result := 'ROLE';
 end;
 
 procedure TMetaRole.GenerateObjectDDL(Stream: TStringStream);
 begin
-  Stream.WriteString(Format('CREATE ROLE %s ; /* By user %s */', [FormatName, Trim(FOwner)]));
+  Stream.WriteString(Format('CREATE ROLE %s /* By user %s */', [FormatName, Trim(FOwner)]));
 end;
 
 function TMetaRole.GetGrants(const Index: Integer): TCustomMetaGrant;
@@ -4008,6 +4146,17 @@ begin
       Stream.WriteString(' ' + FDefaultValue);
 
   end
+end;
+
+function TMetaProcField.CommentKeyword: string;
+begin
+  // Firebird 3 needs the routine kind when a procedure and a function have the same name
+  if FOwner is TMetaStoredFunc then
+    Result := 'FUNCTION PARAMETER'
+  else if (MetaDataBase <> nil) and MetaDataBase.FStoredFunctionsSupports then
+    Result := 'PROCEDURE PARAMETER'
+  else
+    Result := 'PARAMETER';
 end;
 
 { TMetaProcInField }
@@ -4249,8 +4398,18 @@ begin
   inherited;
   FMetaDatabase := TMetaDataBase.Create(nil);
   FMetaDatabase.OnLoadMetaData := DoOnLoadMetaData;
+  FMetaDatabase.DDLTextOptions := DefSchemaExtractDDLTextOptions;
   FLoadOptions := TLoadOptions.Create;
+end;
 
+function TFIBDBSchemaExtract.GetDDLTextOptions: TDDLTextOptions;
+begin
+  Result := FMetaDatabase.DDLTextOptions;
+end;
+
+procedure TFIBDBSchemaExtract.SetDDLTextOptions(const Value: TDDLTextOptions);
+begin
+  FMetaDatabase.DDLTextOptions := Value;
 end;
 
 destructor TFIBDBSchemaExtract.Destroy;
@@ -4396,7 +4555,6 @@ procedure TFIBDBSchemaExtract.LoadMetaData(OnlyNames: boolean = False);
 begin
   if Assigned(FDatabase) then
   begin
-    FMetaDatabase.DDLTextOptions := DDLTextOptions;
     FMetaDatabase.FSysInfos := FLoadOptions.FIncSysInfo;
     FMetaDatabase.FLoadViewChilds := FLoadOptions.FLoadViewChilds;
     FMetaDatabase.FLoadTableChilds := FLoadOptions.FLoadTableChilds;
@@ -4533,9 +4691,11 @@ begin
   Name := QNames.Fields[0].AsString;
   FSource := QNames.Fields[1].AsString;
   FPackageName := QNames.Fields[3].AsString;
+  LoadDescription(QNames);
 
+  // Extract Return param; the query is switched to the in params below
+  QFields.SQL.Text := QRYStoredFuncFieldsFB3Out;
   QFields.Params[0].AsString := FName;
-  // Extract Return param
 
   QFields.ExecQuery;
   while not QFields.Eof do
@@ -4546,8 +4706,8 @@ begin
   QFields.Close;
 
   // Extract In params
-  QFields.Params[0].AsString := FName;
   QFields.SQL.Text := QRYStoredFuncFieldsFB3In;
+  QFields.Params[0].AsString := FName;
   QFields.ExecQuery;
   while not QFields.Eof do
   begin
@@ -4558,6 +4718,18 @@ begin
 
   FLoaded := True
 
+end;
+
+function TMetaStoredFunc.CommentKeyword: string;
+begin
+  Result := 'FUNCTION';
+end;
+
+procedure TMetaStoredFunc.GenerateCommentDDL(Stream: TStringStream);
+begin
+  inherited GenerateCommentDDL(Stream);
+  // The return value has no name and no COMMENT ON
+  GenerateChildCommentDDL(Stream, Ord(soProcFieldIn));
 end;
 
 procedure TMetaStoredFunc.SaveEmptyDDL(Stream: TStringStream);
@@ -4589,7 +4761,6 @@ begin
   Stream.WriteString(sLineBreak + sLineBreak);
   Stream.WriteString(Format('RECREATE PACKAGE BODY %s AS ' + sLineBreak, [FormatName]));
   Stream.WriteString(FBody);
-  Stream.WriteString(DefTerminator);
 end;
 
 procedure TMetaPackage.LoadFromDataBase(QNames: TFIBQuery);
@@ -4597,7 +4768,13 @@ begin
   Name := QNames.Fields[0].AsString;
   FSpec := QNames.Fields[1].AsString;
   FBody := QNames.Fields[2].AsString;
+  LoadDescription(QNames);
   FLoaded := True;
+end;
+
+function TMetaPackage.CommentKeyword: string;
+begin
+  Result := 'PACKAGE';
 end;
 
 procedure TMetaPackage.SaveBodyDDL(Stream: TStringStream);

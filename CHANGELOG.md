@@ -58,6 +58,18 @@
 - `EFIBError.ErrorArgument(Code, Index)`: a string argument of the status
   vector, for example the constraint name of `isc_unique_key_violation`.
 
+#### Schema extract
+
+- `TFIBDBSchemaExtract` and `FullExtractDDL` write the descriptions as
+  `COMMENT ON` (database, domains, tables and views with their columns,
+  indices and triggers, procedures and functions with their parameters,
+  generators, exceptions, external functions, roles, packages, database
+  triggers): in a `COMMENTS` section before the final `COMMIT WORK` of
+  `GetDDLText`, and after the DDL of the object in `GetObjectDDL` and `AsDDL`.
+  They are written while `DDLTextOptions` has the new option
+  `dtoIncludeComments` (on by default) and the server has `COMMENT ON`
+  (Firebird 2.0 and later). The meta objects have a `Description` property.
+
 ### Changed
 
 The lists of old and new names, and what an application has to change, are in
@@ -184,6 +196,14 @@ The lists of old and new names, and what an application has to change, are in
 - The packages write DCU files to `$(BDSCOMMONDIR)\Dcu\FIB\$(Platform)\$(Config)`
   instead of `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`.
 
+#### Schema extract
+
+- `TFIBDBSchemaExtract.DDLTextOptions` is `[dtoIncludeComments]` by default
+  (was `[]`), and `TMetaDataBase` and `ExtGenerateDDLText` use
+  `DefDDLTextOptions` (`dtoIncludeComments` added). Forms saved with
+  `DDLTextOptions = []` keep writing no comments; see
+  [Upgrading](Docs/guide/upgrading.md#800).
+
 #### Samples
 
 - The descriptions of the samples, and how to create the demo database, are in
@@ -207,6 +227,7 @@ The lists of old and new names, and what an application has to change, are in
   polyfills `StrUtil.CharInSet` and `FIBPlatforms.WideCompareStr` (`SysUtils`
   declares both); see [Upgrading](Docs/guide/upgrading.md#800).
 - The samples `UnicodeFSS` (TNT controls) and `UnicodeFSS_2009`.
+- `TMetaTable.GenerateDDLTextOnlyTable` (protected): use `GenerateObjectDDL`.
 - `StrUtil.TFastStringStream`: the DDL methods of `FIBMetaData`
   (`GenerateDDLText`, `GenerateObjectDDL` and the others) take a
   `TStringStream`; see [Upgrading](Docs/guide/upgrading.md#800).
@@ -386,6 +407,20 @@ The lists of old and new names, and what an application has to change, are in
 - `StopFetching` in `TFIBQuery.OnSQLFetch` and `BeforeFetchRecord` made `Next`
   return `nil` but left `Eof` at `False`, so a `while not Eof` loop did not end.
   It is now a final stop: `Eof` is set as at the end of the data.
+- Script of `TFIBDBSchemaExtract.GetDDLText`: the roles, external functions,
+  generators, exceptions, tables, views and database triggers were followed by
+  an extra `;`, the triggers of a view were created twice, the objects of a
+  previous `GetObjectDDL` were written again, the `RETURNS` clause of every
+  function after the first held its first parameter, identity columns lost
+  `GENERATED ... AS IDENTITY`, the system domains `MON$...` of Firebird 4 and
+  later were created, and index and trigger names were not quoted.
+  `TMetaProcedure.PackageName` held the procedure body after `LoadMetaData`.
+- `GetObjectDDL` and `AsDDL`: the DDL of a domain had no terminator and that
+  of a package ended with `;;`. Before a `LoadMetaData`, `GetObjectDDL` ignored
+  `DDLTextOptions` (for example `dtoDecodeDomains`), lost identity columns
+  and took a packaged procedure of the same name.
+- Reloading or clearing the metadata leaked the previous meta objects, and
+  `GetObjectDDL` of a database trigger leaked one object on each call.
 
 ## [7.9.1] - 2026-10-09
 
