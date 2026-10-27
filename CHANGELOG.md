@@ -63,12 +63,18 @@
 - `TFIBDBSchemaExtract` and `FullExtractDDL` write the descriptions as
   `COMMENT ON` (database, domains, tables and views with their columns,
   indices and triggers, procedures and functions with their parameters,
-  generators, exceptions, external functions, roles, packages, database
-  triggers): in a `COMMENTS` section before the final `COMMIT WORK` of
-  `GetDDLText`, and after the DDL of the object in `GetObjectDDL` and `AsDDL`.
-  They are written while `DDLTextOptions` has the new option
-  `dtoIncludeComments` (on by default) and the server has `COMMENT ON`
-  (Firebird 2.0 and later). The meta objects have a `Description` property.
+  generators, exceptions, external functions, roles, packages with their
+  procedures and functions, database triggers): in a `COMMENTS` section before
+  the final `COMMIT WORK` of `GetDDLText`, and after the DDL of the object in
+  `GetObjectDDL` and `AsDDL`. They are written while `DDLTextOptions` has the
+  new option `dtoIncludeComments` (on by default) and the server has
+  `COMMENT ON` (Firebird 2.0 and later). The meta objects have a `Description`
+  property. A description longer than a string literal in the charset of the
+  connection (65535 bytes on Firebird 3 and later, a 65533 bytes statement
+  before) is written as a `/* ... */` note, since `COMMENT ON` takes only a
+  literal.
+- `TMetaPackage.Procedures` and `Functions` (with `ProceduresCount` and
+  `FunctionsCount`): the routines of a package, with their parameters.
 
 ### Changed
 
@@ -203,6 +209,11 @@ The lists of old and new names, and what an application has to change, are in
   `DefDDLTextOptions` (`dtoIncludeComments` added). Forms saved with
   `DDLTextOptions = []` keep writing no comments; see
   [Upgrading](Docs/guide/upgrading.md#800).
+- `TMetaGenerator.Value` is `Int64` (was `Integer`). `FieldsCount` and the
+  index of `Fields` of `TMetaConstraint` (primary keys, unique constraints,
+  indices, foreign keys), and `ForFieldsCount` and `ForFields` of
+  `TMetaForeignKey`, are `Integer` (were `Word`), as in the rest of the meta
+  objects.
 
 #### Samples
 
@@ -421,6 +432,13 @@ The lists of old and new names, and what an application has to change, are in
   and took a packaged procedure of the same name.
 - Reloading or clearing the metadata leaked the previous meta objects, and
   `GetObjectDDL` of a database trigger leaked one object on each call.
+- Schema extract: a generator value over 2147483647 was wrong. When
+  `LoadOptions.DBObjects` had no `otTable`, the views had no columns and their
+  triggers were not written. A procedure, function or external function got the
+  parameters of a packaged one with the same name, and `GetObjectDDL(otUDF)`
+  could take a packaged or PSQL function. `CREATE FUNCTION` and `RETURNS` had
+  two spaces. The script has no empty `UNIQUE`, `CHECKS` or `TRIGGERS`
+  sections.
 
 ## [7.9.1] - 2026-10-09
 
