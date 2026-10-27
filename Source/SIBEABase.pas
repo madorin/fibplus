@@ -470,7 +470,8 @@ constructor TSIBEventThread.Create(ClientLibrary: IIBClientLibrary;
   Owner: TSIBEventAlerter; DBHandle: SIB_DBHandle; EventGrp: Integer;
   TermEvent: TNotifyEvent; aVCLSynchro: Boolean);
 begin
-  inherited Create(True);
+  // starts after the constructor (AfterConstruction)
+  inherited Create(False);
   FClientLibrary := ClientLibrary;
   Signal := TSimpleEvent.Create;
   Parent := Owner;
@@ -478,7 +479,6 @@ begin
   EventGroup := EventGrp;
   OnTerminate := TermEvent;
   FVCLSynchro := aVCLSynchro;
-  Resume;
 end;
 
 destructor TSIBEventThread.Destroy;

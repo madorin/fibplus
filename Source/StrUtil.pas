@@ -2143,7 +2143,7 @@ end;
 {$ELSE}
 function Q_StrLen(P: PAnsiChar): Cardinal;
 begin
-  Result := StrLen(P)
+  Result := Cardinal(Length(P));
 end;
 {$ENDIF}
 

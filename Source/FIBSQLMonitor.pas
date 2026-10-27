@@ -264,8 +264,6 @@ end;
 
   { TFIBCustomSQLMonitor }
 
-{$WARN SYMBOL_DEPRECATED OFF}
-
 constructor TFIBCustomSQLMonitor.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
@@ -1070,11 +1068,11 @@ end;
 
 constructor TMonitorReaderThread.Create;
 begin
-  inherited Create(true);
+  // starts after the constructor (AfterConstruction)
+  inherited Create(False);
   st := TFIBTraceObject.Create('', tfMisc);
   FMonitors := TList.Create;
   InterlockedIncrement(FMonitorCount^);
-  Resume;
 end;
 
 destructor TMonitorReaderThread.Destroy;

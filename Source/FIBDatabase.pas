@@ -3496,19 +3496,18 @@ begin
   end
 end;
 
-{$WARN SYMBOL_DEPRECATED OFF}
+// The API version of the client (6.3 for Firebird 3 and later), not the product version
 function TFIBDatabase.ClientMajorVersion: Integer;
 begin
   LoadLibrary;
-  Result := FClientLibrary.ClientVersion
+  Result := FClientLibrary.isc_get_client_major_version;
 end;
 
 function TFIBDatabase.ClientMinorVersion: Integer;
 begin
   LoadLibrary;
-  Result := FClientLibrary.ClientMinorVersion
+  Result := FClientLibrary.isc_get_client_minor_version;
 end;
-{$WARN SYMBOL_DEPRECATED ON}
 
 function TFIBDatabase.GetIsFirebirdConnect: Boolean;
 begin

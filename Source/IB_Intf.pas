@@ -346,10 +346,11 @@ type
     FBusy: boolean;
 
     function GetLibName: string;
-    function GetIBClientVersion: Integer; deprecated;
-    function GetIBClientMinorVersion: Integer; deprecated;
-    function ClientMinorVersion: Integer; deprecated;
-    function ClientVersion: Integer; deprecated;
+    // the next four are deprecated in IIBClientLibrary
+    function GetIBClientVersion: Integer;
+    function GetIBClientMinorVersion: Integer;
+    function ClientMinorVersion: Integer;
+    function ClientVersion: Integer;
     function GetVersion: TFIBVersion;
     function GetBusy: boolean;
     function isc_attach_database(status_vector: PISC_STATUS;

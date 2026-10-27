@@ -722,6 +722,59 @@ begin
     end;
 end;
 
+// Value rounded half up to Decimals digits, the results of the deprecated FMTBcd.RoundAt for the
+// numbers FormatNumericString gets (the BcdRoundTo of its message does not exist): the zeros left
+// by the carry are dropped, with the decimal separator when no decimal is left (1.296 -> 1.3,
+// 1.96 -> 2)
+function RoundDecimalString(const Value: string; Decimals: Integer; DecimalSeparator: Char): string;
+var
+  Sign: string;
+  SeparatorPos, I: Integer;
+  Carry: Boolean;
+begin
+  if (Value <> '') and (Value[1] = '-') then
+    begin
+      Sign := '-';
+      Result := Copy(Value, 2, MaxInt);
+    end
+  else
+    begin
+      Sign := '';
+      Result := Value;
+    end;
+  SeparatorPos := Pos(DecimalSeparator, Result);
+  if (SeparatorPos = 0) or (Length(Result) - SeparatorPos <= Decimals) then
+    Exit(Value);
+  Carry := Result[SeparatorPos + Decimals + 1] >= '5';
+  if Decimals = 0 then
+    SetLength(Result, SeparatorPos - 1)
+  else
+    SetLength(Result, SeparatorPos + Decimals);
+  I := Length(Result);
+  while Carry and (I > 0) do
+    begin
+      if Result[I] = DecimalSeparator then
+        begin
+          if I = Length(Result) then
+            SetLength(Result, I - 1);
+        end
+      else if (Result[I] >= '0') and (Result[I] <= '9') then
+        if Result[I] < '9' then
+          begin
+            Result[I] := Succ(Result[I]);
+            Carry := False;
+          end
+        else if (I > SeparatorPos) and (I = Length(Result)) then
+          SetLength(Result, I - 1)
+        else
+          Result[I] := '0';
+      Dec(I);
+    end;
+  if Carry then
+    Result := '1' + Result;
+  Result := Sign + Result;
+end;
+
 function FormatNumericString(const Format, Source: string; OneSectionFormat: Boolean = False): string;
 type
   TPosType = (pBegin, pBeforeDecimalSep, pAfterDecimalSep, pEnd);
@@ -871,7 +924,7 @@ begin
         end
         else if Length(Result) - PosDecSepInString > CanHaveDecimalCount then
         begin
-          Result := RoundAt(Result, CanHaveDecimalCount)
+          Result := RoundDecimalString(Result, CanHaveDecimalCount, DecimalSeparator)
         end;
       end;
       //
