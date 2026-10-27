@@ -206,7 +206,7 @@ end;
 procedure TSIBEventThread.SIBInterpretError;
 begin
   ResultStatus := FClientLibrary.isc_interprete(ErrorBuffer, PPISC_STATUS(@ErrorVector));
-  Set8087CW(Default8087CW);
+  Reset8087CW;
 end;
 
 // stub for synchronizing with main thread

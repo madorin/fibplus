@@ -1840,7 +1840,7 @@ end;
 
 function TFIBDatabase.Call(ErrCode: ISC_STATUS; RaiseError: Boolean): ISC_STATUS;
 begin
-  Set8087CW(Default8087CW);
+  Reset8087CW;
   Result := ErrCode;
   // FCanTimeout := False;
   if Assigned(FTimer) and FTimer.Enabled then
@@ -4954,7 +4954,7 @@ function TFIBTransaction.Call(ErrCode: ISC_STATUS; RaiseError: Boolean): ISC_STA
 var
   i: Integer;
 begin
-  Set8087CW(Default8087CW);
+  Reset8087CW;
   Result := ErrCode;
   FCanTimeout := False;
 

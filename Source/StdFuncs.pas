@@ -1239,11 +1239,11 @@ end;
 
 procedure InitFPU;
 var
-  Default8087CW: Word;
-  asm
-    FSTCW Default8087CW
-    OR Default8087CW, 0300h
-    FLDCW Default8087CW
+  ControlWord: Word;
+asm
+  FSTCW ControlWord
+  OR ControlWord, 0300h
+  FLDCW ControlWord
 end;
 
 const

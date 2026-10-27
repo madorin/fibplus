@@ -573,6 +573,11 @@ type
 
 function GetClientLibrary(const aLibName: string): IIBClientLibrary;
 
+{$IFNDEF C22}
+// System.Reset8087CW of Delphi XE and later
+procedure Reset8087CW;
+{$ENDIF}
+
 const
   IBDateDelta = 15018;
 {$IFDEF MACOS}
@@ -643,14 +648,10 @@ begin
   end;
 end;
 
-{$IFDEF WINDOWS}
-procedure InitFPU;
-var
-  Default8087CW: Word;
-  asm
-    FSTCW Default8087CW
-    OR Default8087CW, 0300h
-    FLDCW Default8087CW
+{$IFNDEF C22}
+procedure Reset8087CW;
+begin
+  Set8087CW(Default8087CW);
 end;
 {$ENDIF}
 
@@ -1807,9 +1808,8 @@ begin
     FillChar(FVersion, SizeOf(FVersion), 0);
   end;
 
-{$IFDEF WINDOWS}
-  InitFPU
-{$ENDIF}
+  // Loading the client library can change the FPU control word
+  Reset8087CW;
 end;
 
 procedure TIBClientLibrary.FreeIBLibrary;

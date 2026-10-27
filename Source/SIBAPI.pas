@@ -56,7 +56,7 @@ begin
   with ClientLibrary do
     Result := isc_que_events(PISC_STATUS(Status), PISC_DB_HANDLE(DBHandle),
       PISC_LONG(EventID), Length, EventBuffer, TISC_CALLBACK(Callback), CallbackArg);
-  Set8087CW(Default8087CW);
+  Reset8087CW;
 end;
 
 // ---------------------------------------------------------------------------
@@ -67,7 +67,7 @@ function SIB_CancelEvents(ClientLibrary: IIBClientLibrary;
 begin
   with ClientLibrary do
     Result := isc_cancel_events(PISC_STATUS(Status), PISC_DB_HANDLE(DBHandle), PISC_LONG(EventID));
-  Set8087CW(Default8087CW);
+  Reset8087CW;
 end;
 
 // ---------------------------------------------------------------------------
@@ -77,7 +77,7 @@ procedure SIB_EventCounts(ClientLibrary: IIBClientLibrary;
   EventBuffer, ResultBuffer: PAnsiChar);
 begin
   ClientLibrary.isc_event_counts(PISC_STATUS(Status), Length, EventBuffer, ResultBuffer);
-  Set8087CW(Default8087CW);
+  Reset8087CW;
 end;
 
 // ---------------------------------------------------------------------------
@@ -89,7 +89,7 @@ begin
       Result := isc_free(P)
     else
       Result := 0;
-  Set8087CW(Default8087CW);
+  Reset8087CW;
 end;
 
 end.

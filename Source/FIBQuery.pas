@@ -3736,7 +3736,7 @@ end;
 
 function TFIBQuery.Call(ErrCode: ISC_STATUS; RaiseError: boolean): ISC_STATUS;
 begin
-  Set8087CW(Default8087CW);
+  Reset8087CW;
   Result := 0;
   if Transaction <> nil then
     Result := Transaction.Call(ErrCode, False);
@@ -4811,7 +4811,7 @@ begin
   if not FEof then
   begin
     // Go to the next record...
-    Set8087CW(Default8087CW);
+    Reset8087CW;
     // vLib:=FBase.Database.ClientLibrary;
     fetch_res := Call(FBase.Database.ClientLibrary.isc_dsql_fetch(StatusVector,
       @FHandle, FBase.Database.SQLDialect, FSQLRecord.FXSQLDA), False);
