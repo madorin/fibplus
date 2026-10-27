@@ -104,8 +104,6 @@ begin
     end;
 end;
 
-{$WARNINGS OFF}
-
 function TExpressionParser.VarResult: Boolean;
 var
   iLiteralStart: Word;
@@ -358,7 +356,8 @@ var
             begin
               pArg1 := pfdStart;
               Inc(pArg1, iLiteralStart + PWord(@pfd[0])^);
-              S := AnsiUpperCase(pArg1);
+              // the function name, ASCII
+              S := AnsiUpperCase(string(pArg1));
               if S = 'GETDATE' then
                 begin
                   Result := Now;
@@ -488,7 +487,6 @@ begin
   Inc(pfd, 10);
   Result := ParseNode(pfdStart, pfd);
 end;
-{$WARNINGS ON}
 
 function TExpressionParser.BooleanResult: Boolean;
 var

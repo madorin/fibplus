@@ -116,8 +116,8 @@ type
     FBlobType: Short; // 0 = segmented, 1 = streamed.
     FBlobSubType: Long;
     FBlobHandle: TISC_BLOB_HANDLE;
-    FTableName: AnsiString;
-    FFieldName: AnsiString;
+    FTableName: string;
+    FFieldName: string;
     FKeyValues: TDynArray;
     FLoadedFromCache: Boolean;
     FCharSet: Integer;
@@ -161,8 +161,8 @@ type
     property BlobSubType: Long read FBlobSubType write FBlobSubType;
     property AsString: AnsiString read GetAsString;
     property AsWideString: WideString read GetAsWideString;
-    property FieldName: AnsiString read FFieldName write FFieldName;
-    property TableName: AnsiString read FTableName write FTableName;
+    property FieldName: string read FFieldName write FFieldName;
+    property TableName: string read FTableName write FTableName;
     property RecordKeyValues: TDynArray read FKeyValues write FKeyValues;
   end;
 
@@ -252,7 +252,7 @@ type
     FSkipTitles: Boolean;
   public
     destructor Destroy; override;
-    function GetColumn(var Col: AnsiString): Integer;
+    function GetColumn(var Col: string): Integer;
     function ReadParameters: Boolean; override;
     procedure ReadyStream; override;
     property ColDelimiter: string read FColDelimiter write FColDelimiter;
@@ -1033,8 +1033,8 @@ constructor TFIBBlobStream.CreateNew(AFieldNo: Integer; AStreamList: TList;
 begin
   inherited CreateNew(AFieldNo, AStreamList);
   FCharSet := -1;
-  FTableName := AnsiString(ATableName);
-  FFieldName := AnsiString(AFieldName);
+  FTableName := ATableName;
+  FFieldName := AFieldName;
   if PKeyValues <> nil then
     FKeyValues := PKeyValues^
   else
@@ -1356,17 +1356,20 @@ begin
 
       Stream.Write(TempSize, SizeOf(TempSize));
       Stream.Write(KeyCount, SizeOf(KeyCount));
-      L := Length(FTableName);
+      // the cache file has the names and the key values in the system code page
+      tmpStr := AnsiString(FTableName);
+      L := Length(tmpStr);
       Stream.Write(L, SizeOf(L));
       if L > 0 then
-        Stream.Write(FTableName[1], L);
+        Stream.Write(tmpStr[1], L);
 
-      L := Length(FFieldName);
+      tmpStr := AnsiString(FFieldName);
+      L := Length(tmpStr);
       Stream.Write(L, SizeOf(L));
       if L > 0 then
-        Stream.Write(FFieldName[1], L);
+        Stream.Write(tmpStr[1], L);
 
-      tmpStr := GetRecKeyValuesAsStr;
+      tmpStr := AnsiString(GetRecKeyValuesAsStr);
       L := Length(tmpStr);
       Stream.Write(L, SizeOf(L));
       if L > 0 then
@@ -1421,7 +1424,7 @@ begin
     begin
       SetLength(tmpStr, tmpInt);
       Stream.Read(tmpStr[1], tmpInt);
-      if FTableName <> tmpStr then
+      if AnsiString(FTableName) <> tmpStr then
         Exit;
     end;
     Stream.Read(tmpInt, SizeOf(tmpInt));
@@ -1429,10 +1432,10 @@ begin
     begin
       SetLength(tmpStr, tmpInt);
       Stream.Read(tmpStr[1], tmpInt);
-      if FFieldName <> tmpStr then
+      if AnsiString(FFieldName) <> tmpStr then
         Exit;
     end;
-    tmpStr := GetRecKeyValuesAsStr;
+    tmpStr := AnsiString(GetRecKeyValuesAsStr);
     Stream.Read(tmpInt, SizeOf(tmpInt));
     if Length(tmpStr) <> tmpInt then
       Exit;
@@ -1766,7 +1769,7 @@ begin
   inherited Destroy;
 end;
 
-function TFIBInputDelimitedFile.GetColumn(var Col: AnsiString): Integer;
+function TFIBInputDelimitedFile.GetColumn(var Col: string): Integer;
 var
   c: Char;
   BytesRead: Integer;
@@ -1820,7 +1823,7 @@ end;
 function TFIBInputDelimitedFile.ReadParameters: Boolean;
 var
   i, curcol: Integer;
-  Col: AnsiString;
+  Col: string;
 begin
   Result := False;
   if not FEOF then
@@ -1861,7 +1864,7 @@ end;
 
 procedure TFIBInputDelimitedFile.ReadyStream;
 var
-  Col: AnsiString;
+  Col: string;
   curcol: Integer;
 begin
   if FColDelimiter = '' then
@@ -1893,7 +1896,7 @@ begin
     FVersion := AVersion
   else
     FVersion := 3;
-  FCharSet := CharSet
+  FCharSet := AnsiString(CharSet)
 end;
 
 constructor TFIBOutputRawFile.Create;
@@ -1915,7 +1918,7 @@ begin
   begin
     // FFile.Write(SignRowFile[1], Length(SignRowFile));
     WriteValue(SignRowFile[1], Length(SignRowFile));
-    st := IntToStr(FVersion);
+    st := AnsiString(IntToStr(FVersion));
     WriteValue(st[1], 1);
     if FVersion >= 2 then
     begin
@@ -2162,7 +2165,7 @@ begin
     else
     begin
       BytesRead := FFile.Read(ast[1], 1);
-      FVersion := StrToInt(ast[1]);
+      FVersion := StrToInt(string(ast[1]));
       if FVersion > 1 then
       begin
         if Assigned(FMap) then
@@ -2179,7 +2182,7 @@ begin
           SetLength(s, L);
           if L > 0 then
             BytesRead := FFile.Read(s[1], L);
-          CurPar := Params.ByName[s];
+          CurPar := Params.ByName[string(s)];
           FMap.Add(CurPar);
 
           if CurPar = nil then

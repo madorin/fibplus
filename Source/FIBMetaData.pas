@@ -1020,9 +1020,9 @@ begin
 end;
 
 const
-  TriggerPrefixes: array [TTriggerType] of PAnsiChar = ('BEFORE', 'AFTER', 'ON');
+  TriggerPrefixes: array [TTriggerType] of string = ('BEFORE', 'AFTER', 'ON');
 
-  TriggerSuffixes: array [TTriggerAction] of PAnsiChar = (
+  TriggerSuffixes: array [TTriggerAction] of string = (
     'INSERT',
     'UPDATE',
     'DELETE',

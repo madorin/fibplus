@@ -1527,7 +1527,9 @@ begin
     else
     begin
       SetLength(FBatchSQLs, Length(FBatchSQLs) + 1);
-      FBatchSQLs[Length(FBatchSQLs) - 1] := StmtTxt.Text;
+      // as TFIBQuery encodes SQL text (InterBase 2007 only: the metadata code page is the same)
+      FBatchSQLs[Length(FBatchSQLs) - 1] :=
+        EncodeString(StmtTxt.Text, FQuery.Database.Capabilities.CodePage);
     end;
   end;
 end;

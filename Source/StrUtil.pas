@@ -270,20 +270,21 @@ begin
   Result := 0;
 end;
 
+// GUID text: ASCII
 function CompareStrAndGuid(GUID: PGUID; const Str: AnsiString): Integer;
 begin
-  Result := CompareStr(Str, GUIDAsString(GUID^))
+  Result := CompareStr(string(Str), string(GUIDAsString(GUID^)))
 end;
 
 function CompareStrAndGuidP(GUID: PGUID; const Str: PAnsiString): Integer;
 begin
-  Result := CompareStr(Str^, GUIDAsString(GUID^))
+  Result := CompareStr(string(Str^), string(GUIDAsString(GUID^)))
 end;
 
 function CompareStrWA(const S1: string; const S2: AnsiString): Integer;
 begin
   // Result :=CompareStr(S1,S2)
-  if S1 <> S2 then
+  if S1 <> string(S2) then
     Result := 1
   else
     Result := 0
@@ -291,12 +292,12 @@ end;
 
 function AnsiCompareTextAA(const S1, S2: AnsiString): Integer;
 begin
-  Result := AnsiCompareText(S1, S2)
+  Result := AnsiCompareText(string(S1), string(S2))
 end;
 
 function AnsiUpperCaseA(const S: AnsiString): AnsiString;
 begin
-  Result := AnsiUpperCase(S)
+  Result := AnsiString(AnsiUpperCase(string(S)))
 end;
 
 function IsEqualGUIDs(const guid1, guid2: TGUID): Boolean;
@@ -556,7 +557,7 @@ begin
     Result := False
   else
   begin
-    wTargStr := TargetStr;
+    wTargStr := WideString(TargetStr);
     for i := 1 to L do
       if PartStr[i] <> wTargStr[i] then
       begin
@@ -1390,9 +1391,10 @@ begin
   ws := UTF8ToString(S)
 end;
 
+// S holds the UTF-8 bytes
 procedure DoUtf8Decode(const S: variant; var ws: Widestring);
 begin
-  ws := UTF8ToString(S)
+  ws := UTF8ToString(RawByteString(S))
 end;
 
 {
@@ -1803,7 +1805,7 @@ end;
 
 function SQLMaskCompareAA(const AString, Mask: AnsiString): Boolean;
 begin
-  Result := DoMaskCompare(string(AString), Mask, ['%', '_']);
+  Result := DoMaskCompare(string(AString), string(Mask), ['%', '_']);
 end;
 
 function SQLMaskCompare(const AString, Mask: Widestring): Boolean;
@@ -2153,7 +2155,7 @@ const
   DefTypesCount         = 21;
 
   // Sorted lists; include Firebird reserved words up to Firebird 5.0 plus legacy InterBase/ISQL keywords
-  InternalFunctions: array [0 .. InternalFunctionCount - 1] of AnsiString =
+  InternalFunctions: array [0 .. InternalFunctionCount - 1] of string =
     ('ACOSH', 'ASINH', 'ATANH', 'AVG', 'BIT_LENGTH', 'CAST', 'CORR', 'COSH',
     'COUNT', 'COVAR_POP', 'COVAR_SAMP', 'GEN_ID', 'IIF', 'LOWER', 'MAX', 'MIN',
     'RDB$ERROR', 'RDB$GET_CONTEXT', 'RDB$GET_TRANSACTION_CN', 'RDB$ROLE_IN_USE',
@@ -2161,7 +2163,7 @@ const
     'REGR_COUNT', 'REGR_INTERCEPT', 'REGR_R2', 'REGR_SLOPE', 'REGR_SXX',
     'REGR_SXY', 'REGR_SYY', 'SINH', 'STDDEV_POP', 'STDDEV_SAMP', 'SUBSTRING',
     'SUM', 'TANH', 'UPPER', 'VAR_POP', 'VAR_SAMP');
-  DefKeywords: array [0 .. DefKeywordsCount - 1] of AnsiString = ('ACTIVE',
+  DefKeywords: array [0 .. DefKeywordsCount - 1] of string = ('ACTIVE',
     'ADD', 'ADMIN', 'AFTER', 'ALL', 'ALTER', 'AND', 'ANY', 'AS', 'ASC',
     'ASCENDING', 'AT', 'AUTO', 'AUTODDL', 'BASED', 'BASENAME', 'BASE_NAME',
     'BEFORE', 'BEGIN', 'BETWEEN', 'BLOBEDIT', 'BOTH', 'BUFFER', 'BY', 'CACHE',
@@ -2210,7 +2212,7 @@ const
     'WHENEVER', 'WHERE', 'WHILE', 'WINDOW', 'WITH', 'WITHOUT', 'WORK', 'WRITE',
     'YEAR', 'YEARDAY');
 
-  DefTypes: array [0 .. DefTypesCount - 1] of AnsiString = ('BIGINT', 'BINARY',
+  DefTypes: array [0 .. DefTypesCount - 1] of string = ('BIGINT', 'BINARY',
     'BLOB', 'BOOLEAN', 'CHAR', 'CHARACTER', 'CSTRING', 'DATE', 'DECFLOAT',
     'DECIMAL', 'DOUBLE', 'FLOAT', 'INT128', 'INT64', 'INTEGER', 'NUMERIC',
     'SMALLINT', 'TIME', 'TIMESTAMP', 'VARBINARY', 'VARCHAR');

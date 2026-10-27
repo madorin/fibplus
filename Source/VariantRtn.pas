@@ -152,11 +152,11 @@ end;
                       function CompareStringAndVariantEQ(P: Pointer; const v: Variant): boolean;
                       begin
                         case VarType(v) of
-                          varString: result := AnsiString(P) = String(TVarData(v).VString);
-                          varOleStr: result := AnsiString(P) = WideString(TVarData(v).VOleStr);
-                          varUString: result := AnsiString(P) = string(TVarData(v).VUString);
+                          varString: result := AnsiString(P) = AnsiString(TVarData(v).VString);
+                          varOleStr: result := WideString(AnsiString(P)) = WideString(TVarData(v).VOleStr);
+                          varUString: result := string(AnsiString(P)) = string(TVarData(v).VUString);
                         else
-                          result := AnsiString(P) = VarToStr(v);
+                          result := string(AnsiString(P)) = VarToStr(v);
                         end;
                       end;
 
@@ -200,7 +200,7 @@ end;
                         end;
                       end;
 
-{$WARNINGS OFF}
+                      // P is the AnsiString of a varString variant: decoded with its code page
                       function CompareStringAndVariant(P: Pointer; const v: Variant): integer;
                       var
                         s: UnicodeString;
@@ -217,16 +217,16 @@ end;
                             end;
                           varOleStr:
                             begin
-                              if AnsiString(P) = WideString(TVarData(v).VOleStr) then
+                              if WideString(AnsiString(P)) = WideString(TVarData(v).VOleStr) then
                                 result := 0
-                              else if AnsiString(P) > WideString(TVarData(v).VOleStr) then
+                              else if WideString(AnsiString(P)) > WideString(TVarData(v).VOleStr) then
                                 result := 1
                               else
                                 result := -1
                             end;
                           varUString:
                             begin
-                              s := AnsiString(P);
+                              s := UnicodeString(AnsiString(P));
                               if s = UnicodeString(TVarData(v).VUString) then
                                 result := 0
                               else
@@ -238,16 +238,15 @@ end;
                               end
                             end
                         else
-                          if AnsiString(P) = VarToStr(v) then
+                          if string(AnsiString(P)) = VarToStr(v) then
                             result := 0
-                          else if AnsiString(P) > VarToStr(v) then
+                          else if string(AnsiString(P)) > VarToStr(v) then
                             result := 1
                           else
                             result := -1;
                         end;
                       end;
 
-{$WARNINGS ON}
                       function CompareVariants(const v, v1: Variant): integer;
                       begin
                         case TVarData(v).VType of

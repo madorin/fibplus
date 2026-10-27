@@ -220,6 +220,14 @@ The lists of old and new names, and what an application has to change, are in
 - `TFIBDatabase.ClientMajorVersion` and `ClientMinorVersion` (deprecated) return
   `isc_get_client_major_version`/`isc_get_client_minor_version` of the client library: the same
   values, but a client without these functions (InterBase 6.0 and older) raises an error.
+- Text types: `TFIBDatabase.AliasName`, `DBFileName` and `DBSiteName`,
+  `TFIBCustomService.ServerName`, `TFIBRestoreService.FixCharset`, `SPBConstantNames`,
+  `TFIBBlobStream.TableName` and `FieldName` are `string` (were `AnsiString`), and so are the
+  file name of `TFIBQuery.BatchInputRawFile`/`BatchOutputRawFile`, the column of
+  `TFIBInputDelimitedFile.GetColumn` and the name and value of `StrUtil.GetNameAndValue`. The
+  protected `ServiceStartAddParam` takes a `string` and encodes it; `GenerateTPB` has a new
+  `NameCodePage` parameter (default the system code page); see
+  [Upgrading](Docs/guide/upgrading.md#800).
 
 #### Schema extract
 
@@ -491,6 +499,13 @@ The lists of old and new names, and what an application has to change, are in
   AM/PM designators) became `?`.
 - `LibraryName` of `TFIBDatabase` went through the system code page: a client library in a
   folder with a name outside it could not be loaded.
+- `BlobSwapSupport`: with a table or field name outside the system code page the swap file was
+  not written (the path had `?` in it).
+- `TFIBInputDelimitedFile` read the UTF-16 file of `TFIBOutputDelimitedFile` through the system
+  code page: characters outside it became `?` or a similar letter. `BatchInputRawFile` and
+  `BatchOutputRawFile` could not use a file name outside the system code page.
+- `CompareVariantsEQ` (`VariantRtn`) returned `False` for two equal `AnsiString` (`varString`)
+  variants.
 
 ## [7.9.1] - 2026-10-09
 
