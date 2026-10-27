@@ -272,6 +272,10 @@ The lists of old and new names, and what an application has to change, are in
   "index out of bounds" error.
 - SQL editor: a code completion item chosen on the empty line after the last
   line was sometimes not inserted.
+- `DataSet_ID` property editor: when the `FIB$DATASETS_INFO` table did not
+  exist, it refused to create it ("urDataSetInfo not included into
+  Database.UseRepositories") although `urDataSetInfo` was in `UseRepositories`,
+  unless all three repositories were enabled.
 - `TFIBScripter` cut a statement at a `--` comment when the script was added
   as one item with several lines (e.g. `Script.Add` of a multi-line string):
   the comment ran to the end of the item, not of the line

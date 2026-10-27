@@ -1180,17 +1180,17 @@ begin
           end;
 
           j := p - 1;
-          while (j > 0) and (s1[j] in [' ', #9, #13, #10]) do
+          while (j > 0) and CharInSet(s1[j], [' ', #9, #13, #10]) do
             Dec(j);
           RelTable := '';
           Alias := '';
           if (j > 0) and (s1[j] = '.') then
           begin
-            while (j > 0) and (s1[j] in [' ', #9, #13, #10, '.']) do
+            while (j > 0) and CharInSet(s1[j], [' ', #9, #13, #10, '.']) do
               Dec(j);
             if s1[j] <> '"' then
             begin
-              while (j > 0) and not(s1[j] in [' ', #9, #13, #10, '.']) do
+              while (j > 0) and not CharInSet(s1[j], [' ', #9, #13, #10, '.']) do
               begin
                 Alias := s1[j] + Alias;
                 Dec(j);
@@ -1264,7 +1264,7 @@ begin
         end;
         j := 1;
         p := Length(s1);
-        while (j <= p) and (s1[j] in [' ', #13, #9, #10]) do
+        while (j <= p) and CharInSet(s1[j], [' ', #13, #9, #10]) do
           Inc(j);
         s1 := Copy(s1, j, 100000);
         if (LastChar(s) <> #10) then

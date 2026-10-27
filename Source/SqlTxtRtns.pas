@@ -290,8 +290,7 @@ begin
       Inc(pEtalon);
     end;
     if Result and (Len - Position >= LenEtalon) then
-      // Result:=CharInSet(Source[Position+LenEtalon] , CharsAfterClause)
-      Result := Source[Position + LenEtalon] in CharsAfterClause
+      Result := CharInSet(Source[Position + LenEtalon], CharsAfterClause)
   end
 end;
 
@@ -2575,27 +2574,17 @@ begin
       Dec(p);
     end;
   end;
-  case Length(Result) of
-    2:
-      if CharInSet(Result[1], ['O', 'o']) and CharInSet(Result[2], ['R', 'r']) then
-        Result := '';
-    3:
-      if CharInSet(Result[1], ['A', 'a']) and CharInSet(Result[2], ['N', 'n']) and CharInSet(Result[3], ['D', 'd']) then
-        Result := '';
-  end;
+  if SameText(Result, 'OR') or SameText(Result, 'AND') then
+    Result := '';
 
-  if Length(Result) = 8 then
-    if (Result[1] in ['D', 'd']) and (Result[2] in ['I', 'i']) and
-      (Result[3] in ['S', 's']) and (Result[4] in ['T', 't']) and
-      (Result[5] in ['I', 'i']) and (Result[6] in ['N', 'n']) and
-      (Result[7] in ['C', 'c']) and (Result[8] in ['T', 't']) then
-    begin
-      Result := FieldName;
-      Exit;
-    end;
+  if SameText(Result, 'DISTINCT') then
+  begin
+    Result := FieldName;
+    Exit;
+  end;
   OnlyNumeric := True;
   for p := 1 to Length(Result) do
-    if not(Result[p] in ['0' .. '9']) then
+    if not CharInSet(Result[p], ['0' .. '9']) then
     begin
       OnlyNumeric := False;
       Break
@@ -2744,7 +2733,7 @@ begin
               begin
                 InComment := sNormal;
                 Inc(i);
-                while (i < Length(OrderText)) and (OrderText[i] in [' ', #13, #9, #10]) do
+                while (i < Length(OrderText)) and CharInSet(OrderText[i], [' ', #13, #9, #10]) do
                   Inc(i);
                 Continue
               end
@@ -2758,7 +2747,7 @@ begin
               if OrderText[i + 1] = '/' then
               begin
                 Inc(i, 2);
-                while (i < Length(OrderText)) and (OrderText[i] in [' ', #13, #9, #10]) do
+                while (i < Length(OrderText)) and CharInSet(OrderText[i], [' ', #13, #9, #10]) do
                   Inc(i);
                 InComment := sNormal;
               end
@@ -3133,7 +3122,7 @@ begin
   begin
     StartLine := Position;
 
-    while (StartLine > 1) and not(FSQLText[StartLine] in [#13, #10]) do
+    while (StartLine > 1) and (FSQLText[StartLine] <> #13) and (FSQLText[StartLine] <> #10) do
       Dec(StartLine);
 
     InQuoted := False;
@@ -3141,10 +3130,10 @@ begin
       InQuoted := InQuoted xor (FSQLText[i] = '"');
 
     if not InQuoted then
-      if FSQLText[Position] in endLexem + CharsAfterClause - ['.', '"'] then
+      if CharInSet(FSQLText[Position], endLexem + CharsAfterClause - ['.', '"']) then
       begin
         StartWord := Position;
-        while FSQLText[StartWord] in [' ', #9, #13, #10] do
+        while CharInSet(FSQLText[StartWord], [' ', #9, #13, #10]) do
           Dec(StartWord);
         Exit;
       end;
@@ -3153,7 +3142,7 @@ begin
     if not PartOnly then
     begin
       for i := Position + 1 to Length(FSQLText) do
-        if not InQuoted and (FSQLText[i] in endLexem + CharsAfterClause + ['.'] - ['"']) then
+        if not InQuoted and CharInSet(FSQLText[i], endLexem + CharsAfterClause + ['.'] - ['"']) then
           Break
         else
           case FSQLText[i] of
@@ -3170,7 +3159,7 @@ begin
 
     for i := Position downto 1 do
     begin
-      if not InQuoted and (FSQLText[i] in endLexem + CharsAfterClause - ['.', '"']) then
+      if not InQuoted and CharInSet(FSQLText[i], endLexem + CharsAfterClause - ['.', '"']) then
         Break
       else
         case FSQLText[i] of

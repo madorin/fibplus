@@ -244,7 +244,7 @@ begin
     Exit;
 
   ch := Line[StartPos];
-  if ch in ['?', ':'] then
+  if CharInSet(ch, ['?', ':']) then
   begin
     Token := TToken(tokParam);
     Exit;

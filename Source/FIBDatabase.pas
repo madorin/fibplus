@@ -3919,7 +3919,7 @@ begin
       PVersion := @FServerMajorVersion;
       while i < Length(VersionStr) do
         begin
-          if VersionStr[i] in ['0' .. '9'] then
+          if CharInSet(VersionStr[i], ['0' .. '9']) then
             tmpstr := tmpstr + VersionStr[i]
           else
             begin

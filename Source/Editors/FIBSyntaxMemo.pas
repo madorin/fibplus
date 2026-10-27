@@ -1504,13 +1504,13 @@ var
   i, wordbeg: Integer;
   InWord, InLit, InLitChar: Boolean;
   { }
-  function HasChars(const s: string; StartPos: Integer; Chars: TCharSet): Boolean;
+  function HasChars(const s: string; StartPos: Integer; const Chars: TCharSet): Boolean;
   var
     i: Integer;
   begin
     Result := False;
     for i := StartPos to Length(s) do
-      if not(s[i] in Chars) then
+      if not CharInSet(s[i], Chars) then
         Exit;
     Result := True;
   end;
@@ -1616,7 +1616,7 @@ begin
                   if (Length(si) > Length(PA.LiteralHexPrefix)) and (Pos(PA.LiteralHexPrefix, si) = 1) and
                     HasChars(si, Length(PA.LiteralHexPrefix) + 1, ['0' .. '9', 'A' .. 'F', 'a' .. 'f']) then
                     Result := tokHexValue
-                  else if (Length(si) > 1) and (si[1] in ['-', '0' .. '9']) then
+                  else if (Length(si) > 1) and CharInSet(si[1], ['-', '0' .. '9']) then
                     begin
                       if HasChars(si, 2, ['0' .. '9']) then
                         Result := tokInteger
@@ -1854,7 +1854,7 @@ type
   begin
     wordbeg := Pos;
     Pos := Pos + Length(PA.LiteralHexPrefix);
-    while (Pos <= Length(Line)) and (Line[Pos] in HexChars) do
+    while (Pos <= Length(Line)) and CharInSet(Line[Pos], HexChars) do
       Inc(Pos);
     AddToken(wordbeg, Pos - wordbeg, tokHexValue);
   end;
@@ -1878,7 +1878,7 @@ type
           Token := tokFloat
         else
           Break;
-    until (Pos > Length(Line)) or not(Line[Pos] in ValidChars);
+    until (Pos > Length(Line)) or not CharInSet(Line[Pos], ValidChars);
     AddToken(wordbeg, Pos - wordbeg, Token);
   end;
 
@@ -1994,7 +1994,7 @@ begin
             else
 
               // Numbers supply: Integer and Float
-              if (c in IntChars) and ((Col = 1) or not IsCharAlphaNumeric(Line[Col - 1])) then
+              if CharInSet(c, IntChars) and ((Col = 1) or not IsCharAlphaNumeric(Line[Col - 1])) then
                 begin
                   ProcessWord(wordbeg);
                   ProcessNumber(Col);
@@ -2004,7 +2004,7 @@ begin
 
                 begin
                   Result := tokText;
-                  if c in OperatorChars then
+                  if CharInSet(c, OperatorChars) then
                     Result := tokOperator
                   else
                     case c of
@@ -7819,7 +7819,7 @@ begin
       Clear;
       s := TMPCustomSyntaxMemo(Owner).GetCurrentWord(True);
       if (Length(s) > 0) then
-        if s[Length(s)] in (CharsAfterClause + endLexem + CharsBeforeClause - ['"']) then
+        if CharInSet(s[Length(s)], CharsAfterClause + endLexem + CharsBeforeClause - ['"']) then
           s := '';
       for i := 0 to Pred(FInsertList.Count) do
         if i < FItemList.Count then

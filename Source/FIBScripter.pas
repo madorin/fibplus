@@ -477,7 +477,7 @@ begin
       Inc(pEtalon);
     end;
     if Result and (Len - Position >= LenEtalon) then
-      Result := Source[Position + LenEtalon] in [' ', #13, #9, #10, '/', '-', ';', '^', ',', '}']
+      Result := CharInSet(Source[Position + LenEtalon], [' ', #13, #9, #10, '/', '-', ';', '^', ',', '}'])
   end
 end;
 
@@ -594,7 +594,7 @@ begin
   i := 3;
   while i <= L do
   begin
-    if tmpStr[i] in [' ', #9, #13, #10] then
+    if CharInSet(tmpStr[i], [' ', #9, #13, #10]) then
       Break;
     Inc(i)
   end;
@@ -612,16 +612,16 @@ begin
   begin
     case State of
       sConstName:
-        if (Expr[i] in [' ', #9, #10, #13]) then
+        if CharInSet(Expr[i], [' ', #9, #10, #13]) then
         begin
           cName := UpperCase(Copy(Expr, 1, i - 1));
-          while (i <= Length(Expr)) and (Expr[i] in [' ', #9, #10, #13]) do
+          while (i <= Length(Expr)) and CharInSet(Expr[i], [' ', #9, #10, #13]) do
             Inc(i);
-          if (i > Length(Expr)) or not(Expr[i] in ['=', '>', '<']) then
+          if (i > Length(Expr)) or not CharInSet(Expr[i], ['=', '>', '<']) then
             raise Exception.Create('Parse script error.' + sLineBreak + 'Can''t resolve condition  "$IF"' + sLineBreak + Expr);
           State := sOperator;
         end
-        else if (Expr[i] in ['=', '>', '<']) then
+        else if CharInSet(Expr[i], ['=', '>', '<']) then
         begin
           cName := UpperCase(Copy(Expr, 1, i - 1));
           State := sOperator;
@@ -629,7 +629,7 @@ begin
         else
           Inc(i);
       sOperator:
-        if (Expr[i] in ['=', '>', '<']) then
+        if CharInSet(Expr[i], ['=', '>', '<']) then
         begin
           cOper := cOper + Expr[i];
           Inc(i)
@@ -638,7 +638,7 @@ begin
           State := sValue;
       sValue:
         begin
-          while (i <= Length(Expr)) and (Expr[i] in [' ', #9, #10, #13]) do
+          while (i <= Length(Expr)) and CharInSet(Expr[i], [' ', #9, #10, #13]) do
             Inc(i);
           cValue := Copy(Expr, i, MaxInt);
           Break;
@@ -738,7 +738,7 @@ begin
   i := 10;
   while i <= L do
   begin
-    if tmpStr[i] in [' ', #9, #13, #10] then
+    if CharInSet(tmpStr[i], [' ', #9, #13, #10]) then
       Break;
     Inc(i)
   end;
@@ -2868,7 +2868,7 @@ var
 begin
   CurStr := Line(TokenPos.Y);
   StartPosInStr := TokenPos.X;
-  if (CurStr[StartPosInStr] in ['''', '"']) and IgnoreQuote then
+  if CharInSet(CurStr[StartPosInStr], ['''', '"']) and IgnoreQuote then
   begin
     EndPosInStr := PosCh1(CurStr[StartPosInStr], CurStr, StartPosInStr + 1);
     if EndPosInStr = 0 then
@@ -2879,7 +2879,7 @@ begin
   begin
     EndPosInStr := StartPosInStr;
     L := Length(CurStr);
-    while (EndPosInStr <= L) and not(CurStr[EndPosInStr] in [#9, #13, #10, ' ', '-', '/', ',', ';', '(']) do
+    while (EndPosInStr <= L) and not CharInSet(CurStr[EndPosInStr], [#9, #13, #10, ' ', '-', '/', ',', ';', '(']) do
       Inc(EndPosInStr);
   end;
 
@@ -3078,7 +3078,7 @@ begin
     for i := FQuery.ParamCount - 1 downto 0 do
     begin
       pn := FQuery.ParamName(i);
-      if pn[1] in ['H', 'h'] then
+      if CharInSet(pn[1], ['H', 'h']) then
       begin
         p_ := Pos('_', pn);
         bPos := HexStr2Int(Copy(pn, 2, p_ - 2));
