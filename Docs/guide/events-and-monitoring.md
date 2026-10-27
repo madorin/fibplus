@@ -153,10 +153,10 @@ For `keLostConnect`, `DoRaise := False` ends the call with a silent `EAbort`, un
 
 | Member | Description |
 |--------|-------------|
-| `LastError` | Kind of the last handled error. |
+| `LastError` | Kind of the last error handled in the calling thread. `ExceptionNumber`, `ExceptionName` and `ConstraintName` are per thread too. |
 | `ExceptionNumber`, `ExceptionName` | Number and name of a user exception. Valid for `keException` when `oeException` is set; `ExceptionNumber` is `-1` otherwise. |
-| `ConstraintName` | Constraint of a foreign key, check, or unique violation, see [Options](#options). |
-| `ErrorLexems` | Words that the handler looks for in the server message: `Constraint`, `Index`, `Exception`, `At`. Written in lower case. Defaults: `constraint`, `index`, `exception`, `at`. |
+| `ConstraintName` | Constraint of a foreign key, check, or unique violation, see [Options](#options). The exact name from the status vector, even with spaces or quotes; *Firebird 6* quotes it and puts the schema before an index name, both removed here. |
+| `ErrorLexems` | Words that the handler looks for in the server message: `Constraint` and `Index` (only when the status vector has no constraint name), `Exception`, `At`. Written in lower case. Defaults: `constraint`, `index`, `exception`, `at`. |
 | `OnFIBErrorEvent(Sender, ErrorValue, KindIBError, DoRaise)` | Called after the handler classified the error. |
 
 ### Custom messages for constraints

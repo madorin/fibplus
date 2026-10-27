@@ -194,7 +194,7 @@ type
     procedure SaveToFile(const FileName: string);
     procedure LoadFromFile(const FileName: string);
   public
-    procedure AddErrorMessage(const DBName, ErrorName, ErrorMsg: string; Version: integer);
+    procedure AddErrorMessage(const DBName, ErrorName, ErrorMsg: string; Version: Integer);
     function ErrorMessage(Tr: TFIBTransaction; const ErrorName: string): string;
   end;
 
@@ -2602,7 +2602,7 @@ begin
   end;
 end;
 
-procedure TFIBErrorMessageCache.AddErrorMessage(const DBName, ErrorName, ErrorMsg: string; Version: integer);
+procedure TFIBErrorMessageCache.AddErrorMessage(const DBName, ErrorName, ErrorMsg: string; Version: Integer);
 begin
   FLock.BeginWrite;
   try

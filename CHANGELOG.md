@@ -53,6 +53,11 @@
   over it, and the `Resources` folder is removed; see
   [Upgrading](Docs/guide/upgrading.md#800).
 
+#### Errors
+
+- `EFIBError.ErrorArgument(Code, Index)`: a string argument of the status
+  vector, for example the constraint name of `isc_unique_key_violation`.
+
 ### Changed
 
 The lists of old and new names, and what an application has to change, are in
@@ -297,6 +302,15 @@ The lists of old and new names, and what an application has to change, are in
   replaced the violation, with its own `LastError`, `ConstraintName` and
   `OnFIBErrorEvent`. The violation now keeps the message it has without a row
   in the table.
+- `TFIBErrorHandler.ConstraintName` was parsed from the message: a name with
+  spaces or quotes was cut, and it was empty for a message in another language
+  or without `ShowIBMessage`. It is now the exact name from the status vector,
+  without the quotes and the schema that Firebird 6 adds there.
+- `TFIBErrorHandler.LastError`, `ConstraintName`, `ExceptionName` and
+  `ExceptionNumber` were shared by all threads: an error in one thread changed
+  them while another read them. They are now kept per thread.
+- Creating a second `TFIBErrorHandler` raised, and also unregistered the first
+  one, which then no longer handled any error.
 - A schema cache file that could not be written completely (disk full, ...)
   was left truncated, and the next `Open` with `AutoLoadFromFile` failed
   reading it. The file is now deleted instead.

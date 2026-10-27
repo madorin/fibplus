@@ -33,12 +33,14 @@ type
   *)
 
   TFIBErrorCodes = array of Long;
+  TFIBErrorArguments = array of string;
 
   EFIBError = class(EDatabaseError)
   private
     FSQLCode: Long;
     FIBErrorCode: Long;
     FErrorCodes: TFIBErrorCodes;
+    FErrorArguments: array of TFIBErrorArguments; // the string arguments of each item of FErrorCodes
     FRaiserName: string; // IMS
     FSQLMessage: string;
     FIBMessage: string;
@@ -46,6 +48,7 @@ type
     FMsg: string;
     FSQLState: FIBByteString;
     SenderObj: TObject;
+    procedure ReadStatusVector(Status: PISC_STATUS);
     procedure RebuildMessage; // IMS
     procedure SetSQLMessage(Value: string); // IMS
     procedure SetIBMessage(Value: string); // IMS
@@ -59,6 +62,8 @@ type
     // every gds code of the status vector, set for server errors only
     property ErrorCodes: TFIBErrorCodes read FErrorCodes;
     function HasErrorCode(Code: Long): Boolean;
+    // the Index-th string argument of the first status vector item with Code, '' without one
+    function ErrorArgument(Code: Long; Index: Integer = 0): string;
     function IsStatementTimeout: Boolean;
     property RaiserName: string read FRaiserName write FRaiserName; // IMS
     property SQLState: FIBByteString read FSQLState;
@@ -359,8 +364,9 @@ procedure FIBErrorEx(const ErrMess: string; const Args: array of const);
 
 procedure IBError(ClientLibrary: IIbClientLibrary; Sender: TObject);
 
-procedure RegisterErrorHandler(aErrorHandler: TComponent);
-procedure UnRegisterErrorHandler;
+procedure RegisterErrorHandler(AErrorHandler: TComponent);
+// With a handler, only that handler is unregistered
+procedure UnRegisterErrorHandler(AErrorHandler: TComponent = nil);
 function ErrorHandlerRegistered: Boolean;
 
 // Manage the thread-local status vector
@@ -414,15 +420,16 @@ end;
 
 /// ErrorHandler
 
-procedure RegisterErrorHandler(aErrorHandler: TComponent);
+procedure RegisterErrorHandler(AErrorHandler: TComponent);
 begin
-  if aErrorHandler is TFIBErrorHandler then
-    IBErrorHandler := TFIBErrorHandler(aErrorHandler)
+  if AErrorHandler is TFIBErrorHandler then
+    IBErrorHandler := TFIBErrorHandler(AErrorHandler)
 end;
 
-procedure UnRegisterErrorHandler;
+procedure UnRegisterErrorHandler(AErrorHandler: TComponent = nil);
 begin
-  IBErrorHandler := nil
+  if (AErrorHandler = nil) or (AErrorHandler = IBErrorHandler) then
+    IBErrorHandler := nil
 end;
 
 function ErrorHandlerRegistered: Boolean;
@@ -452,26 +459,63 @@ end;
   *  exception based on the current values in it.
 *)
 
-procedure ReadErrorCodes(Status: PISC_STATUS; var Codes: TFIBErrorCodes);
+// Every gds code of the status vector and the string arguments that follow it; warnings are skipped
+procedure EFIBError.ReadStatusVector(Status: PISC_STATUS);
 var
-  Count: Integer;
+  Count, Target, Len: Integer;
+  Argument: AnsiString;
+
+  procedure AddArgument;
+  var
+    Last: Integer;
+  begin
+    if Target < 0 then
+      Exit;
+    Last := Length(FErrorArguments[Target]);
+    SetLength(FErrorArguments[Target], Last + 1);
+    FErrorArguments[Target][Last] := string(Argument);
+  end;
+
 begin
   Count := 0;
-  SetLength(Codes, 0);
+  Target := -1;
+  FErrorCodes := nil;
+  FErrorArguments := nil;
   while Status^ <> isc_arg_end do
     case Status^ of
       isc_arg_gds:
         begin
           Inc(Status);
-          SetLength(Codes, Count + 1);
-          Codes[Count] := Long(Status^);
+          SetLength(FErrorCodes, Count + 1);
+          SetLength(FErrorArguments, Count + 1);
+          FErrorCodes[Count] := Long(Status^);
+          Target := Count;
           Inc(Count);
           Inc(Status);
         end;
+      isc_arg_warning:
+        begin
+          Target := -1;
+          Inc(Status, 2);
+        end;
+      isc_arg_string:
+        begin
+          Inc(Status);
+          Argument := PAnsiChar(Status^);
+          AddArgument;
+          Inc(Status);
+        end;
       isc_arg_cstring:
-        Inc(Status, 3);
+        begin
+          Inc(Status);
+          Len := Integer(Status^);
+          Inc(Status);
+          SetString(Argument, PAnsiChar(Status^), Len);
+          AddArgument;
+          Inc(Status);
+        end;
     else
-      Inc(Status, 2); // string, number, interpreted, sql_state, warning: one value
+      Inc(Status, 2); // number, interpreted, sql_state: one value
     end;
 end;
 
@@ -558,7 +602,7 @@ begin
   vRaiseExcept := true;
   vEFIBInterBaseError := EFIBInterBaseError.CreateEx(SQLCode, vIBMessage, vSQLMessage, '', Sender); // '' by IMS
   vEFIBInterBaseError.FSQLState := vSQLState;
-  ReadErrorCodes(StatusVector, vEFIBInterBaseError.FErrorCodes);
+  vEFIBInterBaseError.ReadStatusVector(StatusVector);
   try
     if ErrorHandlerRegistered then
       IBErrorHandler.DoOnErrorEvent(Sender, vEFIBInterBaseError, vRaiseExcept);
@@ -714,6 +758,20 @@ begin
     Result := FErrorCodes[i] = Code;
     Inc(i);
   end;
+end;
+
+function EFIBError.ErrorArgument(Code: Long; Index: Integer = 0): string;
+var
+  I: Integer;
+begin
+  for I := 0 to High(FErrorCodes) do
+    if FErrorCodes[I] = Code then
+    begin
+      if (Index >= 0) and (Index <= High(FErrorArguments[I])) then
+        Exit(FErrorArguments[I][Index]);
+      Break;
+    end;
+  Result := '';
 end;
 
 function EFIBError.IsStatementTimeout: Boolean;
