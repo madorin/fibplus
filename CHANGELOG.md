@@ -284,6 +284,16 @@ The lists of old and new names, and what an application has to change, are in
   and messages of `FIB$ERROR_MESSAGES`. They are now kept as `string` and the
   cache files are saved in UTF-8; files saved by older versions are still read
   ([Upgrading](Docs/guide/upgrading.md#schema-cache-files)).
+- The error message cache (`ListErrorMessages`, used by `TFIBErrorHandler` for
+  the messages of `FIB$ERROR_MESSAGES`) was not thread safe: errors handled in
+  several threads at once could raise access violations. With a schema cache
+  file, `FIB$VERSION` was checked once per process for all databases, so the
+  stale messages of a second database, or of a file loaded later, were shown;
+  each database is now checked on its first use and after a load, and also
+  after a restore that lowered its versions.
+- A schema cache file that could not be written completely (disk full, ...)
+  was left truncated, and the next `Open` with `AutoLoadFromFile` failed
+  reading it. The file is now deleted instead.
 - `EFIBClientError.IBErrorCode` had the code of an earlier server error of the
   thread: after a statement timeout a client error had `isc_cancelled`, so
   `TFIBErrorHandler` took it for a cancelled statement. It is now 0.

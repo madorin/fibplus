@@ -164,7 +164,7 @@ The transaction of the SQL logger uses `nowait` and no longer the server default
 
 #### Schema cache files
 
-The schema cache files (`CacheSchemaOptions.LocalCacheFile` and its `.dt` and `.err` files, `SaveSchemaToFile`) keep their texts in UTF-8. Files saved by older versions are still read. Older versions read the new files as text in the system code page and garble the characters outside ASCII (SQL texts, defaults, labels, error messages), so delete these files when you go back to an older version.
+The schema cache files (`CacheSchemaOptions.LocalCacheFile` and its `.dt` and `.err` files, `SaveSchemaToFile`) keep their texts in UTF-8. Files saved by older versions are still read. Older versions ignore the new `.err` file, but read the other two as text in the system code page and garble the characters outside ASCII (SQL texts, defaults, labels), so delete these files when you go back to an older version.
 
 #### Codes of client errors
 
