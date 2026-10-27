@@ -184,6 +184,18 @@ The lists of old and new names, and what an application has to change, are in
 - The packages write DCU files to `$(BDSCOMMONDIR)\Dcu\FIB\$(Platform)\$(Config)`
   instead of `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`.
 
+#### Samples
+
+- The descriptions of the samples, and how to create the demo database, are in
+  [Samples/README.md](Samples/README.md) instead of the Word documents in
+  `Samples\doc`.
+- All samples connect to the Firebird alias `localhost:fibplus_samples`, set
+  once in `Samples\src\FIBExamples.inc`, instead of fixed database paths.
+- `BlobFilters` compresses with `System.ZLib` instead of the bundled PasZLib,
+  which no longer compiled. `DataSetRepository` has a project file and is in
+  the project group, and the **Execute** check box of `SQLMonitor` turns the
+  execute trace on and off by its own state instead of that of **Prepare**.
+
 ### Removed
 
 - Support for Delphi 6, 7, 2005, 2006, 2007 and C++Builder 6 to 2007 (the
