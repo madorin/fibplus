@@ -211,6 +211,12 @@ The lists of old and new names, and what an application has to change, are in
   `RecordCount`: a negative count fetches no row (it fetched all the rows).
   `ISQLStatMaker.FixStartTime` and `TTestInfo.FixStartTime` return the tick
   count as `Cardinal` (was `Integer`).
+- On Delphi XE3 and later `TFIBCustomDataSet` and `TFIBClientDataSet` override only the
+  `TValueBuffer` overload of `DataConvert` (the deprecated `Pointer` one stays for Delphi 2009
+  to XE2), and on XE4 and later `TFIBCustomDataSet` overrides `GetCalcFields(TRecBuf)` instead
+  of `GetCalcFields(TRecordBuffer)`. Code calling the deprecated `TField.GetData`/`SetData`
+  with a pointer and `NativeFormat = False` gets the `TDataSet` conversion; see
+  [Upgrading](Docs/guide/upgrading.md#800).
 
 #### Schema extract
 
@@ -260,6 +266,11 @@ The lists of old and new names, and what an application has to change, are in
 
 ### Fixed
 
+- `TFIBArrayField.AsBytes` and `AsByteArray` (Delphi XE3 and later) returned wrong bytes and
+  wrote past their buffer (the `ftBytes` conversion took the value for an `OleVariant`); they
+  return the 8 bytes of the array id.
+- `TFIBClientBCDField.AsBCD` read in the `OnValidate` of the field returned 0 instead of the
+  new value (Delphi XE3 and later).
 - `PSGetCommandText` of `IProviderSupport` returned an empty string on Delphi
   XE3 and later; it returns the select SQL or the pending provider command, as
   `PSGetCommandTextW` did on Delphi 2009 to XE2.

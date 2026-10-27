@@ -33,7 +33,9 @@ type
   protected
     function ExecuteServerCommand(const Command: string): OleVariant;
     function GetFieldClass(FieldType: TFieldType): TFieldClass; override;
+{$IFNDEF C24}
     procedure DataConvert(Field: TField; Source, Dest: Pointer; ToNative: Boolean); override;
+{$ENDIF}
     // ISQLObject
     function ParamCount: integer;
     function ParamName(ParamIndex: integer): string;
@@ -58,7 +60,13 @@ type
 
   TFIBClientBCDField = class(TBCDField)
   private
+    function GetScaledValue(var Value: Int64): Boolean;
+    procedure SetScaledValue(Value: Int64);
   protected
+{$IFDEF C24}
+    procedure CopyData(Source, Dest: TValueBuffer); overload; override;
+    function GetAsBCD: TBcd; override;
+{$ENDIF}
     function GetAsCurrency: Currency; override;
     function GetAsFloat: Double; override;
 
@@ -146,6 +154,9 @@ begin
   end;
 end;
 
+{$IFNDEF C24}
+// Before XE3 TFIBClientBCDField gets and sets its value scaled by Size through this conversion;
+// XE3+ converts through the TValueBuffer overload and the field converts the native value itself
 procedure TFIBClientDataSet.DataConvert(Field: TField; Source, Dest: Pointer; ToNative: Boolean);
 var
   Scale: byte;
@@ -158,6 +169,7 @@ begin
     raise EOverFlow.CreateFmt(SFieldOutOfRange, [Field.DisplayName]);
 
 end;
+{$ENDIF}
 
 function TFIBClientDataSet.FieldExist(const FieldName: string; var FieldIndex: integer): Boolean;
 var
@@ -272,6 +284,88 @@ end;
 
 { TFIBClientBCDField }
 
+{$IFDEF C24}
+// The native value of a BCD field; TField.GetData/SetData(Pointer) are deprecated (XE3+)
+function GetBcdData(Field: TField; var Value: TBcd): Boolean;
+var
+  Data: TValueBuffer;
+begin
+  SetLength(Data, SizeOf(TBcd));
+  Result := Field.GetData(Data);
+  if Result then
+    Move(Data[0], Value, SizeOf(TBcd));
+end;
+
+procedure SetBcdData(Field: TField; const Value: TBcd);
+var
+  Data: TValueBuffer;
+begin
+  SetLength(Data, SizeOf(TBcd));
+  Move(Value, Data[0], SizeOf(TBcd));
+  Field.SetData(Data);
+end;
+
+// While the field is validated GetData copies the value given to SetData, here the native TBcd
+// (TBCDField copies a Currency)
+procedure TFIBClientBCDField.CopyData(Source, Dest: TValueBuffer);
+begin
+  Move(Source[0], Dest[0], Min(SizeOf(TBcd), Min(Length(Source), Length(Dest))));
+end;
+
+// TBCDField.GetAsBCD (through Currency) from the native value, also while the field is validated
+function TFIBClientBCDField.GetAsBCD: TBcd;
+var
+  Bcd: TBcd;
+begin
+  if GetBcdData(Self, Bcd) then
+    CurrToBCD(BCDToCurrency(Bcd), Result)
+  else
+    Result := NullBcd;
+end;
+{$ENDIF}
+
+// The value scaled by Size, for Size 4 the Currency bits (as TDataSet.DataConvert converts it)
+function TFIBClientBCDField.GetScaledValue(var Value: Int64): Boolean;
+{$IFDEF C24}
+var
+  Bcd: TBcd;
+  Scale: Byte;
+begin
+  Result := GetBcdData(Self, Bcd);
+  if not Result then
+    Exit;
+  if Size = 4 then
+    begin
+      if not BCDToCurr(Bcd, PCurrency(@Value)^) then
+        raise EOverFlow.CreateFmt(SFieldOutOfRange, [DisplayName]);
+    end
+  else if not BCDToInt64WithScale(Bcd, Value, Scale) then
+    raise EOverFlow.CreateFmt(SFieldOutOfRange, [DisplayName]);
+end;
+{$ELSE}
+begin
+  Result := GetData(@Value, False);
+end;
+{$ENDIF}
+
+procedure TFIBClientBCDField.SetScaledValue(Value: Int64);
+{$IFDEF C24}
+var
+  Bcd: TBcd;
+begin
+  FillChar(Bcd, SizeOf(Bcd), 0);
+  if Size = 4 then
+    CurrToBCD(PCurrency(@Value)^, Bcd, 32, Size)
+  else
+    Int64ToBCD(Value, Size, Bcd);
+  SetBcdData(Self, Bcd);
+end;
+{$ELSE}
+begin
+  SetData(@Value, False);
+end;
+{$ENDIF}
+
 procedure TFIBClientBCDField.Assign(Source: TPersistent);
 begin
   if Source = nil then
@@ -291,7 +385,7 @@ function TFIBClientBCDField.GetAsExtended: Extended;
 var
   C: Int64;
 begin
-  if GetData(@C, False) then
+  if GetScaledValue(C) then
     Result := C * E10[-Size]
   else
     Result := 0
@@ -299,9 +393,9 @@ end;
 
 function TFIBClientBCDField.GetAsFloat: Double;
 var
-  C: Comp;
+  C: Int64;
 begin
-  if GetData(@C, False) then
+  if GetScaledValue(C) then
     Result := C * E10[-Size]
   else
     Result := 0
@@ -309,7 +403,7 @@ end;
 
 function TFIBClientBCDField.GetAsInt64: Int64;
 begin
-  if GetData(@Result, False) then
+  if GetScaledValue(Result) then
     if Size <> 0 then
       Result := Round(Result * E10[-Size])
     else
@@ -322,7 +416,7 @@ var
   C: Int64;
 begin
 {$IFDEF C24}with FormatSettings do {$ENDIF}
-    if GetData(@C, False) then
+    if GetScaledValue(C) then
       Result := Int64WithScaleToStr(C, Size, DecimalSeparator)
     else
       Result := '';
@@ -350,7 +444,7 @@ var
 begin
 {$IFDEF C24}with FormatSettings do {$ENDIF}
     try
-      if GetData(@C, False) then
+      if GetScaledValue(C) then
       begin
         if DisplayText or (EditFormat = '') then
           FmtStr := DisplayFormat
@@ -399,7 +493,7 @@ var
 begin
   try
     RndComp := Value * E10[Size];
-    SetData(@RndComp, False);
+    SetScaledValue(PInt64(@RndComp)^);
   except
     raise
   end;
@@ -412,7 +506,7 @@ end;
 
 procedure TFIBClientBCDField.SetAsInt64(Value: Int64);
 begin
-  SetData(@Value, False)
+  SetScaledValue(Value)
 end;
 
 procedure TFIBClientBCDField.SetAsString(const Value: string);
@@ -551,7 +645,11 @@ begin
           begin
             // main changes:
             GetBCDFieldData(Field, False, BcdValue);
+{$IFDEF C24}
+            SetBcdData(Fields[i], BcdValue)
+{$ELSE}
             Fields[i].SetData(@BcdValue)
+{$ENDIF}
           end;
       end;
       Post;

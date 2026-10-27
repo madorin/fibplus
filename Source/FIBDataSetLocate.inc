@@ -745,7 +745,7 @@ begin
              end
              else
              begin
-              L:=StrScan(PAnsiChar(p),#0)-PAnsiChar(p);
+              L:=Length(PAnsiChar(p));
               if L>TField(fl.List^[i]).Size then
                L:=TField(fl.List^[i]).Size;
               if poTrimCharFields in Self.Options then
@@ -778,7 +778,7 @@ begin
              end
              else
              begin
-              L:=StrScan(PAnsiChar(p),#0)-PAnsiChar(p);
+              L:=Length(PAnsiChar(p));
               if L>TField(fl.List^[i]).Size then
                L:=TField(fl.List^[i]).Size;
 
@@ -838,7 +838,7 @@ begin
                 end
                 else
                 begin
-                  L:=StrScan(PAnsiChar(p),#0)-PAnsiChar(p);
+                  L:=Length(PAnsiChar(p));
                   if L>TField(fl.List^[i]).DataSize-1 then
                    L:=TField(fl.List^[i]).DataSize-1;
 
@@ -959,7 +959,7 @@ begin
   vIgnoreRecChecked  :=False;
   fl := TFIBList.Create;
   try
-    GetFieldList(fl, KeyFields);
+    GetDataSetFieldList(Self, fl, KeyFields);
     fld_cnt     := fl.Count;
 //    SetLength(wsA,fl.Count);
     if fl.Count=0 then

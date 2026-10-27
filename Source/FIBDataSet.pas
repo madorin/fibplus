@@ -244,12 +244,6 @@ type
   end;
 
   TFIBDateField = class(TDateField)
-  protected
-{$IFDEF C24}
-    procedure SetAsDateTime(Value: TDateTime); override;
-{$ENDIF}
-  public
-
   end;
 
   TFIBTimeField = class(TTimeField)
@@ -257,9 +251,6 @@ type
     FShowMsec: Boolean;
   protected
     procedure GetText(var Text: string; DisplayText: Boolean); override;
-{$IFDEF C24}
-    procedure SetAsDateTime(Value: TDateTime); override;
-{$ENDIF}
   public
   published
     property ShowMsec: Boolean read FShowMsec write FShowMsec default false;
@@ -273,9 +264,6 @@ type
 
   protected
     procedure GetText(var Text: string; DisplayText: Boolean); override;
-{$IFDEF C24}
-    procedure SetAsDateTime(Value: TDateTime); override;
-{$ENDIF}
   public
     property AsTimeStamp: TTimeStamp read GetAsTimeStamp write SetAsTimeStamp;
   published
@@ -716,6 +704,9 @@ type
     function StoreUpdTransaction: Boolean;
     procedure SetOnEndScroll(Event: TDataSetNotifyEvent);
     function HasDefaultFields: Boolean;
+    procedure SetHasDefaultFields(Value: Boolean);
+    function ConvertFieldData(Field: TField; Source, Dest: Pointer; ToNative: Boolean): Boolean;
+    procedure GetRecordCalcFields(Buffer: TRecordBuffer);
     procedure ClearFieldStreamList;
 
     function CreateInternalQuery(const QName: string): TFIBQuery;
@@ -916,7 +907,11 @@ type
     procedure PrepareQuery(KindQuery: TFIBSQLKind);
     procedure PrepareBookMarkSize;
     procedure ClearCalcFields(Buffer: TRecordBuffer); override;
+{$IFDEF C25}
+    procedure GetCalcFields(Buffer: TRecBuf); override;
+{$ELSE}
     procedure GetCalcFields(Buffer: TRecordBuffer); override;
+{$ENDIF}
     function GetRecord(Buffer: TRecordBuffer; GetMode: TGetMode; DoCheck: Boolean): TGetResult; override; // abstract
     function GetRecordCount: Integer; override;
     function GetRecordSize: Word; override; // abstract
@@ -1160,7 +1155,9 @@ type
     function GetCurrentRecord(Buffer: TRecordBuffer): Boolean; override;
     function GetBlobFieldData(FieldNo: Integer; var Buffer: TBlobByteData): Integer; override; // MIDAS
     function GetFieldData(Field: TField; Buffer: Pointer): Boolean; override; // abstract
+{$IFNDEF C24}
     procedure DataConvert(Field: TField; Source, Dest: Pointer; ToNative: Boolean); override;
+{$ENDIF}
     function GetStateFieldValue(State: TDataSetState; Field: TField): Variant; override;
     procedure DoFieldValidate(Field: TField; Buffer: Pointer);
 
@@ -1774,6 +1771,59 @@ const
   DiffSizesRecData = SizeOf(TRecordData) - SizeOf(TSavedRecordData);
   LocateParamPrefix = 'LOCATE_';
 
+type
+  THackField = class(TField);
+
+// Value of a field in the format of its dataset. TField.GetData/SetData(Pointer) are deprecated
+// (XE3+): a FIBPlus dataset is called directly, its pointer methods are the implementation;
+// another dataset goes through TValueBuffer. Size is the size of Buffer.
+function ReadFieldData(Field: TField; Buffer: Pointer; Size: Integer): Boolean;
+{$IFDEF C24}
+var
+  Data: TValueBuffer;
+{$ENDIF}
+begin
+  if Field.DataSet is TFIBCustomDataSet then
+    Result := TFIBCustomDataSet(Field.DataSet).GetFieldData(Field, Buffer)
+  else
+{$IFDEF C24}
+    begin
+      // GetData copies up to GetIOSize bytes while the field is validated
+      SetLength(Data, Max(THackField(Field).GetIOSize, Size));
+      Result := Field.GetData(Data);
+      if Result then
+        Move(Data[0], Buffer^, Size);
+    end;
+{$ELSE}
+    Result := Field.GetData(Buffer);
+{$ENDIF}
+end;
+
+// Size is the number of bytes of Buffer that hold the value, nil Buffer sets NULL
+procedure WriteFieldData(Field: TField; Buffer: Pointer; Size: Integer);
+{$IFDEF C24}
+var
+  Data: TValueBuffer;
+{$ENDIF}
+begin
+  if Field.DataSet is TFIBCustomDataSet then
+    TFIBCustomDataSet(Field.DataSet).SetFieldData(Field, Buffer)
+  else
+{$IFDEF C24}
+    begin
+      if Buffer <> nil then
+        begin
+          // zero filled: a string value ends with #0
+          SetLength(Data, Max(Field.DataSize, Size) + 1);
+          Move(Buffer^, Data[0], Size);
+        end;
+      Field.SetData(Data);
+    end;
+{$ELSE}
+    Field.SetData(Buffer);
+{$ENDIF}
+end;
+
   // INT128, DECFLOAT(16) and DECFLOAT(34) values are cached in the server format
 function CacheToDecimal(fi: PFIBFieldDescr; Data: Pointer): TFBDecimal;
 begin
@@ -2044,7 +2094,7 @@ begin
           GetMem(FReservedBuffer, DataSize);
           FReservedBuffer[Size] := ZeroData;
         end;
-      Result := GetData(FReservedBuffer)
+      Result := ReadFieldData(Self, FReservedBuffer, DataSize)
     end
   else
     Result := false
@@ -2118,10 +2168,10 @@ begin
     FValueLength := Length(Value);
     if FValueLength > 0 then
       begin
-        SetData(@Value[1])
+        WriteFieldData(Self, @Value[1], FValueLength)
       end
     else
-      TFIBDataSet(DataSet).SetFieldData(Self, vEmptyStrBuffer);
+      WriteFieldData(Self, vEmptyStrBuffer, 1);
   finally
     Exclude(TFIBCustomDataSet(DataSet).FRunState, drsInFieldAsData);
   end
@@ -2147,7 +2197,7 @@ end;
 
 procedure TFIBStringField.Clear;
 begin
-  SetData(nil);
+  WriteFieldData(Self, nil, 0);
 end;
 
 procedure TFIBStringField.SetAsString(const Value: string);
@@ -2157,10 +2207,10 @@ procedure TFIBStringField.SetAsString(const Value: string);
     FValueLength := Length(vValue);
     if FValueLength > 0 then
       begin
-        SetData(@vValue[1])
+        WriteFieldData(Self, @vValue[1], FValueLength)
       end
     else
-      TFIBDataSet(DataSet).SetFieldData(Self, vEmptyStrBuffer);
+      WriteFieldData(Self, vEmptyStrBuffer, 1);
   end;
 
 var
@@ -2247,7 +2297,7 @@ begin
     end;
   Include(TFIBDataSet(DataSet).FRunState, drsInFieldAsData);
   try
-    Result := GetData(FReservedBuffer);
+    Result := ReadFieldData(Self, FReservedBuffer, DataSize);
   finally
     Exclude(TFIBDataSet(DataSet).FRunState, drsInFieldAsData)
   end;
@@ -2273,7 +2323,7 @@ begin
           GetMem(FReservedBuffer, DataSize);
           FReservedBuffer[Size] := ZeroData;
         end;
-      Result := GetData(FReservedBuffer)
+      Result := ReadFieldData(Self, FReservedBuffer, DataSize)
     end
   else
     Result := false
@@ -2319,9 +2369,9 @@ begin
   try
     FValueLength := Length(Value);
     if FValueLength > 0 then
-      SetData(@Value[1])
+      WriteFieldData(Self, @Value[1], FValueLength)
     else
-      TFIBDataSet(DataSet).SetFieldData(Self, vEmptyStrBuffer);
+      WriteFieldData(Self, vEmptyStrBuffer, 1);
   finally
     Exclude(TFIBCustomDataSet(DataSet).FRunState, drsInFieldAsData);
   end
@@ -2373,7 +2423,7 @@ begin
     s := DecodeString(PAnsiChar(Source), Length(PAnsiChar(Source)),
       TFIBCustomDataSet(DataSet).StringFieldCodePage(Self))
   else
-    s := UTF8Decode(PAnsiChar(Source));
+    s := UTF8ToString(PAnsiChar(Source));
   // Dest has DataSize bytes, the UTF8 source can hold more characters
   L := Length(s);
   if L > DataSize div SizeOf(Char) - 1 then
@@ -2439,7 +2489,7 @@ end;
 
 procedure TFIBWideStringField.Clear;
 begin
-  SetData(nil);
+  WriteFieldData(Self, nil, 0);
 end;
 
 function TFIBWideStringField.CharacterSet: string;
@@ -2694,38 +2744,12 @@ end;
 
 procedure TFIBIntegerField.Clear;
 begin
-  SetData(nil);
+  WriteFieldData(Self, nil, 0);
 end;
 
-(*
-  * TFIBDateField - implementation
-*)
-
-{$IFDEF C24}
-procedure TFIBDateField.SetAsDateTime(Value: TDateTime);
-begin
-{$IFDEF WIN64}
-  inherited SetAsDateTime(Value)
-{$ELSE}
-  SetData(@Value, false);
-{$ENDIF}
-end;
-
-{$ENDIF}
 (*
   * TFIBTimeField - implementation
 *)
-
-{$IFDEF C24}
-procedure TFIBTimeField.SetAsDateTime(Value: TDateTime);
-begin
-{$IFDEF WIN64}
-  inherited SetAsDateTime(Value)
-{$ELSE}
-  SetData(@Value, false);
-{$ENDIF}
-end;
-{$ENDIF}
 
 procedure TFIBTimeField.GetText(var Text: string; DisplayText: Boolean);
 var
@@ -2734,7 +2758,7 @@ begin
   inherited GetText(Text, DisplayText);
   if FShowMsec then
     begin
-      if DataSet.GetFieldData(Self, @Data) then
+      if ReadFieldData(Self, @Data, SizeOf(Data)) then
         begin
           Data := Data mod 1000;
           if Data > 0 then
@@ -2747,14 +2771,6 @@ end;
   * TFIBDateTimeField - implementation
 *)
 
-{$IFDEF C24}
-procedure TFIBDateTimeField.SetAsDateTime(Value: TDateTime);
-begin
-  inherited SetAsDateTime(Value)
-  // SetData(@Value, False);
-end;
-{$ENDIF}
-
 procedure TFIBDateTimeField.GetText(var Text: string; DisplayText: Boolean);
 var
   Data: Double;
@@ -2764,7 +2780,7 @@ begin
   inherited GetText(Text, DisplayText);
   if FShowMsec then
     begin
-      if DataSet.GetFieldData(Self, @Data) then
+      if ReadFieldData(Self, @Data, SizeOf(Data)) then
         begin
           ts := MSecsToTimeStamp(Data);
           ts.Time := ts.Time mod 1000;
@@ -2778,7 +2794,7 @@ function TFIBDateTimeField.GetAsTimeStamp: TTimeStamp;
 var
   Data: Double;
 begin
-  if DataSet.GetFieldData(Self, @Data) then
+  if ReadFieldData(Self, @Data, SizeOf(Data)) then
     Result := MSecsToTimeStamp(Data)
   else
     begin
@@ -2792,7 +2808,7 @@ var
   Data: Double;
 begin
   Data := TimeStampToMSecs(Value);
-  SetData(@Data)
+  WriteFieldData(Self, @Data, SizeOf(Data))
 end;
 
 (*
@@ -2862,7 +2878,7 @@ var
 begin
   GetMem(ValueBuffer, SizeOf(TISC_QUAD));
   try
-    GetData(ValueBuffer);
+    ReadFieldData(Self, ValueBuffer, SizeOf(TISC_QUAD));
     Result := PISC_QUAD(ValueBuffer)^;
   finally
     FreeMem(ValueBuffer)
@@ -2945,7 +2961,7 @@ var
 begin
   GetMem(ValueBuffer, SizeOf(TISC_QUAD));
   try
-    GetData(ValueBuffer);
+    ReadFieldData(Self, ValueBuffer, SizeOf(TISC_QUAD));
     Result := PISC_QUAD(ValueBuffer)^;
   finally
     FreeMem(ValueBuffer)
@@ -3139,7 +3155,7 @@ var
   B: LongBool;
 begin
   B := false; // clear
-  if GetData(@B) then
+  if ReadFieldData(Self, @B, SizeOf(B)) then
     if B then
       Result := FStringTrue
     else
@@ -3181,7 +3197,7 @@ var
   B: LongBool;
 begin
   B := false; // clear
-  if GetData(@B) then
+  if ReadFieldData(Self, @B, SizeOf(B)) then
     Result := B
   else
     Result := false;
@@ -3192,7 +3208,7 @@ var
   B: LongBool;
 begin
   B := false; // clear
-  if GetData(@B) then
+  if ReadFieldData(Self, @B, SizeOf(B)) then
     Result := B
   else
     Result := Null;
@@ -3206,7 +3222,7 @@ begin
     Long(B) := 1
   else
     Long(B) := 0;
-  SetData(@B);
+  WriteFieldData(Self, @B, SizeOf(B));
 end;
 
 // Array support
@@ -3277,7 +3293,7 @@ var
 begin
   GetMem(ValueBuffer, SizeOf(TISC_QUAD));
   try
-    GetData(ValueBuffer);
+    ReadFieldData(Self, ValueBuffer, SizeOf(TISC_QUAD));
     Result := PISC_QUAD(ValueBuffer)^;
   finally
     FreeMem(ValueBuffer)
@@ -3618,11 +3634,7 @@ begin
       if Size = 0 then
         begin
           C := Value;
-  {$IFDEF C24}
-          TFIBDataSet(DataSet).SetFieldData(Self, @C);
-  {$ELSE}
-          SetData(@C);
-  {$ENDIF}
+          WriteFieldData(Self, @C, SizeOf(C));
         end
       else
         begin
@@ -3633,11 +3645,7 @@ begin
                 RangeError(Value, MinValue, MaxValue);
             end;
           C := Value * E10[Size];
-  {$IFDEF C24}
-          TFIBDataSet(DataSet).SetFieldData(Self, @C);
-  {$ELSE}
-          SetData(@C);
-  {$ENDIF}
+          WriteFieldData(Self, @C, SizeOf(C));
         end;
     except
       on E: Exception do
@@ -3688,11 +3696,7 @@ begin
       BCDToInt64WithScale(Value, C, lScale);
       if lScale <> Size then
         C := Round(C * E10[Size - lScale]);
-  {$IFDEF C24}
-      TFIBDataSet(DataSet).SetFieldData(Self, @C);
-  {$ELSE}
-      SetData(@C);
-  {$ENDIF}
+      WriteFieldData(Self, @C, SizeOf(C));
     end
 end;
 
@@ -3716,11 +3720,7 @@ begin
             else
               begin
                 C := Value * E10[Size];
-    {$IFDEF C24}
-                TFIBDataSet(DataSet).SetFieldData(Self, @C);
-    {$ELSE}
-                SetData(@C);
-    {$ENDIF}
+                WriteFieldData(Self, @C, SizeOf(C));
               end
         end;
     except
@@ -3775,7 +3775,7 @@ begin
   if FieldKind = fkCalculated then
     inherited SetVarValue(Value)
   else if Size = 0 then
-    SetData(@Value)
+    WriteFieldData(Self, @Value, SizeOf(Value))
   else
     AsExtended := Value;
 end;
@@ -3795,21 +3795,17 @@ begin
           raise Exception.Create(CmpFullName(Self) + sLineBreak + E.Message)
       end;
   end;
-{$IFDEF C24}
-  TFIBDataSet(DataSet).SetFieldData(Self, @RndComp);
-{$ELSE}
-  SetData(@RndComp);
-{$ENDIF}
+  WriteFieldData(Self, @RndComp, SizeOf(RndComp));
 end;
 
 function TFIBBCDField.GetData(Buffer: Pointer): Boolean;
 begin
   if FieldKind = fkCalculated then
-    Result := inherited GetData(Buffer)
+    Result := ReadFieldData(Self, Buffer, DataSize)
   else
     try
       FDataAsComp := True;
-      Result := inherited GetData(Buffer);
+      Result := ReadFieldData(Self, Buffer, DataSize);
     finally
       FDataAsComp := false
     end;
@@ -5637,7 +5633,7 @@ begin
   else
     vQLocate := aQLocate;
   try
-    GetFieldList(fl, KeyFields);
+    GetDataSetFieldList(Self, fl, KeyFields);
     CheckDataFields(fl, 'LocateForPartialCache');
     vQLocate.Database := Database;
     vQLocate.Transaction := Transaction;
@@ -6710,14 +6706,14 @@ begin
         // Keep automatic fields alive across the reopen
         OldDefaultFields := HasDefaultFields;
         if OldDefaultFields then
-          SetDefaultFields(false);
+          SetHasDefaultFields(false);
         try
           Close;
           Open;
         finally
           if OldDefaultFields then
             begin
-              SetDefaultFields(True);
+              SetHasDefaultFields(True);
               // Reopen failed: drop the automatic fields left over from the previous cursor
               if not Active then
                 DestroyFields;
@@ -9069,6 +9065,24 @@ var
   tmpDateTime: TDateTime;
   vBcd: TBcd;
 
+  // TDateTime of a calculated date/time field value (TDateTimeRec)
+  function NativeToDateTime(Data: Pointer): TDateTime;
+{$IFDEF C24}
+  var
+    Native, Value: TValueBuffer;
+  begin
+    SetLength(Native, SizeOf(TDateTimeRec));
+    Move(Data^, Native[0], SizeOf(TDateTimeRec));
+    SetLength(Value, SizeOf(TDateTime));
+    DataConvert(Field, Native, Value, False);
+    Move(Value[0], Result, SizeOf(TDateTime));
+  end;
+{$ELSE}
+  begin
+    DataConvert(Field, Data, @Result, False);
+  end;
+{$ENDIF}
+
 begin
   CheckActive;
   case FCacheModelOptions.FCacheModelKind of
@@ -9233,7 +9247,7 @@ begin
                   end;
                 ftDate, ftTime, ftDateTime:
                   begin
-                    DataConvert(Field, p, @tmpDateTime, false);
+                    tmpDateTime := NativeToDateTime(p);
                     if tmpDateTime = 0 then
                       Result := Null
                     else
@@ -9385,53 +9399,81 @@ begin
       FIBError(feInvalidDataConversion, [nil]);
 end;
 
+// XE3+: the RTL converts through the TValueBuffer overload; the Pointer overload is only reached
+// by the deprecated TField.GetData/SetData(Pointer)
 {$IFDEF C24}
 procedure TFIBCustomDataSet.DataConvert(Field: TField; Source: TValueBuffer; {$IFDEF C25}var {$ENDIF}Dest: TValueBuffer; ToNative: Boolean);
 begin
-  DataConvert(Field, Pointer(Source), Pointer(Dest), ToNative);
+  if not ConvertFieldData(Field, Pointer(Source), Pointer(Dest), ToNative) then
+    inherited;
+end;
+{$ELSE}
+procedure TFIBCustomDataSet.DataConvert(Field: TField; Source, Dest: Pointer; ToNative: Boolean);
+begin
+  if not ConvertFieldData(Field, Source, Dest, ToNative) then
+    inherited;
 end;
 {$ENDIF}
 
-procedure TFIBCustomDataSet.DataConvert(Field: TField; Source, Dest: Pointer; ToNative: Boolean);
+// Converts what TDataSet would convert otherwise; False leaves the conversion to TDataSet. Time and
+// BCD as the Pointer overload of TDataSet, used before XE3: the TValueBuffer one keeps the sign of
+// a time (negative before 1899-12-30, the server rejects it) and the BCD scale of 4
+function TFIBCustomDataSet.ConvertFieldData(Field: TField; Source, Dest: Pointer; ToNative: Boolean): Boolean;
 var
   ws: WideString;
   s: AnsiString;
   L: Integer;
 begin
-  if not(Field is TWideStringField) or (Field.FieldKind <> fkData) then
-    inherited
+  case Field.DataType of
+    ftTime:
+      begin
+        Result := ToNative;
+        if ToNative then
+          PInteger(Dest)^ := DateTimeToTimeStamp(PDateTime(Source)^).Time;
+        Exit;
+      end;
+    ftBCD:
+      begin
+        Result := True;
+        if ToNative then
+          CurrToBCD(PCurrency(Source)^, PBcd(Dest)^, 32, Field.Size)
+        else if not BCDToCurr(PBcd(Source)^, PCurrency(Dest)^) then
+          raise EOverflow.CreateFmt(SFieldOutOfRange, [Field.DisplayName]);
+        Exit;
+      end;
+  end;
+  // wide string data fields: the code page of the column
+  Result := (Field is TWideStringField) and (Field.FieldKind = fkData);
+  if not Result then
+    Exit;
+  if StringFieldCodePage(Field) = FIBCodePageUTF8 then
+    begin
+      Result := ToNative;
+      if ToNative then
+        begin
+          FillChar(Dest^, Field.DataSize, 0);
+          s := UTF8Encode(PWideChar(Source));
+          L := Length(s);
+          if L > 0 then
+            Move(s[1], Dest^, (L + 1) * SizeOf(AnsiChar));
+        end;
+    end
   else
     begin
-      if StringFieldCodePage(Field) = FIBCodePageUTF8 then
+      FillChar(Dest^, Field.DataSize, 0);
+      if ToNative then
         begin
-          if ToNative then
-            begin
-              FillChar(Dest^, Field.DataSize, 0);
-              s := UTF8Encode(PWideChar(Source));
-              L := Length(s);
-              if L > 0 then
-                Move(s[1], Dest^, (L + 1) * SizeOf(AnsiChar));
-            end
-          else
-            inherited
+          s := PWideChar(Source);
+          L := Length(s);
+          if L > 0 then
+            Move(s[1], Dest^, L);
         end
       else
         begin
-          FillChar(Dest^, Field.DataSize, 0);
-          if ToNative then
-            begin
-              s := PWideChar(Source);
-              L := Length(s);
-              if L > 0 then
-                Move(s[1], Dest^, L);
-            end
-          else
-            begin
-              ws := PAnsiChar(Source);
-              L := Length(ws);
-              if L > 0 then
-                Move(ws[1], Dest^, (L + 1) * SizeOf(WideChar));
-            end;
+          ws := PAnsiChar(Source);
+          L := Length(ws);
+          if L > 0 then
+            Move(ws[1], Dest^, (L + 1) * SizeOf(WideChar));
         end;
     end;
 end;
@@ -9478,9 +9520,6 @@ begin
 end;
 {$ENDIF}
 
-type
-  THackField = class(TField);
-
 function TFIBCustomDataSet.GetFieldData(Field: TField; Buffer: Pointer): Boolean;
 var
   Buff, Data: TRecordBuffer;
@@ -9524,7 +9563,7 @@ var
             FDisableCalcFieldsCount := 0;
             try
               SetTempState(dsCalcFields);
-              GetCalcFields(Buff);
+              GetRecordCalcFields(Buff);
             finally
               FDisableCalcFieldsCount := OldDisableCalcFields;
               RestoreState(dsState);
@@ -9555,7 +9594,7 @@ begin
           // TField.CopyData moves GetIOSize bytes, for string fields at least
           // dsMaxStringSize, while field buffers have DataSize bytes
           if Field is TFIBWideStringField then
-            THackField(Field).CopyData(FValidatingFieldBuffer, Buffer)
+            TFIBWideStringField(Field).CopyData(FValidatingFieldBuffer, Buffer)
           else
             Move(FValidatingFieldBuffer^, Buffer^, Field.DataSize);
         Exit;
@@ -9587,7 +9626,7 @@ begin
               begin
                 Buff := GetOldBuffer;
                 if Field.FieldKind in [fkCalculated, fkLookup] then
-                  GetCalcFields(Buff);
+                  GetRecordCalcFields(Buff);
                 Allocated := True;
               end;
             else
@@ -9831,19 +9870,36 @@ begin
     end;
 end;
 
+// XE4+: the RTL calls the TRecBuf overload, TDataSet forwards it to the deprecated TRecordBuffer one
+{$IFDEF C25}
+procedure TFIBCustomDataSet.GetCalcFields(Buffer: TRecBuf);
+{$ELSE}
 procedure TFIBCustomDataSet.GetCalcFields(Buffer: TRecordBuffer);
+{$ENDIF}
+var
+  RecordData: PRecordData;
 begin
   if (FDisableCalcFieldsCount = 0) and (CalcFieldsSize > 0) then
     begin
+      RecordData := PRecordData(Buffer);
       if not vCalcFieldsSavedCache then
         inherited GetCalcFields(Buffer)
-      else if not GetBit(PRecordData(Buffer)^.rdFlags, 7) or (drsInRefreshClientFields in FRunState) then
+      else if not GetBit(RecordData^.rdFlags, 7) or (drsInRefreshClientFields in FRunState) then
         begin
           inherited GetCalcFields(Buffer);
-          PRecordData(Buffer)^.rdFlags := SetBit(PRecordData(Buffer)^.rdFlags, 7, True);
-          WriteRecordCache(PRecordData(Buffer)^.rdRecordNumber, Buffer);
+          RecordData^.rdFlags := SetBit(RecordData^.rdFlags, 7, True);
+          WriteRecordCache(RecordData^.rdRecordNumber, TRecordBuffer(Buffer));
         end
     end;
+end;
+
+procedure TFIBCustomDataSet.GetRecordCalcFields(Buffer: TRecordBuffer);
+begin
+{$IFDEF C25}
+  GetCalcFields(TRecBuf(Buffer));
+{$ELSE}
+  GetCalcFields(Buffer);
+{$ENDIF}
 end;
 
 procedure TFIBCustomDataSet.ShiftCurRec;
@@ -10169,7 +10225,7 @@ begin
       with PRecordData(Buffer)^ do
         begin
           rdBookmarkFlag := bfCurrent;
-          GetCalcFields(Buffer);
+          GetRecordCalcFields(Buffer);
         end
     else if (Result = grEOF) and Assigned(Buffer) then
       begin
@@ -11338,7 +11394,7 @@ begin
                     vCalcFields[i].DataSet := Self;
                 end;
                 // Before XE6 the flag was computed while the calculated fields were attached
-                SetDefaultFields(True);
+                SetHasDefaultFields(True);
               end;
           end;
 
@@ -11853,6 +11909,19 @@ begin
 {$ENDIF}
 end;
 
+procedure TFIBCustomDataSet.SetHasDefaultFields(Value: Boolean);
+begin
+{$IFDEF C27}
+  // Same as the deprecated TDataSet.SetDefaultFields
+  if Value then
+    Fields.LifeCycles := [lcAutomatic]
+  else
+    Fields.LifeCycles := [lcPersistent];
+{$ELSE}
+  SetDefaultFields(Value);
+{$ENDIF}
+end;
+
 // Filter works
 
 procedure TFIBCustomDataSet.SetFiltered(Value: Boolean);
@@ -12329,8 +12398,9 @@ function TFIBCustomDataSet.Translate(Src, Dest: PAnsiChar; ToOem: Boolean): Inte
 begin
   if Src <> nil then
     begin
-      StrCopy(PAnsiChar(Dest), PAnsiChar(Src));
-      Result := Q_StrLen(PAnsiChar(Dest));
+      // SysUtils.StrCopy(PAnsiChar) is deprecated (XE4+); Src may be Dest
+      Result := Q_StrLen(Src);
+      Move(Src^, Dest^, Result + 1);
     end
   else
     Result := 0;
@@ -13077,13 +13147,13 @@ begin
   else
     begin
       GuidValue := StringAsGuid(AnsiString(sValue));
-      SetData(@GuidValue)
+      WriteFieldData(Self, @GuidValue, SizeOf(GuidValue))
     end;
 end;
 
 function TFIBGuidField.GetAsGuid: TGUID;
 begin
-  if not GetData(pBuffer) then
+  if not ReadFieldData(Self, pBuffer, Length(FBuffer)) then
     Result := fibGUID_NULL
   else
     Result := StringAsGuid(FBuffer)
@@ -13094,11 +13164,7 @@ begin
   if IsEqualGUIDs(Value, fibGUID_NULL) then
     Clear
   else
-{$IFDEF C24}
-    TFIBDataSet(DataSet).SetFieldData(Self, @Value);
-{$ELSE}
-    SetData(@Value);
-{$ENDIF}
+    WriteFieldData(Self, @Value, SizeOf(Value));
 end;
 
 procedure TFIBGuidField.SetAsString(const Value: string);
@@ -13880,7 +13946,7 @@ begin
           try
             Open;
             if vDefaultFields then
-              SetDefaultFields(True);
+              SetHasDefaultFields(True);
             RefreshClientFields(False);
           finally
             Exclude(FRunState, drsInClone);
@@ -15856,7 +15922,7 @@ begin
   try
     if OldFiltered then
       Filtered := False; // Locate must find the records hidden by the filter
-    GetFieldList(fl, KeyFields);
+    GetDataSetFieldList(Self, fl, KeyFields);
     // Added records can take a place before the current one: restore by key
     if not IsEmpty then
       CurKeys := FieldValues[KeyFields];
@@ -15980,7 +16046,7 @@ begin
   try
     if OldFiltered then
       Filtered := False; // Locate must find the records hidden by the filter
-    GetFieldList(fl, KeyFields);
+    GetDataSetFieldList(Self, fl, KeyFields);
     // Added records can take a place before the current one: restore by key
     if not IsEmpty then
       CurKeys := FieldValues[KeyFields];

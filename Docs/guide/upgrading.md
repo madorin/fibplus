@@ -96,6 +96,7 @@ These have no old name, so the code that uses them must change:
 | `ListErrorMessages.ErrorMessage(Tr, ErrorName)` (`TFIBErrorMessageCache`) | `ErrorMessage(DB, Tr, ErrorName)` | Pass the database whose `FIB$ERROR_MESSAGES` is read; it must be one of the databases of `Tr`. |
 | `TFIBDataSet.FetchNext(FetchCount: DWORD)` | `FetchNext(FetchCount: Integer)` | Nothing for most code. A negative count fetches no row; it fetched all the rows: call `FetchAll` instead. |
 | `FixStartTime: Integer` of `ISQLStatMaker` and `TTestInfo` | `FixStartTime: Cardinal` | Change the result type in classes that implement `ISQLStatMaker`. |
+| `DataConvert(Field, Source, Dest: Pointer; ToNative)` of `TFIBCustomDataSet` (public) and `TFIBClientDataSet`, `GetCalcFields(Buffer: TRecordBuffer)` of `TFIBCustomDataSet` | Delphi XE3 and later: `DataConvert(Field, Source: TValueBuffer; var Dest: TValueBuffer; ToNative)`; XE4 and later: `GetCalcFields(Buffer: TRecBuf)` | Override the new overloads in descendants. Code calling the deprecated `TField.GetData`/`SetData` with a pointer and `NativeFormat = False` gets the `TDataSet` conversion. |
 
 ### Removed identifiers
 

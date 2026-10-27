@@ -178,6 +178,21 @@ begin
 {$ENDIF}
 end;
 
+{$IFDEF C27}
+type
+  THackDataSet = class(TDataSet);
+{$ENDIF}
+
+// TDataSet.DefaultFields is deprecated (XE6+)
+function HasDefaultFields(DataSet: TDataSet): Boolean;
+begin
+{$IFDEF C27}
+  Result := (THackDataSet(DataSet).FieldOptions.AutoCreateMode <> acExclusive) or not (lcPersistent in DataSet.Fields.LifeCycles);
+{$ELSE}
+  Result := DataSet.DefaultFields;
+{$ENDIF}
+end;
+
 procedure TfrmDstSQLedit.SaveFieldsOrigins(aDataSet: TDataSet);
 var
   i: integer;
@@ -186,7 +201,7 @@ var
 begin
   with aDataSet do
   begin
-    if DefaultFields or (not Active and (FieldCount = 0)) then
+    if HasDefaultFields(aDataSet) or (not Active and (FieldCount = 0)) then
       Exit;
     vConnected := Assigned(GetObjectProp(aDataSet, 'Database')) and
       GetPropValue(GetObjectProp(aDataSet, 'Database'), 'Connected');

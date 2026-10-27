@@ -3052,7 +3052,7 @@ begin
   else
   begin
     fl := TList.Create;
-    DataSet.GetFieldList(fl, FieldList)
+    GetDataSetFieldList(DataSet, fl, FieldList)
   end;
   if UseFieldNames then
     fFieldNames := ''

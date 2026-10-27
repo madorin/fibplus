@@ -96,6 +96,8 @@ function FieldOldValAsString(Field: TField; SQLFormat: Boolean): string;
 function BCDFieldAsSQLString(Field: TField; OldVal: Boolean): variant;
 function BCDFieldAsString(Field: TField; OldVal: Boolean): variant;
 function GetBCDFieldData(Field: TField; OldVal: Boolean; var BCD: TBCD): Boolean;
+// Fields of DataSet named in FieldNames (separated by ';') added to List
+procedure GetDataSetFieldList(DataSet: TDataSet; List: TList; const FieldNames: string);
 
 function GetBit(InByte: byte; Index: byte): Boolean; inline;
 function SetBit(InByte: byte; Index: byte; Value: Boolean): byte;
@@ -138,7 +140,7 @@ const
 implementation
 
 uses
-  FIBConsts, StrUtil;
+  FIBConsts, StrUtil{$IFDEF C24}, Generics.Collections{$ENDIF};
 
 procedure StreamToVariantArray(Stream: TMemoryStream; var Value: variant);
 var
@@ -273,18 +275,50 @@ end;
 function GetBCDFieldData(Field: TField; OldVal: Boolean; var BCD: TBCD): Boolean;
 var
   OldState: TDataSetState;
+{$IFDEF C24}
+  Data: TValueBuffer;
+{$ENDIF}
 begin
   OldState := Field.DataSet.State;
   with THackDS(Field.DataSet) do
     try
       if OldVal and (OldState <> dsOldValue) then
         SetTempState(dsOldValue);
+{$IFDEF C24}
+      SetLength(Data, SizeOf(TBCD));
+      Result := GetFieldData(Field, Data);
+      if Result then
+        Move(Data[0], BCD, SizeOf(TBCD));
+{$ELSE}
       Result := GetFieldData(Field, @BCD);
+{$ENDIF}
     finally
       if OldVal and (OldState <> dsOldValue) then
         RestoreState(OldState);
     end;
 end;
+
+procedure GetDataSetFieldList(DataSet: TDataSet; List: TList; const FieldNames: string);
+{$IFDEF C24}
+var
+  Fields: TList<TField>;
+  Field: TField;
+begin
+  // TDataSet.GetFieldList(TList) is deprecated (XE3+)
+  Fields := TList<TField>.Create;
+  try
+    DataSet.GetFieldList(Fields, FieldNames);
+    for Field in Fields do
+      List.Add(Field);
+  finally
+    Fields.Free;
+  end;
+end;
+{$ELSE}
+begin
+  DataSet.GetFieldList(List, FieldNames);
+end;
+{$ENDIF}
 
 function InternalBCDFieldAsString(Field: TField; OldVal, SQLFormat: Boolean): variant;
 var
