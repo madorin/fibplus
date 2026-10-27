@@ -88,7 +88,7 @@ type
     procedure ShiftMapValues(Distance: Integer);
     procedure WriteRecord(RecordNo: Integer; const Source: TDataBuffer; ForceAllocMem: Boolean);
     procedure WriteField(RecordNo, FieldOffSet: Integer; const Data: TDataBuffer; SizeData: Integer);
-    procedure SetStringValue(Index, RecordNo: Integer; const Value: string);
+    procedure SetStringValue(Index, RecordNo: Integer; const Value: FIBByteString);
     procedure SetStringFromPChar(Index, RecordNo: Integer; const Value: PAnsiChar; Len: Integer; Triming: Boolean);
     procedure SaveOldBuffer(RecordNo: Integer);
     procedure ClearOldBuffer;
@@ -643,7 +643,7 @@ begin
   Inc(TDataBuffer(Result), FieldOffSet);
 end;
 
-procedure TRecordsCache.SetStringValue(Index, RecordNo: Integer; const Value: string);
+procedure TRecordsCache.SetStringValue(Index, RecordNo: Integer; const Value: FIBByteString);
 var
   i, L: Integer;
   Added: Boolean;
@@ -679,7 +679,12 @@ begin
           FStringData.Value[Index, RecordNo] := Value;
         end
       else if (Value[L] = ' ') then
-        FStringData.Value[Index, RecordNo] := TrimRight(Value)
+        begin
+          // as TrimRight, on the bytes
+          while (L > 0) and (Value[L] <= ' ') do
+            Dec(L);
+          FStringData.Value[Index, RecordNo] := Copy(Value, 1, L);
+        end
       else
         FStringData.Value[Index, RecordNo] := Value
     end;

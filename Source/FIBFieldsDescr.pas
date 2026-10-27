@@ -37,9 +37,9 @@ type
     fdStrIndex: Integer;
     fdAddedFields: TAddedTypeFields;
     fdSubType: Short;
-    fdRelationTable: Ansistring;
-    fdRelationField: Ansistring;
-    fdTableAlias: Ansistring;
+    fdRelationTable: string;
+    fdRelationField: string;
+    fdTableAlias: string;
 
   end;
 
@@ -68,6 +68,31 @@ type
   end;
 
 implementation
+
+// The names are in the system code page in the stream
+procedure WriteName(Stream: TStream; const Name: string);
+var
+  Bytes: Ansistring;
+  k: Integer;
+begin
+  Bytes := Ansistring(Name);
+  k := Length(Bytes);
+  Stream.WriteBuffer(k, SizeOf(Integer));
+  if k > 0 then
+    Stream.WriteBuffer(Bytes[1], k);
+end;
+
+function ReadName(Stream: TStream): string;
+var
+  Bytes: Ansistring;
+  c: Integer;
+begin
+  Stream.ReadBuffer(c, SizeOf(Integer));
+  SetLength(Bytes, c);
+  if c > 0 then
+    Stream.ReadBuffer(Bytes[1], c);
+  Result := string(Bytes);
+end;
 
 { TFIBFieldDescrList }
 
@@ -173,21 +198,9 @@ begin
       FieldInfo[i]^.fdSubType := p^.fdSubType;
       with FieldInfo[i]^ do
       begin
-        Stream.ReadBuffer(c, SizeOf(Integer));
-        SetLength(fdRelationTable, c);
-        if c > 0 then
-          Stream.ReadBuffer(fdRelationTable[1], c);
-
-        Stream.ReadBuffer(c, SizeOf(Integer));
-        SetLength(fdRelationField, c);
-        if c > 0 then
-          Stream.ReadBuffer(fdRelationField[1], c);
-
-        Stream.ReadBuffer(c, SizeOf(Integer));
-        SetLength(fdTableAlias, c);
-        if c > 0 then
-          Stream.ReadBuffer(fdTableAlias[1], c);
-
+        fdRelationTable := ReadName(Stream);
+        fdRelationField := ReadName(Stream);
+        fdTableAlias := ReadName(Stream);
       end
     end;
   finally
@@ -198,27 +211,14 @@ end;
 procedure TFIBFieldDescrList.SaveToStream(Stream: TStream);
 var
   i: Integer;
-  k: Integer;
 begin
   Stream.WriteBuffer(vFieldInfoList.Count, SizeOf(Integer));
   for i := 0 to Pred(vFieldInfoList.Count) do
   begin
     Stream.WriteBuffer(PFIBFieldDescr(vFieldInfoList[i])^, SizeOf(TFIBFieldDescr) - SizeOf(Pstring) * 3);
-    k := Length(PFIBFieldDescr(vFieldInfoList[i])^.fdRelationTable);
-    Stream.WriteBuffer(k, SizeOf(Integer));
-    if k > 0 then
-      Stream.WriteBuffer(PFIBFieldDescr(vFieldInfoList[i])^.fdRelationTable[1], k);
-
-    k := Length(PFIBFieldDescr(vFieldInfoList[i])^.fdRelationField);
-    Stream.WriteBuffer(k, SizeOf(Integer));
-    if k > 0 then
-      Stream.WriteBuffer(PFIBFieldDescr(vFieldInfoList[i])^.fdRelationField[1], k);
-
-    k := Length(PFIBFieldDescr(vFieldInfoList[i])^.fdTableAlias);
-    Stream.WriteBuffer(k, SizeOf(Integer));
-    if k > 0 then
-      Stream.WriteBuffer(PFIBFieldDescr(vFieldInfoList[i])^.fdTableAlias[1], k);
-
+    WriteName(Stream, PFIBFieldDescr(vFieldInfoList[i])^.fdRelationTable);
+    WriteName(Stream, PFIBFieldDescr(vFieldInfoList[i])^.fdRelationField);
+    WriteName(Stream, PFIBFieldDescr(vFieldInfoList[i])^.fdTableAlias);
   end;
 end;
 

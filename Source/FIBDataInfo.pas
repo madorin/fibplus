@@ -284,19 +284,19 @@ var
   LockRepList: TCriticalSection;
 
   // One character per repository table: '1' exists, '0' doesn't, '2' unknown; under LockRepList
-procedure SetRepositoryState(DB: TFIBDataBase; const State: Ansistring);
+procedure SetRepositoryState(DB: TFIBDataBase; const State: string);
 var
   Index: integer;
 begin
   Index := DatabaseRepositories.IndexOfObject(DB);
   if Index < 0 then
   begin
-    DatabaseRepositories.AddObject(string(State), DB);
+    DatabaseRepositories.AddObject(State, DB);
     // TFIBTableInfoCache.Notification removes the entry with the component
     DB.FreeNotification(ListTableInfo);
   end
   else
-    DatabaseRepositories[Index] := string(State);
+    DatabaseRepositories[Index] := State;
 end;
 
 const
@@ -315,7 +315,7 @@ var
   aTransaction: TFIBTransaction;
   qry: TFIBQuery;
   Index: integer;
-  s: Ansistring;
+  s: string;
   cr: TExtBoolean;
 
   function RepositaryIsRegistered: TExtBoolean;
@@ -744,7 +744,7 @@ end;
 procedure DoCreateRepositaryTable(DB: TFIBDataBase; Kind: byte);
 var
   Index: integer;
-  State: Ansistring;
+  State: string;
   Transaction: TFIBTransaction;
   qry: TFIBQuery;
 begin
@@ -836,7 +836,7 @@ begin
     if Index < 0 then
       State := '222'
     else
-      State := Ansistring(DatabaseRepositories[Index]);
+      State := DatabaseRepositories[Index];
     State[Kind] := '1';
     SetRepositoryState(DB, State);
   finally
@@ -2864,7 +2864,7 @@ begin
       DI := TFIBDataSetInfo.Create;
       DI.FStreamVersion := StreamVersion;
       DI.LoadFromStream(Stream);
-      FListDataSetInfo.AddObject(tn, DI)
+      FListDataSetInfo.AddObject(string(tn), DI)
     end;
   end;
 end;
@@ -2884,7 +2884,8 @@ begin
       WriteBuffer(c, SizeOf(integer));
       for i := 0 to Pred(c) do
       begin
-        WriteStrToStream(FListDataSetInfo[i], Stream);
+        // the key is the DataSet_ID
+        WriteStrToStream(Ansistring(FListDataSetInfo[i]), Stream);
         TFIBDataSetInfo(FListDataSetInfo.Objects[i]).SaveToStream(Stream);
       end;
     finally

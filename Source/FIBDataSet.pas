@@ -4598,8 +4598,6 @@ begin
   end;
 end;
 
-{$WARNINGS OFF}
-
 function TFIBCustomDataSet.FetchNext(FetchCount: Integer): Integer;
 var
   Buffer: TRecordBuffer;
@@ -4624,8 +4622,6 @@ begin
     FreeRecordBuffer(Buffer);
   end
 end;
-// {$WARNINGS ON}
-
 /// / PrepareOptions Stream
 
 {$DEFINE FIB_IMPLEMENT}
@@ -5805,8 +5801,8 @@ var
           if (Stream is TFIBBlobStream) and FillSwapInfo(Field) then
             with TFIBBlobStream(Stream) do
               begin
-                TableName := AnsiString(SwapTableName);
-                FieldName := AnsiString(SwapFieldName);
+                TableName := SwapTableName;
+                FieldName := SwapFieldName;
                 RecordKeyValues := SwapKeyValues;
               end;
           FWritingBlob := Field;
@@ -5900,8 +5896,6 @@ begin
   UpdateFieldStreams(Buff, ufsClearOldValue, False, False);
 end;
 
-{$WARNINGS OFF}
-
 function TFIBCustomDataSet.InternalRefreshRow(Qry: TFIBQuery; Buff: TRecordBuffer): Boolean;
 var
   iCurScreenState: Integer;
@@ -5961,8 +5955,6 @@ begin
     RestoreScreenCursor(iCurScreenState);
   end;
 end;
-
-// {$WARNINGS ON}
 
 procedure TFIBCustomDataSet.InternalRevertRecord(RecordNumber: Integer; WithUnInserted: Boolean);
 var
@@ -6336,8 +6328,6 @@ begin
   FQInsert.SQL.Assign(Value);
 end;
 
-{$WARNINGS OFF}
-
 type
   TFriendSQLVAR = class(TFIBXSQLVAR);
 
@@ -6534,8 +6524,6 @@ begin
         end;
     end;
 end;
-
-// {$WARNINGS ON}
 
 procedure TFIBCustomDataSet.SetRefreshSQL(Value: TStrings);
 begin
@@ -9460,17 +9448,18 @@ begin
     end
   else
     begin
+      // the system code page: wide string fields of other charsets are Unicode (UTF-8)
       FillChar(Dest^, Field.DataSize, 0);
       if ToNative then
         begin
-          s := PWideChar(Source);
+          s := Ansistring(PWideChar(Source));
           L := Length(s);
           if L > 0 then
             Move(s[1], Dest^, L);
         end
       else
         begin
-          ws := PAnsiChar(Source);
+          ws := WideString(Ansistring(PAnsiChar(Source)));
           L := Length(ws);
           if L > 0 then
             Move(ws[1], Dest^, (L + 1) * SizeOf(WideChar));
@@ -12734,7 +12723,7 @@ var
       case aFields[IndexF].VType of
         vtChar:
           begin
-            Result := DataSet.FindField(aFields[IndexF].vChar);
+            Result := DataSet.FindField(string(aFields[IndexF].vChar));
             if Result = nil then
               raise Exception.Create(SCantSort + IntToStr(IndexF) + ']');
           end;
@@ -13802,7 +13791,8 @@ begin
 
         fs := FieldNo;
         WriteBuffer(fs, SizeOf(integer));
-        ast := Name;
+        // the stream has the names in the system code page
+        ast := Ansistring(Name);
         fs := Length(ast);
         WriteBuffer(fs, SizeOf(integer));
         WriteBuffer(ast[1], fs);
@@ -13896,7 +13886,7 @@ begin
             SetLength(Name, fs);
             if fs > 0 then
               ReadBuffer(Name[1], fs);
-            with TFieldDef.Create(FieldDefs, Name, ft, vSize, False, FieldNo) do
+            with TFieldDef.Create(FieldDefs, string(Name), ft, vSize, False, FieldNo) do
               InternalCalcField := False;
           end;
 
@@ -14848,7 +14838,7 @@ begin
     begin
       case VType of
         vtInteger: Result := Field.Index = VInteger;
-        vtPChar: Result := EquelNames(CI, Field.FieldName, vPChar);
+        vtPChar: Result := EquelNames(CI, Field.FieldName, string(vPChar));
         vtAnsiString: Result := EquelNames(CI, Field.FieldName, string(VAnsiString));
         vtPointer:
           if TObject(VPointer) is TStrings then
@@ -16273,9 +16263,9 @@ var
         case Delta.Fields[i].DataType of
           ftGuid:
             if VarIsEmpty(NewVal) then
-              CurParam.asGuid := StringAsGuid(OldVal)
+              CurParam.asGuid := StringAsGuid(Ansistring(OldVal))
             else if VarToStr(NewVal) <> '' then
-              CurParam.asGuid := StringAsGuid(NewVal)
+              CurParam.asGuid := StringAsGuid(Ansistring(NewVal))
             else
               CurParam.Clear;
           ftBCD:

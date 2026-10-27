@@ -490,8 +490,9 @@ var
            begin
             if not InitStrValue then
              StrValue:=PAnsiString(p)^;
+             // ftString here has the system code page
              if eloCaseInsensitive in Options then
-              StrValue:=AnsiUppercase(StrValue);
+              StrValue:=AnsiString(AnsiUppercase(string(StrValue)));
              Arrow:=TArrow(vSortInfos[i].Asc xor  (UDFCompStr(StrValue)>0))
            end;
            ftWideString:
