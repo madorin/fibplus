@@ -838,9 +838,8 @@ begin
         end
     end;
   i := Length(ParamString);
-  if j < i then
+  if j <= i then
     begin
-      i := Length(ParamString);
       SetLength(s, i - j + 1);
       Move(ParamString[j], s[1], i - j + 1);
       Result := Result or CurParamValue

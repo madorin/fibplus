@@ -39,7 +39,7 @@ begin
       end;
     varSingle:
       begin
-        if Abs(P^ - TVarData(v).VDouble) < 1E-11 then
+        if Abs(P^ - TVarData(v).VSingle) < 1E-11 then
           Result := 0
         else
           if P^ > TVarData(v).VSingle then
@@ -152,20 +152,20 @@ begin
     varString:
 {$IFDEF C_INT64}
       begin
-        if P^ = StrToInt64(string(TVarData(V).VString)) then
+        if P^ = StrToInt64(string(AnsiString(TVarData(V).VString))) then
           Result := 0
         else
-          if P^ > StrToInt64(string(TVarData(V).VString)) then
+          if P^ > StrToInt64(string(AnsiString(TVarData(V).VString))) then
             Result := 1
           else
             Result := -1
       end;
 {$ELSE}
       begin
-        if P^ = StrToFloat(string(TVarData(V).VString)) then
+        if P^ = StrToFloat(string(AnsiString(TVarData(V).VString))) then
           Result := 0
         else
-          if P^ > StrToFloat(string(TVarData(V).VString)) then
+          if P^ > StrToFloat(string(AnsiString(TVarData(V).VString))) then
             Result := 1
           else
             Result := -1

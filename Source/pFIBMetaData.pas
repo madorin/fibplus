@@ -2847,6 +2847,12 @@ begin
     FInternalTransaction.DefaultDatabase := DB;
     try
       DetectServerFeatures;
+      if (ObjectType = otPackage) and not FPackagesSupports or
+        (ObjectType = otStoredFunctions) and not FStoredFunctionsSupports then
+      begin
+        Result := nil;
+        Exit;
+      end;
       if (ObjectType = otTable) and FTabRelTypeSupports then
         CreateQuery(QNames, QRYSysTablesRel, FInternalTransaction)
       else
@@ -3767,7 +3773,7 @@ begin
   else if FComputedSource <> '' then
   begin
     Stream.WriteString(FormatName + ' ');
-    Stream.WriteString(' COMPUTED BY ' + FComputedSource)
+    Stream.WriteString('COMPUTED BY ' + FComputedSource)
   end
   else
     inherited GenerateObjectDDL(Stream);
@@ -3802,7 +3808,7 @@ procedure TMetaField.GenerateObjectDDL(Stream: TFastStringStream);
 begin
   if Self is TMetaDomain then
     Stream.WriteString(FormatName + ' AS ')
-  else
+  else if FormatName <> '' then
     Stream.WriteString(FormatName + ' ');
   inherited GenerateObjectDDL(Stream);
 end;
@@ -3914,7 +3920,8 @@ procedure TMetaProcField.GenerateObjectDDL(Stream: TFastStringStream);
 begin
   if FUseDomain then
   begin
-    Stream.WriteString(FormatName + ' ');
+    if FormatName <> '' then
+      Stream.WriteString(FormatName + ' ');
     case FMechanizm of
       0: Stream.WriteString(FormatIdentifier(3, FDomain));
       1: Stream.WriteString('TYPE OF ' + FDomain)
@@ -3922,7 +3929,8 @@ begin
   end
   else if FUseRelation then
   begin
-    Stream.WriteString(FormatName + ' ');
+    if FormatName <> '' then
+      Stream.WriteString(FormatName + ' ');
     Stream.WriteString('TYPE OF COLUMN ' + FormatIdentifier(3, FRelationObject) +
       '.' + FormatIdentifier(3, FRelationField))
   end

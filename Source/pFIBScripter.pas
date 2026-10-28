@@ -3078,7 +3078,7 @@ begin
     for i := FQuery.ParamCount - 1 downto 0 do
     begin
       pn := FQuery.ParamName(i);
-      if pn[1] in ['H', 'h'] then
+      if (pn <> '') and (pn[1] in ['H', 'h']) then
       begin
         p_ := Pos('_', pn);
         bPos := HexStr2Int(Copy(pn, 2, p_ - 2));

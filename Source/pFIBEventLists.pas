@@ -172,8 +172,16 @@ end;
 
 procedure TCallBackList.Delete(Index: integer);
 begin
-  if (Index > 0) and (Index < FCallBackList.Count) then
-    FCallBackList.Delete(Index);
+  FCS.Acquire;
+  try
+    if (Index >= 0) and (Index < FCallBackList.Count) then
+    begin
+      Dispose(PMethod(FCallBackList[Index]));
+      FCallBackList.Delete(Index);
+    end;
+  finally
+    FCS.Release;
+  end;
 end;
 
 { TNotifyEventList }

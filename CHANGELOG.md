@@ -252,6 +252,31 @@
   position were highlighted at a wrong place.
 - Conditions editor: a narrow conditions list auto-sized its column instead of
   shrinking it.
+- Win64: `TFIBGuidField.AsGuid` and `AsString` (`GUIDAsString` of `StrUtil`) raised an access
+  violation: the destination address was kept in 32 bits.
+- `StringAsGUID` (`StrUtil`) rejected lowercase hex digits.
+- `CompareVariants` (sorting, `Locate`): a `varSingle` variant was compared through the bytes of
+  a `Double`, so 2 and a `Single` 2 were not equal.
+- `CompareVariants` on Delphi 2009 and later: a `WideString` compared with a `varString`
+  variant, and a number compared with a numeric `varString` (`'25'`), read the bytes of the
+  `AnsiString` as UTF-16 (wrong result or "not a valid floating point value").
+- `TCallBackList.Delete` ignored the index 0 and did not free the deleted entry.
+- `TpFIBDataSet.CacheRefreshByArrMap` read past the end of the shorter of the two field arrays.
+- `TpFIBDataSetProvider`: `RefreshRecord` of the client dataset wrote a NULL `NUMERIC` of the
+  source as a number (0 or garbage).
+- `TFIBTransaction`: a database of a multi-database transaction without its own parameters got
+  the `lock_read`/`lock_write` table names in the code page of `MainDatabase`, and the TPB was
+  not rebuilt when the metadata code page changed.
+- `DBParams`: a last `shutdown` value of one character (`shutdown=2`) was ignored.
+- `TpFIBDBSchemaExtract`: the `RETURNS` clause of a function and a computed column had two
+  spaces.
+- `TpFIBDBSchemaExtract.GetObjectDDL` of a package or a PSQL function on a server before
+  Firebird 3 raised "Table unknown" instead of returning an empty string.
+- SQL editor: a mouse click in a line with characters outside Latin-1 (Cyrillic) put the caret
+  in a wrong column (Delphi 2009 and later).
+- Transaction editor: loading the transaction kinds from a file turned only the first `#` of the
+  parameters into a line break.
+- Dataset editor, **AutoUpdateOptions**: the generator step accepted a `.`.
 
 ## [7.9.1] - 2026-10-09
 

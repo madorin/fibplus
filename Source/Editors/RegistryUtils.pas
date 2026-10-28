@@ -290,7 +290,7 @@ begin
         if OpenKey(PathKey + '\' + ts[i], true) then
         begin
           WriteString('Name', Ini.ReadString(ts[i], 'Name', ''));
-          WriteString('Params', StringReplace(Ini.ReadString(ts[i], 'Params', ''), '#', #13#10, []));
+          WriteString('Params', StringReplace(Ini.ReadString(ts[i], 'Params', ''), '#', #13#10, [rfReplaceAll]));
         end;
       Result := true;
     finally

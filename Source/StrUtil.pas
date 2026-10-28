@@ -404,10 +404,11 @@ const
 
 function StringAsGUID(const AStr: AnsiString): TGUID;
 const
-  Hex2IntHash: Array [0 .. 70] of Byte = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  Hex2IntHash: Array [0 .. 102] of Byte = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0,
-    0, 0, 10, 11, 12, 13, 14, 15);
+    0, 0, 10, 11, 12, 13, 14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 11, 12, 13, 14, 15);
 
 begin
   { Thanks to Anton Tril }
@@ -445,9 +446,9 @@ end;
 
 procedure GUIDAsStringToPChar(const AGUID: PGUID; Dest: PAnsiChar);
 var
-  P: Cardinal;
+  P: PAnsiChar;
 begin
-  P := Cardinal(Dest);
+  P := Dest;
   PByte(P)^ := Ord('{');
   Inc(P);
   PWord(P)^ := Int2HexHash[TGUIDBytes(AGUID^).F3];

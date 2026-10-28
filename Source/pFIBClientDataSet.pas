@@ -571,9 +571,10 @@ begin
             Fields[i].Assign(Field)
           else
           begin
-            // main changes:
-            GetBCDFieldData(Field, False, BcdValue);
-            Fields[i].SetData(@BcdValue)
+            if GetBCDFieldData(Field, False, BcdValue) then
+              Fields[i].SetData(@BcdValue)
+            else
+              Fields[i].Clear;
           end;
       end;
       Post;
