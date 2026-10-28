@@ -560,6 +560,8 @@ The lists of old and new names, and what an application has to change, are in
 - `DBParams`: a last `shutdown` value of one character (`shutdown=2`) was ignored.
 - `TFIBDBSchemaExtract`: the `RETURNS` clause of a function and a computed column had two
   spaces.
+- `TFIBDBSchemaExtract.GetObjectDDL` of a package or a PSQL function on a server before
+  Firebird 3 raised "Table unknown" instead of returning an empty string.
 
 ## [7.9.1] - 2026-10-09
 

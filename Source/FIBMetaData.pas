@@ -3093,6 +3093,12 @@ begin
     FInternalTransaction.DefaultDatabase := DB;
     try
       DetectServerFeatures;
+      if (ObjectType = otPackage) and not FPackagesSupports or
+        (ObjectType = otStoredFunctions) and not FStoredFunctionsSupports then
+      begin
+        Result := nil;
+        Exit;
+      end;
       if (ObjectType = otTable) and FTabRelTypeSupports then
         QNames := CreateQuery(QRYSysTablesRel, FInternalTransaction)
       else
