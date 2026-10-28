@@ -5210,7 +5210,10 @@ begin
           end;
         while (Result < t.stStart + t.stLength) and (Result < Length(s)) do
           begin
-            Inc(Pos, fCharWidths[Bold][AnsiChar(s[Result + 1])]);
+            if s[Result + 1] <= High(AnsiChar) then
+              Inc(Pos, fCharWidths[Bold][AnsiChar(s[Result + 1])])
+            else
+              Inc(Pos, Canvas.TextWidth(s[Result + 1]));
             if Pos > Pix then
               begin
                 if Assigned(WordIndex) then

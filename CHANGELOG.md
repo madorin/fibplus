@@ -562,6 +562,8 @@ The lists of old and new names, and what an application has to change, are in
   spaces.
 - `TFIBDBSchemaExtract.GetObjectDDL` of a package or a PSQL function on a server before
   Firebird 3 raised "Table unknown" instead of returning an empty string.
+- SQL editor: a mouse click in a line with characters outside Latin-1 (Cyrillic) put the caret
+  in a wrong column.
 
 ## [7.9.1] - 2026-10-09
 
