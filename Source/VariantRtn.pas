@@ -141,7 +141,7 @@ end;
                       function CompareWideStringAndVariantEQ(P: Pointer; const v: Variant): boolean;
                       begin
                         case VarType(v) of
-                          varString: result := WideString(P) = string(TVarData(v).VString);
+                          varString: result := WideString(P) = string(AnsiString(TVarData(v).VString));
                           varOleStr: result := WideString(P) = WideString(TVarData(v).VOleStr);
                           varUString: result := WideString(P) = string(TVarData(v).VUString);
                         else
@@ -165,9 +165,9 @@ end;
                         case VarType(v) of
                           varString:
                             begin
-                              if WideString(P) = string(TVarData(v).VString) then
+                              if WideString(P) = string(AnsiString(TVarData(v).VString)) then
                                 result := 0
-                              else if WideString(P) > string(TVarData(v).VString) then
+                              else if WideString(P) > string(AnsiString(TVarData(v).VString)) then
                                 result := 1
                               else
                                 result := -1;

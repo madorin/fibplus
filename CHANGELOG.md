@@ -546,6 +546,9 @@ The lists of old and new names, and what an application has to change, are in
 - `StringAsGUID` (`StrUtil`) rejected lowercase hex digits.
 - `CompareVariants` (sorting, `Locate`): a `varSingle` variant was compared through the bytes of
   a `Double`, so 2 and a `Single` 2 were not equal.
+- `CompareVariants`: a `WideString` compared with a `varString` variant, and a number compared
+  with a numeric `varString` (`'25'`), read the bytes of the `AnsiString` as UTF-16 (wrong result
+  or "not a valid floating point value").
 
 ## [7.9.1] - 2026-10-09
 
