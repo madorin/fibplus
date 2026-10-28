@@ -377,6 +377,10 @@ The lists of old and new names, and what an application has to change, are in
   `INTEGER` key field (`AutoUpdateOptions`) was cut; the field raises an error now.
 - `TFIBDataSetProvider`: `RefreshRecord` of the client dataset wrote a NULL `NUMERIC` of the
   source as a number (0 or garbage).
+- FIBPlus fields in a dataset that is not FIBPlus (e.g. persistent fields copied to a
+  `TClientDataSet`): the first read of a `TFIBStringField` could raise an access violation, and
+  `TFIBDateTimeField.AsTimeStamp` gave a wrong value in `OnValidate`, or raised `EIntOverflow`
+  there when it was assigned.
 - `TFIBClientBCDField.AsBCD` read in the `OnValidate` of the field returned 0 instead of the
   new value (Delphi XE3 and later).
 - `PSGetCommandText` of `IProviderSupport` returned an empty string on Delphi

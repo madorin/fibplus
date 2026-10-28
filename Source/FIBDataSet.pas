@@ -2048,14 +2048,16 @@ begin
 end;
 
 function TFIBStringField.IsDBKey: Boolean;
+var
+  CustomDataSet: TFIBCustomDataSet;
 begin
-  with TFIBDataSet(DataSet) do
-    if (FieldKind = fkData) and Assigned(vFieldDescrList) and (vFieldDescrList.Capacity > 0) then
-      begin
-        Result := vFieldDescrList[FieldNo - 1]^.fdIsDBKey;
-      end
-    else
-      Result := false;
+  Result := False;
+  if (FieldKind = fkData) and (DataSet is TFIBCustomDataSet) then
+    begin
+      CustomDataSet := TFIBCustomDataSet(DataSet);
+      if Assigned(CustomDataSet.vFieldDescrList) and (CustomDataSet.vFieldDescrList.Capacity > 0) then
+        Result := CustomDataSet.vFieldDescrList[FieldNo - 1]^.fdIsDBKey;
+    end;
 end;
 
 function TFIBStringField.SqlSubType: Integer;
@@ -2773,20 +2775,16 @@ end;
 
 procedure TFIBDateTimeField.GetText(var Text: string; DisplayText: Boolean);
 var
-  Data: Double;
   ts: TTimeStamp;
-
 begin
   inherited GetText(Text, DisplayText);
   if FShowMsec then
     begin
-      if ReadFieldData(Self, @Data, SizeOf(Data)) then
-        begin
-          ts := MSecsToTimeStamp(Data);
-          ts.Time := ts.Time mod 1000;
-          if ts.Time > 0 then
-            Text := Text + Format('.%.3d', [ts.Time])
-        end
+      // a null value gives a zero time stamp
+      ts := GetAsTimeStamp;
+      ts.Time := ts.Time mod 1000;
+      if ts.Time > 0 then
+        Text := Text + Format('.%.3d', [ts.Time])
     end;
 end;
 
@@ -2794,7 +2792,18 @@ function TFIBDateTimeField.GetAsTimeStamp: TTimeStamp;
 var
   Data: Double;
 begin
-  if ReadFieldData(Self, @Data, SizeOf(Data)) then
+  // a dataset that is not FIBPlus stores a TDateTime
+  if not (DataSet is TFIBCustomDataSet) then
+    begin
+      if IsNull then
+        begin
+          Result.Time := 0;
+          Result.Date := 0;
+        end
+      else
+        Result := DateTimeToTimeStamp(AsDateTime);
+    end
+  else if ReadFieldData(Self, @Data, SizeOf(Data)) then
     Result := MSecsToTimeStamp(Data)
   else
     begin
@@ -2807,8 +2816,13 @@ procedure TFIBDateTimeField.SetAsTimeStamp(const Value: TTimeStamp);
 var
   Data: Double;
 begin
-  Data := TimeStampToMSecs(Value);
-  WriteFieldData(Self, @Data, SizeOf(Data))
+  if not (DataSet is TFIBCustomDataSet) then
+    AsDateTime := TimeStampToDateTime(Value)
+  else
+    begin
+      Data := TimeStampToMSecs(Value);
+      WriteFieldData(Self, @Data, SizeOf(Data))
+    end;
 end;
 
 (*
