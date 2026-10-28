@@ -543,6 +543,7 @@ The lists of old and new names, and what an application has to change, are in
   highlighted at a wrong place.
 - Win64: `TFIBGuidField.AsGuid` and `AsString` (`GUIDAsString` of `StrUtil`) raised an access
   violation: the destination address was kept in 32 bits.
+- `StringAsGUID` (`StrUtil`) rejected lowercase hex digits.
 
 ## [7.9.1] - 2026-10-09
 
