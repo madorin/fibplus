@@ -684,6 +684,7 @@ The lists of old and new names, and what an application has to change, are in
 - SQL editor: pasting text with sections raised an access violation, every paste dropped the
   sections of the editor, sections stayed at their rows when lines were inserted or deleted
   above them, and a paste of plain text did not set `Modified`.
+- SQL editor: undo dropped all the sections of the editor, only the text came back.
 
 ## [7.9.1] - 2026-10-09
 

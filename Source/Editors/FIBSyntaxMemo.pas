@@ -299,7 +299,7 @@ type
   protected
     procedure AddRef;
     procedure Release;
-    procedure Assign(original: TMPSMSectionClone);
+    procedure Assign(Source: TMPSMSectionClone);
   public
     property RefCount: Integer read fRefCount;
   end;
@@ -2512,14 +2512,36 @@ begin
     Free;
 end;
 
-// SiO: Make a copy
-procedure TMPSMSectionClone.Assign(original: TMPSMSectionClone);
+// Copies a section with its nested sections
+function CloneSection(const Father, Sec: TMPSynMemoSection): TMPSynMemoSection;
+var
+  I: TFIBListIndex;
 begin
-  fParent := original.fParent;
-  fRowBeg := original.fRowBeg;
-  fRowEnd := original.fRowEnd;
-  fLevel := original.fLevel;
-  fCollapsed := original.fCollapsed;
+  Result := TMPSynMemoSection.Create;
+  Result.fParent := Father;
+  Result.fRowBeg := Sec.fRowBeg;
+  Result.fRowEnd := Sec.fRowEnd;
+  Result.fLevel := Sec.fLevel;
+  Result.fCollapsed := Sec.fCollapsed;
+  for I := 0 to Sec.Count - 1 do
+    Result.Add(CloneSection(Result, Sec.Sections[I]));
+end;
+
+// Makes a deep copy of the section tree
+procedure TMPSMSectionClone.Assign(Source: TMPSMSectionClone);
+var
+  I: TFIBListIndex;
+begin
+  if Source = Self then
+    Exit;
+  fParent := Source.fParent;
+  fRowBeg := Source.fRowBeg;
+  fRowEnd := Source.fRowEnd;
+  fLevel := Source.fLevel;
+  fCollapsed := Source.fCollapsed;
+  Clear;
+  for I := 0 to Source.Count - 1 do
+    Add(CloneSection(Self, Source.Sections[I]));
 end;
 
 // Class TMPSynMemoSection Implementation
@@ -3011,25 +3033,8 @@ end;
 { TODO : THIS IS WHAT WE WILL SORT OUT - tomorrow morning }
 // The current section tree becomes unique
 procedure TMPSynMemoSections.MakeUnique;
-{ Creates a copy of the section - recurse }
-  function Clone(const Father, Sec: TMPSynMemoSection): TMPSynMemoSection;
-  var
-    i: TFIBListIndex;
-  begin
-    Result := TMPSynMemoSection.Create;
-    Result.fParent := Father;
-    Result.fRowBeg := Sec.fRowBeg;
-    Result.fRowEnd := Sec.fRowEnd;
-    Result.fLevel := Sec.fLevel;
-    Result.fCollapsed := Sec.fCollapsed;
-    for i := 0 to Sec.Count - 1 do
-      Result.Add(Clone(Result, Sec.Sections[i]));
-  end;
-
-{ }
 var
   NewRoot: TMPSMSectionClone;
-  i: TFIBListIndex;
 begin
   if ssUndoProcess in fRichMemo.Lines.State then
     Exit;
@@ -3040,13 +3045,7 @@ begin
       { } {$ENDIF}
       { Create a real /with its own memory/ clone of the section tree }
       NewRoot := TMPSMSectionClone.Create;
-      NewRoot.fParent := nil;
-      NewRoot.fRowBeg := fRoot.fRowBeg;
-      NewRoot.fRowEnd := fRoot.fRowEnd;
-      NewRoot.fLevel := 0;
-      NewRoot.fCollapsed := False;
-      for i := 0 to fRoot.Count - 1 do
-        NewRoot.Add(Clone(NewRoot, fRoot.Sections[i]));
+      NewRoot.Assign(fRoot);
       SetRoot(NewRoot);
     end
   else
@@ -3949,15 +3948,8 @@ begin
   Result.uiSelEnd := fEnd;
   Result.uiSealing := fSealing;
   Result.uiKind := ukNone;
-  Result.uiSections := fRichMemo.Sections.EntireSection;
   Result.uiText := UndoText;
-
-  // SiO: And who is going to create the objects for us?!!
-  // Spent three damn hours hunting the cause of "Runtime error 204"!
-  // P.S. Then as long again figuring out why undo stopped working.
-  // And all it took was making a _copy_.
-  // How it worked before - no idea.
-
+  // a copy: the editor keeps changing its own section tree
   Result.uiSections := TMPSMSectionClone.Create;
   Result.uiSections.Assign(fRichMemo.Sections.EntireSection);
   Result.uiSections.AddRef;
