@@ -443,42 +443,14 @@ begin
 end;
 
 function IsClause(const EtalonClause: string; const Source: string; Position: Integer): boolean;
-// EtalonClause must be if UpperCase
+// EtalonClause must be in UpperCase
 var
-  Len: Integer;
   LenEtalon: Integer;
-  pSource: PChar;
-  pEtalon: PChar;
-  pEtalon1: PChar;
 begin
-  Len := Length(Source);
+  Result := IsKeywordAt(EtalonClause, Source, Position);
   LenEtalon := Length(EtalonClause);
-  if Len - Position + 1 < LenEtalon then
-    Result := False
-  else
-  begin
-    pSource := Pointer(Source);
-    Inc(pSource, Position - 1);
-    pEtalon := Pointer(EtalonClause);
-    pEtalon1 := Pointer(EtalonClause);
-    Inc(pEtalon1, LenEtalon);
-    Result := True;
-    while (pEtalon <> pEtalon1) do
-    begin
-      if pSource^ <> pEtalon^ then
-      begin
-        if Byte(pSource^) - 32 <> Byte(pEtalon^) then
-        begin
-          Result := False;
-          Break;
-        end;
-      end;
-      Inc(pSource);
-      Inc(pEtalon);
-    end;
-    if Result and (Len - Position >= LenEtalon) then
-      Result := CharInSet(Source[Position + LenEtalon], [' ', #13, #9, #10, '/', '-', ';', '^', ',', '}'])
-  end
+  if Result and (Length(Source) - Position >= LenEtalon) then
+    Result := CharInSet(Source[Position + LenEtalon], [' ', #13, #9, #10, '/', '-', ';', '^', ',', '}'])
 end;
 
 function StrIsIfDirective(const CheckStr: string; X: Integer): boolean;

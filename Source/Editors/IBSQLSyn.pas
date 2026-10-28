@@ -35,49 +35,16 @@ implementation
 
 uses
 {$IFDEF C23}
-  Vcl.Graphics
+  Vcl.Graphics,
 {$ELSE}
-    Graphics
+  Graphics,
 {$ENDIF}
-    ;
+  SqlTxtRtns;
 
+// EtalonClause must be in uppercase
 function IsClause(const EtalonClause: string; const Source: string; Position: integer; EndPosition: integer): boolean;
-// the 1st argument must be in uppercase. It is the reference
-var
-  Len: integer;
-  LenEtalon: Integer;
-  pSource: PChar;
-  pEtalon: PChar;
-  pEtalon1: PChar;
 begin
-  Len := EndPosition - Position + 1;
-  LenEtalon := Length(EtalonClause);
-  // if Len-Position+1<LenEtalon then
-  if Len <> LenEtalon then
-    Result := False
-  else
-  begin
-    pSource := Pointer(Source);
-    Inc(pSource, Position - 1);
-    pEtalon := Pointer(EtalonClause);
-    pEtalon1 := Pointer(EtalonClause);
-    Inc(pEtalon1, LenEtalon);
-    Result := True;
-    while (pEtalon <> pEtalon1) do
-    begin
-      if pSource^ <> pEtalon^ then
-      begin
-        // anything not in 'a'..'z' must be filtered out by the pre-check
-        if Byte(pSource^) - 32 <> Byte(pEtalon^) then
-        begin
-          Result := False;
-          Break;
-        end;
-      end;
-      Inc(pSource);
-      Inc(pEtalon);
-    end;
-  end
+  Result := (EndPosition - Position + 1 = Length(EtalonClause)) and IsKeywordAt(EtalonClause, Source, Position);
 end;
 
 const

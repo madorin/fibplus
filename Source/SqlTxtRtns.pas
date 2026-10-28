@@ -241,6 +241,8 @@ const
 
 function ParseMacroString(const MacroString: string; aMacroChar: Char; var DefValue: string): string;
 function PosClause(const Clause, SQLText: string): integer;
+// True when Source has the uppercase Keyword at Position; only 'a'..'z' also match 'A'..'Z'
+function IsKeywordAt(const Keyword, Source: string; Position: Integer): Boolean;
 
 const
   BeginWhere = ' WHERE ';
@@ -250,48 +252,34 @@ implementation
 uses
   StdFuncs;
 
+function IsKeywordAt(const Keyword, Source: string; Position: Integer): Boolean;
+var
+  I: Integer;
+  SourceChar: Char;
+begin
+  if (Position < 1) or (Length(Source) - Position + 1 < Length(Keyword)) then
+    Exit(False);
+  for I := 1 to Length(Keyword) do
+  begin
+    SourceChar := Source[Position + I - 1];
+    if (SourceChar <> Keyword[I]) and
+      not ((SourceChar >= 'a') and (SourceChar <= 'z') and (Ord(SourceChar) - 32 = Ord(Keyword[I]))) then
+      Exit(False);
+  end;
+  Result := True;
+end;
+
 function InternalIsClause(const EtalonClause: string; const Source: string; Position: integer): boolean;
 // EtalonClause must be in UpperCase
 var
-  Len: integer;
   LenEtalon: Integer;
-  pSource: PChar;
-  pEtalon: PChar;
-  pEtalon1: PChar;
 begin
   if (Position > 1) and not CharInSet(Source[Position - 1], CharsBeforeClause) then
-  begin
-    Result := False;
-    Exit
-  end;
-  Len := Length(Source);
+    Exit(False);
+  Result := IsKeywordAt(EtalonClause, Source, Position);
   LenEtalon := Length(EtalonClause);
-  if Len - Position + 1 < LenEtalon then
-    Result := False
-  else
-  begin
-    pSource := Pointer(Source);
-    Inc(pSource, Position - 1);
-    pEtalon := Pointer(EtalonClause);
-    pEtalon1 := Pointer(EtalonClause);
-    Inc(pEtalon1, LenEtalon);
-    Result := True;
-    while (pEtalon <> pEtalon1) do
-    begin
-      if pSource^ <> pEtalon^ then
-      begin
-        if Byte(pSource^) - 32 <> Byte(pEtalon^) then
-        begin
-          Result := False;
-          Break;
-        end;
-      end;
-      Inc(pSource);
-      Inc(pEtalon);
-    end;
-    if Result and (Len - Position >= LenEtalon) then
-      Result := CharInSet(Source[Position + LenEtalon], CharsAfterClause)
-  end
+  if Result and (Length(Source) - Position >= LenEtalon) then
+    Result := CharInSet(Source[Position + LenEtalon], CharsAfterClause)
 end;
 
 procedure SkipCommentsAndBlanks(const SQLText: string; Len: integer; var Position: integer);

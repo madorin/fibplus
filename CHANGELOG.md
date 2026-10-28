@@ -555,6 +555,10 @@ The lists of old and new names, and what an application has to change, are in
   `H<offset>_<size>` in hex digits is a reference now. A reference past the end of the file loaded
   zeros, and a read error stopped the script with the bare stream error: both raise the new
   `feBlobFileError`, with the file and the parameter, and reach `OnExecuteError`.
+- `TFIBScripter`, the SQL parser (`SqlTxtRtns`) and the SQL editor highlighting took any
+  character 32 codes above a keyword letter for that letter: `{DIFDEF X}` was read as
+  `{$IFDEF X}`, `RDBDGET_CONTEXT` was highlighted as `RDB$GET_CONTEXT`, and a non-ASCII letter
+  could match an ASCII one (`Ѧ` as `F`). Only `a`..`z` now match `A`..`Z`.
 
 #### SQL monitor
 
