@@ -381,6 +381,12 @@ The lists of old and new names, and what an application has to change, are in
   `TClientDataSet`): the first read of a `TFIBStringField` could raise an access violation, and
   `TFIBDateTimeField.AsTimeStamp` gave a wrong value in `OnValidate`, or raised `EIntOverflow`
   there when it was assigned.
+- `DisplayFormat` and `EditFormat` of `TFIBBCDField` and `TFIBClientBCDField` when the value is
+  rounded: the zeros of the carry were dropped (`0.00` on 1.296 gave `1.3`, on 0.996 `1`), the
+  thousand separators stayed where they were before the carry (`#,##0.00` on 9999.996 gave
+  `1.0000`), a format without a decimal point kept one decimal, and literals after the digits
+  counted as decimals (`$ #,##0.00 USD` did not round). The trailing zeros of the optional `#`
+  decimals are dropped, as by `FormatFloat` (`0.##` on 1.5 gives `1.5`).
 - `TFIBClientBCDField.AsBCD` read in the `OnValidate` of the field returned 0 instead of the
   new value (Delphi XE3 and later).
 - `PSGetCommandText` of `IProviderSupport` returned an empty string on Delphi

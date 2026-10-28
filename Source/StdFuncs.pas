@@ -720,10 +720,8 @@ begin
     end;
 end;
 
-// Value rounded half up to Decimals digits, the results of the deprecated FMTBcd.RoundAt for the
-// numbers FormatNumericString gets (the BcdRoundTo of its message does not exist): the zeros left
-// by the carry are dropped, with the decimal separator when no decimal is left (1.296 -> 1.3,
-// 1.96 -> 2)
+// Value rounded half up to Decimals digits, keeping them (1.296 -> 1.30, 9.996 -> 10.00); no
+// decimal separator for 0 decimals, no sign when the result is zero
 function RoundDecimalString(const Value: string; Decimals: Integer; DecimalSeparator: Char): string;
 var
   Sign: string;
@@ -751,26 +749,21 @@ begin
   I := Length(Result);
   while Carry and (I > 0) do
     begin
-      if Result[I] = DecimalSeparator then
-        begin
-          if I = Length(Result) then
-            SetLength(Result, I - 1);
-        end
-      else if (Result[I] >= '0') and (Result[I] <= '9') then
+      if (Result[I] >= '0') and (Result[I] <= '9') then
         if Result[I] < '9' then
           begin
             Result[I] := Succ(Result[I]);
             Carry := False;
           end
-        else if (I > SeparatorPos) and (I = Length(Result)) then
-          SetLength(Result, I - 1)
         else
           Result[I] := '0';
       Dec(I);
     end;
   if Carry then
     Result := '1' + Result;
-  Result := Sign + Result;
+  for I := 1 to Length(Result) do
+    if (Result[I] >= '1') and (Result[I] <= '9') then
+      Exit(Sign + Result);
 end;
 
 function FormatNumericString(const Format, Source: string; OneSectionFormat: Boolean = False): string;
@@ -869,17 +862,20 @@ begin
 
       PosDecSepInFormat := PosCh('.', Format);
       NeedDecimalCount := 0;
-      CanHaveDecimalCount := L - PosDecSepInFormat;
-      for i := L downto PosDecSepInFormat do
-      begin
-        if (NeedDecimalCount = 0) and (Format[i] = '0') then
+      CanHaveDecimalCount := 0;
+      if PosDecSepInFormat > 0 then
+        for i := L downto PosDecSepInFormat do
         begin
-          NeedDecimalCount := i - PosDecSepInFormat;
-        end
-        else if NeedDecimalCount <> 0 then
-          if not CharInSet(Format[i], cFormatChars) then
-            Dec(NeedDecimalCount);
-      end;
+          if CharInSet(Format[i], ['0', '#']) then
+            Inc(CanHaveDecimalCount);
+          if (NeedDecimalCount = 0) and (Format[i] = '0') then
+          begin
+            NeedDecimalCount := i - PosDecSepInFormat;
+          end
+          else if NeedDecimalCount <> 0 then
+            if not CharInSet(Format[i], cFormatChars) then
+              Dec(NeedDecimalCount);
+        end;
 
       i := PosDecSepInFormat - 1;
       if (i > 1) and not CharInSet(Format[i], cFormatChars) then
@@ -895,7 +891,7 @@ begin
       end;
 
       i := PosDecSepInFormat + 1;
-      if (i < L) and not CharInSet(Format[i], cFormatChars) then
+      if (PosDecSepInFormat > 0) and (i < L) and not CharInSet(Format[i], cFormatChars) then
       begin
         SetLength(vLiterals, 4);
         vLiterals[3].lPosType := pAfterDecimalSep;
@@ -922,8 +918,13 @@ begin
         end
         else if Length(Result) - PosDecSepInString > CanHaveDecimalCount then
         begin
-          Result := RoundDecimalString(Result, CanHaveDecimalCount, DecimalSeparator)
+          Result := RoundDecimalString(Result, CanHaveDecimalCount, DecimalSeparator);
+          PosDecSepInString := Pos(DecimalSeparator, Result);
         end;
+        // the zeros of the optional '#' decimals
+        if PosDecSepInString > 0 then
+          while (Length(Result) - PosDecSepInString > NeedDecimalCount) and (Result[Length(Result)] = '0') do
+            SetLength(Result, Length(Result) - 1);
       end;
       //
       if Length(vLiterals) > 3 then
