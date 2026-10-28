@@ -391,9 +391,9 @@ end;
 
 procedure GUIDAsStringToPChar(const AGUID: PGUID; Dest: PAnsiChar);
 var
-  P: Cardinal;
+  P: PAnsiChar;
 begin
-  P := Cardinal(Dest);
+  P := Dest;
   PByte(P)^ := Ord('{');
   Inc(P);
   PWord(P)^ := Int2HexHash[TGUIDBytes(AGUID^).F3];

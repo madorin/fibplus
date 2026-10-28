@@ -541,6 +541,8 @@ The lists of old and new names, and what an application has to change, are in
   the address of its message.
 - SQL editor: on a line longer than 65535 characters the words after that position were
   highlighted at a wrong place.
+- Win64: `TFIBGuidField.AsGuid` and `AsString` (`GUIDAsString` of `StrUtil`) raised an access
+  violation: the destination address was kept in 32 bits.
 
 ## [7.9.1] - 2026-10-09
 
