@@ -718,7 +718,7 @@ procedure PutField(Src, Dest: TField); forward;
     if (Src.DataType in [ftArray, ftADT]) then
       PutObjectField(TObjectField(Src), TObjectField(Dest))
     else if (Src.DataType in [ftDataSet, ftReference]) then
-      raise Exception.CreateRes(integer(@SNoDataSets))
+      raise Exception.CreateRes(@SNoDataSets)
     else if (not VarIsEmpty(Src.NewValue)) and (pfInUpdate in Src.ProviderFlags) then
       Dest.Assign(Src);
   end;

@@ -335,7 +335,7 @@ begin
   with tv do
   begin
     // Right also when the tick count wrapped around ($Q- in FIB.inc)
-    FValue := FIBGetTickCount - FBufValue;
+    FValue := Integer(FIBGetTickCount - FBufValue);
     Result := FValue;
     FLogStrValue := false;
   end;

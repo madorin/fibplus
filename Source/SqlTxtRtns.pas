@@ -254,7 +254,7 @@ function InternalIsClause(const EtalonClause: string; const Source: string; Posi
 // EtalonClause must be in UpperCase
 var
   Len: integer;
-  LenEtalon: Byte;
+  LenEtalon: Integer;
   pSource: PChar;
   pEtalon: PChar;
   pEtalon1: PChar;

@@ -108,6 +108,7 @@ function BcdToInt64Scaled(const Value: TBcd; out Res: Int64; out Scale: Integer)
 { Time zones }
 
 function FBIsOffsetZone(ZoneID: Word): Boolean;
+// OffsetMinutes is -23:59 to +23:59
 function FBOffsetToZoneID(OffsetMinutes: Integer): Word;
 function FBZoneIDToOffset(ZoneID: Word): Integer;
 // Offset of an offset zone, 0 for region zones (resolved only by the server)
@@ -604,7 +605,7 @@ begin
     // skip the leading zeros
     if (Res.Count > 0) or (Nibble <> 0) then
     begin
-      Res.D[Res.Count] := Nibble;
+      Res.D[Res.Count] := Byte(Nibble);
       Inc(Res.Count);
     end;
   end;
@@ -629,7 +630,7 @@ begin
   Res.Exponent := Value.Exponent;
   Res.Negative := Value.Negative;
   for i := 1 to Res.Count do
-    Res.D[i - 1] := Ord(Value.Coefficient[i]) - Ord('0');
+    Res.D[i - 1] := Byte(Ord(Value.Coefficient[i]) - Ord('0'));
 end;
 
 function BcdToInt64Scaled(const Value: TBcd; out Res: Int64; out Scale: Integer): Boolean;
@@ -702,15 +703,15 @@ begin
   if IntDigits + FracDigits > MaxBcdDigits then
     Exit;
   Pad := IntDigits + FracDigits - V.Count;
-  Res.Precision := IntDigits + FracDigits;
-  Res.SignSpecialPlaces := FracDigits;
+  Res.Precision := Byte(IntDigits + FracDigits);
+  Res.SignSpecialPlaces := Byte(FracDigits);
   if V.Negative and ((V.Count > 1) or (V.D[0] <> 0)) then
     Res.SignSpecialPlaces := Res.SignSpecialPlaces or $80;
   for i := 0 to V.Count - 1 do
   begin
     n := Pad + i;
     if n and 1 = 0 then
-      Res.Fraction[n shr 1] := V.D[i] shl 4
+      Res.Fraction[n shr 1] := Byte(V.D[i] shl 4)
     else
       Res.Fraction[n shr 1] := Res.Fraction[n shr 1] or V.D[i];
   end;
@@ -962,7 +963,7 @@ begin
     Chunk := Int128DivMod(V, 1000000000);
     for i := 1 to 9 do
     begin
-      Tmp[n] := Chunk mod 10;
+      Tmp[n] := Byte(Chunk mod 10);
       Chunk := Chunk div 10;
       Inc(n);
     end;
@@ -1181,7 +1182,7 @@ var
     // skip the leading zeros
     if (Res.Count > 0) or (Digit <> 0) then
     begin
-      Res.D[Res.Count] := Digit;
+      Res.D[Res.Count] := Byte(Digit);
       Inc(Res.Count);
     end;
   end;
@@ -1536,7 +1537,7 @@ end;
 
 function FBOffsetToZoneID(OffsetMinutes: Integer): Word;
 begin
-  Result := OffsetMinutes + FBOffsetZoneBias;
+  Result := Word(OffsetMinutes + FBOffsetZoneBias);
 end;
 
 function FBZoneIDToOffset(ZoneID: Word): Integer;
@@ -1584,7 +1585,7 @@ var
   ts: TTimeStamp;
 begin
   ts.Date := Value.timestamp_date + IBBuffDateDelta;
-  ts.Time := Value.timestamp_time div 10;
+  ts.Time := Integer(Value.timestamp_time div 10);
   Result := TimeStampToDateTime(ts);
 end;
 
@@ -1610,13 +1611,14 @@ begin
   Utc := Round(MSecs);
   if FBIsOffsetZone(Value.time_zone) then
   begin
-    Value.ext_offset := FBZoneIDToOffset(Value.time_zone);
+    Value.ext_offset := SmallInt(FBZoneIDToOffset(Value.time_zone));
     Dec(Utc, Int64(Value.ext_offset) * 60000);
   end
   else
     Value.ext_offset := FBUnresolvedOffset;
-  Value.utc_timestamp.timestamp_date := Utc div MSecsPerDay - IBBuffDateDelta;
-  Value.utc_timestamp.timestamp_time := (Utc mod MSecsPerDay) * 10;
+  // Utc is positive: milliseconds since 0001-01-01
+  Value.utc_timestamp.timestamp_date := Integer(Utc div MSecsPerDay - IBBuffDateDelta);
+  Value.utc_timestamp.timestamp_time := ISC_TIME((Utc mod MSecsPerDay) * 10);
 end;
 
 function FBTimeTZToMSecs(const Value: TISC_TIME_TZ_EX): Integer;
@@ -1626,7 +1628,7 @@ begin
   MSecs := (Int64(Value.utc_time div 10) + CacheOffset(Value.ext_offset)) mod MSecsPerDay;
   if MSecs < 0 then
     Inc(MSecs, MSecsPerDay);
-  Result := MSecs;
+  Result := Integer(MSecs);
 end;
 
 procedure FBMSecsToTimeTZ(MSecs: Integer; var Value: TISC_TIME_TZ_EX);
@@ -1636,7 +1638,7 @@ begin
   Utc := MSecs;
   if FBIsOffsetZone(Value.time_zone) then
   begin
-    Value.ext_offset := FBZoneIDToOffset(Value.time_zone);
+    Value.ext_offset := SmallInt(FBZoneIDToOffset(Value.time_zone));
     Dec(Utc, Int64(Value.ext_offset) * 60000);
     Utc := Utc mod MSecsPerDay;
     if Utc < 0 then
@@ -1644,7 +1646,7 @@ begin
   end
   else
     Value.ext_offset := FBUnresolvedOffset;
-  Value.utc_time := Utc * 10;
+  Value.utc_time := ISC_TIME(Utc * 10);
 end;
 
 function FBTimeZoneIDByName(const Name: string; out ZoneID: Word): Boolean;
@@ -1683,7 +1685,7 @@ begin
   for i := 0 to FBTimeZoneNamesCount - 1 do
     if AnsiCompareText(FBTimeZoneNames[i], S) = 0 then
     begin
-      ZoneID := FBGmtZoneID - i;
+      ZoneID := Word(FBGmtZoneID - i);
       Result := True;
       Exit;
     end;
@@ -1694,7 +1696,7 @@ var
   i: Integer;
 begin
   for i := 0 to High(DPDTable) do
-    DPDTable[i] := DPDToBin(i);
+    DPDTable[i] := Word(DPDToBin(Cardinal(i)));
 end;
 
 initialization

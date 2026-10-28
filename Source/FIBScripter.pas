@@ -446,7 +446,7 @@ function IsClause(const EtalonClause: string; const Source: string; Position: In
 // EtalonClause must be if UpperCase
 var
   Len: Integer;
-  LenEtalon: Byte;
+  LenEtalon: Integer;
   pSource: PChar;
   pEtalon: PChar;
   pEtalon1: PChar;

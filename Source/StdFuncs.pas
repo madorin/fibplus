@@ -140,29 +140,26 @@ const
 implementation
 
 uses
-  FIBConsts, StrUtil{$IFDEF C24}, Generics.Collections{$ENDIF};
+  SysConst, FIBConsts, StrUtil{$IFDEF C24}, Generics.Collections{$ENDIF};
 
 procedure StreamToVariantArray(Stream: TMemoryStream; var Value: variant);
-var
-  i: Integer;
 begin
-  for i := 0 to Stream.Size - 1 do
-    PByte(LongInt(TVarData(Value).VArray^.Data) + i)^ := PByte(LongInt(Stream.Memory) + i)^;
+  // a memory stream fits the address space
+  if Stream.Size > 0 then
+    Move(Stream.Memory^, TVarData(Value).VArray^.Data^, NativeInt(Stream.Size));
 end;
 
 procedure StreamToVariant(Stream: TMemoryStream; var Value: variant);
-var
-  i: Integer;
-  vt: TVarType;
 begin
   VarClear(Value);
   if Stream.Size > 0 then
   begin
+    // the bounds of a variant array are Integer
+    if Stream.Size > MaxInt then
+      raise EVariantArrayCreateError.Create(SVarArrayCreate);
     Stream.Position := 0;
-    vt := varByte;
-    Value := VarArrayCreate([0, Stream.Size - 1], vt);
-    for i := 0 to Stream.Size - 1 do
-      PByte(LongInt(TVarData(Value).VArray^.Data) + i)^ := PByte(LongInt(Stream.Memory) + i)^;
+    Value := VarArrayCreate([0, Integer(Stream.Size) - 1], varByte);
+    StreamToVariantArray(Stream, Value);
   end;
 end;
 
@@ -186,7 +183,7 @@ begin
       Stream.Size := BufSize;
       Stream.Position := 0;
       Stream.Write(TVarData(Value).VArray^.Data^, BufSize);
-      Result := Stream.Size;
+      Result := BufSize;
     end;
   end;
 end;
@@ -510,7 +507,7 @@ procedure PutTwoBcdDigits(const Nibble1, Nibble2: byte; var BCD: TBCD; Digit: In
 var
   B: byte;
 begin
-  B := Nibble1 SHL 4;
+  B := Byte(Nibble1 shl 4);
   B := B OR (Nibble2 AND 15);
   BCD.Fraction[Digit div 2] := B;
 end;
@@ -522,7 +519,8 @@ function CurrToBCD(const Curr: Currency; var BCD: TBCD; Precision: Integer = 32;
 var
   Temp: Currency;
   BcdIndex, StrIndex, StartPos, Digits: Integer;
-  B1, B2, DotPos: byte;
+  B1, B2: Byte;
+  DotPos: Integer;
   BcdStr: string;
   Dot: Char;
 
@@ -535,15 +533,15 @@ var
       Inc(StrIndex);
     if StrIndex <= Digits then
     begin
-      Result := byte(BcdStr[StrIndex]) - 48;
+      Result := Byte(Ord(BcdStr[StrIndex]) - Ord('0'));
       Inc(StrIndex);
     end;
   end;
 
 begin
   Dot := FormatSettings.DecimalSeparator;
-  BCD.Precision := Precision;
-  BCD.SignSpecialPlaces := Decimals;
+  BCD.Precision := Byte(Precision);
+  BCD.SignSpecialPlaces := Byte(Decimals);
   for BcdIndex := 0 to 31 do
     BCD.Fraction[BcdIndex] := 0;
   if Curr = 0 then
@@ -645,7 +643,7 @@ begin
       SignSpecialPlaces := 128
     else
       SignSpecialPlaces := 0;
-    SignSpecialPlaces := Scale + SignSpecialPlaces;
+    SignSpecialPlaces := Byte(Scale + SignSpecialPlaces);
   end;
 end;
 
@@ -670,7 +668,7 @@ begin
     if SignSpecialPlaces >= 128 then
     begin
       Sign := -1;
-      Scale := SignSpecialPlaces - 128;
+      Scale := Byte(SignSpecialPlaces - 128);
     end
     else
     begin
@@ -1157,7 +1155,7 @@ end;
 
 function RandomInteger(iLow, iHigh: Integer): Integer;
 begin
-  Result := Trunc(Random(iHigh - iLow)) + iLow;
+  Result := Random(iHigh - iLow) + iLow;
 end;
 
 function RandomString(iLength: Integer): String;
@@ -1246,7 +1244,7 @@ var
 begin
   DecodeDate(d, yr, mn, dy);
   B := EncodeDate(yr, 1, 1);
-  Result := Trunc(d - B);
+  Result := Integer(Trunc(d - B));
 end;
 
 function DayOfMonth(d: TDateTime): Integer;
@@ -1268,7 +1266,7 @@ begin
   Year := yr;
   dow_ybeg := SysUtils.DayOfWeek(EncodeDate(yr, 1, 1));
   ThisLeapYear := IsLeapYear(yr);
-  LastLeapYear := IsLeapYear(yr - 1);
+  LastLeapYear := IsLeapYear(Word(yr - 1));
   // Get the Sunday beginning this week.
   Week := (DayOfYear(d) - DayOfWeek(d) + 1);
   (*

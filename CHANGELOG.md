@@ -536,6 +536,9 @@ The lists of old and new names, and what an application has to change, are in
   `INTEGER` key field (`AutoUpdateOptions`) was cut; the field raises an error now.
 - `TFIBDatabase.MemoSubtypes` kept the sub types in a byte, so for example `-1000` also matched
   the sub type 24.
+- Win64: `StreamToVariant` and `StreamToVariantArray` (`StdFuncs`) cut the memory addresses to
+  32 bits (access violation), and so did the "nested datasets" error of `TFIBClientDataSet` with
+  the address of its message.
 
 ## [7.9.1] - 2026-10-09
 

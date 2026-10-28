@@ -387,7 +387,7 @@ procedure TFIBSQLMonitorHook.CreateEvents;
 var
   Sa: TSecurityAttributes;
   Sd: TSecurityDescriptor;
-  MapError: integer;
+  MapError: DWORD;
 
   function OpenLocalEvent(Idx: integer): THandle;
   begin

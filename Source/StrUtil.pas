@@ -350,6 +350,11 @@ const
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0,
     0, 0, 10, 11, 12, 13, 14, 15);
 
+  function HexByte(Index: Integer): Byte;
+  begin
+    Result := Byte(Hex2IntHash[Byte(AStr[Index])] shl 4 or Hex2IntHash[Byte(AStr[Index + 1])]);
+  end;
+
 begin
   { Thanks to Anton Tril }
   if (Length(AStr) <> 38) or (AStr[1] <> '{') or (AStr[38] <> '}') or
@@ -358,26 +363,26 @@ begin
     raise EConvertError.CreateResFmt(PResStringRec(@SInvalidGUID), [AStr]);
   end;
   try
-    TGUIDBytes(Result).F3 := Hex2IntHash[Byte(AStr[2])] shl 4 or Hex2IntHash[Byte(AStr[3])];
-    TGUIDBytes(Result).F2 := Hex2IntHash[Byte(AStr[4])] shl 4 or Hex2IntHash[Byte(AStr[5])];
-    TGUIDBytes(Result).F1 := Hex2IntHash[Byte(AStr[6])] shl 4 or Hex2IntHash[Byte(AStr[7])];
-    TGUIDBytes(Result).F0 := Hex2IntHash[Byte(AStr[8])] shl 4 or Hex2IntHash[Byte(AStr[9])];
+    TGUIDBytes(Result).F3 := HexByte(2);
+    TGUIDBytes(Result).F2 := HexByte(4);
+    TGUIDBytes(Result).F1 := HexByte(6);
+    TGUIDBytes(Result).F0 := HexByte(8);
     // -
-    TGUIDBytes(Result).F5 := Hex2IntHash[Byte(AStr[11])] shl 4 or Hex2IntHash[Byte(AStr[12])];
-    TGUIDBytes(Result).F4 := Hex2IntHash[Byte(AStr[13])] shl 4 or Hex2IntHash[Byte(AStr[14])];
+    TGUIDBytes(Result).F5 := HexByte(11);
+    TGUIDBytes(Result).F4 := HexByte(13);
     // -
-    TGUIDBytes(Result).F7 := Hex2IntHash[Byte(AStr[16])] shl 4 or Hex2IntHash[Byte(AStr[17])];
-    TGUIDBytes(Result).F6 := Hex2IntHash[Byte(AStr[18])] shl 4 or Hex2IntHash[Byte(AStr[19])];
+    TGUIDBytes(Result).F7 := HexByte(16);
+    TGUIDBytes(Result).F6 := HexByte(18);
     // -
-    TGUIDBytes(Result).F8 := Hex2IntHash[Byte(AStr[21])] shl 4 or Hex2IntHash[Byte(AStr[22])];
-    TGUIDBytes(Result).F9 := Hex2IntHash[Byte(AStr[23])] shl 4 or Hex2IntHash[Byte(AStr[24])];
+    TGUIDBytes(Result).F8 := HexByte(21);
+    TGUIDBytes(Result).F9 := HexByte(23);
     // -
-    TGUIDBytes(Result).FA := Hex2IntHash[Byte(AStr[26])] shl 4 or Hex2IntHash[Byte(AStr[27])];
-    TGUIDBytes(Result).FB := Hex2IntHash[Byte(AStr[28])] shl 4 or Hex2IntHash[Byte(AStr[29])];
-    TGUIDBytes(Result).FC := Hex2IntHash[Byte(AStr[30])] shl 4 or Hex2IntHash[Byte(AStr[31])];
-    TGUIDBytes(Result).FD := Hex2IntHash[Byte(AStr[32])] shl 4 or Hex2IntHash[Byte(AStr[33])];
-    TGUIDBytes(Result).FE := Hex2IntHash[Byte(AStr[34])] shl 4 or Hex2IntHash[Byte(AStr[35])];
-    TGUIDBytes(Result).FF := Hex2IntHash[Byte(AStr[36])] shl 4 or Hex2IntHash[Byte(AStr[37])];
+    TGUIDBytes(Result).FA := HexByte(26);
+    TGUIDBytes(Result).FB := HexByte(28);
+    TGUIDBytes(Result).FC := HexByte(30);
+    TGUIDBytes(Result).FD := HexByte(32);
+    TGUIDBytes(Result).FE := HexByte(34);
+    TGUIDBytes(Result).FF := HexByte(36);
   except
     raise EConvertError.CreateResFmt(PResStringRec(@SInvalidGUID), [AStr]);
   end;
@@ -1345,7 +1350,7 @@ begin
 {$IFDEF WINDOWS}
   Len := Length(S);
   if Len > 0 then
-    CharUpperBuffA(PAnsiChar(S), Len);
+    CharUpperBuffA(PAnsiChar(S), DWORD(Len));
 {$ELSE}
   S := AnsiUpperCase(S)
 {$ENDIF}
@@ -1365,7 +1370,7 @@ begin
 {$IFDEF WINDOWS}
   Len := Length(S);
   if Len > 0 then
-    CharUpperBuffW(Pointer(S), Len);
+    CharUpperBuffW(Pointer(S), DWORD(Len));
 {$ELSE}
   S := WideUpperCase(S)
 {$ENDIF}
@@ -1379,7 +1384,7 @@ begin
     Exit;
   SetLength(ws, StrLen);
 
-  L := Utf8ToUnicode(PWideChar(ws), Length(ws) + 1, S, StrLen);
+  L := Integer(Utf8ToUnicode(PWideChar(ws), Cardinal(Length(ws) + 1), S, Cardinal(StrLen)));
   if L > 0 then
     SetLength(ws, L - 1)
   else
@@ -1533,7 +1538,7 @@ end;
 }
 function WordCount(const S: string; const WordDelims: TCharSet): Integer;
 var
-  SLen, i: Cardinal;
+  SLen, i: Integer;
 begin
   Result := 0;
   i := 1;
@@ -2057,7 +2062,7 @@ begin
 end;
 
 var
-  KeyWordsIndexes: array ['A' .. 'Z', 'A' .. 'Z', 0 .. 1] of Word;
+  KeyWordsIndexes: array ['A' .. 'Z', 'A' .. 'Z', 0 .. 1] of Integer;
   KeyWords: TStringList;
 
 const

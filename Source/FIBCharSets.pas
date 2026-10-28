@@ -155,7 +155,7 @@ end;
 function ActualCodePage(CodePage: Word): Word;
 begin
   if CodePage = FIBCodePageSystem then
-    Result := DefaultSystemCodePage
+    Result := Word(DefaultSystemCodePage)
   else
     Result := CodePage;
 end;

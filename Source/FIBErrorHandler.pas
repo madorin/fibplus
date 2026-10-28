@@ -246,7 +246,8 @@ begin
     CheckStatusVector([isc_dsql_cursor_open_err]) then
   begin
     Result := DB.PingAttachment;
-    if not IsConnectionLost(Result) then
+    // an error code: 32 bits on Win64 too
+    if not IsConnectionLost(Long(Result)) then
       Result := 0;
   end;
 end;
@@ -575,7 +576,7 @@ begin
       if not Listed then
         Continue;
       LostDatabase := THackDatabase(Databases[i]);
-      if LostDatabase.Connected and IsConnectionLost(LostDatabase.PingAttachment) then
+      if LostDatabase.Connected and IsConnectionLost(Long(LostDatabase.PingAttachment)) then
       begin
         Actions := laCloseConnect;
         LostDatabase.DoOnLostConnect(LostDatabase, ErrorValue, Actions, DoRaise);
