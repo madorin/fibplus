@@ -3068,42 +3068,48 @@ end;
 
 // Blob File Supports
 
+// A blob file reference is a parameter named H<offset>_<size>, both hexadecimal
+function TryParseBlobReference(const ParamName: string; out Offset: Int64; out Size: Integer): Boolean;
+var
+  Separator: Integer;
+  SizeValue: Int64;
+begin
+  Separator := Pos('_', ParamName);
+  Result := (Length(ParamName) > 0) and CharInSet(ParamName[1], ['H', 'h']) and (Separator > 2) and
+    TryHexToInt64(Copy(ParamName, 2, Separator - 2), Offset) and
+    TryHexToInt64(Copy(ParamName, Separator + 1, MaxInt), SizeValue) and (SizeValue <= MaxInt);
+  if Result then
+    Size := SizeValue;
+end;
+
 procedure TFIBScripter.TryFillBlobParams;
 var
-  i: Integer;
-  pn: string;
-  bPos, Len: Integer;
-  m: TMemoryStream;
-  p_: Integer;
+  i, Size: Integer;
+  Offset: Int64;
+  Data: TMemoryStream;
 begin
-  with FQuery do
-    for i := FQuery.ParamCount - 1 downto 0 do
-    begin
-      pn := FQuery.ParamName(i);
-      if (pn <> '') and CharInSet(pn[1], ['H', 'h']) then
+  for i := FQuery.ParamCount - 1 downto 0 do
+    if TryParseBlobReference(FQuery.ParamName(i), Offset, Size) then
+      if Size = 0 then
+        FQuery.Params[i].Clear
+      else
       begin
-        p_ := Pos('_', pn);
-        bPos := HexStr2Int(Copy(pn, 2, p_ - 2));
-        Len := HexStr2Int(Copy(pn, p_ + 1, Length(pn) - p_));
-        if Len = 0 then
-          FQuery.Params[i].Clear
-        else
-        begin
-          if not Assigned(FBlobFileStream) then
-            FBlobFileStream := TFileStream.Create(FBlobFile, fmOpenRead, fmShareDenyWrite);
-          m := TMemoryStream.Create;
+        Data := TMemoryStream.Create;
+        try
           try
-            m.Size := Len;
-            m.Position := 0;
-            FBlobFileStream.Position := bPos;
-            FBlobFileStream.Read(m.Memory^, Len);
-            FQuery.Params[i].LoadFromStream(m);
-          finally
-            m.Free;
-          end
+            if not Assigned(FBlobFileStream) then
+              FBlobFileStream := TFileStream.Create(FBlobFile, fmOpenRead, fmShareDenyWrite);
+            FBlobFileStream.Position := Offset;
+            Data.CopyFrom(FBlobFileStream, Size);
+          except
+            on E: EStreamError do
+              FIBError(feBlobFileError, [FBlobFile, FQuery.ParamName(i), E.Message]);
+          end;
+          FQuery.Params[i].LoadFromStream(Data);
+        finally
+          Data.Free;
         end;
       end;
-    end
 end;
 
 // Reinsert

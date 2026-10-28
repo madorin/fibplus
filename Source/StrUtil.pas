@@ -179,6 +179,8 @@ function IsEqualGUIDs(const guid1, guid2: TGUID): Boolean;
 
 // Value of a hexadecimal digit, -1 for any other character
 function HexDigitValue(C: Char): Integer; inline;
+// Strict hexadecimal number: 1 to 15 digits, nothing else
+function TryHexToInt64(const S: string; out Value: Int64): Boolean;
 
 { Thanks to Anton Tril }
 
@@ -352,6 +354,23 @@ begin
     'a' .. 'f': Result := Ord(C) - Ord('a') + 10;
   else
     Result := -1;
+  end;
+end;
+
+function TryHexToInt64(const S: string; out Value: Int64): Boolean;
+var
+  i, Digit: Integer;
+begin
+  Value := 0;
+  Result := (Length(S) > 0) and (Length(S) <= 15);
+  if not Result then
+    Exit;
+  for i := 1 to Length(S) do
+  begin
+    Digit := HexDigitValue(S[i]);
+    if Digit < 0 then
+      Exit(False);
+    Value := Value shl 4 or Digit;
   end;
 end;
 

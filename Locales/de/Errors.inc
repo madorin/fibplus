@@ -120,5 +120,6 @@
     '%s.' + CRLF + 'Das Feld %s wird in der Sortierung verwendet, ist aber nicht in den Feldern von SelectSQL',
     '%s: Die Metadaten können nicht geladen werden.',
     'Der Wert von %s hat %d Bytes, das Maximum ist %d',
-    'Ungültiger Wert "%s" in %s'
+    'Ungültiger Wert "%s" in %s',
+    'Blob-Datei %s, Parameter %s: %s'
   );

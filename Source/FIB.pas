@@ -188,7 +188,8 @@ type
     feOrderFieldNotInSelect,
     feCantLoadMetadata,
     feParamValueTooLong,
-    feParamValueInvalid
+    feParamValueInvalid,
+    feBlobFileError
   );
 
   TStatusVector = array [0 .. 19] of ISC_STATUS;

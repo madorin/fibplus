@@ -120,5 +120,6 @@
     '%s.' + CRLF + 'Câmpul %s este folosit în sortare, dar nu se află în câmpurile din SelectSQL',
     '%s: Metadatele nu au putut fi încărcate.',
     'Valoarea %s are %d octeți, maximul este %d',
-    'Valoare nevalidă "%s" în %s'
+    'Valoare nevalidă "%s" în %s',
+    'Fișierul de blob-uri %s, parametrul %s: %s'
   );

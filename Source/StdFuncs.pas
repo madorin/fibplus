@@ -1331,31 +1331,18 @@ asm
   FLDCW ControlWord
 end;
 
-const
-  Hexez: array ['A' .. 'F'] of byte = (10, 11, 12, 13, 14, 15);
-  HexezDecimal: array ['0' .. '9'] of byte = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
-
 function HexStr2Int(const S: String): Integer;
 var
-  j: LongInt;
-  PStart, pEnd: PChar;
+  i, Digit: Integer;
 begin
   Result := 0;
-  j := 1;
-  PStart := Pointer(S);
-  pEnd := Pointer(S);
-  Inc(pEnd, Length(S) - 1);
-  while pEnd >= PStart do
+  for i := 1 to Length(S) do
   begin
-    case pEnd^ of
-      '0': ;
-      '1': Inc(Result, j);
-      '2': Inc(Result, j * 2);
-      '3' .. '9': Inc(Result, j * HexezDecimal[pEnd^]);
-      'A' .. 'F': Inc(Result, j * Hexez[pEnd^]);
-    end;
-    j := j * 16;
-    Dec(pEnd)
+    // Other characters count as 0
+    Digit := HexDigitValue(S[i]);
+    if Digit < 0 then
+      Digit := 0;
+    Result := Result shl 4 or Digit;
   end;
 end;
 

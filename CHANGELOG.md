@@ -550,6 +550,11 @@ The lists of old and new names, and what an application has to change, are in
   as one item with several lines (e.g. `Script.Add` of a multi-line string):
   the comment ran to the end of the item, not of the line
   ([#95](https://github.com/madorin/fibplus/issues/95); also in 7.9.2).
+- `TFIBScripter` with `SET BLOBFILE`: every parameter whose name starts with `H` (`:HIRE_DATE`)
+  was read from the blob file, and lowercase hex digits of a reference were read as 0. Only
+  `H<offset>_<size>` in hex digits is a reference now. A reference past the end of the file loaded
+  zeros, and a read error stopped the script with the bare stream error: both raise the new
+  `feBlobFileError`, with the file and the parameter, and reach `OnExecuteError`.
 
 #### SQL monitor
 
@@ -562,7 +567,7 @@ The lists of old and new names, and what an application has to change, are in
   32 bits (access violation), and so did the "nested datasets" error of `TFIBClientDataSet` with
   the address of its message.
 - `StringAsGUID` (`StrUtil`) rejected lowercase hex digits and read some other characters (`G`,
-  `x`, a space) as 0.
+  `x`, a space) as 0. `HexStr2Int` (`StdFuncs`) reads lowercase hex digits.
 - `TCallBackList.Delete` ignored the index 0 and did not free the deleted entry.
 
 #### IDE, editors and packages

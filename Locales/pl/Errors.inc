@@ -120,5 +120,6 @@
     '%s.' + CRLF + 'Pole %s jest użyte w sortowaniu, ale nie ma go w polach SelectSQL',
     '%s: Nie można załadować metadanych.',
     'Wartość %s ma %d bajtów, maksimum to %d',
-    'Nieprawidłowa wartość "%s" w %s'
+    'Nieprawidłowa wartość "%s" w %s',
+    'Plik blobów %s, parametr %s: %s'
   );
