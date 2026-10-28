@@ -214,14 +214,14 @@ var
 begin
   CheckCircularMaster(Value);
   if FMasterContainer <> nil then
-    for i := 0 to Pred(vDataSetsList.Count) do
-      FMasterContainer.RemoveDataSet(TDataSet(vDataSetsList[i]));
+    for i := 0 to DataSetCount - 1 do
+      FMasterContainer.RemoveDataSet(DataSet(i));
   FMasterContainer := Value;
   if Value <> nil then
     begin
       Value.FreeNotification(Self);
-      for i := 0 to Pred(vDataSetsList.Count) do
-        Value.AddDataSet(TDataSet(vDataSetsList[i]))
+      for i := 0 to DataSetCount - 1 do
+        Value.AddDataSet(DataSet(i))
     end;
 end;
 
@@ -264,7 +264,7 @@ procedure TDataSetsContainer.NotifyDataSets(Sender: TObject; const UDA, UDE: str
 var
   i: Integer;
 begin
-  for i := 0 to Pred(vDataSetsList.Count) do
+  for i := 0 to DataSetCount - 1 do
     begin
       if (UDA = '') or WildStringCompare
         (FastUpperCase(TDataSet(vDataSetsList[i]).Owner.Name + '.' +
@@ -279,7 +279,7 @@ end;
 
 function TDataSetsContainer.DataSetCount: Integer;
 begin
-  Result := vDataSetsList.Count
+  Result := Integer(vDataSetsList.Count)
 end;
 
 function TDataSetsContainer.DataSet(Index: Integer): TDataSet;

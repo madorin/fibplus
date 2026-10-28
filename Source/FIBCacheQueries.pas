@@ -34,7 +34,7 @@ uses
 {$IFDEF C24}
   System.Types, // for inline funcs
 {$ENDIF}
-  SqlTxtRtns, FIBLists, StrUtil;
+  SqlTxtRtns, FIBLists, FIBPlatforms, StrUtil;
 
 type
 
@@ -80,13 +80,12 @@ var
 
 procedure TCacheQueries.Clear;
 var
-  i: integer;
+  i: TFIBListIndex;
 begin
   try
     vInClear := true;
-    with FListUsed do
-      for i := 0 to Pred(Count) do
-        TObject(FListUsed[i]).Free;
+    for i := 0 to FListUsed.Count - 1 do
+      TObject(FListUsed[i]).Free;
   finally
     vInClear := false;
   end;
@@ -158,10 +157,8 @@ var
   i: integer;
   Key: string;
 begin
-  i := FListUsed.IndexOf(aFIBQuery);
-  if i < 0 then
+  if FListUsed.Remove(aFIBQuery) < 0 then
     Exit;
-  FListUsed.Delete(i);
 
   Key := FastTrim(aFIBQuery.SQL.Text);
   // Two queries with the same SQL were in use at the same time, the list
@@ -209,13 +206,12 @@ end;
 
 destructor TCacheList.Destroy;
 var
-  i: integer;
+  i: TFIBListIndex;
 begin
   FLock.Acquire;
   try
-    with FList do
-      for i := 0 to Pred(Count) do
-        TObject(FList[i]).Free;
+    for i := 0 to FList.Count - 1 do
+      TObject(FList[i]).Free;
     FList.Free;
     inherited;
   finally
@@ -226,7 +222,7 @@ end;
 
 function TCacheList.FindCacheForDB(aDataBase: TFIBDataBase): TCacheQueries;
 var
-  i: integer;
+  i: TFIBListIndex;
 begin
   FLock.Acquire;
   try
@@ -268,17 +264,16 @@ end;
 
 procedure TCacheList.RemoveDataBase(aDataBase: TFIBDataBase);
 var
-  i: integer;
+  i: TFIBListIndex;
 begin
   FLock.Acquire;
   try
-    with FList do
-      for i := Pred(Count) downto 0 do
-        if TCacheQueries(FList[i]).FFIBDataBase = aDataBase then
-        begin
-          TCacheQueries(FList[i]).Free;
-          Delete(i)
-        end;
+    for i := FList.Count - 1 downto 0 do
+      if TCacheQueries(FList[i]).FFIBDataBase = aDataBase then
+      begin
+        TCacheQueries(FList[i]).Free;
+        FList.Delete(i)
+      end;
   finally
     FLock.Release
   end

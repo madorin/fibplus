@@ -133,7 +133,7 @@ uses
 {$IFDEF C24}
   System.Types, // for inline funcs
 {$ENDIF}
-  FIB, StdFuncs, StrUtil;
+  FIB, FIBPlatforms, StdFuncs, StrUtil;
 
 type
 
@@ -845,7 +845,7 @@ end;
 
 destructor TMonitorWriterThread.Destroy;
 var
-  i: integer;
+  i: TFIBListIndex;
 begin
   // the queue is written out first, unless StopExec is set
   Terminate;
@@ -1096,7 +1096,7 @@ end;
 
 procedure TMonitorReaderThread.Execute;
 var
-  i: integer;
+  i: TFIBListIndex;
   FTemp: TFIBTraceObject;
 begin
   while (not Terminated) and (not bDone) do

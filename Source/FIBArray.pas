@@ -122,7 +122,8 @@ var
   i: Integer;
 begin
   Result := True;
-  for i := High(Index) downto 0 do
+  // one index per dimension: at most 16
+  for i := Integer(High(Index)) downto 0 do
     if Index[i] < VarArrayHighBound(Value, i + 1) then
     begin
       Inc(Index[i]);
@@ -394,10 +395,11 @@ var
   end;
 
 var
-  i: Integer;
+  i, DimCount: Integer;
 begin
   SDL := FSDLHeader;
-  for i := 0 to High(Bounds) do
+  DimCount := Integer(Length(Bounds)); // at most 16 dimensions
+  for i := 0 to DimCount - 1 do
   begin
     if Bounds[i].Lower = 1 then
     begin
@@ -416,8 +418,8 @@ begin
   AddByte(1);
   AddByte(isc_sdl_scalar);
   AddByte(0);
-  AddByte(Length(Bounds));
-  for i := 0 to High(Bounds) do
+  AddByte(DimCount);
+  for i := 0 to DimCount - 1 do
   begin
     AddByte(isc_sdl_variable);
     AddByte(i);
@@ -428,7 +430,7 @@ end;
 
 function TFIBArray.SliceSize(const Bounds: TArrayBounds): Integer;
 var
-  i: Integer;
+  i: NativeInt;
 begin
   Result := ElementSize;
   for i := 0 to High(Bounds) do
@@ -491,7 +493,7 @@ end;
 
 function TFIBArray.GetDimensionCount: Integer;
 begin
-  Result := Length(FBounds);
+  Result := Integer(Length(FBounds));
 end;
 
 function TFIBArray.GetDimension(Index: Integer): TISC_ARRAY_BOUND;

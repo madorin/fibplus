@@ -72,7 +72,7 @@ destructor TCallBackList.Destroy;
 var
   i: integer;
 begin
-  for i := 0 to Pred(FCallBackList.Count) do
+  for i := 0 to Count - 1 do
     Dispose(FCallBackList[i]);
   FCallBackList.Free;
   FCS.Free;
@@ -98,7 +98,8 @@ begin
     begin
       New(p);
       p^ := Proc;
-      Result := FCallBackList.Add(p);
+      Result := Count;
+      FCallBackList.Add(p);
       if TObject(Proc.Data) is TComponent then
         TComponent(Proc.Data).FreeNotification(Self);
     end;
@@ -113,7 +114,7 @@ var
 begin
   FCS.Acquire;
   try
-    for i := Pred(FCallBackList.Count) downto 0 do
+    for i := Count - 1 downto 0 do
       with PMethod(FCallBackList[i])^ do
         if (Code = Proc.Code) and (Data = Proc.Data) then
         begin
@@ -128,7 +129,7 @@ end;
 
 function TCallBackList.GetCount: integer;
 begin
-  Result := FCallBackList.Count
+  Result := Integer(FCallBackList.Count)
 end;
 
 procedure TCallBackList.Notification(AComponent: TComponent; Operation: TOperation);
@@ -144,13 +145,12 @@ var
 begin
   FCS.Acquire;
   try
-    with FCallBackList do
-      for i := Pred(Count) downto 0 do
-        if TObject(TMethod(FCallBackList[i]^).Data) = ProcOwner then
-        begin
-          Dispose(FCallBackList[i]);
-          Delete(i);
-        end;
+    for i := Count - 1 downto 0 do
+      if TObject(PMethod(FCallBackList[i])^.Data) = ProcOwner then
+      begin
+        Dispose(FCallBackList[i]);
+        FCallBackList.Delete(i);
+      end;
   finally
     FCS.Release;
   end;
@@ -161,7 +161,7 @@ var
   i: integer;
 begin
   Result := -1;
-  for i := Pred(FCallBackList.Count) downto 0 do
+  for i := Count - 1 downto 0 do
     with PMethod(FCallBackList[i])^ do
       if (Code = Proc.Code) and (Data = Proc.Data) then
       begin

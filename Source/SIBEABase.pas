@@ -163,10 +163,12 @@ type
 
 implementation
 
-{$IFNDEF C23}
 uses
-  Windows;
+{$IFNDEF C23}
+  Windows,
 {$ENDIF}
+  FIBPlatforms;
+
 // You normally wouldn't register the TSIBEventAlerter base class directly,
 // but if you aren't using BDE, FIB, or IBO, then you can uncomment this
 // to use the component by accessing the raw InterBase handle.
@@ -515,12 +517,12 @@ end;
 // loop through all the running event threads and kill them
 procedure TSIBEventAlerter.UnRegisterEvents;
 var
-  i: Integer;
+  i: TFIBListIndex;
   Temp: TSIBEventThread;
 begin
   if (FThreads.Count > 0) then
   begin
-    for i := (FThreads.Count - 1) downto 0 do
+    for i := FThreads.Count - 1 downto 0 do
     begin
       Temp := TSIBEventThread(FThreads[i]);
       FThreads.Delete(i);
@@ -668,15 +670,11 @@ begin
 end;
 
 procedure TSIBEventAlerter.ThreadEnded(Sender: TObject);
-var
-  ThreadIdx: Integer;
 begin
   if (Sender is TSIBEventThread) then
   begin
     // Remove terminating thread from thread list
-    ThreadIdx := FThreads.IndexOf(Sender);
-    if (ThreadIdx > -1) then
-      FThreads.Delete(ThreadIdx);
+    FThreads.Remove(Sender);
 
     // if any thread had an exception, then unregister everything
     if (TSIBEventThread(Sender).ReturnValue = 1) then

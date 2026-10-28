@@ -469,7 +469,7 @@ var
 
   procedure AddArgument;
   var
-    Last: Integer;
+    Last: NativeInt;
   begin
     if Target < 0 then
       Exit;
@@ -780,7 +780,7 @@ end;
 
 function EFIBError.ErrorArgument(Code: Long; Index: Integer = 0): string;
 var
-  I: Integer;
+  I: NativeInt;
 begin
   for I := 0 to High(FErrorCodes) do
     if FErrorCodes[I] = Code then

@@ -1738,12 +1738,12 @@ end;
 
 procedure TFIBNRestoreService.Restore(const aBackUpFiles: array of string; const DbName: string);
 var
-  i: Integer;
+  FileName: string;
 begin
   DatabaseName := DbName;
   BackupFiles.Clear;
-  for i := 0 to High(aBackUpFiles) do
-    BackupFiles.Add(aBackUpFiles[i]);
+  for FileName in aBackUpFiles do
+    BackupFiles.Add(FileName);
 
   try
     Attach;
@@ -1768,7 +1768,7 @@ end;
 
 procedure TFIBValidationService.ClearLimboTransactionInfo;
 var
-  i: Integer;
+  i: NativeInt;
 begin
   for i := 0 to High(FLimboTransactionInfo) do
     FLimboTransactionInfo[i].Free;
@@ -1859,7 +1859,8 @@ end;
 
 procedure TFIBValidationService.FixLimboTransactionErrors;
 var
-  i, RepairParam: Integer;
+  i: NativeInt;
+  RepairParam: Integer;
 begin
   ServiceStartParams := AnsiChar(isc_action_svc_repair);
   ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
@@ -1892,7 +1893,7 @@ end;
 
 function TFIBValidationService.GetLimboTransactionInfoCount: Integer;
 begin
-  Result := Length(FLimboTransactionInfo);
+  Result := Integer(Length(FLimboTransactionInfo));
 end;
 
 procedure TFIBValidationService.SetDatabaseName(const Value: string);
@@ -1948,7 +1949,7 @@ end;
 
 procedure TFIBSecurityService.ClearUserInfo;
 var
-  i: Integer;
+  i: NativeInt;
 begin
   for i := 0 to High(FUserInfo) do
     FUserInfo[i].Free;
@@ -2020,7 +2021,7 @@ end;
 
 function TFIBSecurityService.GetUserInfoCount: Integer;
 begin
-  Result := Length(FUserInfo);
+  Result := Integer(Length(FUserInfo));
 end;
 
 procedure TFIBSecurityService.AddUser;

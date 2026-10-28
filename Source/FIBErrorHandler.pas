@@ -152,7 +152,7 @@ end;
 function TFIBErrorHandler.CurrentHandledError(CanCreate: Boolean): THandledError;
 var
   ThreadID: Cardinal;
-  I: Integer;
+  I: TFIBListIndex;
 begin
   if not (CanCreate or ErrorHandledInThread) then
     Exit(FNoHandledError);
@@ -545,7 +545,7 @@ end;
 
 procedure TFIBErrorHandler.DoOnLostConnect(DataBase: TFIBDatabase; ErrorValue: EFIBError; var DoRaise: boolean);
 var
-  i: integer;
+  i: TFIBListIndex;
   Actions: TOnLostConnectActions;
   Databases: TList;
   LostDatabase: THackDatabase;

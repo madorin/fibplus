@@ -1102,7 +1102,7 @@ end;
 procedure AssignSQLObjectParams(Dest: ISQLObject; ParamSources: array of ISQLObject);
 var
   i: Integer;
-  j: Integer;
+  j: NativeInt;
   k: Integer;
   c: Integer;
   pName: string;
@@ -1137,7 +1137,7 @@ end;
 
 function GetConnectedDataBase(const DBName: string): TFIBDatabase;
 var
-  i: Integer;
+  i: TFIBListIndex;
 begin
   Result := nil;
   with DatabaseList.LockList do
@@ -1155,7 +1155,7 @@ end;
 
 procedure CloseAllDatabases;
 var
-  i: Integer;
+  i: TFIBListIndex;
 begin
   with DatabaseList.LockList do
     try
@@ -1171,7 +1171,7 @@ end;
 
 procedure CloseDesignTimeDatabases;
 var
-  I: Integer;
+  I: TFIBListIndex;
   Database: TFIBDatabase;
 begin
   with DatabaseList.LockList do
@@ -1257,7 +1257,7 @@ begin
   List := TList.Create;
   try
     CollectAttached(ForObj, DataSets, List);
-    Result := List.Count;
+    Result := Integer(List.Count); // at most FIBBaseCount items
   finally
     List.Free;
   end;
@@ -1719,7 +1719,7 @@ begin
     FBeforeDestroyEvents.Event[i](Self);
 
   // Tell Dataset's we're being freed.
-  for i := FFIBBases.Count - 1 downto 0 do
+  for i := FIBBaseCount - 1 downto 0 do
     if FFIBBases[i] <> nil then
       FIBBases[i].FOnDatabaseFree;
   // Make sure that all DataSets are removed from the list.
@@ -1903,7 +1903,7 @@ end;
 
 function TFIBDatabase.AddFIBBase(ds: TFIBBase): Integer;
 begin
-  Result := FFIBBases.Count;
+  Result := FIBBaseCount;
   FFIBBases.Add(ds)
 end;
 
@@ -2008,7 +2008,7 @@ procedure TFIBDatabase.ForceCloseTransactions;
 var
   i: Integer;
 begin
-  for i := 0 to FTransactions.Count - 1 do
+  for i := 0 to TransactionCount - 1 do
   begin
     try
       if FTransactions[i] <> nil then
@@ -2276,7 +2276,7 @@ procedure TFIBDatabase.CloseDataSets;
 var
   Index: Integer;
 begin
-  for Index := Pred(FFIBBases.Count) downto 0 do
+  for Index := FIBBaseCount - 1 downto 0 do
     if FIBBases[Index] <> nil then
       if (FIBBases[Index].Owner is TFIBDataSet) then
         TFIBDataSet(FIBBases[Index].Owner).Close;
@@ -2294,7 +2294,7 @@ end;
 
 procedure TFIBDatabase.ApplyUpdates(const DataSets: array of TDataSet);
 var
-  i: Integer;
+  i: NativeInt;
   DS: TFIBCustomDataSet;
   TR: TFIBTransaction;
 begin
@@ -2578,7 +2578,7 @@ end;
 
 function TFIBDatabase.FindTransaction(TR: TFIBTransaction): Integer;
 begin
-  Result := FTransactions.IndexOf(TR);
+  Result := Integer(FTransactions.IndexOf(TR));
 end;
 
 procedure TFIBDatabase.ForceClose;
@@ -2603,7 +2603,7 @@ end;
 
 function TFIBDatabase.GetFIBBasesCount: Integer;
 begin
-  Result := FFIBBases.Count;
+  Result := Integer(FFIBBases.Count);
 end;
 
 function TFIBDatabase.GetDBParamByDPB(const Idx: Integer): string;
@@ -2678,7 +2678,7 @@ end;
 
 function TFIBDatabase.GetTransactionCount: Integer;
 begin
-  Result := FTransactions.Count;
+  Result := Integer(FTransactions.Count);
 end;
 
 function TFIBDatabase.GetActiveTransactionCount: Integer;
@@ -2686,7 +2686,7 @@ var
   i: Integer;
 begin
   Result := 0;
-  for i := 0 to Pred(FTransactions.Count) do
+  for i := 0 to TransactionCount - 1 do
     if (FTransactions[i] <> nil) and TFIBTransaction(FTransactions[i]).InTransaction then
       Inc(Result);
 end;
@@ -2696,7 +2696,7 @@ var
   i: Integer;
 begin
   Result := nil;
-  for i := 0 to Pred(FTransactions.Count) do
+  for i := 0 to TransactionCount - 1 do
     if (FTransactions[i] <> nil) and TFIBTransaction(FTransactions[i])
       .InTransaction and ((TFIBTransaction(FTransactions[i]).DatabaseCount < 2)
       or (TFIBTransaction(FTransactions[i]).DefaultDatabase = Self)) then
@@ -2761,7 +2761,7 @@ begin
       * This is so transactions can commit/rollback, accordingly
     *)
 
-    for i := 0 to FTransactions.Count - 1 do
+    for i := 0 to TransactionCount - 1 do
       try
         if FTransactions[i] <> nil then
           Transactions[i].OnDatabaseDisconnecting(Self);
@@ -2774,7 +2774,7 @@ begin
       * Tell all attached components (TFIBBase's) that we're
       * disconnecting
     *)
-    for i := 0 to FFIBBases.Count - 1 do
+    for i := 0 to FIBBaseCount - 1 do
       try
         if FFIBBases[i] <> nil then
           FIBBases[i].FOnDatabaseDisconnecting;
@@ -2812,7 +2812,7 @@ begin
       * Tell all attached components (TFIBBase's) that we have
       * disconnected.
     *)
-    for i := 0 to FFIBBases.Count - 1 do
+    for i := 0 to FIBBaseCount - 1 do
       if FFIBBases[i] <> nil then
         FIBBases[i].FOnDatabaseDisconnected;
     FCapabilities.Clear;
@@ -2837,13 +2837,13 @@ procedure TFIBDatabase.AbandonServerHandles;
 var
   i: Integer;
 begin
-  for i := 0 to FFIBBases.Count - 1 do
+  for i := 0 to FIBBaseCount - 1 do
     try
       if FFIBBases[i] <> nil then
         FIBBases[i].FOnDatabaseConnectionLost;
     except
     end;
-  for i := 0 to FTransactions.Count - 1 do
+  for i := 0 to TransactionCount - 1 do
     if (FTransactions[i] <> nil) and Transactions[i].InTransaction then
       with Transactions[i] do
         try
@@ -2963,7 +2963,7 @@ end;
 procedure TFIBDatabase.ShutDown(const ShutParams: array of Integer; Delay: Integer = 0);
 var
   oldParams, u, p: string;
-  i, L: Integer;
+  i: NativeInt;
 begin
   { Valid values of ShutParams:
     ibase.pas
@@ -2992,13 +2992,12 @@ begin
     DBParams.Clear;
     ConnectParams.Username := u;
     ConnectParams.Password := p;
-    L := Length(ShutParams);
-    if L = 0 then
+    if Length(ShutParams) = 0 then
       DBParams.Add('shutdown')
     else
       begin
         u := 'shutdown=';
-        for i := 0 to L - 1 do
+        for i := 0 to High(ShutParams) do
           u := u + IntToStr(ShutParams[i]) + ',';
         SetLength(u, Length(u) - 1);
         DBParams.Add(u);
@@ -3056,7 +3055,7 @@ begin
     (*
       * Use the canned login prompt if requested.
     *)
-    for i := 0 to FFIBBases.Count - 1 do
+    for i := 0 to FIBBaseCount - 1 do
       begin
         if FFIBBases[i] <> nil then
           FIBBases[i].FOnDatabaseConnecting;
@@ -3150,7 +3149,7 @@ begin
     FDifferenceTime := Now - GetServerTime;
   FConnectType := 0;
   DoOnConnect;
-  for i := 0 to FFIBBases.Count - 1 do
+  for i := 0 to FIBBaseCount - 1 do
     begin
       if not Connected then
         Break;
@@ -3215,7 +3214,7 @@ procedure TFIBDatabase.RemoveFIBBases;
 var
   i: Integer;
 begin
-  for i := FFIBBases.Count - 1 downto 0 do
+  for i := FIBBaseCount - 1 downto 0 do
     RemoveFIBBase(i);
 end;
 
@@ -3241,7 +3240,7 @@ procedure TFIBDatabase.RemoveTransactions;
 var
   i: Integer;
 begin
-  for i := Pred(FTransactions.Count) downto 0 do
+  for i := TransactionCount - 1 downto 0 do
     if FTransactions[i] <> nil then
       RemoveTransaction(i);
 end;
@@ -4496,11 +4495,9 @@ begin
     Query := GetQueryForUse(aTransaction, aSQL)
   else
     Query := GetQueryForUse(FInternalTransaction, aSQL);
-  with Query.Params do
-    if High(ParamValues) < Count - 1 then
-      c := High(ParamValues)
-    else
-      c := Count - 1;
+  c := Query.Params.Count - 1;
+  if High(ParamValues) < c then
+    c := Integer(High(ParamValues));
 
   with Query do
     try
@@ -4883,7 +4880,7 @@ begin
     end;
   for i := Pred(FBeforeDestroyEvents.Count) downto 0 do
     FBeforeDestroyEvents.Event[i](Self);
-  for i := FFIBBases.Count - 1 downto 0 do
+  for i := FIBBaseCount - 1 downto 0 do
     FIBBases[i].FOnTransactionFree;
   RemoveFIBBases;
   RemoveDatabases;
@@ -4933,7 +4930,7 @@ begin
   Result := ErrCode;
   FCanTimeout := False;
 
-  for i := 0 to FDatabases.Count - 1 do
+  for i := 0 to DatabaseCount - 1 do
     Databases[i].Call(ErrCode, False); // For reset timer
 
   if (Result > 0) and RaiseError then
@@ -5041,7 +5038,7 @@ begin
                 Result := -1;
                 Exit;
               end;
-          Result := FDatabases.Count;
+          Result := DatabaseCount;
           db.AddTransaction(Self);
           FDatabases.Add(db);
           SetLength(FDatabaseTRParams, FDatabases.Count);
@@ -5098,7 +5095,7 @@ var
   var
     i: Integer;
   begin
-    for i := FFIBBases.Count - 1 downto 0 do
+    for i := FIBBaseCount - 1 downto 0 do
       FIBBases[i].FOnTransactionEnding;
     for i := 0 to FBeforeEndTransactionEvents.Count - 1 do
       TEndTrEvent(FBeforeEndTransactionEvents.CallBackAddr[i]^)(Self, Action, Force);
@@ -5108,7 +5105,7 @@ var
   var
     i: Integer;
   begin
-    for i := FFIBBases.Count - 1 downto 0 do
+    for i := FIBBaseCount - 1 downto 0 do
       FIBBases[i].FOnTransactionEnded;
     for i := 0 to FAfterEndTransactionEvents.Count - 1 do
       TEndTrEvent(FAfterEndTransactionEvents.CallBackAddr[i]^)(Self, Action, Force);
@@ -5222,7 +5219,7 @@ end;
 
 function TFIBTransaction.GetDatabaseCount: Integer;
 begin
-  Result := FDatabases.Count;
+  Result := Integer(FDatabases.Count);
 end;
 
 function TFIBTransaction.MainDatabase: TFIBDatabase;
@@ -5242,7 +5239,7 @@ end;
 
 function TFIBTransaction.GetFIBBasesCount: Integer;
 begin
-  Result := FFIBBases.Count;
+  Result := Integer(FFIBBases.Count);
 end;
 
 function TFIBTransaction.GetInTransaction: Boolean;
@@ -5255,7 +5252,7 @@ begin
   if db = nil then
     Result := -1
   else
-    Result := FDatabases.IndexOf(db);
+    Result := Integer(FDatabases.IndexOf(db));
 end;
 
 function TFIBTransaction.GetTimeout: Cardinal;
@@ -5276,8 +5273,8 @@ begin
     inherited Loaded;
     try
       if csDesigning in ComponentState then
-        for i := 0 to FDatabases.Count - 1 do
-          if TFIBDatabase(FDatabases.List[i]).FStreammedConnectFail then
+        for i := 0 to DatabaseCount - 1 do
+          if Databases[i].FStreammedConnectFail then
             Exit;
 
       if FStreamedActive and (not InTransaction) then
@@ -5334,7 +5331,7 @@ procedure TFIBTransaction.RemoveDatabases;
 var
   i: Integer;
 begin
-  for i := Pred(FDatabases.Count) downto 0 do
+  for i := DatabaseCount - 1 downto 0 do
     RemoveDatabase(i);
 end;
 
@@ -5381,7 +5378,7 @@ procedure TFIBTransaction.RemoveFIBBases;
 var
   i: Integer;
 begin
-  for i := FFIBBases.Count - 1 downto 0 do
+  for i := FIBBaseCount - 1 downto 0 do
     // if FFIBBases[i] <> nil then
     RemoveFIBBase(i);
 end;
@@ -5535,7 +5532,7 @@ begin
         if ReadConsistency then
           Databases[i].RequireReadConsistency('TRParams read_consistency');
       end;
-    for i := 0 to FFIBBases.Count - 1 do
+    for i := 0 to FIBBaseCount - 1 do
       FIBBases[i].FOnTransactionStarting;
 
     (*
@@ -5559,7 +5556,7 @@ begin
           FAfterStartTransactionEvents.Event[i](Self);
       end;
 
-    for i := 0 to FFIBBases.Count - 1 do
+    for i := 0 to FIBBaseCount - 1 do
       FIBBases[i].FOnTransactionStarted;
 {$IFNDEF NO_MONITOR}
     if MonitoringEnabled then
@@ -5889,7 +5886,7 @@ end;
 
 procedure CleanDatabaseList;
 var
-  i: Integer;
+  i: TFIBListIndex;
 begin
   with DatabaseList.LockList do
     try

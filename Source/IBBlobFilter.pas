@@ -75,16 +75,12 @@ end;
 
 destructor TIBBlobFilters.Destroy;
 var
-  i: integer;
-  IBBlobFilter: PIBBlobFilter;
+  IBBlobFilter: Pointer;
 begin
   if assigned(FIBBlobFilterList) then
   begin
-    for i := 0 to FIBBlobFilterList.Count - 1 do
-    begin
-      IBBlobFilter := FIBBlobFilterList.Items[i];
-      Dispose(IBBlobFilter);
-    end;
+    for IBBlobFilter in FIBBlobFilterList do
+      Dispose(PIBBlobFilter(IBBlobFilter));
     FIBBlobFilterList.Free;
     FIBBlobFilterList := nil;
   end;
@@ -105,7 +101,7 @@ begin
     Sort;
   Result := False;
   L := 0;
-  H := FIBBlobFilterList.Count - 1;
+  H := Integer(FIBBlobFilterList.Count) - 1; // one entry per registered blob subtype
   while L <= H do
   begin
     i := (L + H) shr 1;

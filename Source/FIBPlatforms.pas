@@ -41,6 +41,13 @@ type
 {$EXTERNALSYM DWORD}
   LONG64 = Int64;
 
+  // Index and count type of TList and TList<T>: NativeInt since Delphi 12
+{$IFDEF C36}
+  TFIBListIndex = NativeInt;
+{$ELSE}
+  TFIBListIndex = Integer;
+{$ENDIF}
+
 function FIBGetTickCount: Cardinal;
 procedure TerminateApplication;
 function ApplicationPath: string;
