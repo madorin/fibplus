@@ -790,12 +790,13 @@ begin
     end;
 end;
 
-// Value rounded half up to Decimals digits, keeping them (1.296 -> 1.30, 9.996 -> 10.00); no
-// decimal separator for 0 decimals, no sign when the result is zero
+// Value rounded half to even to Decimals digits, as FormatCurr and FormatBcd round (TBCDField,
+// TFMTBCDField), keeping them (1.296 -> 1.30, 9.996 -> 10.00, 2.5 -> 2); no decimal separator
+// for 0 decimals, no sign when the result is zero
 function RoundDecimalString(const Value: string; Decimals: Integer; DecimalSeparator: Char): string;
 var
   Sign: string;
-  SeparatorPos, I: Integer;
+  SeparatorPos, LastKept, I: Integer;
   Carry: Boolean;
 begin
   if (Value <> '') and (Value[1] = '-') then
@@ -811,11 +812,21 @@ begin
   SeparatorPos := Pos(DecimalSeparator, Result);
   if (SeparatorPos = 0) or (Length(Result) - SeparatorPos <= Decimals) then
     Exit(Value);
-  Carry := Result[SeparatorPos + Decimals + 1] >= '5';
   if Decimals = 0 then
-    SetLength(Result, SeparatorPos - 1)
+    LastKept := SeparatorPos - 1
   else
-    SetLength(Result, SeparatorPos + Decimals);
+    LastKept := SeparatorPos + Decimals;
+  Carry := Result[SeparatorPos + Decimals + 1] > '5';
+  if Result[SeparatorPos + Decimals + 1] = '5' then
+    begin
+      for I := SeparatorPos + Decimals + 2 to Length(Result) do
+        if Result[I] <> '0' then
+          Carry := True;
+      // a tie rounds up only an odd last digit
+      if not Carry then
+        Carry := (LastKept > 0) and Odd(Ord(Result[LastKept]));
+    end;
+  SetLength(Result, LastKept);
   I := Length(Result);
   while Carry and (I > 0) do
     begin

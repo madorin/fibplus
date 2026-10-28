@@ -235,6 +235,9 @@ The lists of old and new names, and what an application has to change, are in
 - `AsInt64` of `TFIBBCDField` rounds half to even, as `TBCDField.AsLargeInt` (it truncated).
   `TFIBClientBCDField.AsInt64` rounds the same way, now exactly, without going through
   floating point.
+- `DisplayFormat` and `EditFormat` of `TFIBBCDField` and `TFIBClientBCDField` round half to even,
+  as `TBCDField` and `TFMTBCDField` do: `0` on 2.5 gives `2`, on 3.5 `4` (it rounded half up).
+  All the decimals of the value are used, not 4 as by `Currency`.
 
 #### Schema extract
 
@@ -397,19 +400,19 @@ The lists of old and new names, and what an application has to change, are in
   `CompareBCD` and `BCDToExtended` (`StdFuncs`) handle values with more than 18 decimals or an
   integer part beyond `Int64`.
 - `DisplayFormat` and `EditFormat` of `TFIBBCDField` and `TFIBClientBCDField` with sections or a
-  leading literal: the minus sign went after the literal (`$ -1,00`, `FormatFloat` gives
+  leading literal: the minus sign went after the literal (`$ -1,00`, `FormatCurr` gives
   `-$ 1,00`), a value that rounds to zero took the negative section (`0.0;(0.0)` on -0.004 gave
   `(0,0)`), and an empty negative or zero section did not fall back to the first one.
 - `DisplayFormat` and `EditFormat` of `TFIBBCDField` and `TFIBClientBCDField` with quoted text or
   without a `0` before the decimal point: the text was shown with its quotes (`"Neg" 0.0`), a `;`
-  in quotes split the sections, and `#.##` kept the zero integer part (`0,05`, `FormatFloat`
+  in quotes split the sections, and `#.##` kept the zero integer part (`0,05`, `FormatCurr`
   gives `,05`, and an empty text for zero). Text between the digits was dropped (`0" x "0`).
 - `DisplayFormat` and `EditFormat` of `TFIBBCDField` and `TFIBClientBCDField` when the value is
   rounded: the zeros of the carry were dropped (`0.00` on 1.296 gave `1.3`, on 0.996 `1`), the
   thousand separators stayed where they were before the carry (`#,##0.00` on 9999.996 gave
   `1.0000`), a format without a decimal point kept one decimal, and literals after the digits
   counted as decimals (`$ #,##0.00 USD` did not round). The trailing zeros of the optional `#`
-  decimals are dropped, as by `FormatFloat` (`0.##` on 1.5 gives `1.5`).
+  decimals are dropped, as by `FormatCurr` (`0.##` on 1.5 gives `1.5`).
 - Calculated `TFIBBCDField`: `AsExtended` and `AsInt64` read the `TBcd` of the value into an
   `Int64` (access violation or a wrong value), and `AsExtended :=` wrote an `Int64` over it.
 - `AsCurrency` of `TFIBBCDField` and `TFIBClientBCDField`: a value out of the `Currency` range (a
