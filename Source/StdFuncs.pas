@@ -839,6 +839,19 @@ begin
       Exit(Sign + Result);
 end;
 
+// Number of '0' and '#' decimal places of a one section numeric format
+function FormatDecimalCount(const Format: string): Integer;
+var
+  SeparatorPos, I: Integer;
+begin
+  Result := 0;
+  SeparatorPos := PosCh('.', Format);
+  if SeparatorPos > 0 then
+    for I := SeparatorPos + 1 to Length(Format) do
+      if CharInSet(Format[I], ['0', '#']) then
+        Inc(Result);
+end;
+
 function FormatNumericString(const Format, Source: string; OneSectionFormat: Boolean = False): string;
 type
   TPosType = (pBegin, pBeforeDecimalSep, pAfterDecimalSep, pEnd);
@@ -855,6 +868,9 @@ var
   PosDecSepInFormat: Integer;
   PosDecSepInString: Integer;
   vLiterals: array of TLiteral;
+  PositiveFormat, NegativeFormat, ZeroFormat, SectionFormat: string;
+  UnsignedSource: string;
+  UseNegativeSection: Boolean;
 const
   cFormatChars = ['#', '0', ',', '.'];
 
@@ -870,23 +886,37 @@ begin
     i := PosCh(';', Format);
     if i > 0 then
     begin
-      case Source[1] of
-        '+', '1' .. '9': Result := FormatNumericString(FastCopy(Format, 1, i - 1), Source, true);
-      else
-        L := PosCh(';', FastCopy(Format, i + 1, MaxInt));
-        case Source[1] of
-          '0':
-            if (L = 0) or not IsZero(Source) then
-              Result := FormatNumericString(FastCopy(Format, 1, i - 1), Source, true)
-            else
-              Result := FormatNumericString(FastCopy(Format, L + i + 1, MaxInt), Source, true)
-        else
-          if L = 0 then
-            Result := FormatNumericString(FastCopy(Format, i + 1, MaxInt), Source, true)
-          else
-            Result := FormatNumericString(FastCopy(Format, i + 1, L - 1), Source, true)
-        end;
+      // as FormatFloat: an empty section falls back to the first one (keeping the sign for a
+      // negative value), and a value that rounds to zero takes the zero section
+      PositiveFormat := FastCopy(Format, 1, i - 1);
+      NegativeFormat := FastCopy(Format, i + 1, MaxInt);
+      ZeroFormat := '';
+      L := PosCh(';', NegativeFormat);
+      if L > 0 then
+      begin
+        ZeroFormat := FastCopy(NegativeFormat, L + 1, MaxInt);
+        SetLength(NegativeFormat, L - 1);
       end;
+      if CharInSet(Source[1], ['+', '-']) then
+        UnsignedSource := FastCopy(Source, 2, MaxInt)
+      else
+        UnsignedSource := Source;
+      UseNegativeSection := (Source[1] = '-') and (NegativeFormat <> '');
+      if UseNegativeSection then
+        SectionFormat := NegativeFormat
+      else
+        SectionFormat := PositiveFormat;
+{$IFDEF C24}with FormatSettings do {$ENDIF}
+        if IsZero(RoundDecimalString(UnsignedSource, FormatDecimalCount(SectionFormat), DecimalSeparator)) then
+        begin
+          if ZeroFormat <> '' then
+            SectionFormat := ZeroFormat
+          else
+            SectionFormat := PositiveFormat;
+          Result := FormatNumericString(SectionFormat, UnsignedSource, True);
+        end
+        else
+          Result := FormatNumericString(SectionFormat, Source, UseNegativeSection);
       Exit;
     end;
   end;
@@ -1056,7 +1086,11 @@ begin
         Result := Result + vLiterals[0].lBody;
         if Length(vLiterals) > 1 then
         begin
-          Result := vLiterals[1].lBody + Result;
+          // the sign goes before the leading literal, as FormatFloat puts it
+          if Result[1] = '-' then
+            Result := '-' + vLiterals[1].lBody + FastCopy(Result, 2, MaxInt)
+          else
+            Result := vLiterals[1].lBody + Result;
         end;
       end;
     end;
