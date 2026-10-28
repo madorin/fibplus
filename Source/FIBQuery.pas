@@ -83,8 +83,8 @@ type
     FDefMacroValue: string;
     FSrvSQLType: integer;
     FSrvSQLSubType: integer;
-    FSrvSQLLen: Smallint;
-    FSrvSQLScale: Smallint;
+    FSrvSQLLen: Integer;
+    FSrvSQLScale: Integer;
     FInWhereClause: boolean;
     FCanForceIsNull: boolean;
     FInitialized: boolean;
@@ -895,8 +895,10 @@ begin
     else
     begin
       // just copy the buffer
+      if iSize > High(Short) then
+        FIBError(feParamValueTooLong, [Name, iSize, High(Short)]);
       FXSQLVAR.SQLType := SQL_TEXT;
-      FXSQLVAR.sqllen := iSize;
+      FXSQLVAR.sqllen := Short(iSize);
       FIBAlloc(FXSQLVAR.sqldata, iSize, iSize);
       Move(szBuff[0], FXSQLVAR^.sqldata[0], iSize);
     end;
@@ -1013,7 +1015,7 @@ begin
       SQL_TYPE_TIME:
         begin
           Result.Date := 0;
-          Result.Time := PISC_TIME(FXSQLVAR^.sqldata)^ div 10
+          Result.Time := Integer(PISC_TIME(FXSQLVAR^.sqldata)^ div 10)
         end;
       SQL_TYPE_DATE:
         begin
@@ -1024,7 +1026,7 @@ begin
         with PISC_QUAD(FXSQLVAR^.sqldata)^ do
         begin
           Result.Date := gds_quad_high + IBBuffDateDelta;
-          Result.Time := gds_quad_low div 10
+          Result.Time := Integer(gds_quad_low div 10)
         end;
       SQL_TIME_TZ, SQL_TIME_TZ_EX, SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX:
         begin
@@ -1056,7 +1058,7 @@ begin
         begin
           vTime.utc_time := PISC_TIME_TZ(FXSQLVAR^.sqldata)^.utc_time;
           vTime.time_zone := PISC_TIME_TZ(FXSQLVAR^.sqldata)^.time_zone;
-          vTime.ext_offset := FBKnownZoneOffset(vTime.time_zone);
+          vTime.ext_offset := Short(FBKnownZoneOffset(vTime.time_zone));
         end;
         ZoneID := vTime.time_zone;
         OffsetMinutes := vTime.ext_offset;
@@ -1073,7 +1075,7 @@ begin
             ^.utc_timestamp;
           vTimeStamp.time_zone := PISC_TIMESTAMP_TZ(FXSQLVAR^.sqldata)
             ^.time_zone;
-          vTimeStamp.ext_offset := FBKnownZoneOffset(vTimeStamp.time_zone);
+          vTimeStamp.ext_offset := Short(FBKnownZoneOffset(vTimeStamp.time_zone));
         end;
         ZoneID := vTimeStamp.time_zone;
         OffsetMinutes := vTimeStamp.ext_offset;
@@ -1281,8 +1283,14 @@ begin
 end;
 
 function TFIBXSQLVAR.GetAsLong: Long;
-var
-  vInt64: Int64;
+
+  function ToLong(Value: Int64): Long;
+  begin
+    if (Value > High(Long)) or (Value < Low(Long)) then
+      FIBError(feInvalidDataConversion, [nil]);
+    Result := Long(Value);
+  end;
+
 begin
   Result := 0;
   if not IsNull then
@@ -1296,21 +1304,11 @@ begin
               FIBError(feInvalidDataConversion, [nil]);
           end;
         end;
-      SQL_SHORT: Result := Trunc(PShort(FXSQLVAR^.sqldata)^ * E10[FXSQLVAR^.sqlscale]);
-      SQL_LONG:
-        begin
-          Result := Trunc(PLong(FXSQLVAR^.sqldata)^ * E10[FXSQLVAR^.sqlscale]);
-        end;
-      SQL_INT64: Result := Trunc(PInt64(FXSQLVAR^.sqldata)^ * E10[FXSQLVAR^.sqlscale]);
-      SQL_INT128, SQL_DEC16, SQL_DEC34:
-        begin
-          vInt64 := AsInt64;
-          if (vInt64 > MaxInt) or (vInt64 < -MaxInt - 1) then
-            FIBError(feInvalidDataConversion, [nil]);
-          Result := vInt64;
-        end;
-
-      SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT: Result := Trunc(AsDouble);
+      SQL_SHORT: Result := ToLong(Trunc(PShort(FXSQLVAR^.sqldata)^ * E10[FXSQLVAR^.sqlscale]));
+      SQL_LONG: Result := ToLong(Trunc(PLong(FXSQLVAR^.sqldata)^ * E10[FXSQLVAR^.sqlscale]));
+      SQL_INT64: Result := ToLong(Trunc(PInt64(FXSQLVAR^.sqldata)^ * E10[FXSQLVAR^.sqlscale]));
+      SQL_INT128, SQL_DEC16, SQL_DEC34: Result := ToLong(AsInt64);
+      SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT: Result := ToLong(Trunc(AsDouble));
       IB_SQL_BOOLEAN, SQL_BOOLEAN: Result := Ord(AsBoolean);
       SQL_NULL: Result := 0;
 
@@ -1343,14 +1341,19 @@ begin
 end;
 
 function TFIBXSQLVAR.GetAsShort: Short;
+var
+  Value: Long;
 begin
-  Result := 0;
+  Value := 0;
   try
-    Result := AsLong;
+    Value := AsLong;
   except
     on E: Exception do
       FIBError(feInvalidDataConversion, [nil]);
   end;
+  if (Value > High(Short)) or (Value < Low(Short)) then
+    FIBError(feInvalidDataConversion, [nil]);
+  Result := Short(Value);
 end;
 
 function TFIBXSQLVAR.GetAsString: string;
@@ -1397,7 +1400,7 @@ begin
             begin
               SetLength(Result, FStreamValue.Size);
               FStreamValue.Position := 0;
-              FStreamValue.Read(Result[1], FStreamValue.Size);
+              FStreamValue.Read(Result[1], Length(Result));
               if Assigned(FQuery.Database) then
                 SetStringCodePage(RawByteString(Result), BlobCodePage);
             end;
@@ -2019,17 +2022,18 @@ begin
     if IsNull then
       IsNull := False;
     sqlscale := 0;
+    // strings longer than 32767 bytes are sent as blobs
     if (aSize = 0) then
     begin
-      sqllen := aSize;
+      sqllen := 0;
       ReallocMem(sqldata, 1);
     end
     else if (sqllen <> aSize) then
     begin
-      sqllen := aSize;
+      sqllen := Short(aSize);
       ReallocMem(sqldata, aSize);
     end;
-    SQLType := aSQLType or (SQLType and 1);
+    SQLType := Short(aSQLType) or (SQLType and 1);
     Move(aValue, sqldata^, sqllen);
     FModified := True;
   end;
@@ -2105,7 +2109,7 @@ begin
     case ValueType of
       tspNull: InternalSetNull(Self, boolean(aValue));
       tspIsNullable: InternalSetNullable(Self, boolean(aValue));
-      tspScale: FXSQLVAR^.sqlscale := integer(aValue);
+      tspScale: FXSQLVAR^.sqlscale := Short(Integer(aValue));
       tspValue: InternalSetValue(Self, aSQLType, aSize, aValue);
       tspSqlVar: InternalSetAsXSQLVAR(Self, PXSQLVAR(aValue));
     end
@@ -2116,7 +2120,7 @@ begin
       case ValueType of
         tspNull: InternalSetNull(xvar, boolean(aValue));
         tspIsNullable: InternalSetNullable(xvar, boolean(aValue));
-        tspScale: xvar.FXSQLVAR^.sqlscale := integer(aValue);
+        tspScale: xvar.FXSQLVAR^.sqlscale := Short(Integer(aValue));
         tspValue:
           begin
             InternalSetValue(xvar, aSQLType, aSize, aValue);
@@ -2142,8 +2146,12 @@ end;
 
 procedure TFIBXSQLVAR.SetAsInt64(aValue: Int64);
 begin
+  // dialect 1 has no BIGINT
   if FQuery.Database.SQLDialect < 3 then
-    SetAsLong(aValue) // For avoid IB4 bug
+    if (aValue > MaxInt) or (aValue < -MaxInt - 1) then
+      SetAsDouble(aValue)
+    else
+      SetAsLong(Long(aValue))
   else
     SetValue(SQL_INT64, SizeOf(Int64), tspValue, aValue)
 end;
@@ -2166,7 +2174,7 @@ begin
   with tq do
   begin
     gds_quad_high := aValue.Date - IBBuffDateDelta;
-    gds_quad_low := aValue.Time * 10;
+    gds_quad_low := UISC_LONG(aValue.Time * 10);
   end;
   SetValue(SQL_TIMESTAMP, SizeOf(TISC_QUAD), tspValue, tq);
 end;
@@ -2186,7 +2194,7 @@ begin
   if (sSQLType = SQL_TIME_TZ) or (sSQLType = SQL_TIME_TZ_EX) then
   begin
     // TIME in the session time zone, a TIMESTAMP would be resolved at 1899-12-30
-    vTime := DateTimeToTimeStamp(aValue).Time * 10;
+    vTime := ISC_TIME(DateTimeToTimeStamp(aValue).Time * 10);
     SetValue(SQL_TYPE_TIME, SizeOf(ISC_TIME), tspValue, vTime);
   end
   else
@@ -2309,8 +2317,8 @@ var
 
 begin
   sSQLType := ServerSQLType;
-  sSubType := ServerSQLSubType;
-  sSQLScale := GetServerSQLScale;
+  sSubType := Short(ServerSQLSubType);
+  sSQLScale := Short(GetServerSQLScale);
   CodePage := FIBCodePageSystem;
   Provisional := False;
   if AdjustDeffered then
@@ -2405,7 +2413,7 @@ begin
   else
     vValue := PAnsiString(aValue)^;
   if CodePage = FIBCodePageUTF8 then
-    FXSQLVAR^.SQLSubtype := FQuery.Database.UTF8CharSetID
+    FXSQLVAR^.SQLSubtype := Short(FQuery.Database.UTF8CharSetID)
   else if (CodePage <> FIBCodePageSystem) and ((sSQLType = SQL_TEXT) or (sSQLType = SQL_VARYING)) then
     FXSQLVAR^.SQLSubtype := sSubType;
   // too long for a VARCHAR: sent as a text blob in the charset of the column
@@ -2427,7 +2435,7 @@ begin
     if Length(vValue) > 0 then
       FStreamValue.Write(vValue[1], Length(vValue));
     FQuery.FHaveStreamParams := True;
-    FXSQLVAR^.SQLType := sSQLType;
+    FXSQLVAR^.SQLType := Short(sSQLType);
     FXSQLVAR^.SQLSubtype := sSubType;
     FXSQLVAR^.sqlscale := sSQLScale;
     Exit;
@@ -2517,7 +2525,7 @@ begin
 
                 SetLength(byteStr, FStreamValue.Size);
                 FStreamValue.Position := 0;
-                FStreamValue.Read(byteStr[1], FStreamValue.Size);
+                FStreamValue.Read(byteStr[1], Length(byteStr));
                 Result := DecodeString(byteStr, BlobCodePage);
               end;
             end
@@ -2592,8 +2600,8 @@ begin
   else
     case vt of
       varEmpty, varNull: IsNull := True;
-      varSmallint, varInteger, varByte, varWord, varShortInt, varLongWord: AsLong := Value;
-      varInt64: AsInt64 := Value;
+      varSmallint, varInteger, varByte, varWord, varShortInt: AsLong := Value;
+      varLongWord, varInt64: AsInt64 := Value;
       varSingle, varDouble: AsDouble := Value;
       varCurrency: AsCurrency := Value;
       varBoolean:
@@ -2681,7 +2689,7 @@ begin
           varShortInt: AsLong := PShortInt(v.VPointer)^;
           varByte: AsLong := PByte(v.VPointer)^;
           varWord: AsLong := PWord(v.VPointer)^;
-          varLongWord: AsLong := PLongWord(v.VPointer)^;
+          varLongWord: AsInt64 := PLongWord(v.VPointer)^;
           varInt64: AsInt64 := PInt64(v.VPointer)^;
           varVariant: AsVariant := Variant(PVarData(v.VPointer)^);
         else
@@ -3348,8 +3356,9 @@ begin
   end;
   if (FSize > 0) then
   begin
-    FXSQLDA^.sqln := Value;
-    FXSQLDA^.sqld := Value;
+    // the XSQLDA counts are short
+    FXSQLDA^.sqln := Short(Value);
+    FXSQLDA^.sqld := Short(Value);
   end;
 end;
 
@@ -4076,7 +4085,7 @@ begin
     begin
       lt := FixEndTime(stText, scLastTimeExecute);
       S := AddIntValue(stText, scSumTimeExecute, lt);
-      SetIntValue(stText, scAvgTimeExecute, Round(S / GetVarInt(stText, scExecuteCount)));
+      SetIntValue(stText, scAvgTimeExecute, Integer(Round(S / GetVarInt(stText, scExecuteCount))));
       if GetVarInt(stText, scMaxTimeExecute) < lt then
       begin
         SetIntValue(stText, scMaxTimeExecute, lt);
@@ -4179,7 +4188,7 @@ begin
 
   FreeHandle;
   Call(Database.ClientLibrary.isc_dsql_execute_immediate(StatusVector,
-    @Database.Handle, @Transaction.Handle, 0, PAnsiChar(Ansistring(FPreparedSQL)), Database.SQLDialect, xSQLDA), True);
+    @Database.Handle, @Transaction.Handle, 0, PAnsiChar(Ansistring(FPreparedSQL)), Word(Database.SQLDialect), xSQLDA), True);
   DoAfterExecute;
   CompleteStatement;
 end;
@@ -4457,7 +4466,7 @@ begin
         SQLSelect, SQLSelectForUpdate:
           begin
             StartStatisticExec(FProcessedSQL);
-            Call(Database.ClientLibrary.isc_dsql_execute(SV, TRHandle, @FHandle, Database.SQLDialect, xSQLDA), True);
+            Call(Database.ClientLibrary.isc_dsql_execute(SV, TRHandle, @FHandle, Word(Database.SQLDialect), xSQLDA), True);
             EndStatisticExec(FProcessedSQL);
             FOpen := True;
             FBOF := True;
@@ -4471,7 +4480,7 @@ begin
           begin
             StartStatisticExec(FProcessedSQL);
             fetch_res := Call(Database.ClientLibrary.isc_dsql_execute2(SV,
-              TRHandle, @FHandle, Database.SQLDialect, xSQLDA, FSQLRecord.FXSQLDA), False);
+              TRHandle, @FHandle, Word(Database.SQLDialect), xSQLDA, FSQLRecord.FXSQLDA), False);
             EndStatisticExec(FProcessedSQL);
             if Assigned(Database.SQLLogger) and (lfQExecute in Database.SQLLogger.LogFlags) then
               DoLog;
@@ -4499,7 +4508,7 @@ begin
         begin
           StartStatisticExec(FProcessedSQL);
           Call(Database.ClientLibrary.isc_dsql_execute(StatusVector, TRHandle,
-            @FHandle, Database.SQLDialect, xSQLDA), True);
+            @FHandle, Word(Database.SQLDialect), xSQLDA), True);
           EndStatisticExec(FProcessedSQL);
           if Assigned(Database.SQLLogger) and (lfQExecute in Database.SQLLogger.LogFlags) then
             DoLog;
@@ -4841,7 +4850,7 @@ begin
     Reset8087CW;
     // vLib:=FBase.Database.ClientLibrary;
     fetch_res := Call(FBase.Database.ClientLibrary.isc_dsql_fetch(StatusVector,
-      @FHandle, FBase.Database.SQLDialect, FSQLRecord.FXSQLDA), False);
+      @FHandle, Word(FBase.Database.SQLDialect), FSQLRecord.FXSQLDA), False);
 
     if (fetch_res > 0) then
     begin
@@ -4918,11 +4927,17 @@ begin
     Result := -1
   else
   begin
-    L := ClientLibrary.isc_vax_integer(buffer, 2);
+    L := Short(ClientLibrary.isc_vax_integer(buffer, 2));
     Inc(buffer, 2);
     Result := ClientLibrary.isc_vax_integer(buffer, L);
     Inc(buffer, L);
   end;
+end;
+
+// The XSQLVAR items of the statement info: short values
+function Get_Short_Info(ClientLibrary: IIbClientLibrary; var buffer: PAnsiChar): Short;
+begin
+  Result := Short(Get_Numeric_Info(ClientLibrary, buffer));
 end;
 
 function Get_String_Info(ClientLibrary: IIbClientLibrary;
@@ -4999,7 +5014,7 @@ var
   Status: ISC_STATUS;
   DescribeItem: Byte;
   Request: array [0 .. 12] of AnsiChar;
-  RequestLength: integer;
+  RequestLength: Short;
   buffer: array [0 .. 32766] of AnsiChar;
   p: PAnsiChar;
   Lib: IIbClientLibrary;
@@ -5036,8 +5051,8 @@ begin
     begin
       AddItem(isc_info_sql_sqlda_start);
       AddItem(2);
-      AddItem(StartIndex and $FF);
-      AddItem(StartIndex shr 8);
+      AddItem(Byte(StartIndex and $FF));
+      AddItem(Byte(StartIndex shr 8));
     end;
     AddItem(DescribeItem);
     AddItem(isc_info_sql_describe_vars);
@@ -5135,7 +5150,7 @@ function TFIBQuery.SQLDescribeInfo(InfoRequest: array of AnsiChar): PXSQLDA;
 var
   Result_buffer: array [0 .. 32766] of AnsiChar;
   PResult: PAnsiChar;
-  N: integer;
+  N: Short;
   Item: PAnsiChar;
   Index: Short;
   SqlVar: PXSQLVAR;
@@ -5146,7 +5161,8 @@ begin
   else
   begin
     Lib := Database.ClientLibrary;
-    Call(Lib.isc_dsql_sql_info(StatusVector, @FHandle, SizeOf(InfoRequest), @InfoRequest[0],
+    // a request of a few items
+    Call(Lib.isc_dsql_sql_info(StatusVector, @FHandle, Short(SizeOf(InfoRequest)), @InfoRequest[0],
       // SizeOf(Result_buffer)
       32766, Result_buffer), True);
     if not(Result_buffer[0] in [AnsiChar(isc_info_sql_select), AnsiChar(isc_info_sql_bind)]) or
@@ -5156,7 +5172,7 @@ begin
       Exit;
     end;
     PResult := @Result_buffer[2];
-    N := Get_Numeric_Info(Lib, PResult);
+    N := Get_Short_Info(Lib, PResult);
     Result := AllocMem(XSQLDA_LENGTH(N));
     Result^.Version := SQLDA_VERSION1;
     Result^.sqld := N;
@@ -5173,22 +5189,22 @@ begin
           case Byte(Item[0]) of
             isc_info_sql_sqlda_seq:
               begin
-                index := Get_Numeric_Info(Lib, PResult);
+                index := Get_Short_Info(Lib, PResult);
                 SqlVar := @Result^.SqlVar[index - 1];
                 Inc(Result^.sqln)
               end;
-            isc_info_sql_type: SqlVar.SQLType := Get_Numeric_Info(Lib, PResult);
-            isc_info_sql_sub_type: SqlVar.SQLSubtype := Get_Numeric_Info(Lib, PResult);
-            isc_info_sql_scale: SqlVar.sqlscale := Get_Numeric_Info(Lib, PResult);
-            isc_info_sql_length: SqlVar.sqllen := Get_Numeric_Info(Lib, PResult);
+            isc_info_sql_type: SqlVar.SQLType := Get_Short_Info(Lib, PResult);
+            isc_info_sql_sub_type: SqlVar.SQLSubtype := Get_Short_Info(Lib, PResult);
+            isc_info_sql_scale: SqlVar.sqlscale := Get_Short_Info(Lib, PResult);
+            isc_info_sql_length: SqlVar.sqllen := Get_Short_Info(Lib, PResult);
             isc_info_sql_field:
-              SqlVar.sqlname_length := Get_String_Info(Lib, PResult, @SqlVar.SqlName[0], SizeOf(SqlVar.SqlName));
+              SqlVar.sqlname_length := Short(Get_String_Info(Lib, PResult, @SqlVar.SqlName[0], SizeOf(SqlVar.SqlName)));
             isc_info_sql_relation:
-              SqlVar.relname_length := Get_String_Info(Lib, PResult, @SqlVar.RelName[0], SizeOf(SqlVar.RelName));
+              SqlVar.relname_length := Short(Get_String_Info(Lib, PResult, @SqlVar.RelName[0], SizeOf(SqlVar.RelName)));
             isc_info_sql_owner:
-              SqlVar.ownname_length := Get_String_Info(Lib, PResult, @SqlVar.ownname[0], SizeOf(SqlVar.ownname));
+              SqlVar.ownname_length := Short(Get_String_Info(Lib, PResult, @SqlVar.ownname[0], SizeOf(SqlVar.ownname)));
             isc_info_sql_alias:
-              SqlVar.aliasname_length := Get_String_Info(Lib, PResult, @SqlVar.AliasName[0], SizeOf(SqlVar.AliasName));
+              SqlVar.aliasname_length := Short(Get_String_Info(Lib, PResult, @SqlVar.AliasName[0], SizeOf(SqlVar.AliasName)));
             { frb_info_sql_relation_alias:
               get_string_info(Lib,PResult,@SQLVar.ownname[0],SizeOf(SQLVar.aliasname)); }
             isc_info_truncated:
@@ -5251,14 +5267,14 @@ var
   AllocAddr: PAnsiChar;
 
   info_request: AnsiChar;
-  InfoLen: integer;
+  InfoLen: Short;
 
   function ReadRequest: integer;
   begin
     with Database.ClientLibrary do
     begin
       Inc(InfoBuffer);
-      InfoLen := isc_vax_integer(InfoBuffer, 2);
+      InfoLen := Short(isc_vax_integer(InfoBuffer, 2));
       Inc(InfoBuffer, 2);
       Result := isc_vax_integer(InfoBuffer, InfoLen);
       Inc(InfoBuffer, InfoLen);
@@ -5283,7 +5299,7 @@ begin
       if (InfoBuffer[0] <> AnsiChar(isc_info_sql_records)) then
         FIBError(feUnknownError, [nil]);
       Inc(InfoBuffer);
-      InfoLen := isc_vax_integer(InfoBuffer, 2);
+      InfoLen := Short(isc_vax_integer(InfoBuffer, 2));
       if InfoLen > 255 then
       begin
         InfoBuffer := AllocAddr;
@@ -5925,7 +5941,7 @@ end;
 
 procedure TFIBQuery.Prepare;
 var
-  stmt_len: integer;
+  stmt_len: Short;
   res_buffer: array [0 .. 7] of AnsiChar;
   type_item: AnsiChar;
   i: integer;
@@ -6012,7 +6028,7 @@ begin
           Transaction.StartTransaction;
         Call(isc_dsql_alloc_statement2(SV, DBHandle, @FHandle), True);
         FSQLRecord.Count := 1;
-        Call(isc_dsql_prepare(SV, TRHandle, @FHandle, 0, PAnsiChar(FPreparedSQL), Database.SQLDialect,
+        Call(isc_dsql_prepare(SV, TRHandle, @FHandle, 0, PAnsiChar(FPreparedSQL), Word(Database.SQLDialect),
           FSQLRecord.FXSQLDA), True);
 
         (* After preparing the statement, query the stmt type and possibly
@@ -6022,7 +6038,7 @@ begin
         Call(isc_dsql_sql_info(SV, @FHandle, 1, @type_item, SizeOf(res_buffer), res_buffer), True);
         if (res_buffer[0] <> AnsiChar(isc_info_sql_stmt_type)) then
           FIBError(feUnknownError, [nil]);
-        stmt_len := isc_vax_integer(@res_buffer[1], 2);
+        stmt_len := Short(isc_vax_integer(@res_buffer[1], 2));
         FSQLType := TFIBSQLTypes(isc_vax_integer(@res_buffer[3], stmt_len));
         if FSQLType = SQLSelectForUpdate then
         begin
@@ -6049,7 +6065,7 @@ begin
               begin
                 if vDiffParams and FHaveMacros then // !!!
                   SaveRestoreValues(FSQLParams, True);
-                if Call(isc_dsql_describe_bind(SV, @FHandle, Database.SQLDialect, FSQLParams.FXSQLDA), False) > 0 then
+                if Call(isc_dsql_describe_bind(SV, @FHandle, Word(Database.SQLDialect), FSQLParams.FXSQLDA), False) > 0 then
                   IBError(Database.ClientLibrary, Self)
                 else
                 begin
@@ -6113,7 +6129,7 @@ begin
                 if FSQLRecord.FXSQLDA^.sqld > FSQLRecord.FXSQLDA^.sqln then
                 begin
                   FSQLRecord.Count := FSQLRecord.FXSQLDA^.sqld;
-                  Call(isc_dsql_describe(SV, @FHandle, Database.SQLDialect, FSQLRecord.FXSQLDA), True);
+                  Call(isc_dsql_describe(SV, @FHandle, Word(Database.SQLDialect), FSQLRecord.FXSQLDA), True);
                 end
                 else if FSQLRecord.FXSQLDA^.sqld = 0 then
                   FSQLRecord.Count := 0;

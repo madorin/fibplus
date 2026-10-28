@@ -520,6 +520,14 @@ The lists of old and new names, and what an application has to change, are in
 - Services: a start parameter of 65536 bytes or more was dropped or sent with a wrong length; it
   raises an error now. A `BufferSize` of 65536 or more was cut to 2 bytes (65536 gave "Unexpected
   Output buffer value"); the service API gets at most 65535 bytes.
+- `TFIBQuery` fields and parameters: `AsInteger` of a `BIGINT`, a scaled number or a double out of
+  the `Integer` range, and `AsShort` out of the `SMALLINT` range, returned a cut value
+  (5000000000 gave 705032704); they raise an invalid data conversion error, as for `INT128`.
+- `TFIBQuery` parameters: `Assign` of a BLOB of more than 32767 bytes to a parameter that is not
+  a BLOB sent a cut length (70000 bytes became 4464); it raises an error now. `AsInt64` in SQL
+  dialect 1 or 2 sent the value cut to 32 bits; out of that range it is sent as a double. A
+  `LongWord` variant over `MaxInt` was sent as a negative number when passed by reference and
+  raised `EVariantOverflowError` when passed by value; both are sent as a `BIGINT`.
 
 ## [7.9.1] - 2026-10-09
 
