@@ -73,13 +73,14 @@ end;
 
 procedure WriteToRegistry(aRootKey: HKEY; const OtherKeys, ParamNames: array of string; const Values: array of Variant);
 var
-  i, minPar: integer;
+  i, minPar: NativeInt;
+  Key: string;
 begin
   with RegObj do
     try
       RootKey := aRootKey;
-      for i := Low(OtherKeys) to High(OtherKeys) do
-        OpenKey(OtherKeys[i], true);
+      for Key in OtherKeys do
+        OpenKey(Key, True);
       minPar := High(ParamNames);
       if minPar > High(Values) then
         minPar := High(Values);
@@ -101,6 +102,7 @@ end;
 function ReadFromRegistry(aRootKey: HKEY; const OtherKeys, ParamNames: array of string): Variant;
 var
   i, cPar: integer;
+  Key: string;
   t: TRegDataType;
 begin
 
@@ -109,10 +111,10 @@ begin
     try
       Result := false;
       RootKey := aRootKey;
-      for i := Low(OtherKeys) to High(OtherKeys) do
-        if not OpenKey(OtherKeys[i], false) then
+      for Key in OtherKeys do
+        if not OpenKey(Key, False) then
           Exit;
-      cPar := High(ParamNames);
+      cPar := Integer(High(ParamNames)); // the values of one key
       Result := VarArrayCreate([0, 1, 0, cPar], varVariant);
       for i := 0 to cPar do
         try
@@ -146,6 +148,7 @@ end;
 function AllSubKey(aRootKey: HKEY; const ForPath: array of string): Variant;
 var
   i: integer;
+  Key: string;
   SubKeys: TStrings;
 begin
   SubKeys := TStringList.Create;
@@ -154,8 +157,8 @@ begin
     try
       Result := false;
       RootKey := aRootKey;
-      for i := Low(ForPath) to High(ForPath) do
-        if not OpenKey(ForPath[i], false) then
+      for Key in ForPath do
+        if not OpenKey(Key, False) then
           Exit;
       GetKeyNames(SubKeys);
       if SubKeys.Count = 0 then
@@ -176,7 +179,7 @@ end;
 
 function SaveRegKey(const FileName: String; const ForKey: array of string): Boolean;
 var
-  i: integer;
+  Key: string;
   s: string;
 begin
   with RegObj do
@@ -185,8 +188,8 @@ begin
       s := '';
       if FileExists(FileName) then
         DeleteFile(FileName);
-      for i := Low(ForKey) to High(ForKey) do
-        s := s + '\' + ForKey[i];
+      for Key in ForKey do
+        s := s + '\' + Key;
       Result := SaveKey(s, FileName);
     finally
       CloseKey;
@@ -195,15 +198,15 @@ end;
 
 function LoadRegKey(const FileName: String; const ForKey: array of string): Boolean;
 var
-  i: integer;
+  Key: string;
   s: string;
 begin
   with RegObj do
     try
       RootKey := HKEY_CURRENT_USER;
       s := '';
-      for i := Low(ForKey) to High(ForKey) do
-        s := s + '\' + ForKey[i];
+      for Key in ForKey do
+        s := s + '\' + Key;
       Result := ReplaceKey(s, FileName, '');
     finally
       CloseKey;
@@ -214,6 +217,7 @@ function AltSaveRegKey(const FileName: String; const ForKey: array of string): B
 var
   v: Variant;
   i, c: integer;
+  Key: string;
   Ini: TIniFile;
   PathKey: string;
   pv: string;
@@ -225,8 +229,8 @@ begin
     with RegObj do
     begin
       PathKey := '';
-      for i := Low(ForKey) to High(ForKey) do
-        PathKey := PathKey + '\' + ForKey[i];
+      for Key in ForKey do
+        PathKey := PathKey + '\' + Key;
 
       if FileExists(FileName) then
         DeleteFile(FileName);
@@ -254,6 +258,7 @@ function AltLoadRegKey(const FileName: String; const ForKey: array of string): B
 var
   v: Variant;
   i, c: integer;
+  Key: string;
   Ini: TIniFile;
   PathKey: string;
   ts: TStrings;
@@ -262,8 +267,8 @@ begin
   with RegObj do
   begin
     PathKey := '';
-    for i := Low(ForKey) to High(ForKey) do
-      PathKey := PathKey + '\' + ForKey[i];
+    for Key in ForKey do
+      PathKey := PathKey + '\' + Key;
     Ini := TIniFile.Create(FileName);
     ts := TStringList.Create;
     try

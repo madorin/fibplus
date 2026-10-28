@@ -185,9 +185,29 @@ var
   TabTypes: array ['A' .. 'Z', 'A' .. 'Z'] of TDynArray;
   TabFunctions: array ['A' .. 'Z', 'A' .. 'Z'] of TDynArray;
 
+// True when the word of Line at StartPos..EndPos is one of the names listed in Bucket
+function WordInBucket(const Bucket: TDynArray; const Names: array of string; const Line: string;
+  StartPos, EndPos: Integer): Boolean;
+var
+  NameIndex: Integer;
+begin
+  for NameIndex in Bucket do
+    if IsClause(Names[NameIndex], Line, StartPos, EndPos) then
+      Exit(True);
+  Result := False;
+end;
+
+procedure AddToBucket(var Bucket: TDynArray; NameIndex: Integer);
+var
+  Last: NativeInt;
+begin
+  Last := Length(Bucket);
+  SetLength(Bucket, Last + 1);
+  Bucket[Last] := NameIndex;
+end;
+
 function IsReservedWord(const Line: string): boolean;
 var
-  i, j: integer;
   ch, ch1: Char;
   L: integer;
 begin
@@ -205,39 +225,13 @@ begin
     Dec(ch1, 32);
 
   if (ch >= 'A') and (ch <= 'Z') and (ch1 >= 'A') and (ch1 <= 'Z') then
-  begin
-
-    j := Length(TabKeyWords[ch, ch1]) - 1;
-    for i := 0 to j do
-      if IsClause(DefKeywords[TabKeyWords[ch, ch1][i]], Line, 1, L) then
-      begin
-        Result := True;
-        Exit
-      end;
-
-    j := Length(TabTypes[ch, ch1]) - 1;
-    for i := 0 to j do
-      if IsClause(DefTypes[TabTypes[ch, ch1][i]], Line, 1, L) then
-      begin
-        Result := True;
-        Exit
-      end;
-
-    j := Length(TabFunctions[ch, ch1]) - 1;
-    for i := 0 to j do
-      if IsClause(InternalFunctions[TabFunctions[ch, ch1][i]], Line, 1, L) then
-      begin
-        Result := True;
-        Exit
-      end;
-
-  end;
-
+    Result := WordInBucket(TabKeyWords[ch, ch1], DefKeywords, Line, 1, L) or
+      WordInBucket(TabTypes[ch, ch1], DefTypes, Line, 1, L) or
+      WordInBucket(TabFunctions[ch, ch1], InternalFunctions, Line, 1, L);
 end;
 
 procedure FIBSQLTokens(Sender: TObject; StartPos, EndPos: integer; const Line: string; var Token: TToken);
 var
-  i, j: integer;
   ch, ch1: Char;
 begin
   if EndPos - StartPos < 1 then
@@ -257,32 +251,12 @@ begin
     Dec(ch1, 32);
 
   if (ch >= 'A') and (ch <= 'Z') and (ch1 >= 'A') and (ch1 <= 'Z') then
-  begin
-    j := Length(TabKeyWords[ch, ch1]) - 1;
-    for i := 0 to j do
-      if IsClause(DefKeywords[TabKeyWords[ch, ch1][i]], Line, StartPos, EndPos) then
-      begin
-        Token := TToken(tokKeyWord);
-        Exit
-      end;
-
-    j := Length(TabTypes[ch, ch1]) - 1;
-    for i := 0 to j do
-      if IsClause(DefTypes[TabTypes[ch, ch1][i]], Line, StartPos, EndPos) then
-      begin
-        Token := TToken(tokTypes);
-        Exit
-      end;
-
-    j := Length(TabFunctions[ch, ch1]) - 1;
-    for i := 0 to j do
-      if IsClause(InternalFunctions[TabFunctions[ch, ch1][i]], Line, StartPos, EndPos) then
-      begin
-        Token := TToken(tokFunction);
-        Exit
-      end;
-
-  end;
+    if WordInBucket(TabKeyWords[ch, ch1], DefKeywords, Line, StartPos, EndPos) then
+      Token := TToken(tokKeyWord)
+    else if WordInBucket(TabTypes[ch, ch1], DefTypes, Line, StartPos, EndPos) then
+      Token := TToken(tokTypes)
+    else if WordInBucket(TabFunctions[ch, ch1], InternalFunctions, Line, StartPos, EndPos) then
+      Token := TToken(tokFunction);
 end;
 
 procedure AddToSyntaxAttributes(N: TMPSyntaxAttributes);
@@ -306,36 +280,14 @@ end;
 
 procedure InitTabKeyWords;
 var
-  i, j: integer;
-  c, c1: Char;
+  i: Integer;
 begin
   for i := 0 to DefKeywordsCount - 1 do
-  begin
-    c := DefKeywords[i][1];
-    c1 := DefKeywords[i][2];
-    j := Length(TabKeyWords[c, c1]);
-    SetLength(TabKeyWords[c, c1], j + 1);
-    TabKeyWords[c, c1][j] := i
-  end;
-
+    AddToBucket(TabKeyWords[DefKeywords[i][1], DefKeywords[i][2]], i);
   for i := 0 to DefTypesCount - 1 do
-  begin
-    c := DefTypes[i][1];
-    c1 := DefTypes[i][2];
-    j := Length(TabTypes[c, c1]);
-    SetLength(TabTypes[c, c1], j + 1);
-    TabTypes[c, c1][j] := i
-  end;
-
+    AddToBucket(TabTypes[DefTypes[i][1], DefTypes[i][2]], i);
   for i := 0 to InternalFunctionCount - 1 do
-  begin
-    c := InternalFunctions[i][1];
-    c1 := InternalFunctions[i][2];
-    j := Length(TabFunctions[c, c1]);
-    SetLength(TabFunctions[c, c1], j + 1);
-    TabFunctions[c, c1][j] := i
-  end;
-
+    AddToBucket(TabFunctions[InternalFunctions[i][1], InternalFunctions[i][2]], i);
 end;
 
 //

@@ -88,7 +88,7 @@ var
   aForm: TFPDataSetOptionsForm;
   (* I *) Option: Integer;
   chBox: TCheckBox;
-  K: Integer;
+  K: NativeInt;
   Options: Integer;
   MaxOption: Integer;
 begin

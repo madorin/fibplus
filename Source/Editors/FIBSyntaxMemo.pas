@@ -24,7 +24,7 @@ uses
   Graphics, Controls, Forms, Dialogs, ComCtrls, ExtCtrls, StdCtrls, Menus,
   Clipbrd,
 {$ENDIF}
-  Contnrs;
+  Contnrs, FIBPlatforms;
 
 const
   tokBlank        = 0;
@@ -195,8 +195,8 @@ type
     fSection: TMPSynMemoSection;
     fVisibleIndex: Integer;
     fNeedReparse: Boolean;
-    function GetToken(const TokIndex: Integer): TMPSyntaxToken;
-    procedure SetToken(const TokIndex: Integer; const Value: TMPSyntaxToken);
+    function GetToken(const TokIndex: TFIBListIndex): TMPSyntaxToken;
+    procedure SetToken(const TokIndex: TFIBListIndex; const Value: TMPSyntaxToken);
   protected
     function ParseLine(Line: string; LineIndex: Integer; LastToken: TToken; PA: TMPSyntaxAttributes): TToken; virtual;
     function ParseLineEx(const Line: string; LineIndex: Integer; LastToken: TToken; PA: TMPSyntaxAttributes): TToken; virtual;
@@ -211,7 +211,7 @@ type
     function LastToken: TToken;
     function FirstToken: TToken;
     function Parse(Line: string; LineIndex: Integer; LastToken: TToken; PA: TMPSyntaxAttributes): TToken;
-    property Tokens[const TokIndex: Integer]: TMPSyntaxToken read GetToken write SetToken; default;
+    property Tokens[const TokIndex: TFIBListIndex]: TMPSyntaxToken read GetToken write SetToken; default;
     property NeedReparse: Boolean read fNeedReparse write fNeedReparse;
     property Section: TMPSynMemoSection read fSection write fSection;
     property VisibleIndex: Integer read fVisibleIndex write fVisibleIndex;
@@ -281,13 +281,13 @@ type
     fRowEnd: Integer; // End of the stored line range
     fLevel: Integer; // Section nesting level
     fCollapsed: Boolean; // Section is collapsed
-    function GetSections(const Idx: Integer): TMPSynMemoSection;
+    function GetSections(const Idx: TFIBListIndex): TMPSynMemoSection;
     procedure SetLevel(const Value: Integer);
   public
     constructor Create;
     property RowBeg: Integer read fRowBeg write fRowBeg;
     property RowEnd: Integer read fRowEnd write fRowEnd;
-    property Sections[const Idx: Integer]: TMPSynMemoSection read GetSections; default;
+    property Sections[const Idx: TFIBListIndex]: TMPSynMemoSection read GetSections; default;
     property Level: Integer read fLevel write SetLevel;
     property Parent: TMPSynMemoSection read fParent write fParent;
     property Collapsed: Boolean read fCollapsed write fCollapsed;
@@ -323,6 +323,7 @@ type
     procedure MakeUnique;
     procedure SetRoot(const Value: TMPSMSectionClone);
     function GetSection(const Row: Integer): TMPSynMemoSection;
+    function GetVisibleRowCount: Integer;
     procedure SetSection(const Row: Integer; Value: TMPSynMemoSection);
   protected
     procedure Scan; virtual;
@@ -348,6 +349,7 @@ type
     property ErrorString: string read fErrorString;
     property EntireSection: TMPSMSectionClone read fRoot write SetRoot;
     property Indexes: TList read fIndexes;
+    property VisibleRowCount: Integer read GetVisibleRowCount;
   end;
 
   // Operation kinds for UNDO grouping
@@ -1078,7 +1080,7 @@ end;
 // Copies the attributes of token SrcToken to all tokens in DstTokArray
 procedure TMPSyntaxAttributes.CopyAttrs(const SrcToken: TToken; DstTokArray: array of TToken);
 var
-  i: Integer;
+  i: NativeInt;
 begin
   for i := Low(DstTokArray) to High(DstTokArray) do
     fTokenStyles[DstTokArray[i]] := fTokenStyles[SrcToken];
@@ -1299,13 +1301,13 @@ begin
 end;
 
 // Returns the given token
-function TMPSyntaxParser.GetToken(const TokIndex: Integer): TMPSyntaxToken;
+function TMPSyntaxParser.GetToken(const TokIndex: TFIBListIndex): TMPSyntaxToken;
 begin
   Result := TMPSyntaxToken(inherited Items[TokIndex]);
 end;
 
 // Sets the given token
-procedure TMPSyntaxParser.SetToken(const TokIndex: Integer; const Value: TMPSyntaxToken);
+procedure TMPSyntaxParser.SetToken(const TokIndex: TFIBListIndex; const Value: TMPSyntaxToken);
 begin
   Items[TokIndex] := Value;
 end;
@@ -1313,7 +1315,7 @@ end;
 // Returns a "portrait" of the line code (for debugging)
 function TMPSyntaxParser.AsString: string;
 var
-  i: Integer;
+  i: TFIBListIndex;
   s: string;
   t: TMPSyntaxToken;
 begin
@@ -1332,7 +1334,7 @@ end;
 // Takes the data
 procedure TMPSyntaxParser.Assign(const Friend: TMPSyntaxParser);
 var
-  i: Integer;
+  i: TFIBListIndex;
   t, NewT: TMPSyntaxToken;
 begin
   Clear;
@@ -2561,7 +2563,7 @@ begin
 end;
 
 // GetSections() Returns a nested section by index
-function TMPSynMemoSection.GetSections(const Idx: Integer): TMPSynMemoSection;
+function TMPSynMemoSection.GetSections(const Idx: TFIBListIndex): TMPSynMemoSection;
 begin
   Assert(InRange(Idx, 0, Count - 1), 'Bad nested section index: ' + IntToStr(Idx));
   Result := TMPSynMemoSection(Items[Idx])
@@ -2571,7 +2573,7 @@ end;
 // Recursively changes the level of inner sections
 procedure TMPSynMemoSection.SetLevel(const Value: Integer);
 var
-  i: Integer;
+  i: TFIBListIndex;
 begin
   fLevel := Value;
   for i := 0 to Count - 1 do
@@ -2634,7 +2636,7 @@ function TMPSynMemoSections.Next(Sec: TMPSynMemoSection): TMPSynMemoSection;
 { }
   function _next(Sec: TMPSynMemoSection): TMPSynMemoSection;
   var
-    N: Integer;
+    N: TFIBListIndex;
   begin
     if Sec = fRoot then
       Result := nil
@@ -2669,7 +2671,7 @@ function TMPSynMemoSections.Prev(Sec: TMPSynMemoSection): TMPSynMemoSection;
   end;
 
 var
-  N: Integer;
+  N: TFIBListIndex;
 begin
   if Sec = fRoot then
     Result := nil
@@ -2692,6 +2694,11 @@ end;
 function TMPSynMemoSections.GetSection(const Row: Integer): TMPSynMemoSection;
 begin
   Result := fRichMemo.Lines.Parser[Row].Section;
+end;
+
+function TMPSynMemoSections.GetVisibleRowCount: Integer;
+begin
+  Result := Integer(fIndexes.Count); // at most one entry per line
 end;
 
 // Sets the section the line belongs to
@@ -2717,7 +2724,7 @@ var
   { For pure recursion }
   procedure CollapseChildren(Father: TMPSynMemoSection);
   var
-    i: Integer;
+    i: TFIBListIndex;
   begin
     if Recursive then
       for i := Father.Count - 1 downto 0 do
@@ -2752,7 +2759,7 @@ end;
 procedure TMPSynMemoSections.Expand(const Row: Integer; const Recursive, ParentRecursive: Boolean);
   procedure ExpandChildren(Father: TMPSynMemoSection);
   var
-    i: Integer;
+    i: TFIBListIndex;
   begin
     Father.Collapsed := False;
     if Recursive then
@@ -2793,17 +2800,18 @@ procedure TMPSynMemoSections.Explode(const Row: Integer; const Recursive: Boolea
 { Recurse }
   procedure ExplodeChildren(Father: TMPSynMemoSection);
   var
-    i, N: Integer;
+    i: Integer;
+    N, ChildIndex: TFIBListIndex;
     Child: TMPSynMemoSection;
   begin
     if Father.Level > 0 then
       begin
         N := Father.Parent.IndexOf(Father);
-        for i := Father.Count - 1 downto 0 do
+        for ChildIndex := Father.Count - 1 downto 0 do
           begin
             // If this section has nested sections,
             // they now belong to the parent too
-            Child := Father[i];
+            Child := Father[ChildIndex];
             Child.Level := Child.Level - 1;
             Child.Parent := Father.Parent;
             Father.Parent.Insert(N + 1, Father.Extract(Child));
@@ -2847,6 +2855,7 @@ end;
 function TMPSynMemoSections.New(const Row1, Row2: Integer; const IsCollapsed: Boolean = False): TMPSynMemoSection;
 var
   i: Integer;
+  InsertAt: TFIBListIndex;
   Father, iSec: TMPSynMemoSection;
 begin
   { } {$IFDEF SYNDEBUG}
@@ -2911,10 +2920,10 @@ begin
     end;
 
   // Insert the new section among the old one's children
-  i := Father.Count;
-  while (i > 0) and (Father[i - 1].RowBeg > Row1) do
-    dec(i);
-  Father.Insert(i, Result);
+  InsertAt := Father.Count;
+  while (InsertAt > 0) and (Father[InsertAt - 1].RowBeg > Row1) do
+    Dec(InsertAt);
+  Father.Insert(InsertAt, Result);
 
   // Commit the changes
   with fRichMemo.Lines do
@@ -2935,7 +2944,7 @@ procedure TMPSynMemoSections.DeleteRow(const Row: Integer);
 { Recurse }
   procedure UpdateIndexes(Sec: TMPSynMemoSection);
   var
-    i: Integer;
+    i: TFIBListIndex;
   begin
     if Sec.RowBeg > Row then
       dec(Sec.fRowBeg);
@@ -2975,7 +2984,7 @@ var
   { }
   procedure UpdateIndexes(Sec: TMPSynMemoSection);
   var
-    i: Integer;
+    i: TFIBListIndex;
   begin
     if Row <= Sec.RowBeg then
       Inc(Sec.fRowBeg);
@@ -3012,7 +3021,7 @@ const
   { }
   procedure MarkSection(Sec: TMPSynMemoSection);
   var
-    i: Integer;
+    i: TFIBListIndex;
   begin
     if Sec <> fRoot then
       begin
@@ -3037,7 +3046,7 @@ procedure TMPSynMemoSections.MakeUnique;
 { Creates a copy of the section - recurse }
   function Clone(const Father, Sec: TMPSynMemoSection): TMPSynMemoSection;
   var
-    i: Integer;
+    i: TFIBListIndex;
   begin
     Result := TMPSynMemoSection.Create;
     Result.fParent := Father;
@@ -3052,7 +3061,7 @@ procedure TMPSynMemoSections.MakeUnique;
 { }
 var
   NewRoot: TMPSMSectionClone;
-  i: Integer;
+  i: TFIBListIndex;
 begin
   if ssUndoProcess in fRichMemo.Lines.State then
     Exit;
@@ -3088,7 +3097,7 @@ var
   Sl: TStringList;
   procedure SecAsString(Sec: TMPSynMemoSection);
   var
-    i: Integer;
+    i: TFIBListIndex;
   begin
     Sl.Append(Format('%s%d..%d %s', [StringOfChar(' ', Sec.Level * 4),
       Sec.RowBeg, Sec.RowEnd, IfThenStr(Sec.Collapsed, 'Collapsed', '')]));
@@ -3112,7 +3121,7 @@ var
   { }
   procedure ProcessSection(const Sec: TMPSynMemoSection; ParentOpen: Boolean);
   var
-    ChildIndex: Integer;
+    ChildIndex: TFIBListIndex;
   begin
     ChildIndex := 0;
     if Sec.Level > fMaxLevel then
@@ -3133,7 +3142,10 @@ var
               begin
                 Section := Sec;
                 if ParentOpen and (not Sec.Collapsed or (Row = Sec.RowBeg)) then
-                  fVisibleIndex := fIndexes.Add(Pointer(Row))
+                  begin
+                    fVisibleIndex := VisibleRowCount;
+                    fIndexes.Add(Pointer(Row));
+                  end
                 else
                   fVisibleIndex := -1;
               end;
@@ -3185,7 +3197,8 @@ end;
 // Reads the whole text and builds the set of sections
 procedure TMPSynMemoSections.Scan;
 var
-  Row, i: Integer;
+  Row: Integer;
+  i: TFIBListIndex;
   ParentSec, Sec: TMPSynMemoSection;
   Stack: TObjectStack;
   Sm: TSectionMark;
@@ -4032,7 +4045,8 @@ type
 { }
 
 var
-  i, Row1, Row2: Integer;
+  i: NativeInt;
+  Row1, Row2: Integer;
   SafeStart: TPoint;
   SecIndexes: TIntArray;
 begin
@@ -6105,7 +6119,7 @@ end;
 function TMPCustomSyntaxMemo.WordByPos(const WordPos: TPoint): string;
 var
   Parser: TMPSyntaxParser;
-  i: Integer;
+  i: TFIBListIndex;
 begin
   Result := '';
   if (WordPos.Y >= 0) and (WordPos.Y < fLines.Count) then
@@ -6429,7 +6443,7 @@ begin
     Exit;
   Sp := TMPSyntaxParser(fLines.Objects[Row]);
   if Sp <> nil then
-    for i := 0 to Sp.Count - 1 do
+    for i := 0 to Integer(Sp.Count) - 1 do // tokens of one line: at most its length
       begin
         WBeg := Sp[i].stStart;
         if Col < WBeg then
@@ -6511,7 +6525,8 @@ end;
 
 procedure TMPCustomSyntaxMemo.UpdateLineNumbersWidth;
 var
-  NewWidth, i: Integer;
+  NewWidth: Integer;
+  i: NativeInt;
 begin
   NewWidth := 0;
   if (smoShowLineNumberToGutter in fOptions) and fLettersCalculated then
@@ -6772,7 +6787,7 @@ begin
   // Visible index of the target line
   N := RowIndexConvert(Row, cdNeedScreen) + Delta;
   if EnsureInRange then
-    N := EnsureRange(N, 0, fSections.Indexes.Count - 1);
+    N := EnsureRange(N, 0, fSections.VisibleRowCount - 1);
   Result := RowIndexConvert(N, cdNeedReal);
 end;
 
@@ -6782,7 +6797,7 @@ begin
   Result := -1;
   case Direction of
     cdNeedReal:
-      if InRange(Index, 0, fSections.Indexes.Count - 1) then
+      if InRange(Index, 0, fSections.VisibleRowCount - 1) then
         Result := Integer(fSections.Indexes[Index]);
 
     cdNeedScreen:
@@ -6808,7 +6823,7 @@ begin
   fVScroll.OnChange := nil;
   with fVScroll do
     begin
-      Max := Math.Max(fSections.Indexes.Count - ClientLines, 0);
+      Max := Math.Max(fSections.VisibleRowCount - ClientLines, 0);
       Enabled := Max > 0;
       if fLines.Count = 0 then
         Position := 0
@@ -6819,7 +6834,7 @@ begin
     end;
 
   if fPageUpDown <> nil then
-    fPageUpDown.Enabled := (fSections.Indexes.Count > ClientLines);
+    fPageUpDown.Enabled := (fSections.VisibleRowCount > ClientLines);
 
   // Temporarily lock the horizontal scroll while updating it
   fHScroll.OnChange := nil;
@@ -7042,7 +7057,7 @@ end;
 // Mark all lines for repaint
 procedure TMPCustomSyntaxMemo.NeedRedrawAll;
 var
-  i: Integer;
+  i: NativeInt;
 begin
   { } {$IFDEF SYNDEBUG}
   { } Log('Memo.NeedRedrawAll');
@@ -7065,7 +7080,7 @@ begin
   { } Log('Memo.Redraw');
   { } {$ENDIF}
   HideCaret;
-  for i := Low(fScreenLines) to High(fScreenLines) do
+  for i := 0 to Integer(High(fScreenLines)) do // the rows on the screen
     if fScreenLines[i] then
       begin
         PaintLineEx3(i, FindVisibleRow(OffsetY, i, False));
@@ -7396,7 +7411,8 @@ end;
 procedure TMPCustomSyntaxMemo.PaintTokens(const ACanvas: TCanvas; s: string;
   Sp: TMPSyntaxParser; Row, TextIndent, SelStart, SelEnd: Integer);
 var
-  wi, CharPos, i: Integer;
+  CharPos, i: Integer;
+  wi: TFIBListIndex;
   Col, ErrCol: TColor;
   r: TRect;
 begin
@@ -7517,7 +7533,8 @@ end;
 
 function TMPCustomSyntaxMemo.GetCurrentWord(PartOnly: Boolean): string;
 var
-  i, XPos, YPos: Integer;
+  i: TFIBListIndex;
+  XPos, YPos: Integer;
   CurParser: TMPSyntaxParser;
 begin
   Result := '';
@@ -7553,7 +7570,8 @@ end;
 
 procedure TMPCustomSyntaxMemo.ReplaceCurrentWord(DestStr: string);
 var
-  i, XPos: Integer;
+  i: TFIBListIndex;
+  XPos: Integer;
   CurParser: TMPSyntaxParser;
   s: string;
   Success: Boolean;

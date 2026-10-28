@@ -122,7 +122,7 @@ end;
 function LoadToolsImages(const ResourceNames: array of string): TGraphicArray;
 var
   Png: TPngImage;
-  I: Integer;
+  I: NativeInt;
 begin
   SetLength(Result, Length(ResourceNames));
   for I := 0 to High(ResourceNames) do
