@@ -119,5 +119,6 @@
     '%s: Klauzuli ORDER BY nelze najít nebo zpracovat.',
     '%s.' + CRLF + 'Pole %s je použito v řazení, ale není v polích SelectSQL',
     '%s: Metadata nelze načíst.',
-    'Hodnota %s má %d bajtů, maximum je %d'
+    'Hodnota %s má %d bajtů, maximum je %d',
+    'Neplatná hodnota "%s" v %s'
   );

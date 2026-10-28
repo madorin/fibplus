@@ -119,5 +119,6 @@
     '%s: Nie można znaleźć lub przeanalizować klauzuli ORDER BY.',
     '%s.' + CRLF + 'Pole %s jest użyte w sortowaniu, ale nie ma go w polach SelectSQL',
     '%s: Nie można załadować metadanych.',
-    'Wartość %s ma %d bajtów, maksimum to %d'
+    'Wartość %s ma %d bajtów, maksimum to %d',
+    'Nieprawidłowa wartość "%s" w %s'
   );

@@ -119,5 +119,6 @@
     '%s: No se encontró o no se pudo analizar la cláusula ORDER BY.',
     '%s.' + CRLF + 'El campo %s se usa en la ordenación, pero no está en los campos de SelectSQL',
     '%s: No se pueden cargar los metadatos.',
-    'El valor de %s tiene %d bytes, el máximo es %d'
+    'El valor de %s tiene %d bytes, el máximo es %d',
+    'Valor no válido "%s" en %s'
   );

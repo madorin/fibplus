@@ -119,5 +119,6 @@
     '%s: Clauza ORDER BY nu a fost găsită sau nu a putut fi analizată.',
     '%s.' + CRLF + 'Câmpul %s este folosit în sortare, dar nu se află în câmpurile din SelectSQL',
     '%s: Metadatele nu au putut fi încărcate.',
-    'Valoarea %s are %d octeți, maximul este %d'
+    'Valoarea %s are %d octeți, maximul este %d',
+    'Valoare nevalidă "%s" în %s'
   );
