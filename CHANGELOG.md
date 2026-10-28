@@ -609,6 +609,11 @@ The lists of old and new names, and what an application has to change, are in
   number after a keyword was drawn in bold.
 - SQL editor: on a line longer than 65535 characters the words after that position were
   highlighted at a wrong place.
+- SQL editor: copy and paste of several lines with their sections pasted the characters outside
+  the system code page as garbage, and cut the text on a double-byte code page (932, 936). The
+  data is now UTF-16 in the new clipboard format `FIBSyntaxMemoUnicode`; the old `MP_SYN_MEMO`
+  data still pastes.
+- SQL editor: a `LiteralDecimalPoint` outside Latin-1 split the numbers in the highlighting.
 
 ## [7.9.1] - 2026-10-09
 

@@ -909,6 +909,7 @@ uses
 
 var
   CF_SYNTAX: UINT;
+  CF_SYNTAX_LEGACY: UINT;
 
   // Results of RangeRowToScreenRow()
 const
@@ -1505,13 +1506,13 @@ var
   i, wordbeg: Integer;
   InWord, InLit, InLitChar: Boolean;
   { }
-  function HasChars(const s: string; StartPos: Integer; const Chars: TCharSet): Boolean;
+  function HasChars(const s: string; StartPos: Integer; const Chars: TCharSet; ExtraChar: Char = #0): Boolean;
   var
     i: Integer;
   begin
     Result := False;
     for i := StartPos to Length(s) do
-      if not CharInSet(s[i], Chars) then
+      if not CharInSet(s[i], Chars) and ((ExtraChar = #0) or (s[i] <> ExtraChar)) then
         Exit;
     Result := True;
   end;
@@ -1621,7 +1622,7 @@ begin
                     begin
                       if HasChars(si, 2, ['0' .. '9']) then
                         Result := tokInteger
-                      else if HasChars(si, 2, ['0' .. '9', PA.LiteralDecimalPoint]) then
+                      else if HasChars(si, 2, ['0' .. '9'], PA.LiteralDecimalPoint) then
                         Result := tokFloat
                     end;
 
@@ -1651,28 +1652,6 @@ function TMPSyntaxParser.ParseLineEx(const Line: string; LineIndex: Integer; Las
 const
   HexChars: TCharSet = ['0' .. '9', 'A' .. 'F', 'a' .. 'f'];
   IntChars: TCharSet = ['0' .. '9'];
-  { Returns the char category in the line }
-type
-  TCharRange = (crBlank, crSymbol, crLetter, crLit);
-  function CharRange(c: Char): TCharRange;
-  begin
-    if c = PA.LiteralString then
-      Result := crLit
-    else
-      case c of
-        #$00 .. #$20: Result := crBlank;
-        #$21 .. #$2F, #$3A .. #$40: Result := crSymbol;
-        #$30 .. #$39, #$41 .. #$FF: Result := crLetter;
-        else
-          Result := crSymbol;
-      end;
-  end;
-
-// Returns whether the char rank has changed
-  function CharRangeChange(c1, c2: Char): Boolean;
-  begin
-    Result := CharRange(c1) <> CharRange(c2);
-  end;
 
 // Check for comment start
   function TestCommentsBegin(const Pos: Integer; var Token: TToken): Boolean;
@@ -1867,10 +1846,8 @@ type
   var
     Token: TToken;
     wordbeg: Integer;
-    ValidChars: TCharSet;
   begin
     Token := tokInteger;
-    ValidChars := IntChars + [PA.LiteralDecimalPoint];
     wordbeg := Pos;
     repeat
       Inc(Pos);
@@ -1879,7 +1856,7 @@ type
           Token := tokFloat
         else
           Break;
-    until (Pos > Length(Line)) or not CharInSet(Line[Pos], ValidChars);
+    until (Pos > Length(Line)) or not (CharInSet(Line[Pos], IntChars) or (Line[Pos] = PA.LiteralDecimalPoint));
     AddToken(wordbeg, Pos - wordbeg, Token);
   end;
 
@@ -2043,15 +2020,6 @@ begin
                           Inc(Col);
                           ProcessWord(wordbeg);
                         end
-                        { else
-                  //                if CharRangeChange(c, Word[Length(Word)]) then begin
-                  if (Col>1) and CharRangeChange(c, Line[Col-1]) then begin
-                  ProcessWord( WordBeg);
-                  //                    Word := c;
-                  WordBeg := Col;
-                  end
-                  {                else
-                  Word := Word + c; }
                     end;
 
                   Inc(Col);
@@ -3623,62 +3591,84 @@ end;
 // Copies text and nested section info to the clipboard
 procedure TMPSynMemoRange.CopyToClipboard;
 var
-  Data: THandle;
-  DataPtr: Pointer;
+  Data: HGLOBAL;
   s: string;
-  sa: AnsiString;
 begin
   if IsEmpty then
     Exit;
 {$IFDEF SYNDEBUG}
   fRichMemo.Log('Range.CopyToClipboard');
 {$ENDIF}
-  // Just copy the text
-  Clipboard.AsText := Self.GetText;
-  // Unless disabled, and if the selection bounds are on different lines,
-  // save the nested section boundary info
-  if not(smoSkipSectionsOnCopy in fRichMemo.Options) and (fStart.Y <> fEnd.Y) then
-    begin
-      s := GetMarkedText;
-      // the ANSI code page of the clipboard when the text survives it
-      sa := AnsiString(s);
-
-      // Open the clipboard
-      OpenClipboard(Application.Handle);
-      try
-        // Allocate a global memory block
-        Data := GlobalAlloc(GMEM_MOVEABLE + GMEM_DDESHARE, NativeUInt(Length(s) * SizeOf(Char) + SizeOf(Char)));
+  Clipboard.Open;
+  try
+    // Just copy the text
+    Clipboard.AsText := Self.GetText;
+    // Unless disabled, and if the selection bounds are on different lines,
+    // save the nested section boundary info
+    if not(smoSkipSectionsOnCopy in fRichMemo.Options) and (fStart.Y <> fEnd.Y) then
+      begin
+        s := GetMarkedText;
+        Data := GlobalAlloc(GMEM_MOVEABLE, NativeUInt((Length(s) + 1) * SizeOf(Char)));
+        if Data = 0 then
+          RaiseLastOSError;
         try
-          // Get a pointer to it
-          DataPtr := GlobalLock(Data);
-          try
-            if s = string(sa) then
-              Move(PAnsiChar(sa)^, DataPtr^, Length(s) * SizeOf(AnsiChar) + SizeOf(AnsiChar))
-            else
-              Move(PChar(s)^, DataPtr^, Length(s) * SizeOf(Char) + SizeOf(Char));
-            SetClipboardData(CF_SYNTAX, Data);
-          finally
-            GlobalUnlock(Data);
-          end;
+          Move(PChar(s)^, GlobalLock(Data)^, (Length(s) + 1) * SizeOf(Char));
+          GlobalUnlock(Data);
+          Clipboard.SetAsHandle(CF_SYNTAX, Data);
         except
           GlobalFree(Data);
           raise;
         end;
-      finally
-        // Close the clipboard
-        CloseClipboard;
       end;
-    end;
+  finally
+    Clipboard.Close;
+  end;
+end;
+
+// UTF-16, or for MP_SYN_MEMO ANSI when it has CR LF before its first zero byte
+function SyntaxClipboardText(Data: HGLOBAL; OldFormat: Boolean): string;
+var
+  P: PAnsiChar;
+  Size, AnsiLength: NativeUInt;
+  Ansi: AnsiString;
+  HasLineBreak: Boolean;
+begin
+  Result := '';
+  P := GlobalLock(Data);
+  if P = nil then
+    Exit;
+  try
+    Size := GlobalSize(Data);
+    if OldFormat then
+      begin
+        AnsiLength := 0;
+        HasLineBreak := False;
+        while (AnsiLength < Size) and (P[AnsiLength] <> #0) do
+          begin
+            if (AnsiLength > 0) and (P[AnsiLength - 1] = #13) and (P[AnsiLength] = #10) then
+              HasLineBreak := True;
+            Inc(AnsiLength);
+          end;
+        if HasLineBreak then
+          begin
+            SetString(Ansi, P, AnsiLength);
+            Exit(string(Ansi));
+          end;
+      end;
+    SetString(Result, PChar(P), Size div SizeOf(Char));
+    System.SetLength(Result, StrLen(PChar(Result)));
+  finally
+    GlobalUnlock(Data);
+  end;
 end;
 
 // Inserts lines into the text and, if info is present, text sections
 procedure TMPSynMemoRange.PasteFromClipboard;
 var
-  Data: THandle;
+  Data: HGLOBAL;
   oldDirAccess: Boolean;
-  p: Pointer;
   s: string;
-  sa: AnsiString;
+  Marked, OldFormat: Boolean;
 begin
   if smoReadOnly in fRichMemo.fOptions then
     Exit;
@@ -3690,26 +3680,26 @@ begin
   oldDirAccess := fRichMemo.Lines.fDirectAccess;
   fRichMemo.Lines.fDirectAccess := True;
   try
-    if not(smoSkipSectionsOnPaste in fRichMemo.Options) and Clipboard.HasFormat(Word(CF_SYNTAX)) then
+    Marked := False;
+    if not(smoSkipSectionsOnPaste in fRichMemo.Options) then
       begin
-        // Open the clipboard
-        OpenClipboard(Application.Handle);
-        Data := GetClipboardData(CF_SYNTAX);
+        Clipboard.Open;
         try
           // Using the received section boundary info of the passed text,
           // create them at the new location
-          p := GlobalLock(Data);
-          s := PChar(p);
-          sa := PAnsiChar(p);
-          if string(sa) = s then
-            SetMarkedText(s)
-          else
-            SetMarkedText(string(sa));
+          Data := GetClipboardData(CF_SYNTAX);
+          OldFormat := Data = 0;
+          if OldFormat then
+            Data := GetClipboardData(CF_SYNTAX_LEGACY);
+          Marked := Data <> 0;
+          if Marked then
+            s := SyntaxClipboardText(Data, OldFormat);
         finally
-          GlobalUnlock(Data);
-          CloseClipboard;
+          Clipboard.Close;
         end;
-      end
+      end;
+    if Marked then
+      SetMarkedText(s)
     else
       // If there is no syntax or it is disabled, insert plain text
       if Clipboard.HasFormat(CF_TEXT) then
@@ -8132,7 +8122,8 @@ end;
 
 initialization
 
-CF_SYNTAX := RegisterClipboardFormat('MP_SYN_MEMO');
+CF_SYNTAX := RegisterClipboardFormat('FIBSyntaxMemoUnicode');
+CF_SYNTAX_LEGACY := RegisterClipboardFormat('MP_SYN_MEMO');
 DefUserTokenEventProc := nil;
 DefProposal[0] := TStringList.Create;
 DefProposal[1] := TStringList.Create;
