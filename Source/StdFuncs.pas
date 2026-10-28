@@ -69,6 +69,8 @@ function ExtendedToBCD(const Value: Extended; NeedScale: Integer): TBCD;
 // end Comp type stuff
 
 function Int64ToBCD(Value: Int64; Scale: Integer; var BCD: TBCD): Boolean;
+// Value with FromScale decimals as ToScale decimals, rounded half away from zero; False on overflow
+function RescaleInt64(Value: Int64; FromScale, ToScale: Integer; var Rescaled: Int64): Boolean;
 
 function BCDToExtended(BCD: TBCD; var Value: Extended): Boolean;
 function BCDToCompWithScale(BCD: TBCD; var Value: Int64; var Scale: byte): Boolean;
@@ -645,6 +647,53 @@ begin
       SignSpecialPlaces := 0;
     SignSpecialPlaces := Byte(Scale + SignSpecialPlaces);
   end;
+end;
+
+function RescaleInt64(Value: Int64; FromScale, ToScale: Integer; var Rescaled: Int64): Boolean;
+const
+  HalfOf1E19 = 5000000000000000000;
+var
+  Divisor, Remainder: Int64;
+begin
+  Result := True;
+  if ToScale = FromScale then
+    Rescaled := Value
+  else if ToScale > FromScale then
+    begin
+      if Value = 0 then
+        Rescaled := 0
+      else if ToScale - FromScale > High(IE10) then
+        Result := False
+      else
+        begin
+          Divisor := IE10[ToScale - FromScale];
+          Result := (Value <= High(Int64) div Divisor) and (Value >= Low(Int64) div Divisor);
+          if Result then
+            Rescaled := Value * Divisor;
+        end;
+    end
+  else if FromScale - ToScale > High(IE10) + 1 then
+    Rescaled := 0
+  else if FromScale - ToScale = High(IE10) + 1 then
+    begin
+      // |Value| < 1E19
+      if Value >= HalfOf1E19 then
+        Rescaled := 1
+      else if Value <= -HalfOf1E19 then
+        Rescaled := -1
+      else
+        Rescaled := 0;
+    end
+  else
+    begin
+      Divisor := IE10[FromScale - ToScale];
+      Rescaled := Value div Divisor;
+      Remainder := Value mod Divisor;
+      if Remainder * 2 >= Divisor then
+        Inc(Rescaled)
+      else if Remainder * 2 <= -Divisor then
+        Dec(Rescaled);
+    end;
 end;
 
 function BCDToCompWithScale(BCD: TBCD; var Value: Int64; var Scale: byte): Boolean;

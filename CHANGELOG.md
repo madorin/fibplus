@@ -387,6 +387,17 @@ The lists of old and new names, and what an application has to change, are in
   `1.0000`), a format without a decimal point kept one decimal, and literals after the digits
   counted as decimals (`$ #,##0.00 USD` did not round). The trailing zeros of the optional `#`
   decimals are dropped, as by `FormatFloat` (`0.##` on 1.5 gives `1.5`).
+- Calculated `TFIBBCDField`: `AsExtended` and `AsInt64` read the `TBcd` of the value into an
+  `Int64` (access violation or a wrong value), and `AsExtended :=` wrote an `Int64` over it.
+- `AsCurrency` of `TFIBBCDField` and `TFIBClientBCDField`: a value out of the `Currency` range (a
+  `NUMERIC(18,0)` of 123456789012345678) gave a wrong number or raised `EInvalidOp`, and a value
+  with more than 4 decimals was not rounded exactly (999999999999.99999 gave
+  1000000000000.0001). It is exact now and raises `EOverflow` out of the range; `AsFloat` and
+  `AsLargeInt` don't go through `Currency`, and `TFIBBCDField.Value` of such a value is an
+  `FMTBcd` variant.
+- `TFIBClientBCDField.AsBCD` and `AsBCD :=` went through `Currency`, like `TBCDField`: 4
+  decimals, `EConvertError` out of its range. They are exact now, rounded half away from zero
+  to the scale of the field, and an `FMTBcd` variant is assigned through `AsBCD`.
 - `TFIBClientBCDField.AsBCD` read in the `OnValidate` of the field returned 0 instead of the
   new value (Delphi XE3 and later).
 - `PSGetCommandText` of `IProviderSupport` returned an empty string on Delphi

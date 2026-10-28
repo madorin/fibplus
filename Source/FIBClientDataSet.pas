@@ -65,14 +65,18 @@ type
   protected
 {$IFDEF C24}
     procedure CopyData(Source, Dest: TValueBuffer); overload; override;
-    function GetAsBCD: TBcd; override;
 {$ENDIF}
+    function GetAsBCD: TBcd; override;
+    procedure SetAsBCD(const Value: TBcd); override;
     function GetAsCurrency: Currency; override;
     function GetAsFloat: Double; override;
 
     function GetAsExtended: Extended; override;
     function GetAsString: string; override;
     function GetAsInt64: Int64; virtual;
+{$IFDEF C21}
+    function GetAsLargeInt: Largeint; override;
+{$ENDIF}
     function GetAsVariant: variant; override;
     procedure SetAsFloat(Value: Double); override;
 
@@ -318,17 +322,38 @@ begin
   Move(Source[0], Dest[0], Count);
 end;
 
-// TBCDField.GetAsBCD (through Currency) from the native value, also while the field is validated
+{$ENDIF}
+
+// The exact value, also while the field is validated (TBCDField goes through Currency)
 function TFIBClientBCDField.GetAsBCD: TBcd;
-var
-  Bcd: TBcd;
+{$IFDEF C24}
 begin
-  if GetBcdData(Self, Bcd) then
-    CurrToBCD(BCDToCurrency(Bcd), Result)
+  if not GetBcdData(Self, Result) then
+    Result := NullBcd;
+end;
+{$ELSE}
+var
+  C: Int64;
+begin
+  if GetScaledValue(C) then
+    Int64ToBCD(C, Size, Result)
   else
     Result := NullBcd;
 end;
 {$ENDIF}
+
+// Exact, rounded half away from zero to Size decimals (TBCDField goes through Currency)
+procedure TFIBClientBCDField.SetAsBCD(const Value: TBcd);
+var
+  C: Int64;
+  Scale: Byte;
+begin
+  // a zero precision value leaves Scale unchanged
+  Scale := Size;
+  if not BCDToInt64WithScale(Value, C, Scale) or not RescaleInt64(C, Scale, Size, C) then
+    raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
+  SetScaledValue(C);
+end;
 
 // The value scaled by Size, for Size 4 the Currency bits (as TDataSet.DataConvert converts it)
 function TFIBClientBCDField.GetScaledValue(var Value: Int64): Boolean;
@@ -383,8 +408,15 @@ begin
 end;
 
 function TFIBClientBCDField.GetAsCurrency: Currency;
+var
+  C: Int64;
 begin
-  Result := GetAsExtended
+  if not GetScaledValue(C) then
+    Result := 0
+  else if Size = 4 then
+    PInt64(@Result)^ := C
+  else if not RescaleInt64(C, Size, 4, PInt64(@Result)^) then
+    raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
 end;
 
 function TFIBClientBCDField.GetAsExtended: Extended;
@@ -416,6 +448,13 @@ begin
   else
     Result := 0
 end;
+
+{$IFDEF C21}
+function TFIBClientBCDField.GetAsLargeInt: Largeint;
+begin
+  Result := GetAsInt64;
+end;
+{$ENDIF}
 
 function TFIBClientBCDField.GetAsString: string;
 var
@@ -534,7 +573,10 @@ begin
     varSmallint, varInteger, varWord, varLongWord: AsInteger := Value;
     varInt64: AsInt64 := Value
   else
-    AsExtended := Value;
+    if VarIsFMTBcd(Value) then
+      AsBCD := VarToBcd(Value)
+    else
+      AsExtended := Value;
   end
 end;
 

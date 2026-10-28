@@ -352,6 +352,10 @@ type
     procedure SetAsCurrency(Value: Currency); override;
     function GetAsExtended: Extended; override;
     procedure SetAsExtended(Value: Extended); override;
+    function GetAsFloat: Double; override;
+{$IFDEF C21}
+    function GetAsLargeInt: Largeint; override;
+{$ENDIF}
     function GetAsInt64: Int64;
     procedure SetAsInt64(const Value: Int64);
     function GetAsBCD: TBcd; override;
@@ -3456,17 +3460,20 @@ begin
 end;
 
 function TFIBBCDField.GetAsVariant: Variant;
+var
+  C: Int64;
+  CurrencyValue: System.Currency;
 begin
   if FieldKind = fkCalculated then
     Result := inherited GetAsVariant
-  else if IsNull then
+  else if not GetData(@C) then
     Result := Null
   else
     begin
       if Size = 0 then
-        Result := AsInt64
-      else if Size <= 4 then
-        Result := AsCurrency
+        Result := C
+      else if (Size <= 4) and RescaleInt64(C, Size, 4, PInt64(@CurrencyValue)^) then
+        Result := CurrencyValue
       else
         begin
           VarFMTBcdCreate(Result, AsBcd);
@@ -3595,25 +3602,10 @@ begin
   else
     begin
       C := 0;
-      if Size = 0 then // patchInt64B start
-        begin
-          Result := GetData(@C);
-          Value := C;
-        end
-      else
-        begin // patchInt64B end
-          Result := GetData(@C);
-          if Result then
-            begin
-              if Size < 4 then
-                begin
-                  Value := E10[-Size];
-                  Value := C * Value;
-                end
-              else
-                Value := C * E10[-Size];
-            end
-        end
+      Result := GetData(@C);
+      // the Currency bits, exact
+      if Result and not RescaleInt64(C, Size, 4, PInt64(@Value)^) then
+        raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
     end;
 end;
 
@@ -3677,12 +3669,30 @@ var
   C: Int64;
   Success: Boolean;
 begin
+  if FieldKind = fkCalculated then
+    Exit(inherited GetAsExtended);
   Success := GetData(@C);
   if not Success then
     Result := 0
   else
     Result := C * E10[-Size]
 end;
+
+function TFIBBCDField.GetAsFloat: Double;
+begin
+  // TBCDField.GetAsExtended of a calculated field calls GetAsFloat
+  if FieldKind = fkCalculated then
+    Result := inherited GetAsFloat
+  else
+    Result := GetAsExtended;
+end;
+
+{$IFDEF C21}
+function TFIBBCDField.GetAsLargeInt: Largeint;
+begin
+  Result := GetAsInt64;
+end;
+{$ENDIF}
 
 function TFIBBCDField.GetAsBCD: TBcd;
 var
@@ -3752,7 +3762,19 @@ begin
 end;
 
 function TFIBBCDField.GetInternalData(var ValueIsNull: Boolean): Int64;
+var
+  Value: System.Currency;
 begin
+  // a calculated field gives the Currency bits: FieldModified compares it only by null
+  if FieldKind = fkCalculated then
+    begin
+      ValueIsNull := not GetValue(Value);
+      if ValueIsNull then
+        Result := 0
+      else
+        Result := PInt64(@Value)^;
+      Exit;
+    end;
   ValueIsNull := not GetData(@Result);
   if ValueIsNull then
     Result := 0;
@@ -3773,12 +3795,17 @@ begin
       end;
     end
   else
-    Result := 0;
+    begin
+      OldIsNull := True;
+      Result := 0;
+    end;
 end;
 
 function TFIBBCDField.GetAsInt64: Int64;
 begin
-  if not GetData(@Result) then
+  if FieldKind = fkCalculated then
+    Result := Trunc(inherited GetAsCurrency)
+  else if not GetData(@Result) then
     Result := 0
   else if Size > 0 then
     Result := Result div IE10[Size];
@@ -3798,6 +3825,11 @@ procedure TFIBBCDField.SetAsExtended(Value: Extended);
 var
   RndComp: Comp;
 begin
+  if FieldKind = fkCalculated then
+    begin
+      inherited SetAsExtended(Value);
+      Exit;
+    end;
   try
     RndComp := Value * E10[Size];
   except
