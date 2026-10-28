@@ -228,6 +228,11 @@ The lists of old and new names, and what an application has to change, are in
   protected `ServiceStartAddParam` takes a `string` and encodes it; `GenerateTPB` has a new
   `NameCodePage` parameter (default the system code page); see
   [Upgrading](Docs/guide/upgrading.md#800).
+- `FIBAlloc` takes `NativeInt` sizes (was `DWORD`). `TFIBCustomTimer.Interval` (`FIBSafeTimer`,
+  alias `TFIBTimer` in `StdFuncs`) and `TFIBDataSet.WaitEndMasterInterval` are `Cardinal` (were
+  `Integer`), like `TTimer.Interval`. `IIbClientLibrary.isc_interprete` and `fb_Interpret` return
+  `ISC_LONG` (were `ISC_STATUS`, 64 bits on Win64), as the client library. The `Length` of
+  `SIB_QueEvents` and `SIB_EventCounts` is `SIB_Short` (was `SIB_UShort`), as in the client API.
 
 #### Schema extract
 
@@ -509,6 +514,12 @@ The lists of old and new names, and what an application has to change, are in
 - SQL editor: the characters U+0080 to U+00FF were measured as the character of the same byte in
   the system code page (all of them on a Central European or Cyrillic Windows), so the text after
   them was drawn at a wrong offset.
+- `TFIBTransaction`: `lock_timeout` was sent in 2 bytes, so a value from 65536 up was cut
+  (65546 started the transaction with a timeout of 10 seconds). It is sent in 4 bytes; Firebird 2.5
+  and later check the range.
+- Services: a start parameter of 65536 bytes or more was dropped or sent with a wrong length; it
+  raises an error now. A `BufferSize` of 65536 or more was cut to 2 bytes (65536 gave "Unexpected
+  Output buffer value"); the service API gets at most 65535 bytes.
 
 ## [7.9.1] - 2026-10-09
 

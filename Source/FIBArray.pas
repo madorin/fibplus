@@ -501,8 +501,8 @@ begin
   if (FBounds[Index].Lower < Low(SmallInt)) or (FBounds[Index].Upper > High(SmallInt)) then
     FIBError(feArrayBoundsTooWide,
       [FTableName, FFieldName, FBounds[Index].Lower, FBounds[Index].Upper, Index + 1]);
-  Result.array_bound_lower := FBounds[Index].Lower;
-  Result.array_bound_upper := FBounds[Index].Upper;
+  Result.array_bound_lower := SmallInt(FBounds[Index].Lower);
+  Result.array_bound_upper := SmallInt(FBounds[Index].Upper);
 end;
 
 function TFIBArray.GetArraySize: Integer;
@@ -512,7 +512,8 @@ end;
 
 function TFIBArray.GetScale: Byte;
 begin
-  Result := -FElementScale;
+  // the scale of an array element is 0 or negative
+  Result := Byte(-FElementScale);
 end;
 
 procedure TFIBArray.ConversionError(const Value: Variant);
@@ -595,7 +596,7 @@ begin
     blr_timestamp:
       begin
         TS.Date := PISC_QUAD(P)^.gds_quad_high + IBBuffDateDelta;
-        TS.Time := PISC_QUAD(P)^.gds_quad_low div 10;
+        TS.Time := Integer(PISC_QUAD(P)^.gds_quad_low div 10);
         Result := VarFromDateTime(TimeStampToDateTime(TS));
       end;
     blr_bool: Result := PByte(P)^ <> 0;
@@ -644,12 +645,12 @@ begin
             if (i < Low(SmallInt)) or (i > High(SmallInt)) then
               ConversionError(Value)
             else
-              PSmallInt(P)^ := i;
+              PSmallInt(P)^ := SmallInt(i);
           blr_long:
             if (i < Low(Integer)) or (i > High(Integer)) then
               ConversionError(Value)
             else
-              PInteger(P)^ := i;
+              PInteger(P)^ := Integer(i);
         else
           PInt64(P)^ := i;
         end;
@@ -668,14 +669,14 @@ begin
     blr_float: PSingle(P)^ := Value;
     blr_double, blr_d_float: PDouble(P)^ := Value;
     blr_sql_date: PISC_DATE(P)^ := DateTimeToTimeStamp(VarToDateTime(Value)).Date - IBBuffDateDelta;
-    blr_sql_time: PISC_TIME(P)^ := DateTimeToTimeStamp(VarToDateTime(Value)).Time * 10;
+    blr_sql_time: PISC_TIME(P)^ := ISC_TIME(DateTimeToTimeStamp(VarToDateTime(Value)).Time * 10);
     blr_timestamp:
       begin
         TS := DateTimeToTimeStamp(VarToDateTime(Value));
         PISC_QUAD(P)^.gds_quad_high := TS.Date - IBBuffDateDelta;
-        PISC_QUAD(P)^.gds_quad_low := TS.Time * 10;
+        PISC_QUAD(P)^.gds_quad_low := UISC_LONG(TS.Time * 10);
       end;
-    blr_bool: PByte(P)^ := Ord(Boolean(Value));
+    blr_bool: PBoolean(P)^ := Boolean(Value);
   else
     FIBError(feArrayElementType, [FTableName, FFieldName, FElementType]);
   end;
@@ -769,7 +770,7 @@ var
 begin
   ReturnLength := 0;
   CheckStatus(FDatabase.ClientLibrary.isc_get_slice(StatusVector, DBHandle,
-    TRHandle, ID, Length(SDL), PAnsiChar(SDL), 0, nil, BufferSize, Pointer(Buffer), @ReturnLength));
+    TRHandle, ID, Short(Length(SDL)), PAnsiChar(SDL), 0, nil, BufferSize, Pointer(Buffer), @ReturnLength));
   Result := ReturnLength;
 end;
 
@@ -785,7 +786,7 @@ begin
   ID.gds_quad_high := 0;
   ID.gds_quad_low := 0;
   CheckStatus(FDatabase.ClientLibrary.isc_put_slice(StatusVector, DBHandle,
-    TRHandle, @ID, Length(FArraySDL), PAnsiChar(FArraySDL), 0, nil, ArraySize, Pointer(Buffer)));
+    TRHandle, @ID, Short(Length(FArraySDL)), PAnsiChar(FArraySDL), 0, nil, ArraySize, Pointer(Buffer)));
 end;
 
 function TFIBArray.GetArrayValues(ArrayID: TDataBuffer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;

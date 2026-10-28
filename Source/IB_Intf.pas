@@ -169,8 +169,8 @@ type
       blob_handle: PISC_BLOB_HANDLE; seg_buffer_len: UShort;
       seg_buffer: PAnsiChar): ISC_STATUS;
 
-    function isc_interprete(buffer: PAnsiChar; status_vector: PPISC_STATUS): ISC_STATUS;
-    function fb_Interpret(buffer: PAnsiChar; BufLen: ULong; status_vector: PPISC_STATUS): ISC_STATUS;
+    function isc_interprete(buffer: PAnsiChar; status_vector: PPISC_STATUS): ISC_LONG;
+    function fb_Interpret(buffer: PAnsiChar; BufLen: ULong; status_vector: PPISC_STATUS): ISC_LONG;
 
     function isc_open_blob2(status_vector: PISC_STATUS;
       db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
@@ -480,8 +480,8 @@ type
       blob_handle: PISC_BLOB_HANDLE; seg_buffer_len: UShort;
       seg_buffer: PAnsiChar): ISC_STATUS;
 
-    function isc_interprete(buffer: PAnsiChar; status_vector: PPISC_STATUS): ISC_STATUS;
-    function fb_Interpret(buffer: PAnsiChar; BufLen: ULong; status_vector: PPISC_STATUS): ISC_STATUS; // FB
+    function isc_interprete(buffer: PAnsiChar; status_vector: PPISC_STATUS): ISC_LONG;
+    function fb_Interpret(buffer: PAnsiChar; BufLen: ULong; status_vector: PPISC_STATUS): ISC_LONG; // FB
 
     function isc_open_blob2(status_vector: PISC_STATUS;
       db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
@@ -1444,7 +1444,7 @@ begin
   end
 end;
 
-function TIBClientLibrary.isc_interprete(buffer: PAnsiChar; status_vector: PPISC_STATUS): ISC_STATUS;
+function TIBClientLibrary.isc_interprete(buffer: PAnsiChar; status_vector: PPISC_STATUS): ISC_LONG;
 begin
   FBusy := True;
   try
@@ -1454,7 +1454,7 @@ begin
   end
 end;
 
-function TIBClientLibrary.fb_Interpret(buffer: PAnsiChar; BufLen: ULong; status_vector: PPISC_STATUS): ISC_STATUS;
+function TIBClientLibrary.fb_Interpret(buffer: PAnsiChar; BufLen: ULong; status_vector: PPISC_STATUS): ISC_LONG;
 begin
   if not Assigned(Ffb_interpret) then
     Result := isc_interprete(buffer, status_vector)
@@ -1925,9 +1925,9 @@ begin
     // A truncated key would fail with a misleading error
     if Cardinal(length(Key)) > BufferLength then
       raise EAPICallException.Create(Format(SCryptKeyTooLong, [length(Key), BufferLength]));
-    Result := length(Key);
-    if Result > 0 then
-      Move(Pointer(Key)^, buffer^, Result);
+    if Key <> '' then
+      Move(Pointer(Key)^, buffer^, length(Key));
+    Result := Cardinal(length(Key));
   except
     // Must not cross the client library: raised by the caller after the attachment
     if FRequestError = nil then

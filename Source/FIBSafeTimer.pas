@@ -40,12 +40,12 @@ type
     FActive: Boolean;
     FSynchronizing: Boolean;
 {$IFNDEF MACOS}
-    FHandle: Integer;
+    FHandle: NativeUInt;
 {$ENDIF}
-    FInterval: Integer;
+    FInterval: Cardinal;
     FOnTimer: TNotifyEvent;
     procedure SetActive(const Value: Boolean);
-    procedure SetInterval(const Value: Integer);
+    procedure SetInterval(const Value: Cardinal);
   protected
 {$IFDEF MACOS}
     User: TObject;
@@ -55,7 +55,7 @@ type
     destructor Destroy; override;
     property Synchronizing: Boolean read FSynchronizing write FSynchronizing;
     property Enabled: Boolean read FActive write SetActive;
-    property Interval: Integer read FInterval write SetInterval;
+    property Interval: Cardinal read FInterval write SetInterval;
     property OnTimer: TNotifyEvent read FOnTimer write FOnTimer;
   end;
 
@@ -78,7 +78,7 @@ type
   end;
 
 {$IFDEF WINDOWS}
-procedure TimerProc(HWND, uMsg, idEvent, dwTime: Integer); stdcall;
+procedure TimerProc(Wnd: HWND; Msg: UINT; idEvent: NativeUInt; Time: DWORD); stdcall;
 var
   I: Integer;
   Timer: TFIBCustomTimer;
@@ -173,7 +173,7 @@ begin
     Destroy;
 end;
 
-procedure MACCreateTimer(AOwner: TFIBCustomTimer; Interval: Integer);
+procedure MACCreateTimer(AOwner: TFIBCustomTimer; Interval: Cardinal);
 var
   User: TFIBWrapMacTimer;
   LInterval: NSTimeInterval;
@@ -265,7 +265,7 @@ begin
   FActive := Value;
 end;
 
-procedure TFIBCustomTimer.SetInterval(const Value: Integer);
+procedure TFIBCustomTimer.SetInterval(const Value: Cardinal);
 var
   OldEnabled: Boolean;
 begin

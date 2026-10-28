@@ -439,7 +439,7 @@ With `AutoCommit` and `CachedUpdates`, each `Post` and `Delete` runs `ApplyUpdTo
 | `HasUncommitedChanges` | `Boolean` | `True` after the dataset sent a change to the server, until the update transaction ends or the `SelectSQL` text changes. |
 | `HaveRollbackedChanges` | `Boolean` | `True` after the update transaction was rolled back with uncommitted changes of this dataset. Cleared when the `SelectSQL` text changes and when the dataset closes. |
 | `VisibleRecno` | `Integer` | `RecNo` counted among the rows that pass the filter. Used as `RecNo` when `poVisibleRecno` is set. |
-| `WaitEndMasterInterval` | `Integer` | Milliseconds for `dcWaitEndMasterScroll` and `OnEndScroll`. Default `300`. The detail timer reads it at each master change. The `OnEndScroll` timer reads it once, when the event is assigned; a later change has no effect on it. The property is not published, so handlers loaded from a DFM use `300`. |
+| `WaitEndMasterInterval` | `Cardinal` | Milliseconds for `dcWaitEndMasterScroll` and `OnEndScroll`. Default `300`. The detail timer reads it at each master change. The `OnEndScroll` timer reads it once, when the event is assigned; a later change has no effect on it. The property is not published, so handlers loaded from a DFM use `300`. |
 | `WaitEndMasterScroll` | `Boolean` | `True` when `dcWaitEndMasterScroll` is on; setting it changes `DetailConditions`. |
 
 ### Queries and parameters

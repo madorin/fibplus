@@ -19,6 +19,7 @@ type
   SIB_Long = LongInt;
   SIB_PLong = ^SIB_Long;
   SIB_UShort = Word;
+  SIB_Short = SmallInt;
   SIB_DBHandle = SIB_PVoid;
   SIB_PDBHandle = ^SIB_DBHandle;
   SIB_Status = SIB_Long;
@@ -32,13 +33,13 @@ type
 function SIB_Free(ClientLibrary: IIBClientLibrary; P: PAnsiChar): SIB_Long;
 function SIB_QueEvents(ClientLibrary: IIBClientLibrary;
   Status: SIB_PStatusVector; DBHandle: SIB_PDBHandle; EventID: SIB_PLong;
-  Length: SIB_UShort; EventBuffer: PAnsiChar; Callback: SIB_EventCallback;
+  Length: SIB_Short; EventBuffer: PAnsiChar; Callback: SIB_EventCallback;
   CallbackArg: Pointer): SIB_Status;
 function SIB_CancelEvents(ClientLibrary: IIBClientLibrary;
   Status: SIB_PStatusVector; DBHandle: SIB_DBHandle; EventID: SIB_PLong)
   : SIB_Status;
 procedure SIB_EventCounts(ClientLibrary: IIBClientLibrary;
-  Status: SIB_PStatusVector; Length: SIB_UShort;
+  Status: SIB_PStatusVector; Length: SIB_Short;
   EventBuffer, ResultBuffer: PAnsiChar);
 
 implementation
@@ -50,12 +51,12 @@ uses
 
 function SIB_QueEvents(ClientLibrary: IIBClientLibrary;
   Status: SIB_PStatusVector; DBHandle: SIB_PDBHandle; EventID: SIB_PLong;
-  Length: SIB_UShort; EventBuffer: PAnsiChar; Callback: SIB_EventCallback;
+  Length: SIB_Short; EventBuffer: PAnsiChar; Callback: SIB_EventCallback;
   CallbackArg: Pointer): SIB_Status;
 begin
   with ClientLibrary do
-    Result := isc_que_events(PISC_STATUS(Status), PISC_DB_HANDLE(DBHandle),
-      PISC_LONG(EventID), Length, EventBuffer, TISC_CALLBACK(Callback), CallbackArg);
+    Result := SIB_Status(isc_que_events(PISC_STATUS(Status), PISC_DB_HANDLE(DBHandle),
+      PISC_LONG(EventID), Length, EventBuffer, TISC_CALLBACK(Callback), CallbackArg));
   Reset8087CW;
 end;
 
@@ -66,14 +67,14 @@ function SIB_CancelEvents(ClientLibrary: IIBClientLibrary;
   : SIB_Status;
 begin
   with ClientLibrary do
-    Result := isc_cancel_events(PISC_STATUS(Status), PISC_DB_HANDLE(DBHandle), PISC_LONG(EventID));
+    Result := SIB_Status(isc_cancel_events(PISC_STATUS(Status), PISC_DB_HANDLE(DBHandle), PISC_LONG(EventID)));
   Reset8087CW;
 end;
 
 // ---------------------------------------------------------------------------
 
 procedure SIB_EventCounts(ClientLibrary: IIBClientLibrary;
-  Status: SIB_PStatusVector; Length: SIB_UShort;
+  Status: SIB_PStatusVector; Length: SIB_Short;
   EventBuffer, ResultBuffer: PAnsiChar);
 begin
   ClientLibrary.isc_event_counts(PISC_STATUS(Status), Length, EventBuffer, ResultBuffer);

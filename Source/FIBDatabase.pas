@@ -273,7 +273,7 @@ type
     FConnectionSerial: Integer;
     FBlobFilters: TIBBlobFilters;
     FDBFileName: string;
-    FConnectType: ShortInt;
+    FConnectType: Byte;
     FNeedUnicodeFieldsTranslation: Boolean;
     FIsUnicodeConnect: Boolean;
     FIsNoneConnect: Boolean;
@@ -1541,7 +1541,7 @@ var
 begin
   NilTransaction := nil;
   FDatabase.Call(FDatabase.FClientLibrary.isc_dsql_execute_immediate(StatusVector,
-    @FDatabase.FHandle, @NilTransaction, 0, PAnsiChar(SQL), FDatabase.SQLDialect, nil), True);
+    @FDatabase.FHandle, @NilTransaction, 0, PAnsiChar(SQL), Word(FDatabase.SQLDialect), nil), True);
 {$IFNDEF NO_MONITOR}
   if MonitoringEnabled then
     if MonitorHook <> nil then
@@ -2524,7 +2524,7 @@ begin
   tr_handle := nil;
   Call(FClientLibrary.isc_dsql_execute_immediate(StatusVector, @FHandle,
     @tr_handle, 0, PAnsiChar('CREATE DATABASE ''' + AnsiString(FDBName) + ''' ' +
-    AnsiString(DBParams.Text)), SQLDialect, nil), True);
+    AnsiString(DBParams.Text)), Word(SQLDialect), nil), True);
   FConnectionSerial := NextConnectionSerial;
 
   FServerMajorVersion := -1;
@@ -3097,7 +3097,8 @@ begin
     else
       AttachName := AnsiString(FDBName);
     try
-      isc_res := Call(FClientLibrary.isc_attach_database(SV, Length(AttachName),
+      // length 0: null terminated
+      isc_res := Call(FClientLibrary.isc_attach_database(SV, 0,
         PAnsiChar(AttachName), @FHandle, FDPBLength, FDPB), False);
     finally
       if UseCryptKey then
@@ -3806,7 +3807,7 @@ begin
       DBInfoCommand := AnsiChar(isc_info_db_id);
       Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1,
         @DBInfoCommand, FIBLocalBufferLength, local_buffer), True);
-      FConnectType := Int(local_buffer[3]);
+      FConnectType := Byte(local_buffer[3]);
     end;
   Result := FConnectType = 4
 end;
@@ -3874,7 +3875,7 @@ begin
     = SizeOf(TISC_TIMESTAMP)) then
     begin
       ts.timestamp_date := FClientLibrary.isc_vax_integer(@local_buffer[3], 4);
-      ts.timestamp_time := FClientLibrary.isc_vax_integer(@local_buffer[7], 4);
+      ts.timestamp_time := ISC_TIME(FClientLibrary.isc_vax_integer(@local_buffer[7], 4));
       Result := FBTimeStampToDateTime(ts);
     end
   else
@@ -4123,7 +4124,7 @@ begin
   // Each pair consists of:
   // 1. 2 bytes specifying the table ID.
   // 2. 4 bytes listing the number of operations (e.g., inserts) done on that table.
-  qtd_tables := trunc(FClientLibrary.isc_vax_integer(@local_buffer[1], 2) / 6);
+  qtd_tables := FClientLibrary.isc_vax_integer(@local_buffer[1], 2) div 6;
   for i := 0 to qtd_tables - 1 do
     begin
       id_table := FClientLibrary.isc_vax_integer(@local_buffer[3 + (i * 6)], 2);
@@ -4153,7 +4154,7 @@ begin
       // Each pair consists of:
       // 1. 2 bytes specifying the table ID.
       // 2. 4 bytes listing the number of operations (e.g., inserts) done on that table.
-      qtd_tables := trunc(FClientLibrary.isc_vax_integer(@local_buffer[1], 2) / 6);
+      qtd_tables := FClientLibrary.isc_vax_integer(@local_buffer[1], 2) div 6;
       for i := 0 to qtd_tables - 1 do
         begin
           Inc(Result, FClientLibrary.isc_vax_integer(@local_buffer [5 + (i * 6)], 4));
@@ -4333,14 +4334,14 @@ end;
 function TFIBDatabase.GetProtectLongDBInfo(DBInfoCommand: Integer; var Success: Boolean): Long;
 var
   local_buffer: array [0 .. FIBLocalBufferLength - 1] of AnsiChar;
-  Length: Integer;
+  Length: Short;
   _DBInfoCommand: AnsiChar;
 begin
   _DBInfoCommand := AnsiChar(DBInfoCommand);
   Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1,
     @_DBInfoCommand, FIBLocalBufferLength, local_buffer), True);
   Success := local_buffer[0] = _DBInfoCommand;
-  Length := FClientLibrary.isc_vax_integer(@local_buffer[1], 2);
+  Length := Short(FClientLibrary.isc_vax_integer(@local_buffer[1], 2));
   Result := FClientLibrary.isc_vax_integer(@local_buffer[3], Length);
 
 end;
@@ -4366,13 +4367,13 @@ end;
 function TFIBDatabase.GetInt64DBInfo(DBInfoCommand: Integer): Int64;
 var
   local_buffer: array [0 .. FIBLocalBufferLength - 1] of AnsiChar;
-  Length: Integer;
+  Length: Short;
   _DBInfoCommand: AnsiChar;
 begin
   _DBInfoCommand := AnsiChar(DBInfoCommand);
   Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1,
     @_DBInfoCommand, FIBLocalBufferLength, local_buffer), True);
-  Length := FClientLibrary.isc_vax_integer(@local_buffer[1], 2);
+  Length := Short(FClientLibrary.isc_vax_integer(@local_buffer[1], 2));
   Result := FClientLibrary.isc_portable_integer(@local_buffer[3], Length);
 end;
 
@@ -4397,7 +4398,7 @@ function TFIBDatabase.GetDBSQLDialect: Word;
 var
   Success: Boolean;
 begin
-  Result := GetProtectLongDBInfo(isc_info_db_SQL_dialect, Success);
+  Result := Word(GetProtectLongDBInfo(isc_info_db_SQL_dialect, Success));
   if not Success then
     Result := 1
 end;
@@ -4718,10 +4719,8 @@ begin
       FTimeoutAction := TTransactionAction(DefTimeOutAction);
       DefaultDatabase := DefDataBase;
     end
-  else
-    begin
-      Timeout := DefTimeOut;
-    end;
+  else if DefTimeOut > 0 then
+    Timeout := Cardinal(DefTimeOut);
   FBeforeDestroyEvents := TNotifyEventList.Create(Self);
   FBeforeStartTransactionEvents := TNotifyEventList.Create(Self);
   FAfterStartTransactionEvents := TNotifyEventList.Create(Self);
@@ -5548,7 +5547,7 @@ begin
           FBeforeStartTransactionEvents.Event[i](Self);
 
         if (Call(IIbClientLibrary(MainDatabase).isc_start_multiple(StatusVector,
-          @FHandle, DatabaseCount, PISC_TEB(pteb)), False) > 0)
+          @FHandle, Short(DatabaseCount), PISC_TEB(pteb)), False) > 0)
 
         then
           begin
@@ -5592,7 +5591,7 @@ begin
   CheckInTransaction;
   vSQLText := EncodeString(SQLText, MainDatabase.Capabilities.CodePage);
   Call(MainDatabase.ClientLibrary.isc_dsql_execute_immediate(StatusVector,
-    @MainDatabase.Handle, @FHandle, 0, PAnsiChar(vSQLText), MainDatabase.SQLDialect, nil), True);
+    @MainDatabase.Handle, @FHandle, 0, PAnsiChar(vSQLText), Word(MainDatabase.SQLDialect), nil), True);
 end;
 
 procedure TFIBTransaction.SetSavePoint(const SavePointName: string);

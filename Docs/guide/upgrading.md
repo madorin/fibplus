@@ -102,6 +102,10 @@ These have no old name, so the code that uses them must change:
 | `TFIBControlService.ServiceStartAddParam(Value: AnsiString; Param)` (protected) | `ServiceStartAddParam(const Value: string; Param)` | The value is encoded in the system code page. A `UTF8String` (`UTF8Encode`) still converts right; an `AnsiString` filled with UTF-8 bytes does not: pass the text, the Firebird 3+ client converts the system code page to UTF-8 itself. |
 | `StrUtil.GetNameAndValue(S; var Name, Value: AnsiString)` | `var Name, Value: string` | Declare the variables as `string`. |
 | `GenerateTPB(sl, TPB, TPBLength, IsFB21orMore)` (`FIB`) | New last parameter `NameCodePage: Word = 0` | Nothing: `TFIBTransaction` passes the metadata code page of the connection for the `lock_read`/`lock_write` table names; the default is the system code page. |
+| `FIBAlloc(var p; OldSize, NewSize: DWORD)` (`FIB`) | `OldSize, NewSize: NativeInt` | Nothing for most code. |
+| `TFIBCustomTimer.Interval: Integer` (`FIBSafeTimer`, alias `TFIBTimer` in `StdFuncs`), `TFIBDataSet.WaitEndMasterInterval: Integer` | `Cardinal`, like `TTimer.Interval` | Use 0, not a negative value, for no delay: a negative variable now becomes a long interval. |
+| `IIbClientLibrary.isc_interprete`, `fb_Interpret` returning `ISC_STATUS` | `ISC_LONG` | The same type on Win32. On Win64 change the result type in classes that implement `IIbClientLibrary`. |
+| `SIB_QueEvents`, `SIB_EventCounts` (`SIBAPI`) with `Length: SIB_UShort` | `Length: SIB_Short` | Nothing: the event buffer of `isc_event_block` is far below 32767 bytes. |
 
 ### Removed identifiers
 

@@ -646,7 +646,7 @@ type
     vSelectSQLTextChanged: Boolean;
     FRefreshTransactionKind: TTransactionKind;
     FAutoCommit: Boolean;
-    FWaitEndMasterInterval: Integer;
+    FWaitEndMasterInterval: Cardinal;
     FOnFieldChange: TFieldNotifyEvent;
     FOnFillClientBlob: TOnFillClientBlob;
     FOnBlobFieldRead: TOnBlobFieldProcessing;
@@ -1239,7 +1239,7 @@ type
     property DBHandle: PISC_DB_HANDLE read GetDBHandle;
     property TRHandle: PISC_TR_HANDLE read GetTRHandle;
     property AllFetched: Boolean read GetAllFetched;
-    property WaitEndMasterInterval: Integer read FWaitEndMasterInterval write FWaitEndMasterInterval;
+    property WaitEndMasterInterval: Cardinal read FWaitEndMasterInterval write FWaitEndMasterInterval;
     property WaitEndMasterScroll: Boolean read GetWaitEndMasterScroll write SetWaitEndMasterScroll;
     property CountUpdatesPending: Integer read FCountUpdatesPending;
   public

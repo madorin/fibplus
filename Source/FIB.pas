@@ -354,7 +354,7 @@ var
 
   (* FIBAlloc acts like Realloc, except that it guarantees that
     the "newly" allocated memory is initialized to 0's *)
-procedure FIBAlloc(var p; OldSize, NewSize: DWORD);
+procedure FIBAlloc(var p; OldSize, NewSize: NativeInt);
 
 function FIBVersionString: string;
 
@@ -405,7 +405,7 @@ var
 
 threadvar FStatusVector: TStatusVector;
 
-procedure FIBAlloc(var p; OldSize, NewSize: DWORD);
+procedure FIBAlloc(var p; OldSize, NewSize: NativeInt);
 begin
   if Pointer(p) = nil then
     GetMem(Pointer(p), NewSize)
@@ -484,7 +484,8 @@ begin
   FErrorCodes := nil;
   FErrorArguments := nil;
   while Status^ <> isc_arg_end do
-    case Status^ of
+    // an argument type code: small on Win64 too
+    case Long(Status^) of
       isc_arg_gds:
         begin
           Inc(Status);
@@ -572,7 +573,8 @@ begin
   *)
   if (ShowSQLMessage in IBErrorMessages) then
     begin
-      ClientLibrary.isc_sql_interprete(SQLCode, local_buffer, FIBBigLocalBufferLength);
+      // SQLCODE is -999..100
+      ClientLibrary.isc_sql_interprete(Short(SQLCode), local_buffer, FIBBigLocalBufferLength);
 
       vSQLMessage := string(local_buffer);
       vSQLMessage := ReplaceStr(vSQLMessage, '\n', '');
@@ -655,7 +657,8 @@ begin
   p := StatusVector;
   Result := False;
   while (p^ <> 0) and (not Result) do
-    case p^ of
+    // an argument type code: small on Win64 too
+    case Long(p^) of
       3: NextP(3);
       1, 4:
         begin
@@ -758,7 +761,7 @@ begin
   FSQLCode := ASQLCode;
   // a client error has no server code, the status vector can hold an old one
   if not (Self is EFIBClientError) then
-    FIBErrorCode := StatusVectorArray[1];
+    FIBErrorCode := Long(StatusVectorArray[1]);
   SenderObj := Sender;
 end;
 
@@ -923,7 +926,7 @@ var
   UTF8: Boolean;
   UTF8Value: UTF8String;
   Clumplets: array of record
-    Tag: Byte;
+    Tag: Integer;
     Data: AnsiString;
   end;
   Count: Integer;
@@ -931,7 +934,7 @@ var
   Size: Integer;
 
   // The clumplets are written at the end, when the length format is known
-  procedure AddClumplet(Tag: Byte; const Data: AnsiString);
+  procedure AddClumplet(Tag: Integer; const Data: AnsiString);
   begin
     if Length(Data) > 255 then
       begin
@@ -1134,7 +1137,7 @@ begin
   Size := Length(DPB);
   if Size > High(Short) then
     FIBError(feParamValueTooLong, ['DBParams', Size, High(Short)]);
-  DPBLength := Size;
+  DPBLength := Short(Size);
 end;
 
 (*
@@ -1151,24 +1154,16 @@ var
   param_name, param_value: string;
   TableName: FIBByteString;
   Line: string;
-  LT: Word;
+  LockTimeout: Integer;
 begin
   TPB := '';
-  if (sl.Count = 0) then
-    TPBLength := 0
-  else
-    begin
-      TPBLength := sl.Count + 1;
-      TPB := TPB + AnsiChar(isc_tpb_version3);
-    end;
+  if sl.Count > 0 then
+    TPB := AnsiChar(isc_tpb_version3);
   for i := 0 to sl.Count - 1 do
     begin
       Line := FastTrim(sl[i]);
       if Line = '' then
-        begin
-          Dec(TPBLength);
-          Continue;
-        end;
+        Continue;
       GetNameAndValue(Line, param_name, param_value);
       DoLowerCase(param_name);
 
@@ -1195,7 +1190,6 @@ begin
             ParamLength := Length(TableName);
             if ParamLength > 255 then
               FIBError(feParamValueTooLong, [param_name, ParamLength, 255]);
-            Inc(TPBLength, ParamLength + 1);
             TPB := TPB + AnsiChar(ParamLength) + TableName;
           end;
         else
@@ -1208,13 +1202,10 @@ begin
                   begin
                     if IsFB21orMore then
                       begin
-                        // isc_tpb_lock_timeout
-                        TPB := TPB + AnsiChar(TPBVal);
-                        TPB := TPB + #2;
-                        LT := StrToIntDef(param_value, 10);
-
-                        TPB := TPB + PAnsiChar(@LT)[0] + PAnsiChar(@LT)[1];
-                        Inc(TPBLength, 1 + SizeOf(Word));
+                        // isc_tpb_lock_timeout: 4 bytes, the server checks the range
+                        LockTimeout := StrToIntDef(param_value, 10);
+                        TPB := TPB + AnsiChar(TPBVal) + #4 + PAnsiChar(@LockTimeout)[0] +
+                          PAnsiChar(@LockTimeout)[1] + PAnsiChar(@LockTimeout)[2] + PAnsiChar(@LockTimeout)[3];
                       end
                     else
                       TPB := TPB + AnsiChar(TPBVal); // isc_tpb_no_savepoint
@@ -1225,6 +1216,9 @@ begin
           end;
       end;
     end;
+  if Length(TPB) > High(Short) then
+    FIBError(feParamValueTooLong, ['TRParams', Length(TPB), High(Short)]);
+  TPBLength := Short(Length(TPB));
 end;
 
 function DPBConstantName(Code: Integer): string;

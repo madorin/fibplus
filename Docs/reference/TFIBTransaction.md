@@ -89,7 +89,7 @@ The names `verb_time`, `commit_time`, `autocommit`, and `restart_requests` are r
 `lock_timeout` and `no_savepoint` share the same parameter code, and the conversion treats them alike:
 
 - On *Firebird 2.1+* both are sent as a lock timeout. The seconds come from the value after `=`; a missing or non-numeric value becomes `10`. A bare `no_savepoint` is therefore sent as `lock_timeout=10`.
-- The value is limited to 65535 (a `Word`).
+- The value is sent in 4 bytes. *Firebird 2.5+* accepts 1 to 32767 and rejects other values; *Firebird 2.1* keeps the low 16 bits.
 - On older servers and on InterBase the code is sent without a value, so the number is ignored.
 
 The sample below uses the `Transaction` component.

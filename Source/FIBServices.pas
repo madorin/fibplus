@@ -78,7 +78,7 @@ type
     FIBLoaded: Boolean;
     FParamsChanged: Boolean;
     FSPB, FQuerySPB: PAnsiChar;
-    FSPBLength, FQuerySPBLength: Short;
+    FSPBLength, FQuerySPBLength: Integer;
     // FTraceFlags: TTraceFlags;
     FOnLogin: TLoginEvent;
     FLoginPrompt: Boolean;
@@ -108,7 +108,7 @@ type
     function Call(ErrCode: ISC_STATUS; RaiseError: Boolean): ISC_STATUS;
     function ParseString(var RunLen: Integer): string;
     function ParseInteger(var RunLen: Integer): Integer;
-    procedure GenerateSPB(sl: TStrings; var SPB: AnsiString; var SPBLength: Short);
+    procedure GenerateSPB(sl: TStrings; var SPB: AnsiString; var SPBLength: Integer);
     procedure SetLibraryName(const Value: string);
     function StoredLibraryName: Boolean;
   protected
@@ -598,6 +598,14 @@ begin
     Delete(Result, 1, Length(SPBPrefix));
 end;
 
+// The service API takes 2-byte lengths
+function ServiceBufferLength(Length: Integer; const Name: string): Word;
+begin
+  if Length > High(Word) then
+    FIBError(feParamValueTooLong, [Name, Length, High(Word)]);
+  Result := Word(Length);
+end;
+
 { TFIBCustomService }
 
 procedure TFIBCustomService.Attach;
@@ -628,8 +636,9 @@ begin
   end;
   LoadLibrary;
   AnsiConnectString := EncodeString(ConnectString, FIBCodePageSystem);
-  if Call(FClientLibrary.isc_service_attach(StatusVector, Length(AnsiConnectString),
-    PAnsiChar(AnsiConnectString), @FHandle, FSPBLength, FSPB), False) > 0 then
+  // length 0: null terminated
+  if Call(FClientLibrary.isc_service_attach(StatusVector, 0, PAnsiChar(AnsiConnectString), @FHandle,
+    ServiceBufferLength(FSPBLength, 'Params'), FSPB), False) > 0 then
   begin
     FHandle := nil;
     IBError(FClientLibrary, Self);
@@ -817,6 +826,8 @@ begin
 end;
 
 procedure TFIBCustomService.InternalServiceQuery;
+var
+  OutputLength: Integer;
 begin
   FQuerySPBLength := Length(FQueryParams);
   if FQuerySPBLength = 0 then
@@ -825,10 +836,15 @@ begin
   Move(FQueryParams[1], FQuerySPB[0], FQuerySPBLength);
   if (FOutputBuffer = nil) then
     FIBAlloc(FOutputBuffer, 0, FBufferSize);
+  // the API fills at most 65535 bytes
+  OutputLength := FBufferSize;
+  if OutputLength > High(Word) then
+    OutputLength := High(Word);
   try
     LoadLibrary;
-    if Call(FClientLibrary.isc_service_query(StatusVector, @FHandle, nil, 0,
-      nil, FQuerySPBLength, FQuerySPB, FBufferSize, FOutputBuffer), False) > 0 then
+    if Call(FClientLibrary.isc_service_query(StatusVector, @FHandle, nil, 0, nil,
+      ServiceBufferLength(FQuerySPBLength, 'QueryParams'), FQuerySPB, Word(OutputLength), FOutputBuffer),
+      False) > 0 then
     begin
       FHandle := nil;
       IBError(FClientLibrary, Self);
@@ -954,7 +970,8 @@ var
   Len: UShort;
 begin
   LoadLibrary;
-  Len := FClientLibrary.isc_vax_integer(OutputBuffer + RunLen, 2);
+  // unsigned: isc_vax_integer extends the sign of the 2 bytes
+  Len := Word(FClientLibrary.isc_vax_integer(OutputBuffer + RunLen, 2));
   RunLen := RunLen + 2;
   result := DecodeServerText(OutputBuffer + RunLen, Len);
   RunLen := RunLen + Len;
@@ -974,10 +991,10 @@ end;
   *  parameter buffer, and return it and its length
   *  in SPB and SPBLength, respectively.
 }
-procedure TFIBCustomService.GenerateSPB(sl: TStrings; var SPB: AnsiString; var SPBLength: Short);
+procedure TFIBCustomService.GenerateSPB(sl: TStrings; var SPB: AnsiString; var SPBLength: Integer);
 var
   i, j: Integer;
-  SPBVal, SPBServerVal: UShort;
+  SPBVal, SPBServerVal: Integer;
   param_name, param_value: String;
   AnsiValue: FIBByteString;
   pval: Integer;
@@ -1316,10 +1333,13 @@ end;
 procedure TFIBControlService.ServiceStartAddParam(const Value: string; param: Integer);
 var
   Bytes: FIBByteString;
-  Len: UShort;
+  Len: Integer;
 begin
   Bytes := EncodeString(Value, FIBCodePageSystem);
   Len := Length(Bytes);
+  // a 2-byte length
+  if Len > High(Word) then
+    FIBError(feParamValueTooLong, [Format('ServiceStartParams (%d)', [param]), Len, High(Word)]);
   if Len > 0 then
     FStartParams := FStartParams + AnsiChar(param) + PAnsiChar(@Len)[0] + PAnsiChar(@Len)[1] + Bytes;
 end;
@@ -1361,7 +1381,8 @@ begin
   Move(FStartParams[1], FStartSPB[0], FStartSPBLength);
   try
     LoadLibrary;
-    if Call(FClientLibrary.isc_service_start(StatusVector, @FHandle, nil, FStartSPBLength, FStartSPB), False) > 0 then
+    if Call(FClientLibrary.isc_service_start(StatusVector, @FHandle, nil,
+      ServiceBufferLength(FStartSPBLength, 'StartParams'), FStartSPB), False) > 0 then
     begin
       FHandle := nil;
       IBError(FClientLibrary, Self);
@@ -2106,9 +2127,6 @@ begin
 end;
 
 procedure TFIBSecurityService.SetServiceStartOptions;
-var
-  Len: UShort;
-
 begin
   case FSecurityAction of
     ActionAddUser:
@@ -2116,8 +2134,7 @@ begin
         Action := isc_action_svc_add_user;
         if (Pos(' ', FUserName) > 0) then
           FIBError(feStartParamsError, [nil]);
-        Len := Length(FUserName);
-        if (Len = 0) then
+        if FUserName = '' then
           FIBError(feStartParamsError, [nil]);
         ServiceStartParams := AnsiChar(isc_action_svc_add_user);
         ServiceStartAddParam(FUserName, isc_spb_sec_username);
@@ -2138,8 +2155,7 @@ begin
     ActionDeleteUser:
       begin
         Action := isc_action_svc_delete_user;
-        Len := Length(FUserName);
-        if (Len = 0) then
+        if FUserName = '' then
           FIBError(feStartParamsError, [nil]);
         ServiceStartParams := AnsiChar(isc_action_svc_delete_user);
         ServiceStartAddParam(FUserName, isc_spb_sec_username);
@@ -2147,8 +2163,7 @@ begin
     ActionModifyUser:
       begin
         Action := isc_action_svc_modify_user;
-        Len := Length(FUserName);
-        if (Len = 0) then
+        if FUserName = '' then
           FIBError(feStartParamsError, [nil]);
         ServiceStartParams := AnsiChar(isc_action_svc_modify_user);
         ServiceStartAddParam(FUserName, isc_spb_sec_username);

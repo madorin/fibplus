@@ -120,7 +120,7 @@ type
     EventID: SIB_Long;
     DB: SIB_DBHandle;
     EventBuffer: PAnsiChar;
-    EventBufferLen: SIB_Long;
+    EventBufferLen: SIB_Short;
     ResultBuffer: PAnsiChar;
     // Local use variables
     Signal: TSimpleEvent;
@@ -261,7 +261,9 @@ begin
   begin
     EBPArray[i] := EBP(i);
   end;
-  EventBufferLen := FClientLibrary.isc_event_block(@EventBuffer, @ResultBuffer, EventCount, EBPArray);
+  // at most 15 names of at most 255 bytes, 1 + 15 * 260 bytes
+  EventBufferLen := SIB_Short(FClientLibrary.isc_event_block(@EventBuffer, @ResultBuffer,
+    Word(EventCount), EBPArray));
 end;
 
 // stub for synchronizing with main thread

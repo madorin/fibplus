@@ -400,8 +400,8 @@ type
   Tisc_get_slice = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE; isc_arg4: PISC_QUAD;
     isc_arg5: short; isc_arg6: PAnsiChar; isc_arg7: short; isc_arg8: PISC_LONG; isc_arg9: ISC_LONG; isc_arg10: PVoid;
     isc_arg11: PISC_LONG): ISC_STATUS; {$I FIBMacroComp.inc}
-  Tisc_interprete = function(buffer: PAnsiChar; status_vector: PPISC_STATUS): ISC_STATUS; {$I FIBMacroComp.inc}
-  Tfb_interpret = function(buffer: PAnsiChar; BufLen: ULong; status_vector: PPISC_STATUS): ISC_STATUS; {$I FIBMacroComp.inc}
+  Tisc_interprete = function(buffer: PAnsiChar; status_vector: PPISC_STATUS): ISC_LONG; {$I FIBMacroComp.inc}
+  Tfb_interpret = function(buffer: PAnsiChar; BufLen: ULong; status_vector: PPISC_STATUS): ISC_LONG; {$I FIBMacroComp.inc}
   Tisc_open_blob = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
     blob_handle: PISC_BLOB_HANDLE; blob_id: PISC_QUAD): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_open_blob2 = function(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
