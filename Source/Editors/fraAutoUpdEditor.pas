@@ -157,7 +157,7 @@ end;
 
 procedure TfAutoUpdateOptionForm.edGenStepKeyPress(Sender: TObject; var Key: Char);
 begin
-  if not CharInSet(Key, ['0' .. '9', Char(VK_DELETE), Char(VK_BACK)]) then
+  if not CharInSet(Key, ['0' .. '9', Char(VK_BACK)]) then
     Abort;
 end;
 
