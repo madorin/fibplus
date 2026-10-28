@@ -15888,7 +15888,7 @@ var
 begin
   ts := TStringList.Create;
   m := High(SourceFields);
-  if High(DestFields) > m then
+  if High(DestFields) < m then
     m := High(DestFields);
   with ts do
     try
