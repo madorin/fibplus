@@ -650,13 +650,14 @@ begin
             Fields[i].Assign(Field)
           else
           begin
-            // main changes:
-            GetBCDFieldData(Field, False, BcdValue);
+            if GetBCDFieldData(Field, False, BcdValue) then
 {$IFDEF C24}
-            SetBcdData(Fields[i], BcdValue)
+              SetBcdData(Fields[i], BcdValue)
 {$ELSE}
-            Fields[i].SetData(@BcdValue)
+              Fields[i].SetData(@BcdValue)
 {$ENDIF}
+            else
+              Fields[i].Clear;
           end;
       end;
       Post;

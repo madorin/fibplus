@@ -551,6 +551,8 @@ The lists of old and new names, and what an application has to change, are in
   or "not a valid floating point value").
 - `TCallBackList.Delete` ignored the index 0 and did not free the deleted entry.
 - `TFIBDataSet.CacheRefreshByArrMap` read past the end of the shorter of the two field arrays.
+- `TFIBDataSetProvider`: `RefreshRecord` of the client dataset wrote a NULL `NUMERIC` of the
+  source as a number (0 or garbage).
 
 ## [7.9.1] - 2026-10-09
 
