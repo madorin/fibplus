@@ -428,6 +428,8 @@ The lists of old and new names, and what an application has to change, are in
 - An error while registering events (an invalid database handle, a server whose events port
   can't be reached) ended the event thread without a message; it is now reported like an error
   after the registration.
+- `UnRegisterEvents` raised `EListError` when another event thread ended with an error while it
+  waited for a thread to stop.
 
 #### Errors and messages
 

@@ -517,22 +517,19 @@ end;
 // loop through all the running event threads and kill them
 procedure TSIBEventAlerter.UnRegisterEvents;
 var
-  i: TFIBListIndex;
   Temp: TSIBEventThread;
 begin
-  if (FThreads.Count > 0) then
-  begin
-    for i := FThreads.Count - 1 downto 0 do
-    begin
-      Temp := TSIBEventThread(FThreads[i]);
-      FThreads.Delete(i);
-      Temp.SignalTerminate;
-      Temp.WaitFor;
-      Temp.Free;
-    end;
-  end
-  else
+  if (FThreads.Count = 0) then
     raise ESIBError.Create(SIB_RS_NOT_REGISTERED);
+  // WaitFor runs ThreadEnded of other threads, which removes them from the list
+  while (FThreads.Count > 0) do
+  begin
+    Temp := TSIBEventThread(FThreads[FThreads.Count - 1]);
+    FThreads.Delete(FThreads.Count - 1);
+    Temp.SignalTerminate;
+    Temp.WaitFor;
+    Temp.Free;
+  end;
 end;
 
 // calculate how many event threads we need to hold the events
