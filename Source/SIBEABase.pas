@@ -78,12 +78,14 @@ type
     FOnEventAlert: TSIBAlertEvent;
     FEvents: TStrings;
     FThreads: TList;
+    FEndedThreads: TList;
     FNativeHandle: SIB_DBHandle;
     ThreadException: Boolean;
     FVCLSynchro: Boolean;
     procedure SetEvents(Value: TStrings);
     function GetRegistered: Boolean;
     procedure SetRegistered(const Value: Boolean);
+    procedure FreeEndedThreads;
   protected
     { Protected declarations }
     procedure SetNativeHandle(const Value: SIB_DBHandle); virtual;
@@ -114,6 +116,7 @@ type
     FClientLibrary: IIBClientLibrary;
     WhichEvent: Integer;
     ErrorBuffer: PAnsiChar;
+    ErrorBufferLength: Integer;
     ErrorVector: SIB_PStatusVector;
     StatusVector: SIB_StatusVector;
     EventCounts: SIB_EventCountVector;
@@ -208,7 +211,7 @@ end;
 // stub for synchronizing with main thread
 procedure TSIBEventThread.SIBInterpretError;
 begin
-  ResultStatus := FClientLibrary.isc_interprete(ErrorBuffer, PPISC_STATUS(@ErrorVector));
+  ResultStatus := FClientLibrary.fb_Interpret(ErrorBuffer, ErrorBufferLength, PPISC_STATUS(@ErrorVector));
   Reset8087CW;
 end;
 
@@ -286,7 +289,7 @@ end;
 
 function TSIBEventThread.GetIBErrorString: string;
 var
-  Buffer: array [0 .. 255] of AnsiChar;
+  Buffer: array [0 .. 1023] of AnsiChar;
   lastMsg: string;
   errCode: SIB_Status;
 begin
@@ -294,6 +297,8 @@ begin
   if Terminated then
     Exit;
   ErrorBuffer := @Buffer;
+  ErrorBufferLength := SizeOf(Buffer);
+  Buffer[0] := #0;
   ErrorVector := @StatusVector;
   repeat
     Synchronize(SIBInterpretError);
@@ -519,6 +524,7 @@ procedure TSIBEventAlerter.UnRegisterEvents;
 var
   Temp: TSIBEventThread;
 begin
+  FreeEndedThreads;
   if (FThreads.Count = 0) then
     raise ESIBError.Create(SIB_RS_NOT_REGISTERED);
   // WaitFor runs ThreadEnded of other threads, which removes them from the list
@@ -539,6 +545,7 @@ var
   i: Integer;
   DBH: SIB_DBHandle;
 begin
+  FreeEndedThreads;
   if (FThreads.Count = 0) then
   begin
     DBH := NativeHandle;
@@ -621,7 +628,7 @@ begin
   end;
   FVCLSynchro := True;
   FThreads := TList.Create;
-
+  FEndedThreads := TList.Create;
 end;
 
 destructor TSIBEventAlerter.Destroy;
@@ -631,6 +638,8 @@ begin
       UnRegisterEvents;
   except
   end;
+  FreeEndedThreads;
+  FEndedThreads.Free;
   FThreads.Free;
   FEvents.Free;
   FClientLibrary := nil;
@@ -667,11 +676,13 @@ begin
 end;
 
 procedure TSIBEventAlerter.ThreadEnded(Sender: TObject);
+var
+  EndedOnItsOwn: Boolean;
 begin
   if (Sender is TSIBEventThread) then
   begin
     // Remove terminating thread from thread list
-    FThreads.Remove(Sender);
+    EndedOnItsOwn := FThreads.Remove(Sender) >= 0;
 
     // if any thread had an exception, then unregister everything
     if (TSIBEventThread(Sender).ReturnValue = 1) then
@@ -681,7 +692,23 @@ begin
 
       // Clear the thread exception
       ThreadException := False;
-    end
+    end;
+    // The thread waits for this call to return: it is freed later, by FreeEndedThreads
+    if EndedOnItsOwn then
+      FEndedThreads.Add(Sender);
+  end;
+end;
+
+// Frees the threads that ended with an error; their ThreadEnded calls have returned
+procedure TSIBEventAlerter.FreeEndedThreads;
+var
+  Thread: TSIBEventThread;
+begin
+  while (FEndedThreads.Count > 0) do
+  begin
+    Thread := TSIBEventThread(FEndedThreads[FEndedThreads.Count - 1]);
+    FEndedThreads.Delete(FEndedThreads.Count - 1);
+    Thread.Free;
   end;
 end;
 

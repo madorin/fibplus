@@ -451,6 +451,10 @@ The lists of old and new names, and what an application has to change, are in
   after the registration.
 - `UnRegisterEvents` raised `EListError` when another event thread ended with an error while it
   waited for a thread to stop.
+- An event thread that ended with an error was never freed: its events stayed queued and its
+  buffers leaked. It is freed on the next register or unregister or when the alerter is
+  destroyed. The error text is read with `fb_interpret` and the buffer length where the client
+  has it.
 
 #### Errors and messages
 
