@@ -66,7 +66,7 @@ Available in the Object Inspector. When the component is dropped on a form at de
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | `DesignDBOptions` | `TDesignDBOptions` | `[ddoStoreConnected]` | See [Types](#types). |
-| `MemoSubtypes` | `string` | | BLOB subtypes, separated by `;`, that a dataset treats as text (memo) fields besides subtype `1`. A value of `1` in the list is ignored. |
+| `MemoSubtypes` | `string` | | BLOB subtypes, separated by `;`, that a dataset treats as text (memo) fields besides subtype `1`. A value of `1`, a value outside the `SMALLINT` range and text that is not a number are ignored. |
 | `UseRepositories` | `TFIBUseRepositories` | `[urFieldsInfo, urDataSetInfo, urErrorMessagesInfo]` | Which repository tables FIBPlus reads, see [Types](#types). |
 
 ### BLOB handling and logging
@@ -115,6 +115,8 @@ Available in the Object Inspector. When the component is dropped on a form at de
 
 `DBParams` holds one entry per line, in the form `Name=Value` or `Name` alone. The names are the DPB parameter names, such as `user_name`, `password`, `lc_ctype`, `sql_role_name`. A line `config=Name=Value` passes a configuration value to the client (for example `config=WireCompression=true`); `ConfigParam` reads and writes these lines.
 
+All `config=` lines go into one DPB value. A value can be longer than 255 bytes only when `ConnectParams.IsFirebird` is `True` and the client library is *Firebird 3+*: the DPB is then sent as `isc_dpb_version2`, which *Firebird 2.5* servers do not read. Otherwise `Open` raises "The value of *name* has *N* bytes, the maximum is 255". With `utf8_filename` the length counts UTF-8 bytes.
+
 `DBParams` is also the text that `CreateDatabase` appends to `CREATE DATABASE`, and the source of the parameters of `ShutDown` and `Online`.
 
 ## Capabilities
@@ -127,7 +129,7 @@ Available in the Object Inspector. When the component is dropped on a form at de
 | `BlobCodePage(CharSetID)` | `Word` | Code page of a text BLOB whose character set ID is `CharSetID` (the `sqlscale` of the column). |
 | `CodePage` | `Word` | Code page of the SQL text and of text values in the attachment character set. |
 | `MaxIdentifierLength` | `Integer` | Characters allowed in a metadata name: `63` on *Firebird 4+*, otherwise `31`. `0` when not connected. |
-| `MetadataCodePage` | `Word` | Code page of DDL and of the names the server sends. UTF-8 when metadata is sent in UTF-8 (a `NONE` or Unicode attachment on *Firebird 2.1+* with ODS 11.1 or later); otherwise `CodePage`. |
+| `MetadataCodePage` | `Word` | Code page of DDL, of the names the server sends and of the texts of server errors. UTF-8 when metadata is sent in UTF-8 (a `NONE` or Unicode attachment on *Firebird 2.1+* with ODS 11.1 or later); otherwise `CodePage`. |
 | `ReadConsistency` | `Boolean` | `True` on a *Firebird 4+* server: `TpFIBTransaction.TPBMode` `tpbReadConsistency` and `read_consistency` in `TRParams` work. |
 | `SessionTimeouts` | `Boolean` | `True` on a *Firebird 4+* server: `Session.StatementTimeout` and `Session.IdleTimeout` work. |
 | `StatementTimeout` | `Boolean` | `True` when `SessionTimeouts` is `True` and the client library supports per-statement timeouts (`fbclient` 4+): `TFIBQuery.StatementTimeout` and `TpFIBDataSet.StatementTimeout` work. |
@@ -194,7 +196,7 @@ Statistics and tuning values, each read with the matching `isc_info_*` item:
 | `BackoutCount`, `DeleteCount`, `ExpungeCount`, `InsertCount`, `PurgeCount`, `ReadIdxCount`, `ReadSeqCount`, `UpdateCount` | `TStringList` (one `TableID=Count` line per table) |
 | `DeletesCount[Table]`, `IndexedReadCount[Table]`, `InsertsCount[Table]`, `NonIndexedReadCount[Table]`, `UpdatesCount[Table]` | `Integer` |
 | `AllModifications` | `Integer` |
-| `UserNames` | `TStringList` |
+| `UserNames` | `TStringList` (decoded as UTF-8 when the bytes are valid UTF-8, as *Firebird 3+* sends them, else in the system code page) |
 
 Write-ahead log values (`LogFile`, `CurLogFileName`, `CurLogPartitionOffset`, `NumWALBuffers`, `WALBufferSize`, `WALCheckpointLength`, `WALCurCheckpointInterval`, `WALPrvCheckpointFilename`, `WALPrvCheckpointPartOffset`, `WALGroupCommitWaitUSecs`, `WALNumIO`, `WALAverageIOSize`, `WALNumCommits`, `WALAverageGroupCommitSize`) read the matching `isc_info_*` items.
 

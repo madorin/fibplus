@@ -214,22 +214,25 @@ type
 
   TpErrorMessage = class
   private
-    FErrorMsg: Ansistring;
+    FErrorMsg: string;
     FVersion: integer;
   public
     constructor Create(const aErrorMsg: string; aVersion: integer);
   public
-    property ErrorMsg: Ansistring read FErrorMsg;
+    property ErrorMsg: string read FErrorMsg;
     property Version: integer read FVersion;
   end;
 
+  // Thread-safe, process-wide cache of FIB$ERROR_MESSAGES, validated per database
   TpErrorMessagesCollect = class
   private
     FDatabases: TStringList;
-    FMaxVersion: integer;
-    FValidated: boolean;
     FLock: TMultiReadExclusiveWriteSynchronizer;
-    function FindErrorMessage(const DBName, ErrorName: string; var BaseIndex, ErrorIndex: integer): boolean;
+    procedure ClearDatabases;
+    function DatabaseMessages(const DBName: string; CanCreate: Boolean): TObject;
+    function FindErrorMessage(const DBName, ErrorName: string; out ErrorMsg: string): Boolean;
+    function IsValidated(const DBName: string): Boolean;
+    procedure Validate(const DBName: string; MaxVersion: Integer);
   public
     constructor Create;
     destructor Destroy; override;
@@ -241,7 +244,9 @@ type
     procedure LoadFromFile(const FileName: string);
   public
     procedure AddErrorMessage(const DBName, ErrorName, ErrorMsg: string; Version: integer);
-    function ErrorMessage(Tr: TFIBTransaction; const ErrorName: string): string;
+    function ErrorMessage(Tr: TFIBTransaction; const ErrorName: string): string; overload;
+    // The message in DB, which can be another database than the default one of Tr
+    function ErrorMessage(DB: TFIBDataBase; Tr: TFIBTransaction; const ErrorName: string): string; overload;
   end;
 
 var
@@ -1861,22 +1866,39 @@ begin
   end;
 end;
 
-procedure TpFIBTableInfoCollect.SaveToFile(const FileName: string);
+type
+  TFIBSaveToStreamProc = procedure(Stream: TStream) of object;
+
+// A cache file without items is deleted, and so is one that could not be written completely
+procedure SaveCacheFile(const FileName: string; HasItems: Boolean; SaveToStream: TFIBSaveToStreamProc);
 var
   Stream: TFileStream;
 begin
-  if FListTabInfo.Count > 0 then
+  if not HasItems then
+  begin
+    if FileExists(FileName) then
+      SysUtils.DeleteFile(FileName);
+    Exit;
+  end;
+  try
+    Stream := TFileStream.Create(FileName, fmCreate);
+  except
+    Exit;
+  end;
+  try
     try
-      Stream := TFileStream.Create(FileName, fmCreate);
-      try
-        SaveToStream(Stream);
-      finally
-        Stream.Free;
-      end;
-    except
-    end
-  else if FileExists(FileName) then
+      SaveToStream(Stream);
+    finally
+      Stream.Free;
+    end;
+  except
     SysUtils.DeleteFile(FileName);
+  end;
+end;
+
+procedure TpFIBTableInfoCollect.SaveToFile(const FileName: string);
+begin
+  SaveCacheFile(FileName, FListTabInfo.Count > 0, SaveToStream);
 end;
 
 function TpFIBTableInfoCollect.LoadFromFile(const FileName: string; DB: TFIBDataBase = nil): boolean;
@@ -2681,64 +2703,65 @@ begin
   FVersion := aVersion;
 end;
 
-{ TpErrorMessagesCollect }
+type
+  // The messages of one database, by the exact constraint name as FIB$ERROR_MESSAGES compares it
+  TFIBDatabaseErrorMessages = class(TStringList)
+  private
+    FMaxVersion: Integer;
+    FValidated: Boolean;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure Clear; override;
+    procedure AddMessage(const ErrorName, ErrorMsg: string; Version: Integer);
+  end;
 
-procedure TpErrorMessagesCollect.AddErrorMessage(const DBName, ErrorName, ErrorMsg: string; Version: integer);
-var
-  BaseIndex, ErrorIndex: integer;
-  e: TpErrorMessage;
-  ts: TStringList;
+constructor TFIBDatabaseErrorMessages.Create;
 begin
-  BaseIndex := -1;
-  if FindErrorMessage(DBName, ErrorName, BaseIndex, ErrorIndex) then
+  inherited Create;
+  CaseSensitive := True;
+  Sorted := True;
+  Duplicates := dupIgnore;
+end;
+
+destructor TFIBDatabaseErrorMessages.Destroy;
+begin
+  Clear;
+  inherited Destroy;
+end;
+
+procedure TFIBDatabaseErrorMessages.Clear;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+    Objects[i].Free;
+  inherited Clear;
+end;
+
+procedure TFIBDatabaseErrorMessages.AddMessage(const ErrorName, ErrorMsg: string; Version: Integer);
+var
+  Index: Integer;
+  Msg: TpErrorMessage;
+begin
+  if Find(ErrorName, Index) then
   begin
-    with FDatabases do
-      e := TpErrorMessage(TStringList(Objects[BaseIndex]).Objects[ErrorIndex]);
-    if Version > e.FVersion then
+    Msg := TpErrorMessage(Objects[Index]);
+    if Version > Msg.FVersion then
     begin
-      e.FErrorMsg := ErrorMsg;
-      e.FVersion := Version;
+      Msg.FErrorMsg := ErrorMsg;
+      Msg.FVersion := Version;
     end;
   end
   else
-  begin
-    FLock.BeginWrite;
-    try
-      if BaseIndex < 0 then
-        BaseIndex := FDatabases.AddObject(DBName, nil);
-      if FDatabases.Objects[BaseIndex] = nil then
-      begin
-        ts := TStringList.Create;
-        ts.Sorted := True;
-        ts.Duplicates := dupIgnore;
-        FDatabases.Objects[BaseIndex] := ts;
-      end
-      else
-        ts := TStringList(FDatabases.Objects[BaseIndex]);
-      e := TpErrorMessage.Create(ErrorMsg, Version);
-      ts.AddObject(ErrorName, e);
-    finally
-      FLock.EndWrite;
-    end
-  end;
+    AddObject(ErrorName, TpErrorMessage.Create(ErrorMsg, Version));
 end;
 
-procedure TpErrorMessagesCollect.Clear;
-var
-  i, j: integer;
-begin
-  with FDatabases do
-    for i := 0 to Count - 1 do
-    begin
-      for j := 0 to TStringList(Objects[i]).Count - 1 do
-        (TStringList(Objects[i]).Objects[j]).Free;
-      Objects[i].Free;
-    end;
-  FDatabases.Clear;
-end;
+{ TpErrorMessagesCollect }
 
 constructor TpErrorMessagesCollect.Create;
 begin
+  inherited Create;
   FDatabases := TStringList.Create;
   FDatabases.Sorted := True;
   FDatabases.Duplicates := dupIgnore;
@@ -2747,79 +2770,149 @@ end;
 
 destructor TpErrorMessagesCollect.Destroy;
 begin
+  ClearDatabases;
+  FDatabases.Free;
+  FLock.Free;
+  inherited Destroy;
+end;
+
+// The caller holds the write lock
+procedure TpErrorMessagesCollect.ClearDatabases;
+var
+  i: Integer;
+begin
+  for i := 0 to FDatabases.Count - 1 do
+    FDatabases.Objects[i].Free;
+  FDatabases.Clear;
+end;
+
+// The caller holds the lock, the write lock when CanCreate is True
+function TpErrorMessagesCollect.DatabaseMessages(const DBName: string; CanCreate: Boolean): TObject;
+var
+  Index: Integer;
+begin
+  if FDatabases.Find(DBName, Index) then
+    Result := FDatabases.Objects[Index]
+  else if CanCreate then
+  begin
+    Result := TFIBDatabaseErrorMessages.Create;
+    FDatabases.AddObject(DBName, Result);
+  end
+  else
+    Result := nil;
+end;
+
+procedure TpErrorMessagesCollect.Clear;
+begin
   FLock.BeginWrite;
   try
-    Clear;
-    FDatabases.Free;
-    inherited;
+    ClearDatabases;
   finally
     FLock.EndWrite;
-    FLock.Free;
-  end
+  end;
+end;
+
+procedure TpErrorMessagesCollect.AddErrorMessage(const DBName, ErrorName, ErrorMsg: string; Version: integer);
+begin
+  FLock.BeginWrite;
+  try
+    TFIBDatabaseErrorMessages(DatabaseMessages(DBName, True)).AddMessage(ErrorName, ErrorMsg, Version);
+  finally
+    FLock.EndWrite;
+  end;
+end;
+
+function TpErrorMessagesCollect.FindErrorMessage(const DBName, ErrorName: string; out ErrorMsg: string): Boolean;
+var
+  Messages: TFIBDatabaseErrorMessages;
+  Index: Integer;
+begin
+  Result := False;
+  FLock.BeginRead;
+  try
+    Messages := TFIBDatabaseErrorMessages(DatabaseMessages(DBName, False));
+    if (Messages <> nil) and Messages.Find(ErrorName, Index) then
+    begin
+      ErrorMsg := TpErrorMessage(Messages.Objects[Index]).FErrorMsg;
+      Result := True;
+    end;
+  finally
+    FLock.EndRead;
+  end;
+end;
+
+function TpErrorMessagesCollect.IsValidated(const DBName: string): Boolean;
+var
+  Messages: TObject;
+begin
+  FLock.BeginRead;
+  try
+    Messages := DatabaseMessages(DBName, False);
+    Result := (Messages <> nil) and TFIBDatabaseErrorMessages(Messages).FValidated;
+  finally
+    FLock.EndRead;
+  end;
+end;
+
+// No messages, or another max version (a changed message, a restored database): drop the cached ones
+procedure TpErrorMessagesCollect.Validate(const DBName: string; MaxVersion: Integer);
+var
+  Messages: TFIBDatabaseErrorMessages;
+begin
+  FLock.BeginWrite;
+  try
+    Messages := TFIBDatabaseErrorMessages(DatabaseMessages(DBName, True));
+    if (MaxVersion = 0) or (MaxVersion <> Messages.FMaxVersion) then
+      Messages.Clear;
+    Messages.FMaxVersion := MaxVersion;
+    Messages.FValidated := True;
+  finally
+    FLock.EndWrite;
+  end;
 end;
 
 function TpErrorMessagesCollect.ErrorMessage(Tr: TFIBTransaction; const ErrorName: string): string;
+begin
+  Result := ErrorMessage(Tr.DefaultDatabase, Tr, ErrorName);
+end;
+
+// The message of ErrorName in FIB$ERROR_MESSAGES of DB, read in Tr
+function TpErrorMessagesCollect.ErrorMessage(DB: TFIBDataBase; Tr: TFIBTransaction; const ErrorName: string): string;
 var
-  BaseIndex, ErrorIndex, ver: integer;
+  Version: Integer;
   q: TFIBQuery;
 begin
-  if not(urErrorMessagesInfo in Tr.DefaultDatabase.UseRepositories) or
-    not ExistERepositaryTable(Tr.DefaultDatabase) then
-  begin
-    Result := '';
-    Exit;
-  end;
-  if not FValidated then
-  begin
-    q := GetQueryForUse(Tr, 'SELECT  Max(FIB$VERSION) FROM FIB$ERROR_MESSAGES');
-    q.ExecQuery;
-    if q.Eof then
-      ver := 0
-    else
-      ver := q.Fields[0].asInteger;
-    if (ver = 0) or (ver > FMaxVersion) then
-      Clear;
-    FMaxVersion := ver;
-    FValidated := True;
-  end;
   Result := '';
-  if FindErrorMessage(Tr.DefaultDatabase.DBName, ErrorName, BaseIndex, ErrorIndex) then
-    Result := TpErrorMessage(TStringList(FDatabases.Objects[BaseIndex]).Objects[ErrorIndex]).ErrorMsg
-  else
+  if not (urErrorMessagesInfo in DB.UseRepositories) or not ExistERepositaryTable(DB) then
+    Exit;
+  if not IsValidated(DB.DBName) then
   begin
-    if not ExistERepositaryTable(Tr.DefaultDatabase) then
-      Exit;
-    q := GetQueryForUse(Tr, 'SELECT  MESSAGE_STRING, FIB$VERSION FROM FIB$ERROR_MESSAGES WHERE CONSTRAINT_NAME=?CN');
-    q.Options := q.Options + [qoTrimCharFields];
+    q := GetQueryForUse(DB, Tr, 'SELECT MAX(FIB$VERSION) FROM FIB$ERROR_MESSAGES');
     try
-      q.Params[0].asString := ErrorName;
       q.ExecQuery;
-      if q.Eof then
-      begin
-        AddErrorMessage(Tr.DefaultDatabase.DBName, ErrorName, '', 0)
-      end
-      else
-      begin
-        Result := q.Fields[0].asString;
-        AddErrorMessage(Tr.DefaultDatabase.DBName, ErrorName, Result, q.Fields[1].asInteger)
-      end;
+      Validate(DB.DBName, q.Fields[0].AsInteger);
     finally
       FreeQueryForUse(q);
     end;
   end;
-end;
-
-function TpErrorMessagesCollect.FindErrorMessage(const DBName, ErrorName: string; var BaseIndex, ErrorIndex: integer): boolean;
-begin
-  Result := False;
-  with FDatabases do
-    if Find(DBName, BaseIndex) then
+  if FindErrorMessage(DB.DBName, ErrorName, Result) then
+    Exit;
+  q := GetQueryForUse(DB, Tr, 'SELECT MESSAGE_STRING, FIB$VERSION FROM FIB$ERROR_MESSAGES WHERE CONSTRAINT_NAME=?CN');
+  try
+    q.Options := q.Options + [qoTrimCharFields];
+    q.Params[0].AsString := ErrorName;
+    q.ExecQuery;
+    Version := 0;
+    if not q.Eof then
     begin
-      if Objects[BaseIndex] <> nil then
-        Result := TStringList(Objects[BaseIndex]).Find(ErrorName, ErrorIndex);
-    end
-    else
-      BaseIndex := -1;
+      Result := q.Fields[0].AsString;
+      Version := q.Fields[1].AsInteger;
+    end;
+  finally
+    FreeQueryForUse(q);
+  end;
+  // a constraint without a message is cached too, with an empty one
+  AddErrorMessage(DB.DBName, ErrorName, Result, Version);
 end;
 
 const
@@ -2839,87 +2932,89 @@ begin
   end;
 end;
 
+// The file has one max version for all databases; the loaded databases are validated again
 procedure TpErrorMessagesCollect.LoadFromStream(Stream: TStream);
 var
-  ver, i, j, c, c1: integer;
-  st: Ansistring;
-  ADBName, aErrorName, aErrorMsg: Ansistring;
-  aVersion: integer;
+  StreamVersion, MaxVersion, Version, DBCount, MsgCount, i, j: Integer;
+  Signature, DBName, ErrorName, ErrorMsg: AnsiString;
+  Messages: TFIBDatabaseErrorMessages;
 begin
-  with Stream do
-  begin
-    Position := 0;
-    ReadBuffer(ver, SizeOf(integer));
-    if ver <> 1 then
-      Exit;
-    ReadStrFromStream(Stream, st);
-    if st <> ErrSignature then
-      Exit;
-    ReadBuffer(FMaxVersion, SizeOf(integer));
-    Clear;
-    ReadBuffer(c, SizeOf(integer));
-    for i := 0 to c - 1 do
+  Stream.Position := 0;
+  Stream.ReadBuffer(StreamVersion, SizeOf(Integer));
+  if StreamVersion <> 1 then
+    Exit;
+  ReadStrFromStream(Stream, Signature);
+  if Signature <> ErrSignature then
+    Exit;
+  Stream.ReadBuffer(MaxVersion, SizeOf(Integer));
+  FLock.BeginWrite;
+  try
+    ClearDatabases;
+    Stream.ReadBuffer(DBCount, SizeOf(Integer));
+    for i := 0 to DBCount - 1 do
     begin
-      ReadStrFromStream(Stream, ADBName);
-      ReadBuffer(c1, SizeOf(integer));
-      for j := 0 to c1 - 1 do
+      ReadStrFromStream(Stream, DBName);
+      Messages := TFIBDatabaseErrorMessages(DatabaseMessages(string(DBName), True));
+      Messages.FMaxVersion := MaxVersion;
+      Stream.ReadBuffer(MsgCount, SizeOf(Integer));
+      for j := 0 to MsgCount - 1 do
       begin
-        ReadBuffer(aVersion, SizeOf(integer));
-        ReadStrFromStream(Stream, aErrorName);
-        ReadStrFromStream(Stream, aErrorMsg);
-        AddErrorMessage(ADBName, aErrorName, aErrorMsg, aVersion)
+        Stream.ReadBuffer(Version, SizeOf(Integer));
+        ReadStrFromStream(Stream, ErrorName);
+        ReadStrFromStream(Stream, ErrorMsg);
+        Messages.AddMessage(string(ErrorName), string(ErrorMsg), Version);
       end;
     end;
+  finally
+    FLock.EndWrite;
   end;
 end;
 
 procedure TpErrorMessagesCollect.SaveToFile(const FileName: string);
-var
-  Stream: TFileStream;
 begin
-  if FDatabases.Count > 0 then
-    try
-      Stream := TFileStream.Create(FileName, fmCreate);
-      try
-        SaveToStream(Stream);
-      finally
-        Stream.Free;
-      end;
-    except
-    end
-  else if FileExists(FileName) then
-    SysUtils.DeleteFile(FileName);
-
+  SaveCacheFile(FileName, FDatabases.Count > 0, SaveToStream);
 end;
 
+// One max version for all databases: the common one, else 0, which validates each database again
 procedure TpErrorMessagesCollect.SaveToStream(Stream: TStream);
-
 var
-  L: integer;
-  ver, i, j: integer;
-
+  Value, MaxVersion, i, j: Integer;
+  Messages: TFIBDatabaseErrorMessages;
+  Msg: TpErrorMessage;
 begin
-  with Stream do
-  begin
-    ver := 1;
-    WriteBuffer(ver, SizeOf(integer)); // Version of Stream format
+  FLock.BeginRead;
+  try
+    Value := 1;
+    Stream.WriteBuffer(Value, SizeOf(Integer));
     WriteStrToStream(ErrSignature, Stream);
-    WriteBuffer(FMaxVersion, SizeOf(integer));
-    L := FDatabases.Count;
-    WriteBuffer(L, SizeOf(integer));
+    MaxVersion := 0;
     for i := 0 to FDatabases.Count - 1 do
     begin
-      WriteStrToStream(FDatabases[i], Stream);
-      L := TStrings(FDatabases.Objects[i]).Count;
-      WriteBuffer(L, SizeOf(integer));
-      with TStrings(FDatabases.Objects[i]) do
-        for j := 0 to Count - 1 do
-        begin
-          WriteBuffer(TpErrorMessage(Objects[j]).FVersion, SizeOf(integer));
-          WriteStrToStream(Strings[j], Stream);
-          WriteStrToStream(TpErrorMessage(Objects[j]).ErrorMsg, Stream);
-        end;
+      Messages := TFIBDatabaseErrorMessages(FDatabases.Objects[i]);
+      if i = 0 then
+        MaxVersion := Messages.FMaxVersion
+      else if Messages.FMaxVersion <> MaxVersion then
+        MaxVersion := 0;
     end;
+    Stream.WriteBuffer(MaxVersion, SizeOf(Integer));
+    Value := FDatabases.Count;
+    Stream.WriteBuffer(Value, SizeOf(Integer));
+    for i := 0 to FDatabases.Count - 1 do
+    begin
+      Messages := TFIBDatabaseErrorMessages(FDatabases.Objects[i]);
+      WriteStrToStream(AnsiString(FDatabases[i]), Stream);
+      Value := Messages.Count;
+      Stream.WriteBuffer(Value, SizeOf(Integer));
+      for j := 0 to Messages.Count - 1 do
+      begin
+        Msg := TpErrorMessage(Messages.Objects[j]);
+        Stream.WriteBuffer(Msg.FVersion, SizeOf(Integer));
+        WriteStrToStream(AnsiString(Messages[j]), Stream);
+        WriteStrToStream(AnsiString(Msg.FErrorMsg), Stream);
+      end;
+    end;
+  finally
+    FLock.EndRead;
   end;
 end;
 
@@ -3045,21 +3140,8 @@ begin
 end;
 
 procedure TpDataSetInfoCollect.SaveToFile(const FileName: string);
-var
-  Stream: TFileStream;
 begin
-  if FListDataSetInfo.Count > 0 then
-    try
-      Stream := TFileStream.Create(FileName, fmCreate);
-      try
-        SaveToStream(Stream);
-      finally
-        Stream.Free;
-      end;
-    except
-    end
-  else if FileExists(FileName) then
-    SysUtils.DeleteFile(FileName);
+  SaveCacheFile(FileName, FListDataSetInfo.Count > 0, SaveToStream);
 end;
 
 procedure TpFIBTableInfoCollect.CommitInternalTransaction;

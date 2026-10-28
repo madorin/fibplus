@@ -111,6 +111,7 @@ end;
 | `EFIBError.IsStatementTimeout` | `True` if the server cancelled the statement because of its timeout |
 | `EFIBError.HasErrorCode(Code)` | `True` if the status vector contains that code |
 | `EFIBError.ErrorCodes` | Every code of the status vector; set for server errors only |
+| `EFIBError.ErrorArgument(Code, Index)` | The `Index`-th string argument of `Code` in the status vector, as the server sends it (for example the constraint name of `isc_unique_key_violation`, quoted by *Firebird 6*); numeric arguments are not counted; `''` without one |
 
 If you use `TpFibErrorHandler`, `keStatementTimeout` and `keCancelled` identify these cases in `TKindIBError`.
 

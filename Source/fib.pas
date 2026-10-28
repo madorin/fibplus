@@ -33,12 +33,14 @@ type
   *)
 
   TFIBErrorCodes = array of Long;
+  TFIBErrorArguments = array of string;
 
   EFIBError = class(EDatabaseError)
   private
     FSQLCode: Long;
     FIBErrorCode: Long;
     FErrorCodes: TFIBErrorCodes;
+    FErrorArguments: array of TFIBErrorArguments; // the string arguments of each item of FErrorCodes
     FRaiserName: string; // IMS
     FSQLMessage: string;
     FIBMessage: string;
@@ -46,6 +48,7 @@ type
     FMsg: string;
     FSQLState: FIBByteString;
     SenderObj: TObject;
+    procedure ReadStatusVector(Status: PISC_STATUS; CodePage: Word);
     procedure RebuildMessage; // IMS
     procedure SetSQLMessage(Value: string); // IMS
     procedure SetIBMessage(Value: string); // IMS
@@ -59,6 +62,8 @@ type
     // every gds code of the status vector, set for server errors only
     property ErrorCodes: TFIBErrorCodes read FErrorCodes;
     function HasErrorCode(Code: Long): Boolean;
+    // the Index-th string argument of the first status vector item with Code, '' without one
+    function ErrorArgument(Code: Long; Index: Integer = 0): string;
     function IsStatementTimeout: Boolean;
     property RaiserName: string read FRaiserName write FRaiserName; // IMS
     property SQLState: FIBByteString read FSQLState;
@@ -164,7 +169,8 @@ type
     feFieldListEmpty,
     feCantUseField,
     feFB2feature,
-    feFeatureNotSupported
+    feFeatureNotSupported,
+    feParamValueTooLong
   );
 
   TStatusVector = array [0 .. 19] of ISC_STATUS;
@@ -319,8 +325,9 @@ procedure FIBErrorEx(const ErrMess: string; const Args: array of const);
 
 procedure IBError(ClientLibrary: IIbClientLibrary; Sender: TObject);
 
-procedure RegisterErrorHandler(aErrorHandler: TComponent);
-procedure UnRegisterErrorHandler;
+procedure RegisterErrorHandler(AErrorHandler: TComponent);
+// With a handler, only that handler is unregistered
+procedure UnRegisterErrorHandler(AErrorHandler: TComponent = nil);
 function ErrorHandlerRegistered: Boolean;
 
 // Manage the thread-local status vector
@@ -329,13 +336,16 @@ function StatusVectorArray: PStatusVector;
 function CheckStatusVector(ErrorCodes: array of ISC_STATUS): Boolean;
 function StatusVectorAsText: string;
 
-// Generate a DPB
-procedure GenerateDPB(sl: TStrings; var DPB: AnsiString; var DPBLength: Short; IsFirebird: Boolean);
+// Generate a DPB; AllowVersion2 (the client supports isc_dpb_version2) permits values over 255 bytes
+procedure GenerateDPB(sl: TStrings; var DPB: AnsiString; var DPBLength: Short; IsFirebird: Boolean;
+  AllowVersion2: Boolean = True);
 // utf8_filename in DBParams: the strings of the DPB and the database name go in UTF-8
 function DPBUsesUTF8(sl: TStrings; IsFirebird: Boolean): Boolean;
 // Name in DBParams of a DPB code, '' when unknown
 function DPBConstantName(Code: Integer): string;
-procedure GenerateTPB(sl: TStrings; var TPB: AnsiString; var TPBLength: Short; IsFB21orMore: Boolean);
+// lock_read/lock_write table names in NameCodePage (FIBCharSets, 0 the system code page)
+procedure GenerateTPB(sl: TStrings; var TPB: AnsiString; var TPBLength: Short; IsFB21orMore: Boolean;
+  NameCodePage: Word = 0);
 // Manage global options
 procedure SetIBErrorMessages(Value: TIBErrorMessages);
 function GetIBErrorMessages: TIBErrorMessages;
@@ -346,7 +356,7 @@ var
 implementation
 
 uses
-  IB_ErrorCodes, pFIBErrorHandler, StdFuncs, StrUtil;
+  IB_ErrorCodes, pFIBErrorHandler, StdFuncs, StrUtil, FIBDatabase, FIBCharSets;
 
 var
   IBErrorHandler: TpFibErrorHandler;
@@ -372,15 +382,16 @@ end;
 
 /// ErrorHandler
 
-procedure RegisterErrorHandler(aErrorHandler: TComponent);
+procedure RegisterErrorHandler(AErrorHandler: TComponent);
 begin
-  if aErrorHandler is TpFibErrorHandler then
-    IBErrorHandler := TpFibErrorHandler(aErrorHandler)
+  if AErrorHandler is TpFibErrorHandler then
+    IBErrorHandler := TpFibErrorHandler(AErrorHandler)
 end;
 
-procedure UnRegisterErrorHandler;
+procedure UnRegisterErrorHandler(AErrorHandler: TComponent = nil);
 begin
-  IBErrorHandler := nil
+  if (AErrorHandler = nil) or (AErrorHandler = IBErrorHandler) then
+    IBErrorHandler := nil
 end;
 
 function ErrorHandlerRegistered: Boolean;
@@ -410,27 +421,76 @@ end;
   *  exception based on the current values in it.
 *)
 
-procedure ReadErrorCodes(Status: PISC_STATUS; var Codes: TFIBErrorCodes);
+// Every gds code of the status vector and the string arguments that follow it; warnings are skipped
+procedure EFIBError.ReadStatusVector(Status: PISC_STATUS; CodePage: Word);
 var
-  Count: Integer;
+  Count, Target, Len: Integer;
+  Argument: AnsiString;
+
+  procedure AddArgument;
+  var
+    Last: Integer;
+  begin
+    if Target < 0 then
+      Exit;
+    Last := Length(FErrorArguments[Target]);
+    SetLength(FErrorArguments[Target], Last + 1);
+    FErrorArguments[Target][Last] := DecodeString(PAnsiChar(Argument), Length(Argument), CodePage);
+  end;
+
 begin
   Count := 0;
-  SetLength(Codes, 0);
+  Target := -1;
+  FErrorCodes := nil;
+  FErrorArguments := nil;
   while Status^ <> isc_arg_end do
     case Status^ of
       isc_arg_gds:
         begin
           Inc(Status);
-          SetLength(Codes, Count + 1);
-          Codes[Count] := Long(Status^);
+          SetLength(FErrorCodes, Count + 1);
+          SetLength(FErrorArguments, Count + 1);
+          FErrorCodes[Count] := Long(Status^);
+          Target := Count;
           Inc(Count);
           Inc(Status);
         end;
+      isc_arg_warning:
+        begin
+          Target := -1;
+          Inc(Status, 2);
+        end;
+      isc_arg_string:
+        begin
+          Inc(Status);
+          Argument := PAnsiChar(Status^);
+          AddArgument;
+          Inc(Status);
+        end;
       isc_arg_cstring:
-        Inc(Status, 3);
+        begin
+          Inc(Status);
+          Len := Integer(Status^);
+          Inc(Status);
+          SetString(Argument, PAnsiChar(Status^), Len);
+          AddArgument;
+          Inc(Status);
+        end;
     else
-      Inc(Status, 2); // string, number, interpreted, sql_state, warning: one value
+      Inc(Status, 2); // number, interpreted, sql_state: one value
     end;
+end;
+
+// Firebird 3+ sends the status vector strings in the attachment charset, in UTF-8 (metadata) on NONE
+function StatusVectorCodePage(Sender: TObject): Word;
+var
+  DB: TFIBDatabase;
+begin
+  DB := FindDatabaseForObject(Sender);
+  if (DB <> nil) and DB.Connected and IsCodePageAvailable(DB.Capabilities.MetadataCodePage) then
+    Result := DB.Capabilities.MetadataCodePage
+  else
+    Result := FIBCodePageSystem;
 end;
 
 procedure IBError(ClientLibrary: IIbClientLibrary; Sender: TObject);
@@ -445,9 +505,10 @@ var
 
   vEFIBInterBaseError: EFIBInterBaseError;
   vRaiseExcept: Boolean;
-  tmpStr: AnsiString;
+  tmpStr: string;
   L: Integer;
   vSQLState: FIBByteString;
+  CodePage: Word;
 begin
   (*
     * Initialize the working user message.
@@ -460,6 +521,7 @@ begin
   SQLCode := ClientLibrary.isc_sqlcode(status_vector);
   // FillChar(vFbSQLState,FB_sqlstate_bufSize,0);
   vSQLState := ClientLibrary.fb_sqlstate(status_vector);
+  CodePage := StatusVectorCodePage(Sender);
   vIBMessage := '';
   vSQLMessage := '';
   (*
@@ -495,8 +557,7 @@ begin
       L := ClientLibrary.fb_Interpret(local_buffer, FIBHugeLocalBufferLength, @status_vector);
       while (L > 0) do
         begin
-          SetLength(tmpStr, L);
-          Move(local_buffer[0], tmpStr[1], L);
+          tmpStr := DecodeString(local_buffer, L, CodePage);
 
           if Length(tmpStr) > 0 then
             begin
@@ -516,7 +577,7 @@ begin
   vRaiseExcept := true;
   vEFIBInterBaseError := EFIBInterBaseError.CreateEx(SQLCode, vIBMessage, vSQLMessage, '', Sender); // '' by IMS
   vEFIBInterBaseError.FSQLState := vSQLState;
-  ReadErrorCodes(StatusVector, vEFIBInterBaseError.FErrorCodes);
+  vEFIBInterBaseError.ReadStatusVector(StatusVector, CodePage);
   try
     if ErrorHandlerRegistered then
       IBErrorHandler.DoOnErrorEvent(Sender, vEFIBInterBaseError, vRaiseExcept);
@@ -674,6 +735,23 @@ begin
   end;
 end;
 
+function EFIBError.ErrorArgument(Code: Long; Index: Integer = 0): string;
+var
+  I: Integer;
+begin
+  for I := 0 to High(FErrorCodes) do
+    if FErrorCodes[I] = Code then
+    begin
+      if (Index >= 0) and (Index <= High(FErrorArguments[I])) then
+      begin
+        Result := FErrorArguments[I][Index];
+        Exit;
+      end;
+      Break;
+    end;
+  Result := '';
+end;
+
 function EFIBError.IsStatementTimeout: Boolean;
 begin
   Result := (FIBErrorCode = isc_cancelled) and (HasErrorCode(isc_req_stmt_timeout) or
@@ -800,7 +878,8 @@ end;
   *  parameter buffer, and return it and its length
   *  in DPB and DPBLength, respectively.
 *)
-procedure GenerateDPB(sl: TStrings; var DPB: AnsiString; var DPBLength: Short; IsFirebird: Boolean);
+procedure GenerateDPB(sl: TStrings; var DPB: AnsiString; var DPBLength: Short; IsFirebird: Boolean;
+  AllowVersion2: Boolean);
 var
   i: Integer;
   j, DPBVal: Integer;
@@ -809,28 +888,59 @@ var
   Line, Value: string;
   UTF8: Boolean;
   UTF8Value: UTF8String;
+  Clumplets: array of record
+    Tag: Byte;
+    Data: AnsiString;
+  end;
+  Count: Integer;
+  Wide: Boolean;
+  Size: Integer;
+
+  // The clumplets are written at the end, when the length format is known
+  procedure AddClumplet(Tag: Byte; const Data: AnsiString);
+  begin
+    if Length(Data) > 255 then
+      begin
+        if not (IsFirebird and AllowVersion2) then
+          FIBError(feParamValueTooLong, [DPBConstantName(Tag), Length(Data), 255]);
+        Wide := True;
+      end;
+    if Count = Length(Clumplets) then
+      SetLength(Clumplets, Count + 16);
+    Clumplets[Count].Tag := Tag;
+    Clumplets[Count].Data := Data;
+    Inc(Count);
+  end;
 
   procedure ApplyStrParam;
   begin
-    DPB := DPB + AnsiChar(DPBVal) + AnsiChar(Length(param_value)) + param_value;
-    Inc(DPBLength, 2 + Length(param_value));
+    AddClumplet(DPBVal, param_value);
   end;
 
   // the engine reads 1 to 4 bytes
   procedure ApplyIntParam(IntValue: Integer);
+  var
+    Data: AnsiString;
   begin
-    DPB := DPB + AnsiChar(DPBVal) + #4 + PAnsiChar(@IntValue)[0] +
-      PAnsiChar(@IntValue)[1] + PAnsiChar(@IntValue)[2] + PAnsiChar(@IntValue)[3];
-    Inc(DPBLength, 6);
+    SetLength(Data, SizeOf(IntValue));
+    Move(IntValue, Data[1], SizeOf(IntValue));
+    AddClumplet(DPBVal, Data);
+  end;
+
+  function LengthBytes(Len: Integer): AnsiString;
+  begin
+    if Wide then
+      begin
+        SetLength(Result, 4);
+        Move(Len, Result[1], 4);
+      end
+    else
+      Result := AnsiChar(Len);
   end;
 
 begin
-  (*
-    * The DPB is initially empty, with the exception that
-    * the DPB version must be the first byte of the string.
-  *)
-  DPBLength := 1;
-  DPB := AnsiChar(isc_dpb_version1);
+  Count := 0;
+  Wide := False;
   UTF8 := DPBUsesUTF8(sl, IsFirebird);
   (*
     * Iterate through the textual database parameters, constructing
@@ -925,10 +1035,7 @@ begin
           isc_dpb_online_dump, isc_dpb_overwrite, isc_dpb_old_file_size, isc_dpb_shutdown_delay:
           ApplyIntParam(StrToInt(param_value));
         isc_dpb_sweep:
-          begin
-            DPB := DPB + AnsiChar(DPBVal) + #1 + AnsiChar(isc_dpb_records);
-            Inc(DPBLength, 3);
-          end;
+          AddClumplet(DPBVal, AnsiChar(isc_dpb_records));
         isc_dpb_sweep_interval:
           ApplyIntParam(StrToInt(param_value));
         isc_dpb_parallel_workers:
@@ -937,55 +1044,34 @@ begin
               ApplyIntParam(StrToInt(param_value));
           end;
         isc_dpb_activate_shadow, isc_dpb_delete_shadow, isc_dpb_begin_log, isc_dpb_quit_log:
-          begin
-            DPB := DPB + AnsiChar(DPBVal) + #1#0;
-            Inc(DPBLength, 3);
-          end;
+          AddClumplet(DPBVal, #0);
 
         isc_dpb_utf8_filename:
           begin
             // or isc_dpb_archive_database
             if IsFirebird then
-              begin
-                DPB := DPB + AnsiChar(DPBVal) + #0;
-                Inc(DPBLength, 2);
-              end
+              AddClumplet(DPBVal, '');
           end;
 
         isc_dpb_no_db_triggers:
           begin
             // or isc_dpb_client_interbase_var
             if IsFirebird then
-              begin
-                DPB := DPB + AnsiChar(DPBVal) + #1#1;
-                Inc(DPBLength, 3);
-              end
+              AddClumplet(DPBVal, #1);
           end;
 
         //
         isc_dpb_no_garbage_collect, isc_dpb_garbage_collect:
-          begin
-            DPB := DPB + AnsiChar(DPBVal) + #1#1;
-            Inc(DPBLength, 3);
-          end;
+          AddClumplet(DPBVal, #1);
         isc_dpb_shutdown:
           begin
             if Length(param_value) = 0 then
-              begin
-                DPB := DPB + AnsiChar(DPBVal) + #0;
-                Inc(DPBLength, 2);
-              end
+              AddClumplet(DPBVal, '')
             else
-              begin
-                DPB := DPB + AnsiChar(DPBVal) + #1 + AnsiChar(GetDPBShutParamValue(param_value));
-                Inc(DPBLength, 3);
-              end;
+              AddClumplet(DPBVal, AnsiChar(GetDPBShutParamValue(param_value)));
           end;
         isc_dpb_online:
-          begin
-            DPB := DPB + AnsiChar(DPBVal) + #0;
-            Inc(DPBLength, 2);
-          end;
+          AddClumplet(DPBVal, '');
         else
           begin
             if (DPBVal > 0) and (DPBVal <= isc_dpb_last_dpb_constant) then
@@ -996,11 +1082,19 @@ begin
       end;
     end;
   if config <> '' then
-    begin
-      DPBVal := isc_dpb_config;
-      param_value := config;
-      ApplyStrParam;
-    end;
+    AddClumplet(isc_dpb_config, config);
+
+  // version 2 has 4-byte lengths in every clumplet
+  if Wide then
+    DPB := AnsiChar(isc_dpb_version2)
+  else
+    DPB := AnsiChar(isc_dpb_version1);
+  for i := 0 to Count - 1 do
+    DPB := DPB + AnsiChar(Clumplets[i].Tag) + LengthBytes(Length(Clumplets[i].Data)) + Clumplets[i].Data;
+  Size := Length(DPB);
+  if Size > High(Short) then
+    FIBError(feParamValueTooLong, ['DBParams', Size, High(Short)]);
+  DPBLength := Size;
 end;
 
 (*
@@ -1010,28 +1104,22 @@ end;
   *  parameter buffer, and return it and its length in
   *  TPB and TPBLength, respectively.
 *)
-procedure GenerateTPB(sl: TStrings; var TPB: AnsiString; var TPBLength: Short; IsFB21orMore: Boolean);
+procedure GenerateTPB(sl: TStrings; var TPB: AnsiString; var TPBLength: Short; IsFB21orMore: Boolean;
+  NameCodePage: Word);
 var
   i, j, TPBVal, ParamLength: Integer;
   param_name, param_value: AnsiString;
-  LT: Word;
+  TableName: FIBByteString;
+  LockTimeout: Integer;
 begin
   TPB := '';
-  if (sl.Count = 0) then
-    TPBLength := 0
-  else
-    begin
-      TPBLength := sl.Count + 1;
-      TPB := TPB + AnsiChar(isc_tpb_version3);
-    end;
+  if sl.Count > 0 then
+    TPB := AnsiChar(isc_tpb_version3);
   for i := 0 to sl.Count - 1 do
     begin
       sl[i] := FastTrim(sl[i]);
       if sl[i] = '' then
-        begin
-          Dec(TPBLength);
-          Continue;
-        end;
+        Continue;
       GetNameAndValue(sl[i], param_name, param_value);
       DoLowerCase(param_name);
 
@@ -1053,10 +1141,16 @@ begin
         isc_tpb_lock_read, isc_tpb_lock_write:
           begin
             TPB := TPB + AnsiChar(TPBVal);
-            // Now set the string parameter
-            ParamLength := Length(param_value);
-            Inc(TPBLength, ParamLength + 1);
-            TPB := TPB + AnsiChar(ParamLength) + param_value;
+            // the table name from the line: param_value went through the system code page
+            j := PosCh('=', sl[i]);
+            if j > 0 then
+              TableName := EncodeString(FastCopy(sl[i], j + 1, MaxInt), NameCodePage)
+            else
+              TableName := '';
+            ParamLength := Length(TableName);
+            if ParamLength > 255 then
+              FIBError(feParamValueTooLong, [string(param_name), ParamLength, 255]);
+            TPB := TPB + AnsiChar(ParamLength) + TableName;
           end;
         else
           begin
@@ -1068,13 +1162,10 @@ begin
                   begin
                     if IsFB21orMore then
                       begin
-                        // isc_tpb_lock_timeout
-                        TPB := TPB + AnsiChar(TPBVal);
-                        TPB := TPB + #2;
-                        LT := StrToIntDef(param_value, 10);
-
-                        TPB := TPB + PAnsiChar(@LT)[0] + PAnsiChar(@LT)[1];
-                        Inc(TPBLength, 1 + SizeOf(Word));
+                        // isc_tpb_lock_timeout: 4 bytes, the server checks the range
+                        LockTimeout := StrToIntDef(string(param_value), 10);
+                        TPB := TPB + AnsiChar(TPBVal) + #4 + PAnsiChar(@LockTimeout)[0] +
+                          PAnsiChar(@LockTimeout)[1] + PAnsiChar(@LockTimeout)[2] + PAnsiChar(@LockTimeout)[3];
                       end
                     else
                       TPB := TPB + AnsiChar(TPBVal); // isc_tpb_no_savepoint
@@ -1085,6 +1176,9 @@ begin
           end;
       end;
     end;
+  if Length(TPB) > High(Short) then
+    FIBError(feParamValueTooLong, ['TRParams', Length(TPB), High(Short)]);
+  TPBLength := Length(TPB);
 end;
 
 function DPBConstantName(Code: Integer): string;

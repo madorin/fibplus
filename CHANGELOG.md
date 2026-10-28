@@ -2,6 +2,14 @@
 
 ## [7.9.2] - Unreleased
 
+### Added
+
+- `EFIBError.ErrorArgument(Code, Index)`: a string argument of the status
+  vector, for example the constraint name of `isc_unique_key_violation`.
+- `ListErrorMessages.ErrorMessage` and `GetQueryForUse` (`pFIBCacheQueries`)
+  have an overload with the database, for a transaction over several
+  databases. `FindDatabaseForObject` (`pFIBErrorHandler`) is public.
+
 ### Changed
 
 - The Delphi XE, XE6 and XE8 packages are named like those of XE2 to XE7:
@@ -103,6 +111,147 @@
 - Changing `psUseGuidField` in `PrepareOptions` after the first open had no
   effect: the field stayed a `TFIBStringField`. The field definitions are now
   read again, as for `psUseBooleanField`.
+- `StopFetching` in `TFIBQuery.OnSQLFetch` and `BeforeFetchRecord` made `Next`
+  return `nil` but left `Eof` at `False`, so a `while not Eof` loop did not end.
+  It is now a final stop: `Eof` is set as at the end of the data.
+- A parameter set before `Prepare` could be converted to the server type twice,
+  when another parameter was set before a new `Prepare`.
+- A `DBParams` value over 255 bytes (several `config=` lines, or a long non-ASCII
+  password with `utf8_filename`) had its one-byte length wrapped and made a
+  corrupt DPB. With a Firebird 3+ client the DPB is now sent as
+  `isc_dpb_version2` (4-byte lengths) when a value needs it; otherwise, and for
+  long lock table names in `TRParams` and values in the `TpFIBServices`
+  `Params`, a clear error names the parameter.
+- The error message cache (`ListErrorMessages`, used by `TpFibErrorHandler` for
+  the messages of `FIB$ERROR_MESSAGES`) was not thread safe: errors handled in
+  several threads at once could raise access violations. `FIB$VERSION` was
+  checked once per process for all databases, so the stale messages of a second
+  database, or of a schema cache file loaded later, were shown; each database is
+  now checked on its first use and after a load. Constraint names that differ
+  only in case no longer share one cached message.
+- A schema cache file that could not be written completely (disk full, ...)
+  was left truncated, and the next `Open` with `AutoLoadFromFile` failed
+  reading it. The file is now deleted instead.
+- `TpFibErrorHandler`: when the lookup of a constraint in `FIB$ERROR_MESSAGES`
+  failed (the table dropped, a transaction that is not active), its error
+  replaced the violation, with its own `LastError`, `ConstraintName` and
+  `OnFIBErrorEvent`. The violation now keeps the message it has without a row
+  in the table.
+- `TpFibErrorHandler.ConstraintName` was parsed from the message: a name with
+  spaces or quotes was cut, and it was empty for a message in another language
+  or without `ShowIBMessage`. It is now the exact name from the status vector,
+  without the quotes and the schema that Firebird 6 adds there.
+- `TpFibErrorHandler.LastError`, `ConstraintName`, `ExceptionName` and
+  `ExceptionNumber` were shared by all threads: an error in one thread changed
+  them while another read them. They are now kept per thread.
+- Creating a second `TpFibErrorHandler` raised, and also unregistered the first
+  one, which then no longer handled any error.
+- `TpFibErrorHandler`: in a transaction over several databases, a violation in
+  a database other than the default one of the transaction was looked up in
+  `FIB$ERROR_MESSAGES` of the default database and cached under it. The lookup
+  now uses the database of the failing statement. The server version that
+  decides whether `ExceptionName` is read was also taken from the default
+  database; without one, `ExceptionName` was `Unknown` and the message kept the
+  name and the stack trace.
+- Server error messages (`Message`, `IBMessage`) and
+  `TpFibErrorHandler.ConstraintName` and `ExceptionName` were decoded in the
+  system code page, so non-ASCII names and exception texts were garbled outside
+  it. They are now decoded in the charset of the connection (UTF-8 on a `NONE`
+  connection, where the server sends the metadata charset). Firebird 2.5 sends
+  the names in UTF-8 and the exception texts in the charset of the connection,
+  so on a connection that is not `UTF8` or `NONE` the names stay garbled there.
+  The server errors of array fields and of `TFIBBlobStream.BlobToFile` now also
+  give their database, for the decoding and for `OnLostConnect`.
+- Security service (`TpFIBSecurityService`) with a Firebird 3+ client library:
+  the user name, password, first, middle and last name and role were encoded in
+  UTF-8 and then converted again by the client from the system code page, so
+  every non-ASCII character was stored garbled (`é` as `Ã©`). They are now sent
+  in the system code page, which the client converts; on Delphi 2009 and later
+  a character outside it raises "Cannot transliterate" instead of being sent as
+  `?`.
+- Text the server sends back was decoded in the system code page: the output of
+  the services (`GetNextLine`, `GetNextChunk`), `TpFIBSecurityService.UserInfo`,
+  the attached database names and the other strings of
+  `TpFIBServerProperties`, and `TFIBDatabase.UserNames`, `Version`,
+  `FBVersion` and the other text database info. A Linux server sends file names
+  in UTF-8 and Firebird 3+ user names are UTF-8, so non-ASCII names were
+  garbled. They are now decoded as UTF-8 when the bytes are valid UTF-8, else
+  in the system code page (a Windows server).
+- `lock_read`/`lock_write` table names in `TRParams` were sent in the system
+  code page; the server takes them in the charset of the connection, so a
+  non-ASCII table name was not found or was a malformed string. They are now
+  sent in the metadata code page of the connection (Firebird 2.5 still takes
+  them in UNICODE_FSS only).
+- `TFIBQuery` fields and parameters of a date, time, number or boolean type on
+  Delphi 2009 and later: `AsString` passed the formatted text through the
+  system code page, so locale texts outside it (for example the AM/PM
+  designators) became `?`.
+- `LibraryName` of `TFIBDatabase` went through the system code page: a client
+  library in a folder with a name outside it could not be loaded.
+- `CompareVariantsEQ` (`VariantRtn`) returned `False` for two equal
+  `AnsiString` (`varString`) variants on Delphi 2009 and later.
+- `TFIBTransaction`: `lock_timeout` was sent in 2 bytes, so a value from 65536
+  up was cut (65546 started the transaction with a timeout of 10 seconds). It is
+  sent in 4 bytes; Firebird 2.5 and later check the range.
+- Services: a start parameter of 65536 bytes or more was dropped or sent with a
+  wrong length; it raises an error now. A `BufferSize` of 65536 or more was cut
+  to 2 bytes (65536 gave "Unexpected Output buffer value"); the service API gets
+  at most 65535 bytes.
+- `TFIBQuery` fields and parameters: `AsInteger` of a `BIGINT`, a scaled number
+  or a double out of the `Integer` range, and `AsShort` out of the `SMALLINT`
+  range, returned a cut value (5000000000 gave 705032704); they raise an
+  invalid data conversion error, as for `INT128`.
+- `TFIBQuery` parameters: `Assign` of a BLOB of more than 32767 bytes to a
+  parameter that is not a BLOB sent a cut length (70000 bytes became 4464); it
+  raises an error now. `AsInt64` in SQL dialect 1 or 2 sent the value cut to 32
+  bits; out of that range it is sent as a double. A `LongWord` variant over
+  `MaxInt` was sent as a negative number when passed by reference and raised
+  `EVariantOverflowError` when passed by value; both are sent as a `BIGINT`.
+- `TpFIBDataSet`: a value out of range in a persistent float field of a
+  `NUMERIC` stored as `INTEGER` or `SMALLINT` (for example 30000000 in a
+  `NUMERIC(9,2)`) was stored cut (-12949672.96); it raises an error now. A
+  generator value out of the `INTEGER` range for an `INTEGER` key field
+  (`AutoUpdateOptions`) was cut; the field raises an error now.
+- `TFIBDatabase.MemoSubtypes` kept the sub types in a byte, so for example
+  `-1000` also matched the sub type 24.
+- Win64: `StreamToVariant` and `StreamToVariantArray` (`StdFuncs`) cut the
+  memory addresses to 32 bits (access violation), and so did the "nested
+  datasets" error of `TpFIBClientDataSet` with the address of its message.
+- Script of `TpFIBDBSchemaExtract.GetDDLText`: the roles, external functions,
+  generators, exceptions, tables, views and database triggers were followed by
+  an extra `;`, the triggers of a view were created twice, the objects of a
+  previous `GetObjectDDL` were written again, the `RETURNS` clause of every
+  function after the first held its first parameter, identity columns lost
+  `GENERATED ... AS IDENTITY`, the system domains `MON$...` of Firebird 4 and
+  later were created, and index and trigger names were not quoted.
+  `TMetaProcedure.PackageName` held the procedure body after `LoadMetaData`.
+- `GetObjectDDL` and `AsDDL`: the DDL of a domain had no terminator and that
+  of a package ended with `;;`. Before a `LoadMetaData`, `GetObjectDDL` ignored
+  `DDLTextOptions` (for example `dtoDecodeDomains`), lost identity columns
+  and took a packaged procedure of the same name.
+- Reloading or clearing the metadata leaked the previous meta objects, and
+  `GetObjectDDL` of a database trigger leaked one object on each call.
+- Schema extract: a generator value over 2147483647 was wrong
+  (`TMetaGenerator.Value` is `Int64`). When `LoadOptions.DBObjects` had no
+  `otTable`, the views had no columns and their triggers were not written. A
+  procedure, function or external function got the parameters of a packaged
+  one with the same name, and `GetObjectDDL(otUDF)` could take a packaged or
+  PSQL function. `CREATE FUNCTION` had two spaces. The script has no empty
+  `UNIQUE`, `CHECKS` or `TRIGGERS` sections.
+- SQL editor: a code completion item chosen on the empty line after the last
+  line was sometimes not inserted.
+- `DataSet_ID` property editor: when the `FIB$DATASETS_INFO` table did not
+  exist, it refused to create it ("urDataSetInfo not included into
+  Database.UseRepositories") although `urDataSetInfo` was in `UseRepositories`,
+  unless all three repositories were enabled.
+- SQL editor: on Delphi 2009 and later the characters U+0080 to U+00FF were
+  measured as the character of the same byte in the system code page (all of
+  them on a Central European or Cyrillic Windows), so the text after them was
+  drawn at a wrong offset.
+- SQL editor: on a line longer than 65535 characters the words after that
+  position were highlighted at a wrong place.
+- Conditions editor: a narrow conditions list auto-sized its column instead of
+  shrinking it.
 
 ## [7.9.1] - 2026-10-09
 

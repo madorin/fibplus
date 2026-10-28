@@ -255,8 +255,8 @@ type
 
   TMPSyntaxToken = class
   public
-    stStart: Word; // Word start, in chars
-    stLength: Word; // Word length, in chars
+    stStart: Integer; // Word start, in chars
+    stLength: Integer; // Word length, in chars
     stToken: TToken; // Word type (token)
     stStyle: TMPSyntaxTokenStyles; // Word is selected
   end;
@@ -1355,8 +1355,8 @@ var
   W: TMPSyntaxToken;
 begin
   W := TMPSyntaxToken.Create;
-  W.stStart := Word(Beg - 1);
-  W.stLength := Word(Len);
+  W.stStart := Beg - 1;
+  W.stLength := Len;
   W.stToken := Token;
   W.stStyle := [];
   Add(W);
@@ -5245,11 +5245,12 @@ begin
       Font.Assign(Self.Font);
       fCharHeight := -Font.Height + 3;
       Font.Style := [];
+      // by code point, as CharPosToPixOffset looks them up (not the ANSI character of the byte)
       for c := Low(fCharWidths[False]) to High(fCharWidths[False]) do
-        fCharWidths[False][c] := Byte(TextWidth(c));
+        fCharWidths[False][c] := Byte(TextWidth(Char(Ord(c))));
       Font.Style := [fsBold];
       for c := Low(fCharWidths[True]) to High(fCharWidths[True]) do
-        fCharWidths[True][c] := Byte(TextWidth(c));
+        fCharWidths[True][c] := Byte(TextWidth(Char(Ord(c))));
     end;
 
 end;
@@ -7741,9 +7742,9 @@ begin
 
     end;
 
+  Success := False;
   if Range.PosY < Lines.Count then
     begin
-      Success := False;
       XPos := Range.PosX;
 
       CurParser := Lines.Parser[Range.PosY];
@@ -7786,12 +7787,8 @@ begin
                 end;
               Break
             end
-    end
-  else if Range.PosY = 0 then
-    begin
-      Success := True;
-      Range.SetTextEx(DestStr, ukRangeInserted);
     end;
+  // No word under the caret, or the caret on the line after the last one
   if not Success then
     begin
       Range.SetTextEx(DestStr, ukRangeInserted);

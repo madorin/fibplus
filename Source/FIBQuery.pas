@@ -41,6 +41,8 @@ type
   private
     function GetAsBoolean: boolean;
     procedure SetAsBoolean(const Value: boolean);
+    function FormatValue: string;
+    function ValueText: string;
   protected
     FIndex: integer;
     FModified: boolean;
@@ -886,6 +888,8 @@ begin
     else
     begin
       // just copy the buffer
+      if iSize > High(Short) then
+        FIBError(feParamValueTooLong, [Name, iSize, High(Short)]);
       FXSQLVAR.SQLType := SQL_TEXT;
       FXSQLVAR.sqllen := iSize;
       FIBAlloc(FXSQLVAR.sqldata, iSize, iSize);
@@ -1287,8 +1291,14 @@ begin
 end;
 
 function TFIBXSQLVAR.GetAsLong: Long;
-var
-  vInt64: Int64;
+
+  function ToLong(Value: Int64): Long;
+  begin
+    if (Value > High(Long)) or (Value < Low(Long)) then
+      FIBError(feInvalidDataConversion, [nil]);
+    Result := Long(Value);
+  end;
+
 begin
   Result := 0;
   if not IsNull then
@@ -1302,21 +1312,11 @@ begin
               FIBError(feInvalidDataConversion, [nil]);
           end;
         end;
-      SQL_SHORT: Result := Trunc(PShort(FXSQLVAR^.sqldata)^ * E10[FXSQLVAR^.sqlscale]);
-      SQL_LONG:
-        begin
-          Result := Trunc(PLong(FXSQLVAR^.sqldata)^ * E10[FXSQLVAR^.sqlscale]);
-        end;
-      SQL_INT64: Result := Trunc(PInt64(FXSQLVAR^.sqldata)^ * E10[FXSQLVAR^.sqlscale]);
-      SQL_INT128, SQL_DEC16, SQL_DEC34:
-        begin
-          vInt64 := AsInt64;
-          if (vInt64 > MaxInt) or (vInt64 < -MaxInt - 1) then
-            FIBError(feInvalidDataConversion, [nil]);
-          Result := vInt64;
-        end;
-
-      SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT: Result := Trunc(AsDouble);
+      SQL_SHORT: Result := ToLong(Trunc(PShort(FXSQLVAR^.sqldata)^ * E10[FXSQLVAR^.sqlscale]));
+      SQL_LONG: Result := ToLong(Trunc(PLong(FXSQLVAR^.sqldata)^ * E10[FXSQLVAR^.sqlscale]));
+      SQL_INT64: Result := ToLong(Trunc(PInt64(FXSQLVAR^.sqldata)^ * E10[FXSQLVAR^.sqlscale]));
+      SQL_INT128, SQL_DEC16, SQL_DEC34: Result := ToLong(AsInt64);
+      SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT: Result := ToLong(Trunc(AsDouble));
       IB_SQL_BOOLEAN, SQL_BOOLEAN: Result := Ord(AsBoolean);
       SQL_NULL: Result := 0;
 
@@ -1349,14 +1349,19 @@ begin
 end;
 
 function TFIBXSQLVAR.GetAsShort: Short;
+var
+  Value: Long;
 begin
-  Result := 0;
+  Value := 0;
   try
-    Result := AsLong;
+    Value := AsLong;
   except
     on E: Exception do
       FIBError(feInvalidDataConversion, [nil]);
   end;
+  if (Value > High(Short)) or (Value < Low(Short)) then
+    FIBError(feInvalidDataConversion, [nil]);
+  Result := Short(Value);
 end;
 
 function TFIBXSQLVAR.GetAsString: string;
@@ -1476,36 +1481,60 @@ begin
             DoTrimRight(Result);
 {$ENDIF}
         end;
-      SQL_TYPE_DATE: Result := DateToStr(AsDateTime);
-      SQL_TIMESTAMP: Result := DateTimeToStr(AsDateTime);
-      SQL_TYPE_TIME: Result := TimeToStr(AsTime);
-      SQL_SHORT, SQL_LONG:
-        if FXSQLVAR^.sqlscale <> 0 then
-          Result := FloatToStr(AsDouble)
-        else
-          Result := IntToStr(AsLong);
-      SQL_INT64:
-        if FXSQLVAR^.sqlscale = 0 then
-          Result := IntToStr(AsInt64)
-        else
-          with FXSQLVAR^ do
-{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
-            begin
-              Result := Int64WithScaleToStr(PInt64(sqldata)^, -sqlscale, DecimalSeparator)
-            end;
-      SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT: Result := FloatToStr(AsDouble);
-      SQL_INT128: Result := Ansistring(FBDecimalToPlainStr(GetDecimalValue, LocalDecimalSeparator));
-      SQL_DEC16, SQL_DEC34: Result := Ansistring(FBDecimalToStr(GetDecimalValue, LocalDecimalSeparator));
-      SQL_TIME_TZ, SQL_TIME_TZ_EX: Result := Ansistring(TimeToStr(AsDateTime) + ' ' + AsTimeZoneName);
-      SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX: Result := Ansistring(DateTimeToStr(AsDateTime) + ' ' + AsTimeZoneName);
-      IB_SQL_BOOLEAN, SQL_BOOLEAN:
-        if AsBoolean then
-          Result := TrueStr
-        else
-          Result := FalseStr;
-      SQL_NULL: Result := '';
     else
-      FIBError(feInvalidDataConversion, [nil]);
+      // the system code page of an AnsiString
+      Result := Ansistring(FormatValue);
+    end;
+end;
+
+// Text of a value of a type that is not a string
+function TFIBXSQLVAR.FormatValue: string;
+begin
+  case FXSQLVAR^.SQLType and (not 1) of
+    SQL_TYPE_DATE: Result := DateToStr(AsDateTime);
+    SQL_TIMESTAMP: Result := DateTimeToStr(AsDateTime);
+    SQL_TYPE_TIME: Result := TimeToStr(AsTime);
+    SQL_SHORT, SQL_LONG:
+      if FXSQLVAR^.sqlscale <> 0 then
+        Result := FloatToStr(AsDouble)
+      else
+        Result := IntToStr(AsLong);
+    SQL_INT64:
+      if FXSQLVAR^.sqlscale = 0 then
+        Result := IntToStr(AsInt64)
+      else
+        with FXSQLVAR^ do
+{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+          begin
+            Result := Int64WithScaleToStr(PInt64(sqldata)^, -sqlscale, DecimalSeparator)
+          end;
+    SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT: Result := FloatToStr(AsDouble);
+    SQL_INT128: Result := FBDecimalToPlainStr(GetDecimalValue, LocalDecimalSeparator);
+    SQL_DEC16, SQL_DEC34: Result := FBDecimalToStr(GetDecimalValue, LocalDecimalSeparator);
+    SQL_TIME_TZ, SQL_TIME_TZ_EX: Result := TimeToStr(AsDateTime) + ' ' + AsTimeZoneName;
+    SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX: Result := DateTimeToStr(AsDateTime) + ' ' + AsTimeZoneName;
+    IB_SQL_BOOLEAN, SQL_BOOLEAN:
+      if AsBoolean then
+        Result := TrueStr
+      else
+        Result := FalseStr;
+    SQL_NULL: Result := '';
+  else
+    FIBError(feInvalidDataConversion, [nil]);
+  end;
+end;
+
+// Strings through the code page of their bytes, other values formatted
+function TFIBXSQLVAR.ValueText: string;
+begin
+  if IsNull then
+    Result := ''
+  else
+    case FXSQLVAR^.SQLType and (not 1) of
+      SQL_TEXT, SQL_VARYING, SQL_BLOB, SQL_ARRAY:
+        Result := string(GetAsAnsiString);
+    else
+      Result := FormatValue;
     end;
 end;
 
@@ -2144,8 +2173,12 @@ end;
 
 procedure TFIBXSQLVAR.SetAsInt64(aValue: Int64);
 begin
+  // dialect 1 has no BIGINT
   if FQuery.Database.SQLDialect < 3 then
-    SetAsLong(aValue) // For avoid IB4 bug
+    if (aValue > MaxInt) or (aValue < -MaxInt - 1) then
+      SetAsDouble(aValue)
+    else
+      SetAsLong(Long(aValue))
   else
     SetValue(SQL_INT64, SizeOf(Int64), tspValue, aValue)
 end;
@@ -2607,10 +2640,10 @@ begin
           end;
 
       else
-        Result := GetAsAnsiString;
+        Result := ValueText;
       end
   else
-    Result := GetAsAnsiString;
+    Result := ValueText;
 end;
 
 procedure TFIBXSQLVAR.SetAsVariant(Value: Variant);
@@ -2651,8 +2684,8 @@ begin
   else
     case vt of
       varEmpty, varNull: IsNull := True;
-      varSmallint, varInteger, varByte, varWord, varShortInt, varLongWord: AsLong := Value;
-      varInt64: AsInt64 := Value;
+      varSmallint, varInteger, varByte, varWord, varShortInt: AsLong := Value;
+      varLongWord, varInt64: AsInt64 := Value;
       varSingle, varDouble: AsDouble := Value;
       varCurrency: AsCurrency := Value;
       varBoolean:
@@ -2673,7 +2706,7 @@ begin
         end;
       varOleStr{$IFDEF D2009+}, varUString{$ENDIF} :
         AsWideString := Value;
-      varString: AsAnsiString := Value;
+      varString: AsAnsiString := Ansistring(Value);
       varArray:
 {$IFDEF SUPPORT_ARRAY_FIELD}
         if IsArrayParamValue(Value, sSQLType) then
@@ -2740,7 +2773,7 @@ begin
           varShortInt: AsLong := PShortInt(v.VPointer)^;
           varByte: AsLong := PByte(v.VPointer)^;
           varWord: AsLong := PWord(v.VPointer)^;
-          varLongWord: AsLong := PLongWord(v.VPointer)^;
+          varLongWord: AsInt64 := PLongWord(v.VPointer)^;
           varInt64: AsInt64 := PInt64(v.VPointer)^;
           varVariant: AsVariant := Variant(PVarData(v.VPointer)^);
         else
@@ -3157,6 +3190,7 @@ begin
               FXSQLVARs^[i].InternalSetAsString(@FXSQLVARs^[i].FWideTempValue, True, True);
         end;
       end;
+      FXSQLVARs^[i].FIsDefferedSetting := False;
     end;
   FHasDefferedSettings := False
 end;
@@ -4766,10 +4800,13 @@ begin
     begin
       StopFetching := False;
       FOnSQLFetch(FRecordCount, StopFetching);
-      if StopFetching and not(csLoading in ComponentState) then
-        // Abort;
-        Exit;
+      // A final stop: the cursor ends as at the end of the data
+      if StopFetching and not (csLoading in ComponentState) then
+        FEof := True;
     end;
+  end;
+  if not FEof then
+  begin
     // Go to the next record...
     Set8087CW(Default8087CW);
     // vLib:=FBase.Database.ClientLibrary;

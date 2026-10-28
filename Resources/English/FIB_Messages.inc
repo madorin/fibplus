@@ -98,6 +98,7 @@
     'Error in %s. FieldList is empty.',
     '%s can''t use field "%s"',
     '%s is a Firebird 2 function. Please upgrade to Firebird 2 to use this functionality',
-    '%s is not supported by %s'
+    '%s is not supported by %s',
+    'The value of %s has %d bytes, the maximum is %d'
   );
 

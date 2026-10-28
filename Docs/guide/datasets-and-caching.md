@@ -242,7 +242,7 @@ FIBPlus runs many small internal statements: reading metadata, `GEN_ID`, and the
 CustomerName := Database.QueryValue('SELECT NAME FROM CUSTOMER WHERE ID = :ID', 0, [42]);
 ```
 
-The unit `pFIBCacheQueries` exports `GetQueryForUse` and `FreeQueryForUse` for your own code. `GetQueryForUse` returns `nil` when the transaction is `nil`, or when it has no default database and not exactly one database. The datasets do not use the cache for their own five queries; each dataset owns them.
+The unit `pFIBCacheQueries` exports `GetQueryForUse` and `FreeQueryForUse` for your own code. `GetQueryForUse` returns `nil` when the transaction is `nil`, or when it has no default database and not exactly one database. The overload `GetQueryForUse(Database, Transaction, SQLText)` takes the database explicitly, for a transaction over several databases; it returns `nil` when either is `nil`. The datasets do not use the cache for their own five queries; each dataset owns them.
 
 ### Clearing the query cache
 

@@ -1583,7 +1583,7 @@ begin
               Exit;
             end
         else
-          IBError(FDatabase.ClientLibrary, nil);
+          IBError(FDatabase.ClientLibrary, Self);
         end;
 
       end;

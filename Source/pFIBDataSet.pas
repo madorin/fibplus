@@ -3459,7 +3459,8 @@ begin
       TLargeintField(kf).AsLargeInt := Database.Gen_Id(FAutoUpdateOptions.GeneratorName,
         FAutoUpdateOptions.GeneratorStep, Transaction)
     else
-      kf.asInteger := Database.Gen_Id(FAutoUpdateOptions.GeneratorName, FAutoUpdateOptions.GeneratorStep, Transaction);
+      // a value out of the range of the field raises an error
+      kf.AsVariant := Database.Gen_Id(FAutoUpdateOptions.GeneratorName, FAutoUpdateOptions.GeneratorStep, Transaction);
     FGeneratorBeUsed := True
   end;
 end;

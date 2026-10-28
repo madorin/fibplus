@@ -118,7 +118,7 @@ function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
                       function CompareStringAndVariantEQ(P: Pointer; const v: Variant): boolean;
                       begin
                         case VarType(v) of
-                          varString: result := AnsiString(P) = String(TVarData(v).VString);
+                          varString: result := AnsiString(P) = AnsiString(TVarData(v).VString);
                           varOleStr: result := AnsiString(P) = WideString(TVarData(v).VOleStr);
 {$IFDEF D2009+}
                           varUString: result := AnsiString(P) = string(TVarData(v).VUString);

@@ -29,6 +29,9 @@ function FirebirdCharSetName(CharSetID: Integer): string;
 // Before Delphi 2009 only UTF-8 is converted
 function DecodeString(Buffer: PAnsiChar; Length: Integer; CodePage: Word): string; overload;
 function DecodeString(const Bytes: FIBByteString; CodePage: Word): string; overload;
+// Text the server takes from its system: UTF-8 when the bytes are valid UTF-8 (Linux,
+// Firebird 3+ names), else the system code page (Windows servers)
+function DecodeServerText(Buffer: PAnsiChar; Length: Integer): string;
 // Not tagged with CodePage: concatenating tagged AnsiStrings converts them
 function EncodeString(const S: string; CodePage: Word): FIBByteString;
 // Bytes of S in CodePage, without the transliteration check of EncodeString
@@ -45,7 +48,7 @@ implementation
 
 uses
   fib, FIBConsts
-{$IFDEF D2009+}{$IFNDEF D_XE}, Windows{$ENDIF}{$ENDIF};
+{$IFNDEF D_XE}, Windows{$ENDIF};
 
 type
   TFirebirdCharSet = record
@@ -147,6 +150,7 @@ end;
 {$IFDEF D2009+}
 
 const
+  MB_ERR_INVALID_CHARS = 8;
   WC_NO_BEST_FIT_CHARS = $400;
   GB18030CodePage = 54936;
 
@@ -173,12 +177,13 @@ begin
   Result := ActualCodePage(CodePage) = DefaultSystemCodePage;
 end;
 
-function ToUnicode(CodePage: Word; Buffer: PAnsiChar; Length: Integer; Dest: PWideChar; DestLength: Integer): Integer;
+function ToUnicode(CodePage: Word; Flags: Cardinal; Buffer: PAnsiChar; Length: Integer; Dest: PWideChar;
+  DestLength: Integer): Integer;
 begin
 {$IFDEF D_XE}
-  Result := UnicodeFromLocaleChars(CodePage, 0, Buffer, Length, Dest, DestLength);
+  Result := UnicodeFromLocaleChars(CodePage, Flags, Buffer, Length, Dest, DestLength);
 {$ELSE}
-  Result := MultiByteToWideChar(CodePage, 0, Buffer, Length, Dest, DestLength);
+  Result := MultiByteToWideChar(CodePage, Flags, Buffer, Length, Dest, DestLength);
 {$ENDIF}
 end;
 
@@ -212,7 +217,7 @@ begin
   CodePage := ActualCodePage(CodePage);
   // never more UTF-16 units than bytes
   SetLength(Result, Length);
-  L := ToUnicode(CodePage, Buffer, Length, PWideChar(Result), Length);
+  L := ToUnicode(CodePage, 0, Buffer, Length, PWideChar(Result), Length);
   if L = 0 then
     CodePageError(CodePage);
   SetLength(Result, L);
@@ -257,6 +262,21 @@ begin
   Result := FromUnicode(ActualCodePage(CodePage), PWideChar(Probe), 1, nil, 0, nil) > 0;
 end;
 
+function DecodeServerText(Buffer: PAnsiChar; Length: Integer): string;
+var
+  L: Integer;
+begin
+  Result := '';
+  if Length <= 0 then
+    Exit;
+  SetLength(Result, Length);
+  L := ToUnicode(FIBCodePageUTF8, MB_ERR_INVALID_CHARS, Buffer, Length, PWideChar(Result), Length);
+  if L > 0 then
+    SetLength(Result, L)
+  else
+    Result := DecodeString(Buffer, Length, FIBCodePageSystem);
+end;
+
 {$ELSE}
 
 function DecodeString(Buffer: PAnsiChar; Length: Integer; CodePage: Word): string;
@@ -285,6 +305,26 @@ end;
 function IsCodePageAvailable(CodePage: Word): Boolean;
 begin
   Result := True;
+end;
+
+function DecodeServerText(Buffer: PAnsiChar; Length: Integer): string;
+const
+  MB_ERR_INVALID_CHARS = 8;
+var
+  L: Integer;
+  Text: WideString;
+begin
+  Result := '';
+  if Length <= 0 then
+    Exit;
+  SetString(Result, Buffer, Length);
+  SetLength(Text, Length);
+  L := MultiByteToWideChar(FIBCodePageUTF8, MB_ERR_INVALID_CHARS, Buffer, Length, PWideChar(Text), Length);
+  if L > 0 then
+  begin
+    SetLength(Text, L);
+    Result := Text;
+  end;
 end;
 
 {$ENDIF}

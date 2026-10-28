@@ -152,16 +152,9 @@ end;
 function GetValueInSet(Instance: TObject; const PropName, ValueName: string): boolean;
 var
   Prop: TProperty;
-  P: integer;
-  Str: String;
 begin
   Prop := GetProperty(Instance, PropName);
-  Str := GetPropValue(Prop.Obj, PropName, True);
-  P := Pos(ValueName, Str);
-  if P <= 1 then
-    Result := False
-  else
-    Result := (Str[P - 1] in ['[', ',']) and (Str[P + Length(ValueName)] in [']', ','])
+  Result := Pos(',' + ValueName + ',', ',' + GetSetProp(Prop.Obj, Prop.PropName) + ',') > 0;
 end;
 
 initialization

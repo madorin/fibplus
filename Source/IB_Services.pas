@@ -22,7 +22,7 @@ interface
 uses
 
   SysUtils, Classes,
-  ibase, IB_Intf, IB_Externals, Variants;
+  ibase, IB_Intf, IB_Externals, Variants, FIBPlatforms;
 
 const
   DefaultBufferSize = 32000;
@@ -107,7 +107,7 @@ type
     procedure ParamsChanging(Sender: TObject);
     procedure CheckServerName;
     function Call(ErrCode: ISC_STATUS; RaiseError: Boolean): ISC_STATUS;
-    function ParseString(var RunLen: Integer): AnsiString;
+    function ParseString(var RunLen: Integer): string;
     function ParseInteger(var RunLen: Integer): Integer;
     procedure GenerateSPB(sl: TStrings; var SPB: AnsiString; var SPBLength: Short);
     procedure SetLibraryName(const Value: string);
@@ -247,6 +247,8 @@ type
   TpFIBControlAndQueryService = class(TpFIBControlService)
   private
     FEof: Boolean;
+    // bytes of a character cut at the end of the last chunk
+    FChunkTail: FIBByteString;
     FAction: Integer;
     FOnTextNotify: TServiceGetTextNotify;
     procedure SetAction(Value: Integer);
@@ -607,7 +609,7 @@ uses
 {$IFNDEF NO_MONITOR}
   FIBSQLMonitor,
 {$ENDIF}
-  fib;
+  fib, FIBCharSets;
 
 // Lower case, without the 'isc_spb_' prefix, as in SPBConstantNames
 function NormalizeSPBName(const Name: String): String;
@@ -834,6 +836,8 @@ begin
 end;
 
 procedure TpFIBCustomService.InternalServiceQuery;
+var
+  OutputLength: Integer;
 begin
   FQuerySPBLength := Length(FQueryParams);
   if FQuerySPBLength = 0 then
@@ -842,10 +846,14 @@ begin
   Move(FQueryParams[1], FQuerySPB[0], FQuerySPBLength);
   if (FOutputBuffer = nil) then
     FIBAlloc(FOutputBuffer, 0, FBufferSize);
+  // the API fills at most 65535 bytes
+  OutputLength := FBufferSize;
+  if OutputLength > High(Word) then
+    OutputLength := High(Word);
   try
     LoadLibrary;
     if Call(FClientLibrary.isc_service_query(StatusVector, @FHandle, nil, 0,
-      nil, FQuerySPBLength, FQuerySPB, FBufferSize, FOutputBuffer), False) > 0 then
+      nil, FQuerySPBLength, FQuerySPB, OutputLength, FOutputBuffer), False) > 0 then
     begin
       FHandle := nil;
       IBError(FClientLibrary, Self);
@@ -966,20 +974,16 @@ begin
     IBError(FClientLibrary, Self);
 end;
 
-function TpFIBCustomService.ParseString(var RunLen: Integer): AnsiString;
+function TpFIBCustomService.ParseString(var RunLen: Integer): string;
 var
   Len: UShort;
-  tmp: AnsiChar;
 begin
   LoadLibrary;
   Len := FClientLibrary.isc_vax_integer(OutputBuffer + RunLen, 2);
   RunLen := RunLen + 2;
   if (Len <> 0) then
   begin
-    tmp := OutputBuffer[RunLen + Len];
-    OutputBuffer[RunLen + Len] := #0;
-    result := AnsiString(PAnsiChar(@OutputBuffer[RunLen]));
-    OutputBuffer[RunLen + Len] := tmp;
+    result := DecodeServerText(OutputBuffer + RunLen, Len);
     RunLen := RunLen + Len;
   end
   else
@@ -1005,6 +1009,7 @@ var
   i, j: Integer;
   SPBVal, SPBServerVal: UShort;
   param_name, param_value: String;
+  AnsiValue: AnsiString;
   pval: Integer;
 begin
   { The SPB is initially empty, with the exception that
@@ -1040,8 +1045,11 @@ begin
     case SPBVal of
       isc_spb_command_line, isc_spb_user_name, isc_spb_password, isc_spb_sql_role_name:
         begin
-          SPB := SPB + AnsiChar(SPBServerVal) + AnsiChar(Length(param_value)) + param_value;
-          Inc(SPBLength, 2 + Length(param_value));
+          AnsiValue := AnsiString(param_value);
+          if Length(AnsiValue) > 255 then
+            FIBError(feParamValueTooLong, [param_name, Length(AnsiValue), 255]);
+          SPB := SPB + AnsiChar(SPBServerVal) + AnsiChar(Length(AnsiValue)) + AnsiValue;
+          Inc(SPBLength, 2 + Length(AnsiValue));
         end;
       isc_spb_connect_timeout, isc_spb_dummy_packet_interval:
         begin
@@ -1053,10 +1061,10 @@ begin
 
     else
       begin
-        if (SPBVal > 0) and (SPBVal <= isc_dpb_last_dpb_constant) then
+        if (SPBVal > 0) and (SPBVal <= isc_spb_last_spb_constant) then
           FIBError(feSPBConstantNotSupported, [SPBConstantNames[SPBVal]])
         else
-          FIBError(feSPBConstantUnknown, [SPBVal]);
+          FIBError(feSPBConstantUnknown, [param_name]);
       end;
     end;
   end;
@@ -1336,9 +1344,12 @@ end;
 
 procedure TpFIBControlService.ServiceStartAddParam(Value: AnsiString; param: Integer);
 var
-  Len: UShort;
+  Len: Integer;
 begin
   Len := Length(Value);
+  // a 2-byte length
+  if Len > High(Word) then
+    FIBError(feParamValueTooLong, [Format('ServiceStartParams (%d)', [param]), Len, High(Word)]);
   if Len > 0 then
   begin
     FStartParams := FStartParams + AnsiChar(param) + PAnsiChar(@Len)[0] + PAnsiChar(@Len)[1] + Value;
@@ -2074,7 +2085,7 @@ procedure TpFIBSecurityService.DisplayUsers;
 begin
   SecurityAction := ActionDisplayUser;
   ServiceStartParams := AnsiChar(isc_action_svc_display_user);
-  ServiceStartAddParam(UTF8Encode(FSQLRole), SPBConstantValues[isc_spb_sql_role_name]);
+  ServiceStartAddParam(EncodeString(FSQLRole, FIBCodePageSystem), SPBConstantValues[isc_spb_sql_role_name]);
   InternalServiceStart;
   FetchUserInfo;
 end;
@@ -2083,7 +2094,7 @@ procedure TpFIBSecurityService.DisplayUser(UserName: String);
 begin
   SecurityAction := ActionDisplayUser;
   ServiceStartParams := AnsiChar(isc_action_svc_display_user);
-  ServiceStartAddParam(UTF8Encode(UserName), isc_spb_sec_username);
+  ServiceStartAddParam(EncodeString(UserName, FIBCodePageSystem), isc_spb_sec_username);
   InternalServiceStart;
   FetchUserInfo;
 end;
@@ -2176,7 +2187,7 @@ begin
         if (Len = 0) then
           FIBError(feStartParamsError, [nil]);
         ServiceStartParams := AnsiChar(isc_action_svc_add_user);
-        ServiceStartAddParam(UTF8Encode(FUserName), isc_spb_sec_username);
+        ServiceStartAddParam(EncodeString(FUserName, FIBCodePageSystem), isc_spb_sec_username);
         ServiceStartAddParam(FUserID, isc_spb_sec_userId);
         ServiceStartAddParam(FGroupID, isc_spb_sec_groupid);
         if (ModifySecAdmin in FModifyParams) then
@@ -2185,11 +2196,11 @@ begin
           else
             ServiceStartAddParam(0, isc_spb_sec_admin);
 
-        ServiceStartAddParam(UTF8Encode(FPassword), isc_spb_sec_password);
-        ServiceStartAddParam(UTF8Encode(FFirstName), isc_spb_sec_firstname);
-        ServiceStartAddParam(UTF8Encode(FMiddleName), isc_spb_sec_middlename);
-        ServiceStartAddParam(UTF8Encode(FLastName), isc_spb_sec_lastname);
-        ServiceStartAddParam(UTF8Encode(FSQLRole), SPBConstantValues[isc_spb_sql_role_name]);
+        ServiceStartAddParam(EncodeString(FPassword, FIBCodePageSystem), isc_spb_sec_password);
+        ServiceStartAddParam(EncodeString(FFirstName, FIBCodePageSystem), isc_spb_sec_firstname);
+        ServiceStartAddParam(EncodeString(FMiddleName, FIBCodePageSystem), isc_spb_sec_middlename);
+        ServiceStartAddParam(EncodeString(FLastName, FIBCodePageSystem), isc_spb_sec_lastname);
+        ServiceStartAddParam(EncodeString(FSQLRole, FIBCodePageSystem), SPBConstantValues[isc_spb_sql_role_name]);
       end;
     ActionDeleteUser:
       begin
@@ -2198,7 +2209,7 @@ begin
         if (Len = 0) then
           FIBError(feStartParamsError, [nil]);
         ServiceStartParams := AnsiChar(isc_action_svc_delete_user);
-        ServiceStartAddParam(UTF8Encode(FUserName), isc_spb_sec_username);
+        ServiceStartAddParam(EncodeString(FUserName, FIBCodePageSystem), isc_spb_sec_username);
       end;
     ActionModifyUser:
       begin
@@ -2207,26 +2218,26 @@ begin
         if (Len = 0) then
           FIBError(feStartParamsError, [nil]);
         ServiceStartParams := AnsiChar(isc_action_svc_modify_user);
-        ServiceStartAddParam(UTF8Encode(FUserName), isc_spb_sec_username);
+        ServiceStartAddParam(EncodeString(FUserName, FIBCodePageSystem), isc_spb_sec_username);
         if (ModifyUserId in FModifyParams) then
           ServiceStartAddParam(FUserID, isc_spb_sec_userId);
         if (ModifyGroupId in FModifyParams) then
           ServiceStartAddParam(FGroupID, isc_spb_sec_groupid);
         if (ModifyPassword in FModifyParams) then
-          ServiceStartAddParam(UTF8Encode(FPassword), isc_spb_sec_password);
+          ServiceStartAddParam(EncodeString(FPassword, FIBCodePageSystem), isc_spb_sec_password);
         if (ModifyFirstName in FModifyParams) then
-          ServiceStartAddParam(UTF8Encode(FFirstName), isc_spb_sec_firstname);
+          ServiceStartAddParam(EncodeString(FFirstName, FIBCodePageSystem), isc_spb_sec_firstname);
         if (ModifyMiddleName in FModifyParams) then
-          ServiceStartAddParam(UTF8Encode(FMiddleName), isc_spb_sec_middlename);
+          ServiceStartAddParam(EncodeString(FMiddleName, FIBCodePageSystem), isc_spb_sec_middlename);
         if (ModifyLastName in FModifyParams) then
-          ServiceStartAddParam(UTF8Encode(FLastName), isc_spb_sec_lastname);
+          ServiceStartAddParam(EncodeString(FLastName, FIBCodePageSystem), isc_spb_sec_lastname);
         if (ModifySecAdmin in FModifyParams) then
           if FSecAdmin then
             ServiceStartAddParam(1, isc_spb_sec_admin)
           else
             ServiceStartAddParam(0, isc_spb_sec_admin);
 
-        ServiceStartAddParam(UTF8Encode(FSQLRole), SPBConstantValues[isc_spb_sql_role_name]);
+        ServiceStartAddParam(EncodeString(FSQLRole, FIBCodePageSystem), SPBConstantValues[isc_spb_sql_role_name]);
       end;
   end;
 end;
@@ -2242,12 +2253,40 @@ end;
 procedure TpFIBControlAndQueryService.SetAction(Value: Integer);
 begin
   FEof := False;
+  FChunkTail := '';
   FAction := Value;
+end;
+
+// Bytes at the end of S that start a UTF-8 character but do not complete it
+function IncompleteUTF8Tail(const S: FIBByteString): Integer;
+var
+  i, First, Need: Integer;
+begin
+  Result := 0;
+  First := Length(S) - 2;
+  if First < 1 then
+    First := 1;
+  for i := Length(S) downto First do
+    if Byte(S[i]) >= $C0 then
+    begin
+      if Byte(S[i]) >= $F0 then
+        Need := 4
+      else if Byte(S[i]) >= $E0 then
+        Need := 3
+      else
+        Need := 2;
+      if Length(S) - i + 1 < Need then
+        Result := Length(S) - i + 1;
+      Exit;
+    end
+    else if Byte(S[i]) < $80 then
+      Exit;
 end;
 
 function TpFIBControlAndQueryService.GetNextChunk: String;
 var
-  Length: Integer;
+  Length, Tail: Integer;
+  Bytes: FIBByteString;
 begin
   if (FEof = True) then
   begin
@@ -2268,8 +2307,14 @@ begin
     FEof := True
   else
     FIBError(feOutputParsingError, [nil]);
-  OutputBuffer[3 + Length] := #0;
-  result := AnsiString(PAnsiChar(@OutputBuffer[3]));
+  SetString(Bytes, PAnsiChar(@OutputBuffer[3]), Length);
+  Bytes := FChunkTail + Bytes;
+  if FEof then
+    Tail := 0
+  else
+    Tail := IncompleteUTF8Tail(Bytes);
+  FChunkTail := Copy(Bytes, System.Length(Bytes) - Tail + 1, Tail);
+  result := DecodeServerText(PAnsiChar(Bytes), System.Length(Bytes) - Tail);
 end;
 
 procedure TpFIBControlAndQueryService.ServiceStart;
@@ -2307,8 +2352,7 @@ begin
     FEof := True;
     exit;
   end;
-  OutputBuffer[3 + Length] := #0;
-  result := AnsiString(PAnsiChar(@OutputBuffer[3]));
+  result := DecodeServerText(OutputBuffer + 3, Length);
 end;
 
 { TpFIBLogService }
@@ -2384,6 +2428,12 @@ begin
   else
     FIBError(feOutputParsingError, [nil]);
   SetString(result, PAnsiChar(@OutputBuffer[3]), ALength);
+  // bytes kept by GetNextChunk
+  if FChunkTail <> '' then
+  begin
+    result := FChunkTail + result;
+    FChunkTail := '';
+  end;
 end;
 
 end.

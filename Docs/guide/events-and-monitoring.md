@@ -153,22 +153,24 @@ For `keLostConnect`, `DoRaise := False` ends the call with a silent `EAbort`, un
 
 | Member | Description |
 |--------|-------------|
-| `LastError` | Kind of the last handled error. |
+| `LastError` | Kind of the last error handled in the calling thread. `ExceptionNumber`, `ExceptionName` and `ConstraintName` are per thread too. |
 | `ExceptionNumber`, `ExceptionName` | Number and name of a user exception. Valid for `keException` when `oeException` is set; `ExceptionNumber` is `-1` otherwise. |
-| `ConstraintName` | Constraint of a foreign key, check, or unique violation, see [Options](#options). |
-| `ErrorLexems` | Words that the handler looks for in the server message: `Constraint`, `Index`, `Exception`, `At`. Written in lower case. Defaults: `constraint`, `index`, `exception`, `at`. |
+| `ConstraintName` | Constraint of a foreign key, check, or unique violation, see [Options](#options). The exact name from the status vector, even with spaces or quotes; *Firebird 6* quotes it and puts the schema before an index name, both removed here. |
+| `ErrorLexems` | Words that the handler looks for in the server message: `Constraint` and `Index` (only when the status vector has no constraint name), `Exception`, `At`. Written in lower case. Defaults: `constraint`, `index`, `exception`, `at`. |
 | `OnFIBErrorEvent(Sender, ErrorValue, KindIBError, DoRaise)` | Called after the handler classified the error. |
 
 ### Custom messages for constraints
 
-With `oeForeignKey`, `oeCheck`, or `oeUniqueViolation`, the handler looks up the constraint name in the table `FIB$ERROR_MESSAGES` of the database. A row has a `CONSTRAINT_NAME` and a `MESSAGE_STRING`.
+With `oeForeignKey`, `oeCheck`, or `oeUniqueViolation`, the handler looks up the constraint name in the table `FIB$ERROR_MESSAGES` of the database of the failing statement (in a transaction over several databases, not the default one of the transaction). A row has a `CONSTRAINT_NAME` and a `MESSAGE_STRING`.
 
 ```sql
 INSERT INTO FIB$ERROR_MESSAGES (CONSTRAINT_NAME, MESSAGE_STRING)
 VALUES ('UNQ_CUSTOMER_NAME', 'A customer with this name already exists.');
 ```
 
-The lookup needs the table to exist and `urErrorMessagesInfo` to be in `TFIBDatabase.UseRepositories` (it is by default). Found messages are cached in the application. Without a row for the constraint, a foreign key violation keeps its message; a unique or check violation gets the server message only.
+The lookup needs the table to exist and `urErrorMessagesInfo` to be in `TFIBDatabase.UseRepositories` (it is by default). `CONSTRAINT_NAME` must be the name as the server reports it, in the same case (upper case for a name created without quotes). Without a row for the constraint, a foreign key violation keeps its message; a unique or check violation gets the server message only. If the lookup itself fails, for example without an active transaction, the error is handled as if there were no row.
+
+The messages, and the constraints without a row, are cached in the application for each database. The cache is checked against the `FIB$VERSION` column once per database: at the first lookup and after `LoadSchemaFromFile`. A row added or changed later is used after `ListErrorMessages.Clear` (unit `pFIBDataInfo`) or a restart of the application.
 
 ### Lost connection
 

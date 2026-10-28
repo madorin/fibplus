@@ -11641,6 +11641,21 @@ begin
     end;
 end;
 
+// A scaled number stored in an INTEGER or SMALLINT column
+function ScaledLong(Value: Int64): Long;
+begin
+  if (Value > High(Long)) or (Value < Low(Long)) then
+    FIBError(feInvalidDataConversion, [nil]);
+  Result := Long(Value);
+end;
+
+function ScaledShort(Value: Int64): Short;
+begin
+  if (Value > High(Short)) or (Value < Low(Short)) then
+    FIBError(feInvalidDataConversion, [nil]);
+  Result := Short(Value);
+end;
+
 {$IFDEF D_XE3}
 
 procedure TFIBCustomDataSet.SetFieldData(Field: TField; Buffer: TValueBuffer);
@@ -11843,12 +11858,12 @@ begin
                             SQL_FLOAT: PSingle(@Buff[fi^.fdDataOfs])^ := PDouble(Buffer)^;
                             SQL_LONG:
                               if fi^.fdDataScale <> 0 then
-                                PLong(@Buff[fi^.fdDataOfs])^ := Round(PDouble(Buffer)^ * E10[-fi^.fdDataScale])
+                                PLong(@Buff[fi^.fdDataOfs])^ := ScaledLong(Round(PDouble(Buffer)^ * E10[-fi^.fdDataScale]))
                               else
                                 PLong(@Buff[fi^.fdDataOfs])^ := PLong(Buffer)^;
                             SQL_SHORT:
                               if fi^.fdDataScale <> 0 then
-                                PShort(@Buff[fi^.fdDataOfs])^ := Round(PDouble(Buffer)^ * E10[-fi^.fdDataScale])
+                                PShort(@Buff[fi^.fdDataOfs])^ := ScaledShort(Round(PDouble(Buffer)^ * E10[-fi^.fdDataScale]))
                               else
                                 PShort(@Buff[fi^.fdDataOfs])^ := PShort(Buffer)^;
                             SQL_INT64:

@@ -479,7 +479,7 @@ type
     function BytesInUnicodeChar(CharSetId: Integer): Byte;
     function ReturnDeclaredFieldSize: Boolean;
     function MemoSubTypesActive: Boolean;
-    function IsMemoSubtype(aSubtype: ShortInt): Boolean;
+    function IsMemoSubtype(aSubtype: SmallInt): Boolean;
     function LibraryFilePath: string;
 
 {$IFDEF USE_DEPRECATE_METHODS1}
@@ -1403,6 +1403,8 @@ begin
       FLibraryName := LibName;
       FClientLibrary := nil;
       FClientLibLoaded := False;
+      // the DPB version depends on the client
+      FDBParamsChanged := True;
       { if Length(FLibraryName)>0 then
       LoadLibrary }
     end;
@@ -1442,7 +1444,7 @@ begin
   Result := FMemoSubtypes.Active
 end;
 
-function TFIBDatabase.IsMemoSubtype(aSubtype: ShortInt): Boolean;
+function TFIBDatabase.IsMemoSubtype(aSubtype: SmallInt): Boolean;
 begin
   Result := FMemoSubtypes.IsMemoSubtype(aSubtype)
 end;
@@ -2274,7 +2276,8 @@ begin
     if FDBParamsChanged then
       begin
         FDBParamsChanged := False;
-        GenerateDPB(FDBParams, DPB, FDPBLength, FConnectParams.IsFirebird);
+        GenerateDPB(FDBParams, DPB, FDPBLength, FConnectParams.IsFirebird,
+          (FClientLibrary.Version.Product = fpFirebird) and (FClientLibrary.Version.Major >= 3));
         FIBAlloc(FDPB, 0, FDPBLength);
         Move(DPB[1], FDPB[0], FDPBLength);
       end;
@@ -2337,7 +2340,6 @@ begin
   FInternalTransaction.Timeout := 1000;
   FStreammedConnectFail := False;
   AttachmentID;
-  DPB := FDPB;
 
 {$IFNDEF NO_MONITOR}
   if MonitoringEnabled then
@@ -2450,8 +2452,6 @@ begin
 end;
 
 procedure TFIBDatabase.LoadLibrary;
-var
-  XLibraryName: AnsiString;
 begin
 {$IFDEF D_XE2}
 {$IFDEF WIN64}
@@ -2461,8 +2461,7 @@ begin
 {$ENDIF}
   if not FClientLibLoaded then
     begin
-      XLibraryName := FLibraryName;
-      FClientLibrary := IB_Intf.GetClientLibrary(XLibraryName);
+      FClientLibrary := IB_Intf.GetClientLibrary(FLibraryName);
       FClientLibLoaded := Assigned(FClientLibrary);
     end;
   if not FClientLibrary.LibraryLoaded then
@@ -3063,10 +3062,7 @@ begin
   Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1,
     @DBInfoCommand, FIBLocalBufferLength, local_buffer), True);
   if DBInfoCommand = local_buffer[0] then
-    begin
-      local_buffer[5 + Int(local_buffer[4])] := #0;
-      Result := PAnsiChar(@local_buffer[5]);
-    end
+    Result := DecodeServerText(@local_buffer[5], Int(local_buffer[4]))
   else
     Result := '';
 end;
@@ -3242,8 +3238,7 @@ begin
 
   Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1,
     @DBInfoCommand, FIBBigLocalBufferLength, local_buffer), True);
-  local_buffer[5 + Int(local_buffer[4])] := #0;
-  Result := PAnsiChar(@local_buffer[5]);
+  Result := DecodeServerText(@local_buffer[5], Int(local_buffer[4]));
 end;
 
 function TFIBDatabase.GetCurrentMemory: Long;
@@ -3274,7 +3269,6 @@ end;
 function TFIBDatabase.GetUserNames: TStringList;
 var
   local_buffer: array [0 .. FIBHugeLocalBufferLength - 1] of AnsiChar;
-  temp_buffer: array [0 .. FIBLocalBufferLength - 2] of AnsiChar;
   DBInfoCommand: AnsiChar;
   i, user_length: Integer;
 begin
@@ -3292,10 +3286,8 @@ begin
       // skip "isc_info_user_names byte" & two unknown bytes of structure (see below)
       user_length := Long(local_buffer[i]);
       Inc(i, 1);
-      Move(local_buffer[i], temp_buffer[0], user_length);
+      FUserNames.Add(DecodeServerText(@local_buffer[i], user_length));
       Inc(i, user_length);
-      temp_buffer[user_length] := #0;
-      FUserNames.Add(AnsiString(temp_buffer));
     end;
 end;
 
@@ -3581,8 +3573,7 @@ begin
   _DBInfoCommand := AnsiChar(DBInfoCommand);
   Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1,
     @_DBInfoCommand, FIBBigLocalBufferLength, local_buffer), True);
-  local_buffer[4 + Int(local_buffer[3])] := #0;
-  Result := PAnsiChar(@local_buffer[4]);
+  Result := DecodeServerText(@local_buffer[4], Int(local_buffer[3]));
 end;
 
 function TFIBDatabase.GetInt64DBInfo(DBInfoCommand: Integer): Int64;
@@ -4569,7 +4560,7 @@ begin
   if FTRParamsChanged then
     begin
       FTRParamsChanged := False;
-      GenerateTPB(FTRParams, TPB, FTPBLength, vIsFB21orMore);
+      GenerateTPB(FTRParams, TPB, FTPBLength, vIsFB21orMore, MainDatabase.Capabilities.MetadataCodePage);
       FIBAlloc(FTPB, 0, FTPBLength);
       Move(TPB[1], FTPB[0], FTPBLength);
     end;
@@ -4591,7 +4582,8 @@ begin
             vTRParams1.Text := FDatabaseTRParams[i];
 
             SetLength(FDatabaseTPBs, i + 1);
-            GenerateTPB(vTRParams1, FDatabaseTPBs[i], vTPBLength, vIsFB21orMore);
+            GenerateTPB(vTRParams1, FDatabaseTPBs[i], vTPBLength, vIsFB21orMore,
+              Databases[i].Capabilities.MetadataCodePage);
             if Length(FDatabaseTPBs[i]) > 0 then
               begin
                 pteb^[i].tpb_address := @FDatabaseTPBs[i][1];

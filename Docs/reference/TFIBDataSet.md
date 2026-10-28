@@ -353,7 +353,7 @@ Events of `TDataSet` (`BeforeOpen`, `AfterPost`, `OnNewRecord`, and so on) are p
 | Name | Description |
 |------|-------------|
 | `AfterFetchRecord` | After a row is stored in the cache. Setting `StopFetching` ends the fetch, keeps the row, and ends with a silent `EAbort`. `FromQuery` can also be `QRefresh`. With `UniDirectional` or `cmkLimitedBufferSize`, `RecordNumber` is already reduced modulo `BufferChunks`. |
-| `BeforeFetchRecord` | Called by `QSelect` before it requests the next row from the server; `RecordNumber` is the number of rows already fetched. Setting `StopFetching` makes the fetch return no row, and `Eof` is not set. |
+| `BeforeFetchRecord` | Called by `QSelect` before it requests the next row from the server; `RecordNumber` is the number of rows already fetched. Setting `StopFetching` ends the fetch: no more rows are read, `QSelect.Eof` and `AllFetched` are set, and the cached rows are the whole result until the dataset is reopened. |
 | `OnCompareFieldValues` | Compares two values for sorting. See `TCompareFieldValues`. |
 | `OnDisableControls` / `OnEnableControls` | `DisableControls` and `EnableControls` changed the state of the controls. |
 | `OnEndScroll` | The dataset has not scrolled for `WaitEndMasterInterval` milliseconds. The timer restarts on each `AfterScroll`, which is skipped while scroll events are disabled, but a timer started earlier can still fire after `DisableScrollEvents`. |

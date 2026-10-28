@@ -154,7 +154,7 @@ An ID refers either to an offset zone (`+02:00`) or to a region zone. `FIBTypes`
 ### `config=` lines in `DBParams`
 
 - **Server:** any. **Client library:** *Firebird 3+* (the code marks `isc_dpb_config` as *Firebird 3+*).
-- **In FIBPlus:** lines `config=Name=Value` in `DBParams` and `ConfigParam[Name]` pass configuration values to the client. `ConnectParams.WireCompression` writes the `WireCompression` value this way.
+- **In FIBPlus:** lines `config=Name=Value` in `DBParams` and `ConfigParam[Name]` pass configuration values to the client. `ConnectParams.WireCompression` writes the `WireCompression` value this way. All lines go into one value; over 255 bytes it needs a *Firebird 3+* client and server, see [DBParams](../reference/TFIBDatabase.md#dbparams).
 - **Guide:** [Connections](connections.md).
 
 ## Firebird 2.1

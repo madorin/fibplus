@@ -142,26 +142,20 @@ uses
   FIBConsts, StrUtil;
 
 procedure StreamToVariantArray(Stream: TMemoryStream; var Value: variant);
-var
-  i: Integer;
 begin
-  for i := 0 to Stream.Size - 1 do
-    PByte(LongInt(TVarData(Value).VArray^.Data) + i)^ := PByte(LongInt(Stream.Memory) + i)^;
+  // a memory stream fits the address space
+  if Stream.Size > 0 then
+    Move(Stream.Memory^, TVarData(Value).VArray^.Data^, Stream.Size);
 end;
 
 procedure StreamToVariant(Stream: TMemoryStream; var Value: variant);
-var
-  i: Integer;
-  vt: TVarType;
 begin
   VarClear(Value);
   if Stream.Size > 0 then
   begin
     Stream.Position := 0;
-    vt := varByte;
-    Value := VarArrayCreate([0, Stream.Size - 1], vt);
-    for i := 0 to Stream.Size - 1 do
-      PByte(LongInt(TVarData(Value).VArray^.Data) + i)^ := PByte(LongInt(Stream.Memory) + i)^;
+    Value := VarArrayCreate([0, Stream.Size - 1], varByte);
+    StreamToVariantArray(Stream, Value);
   end;
 end;
 
