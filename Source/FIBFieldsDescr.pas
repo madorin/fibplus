@@ -60,7 +60,7 @@ type
       afdNullable, afdIsDBKey: Boolean; IsSeparateString: Boolean;
       aAddedType: TAddedTypeFields): Integer;
     procedure SaveToStream(Stream: TStream);
-    procedure LoadFromStream(Stream: TStream; StreamVersion: byte);
+    procedure LoadFromStream(Stream: TStream; StreamVersion: Integer);
 
     property FieldInfo[Index: Integer]: PFIBFieldDescr read GetFieldInfo; default;
     property Capacity: Integer read GetCapacity write SetCapacity;
@@ -175,7 +175,7 @@ begin
   Result := PFIBFieldDescr(vFieldInfoList.List[Index])
 end;
 
-procedure TFIBFieldDescrList.LoadFromStream(Stream: TStream; StreamVersion: byte);
+procedure TFIBFieldDescrList.LoadFromStream(Stream: TStream; StreamVersion: Integer);
 var
   i, c: Integer;
   p: PFIBFieldDescr;

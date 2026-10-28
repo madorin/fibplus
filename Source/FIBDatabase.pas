@@ -538,7 +538,7 @@ type
     function BytesInUnicodeChar(CharSetId: Integer): Byte;
     function ReturnDeclaredFieldSize: Boolean;
     function MemoSubTypesActive: Boolean;
-    function IsMemoSubtype(aSubtype: ShortInt): Boolean;
+    function IsMemoSubtype(aSubtype: SmallInt): Boolean;
     function LibraryFilePath: string;
 
 {$IFDEF USE_DEPRECATE_METHODS1}
@@ -1805,7 +1805,7 @@ begin
   Result := FMemoSubtypes.Active
 end;
 
-function TFIBDatabase.IsMemoSubtype(aSubtype: ShortInt): Boolean;
+function TFIBDatabase.IsMemoSubtype(aSubtype: SmallInt): Boolean;
 begin
   Result := FMemoSubtypes.IsMemoSubtype(aSubtype)
 end;

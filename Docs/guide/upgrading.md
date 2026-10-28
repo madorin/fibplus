@@ -105,7 +105,9 @@ These have no old name, so the code that uses them must change:
 | `FIBAlloc(var p; OldSize, NewSize: DWORD)` (`FIB`) | `OldSize, NewSize: NativeInt` | Nothing for most code. |
 | `TFIBCustomTimer.Interval: Integer` (`FIBSafeTimer`, alias `TFIBTimer` in `StdFuncs`), `TFIBDataSet.WaitEndMasterInterval: Integer` | `Cardinal`, like `TTimer.Interval` | Use 0, not a negative value, for no delay: a negative variable now becomes a long interval. |
 | `IIbClientLibrary.isc_interprete`, `fb_Interpret` returning `ISC_STATUS` | `ISC_LONG` | The same type on Win32. On Win64 change the result type in classes that implement `IIbClientLibrary`. |
+| `TFIBDatabase.IsMemoSubtype(aSubtype: ShortInt)`, `TMemoSubtypes.IsMemoSubtype` | `aSubtype: SmallInt` | Nothing. |
 | `SIB_QueEvents`, `SIB_EventCounts` (`SIBAPI`) with `Length: SIB_UShort` | `Length: SIB_Short` | Nothing: the event buffer of `isc_event_block` is far below 32767 bytes. |
+| `TFIBFieldDescrList.LoadFromStream(Stream; StreamVersion: Byte)` | `StreamVersion: Integer` | Nothing. |
 
 ### Removed identifiers
 
@@ -196,6 +198,16 @@ A feature that the client library doesn't support raises `feClientFeatureNotSupp
 #### Non-ASCII text in server errors
 
 `Message`, `IBMessage` and `ErrorArgument` of a server error and `TFIBErrorHandler.ConstraintName` and `ExceptionName` are decoded in the charset of the connection, no longer in the system code page. Code that decoded them again (for example `UTF8ToString(RawByteString(E.Message))` on a UTF8 connection) must stop doing so.
+
+#### Values out of range
+
+Some values that were cut without an error now raise one; see the [changelog](../../CHANGELOG.md):
+`AsInteger` and `AsShort` of `TFIBQuery` fields and parameters out of the range of the type, a
+BLOB of more than 32767 bytes assigned to a parameter that is not a BLOB, a value out of the
+range of a persistent float field of a `NUMERIC` stored as `INTEGER` or `SMALLINT`, a generator
+value out of the range of an `INTEGER` key field, a service start parameter of 65536 bytes or
+more. `lock_timeout` of `TRParams` is checked by Firebird 2.5 and later (1 to 32767). Use `AsInt64`,
+`BIGINT` columns or a smaller value.
 
 ## 7.9.1
 

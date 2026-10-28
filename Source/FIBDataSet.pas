@@ -5234,7 +5234,7 @@ begin
                 end;
               SQL_TYPE_TIME:
                 begin
-                  PInteger(@Buffer[fi^.fdDataOfs - DiffSizesRecData])^ := PISC_TIME(LocalData)^ div 10;
+                  PInteger(@Buffer[fi^.fdDataOfs - DiffSizesRecData])^ := Integer(PISC_TIME(LocalData)^ div 10);
                 end;
               SQL_INT64:
                 if (fi^.fdDataScale < -4) and not(psSQLINT64ToBCD in PrepareOptions) then
@@ -5426,7 +5426,8 @@ begin
             else
               atf := atfStandard
           end;
-          vFieldDescrList.Add(vvSqlType and (not 1), sqlscale, vvFieldBufSize,
+          // a type code and a size from sqllen
+          vFieldDescrList.Add(Short(vvSqlType and (not 1)), sqlscale, Short(vvFieldBufSize),
             SQLType and 1 = 1, StringInArray(qda[i].SqlName, ['DB_KEY', 'RDB$DB_KEY']), vvSeparateString, atf);
         end;
       fi := vFieldDescrList[i];
@@ -6461,7 +6462,7 @@ begin
                                   Inc(Data, SizeOf(Integer));
                                 end
                               else
-                                L := Q_StrLen(Data);
+                                L := Integer(Q_StrLen(Data));
 
                               if L > fi^.fdDataSize then
                                 L := fi^.fdDataSize;
@@ -9476,7 +9477,8 @@ var
 begin
   blField := FieldByNumber(FieldNo) as TBlobField;
   Stream := CreateBlobStream(blField, bmRead);
-  Result := Stream.Size;
+  // a FIBPlus blob stream holds at most MaxInt bytes
+  Result := Integer(Stream.Size);
   if Result = 0 then
     Stream.Free
   else if blField.DataType = ftWideMemo then
@@ -9705,7 +9707,7 @@ begin
                           begin
                             if (StringFieldCodePage(Field) = FIBCodePageUTF8) and not(drsInFieldAsData in FRunState) then
                               begin
-                                L := Utf8ToUnicode(PWideChar(Buffer), L + 1, PAnsiChar(Data), L);
+                                L := Integer(Utf8ToUnicode(PWideChar(Buffer), Cardinal(L + 1), PAnsiChar(Data), Cardinal(L)));
                                 if L > Field.Size then
                                   L := Field.Size;
                                 PWideChar(Buffer)[L] := #0
@@ -10262,7 +10264,11 @@ end;
 
 function TFIBCustomDataSet.GetRecordSize: Word;
 begin
-  Result := FRecordBufferSize;
+  // the TDataSet property is a Word
+  if FRecordBufferSize > High(Word) then
+    Result := High(Word)
+  else
+    Result := Word(FRecordBufferSize);
 end;
 
 procedure TFIBCustomDataSet.RefreshMasterDS;
@@ -10829,7 +10835,7 @@ end;
 procedure TFIBCustomDataSet.InternalInitFieldDefs;
 var
   DataType: TFieldType;
-  Size: Word;
+  Size: Integer;
   i, FieldNo: Integer;
   Name: string;
   isSmallInt: Boolean;
@@ -11437,7 +11443,7 @@ begin
         FRecordBufferSize := FCalcFieldsOffset + CalcFieldsSize;
         FBlockReadSize := FBlockReadSize + (StreamFieldCount * SizeOf(TFIBFieldStream));
 
-        FBufferChunkSize := FRecordBufferSize * FCacheModelOptions.FBufferChunks;
+        FBufferChunkSize := DWORD(FRecordBufferSize * FCacheModelOptions.FBufferChunks);
         vCalcFieldsSavedCache := poCacheCalcFields in Options;
         if vCalcFieldsSavedCache then
           FRecordsCache := TRecordsCache.Create(FCacheModelOptions.FBufferChunks,
@@ -12066,6 +12072,21 @@ begin
 end;
 {$ENDIF}
 
+// A scaled number stored in an INTEGER or SMALLINT column
+function ScaledLong(Value: Int64): Long;
+begin
+  if (Value > High(Long)) or (Value < Low(Long)) then
+    FIBError(feInvalidDataConversion, [nil]);
+  Result := Long(Value);
+end;
+
+function ScaledShort(Value: Int64): Short;
+begin
+  if (Value > High(Short)) or (Value < Low(Short)) then
+    FIBError(feInvalidDataConversion, [nil]);
+  Result := Short(Value);
+end;
+
 procedure TFIBCustomDataSet.SetFieldData(Field: TField; Buffer: Pointer);
 var
   Buff, TmpBuff: TRecordBuffer;
@@ -12142,7 +12163,7 @@ begin
             if TFIBStringField(Field).vInSetAsString then
               L := TFIBStringField(Field).FValueLength
             else
-              L := Q_StrLen(Buffer);
+              L := Integer(Q_StrLen(Buffer));
             if L > Field.DataSize - 1 then
               L := Field.DataSize - 1;
 
@@ -12223,7 +12244,7 @@ begin
                                 if (Field is TFIBStringField) and TFIBStringField(Field).vInSetAsString then
                                   L := TFIBStringField(Field).FValueLength
                                 else
-                                  L := Q_StrLen(Buffer);
+                                  L := Integer(Q_StrLen(Buffer));
                                 if L > fi.fdDataSize then
                                   L := fi.fdDataSize;
 
@@ -12260,12 +12281,12 @@ begin
                             SQL_FLOAT: PSingle(@Buff[fi^.fdDataOfs])^ := PDouble(Buffer)^;
                             SQL_LONG:
                               if fi^.fdDataScale <> 0 then
-                                PLong(@Buff[fi^.fdDataOfs])^ := Round(PDouble(Buffer)^ * E10[-fi^.fdDataScale])
+                                PLong(@Buff[fi^.fdDataOfs])^ := ScaledLong(Round(PDouble(Buffer)^ * E10[-fi^.fdDataScale]))
                               else
                                 PLong(@Buff[fi^.fdDataOfs])^ := PLong(Buffer)^;
                             SQL_SHORT:
                               if fi^.fdDataScale <> 0 then
-                                PShort(@Buff[fi^.fdDataOfs])^ := Round(PDouble(Buffer)^ * E10[-fi^.fdDataScale])
+                                PShort(@Buff[fi^.fdDataOfs])^ := ScaledShort(Round(PDouble(Buffer)^ * E10[-fi^.fdDataScale]))
                               else
                                 PShort(@Buff[fi^.fdDataOfs])^ := PShort(Buffer)^;
                             SQL_INT64:
@@ -12388,7 +12409,7 @@ begin
   if Src <> nil then
     begin
       // SysUtils.StrCopy(PAnsiChar) is deprecated (XE4+); Src may be Dest
-      Result := Q_StrLen(Src);
+      Result := Integer(Q_StrLen(Src));
       Move(Src^, Dest^, Result + 1);
     end
   else
@@ -15676,7 +15697,8 @@ begin
       TLargeintField(kf).AsLargeInt := Database.Gen_Id(FAutoUpdateOptions.GeneratorName,
         FAutoUpdateOptions.GeneratorStep, Transaction)
     else
-      kf.asInteger := Database.Gen_Id(FAutoUpdateOptions.GeneratorName, FAutoUpdateOptions.GeneratorStep, Transaction);
+      // a value out of the range of the field raises an error
+      kf.AsVariant := Database.Gen_Id(FAutoUpdateOptions.GeneratorName, FAutoUpdateOptions.GeneratorStep, Transaction);
     FGeneratorBeUsed := True
   end;
 end;
@@ -16291,7 +16313,7 @@ var
               end;
               BCDToInt64WithScale(pValue^, lValue, lScale);
               CurParam.asInt64 := lValue;
-              CurParam.Data.sqlscale := -lScale;
+              CurParam.Data.sqlscale := Short(-lScale);
             end;
         else
           if VarIsEmpty(NewVal) then

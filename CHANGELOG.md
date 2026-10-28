@@ -233,6 +233,8 @@ The lists of old and new names, and what an application has to change, are in
   `Integer`), like `TTimer.Interval`. `IIbClientLibrary.isc_interprete` and `fb_Interpret` return
   `ISC_LONG` (were `ISC_STATUS`, 64 bits on Win64), as the client library. The `Length` of
   `SIB_QueEvents` and `SIB_EventCounts` is `SIB_Short` (was `SIB_UShort`), as in the client API.
+  `TFIBDatabase.IsMemoSubtype` and `TMemoSubtypes.IsMemoSubtype` take a `SmallInt` (was
+  `ShortInt`), and `TFIBFieldDescrList.LoadFromStream` an `Integer` version (was `Byte`).
 
 #### Schema extract
 
@@ -528,6 +530,12 @@ The lists of old and new names, and what an application has to change, are in
   dialect 1 or 2 sent the value cut to 32 bits; out of that range it is sent as a double. A
   `LongWord` variant over `MaxInt` was sent as a negative number when passed by reference and
   raised `EVariantOverflowError` when passed by value; both are sent as a `BIGINT`.
+- `TFIBDataSet`: a value out of range in a persistent float field of a `NUMERIC` stored as
+  `INTEGER` or `SMALLINT` (for example 30000000 in a `NUMERIC(9,2)`) was stored cut
+  (-12949672.96); it raises an error now. A generator value out of the `INTEGER` range for an
+  `INTEGER` key field (`AutoUpdateOptions`) was cut; the field raises an error now.
+- `TFIBDatabase.MemoSubtypes` kept the sub types in a byte, so for example `-1000` also matched
+  the sub type 24.
 
 ## [7.9.1] - 2026-10-09
 

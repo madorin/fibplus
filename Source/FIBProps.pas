@@ -468,11 +468,11 @@ type
   TMemoSubtypes = class
   private
     FActive: boolean;
-    FSubTypes: array of ShortInt;
+    FSubTypes: array of SmallInt;
     FSubTypesStr: string;
     procedure SetSubTypes(const SubTypesStr: string);
   public
-    function IsMemoSubtype(aSubtype: ShortInt): boolean;
+    function IsMemoSubtype(aSubtype: SmallInt): boolean;
     property Active: boolean read FActive;
   published
     property Subtypes: string read FSubTypesStr write SetSubTypes;
@@ -2076,7 +2076,7 @@ end;
 
 { TMemoSubtypes }
 
-function TMemoSubtypes.IsMemoSubtype(aSubtype: ShortInt): boolean;
+function TMemoSubtypes.IsMemoSubtype(aSubtype: SmallInt): boolean;
 var
   I, L: integer;
 begin
@@ -2096,6 +2096,7 @@ end;
 procedure TMemoSubtypes.SetSubTypes(const SubTypesStr: string);
 var
   wc, I: integer;
+  SubType: Integer;
   S: string;
 begin
   FActive := False;
@@ -2105,7 +2106,11 @@ begin
   for I := 1 to wc do
   begin
     S := ExtractWord(I, SubTypesStr, [';']);
-    FSubTypes[I - 1] := StrToIntDef(S, 1);
+    SubType := StrToIntDef(S, 1);
+    // out of the SMALLINT range: ignored, as text that is not a number
+    if (SubType < Low(SmallInt)) or (SubType > High(SmallInt)) then
+      SubType := 1;
+    FSubTypes[I - 1] := SmallInt(SubType);
     if FSubTypes[I - 1] <> 1 then
     begin
       FActive := True;

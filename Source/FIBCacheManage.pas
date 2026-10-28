@@ -56,7 +56,7 @@ type
     FStringFieldOffsets: PIntArray;
     FStringFieldSize: PIntArray;
     FRecInBlock: Integer;
-    FStrFieldCount: Word;
+    FStrFieldCount: Integer;
     FSaveChangeLog: Boolean;
     procedure SetBlockCount(NewCount: Integer);
     function GetBlockCount: Integer;
@@ -1020,7 +1020,8 @@ var
     if UseCache then
       if Force or (CacheStream.Position + nextCount >= CacheSize) then
         begin
-          Stream.WriteBuffer(CacheStream.Memory^, CacheStream.Position);
+          // flushed before it grows over CacheSize
+          Stream.WriteBuffer(CacheStream.Memory^, Integer(CacheStream.Position));
           CacheStream.Position := 0;
         end;
   end;

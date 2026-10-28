@@ -481,7 +481,8 @@ procedure GetBlobInfo(ClientLibrary: IIbClientLibrary;
 var
   items: array [0 .. 3] of AnsiChar;
   results: array [0 .. 99] of AnsiChar;
-  i, item_length: Integer;
+  i: Integer;
+  item_length: Short;
   item: Integer;
 begin
   if not Assigned(ClientLibrary) then
@@ -500,13 +501,13 @@ begin
   begin
     item := Integer(results[i]);
     Inc(i);
-    item_length := ClientLibrary.isc_vax_integer(@results[i], 2);
+    item_length := Short(ClientLibrary.isc_vax_integer(@results[i], 2));
     Inc(i, 2);
     case item of
       isc_info_blob_num_segments: NumSegments := ClientLibrary.isc_vax_integer(@results[i], item_length);
       isc_info_blob_max_segment: MaxSegmentSize := ClientLibrary.isc_vax_integer(@results[i], item_length);
       isc_info_blob_total_length: TotalSize := ClientLibrary.isc_vax_integer(@results[i], item_length);
-      isc_info_blob_type: BlobType := ClientLibrary.isc_vax_integer(@results[i], item_length);
+      isc_info_blob_type: BlobType := Short(ClientLibrary.isc_vax_integer(@results[i], item_length));
     end;
     Inc(i, item_length);
   end;
@@ -526,7 +527,7 @@ begin
 
   LocalBuffer := Buffer;
   if BlobSize < DefaultBlobSegmentSize then
-    SegLen := BlobSize // Avoid IB2007 bug
+    SegLen := Word(BlobSize) // Avoid IB2007 bug
   else
     SegLen := DefaultBlobSegmentSize;
   AllReadBytes := 0;
@@ -534,7 +535,7 @@ begin
   while (AllReadBytes < BlobSize) do
   begin
     if (AllReadBytes + SegLen > BlobSize) then
-      SegLen := BlobSize - AllReadBytes;
+      SegLen := Word(BlobSize - AllReadBytes);
     if not((ClientLibrary.isc_get_segment(StatusVector, hBlobHandle, @BytesRead,
       SegLen, LocalBuffer) = 0) or (StatusVectorArray[1] = isc_segment)) then
       IBError(ClientLibrary, nil);
@@ -567,10 +568,11 @@ begin
     if vBlobSize = BlobSize then
       SegLen := 0
     else if BlobSize < DefaultBlobSegmentSize then
-      SegLen := BlobSize // Avoid IB2007 bug
+      SegLen := Word(BlobSize) // Avoid IB2007 bug
     else
       SegLen := DefaultBlobSegmentSize;
-    case ClientLibrary.isc_get_segment(StatusVector, hBlobHandle, @BytesRead, SegLen, LocalBuffer) of
+    // a status code: 32 bits on Win64 too
+    case Long(ClientLibrary.isc_get_segment(StatusVector, hBlobHandle, @BytesRead, SegLen, LocalBuffer)) of
       0, isc_segment:
         begin
           Inc(LocalBuffer, BytesRead);
@@ -612,7 +614,7 @@ begin
   begin
     if (CurPos + SegLen > BlobSize) then
       SegLen := BlobSize - CurPos;
-    if ClientLibrary.isc_put_segment(StatusVector, hBlobHandle, SegLen, PAnsiChar(@Buffer[CurPos])) > 0 then
+    if ClientLibrary.isc_put_segment(StatusVector, hBlobHandle, Word(SegLen), PAnsiChar(@Buffer[CurPos])) > 0 then
       IBError(ClientLibrary, nil);
     Inc(CurPos, SegLen);
     if Assigned(CallBack) then
@@ -1550,11 +1552,13 @@ begin
         if vBlobSize = iBlobSize then
           SegLen := 0
         else if iBlobSize < DefaultBlobSegmentSize then
-          SegLen := iBlobSize // Avoid IB2007 bug
+          SegLen := Word(iBlobSize) // Avoid IB2007 bug
         else
           SegLen := DefaultBlobSegmentSize;
 
-        case FDatabase.ClientLibrary.isc_get_segment(StatusVector, @FBlobHandle, @BytesRead, SegLen, LocalBuffer) of
+        // a status code: 32 bits on Win64 too
+        case Long(FDatabase.ClientLibrary.isc_get_segment(StatusVector, @FBlobHandle, @BytesRead, SegLen,
+          LocalBuffer)) of
           0, isc_segment:
             begin
               f.WriteBuffer(LocalBuffer^, BytesRead);
@@ -1585,12 +1589,21 @@ begin
   end;
 end;
 
+// TCallBackBlobReadWrite takes Integer: MaxInt for a file over 2 GB
+function ProgressValue(Value: Int64): Integer;
+begin
+  if Value > MaxInt then
+    Result := MaxInt
+  else
+    Result := Integer(Value);
+end;
+
 function TFIBBlobStream.FileToBlob(const FileName: string; CallBack: TCallBackBlobReadWrite = nil): TISC_QUAD;
 var
   f: TFileStream;
   seg: Longint;
   Stop: Boolean;
-  CurPos: Integer;
+  CurPos: Int64;
 begin
   // For big blob fields
   Result.gds_quad_high := 0;
@@ -1613,7 +1626,7 @@ begin
         FIBMiscellaneous.WriteBlob(FDatabase.ClientLibrary, @FBlobHandle, FBuffer, seg, nil);
         Inc(CurPos, seg);
         if Assigned(CallBack) then
-          CallBack(f.Size, CurPos, Stop);
+          CallBack(ProgressValue(f.Size), ProgressValue(CurPos), Stop);
         if Stop then
           Break;
       end;
@@ -1707,7 +1720,7 @@ end;
 function TFIBOutputDelimitedFile.WriteColumns: Boolean;
 var
   i: Integer;
-  BytesWritten: DWORD;
+  BytesWritten: Integer;
   L, CL: Integer;
   LenCDel, LenRDel: Integer;
 begin
@@ -1755,7 +1768,7 @@ begin
     SetLength(st, CL);
 
     BytesWritten := WriteValue(st[1], Length(st) * SizeOf(Char));
-    if BytesWritten = DWORD(Length(st) * SizeOf(Char)) then
+    if BytesWritten = Length(st) * SizeOf(Char) then
       Result := True;
   end
 end;
@@ -1952,7 +1965,7 @@ end;
 function TFIBOutputRawFile.WriteColumns: Boolean;
 var
   i: Integer;
-  BytesWritten: DWORD;
+  BytesWritten: Integer;
   b: Boolean;
   Buffer: TDataBuffer;
   bs: TMemoryStream;
@@ -1980,7 +1993,8 @@ begin
                   if bs = nil then
                     bs := TMemoryStream.Create;
                   Columns[i].SaveToStream(bs);
-                  Bytes := bs.Size;
+                  // a FIBPlus blob holds at most MaxInt bytes
+                  Bytes := Integer(bs.Size);
                   WriteValue(Bytes, SizeOf(Integer));
                   Buffer := bs.Memory;
                 end;
@@ -1988,7 +2002,7 @@ begin
               Bytes := sqllen
             end;
             BytesWritten := WriteValue(Buffer[0], Bytes);
-            if BytesWritten <> DWORD(Bytes) then
+            if BytesWritten <> Bytes then
               Exit;
           end;
       end;
@@ -2021,9 +2035,9 @@ end;
 function TFIBInputRawFile.ReadParameters: Boolean;
 var
   i: Integer;
-  BytesRead: DWORD;
+  BytesRead: Integer;
   b: Boolean;
-  Bytes: DWORD;
+  Bytes: Integer;
   Buffer: TDataBuffer;
   bs: TMemoryStream;
 
@@ -2122,7 +2136,7 @@ procedure TFIBInputRawFile.ReadyStream;
 var
   ast: AnsiString;
   s: AnsiString;
-  BytesRead: DWORD;
+  BytesRead: Integer;
   L, pc: Integer;
   CurPar: TFIBXSQLVAR;
   SQLVAR: PXSQLVAR;
@@ -2157,7 +2171,7 @@ begin
   begin
     SetLength(ast, Length(SignRowFile));
     BytesRead := FFile.Read(ast[1], Length(SignRowFile));
-    if (BytesRead <> DWORD(Length(SignRowFile))) or (ast <> SignRowFile) then
+    if (BytesRead <> Length(SignRowFile)) or (ast <> SignRowFile) then
     begin
       CloseFile;
       FState := bsInError;

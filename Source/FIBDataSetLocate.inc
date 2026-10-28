@@ -166,7 +166,7 @@ begin
     if Field.DataType = ftString then
       Result := 0
     else
-      Result := DefaultSystemCodePage;
+      Result := Word(DefaultSystemCodePage);
 end;
 
 function IsVisibleRecord:boolean;
@@ -464,7 +464,7 @@ var
   p:Pointer;
   vIsString:boolean;
   L:integer;
-  cResult:shortInt;
+  cResult: Integer;
   InitStrValue:boolean;
   ts:TTimeStamp;
   fi:PFIBFieldDescr;
