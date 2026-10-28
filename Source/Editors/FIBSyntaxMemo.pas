@@ -183,8 +183,8 @@ type
 
   TMPSyntaxToken = class
   public
-    stStart: Word; // Word start, in chars
-    stLength: Word; // Word length, in chars
+    stStart: Integer; // Word start, in chars
+    stLength: Integer; // Word length, in chars
     stToken: TToken; // Word type (token)
     stStyle: TMPSyntaxTokenStyles; // Word is selected
   end;
@@ -906,7 +906,7 @@ uses
   Math, StrUtils, Variants;
 
 var
-  CF_SYNTAX: THandle;
+  CF_SYNTAX: UINT;
 
   // Results of RangeRowToScreenRow()
 const
@@ -1078,10 +1078,10 @@ end;
 // Copies the attributes of token SrcToken to all tokens in DstTokArray
 procedure TMPSyntaxAttributes.CopyAttrs(const SrcToken: TToken; DstTokArray: array of TToken);
 var
-  t: TToken;
+  i: Integer;
 begin
-  for t := Low(DstTokArray) to High(DstTokArray) do
-    fTokenStyles[DstTokArray[t]] := fTokenStyles[SrcToken];
+  for i := Low(DstTokArray) to High(DstTokArray) do
+    fTokenStyles[DstTokArray[i]] := fTokenStyles[SrcToken];
 end;
 
 const
@@ -1291,8 +1291,8 @@ var
   W: TMPSyntaxToken;
 begin
   W := TMPSyntaxToken.Create;
-  W.stStart := Word(Beg - 1);
-  W.stLength := Word(Len);
+  W.stStart := Beg - 1;
+  W.stLength := Len;
   W.stToken := Token;
   W.stStyle := [];
   Add(W);
@@ -3634,7 +3634,7 @@ begin
       OpenClipboard(Application.Handle);
       try
         // Allocate a global memory block
-        Data := GlobalAlloc(GMEM_MOVEABLE + GMEM_DDESHARE, Length(s) * SizeOf(Char) + SizeOf(Char));
+        Data := GlobalAlloc(GMEM_MOVEABLE + GMEM_DDESHARE, NativeUInt(Length(s) * SizeOf(Char) + SizeOf(Char)));
         try
           // Get a pointer to it
           DataPtr := GlobalLock(Data);
@@ -3677,7 +3677,7 @@ begin
   oldDirAccess := fRichMemo.Lines.fDirectAccess;
   fRichMemo.Lines.fDirectAccess := True;
   try
-    if not(smoSkipSectionsOnPaste in fRichMemo.Options) and Clipboard.HasFormat(CF_SYNTAX) then
+    if not(smoSkipSectionsOnPaste in fRichMemo.Options) and Clipboard.HasFormat(Word(CF_SYNTAX)) then
       begin
         // Open the clipboard
         OpenClipboard(Application.Handle);
@@ -5602,9 +5602,9 @@ begin
           if ssCtrl in Shift then
             begin
               if ssShift in Shift then
-                BookMarks[Key - Ord('0')] := fRange.PosY
+                BookMarks[TBookmarkIndex(Key - Ord('0'))] := fRange.PosY
               else
-                Navigate(0, BookMarks[Key - Ord('0')]);
+                Navigate(0, BookMarks[TBookmarkIndex(Key - Ord('0'))]);
             end
             { else
             if Lines.Count=0 then
@@ -5617,9 +5617,9 @@ begin
       VK_NUMPAD0 .. VK_NUMPAD9:
         if ssCtrl in Shift then
           if ssShift in Shift then
-            BookMarks[Key - VK_NUMPAD0] := fRange.PosY
+            BookMarks[TBookmarkIndex(Key - VK_NUMPAD0)] := fRange.PosY
           else
-            Navigate(0, BookMarks[Key - VK_NUMPAD0]);
+            Navigate(0, BookMarks[TBookmarkIndex(Key - VK_NUMPAD0)]);
 
 {$IFDEF SYNDEBUG}
       VK_MULTIPLY:
@@ -6815,7 +6815,7 @@ begin
       else
         Position := RowIndexConvert(OffsetY, cdNeedScreen);
       SmallChange := 1;
-      LargeChange := ClientLines - 2;
+      LargeChange := TScrollBarInc(EnsureRange(ClientLines - 2, Low(TScrollBarInc), High(TScrollBarInc)));
     end;
 
   if fPageUpDown <> nil then
@@ -7931,7 +7931,7 @@ var
   t: Integer;
 begin
   SendMessage(FListProp.Handle, WM_VSCROLL, SB_PAGEDOWN, 0);
-  t := LoWord(FListProp.Perform(LB_ITEMFROMPOINT, 0, MakeLParam(0, FListProp.ClientHeight)));
+  t := LoWord(FListProp.Perform(LB_ITEMFROMPOINT, 0, MakeLParam(0, Word(FListProp.ClientHeight))));
   if t >= 0 then
     FListProp.ItemIndex := t
 end;
@@ -7999,7 +7999,7 @@ var
 begin
   SendMessage(FListProp.Handle, WM_VSCROLL, SB_PAGEUP, 0);
 
-  t := FListProp.Perform(LB_GETTOPINDEX, 0, 0);
+  t := Integer(FListProp.Perform(LB_GETTOPINDEX, 0, 0));
   if t >= 0 then
     FListProp.ItemIndex := t;
 end;

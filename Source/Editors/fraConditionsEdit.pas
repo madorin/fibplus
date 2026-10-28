@@ -88,7 +88,11 @@ end;
 
 procedure TfraEdConditions.ListView1Resize(Sender: TObject);
 begin
-  ListView1.Columns[0].Width := ListView1.Width - ScaleToPPI(Self, 20)
+  // -1 and -2 would mean auto size
+  if ListView1.Width > ScaleToPPI(Self, 20) then
+    ListView1.Columns[0].Width := TWidth(ListView1.Width - ScaleToPPI(Self, 20))
+  else
+    ListView1.Columns[0].Width := 0;
 end;
 
 procedure TfraEdConditions.Button3Click(Sender: TObject);

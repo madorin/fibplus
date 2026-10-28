@@ -86,7 +86,7 @@ uses
 function EditOptions(aDataSets: array of TDataSet; aPageIndex: Integer): boolean;
 var
   aForm: TFPDataSetOptionsForm;
-  (* I *) Option: Byte;
+  (* I *) Option: Integer;
   chBox: TCheckBox;
   K: Integer;
   Options: Integer;
@@ -166,7 +166,7 @@ end;
 
 procedure TFPDataSetOptionsForm.ShowChanges;
 var
-  Option: Byte;
+  Option: Integer;
   Options: Integer;
   MaxOption: Integer;
   chBox: TCheckBox;

@@ -45,7 +45,7 @@ function IsClause(const EtalonClause: string; const Source: string; Position: in
 // the 1st argument must be in uppercase. It is the reference
 var
   Len: integer;
-  LenEtalon: Byte;
+  LenEtalon: Integer;
   pSource: PChar;
   pEtalon: PChar;
   pEtalon1: PChar;
