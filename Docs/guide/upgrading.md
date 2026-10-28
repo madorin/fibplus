@@ -8,7 +8,7 @@ Find the version you use now, then read every section above it, from the one jus
 
 | Version | Status | Notes |
 |---------|--------|-------|
-| [8.0.0](#800) | Unreleased | Dataset, client dataset, database, transaction, query, service components, array, update object, scripter, stored procedure, error handler, table changes reader and schema extract classes renamed from `TpFIB...` to `TFIB...`. |
+| [8.0.0](#800) | Unreleased | Delphi 2009 or later. Classes and units renamed from `TpFIB...` and `pFIB...` to `TFIB...` and `FIB...` (the old names stay as deprecated aliases), the `TpFIB...` components merged into the `TFIB...` ones, packages renamed, `TRParams` filled by `TPBMode`, translated error messages. |
 | [7.9.1](#791) | 2026-10-09 | Text in the code page of each column's character set, *Firebird 4+* statement and idle timeouts and read consistency, *Firebird 5+* parallel workers, an FMX login dialog package, and many bug fixes. |
 | [7.9.0](#790) | 2026-10-01 | First release of the community maintained FIBPlus. Based on the FIBPlus 7 sources of build 632 (2014-02-17). |
 
@@ -96,6 +96,8 @@ These have no old name, so the code that uses them must change:
 | `ListErrorMessages.ErrorMessage(Tr, ErrorName)` (`TFIBErrorMessageCache`) | `ErrorMessage(DB, Tr, ErrorName)` | Pass the database whose `FIB$ERROR_MESSAGES` is read; it must be one of the databases of `Tr`. |
 | `TFIBDataSet.FetchNext(FetchCount: DWORD)` | `FetchNext(FetchCount: Integer)` | Nothing for most code. A negative count fetches no row; it fetched all the rows: call `FetchAll` instead. |
 | `FixStartTime: Integer` of `ISQLStatMaker` and `TTestInfo` | `FixStartTime: Cardinal` | Change the result type in classes that implement `ISQLStatMaker`. |
+| `TFIBDataSet.DefaultFields` (redeclared by FIBPlus) | *Delphi XE6+*: `TDataSet.DefaultFields` | The compiler reports it as deprecated; use `Fields.LifeCycles`. The result is the same. Delphi 2009 to XE5 keep the FIBPlus property. |
+| `TFIBDatabase.ClientMajorVersion`, `ClientMinorVersion` (deprecated) | Read from `isc_get_client_major_version` and `isc_get_client_minor_version` | The same values. A client library without these functions (InterBase 6.0 and older) raises `EAPICallException`. Use `ClientLibrary.Version`. |
 | `DataConvert(Field, Source, Dest: Pointer; ToNative)` of `TFIBCustomDataSet` (public) and `TFIBClientDataSet`, `GetCalcFields(Buffer: TRecordBuffer)` of `TFIBCustomDataSet` | Delphi XE3 and later: `DataConvert(Field, Source: TValueBuffer; var Dest: TValueBuffer; ToNative)`; XE4 and later: `GetCalcFields(Buffer: TRecBuf)` | Override the new overloads in descendants. Code calling the deprecated `TField.GetData`/`SetData` with a pointer and `NativeFormat = False` gets the `TDataSet` conversion. |
 | `TFIBDatabase.AliasName`, `DBFileName`, `DBSiteName`; `TFIBCustomService.ServerName`, `TFIBRestoreService.FixCharset`; `TFIBBlobStream.TableName`, `FieldName`; `SPBConstantNames`; `TFIBFieldDescr.fdRelationTable`, `fdRelationField`, `fdTableAlias` (`AnsiString`) | `string` | Nothing for most code. `DBFileName`, `DBSiteName` and the text of the services are decoded as UTF-8 when the server sends valid UTF-8, else in the system code page. |
 | `TFIBQuery.BatchInputRawFile(FileName: AnsiString)`, `BatchOutputRawFile(FileName: AnsiString; ...)`, `TFIBInputDelimitedFile.GetColumn(var Col: AnsiString)` | `string` parameters | Pass a `string`; an `AnsiString` variable for `GetColumn` must become a `string`. |
@@ -193,6 +195,7 @@ A feature that the client library doesn't support raises `feClientFeatureNotSupp
 - `GetDDLText`, `GetObjectDDL`, `AsDDL` and `FullExtractDDL` write the descriptions as `COMMENT ON` statements; see the [changelog](../../CHANGELOG.md). `TFIBDBSchemaExtract.DDLTextOptions` is `[dtoIncludeComments]` by default, and `DefDDLTextOptions` of `TMetaDataBase` has it too. A form saved before has `DDLTextOptions = []` stored and writes no comments: add `dtoIncludeComments` in the Object Inspector. Remove the option to get the old output.
 - `TMetaGenerator.Value` is `Int64`. Code that assigns it to an `Integer` still compiles but cuts values over 2147483647: use an `Int64` variable.
 - `DDLTextOptions` of the component is kept by its meta database (`GetMetaDataBase.DDLTextOptions`); the protected field `FDDLTextOptions` is removed. Descendants use the property.
+- `GetObjectDDL` of a package or a PSQL function returns an empty string on a server before Firebird 3; it raised "Table unknown". The DDL text also changes in details (terminators, quoting, single spaces): tools that compare scripts made by different versions show these differences.
 - `LoadMetaData`, `Clear` and a new `Database` free the meta objects of the previous load; they were leaked before. Don't keep a `TMetaTable`, `TMetaProcedure` or other meta object across these calls: take it again from `Tables`, `Procedures` or `ObjectByName`.
 
 #### Non-ASCII text in server errors
