@@ -380,7 +380,11 @@ The lists of old and new names, and what an application has to change, are in
 - FIBPlus fields in a dataset that is not FIBPlus (e.g. persistent fields copied to a
   `TClientDataSet`): the first read of a `TFIBStringField` could raise an access violation, and
   `TFIBDateTimeField.AsTimeStamp` gave a wrong value in `OnValidate`, or raised `EIntOverflow`
-  there when it was assigned.
+  there when it was assigned. `AsNativeData` and `AsOctetsData` of the string fields wrote into
+  the memory of that dataset, `TFIBWideStringField` did not work there at all,
+  `TFIBFloatField.Scale` and `AsFloat :=` and `TFIBTimeField.ShowMsec` in `OnValidate` read
+  garbage, and the value of a `TFIBArrayField` was lost. `GetBlobInfo`, `Blob_ID` and `ArrayID`
+  raise a clear error there.
 - `DisplayFormat` and `EditFormat` of `TFIBBCDField` and `TFIBClientBCDField` when the value is
   rounded: the zeros of the carry were dropped (`0.00` on 1.296 gave `1.3`, on 0.996 `1`), the
   thousand separators stayed where they were before the carry (`#,##0.00` on 9999.996 gave

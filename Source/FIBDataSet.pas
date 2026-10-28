@@ -2146,6 +2146,9 @@ end;
 
 function TFIBStringField.GetAsNativeData: FIBByteString;
 begin
+  // another dataset has no native format: the stored bytes
+  if not (DataSet is TFIBCustomDataSet) then
+    Exit(FIBByteString(inherited GetAsAnsiString));
   Include(TFIBCustomDataSet(DataSet).FRunState, drsInFieldAsData);
   try
     if not GetDataToReserveBuffer then
@@ -2169,7 +2172,8 @@ begin
     raise Exception.Create('Method TFIBStringField.SetAsNativeData:' + sLineBreak +
       'DataSet ' + CmpFullName(Self) + ' field "' + FieldName +
       '" is not data field');
-  Include(TFIBCustomDataSet(DataSet).FRunState, drsInFieldAsData);
+  if DataSet is TFIBCustomDataSet then
+    Include(TFIBCustomDataSet(DataSet).FRunState, drsInFieldAsData);
   try
     FValueLength := Length(Value);
     if FValueLength > 0 then
@@ -2179,7 +2183,8 @@ begin
     else
       WriteFieldData(Self, vEmptyStrBuffer, 1);
   finally
-    Exclude(TFIBCustomDataSet(DataSet).FRunState, drsInFieldAsData);
+    if DataSet is TFIBCustomDataSet then
+      Exclude(TFIBCustomDataSet(DataSet).FRunState, drsInFieldAsData);
   end
 end;
 
@@ -2194,8 +2199,9 @@ end;
 function TFIBStringField.GetDataSize: Integer;
 begin
   Result := inherited GetDataSize;
-  if (FieldKind = fkData) and TFIBDataSet(DataSet).Database.NeedUnicodeFieldTranslation(Byte(SqlSubType)) then
-    Result := (Result - 1) * TFIBDataSet(DataSet).Database.BytesInUnicodeChar
+  if (FieldKind = fkData) and (DataSet is TFIBCustomDataSet) and
+    TFIBCustomDataSet(DataSet).Database.NeedUnicodeFieldTranslation(Byte(SqlSubType)) then
+    Result := (Result - 1) * TFIBCustomDataSet(DataSet).Database.BytesInUnicodeChar
       (Byte(SqlSubType)) + 1
 
 end;
@@ -2284,7 +2290,10 @@ end;
 
 function TFIBWideStringField.GetDataSize: Integer;
 begin
-  if FieldKind in [fkCalculated, fkLookup] then
+  // another dataset stores UTF-16, as for TWideStringField
+  if Assigned(DataSet) and not (DataSet is TFIBCustomDataSet) then
+    Result := inherited GetDataSize
+  else if FieldKind in [fkCalculated, fkLookup] then
     Result := (Size * 3) + 1
   else
     begin
@@ -2296,6 +2305,11 @@ end;
 
 function TFIBWideStringField.GetBytesValue(var Value: FIBByteString): Boolean;
 begin
+  if not (DataSet is TFIBCustomDataSet) then
+    begin
+      Value := GetAsNativeData;
+      Exit(not IsNull);
+    end;
   if not Assigned(FReservedBuffer) then
     begin
       GetMem(FReservedBuffer, DataSize);
@@ -2337,7 +2351,7 @@ end;
 
 function TFIBWideStringField.GetAsString: string;
 begin
-  if FieldKind <> fkData then
+  if (FieldKind <> fkData) or not (DataSet is TFIBCustomDataSet) then
     begin
       Result := inherited;
       Exit;
@@ -2350,7 +2364,9 @@ end;
 
 function TFIBWideStringField.GetAsNativeData: FIBByteString;
 begin
-
+  // another dataset has no native format: UTF-8
+  if not (DataSet is TFIBCustomDataSet) then
+    Exit(FIBByteString(UTF8Encode(AsString)));
   Include(TFIBCustomDataSet(DataSet).FRunState, drsInFieldAsData);
   try
     if not GetDataToReserveBuffer then
@@ -2371,6 +2387,11 @@ begin
     raise Exception.Create('Method TFIBWideStringField.SetAsNativeData:' + sLineBreak +
       'DataSet ' + CmpFullName(Self) + ' field "' + FieldName +
       '" is not data field');
+  if not (DataSet is TFIBCustomDataSet) then
+    begin
+      AsString := UTF8ToString(Value);
+      Exit;
+    end;
   Include(TFIBCustomDataSet(DataSet).FRunState, drsInFieldAsData);
   try
     FValueLength := Length(Value);
@@ -2764,7 +2785,14 @@ begin
   inherited GetText(Text, DisplayText);
   if FShowMsec then
     begin
-      if ReadFieldData(Self, @Data, SizeOf(Data)) then
+      // OnValidate of another dataset reads its buffer as a TDateTime
+      if not (DataSet is TFIBCustomDataSet) then
+        begin
+          Data := DateTimeToTimeStamp(AsDateTime).Time mod 1000;
+          if Data > 0 then
+            Text := Text + Format('.%.3d', [Data])
+        end
+      else if ReadFieldData(Self, @Data, SizeOf(Data)) then
         begin
           Data := Data mod 1000;
           if Data > 0 then
@@ -2833,6 +2861,13 @@ end;
   * TFIBBlobField - implementation
 *)
 
+// Blob and array IDs exist only in a FIBPlus dataset
+procedure CheckFIBDataSet(Field: TField; const Member: string);
+begin
+  if not (Field.DataSet is TFIBCustomDataSet) then
+    DatabaseErrorFmt(SFieldNeedsFIBDataSet, [Member], Field);
+end;
+
 function TFIBBlobField.GetAsVariant: Variant;
 begin
   if IsNull then
@@ -2850,6 +2885,7 @@ var
   Success: Boolean;
   fs: TStream;
 begin
+  CheckFIBDataSet(Self, 'GetBlobInfo');
   if IsNull then
     begin
       FillChar(Result, SizeOf(Result), 0);
@@ -2894,6 +2930,7 @@ function TFIBBlobField.GetBlobId: TISC_QUAD;
 var
   ValueBuffer: PAnsiChar;
 begin
+  CheckFIBDataSet(Self, 'Blob_ID');
   GetMem(ValueBuffer, SizeOf(TISC_QUAD));
   try
     ReadFieldData(Self, ValueBuffer, SizeOf(TISC_QUAD));
@@ -2977,6 +3014,7 @@ function TFIBMemoField.GetBlobId: TISC_QUAD;
 var
   ValueBuffer: PAnsiChar;
 begin
+  CheckFIBDataSet(Self, 'Blob_ID');
   GetMem(ValueBuffer, SizeOf(TISC_QUAD));
   try
     ReadFieldData(Self, ValueBuffer, SizeOf(TISC_QUAD));
@@ -3000,6 +3038,7 @@ var
   Success: Boolean;
   fs: TStream;
 begin
+  CheckFIBDataSet(Self, 'GetBlobInfo');
   if IsNull then
     begin
       FillChar(Result, SizeOf(Result), 0);
@@ -3081,10 +3120,13 @@ end;
 
 function TFIBFloatField.GetScale: Integer;
 begin
-  if (FieldKind = fkData) then
+  if FieldKind <> fkData then
+    Result := -15
+  else if DataSet is TFIBCustomDataSet then
     Result := TFIBCustomDataSet(DataSet).GetFieldScale(Self)
   else
-    Result := -15;
+    // no rounding, as TFloatField
+    Result := 0;
 end;
 
 procedure TFIBFloatField.GetText(var Text: string; DisplayText: Boolean);
@@ -3101,9 +3143,9 @@ procedure TFIBFloatField.SetAsFloat(Value: Double);
 var
   fi: PFIBFieldDescr;
 begin
-  if (FieldKind = fkData) then
+  if (FieldKind = fkData) and (DataSet is TFIBCustomDataSet) then
     begin
-      fi := TFIBDataSet(DataSet).vFieldDescrList[FieldNo - 1];
+      fi := TFIBCustomDataSet(DataSet).vFieldDescrList[FieldNo - 1];
       if Assigned(fi) then
         case fi^.fdDataType of
           SQL_SHORT:
@@ -3262,7 +3304,7 @@ end;
 
 function TFIBArrayField.GetFIBXSQLVAR: TFIBXSQLVAR;
 begin
-  if DataSet = nil then
+  if not (DataSet is TFIBCustomDataSet) then
     Result := nil
   else
     with TFIBDataSet(DataSet).QSelect, TFIBDataSet(DataSet) do
@@ -3309,6 +3351,7 @@ function TFIBArrayField.GetArrayId: TISC_QUAD;
 var
   ValueBuffer: PAnsiChar;
 begin
+  CheckFIBDataSet(Self, 'ArrayID');
   GetMem(ValueBuffer, SizeOf(TISC_QUAD));
   try
     ReadFieldData(Self, ValueBuffer, SizeOf(TISC_QUAD));
@@ -3318,17 +3361,23 @@ begin
   end;
 end;
 
+// another dataset stores the bytes, as TBytesField
 function TFIBArrayField.GetAsVariant: Variant;
 begin
-  Result := 0;
-  if DataSet <> nil then
+  if DataSet is TFIBCustomDataSet then
     Result := TFIBDataSet(DataSet).ArrayFieldValue(Self)
+  else if DataSet = nil then
+    Result := 0
+  else
+    Result := inherited GetAsVariant;
 end;
 
 procedure TFIBArrayField.SetAsVariant(const Value: Variant); // override;
 begin
-  if DataSet <> nil then
+  if DataSet is TFIBCustomDataSet then
     TFIBDataSet(DataSet).SetArrayValue(Self, Value)
+  else if DataSet <> nil then
+    inherited SetAsVariant(Value);
 end;
 
 {$ENDIF}
