@@ -559,7 +559,8 @@ The lists of old and new names, and what an application has to change, are in
 - Win64: `StreamToVariant` and `StreamToVariantArray` (`StdFuncs`) cut the memory addresses to
   32 bits (access violation), and so did the "nested datasets" error of `TFIBClientDataSet` with
   the address of its message.
-- `StringAsGUID` (`StrUtil`) rejected lowercase hex digits.
+- `StringAsGUID` (`StrUtil`) rejected lowercase hex digits and read some other characters (`G`,
+  `x`, a space) as 0.
 - `TCallBackList.Delete` ignored the index 0 and did not free the deleted entry.
 
 #### IDE, editors and packages

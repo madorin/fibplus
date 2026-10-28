@@ -177,6 +177,9 @@ function CompareStrAndGuid(GUID: PGUID; const Str: AnsiString): Integer;
 function CompareStrAndGuidP(GUID: PGUID; const Str: PAnsiString): Integer;
 function IsEqualGUIDs(const guid1, guid2: TGUID): Boolean;
 
+// Value of a hexadecimal digit, -1 for any other character
+function HexDigitValue(C: Char): Integer; inline;
+
 { Thanks to Anton Tril }
 
 function IsNumericStr(const Str: string): Boolean;
@@ -314,8 +317,6 @@ type
     F0, F1, F2, F3, F4, F5, F6, F7, F8, F9, FA, FB, FC, FD, FE, FF: Byte;
   end;
 
-{$R+}
-
 const
 
   Int2HexHash: Array [0 .. 255] of Word = ($3030, $3130, $3230, $3330, $3430,
@@ -343,50 +344,60 @@ const
     $4345, $4445, $4545, $4645, $3046, $3146, $3246, $3346, $3446, $3546, $3646,
     $3746, $3846, $3946, $4146, $4246, $4346, $4446, $4546, $4646);
 
+function HexDigitValue(C: Char): Integer;
+begin
+  case C of
+    '0' .. '9': Result := Ord(C) - Ord('0');
+    'A' .. 'F': Result := Ord(C) - Ord('A') + 10;
+    'a' .. 'f': Result := Ord(C) - Ord('a') + 10;
+  else
+    Result := -1;
+  end;
+end;
+
 function StringAsGUID(const AStr: AnsiString): TGUID;
-const
-  Hex2IntHash: Array [0 .. 102] of Byte = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0,
-    0, 0, 10, 11, 12, 13, 14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 11, 12, 13, 14, 15);
+
+  procedure InvalidGUID;
+  begin
+    raise EConvertError.CreateResFmt(PResStringRec(@SInvalidGUID), [AStr]);
+  end;
 
   function HexByte(Index: Integer): Byte;
+  var
+    HighNibble, LowNibble: Integer;
   begin
-    Result := Byte(Hex2IntHash[Byte(AStr[Index])] shl 4 or Hex2IntHash[Byte(AStr[Index + 1])]);
+    HighNibble := HexDigitValue(Char(AStr[Index]));
+    LowNibble := HexDigitValue(Char(AStr[Index + 1]));
+    if (HighNibble < 0) or (LowNibble < 0) then
+      InvalidGUID;
+    Result := HighNibble shl 4 or LowNibble;
   end;
 
 begin
   { Thanks to Anton Tril }
   if (Length(AStr) <> 38) or (AStr[1] <> '{') or (AStr[38] <> '}') or
     (AStr[10] <> '-') or (AStr[15] <> '-') or (AStr[20] <> '-') or (AStr[25] <> '-') then
-  begin
-    raise EConvertError.CreateResFmt(PResStringRec(@SInvalidGUID), [AStr]);
-  end;
-  try
-    TGUIDBytes(Result).F3 := HexByte(2);
-    TGUIDBytes(Result).F2 := HexByte(4);
-    TGUIDBytes(Result).F1 := HexByte(6);
-    TGUIDBytes(Result).F0 := HexByte(8);
-    // -
-    TGUIDBytes(Result).F5 := HexByte(11);
-    TGUIDBytes(Result).F4 := HexByte(13);
-    // -
-    TGUIDBytes(Result).F7 := HexByte(16);
-    TGUIDBytes(Result).F6 := HexByte(18);
-    // -
-    TGUIDBytes(Result).F8 := HexByte(21);
-    TGUIDBytes(Result).F9 := HexByte(23);
-    // -
-    TGUIDBytes(Result).FA := HexByte(26);
-    TGUIDBytes(Result).FB := HexByte(28);
-    TGUIDBytes(Result).FC := HexByte(30);
-    TGUIDBytes(Result).FD := HexByte(32);
-    TGUIDBytes(Result).FE := HexByte(34);
-    TGUIDBytes(Result).FF := HexByte(36);
-  except
-    raise EConvertError.CreateResFmt(PResStringRec(@SInvalidGUID), [AStr]);
-  end;
+    InvalidGUID;
+  TGUIDBytes(Result).F3 := HexByte(2);
+  TGUIDBytes(Result).F2 := HexByte(4);
+  TGUIDBytes(Result).F1 := HexByte(6);
+  TGUIDBytes(Result).F0 := HexByte(8);
+  // -
+  TGUIDBytes(Result).F5 := HexByte(11);
+  TGUIDBytes(Result).F4 := HexByte(13);
+  // -
+  TGUIDBytes(Result).F7 := HexByte(16);
+  TGUIDBytes(Result).F6 := HexByte(18);
+  // -
+  TGUIDBytes(Result).F8 := HexByte(21);
+  TGUIDBytes(Result).F9 := HexByte(23);
+  // -
+  TGUIDBytes(Result).FA := HexByte(26);
+  TGUIDBytes(Result).FB := HexByte(28);
+  TGUIDBytes(Result).FC := HexByte(30);
+  TGUIDBytes(Result).FD := HexByte(32);
+  TGUIDBytes(Result).FE := HexByte(34);
+  TGUIDBytes(Result).FF := HexByte(36);
 end;
 {$R-}
 
