@@ -3760,17 +3760,16 @@ end;
 procedure TFIBBCDField.SetAsBCD(const Value: TBcd);
 var
   C: Int64;
-  lScale: Byte;
+  Scale: Byte;
 begin
   if FieldKind = fkCalculated then
     inherited SetAsBCD(Value)
   else
     begin
-      BCDToInt64WithScale(Value, C, lScale);
-      if lScale <> Size then
-        C := Round(C * E10[Size - lScale]);
+      if not BCDToInt64WithScale(Value, C, Scale) or not RescaleInt64(C, Scale, Size, C) then
+        raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
       WriteFieldData(Self, @C, SizeOf(C));
-    end
+    end;
 end;
 
 procedure TFIBBCDField.SetVarValue(const Value: Variant);
@@ -3850,14 +3849,20 @@ begin
     end;
 end;
 
+// Rounded half to even, as TBCDField.AsLargeInt
 function TFIBBCDField.GetAsInt64: Int64;
+var
+  CurrencyValue: System.Currency;
 begin
   if FieldKind = fkCalculated then
-    Result := Trunc(inherited GetAsCurrency)
+    begin
+      CurrencyValue := inherited GetAsCurrency;
+      RescaleInt64(PInt64(@CurrencyValue)^, 4, 0, Result, True);
+    end
   else if not GetData(@Result) then
     Result := 0
-  else if Size > 0 then
-    Result := Result div IE10[Size];
+  else
+    RescaleInt64(Result, Size, 0, Result, True);
 end;
 
 procedure TFIBBCDField.SetAsInt64(const Value: Int64);

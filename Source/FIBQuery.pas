@@ -2806,8 +2806,7 @@ var
 begin
   if (FQuery.Database.SQLDialect < 3) then
   begin
-    if not BCDToExtended(Value, E) then
-      FIBError(feInvalidDataConversion, [nil]);
+    BCDToExtended(Value, E);
     SetAsExtended(E);
   end
   else

@@ -169,7 +169,8 @@ begin
     inherited DataConvert(Field, Source, Dest, ToNative)
   else if ToNative then
     Int64ToBCD(Int64(Source^), Field.Size, TBcd(Dest^))
-  else if not BCDToInt64WithScale(TBcd(Source^), Int64(Dest^), Scale) then
+  else if not BCDToInt64WithScale(TBcd(Source^), Int64(Dest^), Scale) or
+    not RescaleInt64(Int64(Dest^), Scale, Field.Size, Int64(Dest^)) then
     raise EOverFlow.CreateFmt(SFieldOutOfRange, [Field.DisplayName]);
 
 end;
@@ -348,8 +349,6 @@ var
   C: Int64;
   Scale: Byte;
 begin
-  // a zero precision value leaves Scale unchanged
-  Scale := Size;
   if not BCDToInt64WithScale(Value, C, Scale) or not RescaleInt64(C, Scale, Size, C) then
     raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
   SetScaledValue(C);
@@ -370,7 +369,7 @@ begin
       if not BCDToCurr(Bcd, PCurrency(@Value)^) then
         raise EOverFlow.CreateFmt(SFieldOutOfRange, [DisplayName]);
     end
-  else if not BCDToInt64WithScale(Bcd, Value, Scale) then
+  else if not BCDToInt64WithScale(Bcd, Value, Scale) or not RescaleInt64(Value, Scale, Size, Value) then
     raise EOverFlow.CreateFmt(SFieldOutOfRange, [DisplayName]);
 end;
 {$ELSE}
@@ -439,14 +438,13 @@ begin
     Result := 0
 end;
 
+// Rounded half to even, as TBCDField.AsLargeInt
 function TFIBClientBCDField.GetAsInt64: Int64;
 begin
   if GetScaledValue(Result) then
-    if Size <> 0 then
-      Result := Round(Result * E10[-Size])
-    else
+    RescaleInt64(Result, Size, 0, Result, True)
   else
-    Result := 0
+    Result := 0;
 end;
 
 {$IFDEF C21}

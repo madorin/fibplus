@@ -69,11 +69,14 @@ function ExtendedToBCD(const Value: Extended; NeedScale: Integer): TBCD;
 // end Comp type stuff
 
 function Int64ToBCD(Value: Int64; Scale: Integer; var BCD: TBCD): Boolean;
-// Value with FromScale decimals as ToScale decimals, rounded half away from zero; False on overflow
-function RescaleInt64(Value: Int64; FromScale, ToScale: Integer; var Rescaled: Int64): Boolean;
+// Value with FromScale decimals as ToScale decimals, rounded half away from zero (half to even with
+// HalfToEven, as Round); False on overflow
+function RescaleInt64(Value: Int64; FromScale, ToScale: Integer; var Rescaled: Int64;
+  HalfToEven: Boolean = False): Boolean;
 
 function BCDToExtended(BCD: TBCD; var Value: Extended): Boolean;
 function BCDToCompWithScale(BCD: TBCD; var Value: Int64; var Scale: byte): Boolean;
+// Value scaled by Scale decimals (decimals beyond Int64 rounded half away from zero); False on overflow
 function BCDToInt64WithScale(BCD: TBCD; var Value: Int64; var Scale: byte): Boolean;
 function BCDToSQLStr(BCD: TBCD): String;
 function CompareBCD(const BCD1, BCD2: TBCD): Integer; inline;
@@ -649,11 +652,13 @@ begin
   end;
 end;
 
-function RescaleInt64(Value: Int64; FromScale, ToScale: Integer; var Rescaled: Int64): Boolean;
+function RescaleInt64(Value: Int64; FromScale, ToScale: Integer; var Rescaled: Int64;
+  HalfToEven: Boolean): Boolean;
 const
   HalfOf1E19 = 5000000000000000000;
 var
   Divisor, Remainder: Int64;
+  RoundHalfAway: Boolean;
 begin
   Result := True;
   if ToScale = FromScale then
@@ -677,9 +682,9 @@ begin
   else if FromScale - ToScale = High(IE10) + 1 then
     begin
       // |Value| < 1E19
-      if Value >= HalfOf1E19 then
+      if (Value > HalfOf1E19) or (Value = HalfOf1E19) and not HalfToEven then
         Rescaled := 1
-      else if Value <= -HalfOf1E19 then
+      else if (Value < -HalfOf1E19) or (Value = -HalfOf1E19) and not HalfToEven then
         Rescaled := -1
       else
         Rescaled := 0;
@@ -688,10 +693,11 @@ begin
     begin
       Divisor := IE10[FromScale - ToScale];
       Rescaled := Value div Divisor;
-      Remainder := Value mod Divisor;
-      if Remainder * 2 >= Divisor then
+      Remainder := (Value mod Divisor) * 2;
+      RoundHalfAway := not HalfToEven or Odd(Rescaled);
+      if (Remainder > Divisor) or (Remainder = Divisor) and RoundHalfAway then
         Inc(Rescaled)
-      else if Remainder * 2 <= -Divisor then
+      else if (Remainder < -Divisor) or (Remainder = -Divisor) and RoundHalfAway then
         Dec(Rescaled);
     end;
 end;
@@ -703,39 +709,57 @@ end;
 
 function BCDToInt64WithScale(BCD: TBCD; var Value: Int64; var Scale: byte): Boolean;
 var
-  Sign: Integer;
-  c: Currency;
-begin
-  with BCD do
+  Places, FirstDecimal, I, Digit: Integer;
+
+  // Low(Int64) with one decimal less, rounded half away from zero
+  function DropLastDecimal: Boolean;
   begin
-    if Precision = 0 then
+    Result := Scale > 0;
+    if Result then
     begin
-      Result := true;
-      Value := 0;
-      Exit;
+      Value := Low(Int64) div 10 - 1;
+      Dec(Scale);
     end;
-    if SignSpecialPlaces >= 128 then
-    begin
-      Sign := -1;
-      Scale := Byte(SignSpecialPlaces - 128);
-    end
+  end;
+
+begin
+  Result := True;
+  Value := 0;
+  Scale := 0;
+  // zero precision or null
+  if (BCD.Precision = 0) or (BCD.SignSpecialPlaces and $40 <> 0) then
+    Exit;
+  Places := BCD.SignSpecialPlaces and $3F;
+  Scale := Places;
+  FirstDecimal := BCD.Precision - Places;
+  // accumulated negative, so that Low(Int64) fits
+  for I := 0 to BCD.Precision - 1 do
+  begin
+    if Odd(I) then
+      Digit := BCD.Fraction[I div 2] and $0F
+    else
+      Digit := BCD.Fraction[I div 2] shr 4;
+    if Value >= (Low(Int64) + Digit) div 10 then
+      Value := Value * 10 - Digit
+    else if I < FirstDecimal then
+      Exit(False)
     else
     begin
-      Sign := 1;
-      Scale := SignSpecialPlaces;
+      // decimals that don't fit: round half away from zero at this digit
+      Scale := I - FirstDecimal;
+      if Digit >= 5 then
+        if Value > Low(Int64) then
+          Dec(Value)
+        else if not DropLastDecimal then
+          Exit(False);
+      Break;
     end;
-    if Scale >= 64 then
-    begin
-      // null
-      Result := true;
-      Value := 0;
-      Exit;
-    end;
-    SignSpecialPlaces := 4;
   end;
-  Result := BCDToCurr(BCD, c);
-  if Result then
-    Value := Sign * PInt64(@c)^;
+  if BCD.SignSpecialPlaces and $80 = 0 then
+    if (Value > Low(Int64)) or DropLastDecimal then
+      Value := -Value
+    else
+      Result := False;
 end;
 
 function BCDToSQLStr(BCD: TBCD): String;
@@ -1047,10 +1071,34 @@ function BCDToExtended(BCD: TBCD; var Value: Extended): Boolean;
 var
   c: Int64;
   Scale: byte;
+  Places, I: Integer;
 begin
-  Result := BCDToInt64WithScale(BCD, c, Scale);
-  if Result then
-    Value := c * E10[-Scale]
+  Result := True;
+  if BCDToInt64WithScale(BCD, c, Scale) then
+  begin
+    Value := c;
+    Places := Scale;
+  end
+  else
+  begin
+    // the integer part doesn't fit Int64: all digits, approximate
+    Value := 0;
+    for I := 0 to BCD.Precision - 1 do
+      if Odd(I) then
+        Value := Value * 10 + (BCD.Fraction[I div 2] and $0F)
+      else
+        Value := Value * 10 + (BCD.Fraction[I div 2] shr 4);
+    if BCD.SignSpecialPlaces and $80 <> 0 then
+      Value := -Value;
+    Places := BCD.SignSpecialPlaces and $3F;
+  end;
+  // E10 holds 18 decimals
+  while Places > High(E10) do
+  begin
+    Value := Value * E10[-High(E10)];
+    Dec(Places, High(E10));
+  end;
+  Value := Value * E10[-Places];
 end;
 
 function CompareBCD(const BCD1, BCD2: TBCD): Integer;

@@ -230,6 +230,12 @@ The lists of old and new names, and what an application has to change, are in
   `TFIBDatabase.IsMemoSubtype` and `TMemoSubtypes.IsMemoSubtype` take a `SmallInt` (was
   `ShortInt`), and `TFIBFieldDescrList.LoadFromStream` an `Integer` version (was `Byte`).
 
+#### Fields
+
+- `AsInt64` of `TFIBBCDField` rounds half to even, as `TBCDField.AsLargeInt` (it truncated).
+  `TFIBClientBCDField.AsInt64` rounds the same way, now exactly, without going through
+  floating point.
+
 #### Schema extract
 
 - `TFIBDBSchemaExtract.DDLTextOptions` is `[dtoIncludeComments]` by default
@@ -385,6 +391,11 @@ The lists of old and new names, and what an application has to change, are in
   `TFIBFloatField.Scale` and `AsFloat :=` and `TFIBTimeField.ShowMsec` in `OnValidate` read
   garbage, and the value of a `TFIBArrayField` was lost. `GetBlobInfo`, `Blob_ID` and `ArrayID`
   raise a clear error there.
+- `TFIBBCDField.AsBCD :=` rescaled through floating point and stored an out of range value
+  without an error; a value with 19 significant digits lost its leading digit. It is exact now,
+  rounded half away from zero to the scale of the field, and raises `EOverflow` out of the range.
+  `CompareBCD` and `BCDToExtended` (`StdFuncs`) handle values with more than 18 decimals or an
+  integer part beyond `Int64`.
 - `DisplayFormat` and `EditFormat` of `TFIBBCDField` and `TFIBClientBCDField` when the value is
   rounded: the zeros of the carry were dropped (`0.00` on 1.296 gave `1.3`, on 0.996 `1`), the
   thousand separators stayed where they were before the carry (`#,##0.00` on 9999.996 gave
