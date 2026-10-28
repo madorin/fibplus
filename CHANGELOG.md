@@ -553,6 +553,10 @@ The lists of old and new names, and what an application has to change, are in
 - `TFIBDataSet.CacheRefreshByArrMap` read past the end of the shorter of the two field arrays.
 - `TFIBDataSetProvider`: `RefreshRecord` of the client dataset wrote a NULL `NUMERIC` of the
   source as a number (0 or garbage).
+- `TFIBTransaction`: the transaction parameters were not rebuilt when the connection reopened
+  with another charset, so the `lock_read`/`lock_write` table names kept the old code page; a
+  database of a multi-database transaction without its own parameters got the names in the code
+  page of `MainDatabase`.
 
 ## [7.9.1] - 2026-10-09
 

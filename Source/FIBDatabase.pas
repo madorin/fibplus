@@ -824,6 +824,7 @@ type
     FStreamedActive: Boolean;
     FTPB: PAnsiChar; // Parameters to TR as passed to IB.
     FTPBLength: Short; // Length of parameter buffer
+    FTPBCodePage: Word; // Code page of the names in FTPB
     FTimer: TFIBTimer; // Timer for timing out transactions.
     FTimeoutAction: TTransactionAction; // Rollback or commit at end of timeout?
     FTRParams: TStrings; // Parameters to Transactions.
@@ -5464,6 +5465,7 @@ var
   TPB: AnsiString;
   i: Integer;
   vTRParams1: TStrings;
+  DatabaseParams: TStrings;
   ReadConsistency: Boolean;
   vTPBLength: Short;
   vIsFB21orMore: Boolean;
@@ -5486,12 +5488,13 @@ begin
   (*
     * Make sure that a current TPB is generated.
   *)
-  if FTRParamsChanged then
+  if FTRParamsChanged or (FTPBCodePage <> MainDatabase.Capabilities.MetadataCodePage) then
     begin
       GenerateTPB(FTRParams, TPB, FTPBLength, vIsFB21orMore, MainDatabase.Capabilities.MetadataCodePage);
       FIBAlloc(FTPB, 0, FTPBLength);
       Move(TPB[1], FTPB[0], FTPBLength);
       FReadConsistencyParams := HasParamsLine(FTRParams, 'read_consistency');
+      FTPBCodePage := MainDatabase.Capabilities.MetadataCodePage;
       // only now: GenerateTPB raises for a wrong line and the next start must build it again
       FTRParamsChanged := False;
     end;
@@ -5501,7 +5504,7 @@ begin
     for i := 0 to DatabaseCount - 1 do
       begin
         pteb^[i].db_handle := @(Databases[i].Handle);
-        if FDatabaseTRParams[i] = '' then
+        if (FDatabaseTRParams[i] = '') and (Databases[i].Capabilities.MetadataCodePage = FTPBCodePage) then
           begin
             ReadConsistency := FReadConsistencyParams;
             pteb^[i].tpb_address := FTPB;
@@ -5509,13 +5512,19 @@ begin
           end
         else
           begin
-            if vTRParams1 = nil then
-              vTRParams1 := TStringList.Create;
-            vTRParams1.Text := FDatabaseTRParams[i];
-            ReadConsistency := HasParamsLine(vTRParams1, 'read_consistency');
+            if FDatabaseTRParams[i] = '' then
+              DatabaseParams := FTRParams
+            else
+            begin
+              if vTRParams1 = nil then
+                vTRParams1 := TStringList.Create;
+              vTRParams1.Text := FDatabaseTRParams[i];
+              DatabaseParams := vTRParams1;
+            end;
+            ReadConsistency := HasParamsLine(DatabaseParams, 'read_consistency');
 
             SetLength(FDatabaseTPBs, i + 1);
-            GenerateTPB(vTRParams1, FDatabaseTPBs[i], vTPBLength, vIsFB21orMore,
+            GenerateTPB(DatabaseParams, FDatabaseTPBs[i], vTPBLength, vIsFB21orMore,
               Databases[i].Capabilities.MetadataCodePage);
             if Length(FDatabaseTPBs[i]) > 0 then
               begin
