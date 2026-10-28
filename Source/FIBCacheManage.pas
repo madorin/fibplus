@@ -920,93 +920,6 @@ begin
     FMapRecords.Delete(OldRecno + 1)
 end;
 
-{ .$DEFINE REL }
-
-{$IFDEF REL}
-procedure TRecordsCache.SaveToStream(Stream: TStream; SeekBegin: Boolean; CacheSize: Integer = 32 * 1024);
-const
-  DefDelta: Integer = 32 * 1024;
-  // DefDelta:integer =   0 ;
-var
-  i, j, L: Integer;
-  p: PFIBByteString;
-  sp: Int64;
-begin
-
-  with Stream do
-    begin
-      if SeekBegin then
-        Seek(0, soFromBeginning);
-
-      if (DefDelta > 0) and (Size - Position < BlockCount * FBlockSize) then
-        begin
-          sp := Position;
-          if FBlocks.Count * FBlockSize < DefDelta then
-            Size := Size + DefDelta
-          else
-            Size := Size + FBlocks.Count * FBlockSize;
-          Position := sp; // For FileStream
-        end;
-      i := BlockCount;
-      WriteBuffer(i, SizeOf(Integer));
-      WriteBuffer(FBlockSize, SizeOf(Integer));
-      WriteBuffer(FInOutRecordSize, SizeOf(Integer));
-      WriteBuffer(FStrFieldCount, SizeOf(Integer));
-      WriteBuffer(FSaveChangeLog, SizeOf(Boolean));
-      WriteBuffer(FRecordCount, SizeOf(Integer));
-
-      for i := 0 to BlockCount - 1 do
-        WriteBuffer(FBlocks.List^[i]^, FBlockSize);
-
-      if FStrFieldCount > 0 then
-        begin
-          for i := 1 to FStrFieldCount do
-            begin
-              WriteBuffer(FStringFieldOffsets^[i], SizeOf(Integer));
-              WriteBuffer(FStringFieldSize^[i], SizeOf(Integer));
-            end;
-        end;
-
-      if FStrFieldCount > 0 then
-        begin
-          if (DefDelta > 0) and (Size - Position < FStrFieldCount * 256) then
-            begin
-              sp := Stream.Position;
-              Stream.Size := Stream.Size + DefDelta;
-              Stream.Position := sp; // For FileStream
-            end;
-          for i := 0 to FStrFieldCount - 1 do
-            for j := 0 to FRecordCount - 1 do
-              begin
-                p := FStringData.PValue[i, j];
-                L := Length(p^);
-                if (DefDelta > 0) and (Stream.Size - (Stream.Position + L) < 100) then
-                  begin
-                    sp := Stream.Position;
-                    Stream.Size := Stream.Size + DefDelta;
-                    Stream.Position := sp; // For FileStream
-                  end;
-                WriteBuffer(L, SizeOf(Integer));
-                if L > 0 then
-                  WriteBuffer(p^[1], L);
-              end;
-        end;
-      if Assigned(FMapRecords) then
-        begin
-          Stream.WriteBuffer(FMapRecords.Count, SizeOf(Integer));
-          for i := 0 to FMapRecords.Count - 1 do
-            Stream.WriteBuffer(FMapRecords.List^[i], SizeOf(Integer));
-        end
-      else
-        begin
-          L := 0;
-          Stream.WriteBuffer(L, SizeOf(Integer));
-        end;
-      // Apply real stream size
-      Stream.Size := Stream.Position;
-    end
-end;
-{$ELSE}
 procedure TRecordsCache.SaveToStream(Stream: TStream; SeekBegin: Boolean; CacheSize: Integer = 32 * 1024);
 var
   i, j, L: Integer;
@@ -1117,8 +1030,6 @@ begin
         CacheStream.Free
     end
 end;
-
-{$ENDIF}
 
 procedure TRecordsCache.LoadFromStream(Stream: TStream; SeekBegin: Boolean);
 var
