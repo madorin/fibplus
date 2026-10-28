@@ -417,6 +417,11 @@ The lists of old and new names, and what an application has to change, are in
 - `TFIBClientBCDField.AsBCD` and `AsBCD :=` went through `Currency`, like `TBCDField`: 4
   decimals, `EConvertError` out of its range. They are exact now, rounded half away from zero
   to the scale of the field, and an `FMTBcd` variant is assigned through `AsBCD`.
+- `TFIBClientBCDField.AsInt64 :=` stored the value as already scaled (77 on a scale 2 field
+  stored 0.77); it stores 77.00 now and raises `EOverflow` out of the range of the field.
+- `AsLargeInt :=` of `TFIBBCDField` and `TFIBClientBCDField` went through `Currency` and raised an
+  error beyond its range (9e14), and `TFIBBCDField.AsInt64 :=` went through floating point (digits
+  lost on Win64). Both are exact now and raise `EOverflow` out of the range of the field.
 - `TFIBClientBCDField.AsBCD` read in the `OnValidate` of the field returned 0 instead of the
   new value (Delphi XE3 and later).
 - `PSGetCommandText` of `IProviderSupport` returned an empty string on Delphi

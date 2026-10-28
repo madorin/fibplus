@@ -76,6 +76,7 @@ type
     function GetAsInt64: Int64; virtual;
 {$IFDEF C21}
     function GetAsLargeInt: Largeint; override;
+    procedure SetAsLargeInt(Value: Largeint); override;
 {$ENDIF}
     function GetAsVariant: variant; override;
     procedure SetAsFloat(Value: Double); override;
@@ -548,9 +549,20 @@ begin
 end;
 
 procedure TFIBClientBCDField.SetAsInt64(Value: Int64);
+var
+  C: Int64;
 begin
-  SetScaledValue(Value)
+  if not RescaleInt64(Value, 0, Size, C) then
+    raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
+  SetScaledValue(C);
 end;
+
+{$IFDEF C21}
+procedure TFIBClientBCDField.SetAsLargeInt(Value: Largeint);
+begin
+  SetAsInt64(Value);
+end;
+{$ENDIF}
 
 procedure TFIBClientBCDField.SetAsString(const Value: string);
 begin

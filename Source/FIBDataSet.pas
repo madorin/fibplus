@@ -355,6 +355,7 @@ type
     function GetAsFloat: Double; override;
 {$IFDEF C21}
     function GetAsLargeInt: Largeint; override;
+    procedure SetAsLargeInt(Value: Largeint); override;
 {$ENDIF}
     function GetAsInt64: Int64;
     procedure SetAsInt64(const Value: Int64);
@@ -3866,14 +3867,25 @@ begin
 end;
 
 procedure TFIBBCDField.SetAsInt64(const Value: Int64);
+var
+  C: Int64;
 begin
   if FieldKind = fkCalculated then
     inherited SetVarValue(Value)
-  else if Size = 0 then
-    WriteFieldData(Self, @Value, SizeOf(Value))
   else
-    AsExtended := Value;
+  begin
+    if not RescaleInt64(Value, 0, Size, C) then
+      raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
+    WriteFieldData(Self, @C, SizeOf(C));
+  end;
 end;
+
+{$IFDEF C21}
+procedure TFIBBCDField.SetAsLargeInt(Value: Largeint);
+begin
+  SetAsInt64(Value);
+end;
+{$ENDIF}
 
 procedure TFIBBCDField.SetAsExtended(Value: Extended);
 var
