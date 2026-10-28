@@ -309,8 +309,8 @@ The lists of old and new names, and what an application has to change, are in
   [Upgrading](Docs/guide/upgrading.md#role-name-in-quotes).
 - `lock_read`/`lock_write` table names in `TRParams` were sent in the system code page; the
   server takes them in the charset of the connection, so a non-ASCII table name was not found or
-  was a malformed string. They are now sent in the metadata code page of the connection
-  (Firebird 2.5 still takes them in UNICODE_FSS only).
+  was a malformed string. They are now sent in the metadata code page of the connection, and in
+  UTF-8 to Firebird 2.1 to 2.5, which look them up in the stored names without converting them.
 - `TFIBTransaction`: the transaction parameters were not rebuilt when the connection reopened
   with another charset, so the `lock_read`/`lock_write` table names kept the old code page; a
   database of a multi-database transaction without its own parameters got the names in the code

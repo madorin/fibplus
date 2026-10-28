@@ -92,6 +92,7 @@ type
     FUnicodeCharSets: TIBCharSets;
     FCodePage: Word;
     FMetadataCodePage: Word;
+    FTPBCodePage: Word;
     procedure Clear;
     procedure Update(Database: TFIBDatabase);
     procedure UpdateCodePages(Database: TFIBDatabase);
@@ -115,6 +116,8 @@ type
     property CodePage: Word read FCodePage;
     // DDL and the names the server sends; UTF-8 on NONE (metadata is not converted)
     property MetadataCodePage: Word read FMetadataCodePage;
+    // Table names of lock_read and lock_write in the TPB
+    property TPBCodePage: Word read FTPBCodePage;
   end;
 
   // Live state of the attachment; values are kept while disconnected and sent on connect
@@ -320,6 +323,7 @@ type
     function GetNoReserve: Long; // isc_info_no_reserve
     function GetODSMinorVersion: Long; // isc_info_ods_minor_version
     function GetODSMajorVersion: Long; // isc_info_ods_version
+    function ReadUTF8Metadata: Boolean;
     function GetPageSize: Long; // isc_info_page_size
     function GetVersion: string; // isc_info_info_version
     function GetCurrentMemory: Long; // isc_info_current_memory
@@ -390,6 +394,8 @@ type
     FServerBuild: Integer;
     FNeedUTFDecodeDDL: Boolean;
     FIsFB21OrMore: Boolean;
+    // Firebird 2.1 and later with ODS 11.1 and later: the metadata is stored in UTF-8
+    FUTF8Metadata: Boolean;
     FCapabilities: TFIBDatabaseCapabilities;
     FSession: TFIBSession;
     procedure SetSession(Value: TFIBSession);
@@ -1478,6 +1484,11 @@ begin
     FMetadataCodePage := FIBCodePageUTF8
   else
     FMetadataCodePage := FCodePage;
+  // Firebird 2.1-2.5 look the TPB table names up in the UTF-8 metadata unconverted
+  if Database.FUTF8Metadata and (Database.ServerMajorVersion < 3) then
+    FTPBCodePage := FIBCodePageUTF8
+  else
+    FTPBCodePage := FMetadataCodePage;
 end;
 
 function TFIBDatabaseCapabilities.TextCodePage(CharSetID: Integer): Word;
@@ -2454,6 +2465,7 @@ begin
       FNeedUnicodeFieldsTranslation := FIsUnicodeConnect or FIsNoneConnect;
       FNeedUTFDecodeDDL := False;
       FIsFB21OrMore := False;
+      FUTF8Metadata := False;
     end
   else
     begin
@@ -2463,17 +2475,8 @@ begin
       FNeedUnicodeFieldsTranslation := FIsUnicodeConnect or FIsNoneConnect;
 
       FIsFB21OrMore := (vMajorVersion > 2) or ((vMajorVersion = 2) and (GetServerMinorVersion >= 1));
-
-      if FNeedUnicodeFieldsTranslation then
-        begin
-          if FIsFB21OrMore and ((GetODSMajorVersion > 11) or
-            ((GetODSMajorVersion = 11) and (GetODSMinorVersion >= 1))) then
-            FNeedUTFDecodeDDL := True
-          else
-            FNeedUTFDecodeDDL := False
-        end
-      else
-        FNeedUTFDecodeDDL := False;
+      FUTF8Metadata := ReadUTF8Metadata;
+      FNeedUTFDecodeDDL := FNeedUnicodeFieldsTranslation and FUTF8Metadata;
     end;
   FCapabilities.UpdateCodePages(Self);
 
@@ -2534,6 +2537,7 @@ begin
 
   InitAttachment;
   FIsFB21OrMore := False;
+  FUTF8Metadata := False;
   if FIsFireBirdConnect and (ServerMajorVersion >= 2) then
     begin
       FIsUnicodeConnect := (FCapabilities.AttachmentCharSetID >= 0) and
@@ -2541,17 +2545,8 @@ begin
       FIsNoneConnect := FCapabilities.AttachmentCharSetID = 0;
       FNeedUnicodeFieldsTranslation := FIsUnicodeConnect or FIsNoneConnect;
       FIsFB21OrMore := (GetServerMajorVersion > 2) or ((GetServerMajorVersion = 2) and (GetServerMinorVersion >= 1));
-
-      if FNeedUnicodeFieldsTranslation then
-        begin
-          if FIsFB21OrMore and
-            ((GetODSMajorVersion > 11) or ((GetODSMajorVersion = 11) and (GetODSMinorVersion >= 1))) then
-            FNeedUTFDecodeDDL := True
-          else
-            FNeedUTFDecodeDDL := False
-        end
-      else
-        FNeedUTFDecodeDDL := False;
+      FUTF8Metadata := ReadUTF8Metadata;
+      FNeedUTFDecodeDDL := FNeedUnicodeFieldsTranslation and FUTF8Metadata;
     end;
   FCapabilities.UpdateCodePages(Self);
 end;
@@ -4010,6 +4005,19 @@ end;
 function TFIBDatabase.GetODSMajorVersion: Long;
 begin
   Result := GetLongDBInfo(isc_info_ods_version);
+end;
+
+function TFIBDatabase.ReadUTF8Metadata: Boolean;
+var
+  ODSMajor: Integer;
+begin
+  // ODS 12 and later come with Firebird 3 and later: no round trip
+  Result := FIsFB21OrMore and (ServerMajorVersion >= 3);
+  if FIsFB21OrMore and not Result then
+  begin
+    ODSMajor := GetODSMajorVersion;
+    Result := (ODSMajor > 11) or ((ODSMajor = 11) and (GetODSMinorVersion >= 1));
+  end;
 end;
 
 function TFIBDatabase.GetPageSize: Long;
@@ -5488,13 +5496,13 @@ begin
   (*
     * Make sure that a current TPB is generated.
   *)
-  if FTRParamsChanged or (FTPBCodePage <> MainDatabase.Capabilities.MetadataCodePage) then
+  if FTRParamsChanged or (FTPBCodePage <> MainDatabase.Capabilities.TPBCodePage) then
     begin
-      GenerateTPB(FTRParams, TPB, FTPBLength, vIsFB21orMore, MainDatabase.Capabilities.MetadataCodePage);
+      GenerateTPB(FTRParams, TPB, FTPBLength, vIsFB21orMore, MainDatabase.Capabilities.TPBCodePage);
       FIBAlloc(FTPB, 0, FTPBLength);
       Move(TPB[1], FTPB[0], FTPBLength);
       FReadConsistencyParams := HasParamsLine(FTRParams, 'read_consistency');
-      FTPBCodePage := MainDatabase.Capabilities.MetadataCodePage;
+      FTPBCodePage := MainDatabase.Capabilities.TPBCodePage;
       // only now: GenerateTPB raises for a wrong line and the next start must build it again
       FTRParamsChanged := False;
     end;
@@ -5504,7 +5512,7 @@ begin
     for i := 0 to DatabaseCount - 1 do
       begin
         pteb^[i].db_handle := @(Databases[i].Handle);
-        if (FDatabaseTRParams[i] = '') and (Databases[i].Capabilities.MetadataCodePage = FTPBCodePage) then
+        if (FDatabaseTRParams[i] = '') and (Databases[i].Capabilities.TPBCodePage = FTPBCodePage) then
           begin
             ReadConsistency := FReadConsistencyParams;
             pteb^[i].tpb_address := FTPB;
@@ -5525,7 +5533,7 @@ begin
 
             SetLength(FDatabaseTPBs, i + 1);
             GenerateTPB(DatabaseParams, FDatabaseTPBs[i], vTPBLength, vIsFB21orMore,
-              Databases[i].Capabilities.MetadataCodePage);
+              Databases[i].Capabilities.TPBCodePage);
             if Length(FDatabaseTPBs[i]) > 0 then
               begin
                 pteb^[i].tpb_address := @FDatabaseTPBs[i][1];
