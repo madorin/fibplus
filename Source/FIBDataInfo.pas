@@ -1836,8 +1836,6 @@ begin
   end;
 end;
 
-// {$WARNINGS ON}
-
 function TFIBTableInfoCache.FindTableInfo(const ADBName, ATableName: string): TFIBTableInfo;
 var
   Index: integer;

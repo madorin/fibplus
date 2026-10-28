@@ -53,12 +53,6 @@
 {$IF CompilerVersion >= 36} {$DEFINE C36} {$IFEND} // Delphi 12 Athens
 {$IF CompilerVersion >= 37} {$DEFINE C37} {$IFEND} // Delphi 13 Florence
 
-// Warnings
-
-{$WARN UNSAFE_TYPE OFF}
-{$WARN UNSAFE_CODE OFF}
-{$WARN UNSAFE_CAST OFF}
-
 // Platform
 
 {$IFNDEF NO_GUI}
