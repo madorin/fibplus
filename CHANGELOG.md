@@ -356,6 +356,9 @@ The lists of old and new names, and what an application has to change, are in
 - `TFIBInputDelimitedFile` read the UTF-16 file of `TFIBOutputDelimitedFile` through the system
   code page: characters outside it became `?` or a similar letter. `BatchInputRawFile` and
   `BatchOutputRawFile` could not use a file name outside the system code page.
+- Win64: `TFIBQuery.BatchOutput` to a `TFIBOutputDelimitedFile` or a raw file
+  (`BatchOutputRawFile`) raised an access violation, kept the buffer address in 32 bits, and
+  returned `False` with an empty file, so a `BatchInput` from it inserted no row.
 
 #### Datasets and fields
 
