@@ -564,6 +564,8 @@ The lists of old and new names, and what an application has to change, are in
   Firebird 3 raised "Table unknown" instead of returning an empty string.
 - SQL editor: a mouse click in a line with characters outside Latin-1 (Cyrillic) put the caret
   in a wrong column.
+- Transaction editor: loading the transaction kinds from a file turned only the first `#` of the
+  parameters into a line break.
 
 ## [7.9.1] - 2026-10-09
 
