@@ -558,6 +558,8 @@ The lists of old and new names, and what an application has to change, are in
   database of a multi-database transaction without its own parameters got the names in the code
   page of `MainDatabase`.
 - `DBParams`: a last `shutdown` value of one character (`shutdown=2`) was ignored.
+- `TFIBDBSchemaExtract`: the `RETURNS` clause of a function and a computed column had two
+  spaces.
 
 ## [7.9.1] - 2026-10-09
 
