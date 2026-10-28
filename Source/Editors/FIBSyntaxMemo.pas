@@ -3666,7 +3666,6 @@ end;
 procedure TMPSynMemoRange.PasteFromClipboard;
 var
   Data: HGLOBAL;
-  oldDirAccess: Boolean;
   s: string;
   Marked, OldFormat: Boolean;
 begin
@@ -3675,10 +3674,7 @@ begin
 {$IFDEF SYNDEBUG}
   fRichMemo.Log('Range.PasteFromClipboard');
 {$ENDIF}
-  // Remember the insert position to adjust sections
   fRichMemo.Lines.BeginUpdate;
-  oldDirAccess := fRichMemo.Lines.fDirectAccess;
-  fRichMemo.Lines.fDirectAccess := True;
   try
     Marked := False;
     if not(smoSkipSectionsOnPaste in fRichMemo.Options) then
@@ -3705,11 +3701,9 @@ begin
       if Clipboard.HasFormat(CF_TEXT) then
         SetTextEx(Clipboard.AsText, ukRangeInserted);
   finally
-    fRichMemo.Lines.fDirectAccess := oldDirAccess;
-    fRichMemo.Sections.Scan;
     // Repaint, reindex and reparse are needed
     fRichMemo.NeedRedrawAll;
-    fRichMemo.Lines.fState := [ssNeedReIndex, ssNeedReparseAll];
+    fRichMemo.Lines.fState := fRichMemo.Lines.fState + [ssNeedReIndex, ssNeedReparseAll];
   end;
   fRichMemo.Lines.EndUpdate;
   fRichMemo.MakeVisible(PosX, PosY)
@@ -4130,6 +4124,7 @@ var
 
 var
   ui: TMPSynMemoUndoItem;
+  AdjustSections: Boolean;
 begin
   { } {$IFDEF SYNDEBUG}
   { } fRichMemo.LogFmt('Range.SetText("%.20s")', [Value]);
@@ -4226,47 +4221,68 @@ begin
       // Buzz
       if Lines.Capacity < fStart.Y + n2 - n1 then
         Lines.Capacity := fStart.Y + n2 - n1;
-      // p:=fStart.Y+n2-n1;
-      p := Lines.Count - 1;
-      for N := n2 - n1 downto 1 do
-        if fStart.X = 0 then
-          Lines.Add('')
-        else
-          Lines.Add('');
-      P1 := Lines.Count - 1;
-      for N := p + 1 - fStart.Y downto 1 do
+      // Lines are added and deleted at the end and moved into place: shift the sections at the
+      // edited rows instead of the last ones
+      AdjustSections := not (ssUndoProcess in Lines.State) and not Lines.DirectAccess;
+      if AdjustSections then
         begin
-          if p < 0 then
-            Break;
-          TMPSyntaxParser(Lines.Objects[p]).fNeedReparse := True;
-          Lines.Exchange(p, P1);
-          dec(p);
-          dec(P1);
-        end;
-      { for n := n2 - n1 downto 1 do
-      if fStart.X = 0
-      then Lines.Insert(fStart.Y, '')
-      else Lines.Insert(fStart.Y + n1, ''); }
-
-      if n1 > n2 then
-        begin
-          p := fStart.Y;
-          // p1:=Lines.Count-(n1 - n2);
-          for N := p + (n1 - n2) to Lines.Count - 1 do
-            begin
-              Lines.Exchange(N, p);
-              Inc(p);
-            end;
+          if ssNeedReIndex in Lines.State then
+            Sections.ReIndex;
+          // Bottom up, so the rows still to delete keep their indexes
           for N := n1 - n2 downto 1 do
-            Lines.Delete(Lines.Count - 1);
-          NeedReDrawLE(fStart.Y);
-          // The last line is always empty
+            Sections.DeleteRow(fStart.Y + Ord((fStart.X > 0) or (fEnd.X > 0)) + N - 1);
+          Lines.State := Lines.State + [ssUndoProcess];
         end;
-      { for n := n1 - n2 downto 1 do
-      Lines.Delete(fStart.Y); }
+      try
+        // p:=fStart.Y+n2-n1;
+        p := Lines.Count - 1;
+        for N := n2 - n1 downto 1 do
+          if fStart.X = 0 then
+            Lines.Add('')
+          else
+            Lines.Add('');
+        P1 := Lines.Count - 1;
+        for N := p + 1 - fStart.Y downto 1 do
+          begin
+            if p < 0 then
+              Break;
+            TMPSyntaxParser(Lines.Objects[p]).fNeedReparse := True;
+            Lines.Exchange(p, P1);
+            dec(p);
+            dec(P1);
+          end;
+        { for n := n2 - n1 downto 1 do
+        if fStart.X = 0
+        then Lines.Insert(fStart.Y, '')
+        else Lines.Insert(fStart.Y + n1, ''); }
 
-      for N := 0 to n2 - 1 do
-        Lines[fStart.Y + N] := Sl[N];
+        if n1 > n2 then
+          begin
+            p := fStart.Y;
+            // p1:=Lines.Count-(n1 - n2);
+            for N := p + (n1 - n2) to Lines.Count - 1 do
+              begin
+                Lines.Exchange(N, p);
+                Inc(p);
+              end;
+            for N := n1 - n2 downto 1 do
+              Lines.Delete(Lines.Count - 1);
+            NeedReDrawLE(fStart.Y);
+            // The last line is always empty
+          end;
+        { for n := n1 - n2 downto 1 do
+        Lines.Delete(fStart.Y); }
+
+        for N := 0 to n2 - 1 do
+          Lines[fStart.Y + N] := Sl[N];
+      finally
+        if AdjustSections then
+          Lines.State := Lines.State - [ssUndoProcess];
+      end;
+
+      if AdjustSections then
+        for N := n2 - n1 downto 1 do
+          Sections.InsertRow(fStart.Y + Ord(fStart.X > 0));
 
       // Set the new cursor position
       fEnd := NewSelEnd;

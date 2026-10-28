@@ -658,6 +658,9 @@ The lists of old and new names, and what an application has to change, are in
   data is now UTF-16 in the new clipboard format `FIBSyntaxMemoUnicode`; the old `MP_SYN_MEMO`
   data still pastes.
 - SQL editor: a `LiteralDecimalPoint` outside Latin-1 split the numbers in the highlighting.
+- SQL editor: pasting text with sections raised an access violation, every paste dropped the
+  sections of the editor, sections stayed at their rows when lines were inserted or deleted
+  above them, and a paste of plain text did not set `Modified`.
 
 ## [7.9.1] - 2026-10-09
 
