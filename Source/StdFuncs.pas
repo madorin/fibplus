@@ -776,9 +776,6 @@ begin
     end;
 end;
 
-const
-  ZeroStr = '000000000000000000';
-
 function IsZero(const Str: string): Boolean;
 var
   i: Integer;
@@ -839,40 +836,131 @@ begin
       Exit(Sign + Result);
 end;
 
-// Number of '0' and '#' decimal places of a one section numeric format
-function FormatDecimalCount(const Format: string): Integer;
-var
-  SeparatorPos, I: Integer;
+type
+  // The placeholders of a one section numeric format, as FormatFloat scans them
+  TNumericFormatScan = record
+    DigitCount: Integer;
+    DecimalIndex: Integer;
+    IntegerZeros: Integer;
+    DecimalZeros: Integer;
+    ThousandSep: Boolean;
+  end;
+
+// Position after the quoted text that starts at Start
+function SkipFormatQuote(const Format: string; Start: Integer): Integer;
 begin
-  Result := 0;
-  SeparatorPos := PosCh('.', Format);
-  if SeparatorPos > 0 then
-    for I := SeparatorPos + 1 to Length(Format) do
-      if CharInSet(Format[I], ['0', '#']) then
-        Inc(Result);
+  Result := Start + 1;
+  while (Result <= Length(Format)) and (Format[Result] <> Format[Start]) do
+    Inc(Result);
+  if Result <= Length(Format) then
+    Inc(Result);
+end;
+
+// Position of the ';' that ends the format section starting at Start, or Length + 1
+function NumericFormatSectionEnd(const Format: string; Start: Integer): Integer;
+begin
+  Result := Start;
+  while (Result <= Length(Format)) and (Format[Result] <> ';') do
+    if CharInSet(Format[Result], ['''', '"']) then
+      Result := SkipFormatQuote(Format, Result)
+    else
+      Inc(Result);
+end;
+
+procedure ScanNumericFormat(const Format: string; var Scan: TNumericFormatScan);
+var
+  I, FirstZero, LastZero: Integer;
+begin
+  Scan.DigitCount := 0;
+  Scan.DecimalIndex := -1;
+  FirstZero := MaxInt;
+  LastZero := 0;
+  Scan.ThousandSep := False;
+  I := 1;
+  while I <= Length(Format) do
+    if CharInSet(Format[I], ['''', '"']) then
+      I := SkipFormatQuote(Format, I)
+    else
+    begin
+      case Format[I] of
+        '#':
+          Inc(Scan.DigitCount);
+        '0':
+          begin
+            if Scan.DigitCount < FirstZero then
+              FirstZero := Scan.DigitCount;
+            Inc(Scan.DigitCount);
+            LastZero := Scan.DigitCount;
+          end;
+        '.':
+          if Scan.DecimalIndex = -1 then
+            Scan.DecimalIndex := Scan.DigitCount;
+        ',':
+          Scan.ThousandSep := True;
+      end;
+      Inc(I);
+    end;
+  if Scan.DecimalIndex = -1 then
+    Scan.DecimalIndex := Scan.DigitCount;
+  // the integer and decimal digits always written ('0' placeholders)
+  Scan.IntegerZeros := Max(Scan.DecimalIndex - FirstZero, 0);
+  Scan.DecimalZeros := Max(LastZero - Scan.DecimalIndex, 0);
 end;
 
 function FormatNumericString(const Format, Source: string; OneSectionFormat: Boolean = False): string;
-type
-  TPosType = (pBegin, pBeforeDecimalSep, pAfterDecimalSep, pEnd);
-
-  TLiteral = record
-    lBody: string;
-    lPos: Integer;
-    lPosType: TPosType;
-  end;
 var
-  L, i: Integer;
-  NeedDecimalCount: Integer;
-  CanHaveDecimalCount: Integer;
-  PosDecSepInFormat: Integer;
-  PosDecSepInString: Integer;
-  vLiterals: array of TLiteral;
+  Scan: TNumericFormatScan;
   PositiveFormat, NegativeFormat, ZeroFormat, SectionFormat: string;
-  UnsignedSource: string;
+  UnsignedSource, Digits: string;
   UseNegativeSection: Boolean;
-const
-  cFormatChars = ['#', '0', ',', '.'];
+  DecimalSep, ThousandsSep: Char;
+  I, L, Exponent, DigitIndex, DigitDelta, DigitPlace: Integer;
+
+  procedure WriteDigit(Digit: Char);
+  begin
+    if DigitPlace = 0 then
+      Result := Result + DecimalSep + Digit
+    else
+      Result := Result + Digit;
+    Dec(DigitPlace);
+    if Scan.ThousandSep and (DigitPlace > 1) and (DigitPlace mod 3 = 0) then
+      Result := Result + ThousandsSep;
+  end;
+
+  procedure AddDigit;
+  begin
+    if DigitIndex <= Length(Digits) then
+    begin
+      WriteDigit(Digits[DigitIndex]);
+      Inc(DigitIndex);
+    end
+    else if DigitPlace <= -Scan.DecimalZeros then
+      Dec(DigitPlace)
+    else
+      WriteDigit('0');
+  end;
+
+  // a '0' or '#' placeholder; the integer digits beyond the placeholders go at the first one
+  procedure PutFormatDigit;
+  begin
+    if DigitDelta < 0 then
+    begin
+      Inc(DigitDelta);
+      if DigitPlace <= Scan.IntegerZeros then
+        WriteDigit('0')
+      else
+        Dec(DigitPlace);
+    end
+    else
+    begin
+      while DigitDelta > 0 do
+      begin
+        AddDigit;
+        Dec(DigitDelta);
+      end;
+      AddDigit;
+    end;
+  end;
 
 begin
   if Length(Source) = 0 then
@@ -880,219 +968,114 @@ begin
     Result := '';
     Exit;
   end;
+{$IFDEF C24}with FormatSettings do {$ENDIF}
+  begin
+    DecimalSep := DecimalSeparator;
+    ThousandsSep := ThousandSeparator;
+  end;
+  if CharInSet(Source[1], ['+', '-']) then
+    UnsignedSource := FastCopy(Source, 2, MaxInt)
+  else
+    UnsignedSource := Source;
 
   if not OneSectionFormat then
   begin
-    i := PosCh(';', Format);
-    if i > 0 then
+    I := NumericFormatSectionEnd(Format, 1);
+    if I <= Length(Format) then
     begin
-      // as FormatFloat: an empty section falls back to the first one (keeping the sign for a
+      // as FormatCurr: an empty section falls back to the first one (keeping the sign for a
       // negative value), and a value that rounds to zero takes the zero section
-      PositiveFormat := FastCopy(Format, 1, i - 1);
-      NegativeFormat := FastCopy(Format, i + 1, MaxInt);
-      ZeroFormat := '';
-      L := PosCh(';', NegativeFormat);
-      if L > 0 then
-      begin
-        ZeroFormat := FastCopy(NegativeFormat, L + 1, MaxInt);
-        SetLength(NegativeFormat, L - 1);
-      end;
-      if CharInSet(Source[1], ['+', '-']) then
-        UnsignedSource := FastCopy(Source, 2, MaxInt)
-      else
-        UnsignedSource := Source;
+      PositiveFormat := FastCopy(Format, 1, I - 1);
+      L := NumericFormatSectionEnd(Format, I + 1);
+      NegativeFormat := FastCopy(Format, I + 1, L - I - 1);
+      ZeroFormat := FastCopy(Format, L + 1, NumericFormatSectionEnd(Format, L + 1) - L - 1);
       UseNegativeSection := (Source[1] = '-') and (NegativeFormat <> '');
-      if UseNegativeSection then
+      if (ZeroFormat <> '') and IsZero(UnsignedSource) then
+        SectionFormat := ZeroFormat
+      else if UseNegativeSection then
         SectionFormat := NegativeFormat
       else
         SectionFormat := PositiveFormat;
-{$IFDEF C24}with FormatSettings do {$ENDIF}
-        if IsZero(RoundDecimalString(UnsignedSource, FormatDecimalCount(SectionFormat), DecimalSeparator)) then
-        begin
-          if ZeroFormat <> '' then
-            SectionFormat := ZeroFormat
-          else
-            SectionFormat := PositiveFormat;
-          Result := FormatNumericString(SectionFormat, UnsignedSource, True);
-        end
+      // an empty section: the general format
+      if SectionFormat = '' then
+        Exit(Source);
+      ScanNumericFormat(SectionFormat, Scan);
+      if IsZero(RoundDecimalString(UnsignedSource, Scan.DigitCount - Scan.DecimalIndex, DecimalSep)) then
+      begin
+        if ZeroFormat <> '' then
+          SectionFormat := ZeroFormat
         else
-          Result := FormatNumericString(SectionFormat, Source, UseNegativeSection);
+          SectionFormat := PositiveFormat;
+        if SectionFormat = '' then
+          Result := Source
+        else
+          Result := FormatNumericString(SectionFormat, '0', True);
+      end
+      else
+        Result := FormatNumericString(SectionFormat, Source, UseNegativeSection);
       Exit;
     end;
   end;
 
-  Result := Source;
-  L := Length(Format);
-{$IFDEF C24}with FormatSettings do {$ENDIF}
-    if L > 0 then
-    begin
-      while (L > 0) and CharInSet(Format[L], [#9, ' ', ';']) do
-        Dec(L);
-      if L = 0 then
-      begin
-        Result := '';
-        Exit;
-      end;
-      if not CharInSet(Format[L], cFormatChars) then
-      begin
-        SetLength(vLiterals, 1);
-        vLiterals[0].lBody := '';
-        vLiterals[0].lPosType := pEnd;
-        i := L;
-        while (i > 0) and not CharInSet(Format[i], cFormatChars) do
+  if Format = '' then
+  begin
+    Result := Source;
+    Exit;
+  end;
+  ScanNumericFormat(Format, Scan);
+  // the significant digits and the number of integer digits (negative for the zeros after the
+  // separator), as FloatToDecimal gives them
+  Digits := RoundDecimalString(UnsignedSource, Scan.DigitCount - Scan.DecimalIndex, DecimalSep);
+  Exponent := Pos(DecimalSep, Digits) - 1;
+  if Exponent < 0 then
+    Exponent := Length(Digits)
+  else
+    Delete(Digits, Exponent + 1, 1);
+  while (Digits <> '') and (Digits[1] = '0') do
+  begin
+    Delete(Digits, 1, 1);
+    Dec(Exponent);
+  end;
+  L := Length(Digits);
+  while (L > 0) and (Digits[L] = '0') do
+    Dec(L);
+  SetLength(Digits, L);
+  if Digits = '' then
+    Exponent := 0;
+
+  if (Source[1] = '-') and (Digits <> '') and not OneSectionFormat then
+    Result := '-'
+  else
+    Result := '';
+  DigitDelta := Exponent - Scan.DecimalIndex;
+  if DigitDelta >= 0 then
+    DigitPlace := Exponent
+  else
+    DigitPlace := Scan.DecimalIndex;
+  DigitIndex := 1;
+  I := 1;
+  while I <= Length(Format) do
+    case Format[I] of
+      '0', '#':
         begin
-          Dec(i);
+          PutFormatDigit;
+          Inc(I);
         end;
-        if i = 0 then
+      '.', ',':
+        Inc(I);
+      '''', '"':
         begin
-          Result := FastCopy(Format, i + 1, L - i);
-          Exit;
-        end
-        else
-          vLiterals[0].lBody := FastCopy(Format, i + 1, L - i);
-      end;
-
-      i := 1;
-      if (i < L) and not CharInSet(Format[1], cFormatChars) then
-      begin
-        SetLength(vLiterals, 2);
-        vLiterals[1].lBody := '';
-        vLiterals[1].lPosType := pBegin;
-        while (i < L) and not CharInSet(Format[i], cFormatChars) do
-          Inc(i);
-        vLiterals[1].lBody := FastCopy(Format, 1, i - 1);
-      end;
-
-      PosDecSepInFormat := PosCh('.', Format);
-      NeedDecimalCount := 0;
-      CanHaveDecimalCount := 0;
-      if PosDecSepInFormat > 0 then
-        for i := L downto PosDecSepInFormat do
-        begin
-          if CharInSet(Format[i], ['0', '#']) then
-            Inc(CanHaveDecimalCount);
-          if (NeedDecimalCount = 0) and (Format[i] = '0') then
-          begin
-            NeedDecimalCount := i - PosDecSepInFormat;
-          end
-          else if NeedDecimalCount <> 0 then
-            if not CharInSet(Format[i], cFormatChars) then
-              Dec(NeedDecimalCount);
-        end;
-
-      i := PosDecSepInFormat - 1;
-      if (i > 1) and not CharInSet(Format[i], cFormatChars) then
-      begin
-        SetLength(vLiterals, 3);
-        vLiterals[2].lPosType := pBeforeDecimalSep;
-        while (i > 1) and not CharInSet(Format[i], cFormatChars) do
-          Dec(i);
-        if i > 1 then
-          vLiterals[2].lBody := FastCopy(Format, i + 1, PosDecSepInFormat - i - 1)
-        else
-          vLiterals[2].lBody := ''
-      end;
-
-      i := PosDecSepInFormat + 1;
-      if (PosDecSepInFormat > 0) and (i < L) and not CharInSet(Format[i], cFormatChars) then
-      begin
-        SetLength(vLiterals, 4);
-        vLiterals[3].lPosType := pAfterDecimalSep;
-        while (i < L) and not CharInSet(Format[i], cFormatChars) do
-          Inc(i);
-        if i < L then
-          vLiterals[3].lBody := FastCopy(Format, PosDecSepInFormat + 1, i - PosDecSepInFormat - 1)
-        else
-          vLiterals[3].lBody := ''
-      end;
-
-      PosDecSepInString := Pos(DecimalSeparator, Result);
-      if (PosDecSepInString = 0) and (NeedDecimalCount > 0) then
-      begin
-        Result := Result + DecimalSeparator;
-        PosDecSepInString := Length(Result)
-      end;
-      if (PosDecSepInString > 0) then
-      begin
-        if Length(Result) - PosDecSepInString < NeedDecimalCount then
-        begin
-          if NeedDecimalCount > 0 then
-            Result := Result + FastCopy(ZeroStr, 1, NeedDecimalCount - (Length(Result) - PosDecSepInString))
-        end
-        else if Length(Result) - PosDecSepInString > CanHaveDecimalCount then
-        begin
-          Result := RoundDecimalString(Result, CanHaveDecimalCount, DecimalSeparator);
-          PosDecSepInString := Pos(DecimalSeparator, Result);
-        end;
-        // the zeros of the optional '#' decimals
-        if PosDecSepInString > 0 then
-          while (Length(Result) - PosDecSepInString > NeedDecimalCount) and (Result[Length(Result)] = '0') do
-            SetLength(Result, Length(Result) - 1);
-      end;
-      //
-      if Length(vLiterals) > 3 then
-      begin
-        Result := FastCopy(Result, 1, PosDecSepInString) + vLiterals[3].lBody +
-          FastCopy(Result, PosDecSepInString + 1, MaxInt);
-      end;
-
-      if Length(vLiterals) > 2 then
-      begin
-        if PosDecSepInString > 0 then
-          Result := FastCopy(Result, 1, PosDecSepInString - 1) + vLiterals[2]
-            .lBody + FastCopy(Result, PosDecSepInString, MaxInt)
-        else
-          Result := Result + vLiterals[2].lBody;
-      end;
-
-      if PosCh(',', Format) > 0 then
-      begin
-        L := 1;
-        i := PosDecSepInString - 1;
-        if i < 0 then
-          i := Length(Result);
-{$IFDEF C24}with FormatSettings do {$ENDIF}
-          while i > 1 do
-          begin
-            if L = 3 then
-            begin
-              if (i <> 2) or not CharInSet(Result[1], ['+', '-']) then
-                Result := FastCopy(Result, 1, i - 1) + ThousandSeparator + FastCopy(Result, i, MaxInt);
-              L := 0
-            end
-            else
-            begin
-              Dec(i);
-              Inc(L)
-            end;
-          end;
-      end;
-      if Length(vLiterals) > 1 then
-        PosDecSepInFormat := PosDecSepInFormat - Length(vLiterals[1].lBody);
-      if (PosDecSepInFormat = 1) then
-      begin
-        if (PosDecSepInString = 2) and (Result[1] = '0') then
-          Delete(Result, 1, 1)
-        else if (PosDecSepInString = 3) and (Result[1] = '-') and (Result[2] = '0') then
-          Delete(Result, 2, 1);
-      end;
-{$IFDEF C24}with FormatSettings do {$ENDIF}
-        if Result[Length(Result)] = DecimalSeparator then
-          SetLength(Result, Length(Result) - 1);
-      if OneSectionFormat and (Result[1] = '-') then
-        Delete(Result, 1, 1);
-      if Length(vLiterals) > 0 then
-      begin
-        Result := Result + vLiterals[0].lBody;
-        if Length(vLiterals) > 1 then
-        begin
-          // the sign goes before the leading literal, as FormatFloat puts it
-          if Result[1] = '-' then
-            Result := '-' + vLiterals[1].lBody + FastCopy(Result, 2, MaxInt)
+          L := SkipFormatQuote(Format, I);
+          // the text up to the closing quote, or to the end
+          if (L - 1 > I) and (Format[L - 1] = Format[I]) then
+            Result := Result + FastCopy(Format, I + 1, L - I - 2)
           else
-            Result := vLiterals[1].lBody + Result;
+            Result := Result + FastCopy(Format, I + 1, L - I - 1);
+          I := L;
         end;
-      end;
+    else
+      Result := Result + Format[I];
+      Inc(I);
     end;
 end;
 

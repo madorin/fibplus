@@ -3584,7 +3584,6 @@ var
   Digits: Integer;
   TC: Int64;
   Format: TFloatFormat;
-  bcdValue: TBcd;
 begin
   if FieldKind in [fkCalculated] then
     inherited GetText(Text, DisplayText)
@@ -3605,10 +3604,7 @@ begin
                   Text := IntToStr(TC)
                 end
               else
-                begin
-                  Int64ToBCD(TC, Size, bcdValue);
-                  Text := FormatBcd(FmtStr, bcdValue)
-                end;
+                Text := FormatNumericString(FmtStr, IntToStr(TC));
             end
           else
     {$IFDEF C24}with FormatSettings do {$ENDIF}

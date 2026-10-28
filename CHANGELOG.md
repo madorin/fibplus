@@ -400,6 +400,10 @@ The lists of old and new names, and what an application has to change, are in
   leading literal: the minus sign went after the literal (`$ -1,00`, `FormatFloat` gives
   `-$ 1,00`), a value that rounds to zero took the negative section (`0.0;(0.0)` on -0.004 gave
   `(0,0)`), and an empty negative or zero section did not fall back to the first one.
+- `DisplayFormat` and `EditFormat` of `TFIBBCDField` and `TFIBClientBCDField` with quoted text or
+  without a `0` before the decimal point: the text was shown with its quotes (`"Neg" 0.0`), a `;`
+  in quotes split the sections, and `#.##` kept the zero integer part (`0,05`, `FormatFloat`
+  gives `,05`, and an empty text for zero). Text between the digits was dropped (`0" x "0`).
 - `DisplayFormat` and `EditFormat` of `TFIBBCDField` and `TFIBClientBCDField` when the value is
   rounded: the zeros of the carry were dropped (`0.00` on 1.296 gave `1.3`, on 0.996 `1`), the
   thousand separators stayed where they were before the carry (`#,##0.00` on 9999.996 gave
