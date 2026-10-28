@@ -877,9 +877,8 @@ begin
         end
     end;
   i := Length(ParamString);
-  if j < i then
+  if j <= i then
     begin
-      i := Length(ParamString);
       s := Copy(ParamString, j, i - j + 1);
       Result := Result or CurParamValue
     end;

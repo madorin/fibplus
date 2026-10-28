@@ -557,6 +557,7 @@ The lists of old and new names, and what an application has to change, are in
   with another charset, so the `lock_read`/`lock_write` table names kept the old code page; a
   database of a multi-database transaction without its own parameters got the names in the code
   page of `MainDatabase`.
+- `DBParams`: a last `shutdown` value of one character (`shutdown=2`) was ignored.
 
 ## [7.9.1] - 2026-10-09
 
