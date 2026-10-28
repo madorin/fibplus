@@ -10,7 +10,7 @@ unit SIBAPI;
 interface
 
 uses
-  IB_Intf, SIBGlobals;
+  IB_Externals, IB_Intf, SIBGlobals;
 
 type
   // data types used to interface with the InterBase API
@@ -22,12 +22,15 @@ type
   SIB_Short = SmallInt;
   SIB_DBHandle = SIB_PVoid;
   SIB_PDBHandle = ^SIB_DBHandle;
-  SIB_Status = SIB_Long;
+  SIB_Status = ISC_STATUS;
   SIB_PStatus = ^SIB_Status;
   SIB_PPStatus = ^SIB_PStatus;
   SIB_StatusVector = array [0 .. 19] of SIB_Status;
   SIB_PStatusVector = ^SIB_StatusVector;
   SIB_PPStatusVector = ^SIB_PStatusVector;
+  // isc_event_counts writes ISC_ULONG counts, not status entries
+  SIB_EventCountVector = array [0 .. SIB_MAX_EVENT_BLOCK - 1] of UISC_LONG;
+  SIB_PEventCountVector = ^SIB_EventCountVector;
   SIB_EventCallback = procedure(P: Pointer; Length: SIB_UShort; Updated: PAnsiChar); cdecl;
 
 function SIB_Free(ClientLibrary: IIBClientLibrary; P: PAnsiChar): SIB_Long;
@@ -39,13 +42,13 @@ function SIB_CancelEvents(ClientLibrary: IIBClientLibrary;
   Status: SIB_PStatusVector; DBHandle: SIB_DBHandle; EventID: SIB_PLong)
   : SIB_Status;
 procedure SIB_EventCounts(ClientLibrary: IIBClientLibrary;
-  Status: SIB_PStatusVector; Length: SIB_Short;
+  Counts: SIB_PEventCountVector; Length: SIB_Short;
   EventBuffer, ResultBuffer: PAnsiChar);
 
 implementation
 
 uses
-  IB_Externals, ibase;
+  ibase;
 
 // ---------------------------------------------------------------------------
 
@@ -74,10 +77,10 @@ end;
 // ---------------------------------------------------------------------------
 
 procedure SIB_EventCounts(ClientLibrary: IIBClientLibrary;
-  Status: SIB_PStatusVector; Length: SIB_Short;
+  Counts: SIB_PEventCountVector; Length: SIB_Short;
   EventBuffer, ResultBuffer: PAnsiChar);
 begin
-  ClientLibrary.isc_event_counts(PISC_STATUS(Status), Length, EventBuffer, ResultBuffer);
+  ClientLibrary.isc_event_counts(PUISC_LONG(Counts), Length, EventBuffer, ResultBuffer);
   Reset8087CW;
 end;
 

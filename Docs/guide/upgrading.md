@@ -109,6 +109,8 @@ These have no old name, so the code that uses them must change:
 | `IIbClientLibrary.isc_interprete`, `fb_Interpret` returning `ISC_STATUS` | `ISC_LONG` | The same type on Win32. On Win64 change the result type in classes that implement `IIbClientLibrary`. |
 | `TFIBDatabase.IsMemoSubtype(aSubtype: ShortInt)`, `TMemoSubtypes.IsMemoSubtype` | `aSubtype: SmallInt` | Nothing. |
 | `SIB_QueEvents`, `SIB_EventCounts` (`SIBAPI`) with `Length: SIB_UShort` | `Length: SIB_Short` | Nothing: the event buffer of `isc_event_block` is far below 32767 bytes. |
+| `SIB_Status = SIB_Long` (`SIBAPI`, the entries of `SIB_StatusVector`) | `ISC_STATUS` | Nothing on Win32. On Win64 the vector has 64-bit entries, as the client writes them. |
+| `IIBClientLibrary.isc_event_counts(status_vector: PISC_STATUS; ...)`, `Tisc_event_counts` (`ibase`); `SIB_EventCounts(...; Status: SIB_PStatusVector; ...)` | `event_counts: PUISC_LONG`, as `ISC_ULONG*` in the C header; `Counts: SIB_PEventCountVector` | Pass an array of `UISC_LONG` (the counts are 32-bit values, also on Win64) and change the parameter type in classes that implement `IIBClientLibrary`. |
 | `TFIBFieldDescrList.LoadFromStream(Stream; StreamVersion: Byte)` | `StreamVersion: Integer` | Nothing. |
 
 ### Removed identifiers

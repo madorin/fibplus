@@ -389,7 +389,7 @@ type
   Tisc_encode_timestamp = procedure(tm_date: PCTimeStructure; ib_timestamp: PISC_TIMESTAMP); {$I FIBMacroComp.inc}
   Tisc_event_block = function(event_buffer: PPAnsiChar; result_buffer: PPAnsiChar; id_count: UShort;
     event_list: array of PAnsiChar): ISC_LONG; {$I FIBMacroComp.inc}
-  Tisc_event_counts = procedure(status_vector: PISC_STATUS; buffer_length: short; event_buffer: PAnsiChar;
+  Tisc_event_counts = procedure(event_counts: PUISC_LONG; buffer_length: short; event_buffer: PAnsiChar;
     result_buffer: PAnsiChar); {$I FIBMacroComp.inc}
   Tisc_expand_dpb = procedure(dpb: PPAnsiChar; dpb_length: PShort; item_list: array of Pointer); {$I FIBMacroComp.inc}
   Tisc_modify_dpb = function(dpb: PPAnsiChar; isc_arg2, isc_arg3: PShort; isc_arg4: UShort; isc_arg5: PAnsiChar;

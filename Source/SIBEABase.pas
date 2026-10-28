@@ -116,6 +116,7 @@ type
     ErrorBuffer: PAnsiChar;
     ErrorVector: SIB_PStatusVector;
     StatusVector: SIB_StatusVector;
+    EventCounts: SIB_EventCountVector;
     ResultStatus: SIB_Status;
     EventID: SIB_Long;
     DB: SIB_DBHandle;
@@ -214,7 +215,7 @@ end;
 // stub for synchronizing with main thread
 procedure TSIBEventThread.SIBEventCounts;
 begin
-  SIB_EventCounts(FClientLibrary, @StatusVector, EventBufferLen, EventBuffer, ResultBuffer);
+  SIB_EventCounts(FClientLibrary, @EventCounts, EventBufferLen, EventBuffer, ResultBuffer);
 end;
 
 // stub for synchronizing with main thread
@@ -273,7 +274,7 @@ procedure TSIBEventThread.DoEvent;
 
 begin
   Parent.FOnEventAlert(Parent, Parent.FEvents[((EventGroup * SIB_MAX_EVENT_BLOCK) + WhichEvent)],
-    StatusVector[WhichEvent])
+    EventCounts[WhichEvent])
 end;
 
 // called by the IB event callback to copy an update resultbuffer
@@ -347,7 +348,7 @@ begin
     for i := 0 to (EventCount - 1) do
     begin
       // if this particular event occured, call the event handler
-      if (StatusVector[i] <> 0) then
+      if (EventCounts[i] <> 0) then
       begin
         WhichEvent := i;
         if FVCLSynchro then
@@ -442,10 +443,9 @@ end;
 // waiting for events to be received
 procedure TSIBEventThread.Execute;
 begin
-  RegisterEvents;
-  QueueEvents;
-
   try
+    RegisterEvents;
+    QueueEvents;
     repeat
       // wait for an event to be signaled
       Signal.WaitFor(INFINITE);

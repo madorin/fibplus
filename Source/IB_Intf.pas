@@ -160,7 +160,7 @@ type
     function isc_event_block(event_buffer: PPAnsiChar;
       result_buffer: PPAnsiChar; id_count: UShort;
       event_list: array of PAnsiChar): ISC_LONG;
-    procedure isc_event_counts(status_vector: PISC_STATUS; buffer_length: Short; event_buffer: PAnsiChar; result_buffer: PAnsiChar);
+    procedure isc_event_counts(event_counts: PUISC_LONG; buffer_length: Short; event_buffer: PAnsiChar; result_buffer: PAnsiChar);
     function isc_free(isc_arg1: PAnsiChar): ISC_LONG;
     function isc_get_segment(status_vector: PISC_STATUS;
       blob_handle: PISC_BLOB_HANDLE; actual_seg_length: PUShort;
@@ -471,7 +471,7 @@ type
     function isc_event_block(event_buffer: PPAnsiChar;
       result_buffer: PPAnsiChar; id_count: UShort;
       event_list: array of PAnsiChar): ISC_LONG;
-    procedure isc_event_counts(status_vector: PISC_STATUS; buffer_length: Short; event_buffer: PAnsiChar; result_buffer: PAnsiChar);
+    procedure isc_event_counts(event_counts: PUISC_LONG; buffer_length: Short; event_buffer: PAnsiChar; result_buffer: PAnsiChar);
     function isc_free(isc_arg1: PAnsiChar): ISC_LONG;
     function isc_get_segment(status_vector: PISC_STATUS;
       blob_handle: PISC_BLOB_HANDLE; actual_seg_length: PUShort;
@@ -1360,11 +1360,11 @@ begin
 
 end;
 
-procedure TIBClientLibrary.isc_event_counts(status_vector: PISC_STATUS; buffer_length: Short; event_buffer, result_buffer: PAnsiChar);
+procedure TIBClientLibrary.isc_event_counts(event_counts: PUISC_LONG; buffer_length: Short; event_buffer, result_buffer: PAnsiChar);
 begin
   FBusy := True;
   try
-    Fisc_event_counts(status_vector, buffer_length, event_buffer, result_buffer)
+    Fisc_event_counts(event_counts, buffer_length, event_buffer, result_buffer)
   finally
     FBusy := False;
   end

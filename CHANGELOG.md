@@ -223,6 +223,10 @@ The lists of old and new names, and what an application has to change, are in
   `Integer`), like `TTimer.Interval`. `IIbClientLibrary.isc_interprete` and `fb_Interpret` return
   `ISC_LONG` (were `ISC_STATUS`, 64 bits on Win64), as the client library. The `Length` of
   `SIB_QueEvents` and `SIB_EventCounts` is `SIB_Short` (was `SIB_UShort`), as in the client API.
+  `SIB_Status` (`SIBAPI`) is `ISC_STATUS` (was `SIB_Long`, 32 bits on Win64), so the event status
+  vector has the entries the client writes. `IIBClientLibrary.isc_event_counts` and
+  `Tisc_event_counts` take a `PUISC_LONG` (was `PISC_STATUS`), as `ISC_ULONG*` in the C header,
+  and `SIB_EventCounts` a `SIB_PEventCountVector`.
   `TFIBDatabase.IsMemoSubtype` and `TMemoSubtypes.IsMemoSubtype` take a `SmallInt` (was
   `ShortInt`), and `TFIBFieldDescrList.LoadFromStream` an `Integer` version (was `Byte`).
 
@@ -414,6 +418,16 @@ The lists of old and new names, and what an application has to change, are in
   not written (the path had `?` in it).
 - `TFIBDatabase.MemoSubtypes` kept the sub types in a byte, so for example `-1000` also matched
   the sub type 24.
+
+#### Events
+
+- Win64: the event alerter (`TFIBEventAlerter`) gave the client a status vector of 32-bit
+  entries, while the client writes 64-bit ones: an error while registering or cancelling events
+  could overwrite the handles of the event thread. The event counts, which the client writes as
+  32-bit values, have their own array now.
+- An error while registering events (an invalid database handle, a server whose events port
+  can't be reached) ended the event thread without a message; it is now reported like an error
+  after the registration.
 
 #### Errors and messages
 
