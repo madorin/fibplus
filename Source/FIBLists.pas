@@ -382,8 +382,8 @@ begin
   end;
   Find(MinValue, Index);
   Find(MaxValue, Index1);
-  if Index1 >= FList.Count then
-    Index1 := FList.Count - 1;
+  if Index1 >= Count then
+    Index1 := Count - 1;
   if MaxValue < integer(FList.List^[Index1]) then
     Dec(Index1);
 
@@ -398,7 +398,7 @@ var
   Index: integer;
 begin
   Find(FromValue, Index);
-  for I := FList.Count - 1 downto Index do
+  for I := Count - 1 downto Index do
     FList.List^[I] := Pointer(integer(FList.List^[I]) + Distance)
 end;
 
@@ -419,7 +419,7 @@ var
 begin
   Result := False;
   L := 0;
-  H := FList.Count - 1;
+  H := Count - 1;
 
   while L <= H do
   begin
@@ -458,7 +458,7 @@ end;
 
 function TSortedList.GetCount: integer;
 begin
-  Result := FList.Count
+  Result := Integer(FList.Count)
 end;
 
 procedure TSortedList.Clear;

@@ -2078,13 +2078,12 @@ end;
 
 function TMemoSubtypes.IsMemoSubtype(aSubtype: SmallInt): boolean;
 var
-  I, L: integer;
+  I: NativeInt;
 begin
   { Result:=(aSubtype=FSubType1) or (aSubtype=FSubType2) or (aSubtype=FSubType2)
     or  (aSubtype=FSubType3) or (aSubtype=FSubType4) }
   result := False;
-  L := Length(FSubTypes) - 1;
-  for I := 0 to L do
+  for I := 0 to High(FSubTypes) do
     if aSubtype = FSubTypes[I] then
     begin
       result := True;

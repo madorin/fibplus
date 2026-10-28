@@ -320,7 +320,7 @@ end;
 
 function TRecordsCache.GetBlockCount: Integer;
 begin
-  Result := FBlocks.Count
+  Result := Integer(FBlocks.Count)
 end;
 
 function TRecordsCache.CreateNewBlock: Integer;
@@ -345,10 +345,10 @@ var
 begin
   if Assigned(FMapRecords) and (RecordNo > FMapRecords.Count) then
     begin
-      c := FMapRecords.Count;
+      c := Integer(FMapRecords.Count); // less than RecordNo
       for i := c to RecordNo - 1 do
         FMapRecords.Add(Pointer(FRecordCount + 1 + i - c));
-      FRecordCount := FMapRecords.Count;
+      FRecordCount := RecordNo;
       if Assigned(FStringData) then
         while (FStringData.CountY < FMapRecords.Count) do
           FStringData.Add
@@ -1099,8 +1099,9 @@ begin
         end;
       if Assigned(FMapRecords) then
         begin
-          InternalWriteBuffer(FMapRecords.Count, SizeOf(Integer));
-          for i := 0 to FMapRecords.Count - 1 do
+          L := Integer(FMapRecords.Count); // one entry per record
+          InternalWriteBuffer(L, SizeOf(Integer));
+          for i := 0 to L - 1 do
             begin
               InternalWriteBuffer(FMapRecords.List^[i], SizeOf(Integer));
             end
@@ -1197,7 +1198,7 @@ begin
     begin
       FMapRecords := TFIBList.Create;
       FMapRecords.Count := FRecordCount;
-      for i := 0 to FMapRecords.Count - 1 do
+      for i := 0 to FRecordCount - 1 do
         begin
           FMapRecords.List^[i] := Pointer(i + 1);
         end;
@@ -1206,7 +1207,7 @@ end;
 
 procedure TRecordsCache.ShiftMapValues(Distance: Integer);
 var
-  i: Integer;
+  i: NativeInt;
 begin
   if not Assigned(FMapRecords) then
     InitializeMap;
@@ -1252,7 +1253,7 @@ begin
       if (BookMark <= FMapRecords.Count) and (FMapRecords.List^[BookMark - 1] = Pointer(BookMark)) then
         Result := BookMark - 1
       else
-        Result := FMapRecords.IndexOf(Pointer(BookMark))
+        Result := Integer(FMapRecords.IndexOf(Pointer(BookMark)))
     end
   else
     Result := BookMark - 1
@@ -1279,7 +1280,7 @@ begin
   if FChangeLog = nil then
     Result := 0
   else
-    Result := FChangeLog.Count
+    Result := Integer(FChangeLog.Count)
 end;
 
 end.

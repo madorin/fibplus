@@ -762,7 +762,7 @@ var
 begin
   L := NameLength;
   if L > Length(Name) then
-    L := Length(Name)
+    L := Integer(Length(Name)) // the name buffer of an XSQLVAR
   else if L < 0 then
     L := 0;
   SetString(Result, PAnsiChar(@Name[0]), L);
@@ -4656,14 +4656,15 @@ end;
 
 procedure TFIBQuery.ExecProcedure(const ProcName: string; const InputParams: array of Variant);
 var
-  i: Integer;
+  i, InputCount: Integer;
   SQLText: string;
 begin
   SQLText := ExecProcPrefix + 'PROCEDURE ' + ProcName;
-  if Length(InputParams) > 0 then
+  InputCount := Integer(Length(InputParams)); // input parameters of the procedure
+  if InputCount > 0 then
   begin
     SQLText := SQLText + '(?P0';
-    for i := 1 to High(InputParams) do
+    for i := 1 to InputCount - 1 do
       SQLText := SQLText + ',?P' + IntToStr(i);
     SQLText := SQLText + ')';
   end;
@@ -4671,7 +4672,7 @@ begin
     SQL.Text := SQLText;
   if not Prepared then
     Prepare;
-  for i := 0 to High(InputParams) do
+  for i := 0 to InputCount - 1 do
     Params[i].AsVariant := InputParams[i];
   ExecProc;
 end;
@@ -6371,11 +6372,10 @@ var
   pc: integer;
 begin
   // Exec Query with ParamValues
-  if High(ParamValues) < Pred(Params.Count) then
-    pc := High(ParamValues)
-  else
-    pc := Pred(Params.Count);
-  for i := Low(ParamValues) to pc do
+  pc := Params.Count - 1;
+  if High(ParamValues) < pc then
+    pc := Integer(High(ParamValues));
+  for i := 0 to pc do
     Params[i].AsVariant := ParamValues[i];
 end;
 

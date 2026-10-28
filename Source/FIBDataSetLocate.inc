@@ -295,7 +295,7 @@ end;
 
 procedure  AdjustKeys;
 var
-      i:integer;
+      i: NativeInt;
       CalcSize:integer;
       fdt  :TFieldType ;
       CurrencyKey: Currency;
@@ -961,7 +961,7 @@ begin
   fl := TFIBList.Create;
   try
     GetDataSetFieldList(Self, fl, KeyFields);
-    fld_cnt     := fl.Count;
+    fld_cnt     := Integer(fl.Count); // the fields of KeyFields
 //    SetLength(wsA,fl.Count);
     if fl.Count=0 then
      Exit;

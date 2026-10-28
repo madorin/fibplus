@@ -688,7 +688,7 @@ begin
   FFieldNo := AFieldNo;
   FNeedSaveOldBuffer := True;
   if Assigned(FStreamList) then
-    FIndexInList := FStreamList.Add(Self);
+    FIndexInList := Integer(FStreamList.Add(Self));
 end;
 
 destructor TFIBFieldStream.Destroy;
@@ -1248,11 +1248,10 @@ end;
 
 function TFIBBlobStream.GetRecKeyValuesAsStr: string;
 var
-  i, L: Integer;
+  i: NativeInt;
 begin
   Result := '';
-  L := Length(FKeyValues) - 1;
-  for i := 0 to L do
+  for i := 0 to High(FKeyValues) do
     Result := Result + VarToStr(FKeyValues[i]) + '_';
   SetLength(Result, Length(Result) - 1);
 end;
@@ -1343,7 +1342,7 @@ begin
     Seek(0, soFromBeginning);
     if IsCacheStream then
     begin
-      KeyCount := Length(FKeyValues);
+      KeyCount := Integer(Length(FKeyValues)); // key fields, 4 bytes in the stream
       Stream.Write(BlobCacheSignature[1], Length(BlobCacheSignature));
       Stream.Write(SwapVersion, SizeOf(SwapVersion));
       Stream.Write(FBlobID, SizeOf(TISC_QUAD));
@@ -2114,7 +2113,7 @@ begin
           Result := False
         else
         begin
-          for i := 0 to FMap.Count - 1 do
+          for i := 0 to Integer(FMap.Count) - 1 do // the columns of the file header
           begin
             if Assigned(FMap[i]) then
             begin

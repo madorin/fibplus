@@ -4959,7 +4959,7 @@ end;
 
 procedure TFIBCustomDataSet.ClearFieldStreamList;
 var
-  i: Integer;
+  i: TFIBListIndex;
 begin
   if Assigned(FFieldStreamList) then
     for i := FFieldStreamList.Count - 1 downto 0 do
@@ -5599,7 +5599,7 @@ end;
 
 procedure TFIBCustomDataSet.CheckDataFields(FieldList: TList; const CallerProc: string);
 var
-  i: Integer;
+  i: TFIBListIndex;
 begin
   if FieldList.Count = 0 then
     FIBError(feFieldListEmpty, [CmpFullName(Self) + '.' + CallerProc])
@@ -5619,7 +5619,7 @@ var
   vQLocate: TFIBQuery;
   vLocateWhere: string;
   FN, ParName: string;
-  i: Integer;
+  i: NativeInt;
   R: Integer;
 begin
   fl := TFIBList.Create;
@@ -7571,11 +7571,7 @@ begin
 
         if (FCacheModelOptions.FBlobCacheLimit > 0) then
           begin
-            fOfs := FOpenedFieldStreams.IndexOf(fs);
-            if fOfs >= 0 then
-              begin
-                FOpenedFieldStreams.Delete(fOfs);
-              end;
+            FOpenedFieldStreams.Remove(fs);
             FOpenedFieldStreams.Add(fs); // Last to Last
 
             if (FOpenedFieldStreams.Count > FCacheModelOptions.FBlobCacheLimit) then
@@ -7905,7 +7901,7 @@ end;
 procedure TFIBCustomDataSet.DoSortEx(Fields: array of Integer; Ordering: array of Boolean);
 var
   vFields: array of TVarRec;
-  i: Integer;
+  i: NativeInt;
 begin
   SetLength(vFields, High(Fields) + 1);
   for i := 0 to High(Fields) do
@@ -11333,6 +11329,7 @@ var
   i, j: Integer;
   vForceCreateFields: Boolean;
   vCalcFields: array of TField;
+  CalcField: TField;
 begin
   if drsInClone in FRunState then
     begin
@@ -11385,8 +11382,8 @@ begin
                     raise;
                   end;
                 finally
-                  for i := 0 to High(vCalcFields) do
-                    vCalcFields[i].DataSet := Self;
+                  for CalcField in vCalcFields do
+                    CalcField.DataSet := Self;
                 end;
                 // Before XE6 the flag was computed while the calculated fields were attached
                 SetHasDefaultFields(True);
@@ -11954,6 +11951,7 @@ const
 var
   CalcFieldsList: TList;
   WideFieldsList: TList;
+  FieldItem: Pointer;
   i: Integer;
   OldParser: TExpressionParser;
 begin
@@ -11982,10 +11980,10 @@ begin
         [poExtSyntax], '', nil, FldTypeMap, StrToDateFmt, SQLMaskCompare);
     OldParser.Free;
   finally
-    for i := 0 to Pred(CalcFieldsList.Count) do
-      TField(CalcFieldsList[i]).FieldKind := fkCalculated;
-    for i := 0 to Pred(WideFieldsList.Count) do
-      THackField(WideFieldsList[i]).SetDataType(ftString);
+    for FieldItem in CalcFieldsList do
+      TField(FieldItem).FieldKind := fkCalculated;
+    for FieldItem in WideFieldsList do
+      THackField(FieldItem).SetDataType(ftString);
     Exclude(FRunState, drsDontCheckInactive);
     CalcFieldsList.Free;
     WideFieldsList.Free;
@@ -12692,7 +12690,7 @@ procedure FastSort(DataSet: TFIBCustomDataSet; aFields: array of TField; Orderin
     V1: array of Variant;
     FCur, FCount: Integer;
   begin
-    FCount := High(aFields);
+    FCount := Integer(High(aFields)); // the sort fields of Sort
     SetLength(p, FCount + 1);
     SetLength(V, FCount + 1);
     SetLength(V1, FCount + 1);
@@ -12814,11 +12812,11 @@ begin
       FFilteredCacheInfo.NonVisibleRecords.Clear;
       FFilteredCacheInfo.AllRecords := -1;
 
-      vFieldCount := High(aFields) - Low(aFields) + 1;
+      vFieldCount := Integer(Length(aFields)); // sort fields
       SetLength(vSortedFields, vFieldCount);
 
       FSortFields := VarArrayCreate([0, vFieldCount - 1, 0, 2], varVariant);
-      for i := Low(aFields) to High(aFields) do
+      for i := 0 to vFieldCount - 1 do
         begin
           tf := GetField(i);
           FSortFields[i, 1] := Ordering[i];
@@ -13468,15 +13466,13 @@ end;
 function TFIBCustomDataSet.ExistActiveUO(KindUpdate: TUpdateKind): boolean;
 var
   List: TList;
-  i, lc: integer;
-
+  i: TFIBListIndex;
 begin
   List := ListForUO(KindUpdate);
   Result := False;
   if List = nil then
     Exit;
-  lc := Pred(List.Count);
-  for i := 0 to lc do
+  for i := 0 to List.Count - 1 do
   begin
     Result := TFIBUpdateObject(List[i]).Active;
     if Result then
@@ -13486,20 +13482,17 @@ end;
 
 procedure TFIBCustomDataSet.SynchroOrdersUO(List: TList);
 var
-  i, lc: integer;
+  i: Integer;
 begin
-  lc := Pred(List.Count);
-  with List do
-    for i := 0 to lc do
-    begin
-      TFIBUpdateObject(List[i]).ChangeOrderInList(i);
-    end;
+  // update objects of one kind
+  for i := 0 to Integer(List.Count) - 1 do
+    TFIBUpdateObject(List[i]).ChangeOrderInList(i);
 end;
 
 function TFIBCustomDataSet.AddUpdateObject(Value: TFIBUpdateObject): Integer;
 var
   List: TList;
-  OldPos: integer;
+  OldPos: TFIBListIndex;
 begin
   Result := -1;
   if Value = nil then
@@ -13507,26 +13500,23 @@ begin
   List := ListForUO(Value.KindUpdate);
   if List = nil then
     Exit;
-  with List do
+  OldPos := List.IndexOf(Value);
+  if OldPos = -1 then
   begin
-    OldPos := IndexOf(Value);
-    if OldPos = -1 then
-    begin
-      if Value.OrderInList < Count then
-        Insert(Value.OrderInList, Value)
-      else
-        Add(Value);
-    end
+    if Value.OrderInList < List.Count then
+      List.Insert(Value.OrderInList, Value)
     else
-    begin
-      if Value.OrderInList < Count then
-        Move(OldPos, Value.OrderInList)
-      else
-        Move(OldPos, Pred(Count))
-    end;
+      List.Add(Value);
+  end
+  else
+  begin
+    if Value.OrderInList < List.Count then
+      List.Move(OldPos, Value.OrderInList)
+    else
+      List.Move(OldPos, List.Count - 1)
   end;
   SynchroOrdersUO(List);
-  Result := List.IndexOf(Value)
+  Result := Value.OrderInList;
 end;
 
 procedure TFIBCustomDataSet.RemoveUpdateObject(Value: TFIBUpdateObject);
@@ -13548,7 +13538,7 @@ end;
 procedure TFIBCustomDataSet.ExecUpdateObjects(KindUpdate: TUpdateKind; Buff: TRecordBuffer; aExecuteOrder: TFIBOrderExecUO);
 var
   List: TList;
-  i: integer;
+  i: TFIBListIndex;
 begin
   List := ListForUO(KindUpdate);
   if List.Count > 0 then
@@ -14112,7 +14102,7 @@ var
   SQL: Widestring;
   procedure SaveFlagsForRecordsInExecBlock;
   var
-    j: integer;
+    j: NativeInt;
   begin
     for j := 0 to Pred(Length(RecordsInExecBlock)) do
     begin
@@ -14843,7 +14833,7 @@ end;
 
 function FieldInArray(Field: TField; Arr: array of const): boolean;
 var
-  i: integer;
+  i: NativeInt;
   CI: boolean;
 begin
   CI := True;
@@ -15056,6 +15046,7 @@ var
   FieldTableName: string;
   FieldTableAlias: string;
   KeyFieldList: TList;
+  KeyIndex: TFIBListIndex;
   FormatTableName: string;
   RelTableName: string;
   vpFIBTableInfo: TFIBTableInfo;
@@ -15196,32 +15187,32 @@ begin
 
       // Validate KeyFields
       pWhereClause := '';
-      for i := Pred(KeyFieldList.Count) downto 0 do
+      for KeyIndex := KeyFieldList.Count - 1 downto 0 do
       begin
         RelTableName := EasyFormatIdentifier(Database.SQLDialect,
-          GetRelationTableName(TObject(KeyFieldList[i])), False);
+          GetRelationTableName(TObject(KeyFieldList[KeyIndex])), False);
 
         // if RelTableName <> FormatTableName then
         if not IsEquelSQLNames(RelTableName, FormatTableName) then
         begin
-          KeyFieldList.Delete(i);
+          KeyFieldList.Delete(KeyIndex);
           Continue;
         end;
 
         RealKeyFieldName := EasyFormatIdentifier(Database.SQLDialect,
-          GetRelationFieldName(TObject(KeyFieldList[i])), False);
+          GetRelationFieldName(TObject(KeyFieldList[KeyIndex])), False);
         vFi := vpFIBTableInfo.FieldInfo(RealKeyFieldName);
         if (vFi = nil) then
-          vCanNtIncToWhere := not IsDBKeyField(KeyFieldList[i])
+          vCanNtIncToWhere := not IsDBKeyField(KeyFieldList[KeyIndex])
         else
           vCanNtIncToWhere := not vFi.CanIncToWhereClause;
         if vCanNtIncToWhere then
-          KeyFieldList.Delete(i)
+          KeyFieldList.Delete(KeyIndex)
         else
         begin
-          vFieldName := TField(KeyFieldList[i]).FieldName;
+          vFieldName := TField(KeyFieldList[KeyIndex]).FieldName;
           pWhereClause := pWhereClause + iifStr(pWhereClause = '', '', ' and ')
-            + vAliasTableName + '.' + RealKeyFieldName + '=' + FieldValueToStr(TField(KeyFieldList[i]), True)
+            + vAliasTableName + '.' + RealKeyFieldName + '=' + FieldValueToStr(TField(KeyFieldList[KeyIndex]), True)
         end;
       end;
       if KeyFieldList.Count = 0 then
@@ -15363,6 +15354,7 @@ var
   FieldTableName: string;
   FieldTableAlias: string;
   KeyFieldList: TList;
+  KeyIndex: TFIBListIndex;
   FormatTableName: string;
   RelTableName: string;
   vpFIBTableInfo: TFIBTableInfo;
@@ -15444,32 +15436,32 @@ begin
 
       // Validate KeyFields
       pWhereClause := '';
-      for i := Pred(KeyFieldList.Count) downto 0 do
+      for KeyIndex := KeyFieldList.Count - 1 downto 0 do
       begin
         RelTableName := EasyFormatIdentifier(Database.SQLDialect,
-          GetRelationTableName(TObject(KeyFieldList[i])), False);
+          GetRelationTableName(TObject(KeyFieldList[KeyIndex])), False);
 
         // if RelTableName <> FormatTableName then
         if not IsEquelSQLNames(RelTableName, FormatTableName) then
         begin
-          KeyFieldList.Delete(i);
+          KeyFieldList.Delete(KeyIndex);
           Continue;
         end;
         RealKeyFieldName := EasyFormatIdentifier(Database.SQLDialect,
-          GetRelationFieldName(TObject(KeyFieldList[i])), False);
+          GetRelationFieldName(TObject(KeyFieldList[KeyIndex])), False);
         vFi := vpFIBTableInfo.FieldInfo(RealKeyFieldName);
         if (vFi = nil) then
-          vCanNtIncToWhere := not IsDBKeyField(KeyFieldList[i])
+          vCanNtIncToWhere := not IsDBKeyField(KeyFieldList[KeyIndex])
         else
           vCanNtIncToWhere := not vFi.CanIncToWhereClause;
         if vCanNtIncToWhere then
-          KeyFieldList.Delete(i)
+          KeyFieldList.Delete(KeyIndex)
         else
         begin
           if vFieldsCreated then
-            vFieldName := TField(KeyFieldList[i]).FieldName
+            vFieldName := TField(KeyFieldList[KeyIndex]).FieldName
           else
-            vFieldName := TFieldDef(KeyFieldList[i]).Name;
+            vFieldName := TFieldDef(KeyFieldList[KeyIndex]).Name;
 
           pWhereClause := pWhereClause + iifStr(pWhereClause = '', '', ' and ')
             + vAliasTableName + '.' + RealKeyFieldName + '=?' + EasyFormatIdentifier(Database.SQLDialect,
@@ -15798,7 +15790,7 @@ end;
 
 procedure TFIBCustomDataSet.CacheModify(aFields: array of integer; Values: array of variant; KindModify: byte);
 var
-  i: integer;
+  i: NativeInt;
 begin
   CheckBrowseMode;
   Include(FRunState, drsInCacheRefresh);
@@ -15891,7 +15883,7 @@ end;
 procedure TFIBCustomDataSet.CacheRefreshByArrMap(FromDataSet: TDataSet; Kind: TCachRefreshKind; const SourceFields, DestFields: array of string);
 var
   ts: TStrings;
-  i, m: integer;
+  i, m: NativeInt;
 
 begin
   ts := TStringList.Create;
@@ -15919,7 +15911,7 @@ var
   SrcValues: array of TFIBXSQLVAR;
   EditFields: array of integer;
   Values: array of variant;
-  i, j: integer;
+  i, KeyCount, ValueCount: Integer;
   CurRec: integer;
   CurKeys: variant;
   OldActiveRecord: integer;
@@ -15953,37 +15945,39 @@ begin
         if Eof then
           Exit;
 
-        SetLength(SrcKeys, fl.Count);
-        for i := 0 to fl.Count - 1 do
+        KeyCount := Integer(fl.Count); // the fields of KeyFields
+        SetLength(SrcKeys, KeyCount);
+        for i := 0 to KeyCount - 1 do
           SrcKeys[i] := RefreshQuery.FieldByName(TField(fl.List^[i]).FieldName);
 
-        SetLength(KeyValues, fl.Count);
+        SetLength(KeyValues, KeyCount);
 
         if not DoAdditionalRefreshRec then
         begin
 
           SetLength(SrcValues, Self.FieldCount);
           SetLength(EditFields, Self.FieldCount);
-          j := 0;
+          ValueCount := 0;
           for i := 0 to Self.FieldCount - 1 do
           begin
-            SrcValues[j] := RefreshQuery.FindField(Self.Fields[i].FieldName);
-            if SrcValues[j] <> nil then
+            SrcValues[ValueCount] := RefreshQuery.FindField(Self.Fields[i].FieldName);
+            if SrcValues[ValueCount] <> nil then
             begin
-              EditFields[j] := i;
-              Inc(j)
+              EditFields[ValueCount] := i;
+              Inc(ValueCount)
             end;
           end;
-          SetLength(SrcValues, j);
-          SetLength(EditFields, j);
-          SetLength(Values, j);
+          SetLength(SrcValues, ValueCount);
+          SetLength(EditFields, ValueCount);
+          SetLength(Values, ValueCount);
         end
         else
         begin
-          SetLength(SrcValues, fl.Count);
-          SetLength(EditFields, fl.Count);
-          SetLength(Values, fl.Count);
-          for i := 0 to fl.Count - 1 do
+          ValueCount := KeyCount;
+          SetLength(SrcValues, ValueCount);
+          SetLength(EditFields, ValueCount);
+          SetLength(Values, ValueCount);
+          for i := 0 to ValueCount - 1 do
           begin
             EditFields[i] := TField(fl.List^[i]).Index;
             SrcValues[i] := RefreshQuery.FindField
@@ -15995,7 +15989,7 @@ begin
           Next;
         while not Eof do
         begin
-          for i := 0 to fl.Count - 1 do
+          for i := 0 to KeyCount - 1 do
             KeyValues[i] := SrcKeys[i].Value;
 
           if Locate(KeyFields, KeyValues, []) then
@@ -16004,14 +15998,14 @@ begin
               CacheDelete
             else if not DoAdditionalRefreshRec then
             begin
-              for i := 0 to Length(EditFields) - 1 do
+              for i := 0 to ValueCount - 1 do
                 Values[i] := SrcValues[i].Value;
               CacheEdit(EditFields, Values)
             end
           end // Locate
           else if not IsDeletedRecords then
           begin
-            for i := 0 to Length(EditFields) - 1 do
+            for i := 0 to ValueCount - 1 do
               Values[i] := SrcValues[i].Value;
             CacheAppend(EditFields, Values);
             if Sorted then
@@ -16043,7 +16037,7 @@ var
   p: TFIBXSQLVAR;
   KeyValues: array of variant;
   SrcKeys: array of TField;
-  i: integer;
+  i, KeyCount: Integer;
   CurRec: integer;
   CurKeys: variant;
   OldActiveRecord: integer;
@@ -16075,15 +16069,16 @@ begin
       RefreshDataSet.Open
     end;
 
-    SetLength(SrcKeys, fl.Count);
-    for i := 0 to fl.Count - 1 do
+    KeyCount := Integer(fl.Count); // the fields of KeyFields
+    SetLength(SrcKeys, KeyCount);
+    for i := 0 to KeyCount - 1 do
       SrcKeys[i] := RefreshDataSet.FieldByName(TField(fl.List^[i]).FieldName);
-    SetLength(KeyValues, fl.Count);
+    SetLength(KeyValues, KeyCount);
 
     RefreshDataSet.First;
     while not RefreshDataSet.Eof do
     begin
-      for i := 0 to fl.Count - 1 do
+      for i := 0 to KeyCount - 1 do
         KeyValues[i] := SrcKeys[i].Value;
 
       if Locate(KeyFields, KeyValues, []) then
@@ -16264,7 +16259,7 @@ function TFIBCustomDataSet.PSUpdateRecord(UpdateKind: TUpdateKind; Delta: TDataS
 
 var
   UpdateAction: TFIBUpdateAction;
-  j: integer;
+  j: TFIBListIndex;
   UpdQry: TFIBQuery;
   CurParam: TFIBXSQLVAR;
   ListUO: TList;

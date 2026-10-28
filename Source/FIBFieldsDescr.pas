@@ -69,6 +69,9 @@ type
 
 implementation
 
+uses
+  FIBPlatforms;
+
 // The names are in the system code page in the stream
 procedure WriteName(Stream: TStream; const Name: string);
 var
@@ -113,42 +116,41 @@ begin
     fdIsSeparateString := IsSeparateString;
     fdAddedFields := aAddedType;
   end;
-  Result := vFieldInfoList.Add(p)
+  Result := Integer(vFieldInfoList.Add(p))
 end;
 
 procedure TFIBFieldDescrList.Assign(Source: TFIBFieldDescrList);
 var
-  i: Integer;
+  i: TFIBListIndex;
+  Dest: PFIBFieldDescr;
 begin
   if Source = Self then
     exit;
   Clear;
   vFieldInfoList.Capacity := Source.vFieldInfoList.Capacity;
-  for i := 0 to Pred(Source.vFieldInfoList.Count) do
-    with Source.FieldInfo[i]^ do
+  for i := 0 to Source.vFieldInfoList.Count - 1 do
+    with PFIBFieldDescr(Source.vFieldInfoList[i])^ do
     begin
       Add(fdDataType, fdDataScale, fdDataSize, fdNullable, fdIsDBKey, fdIsSeparateString, fdAddedFields);
-      PFIBFieldDescr(vFieldInfoList[i])^.fdDataOfs := fdDataOfs;
-      PFIBFieldDescr(vFieldInfoList[i])^.fdStrIndex := fdStrIndex;
-
-      PFIBFieldDescr(vFieldInfoList[i])^.fdSubType := fdSubType;
-      PFIBFieldDescr(vFieldInfoList[i])^.fdRelationTable := fdRelationTable;
-      PFIBFieldDescr(vFieldInfoList[i])^.fdRelationField := fdRelationField;
-      PFIBFieldDescr(vFieldInfoList[i])^.fdTableAlias := fdTableAlias;
-
+      Dest := vFieldInfoList[i];
+      Dest^.fdDataOfs := fdDataOfs;
+      Dest^.fdStrIndex := fdStrIndex;
+      Dest^.fdSubType := fdSubType;
+      Dest^.fdRelationTable := fdRelationTable;
+      Dest^.fdRelationField := fdRelationField;
+      Dest^.fdTableAlias := fdTableAlias;
     end;
 end;
 
 procedure TFIBFieldDescrList.Clear;
 var
-  i: Integer;
+  i: TFIBListIndex;
 begin
-  with vFieldInfoList do
-    for i := 0 to Pred(Count) do
-    begin
-      Finalize(PFIBFieldDescr(vFieldInfoList[i])^);
-      FreeMem(vFieldInfoList[i], SizeOf(TFIBFieldDescr));
-    end;
+  for i := 0 to vFieldInfoList.Count - 1 do
+  begin
+    Finalize(PFIBFieldDescr(vFieldInfoList[i])^);
+    FreeMem(vFieldInfoList[i], SizeOf(TFIBFieldDescr));
+  end;
   vFieldInfoList.Clear;
 end;
 
@@ -167,7 +169,7 @@ end;
 
 function TFIBFieldDescrList.GetCapacity: Integer;
 begin
-  Result := vFieldInfoList.Capacity
+  Result := Integer(vFieldInfoList.Capacity)
 end;
 
 function TFIBFieldDescrList.GetFieldInfo(Index: Integer): PFIBFieldDescr;
@@ -210,10 +212,11 @@ end;
 
 procedure TFIBFieldDescrList.SaveToStream(Stream: TStream);
 var
-  i: Integer;
+  i, FieldCount: Integer;
 begin
-  Stream.WriteBuffer(vFieldInfoList.Count, SizeOf(Integer));
-  for i := 0 to Pred(vFieldInfoList.Count) do
+  FieldCount := Integer(vFieldInfoList.Count); // field descriptors, 4 bytes in the stream
+  Stream.WriteBuffer(FieldCount, SizeOf(FieldCount));
+  for i := 0 to FieldCount - 1 do
   begin
     Stream.WriteBuffer(PFIBFieldDescr(vFieldInfoList[i])^, SizeOf(TFIBFieldDescr) - SizeOf(Pstring) * 3);
     WriteName(Stream, PFIBFieldDescr(vFieldInfoList[i])^.fdRelationTable);

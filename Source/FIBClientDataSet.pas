@@ -238,11 +238,10 @@ var
   pc: integer;
 begin
   // Exec Query with ParamValues
-  if High(ParamValues) < Pred(Params.Count) then
-    pc := High(ParamValues)
-  else
-    pc := Pred(Params.Count);
-  for i := Low(ParamValues) to pc do
+  pc := Params.Count - 1;
+  if High(ParamValues) < pc then
+    pc := Integer(High(ParamValues));
+  for i := 0 to pc do
     Params[i].Value := ParamValues[i];
   Open
 end;
@@ -308,8 +307,15 @@ end;
 // While the field is validated GetData copies the value given to SetData, here the native TBcd
 // (TBCDField copies a Currency)
 procedure TFIBClientBCDField.CopyData(Source, Dest: TValueBuffer);
+var
+  Count: NativeInt;
 begin
-  Move(Source[0], Dest[0], Min(SizeOf(TBcd), Min(Length(Source), Length(Dest))));
+  Count := Length(Source);
+  if Count > Length(Dest) then
+    Count := Length(Dest);
+  if Count > SizeOf(TBcd) then
+    Count := SizeOf(TBcd);
+  Move(Source[0], Dest[0], Count);
 end;
 
 // TBCDField.GetAsBCD (through Currency) from the native value, also while the field is validated
@@ -571,7 +577,7 @@ function TFIBDataSetProvider.FindRecord(Source, Delta: TDataSet; UpdateMode: TUp
   end;
 
 var
-  i: integer;
+  i, KeyCount: Integer;
   KeyValues: variant;
   Fields: string;
   FieldList: TList;
@@ -584,9 +590,10 @@ begin
     GetFieldList(Delta, UpdateMode, FieldList);
     if FieldList.Count > 1 then
     begin
-      KeyValues := VarArrayCreate([0, FieldList.Count - 1], varVariant);
+      KeyCount := Integer(FieldList.Count); // the key fields of the delta
+      KeyValues := VarArrayCreate([0, KeyCount - 1], varVariant);
       Fields := '';
-      for i := 0 to FieldList.Count - 1 do
+      for i := 0 to KeyCount - 1 do
         with TField(FieldList[i]) do
         begin
           if (TField(FieldList[i]) is TBCDField) and (TBCDField(FieldList[i]).Size <> 4) then
