@@ -1768,7 +1768,7 @@ end;
 
 function TFIBScripter.StatementsCount: Integer;
 begin
-  Result := Length(FScriptMap)
+  Result := Integer(Length(FScriptMap)) // statements of one script text
 end;
 
 function GetLineCountInFile(const FileName: string): Integer;

@@ -813,7 +813,7 @@ end;
 
 function StringInArray(const S: string; const a: array of String): Boolean;
 var
-  i: Integer;
+  i: NativeInt;
 begin
   Result := False;
   for i := Low(a) to High(a) do
@@ -1572,7 +1572,7 @@ end;
 
 function FirstPos(Search: array of Char; const InString: string): Integer;
 var
-  i: Integer;
+  i: NativeInt;
   p1: Integer;
 begin
   Result := 0;
@@ -1587,7 +1587,7 @@ end;
 
 function FirstPos(Search: array of AnsiChar; const InString: AnsiString): Integer;
 var
-  i: Integer;
+  i: NativeInt;
   p1: Integer;
 begin
   Result := 0;

@@ -365,10 +365,11 @@ end;
 procedure TTestInfo.SaveStatisticsToFile(const FileName: string);
 var
   i: Integer;
+  VarIndex: Pointer;
 begin
   if FPrintListActual then
-    for i := 0 to Pred(FPrintList.Count) do
-      LogVarValues(FTestVars[Integer(FPrintList[i])], FileName)
+    for VarIndex in FPrintList do
+      LogVarValues(FTestVars[Integer(VarIndex)], FileName)
   else
     for i := 0 to Pred(FTestVars.Count) do
       LogVarValues(FTestVars[i], FileName)

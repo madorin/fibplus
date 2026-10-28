@@ -966,7 +966,7 @@ procedure FullExtractDDL(DB: TFIBDatabase; Dest: TStrings);
 implementation
 
 uses
-  StdFuncs, FIBCharSets;
+  StdFuncs, FIBCharSets, FIBPlatforms;
 
 procedure FullExtractDDL(DB: TFIBDatabase; Dest: TStrings);
 var
@@ -1366,7 +1366,7 @@ end;
 procedure TCustomMetaObject.ClearChilds(const ClassIndex: Integer);
 var
   Childs: TList;
-  I: Integer;
+  I: TFIBListIndex;
 begin
   Childs := FItems[ClassIndex].Childs;
   for I := 0 to Childs.Count - 1 do
@@ -1477,16 +1477,13 @@ function TCustomMetaObject.GenerateChildDDL(Stream: TStringStream; ChildType: In
 var
   I: Integer;
 begin
-  with FItems[ChildType] do
+  Result := GetChildsCount(ChildType);
+  for I := 0 to Result - 1 do
   begin
-    Result := Childs.Count;
-    for I := 0 to Childs.Count - 1 do
-    begin
-      Stream.WriteString(sLineBreak);
-      TCustomMetaObject(Childs[I]).GenerateObjectDDL(Stream);
-      Stream.WriteString(DefTerminator);
-    end;
-  end
+    Stream.WriteString(sLineBreak);
+    GetChildObject(ChildType, I).GenerateObjectDDL(Stream);
+    Stream.WriteString(DefTerminator);
+  end;
 end;
 
 procedure TCustomMetaObject.GenerateObjectDDL(Stream: TStringStream);
@@ -1523,7 +1520,7 @@ begin
   if FItems[ClassIndex].Childs = nil then
     Result := 0
   else
-    Result := FItems[ClassIndex].Childs.Count;
+    Result := Integer(FItems[ClassIndex].Childs.Count); // the objects of one class in the database
 end;
 
 procedure TCustomMetaObject.SetName(const Value: string);
@@ -1535,7 +1532,7 @@ end;
 function TCustomMetaObject.GetChildObjectByName(const ClassIndex: Integer; const ObjectName: string): TCustomMetaObject;
 var
   FChilds: TList;
-  I: Integer;
+  I: TFIBListIndex;
 begin
   Result := nil;
   if ClassIndex = Ord(otDatabase) then
@@ -1631,7 +1628,7 @@ end;
 
 function TMetaTable.GetFieldsCount: Integer;
 begin
-  Result := FItems[Ord(soTableFields)].Childs.Count;
+  Result := GetChildsCount(Ord(soTableFields));
 end;
 
 function TMetaTable.GetPrimaryKey: TMetaPrimaryKey;
@@ -1654,7 +1651,7 @@ end;
 
 function TMetaTable.GetUniquesCount: Integer;
 begin
-  Result := FItems[Ord(soUniqueConstr)].Childs.Count;
+  Result := GetChildsCount(Ord(soUniqueConstr));
 end;
 
 procedure TMetaTable.LoadFromDataBase(QNames, QFields: TFIBQuery;
@@ -1823,7 +1820,7 @@ end;
 
 function TMetaTable.GetIndicesCount: Integer;
 begin
-  Result := FItems[Ord(soIndex)].Childs.Count;
+  Result := GetChildsCount(Ord(soIndex));
 end;
 
 function TMetaTable.GetForeign(const Index: Integer): TMetaForeignKey;
@@ -1833,7 +1830,7 @@ end;
 
 function TMetaTable.GetForeignCount: Integer;
 begin
-  Result := FItems[Ord(soForeignKey)].Childs.Count;
+  Result := GetChildsCount(Ord(soForeignKey));
 end;
 
 function TMetaTable.FindFieldIndex(const Name: string): Integer;
@@ -1853,7 +1850,7 @@ end;
 
 function TMetaTable.GetChecksCount: Integer;
 begin
-  Result := FItems[Ord(soCheckConstr)].Childs.Count;
+  Result := GetChildsCount(Ord(soCheckConstr));
 end;
 
 function TMetaTable.GetTriggers(const Index: Integer): TCustomMetaTrigger;
@@ -1863,7 +1860,7 @@ end;
 
 function TMetaTable.GetTriggersCount: Integer;
 begin
-  Result := FItems[Ord(soTableTriggers)].Childs.Count;
+  Result := GetChildsCount(Ord(soTableTriggers));
 end;
 
 procedure TMetaTable.GenerateObjectDDL(Stream: TStringStream);
@@ -1898,7 +1895,7 @@ end;
 
 function TMetaTable.GetGrantsCount: Integer;
 begin
-  Result := FItems[Ord(soTableGrants)].Childs.Count;
+  Result := GetChildsCount(Ord(soTableGrants));
 end;
 
 class function TMetaTable.ClassIndex: Integer;
@@ -1992,12 +1989,10 @@ end;
 
 function TCustomMetaField.GetDimensionStr: string;
 var
-  J, L: Integer;
+  J: NativeInt;
 begin
   Result := '[';
-  L := System.Length(FDimensions) - 1;
-
-  for J := 0 to L do
+  for J := 0 to High(FDimensions) do
     Result := Result + IntToStr(FDimensions[J].LOWER_BOUND) + ':' + IntToStr(FDimensions[J].UPPER_BOUND) + ',';
   Result[System.Length(Result)] := ']'
 end;
@@ -2595,7 +2590,7 @@ var
         Stream.WriteString(sLineBreak);
       end;
 
-      for I := 0 to FItems[ObjType].Childs.Count - 1 do
+      for I := 0 to GetChildsCount(ObjType) - 1 do
       begin
         CurObj := GetChildObject(ObjType, I);
         if not CurObj.Loaded then
@@ -3200,7 +3195,7 @@ end;
 
 function TMetaConstraint.GetFieldsCount: Integer;
 begin
-  Result := Length(FFields);
+  Result := Integer(Length(FFields));
 end;
 
 class function TMetaConstraint.IsSubObject: boolean;
@@ -3316,7 +3311,7 @@ end;
 
 function TMetaForeignKey.GetForFieldsCount: Integer;
 begin
-  Result := Length(FForFields);
+  Result := Integer(Length(FForFields));
 end;
 
 function TMetaForeignKey.GetForTable: TMetaTable;
@@ -3571,7 +3566,7 @@ end;
 
 function TMetaView.GetFieldsCount: Integer;
 begin
-  Result := FItems[Ord(soViewFields)].Childs.Count;
+  Result := GetChildsCount(Ord(soViewFields));
 end;
 
 function TMetaView.GetTriggers(const Index: Integer): TCustomMetaTrigger;
@@ -3581,7 +3576,7 @@ end;
 
 function TMetaView.GetTriggersCount: Integer;
 begin
-  Result := FItems[Ord(soViewTriggers)].Childs.Count;
+  Result := GetChildsCount(Ord(soViewTriggers));
 end;
 
 procedure TMetaView.LoadFromDataBase(QName, QFields, QTriggers: TFIBQuery; QCharset: TFIBQuery; ChildTypes: TViewChildTypes);
@@ -3645,7 +3640,7 @@ end;
 
 function TMetaView.GetGrantsCount: Integer;
 begin
-  Result := FItems[Ord(soViewGrants)].Childs.Count;
+  Result := GetChildsCount(Ord(soViewGrants));
 end;
 
 class function TMetaView.ClassIndex: Integer;
@@ -3711,7 +3706,7 @@ end;
 
 function TMetaProcedure.GetInputFieldsCount: Integer;
 begin
-  Result := FItems[Ord(soProcFieldIn)].Childs.Count;
+  Result := GetChildsCount(Ord(soProcFieldIn));
 end;
 
 function TMetaProcedure.GetOutputFields(const Index: Integer): TMetaProcOutField;
@@ -3721,7 +3716,7 @@ end;
 
 function TMetaProcedure.GetOutputFieldsCount: Integer;
 begin
-  Result := FItems[Ord(soProcFieldOut)].Childs.Count;
+  Result := GetChildsCount(Ord(soProcFieldOut));
 end;
 
 procedure TMetaProcedure.InternalSaveToDDL(Stream: TStringStream; Operation: string);
@@ -3823,7 +3818,7 @@ end;
 
 function TMetaProcedure.GetGrantsCount: Integer;
 begin
-  Result := FItems[Ord(soProcGrants)].Childs.Count;
+  Result := GetChildsCount(Ord(soProcGrants));
 end;
 
 class function TMetaProcedure.ClassIndex: Integer;
@@ -3950,7 +3945,7 @@ end;
 
 function TMetaUDF.GetFieldsCount: Integer;
 begin
-  Result := FItems[Ord(soUDFField)].Childs.Count;
+  Result := GetChildsCount(Ord(soUDFField));
 end;
 
 class function TMetaUDF.ClassIndex: Integer;
@@ -4153,7 +4148,7 @@ end;
 
 function TMetaRole.GetGrantsCount: Integer;
 begin
-  Result := FItems[Ord(soRoleGrants)].Childs.Count;
+  Result := GetChildsCount(Ord(soRoleGrants));
 end;
 
 constructor TMetaRole.Create(AOwner: TCustomMetaObject; aName: string = '');
@@ -4256,7 +4251,7 @@ type
 
 procedure DeleteIndex(Index: Integer; var StringArray: TDynStrArray);
 var
-  I, L: Integer;
+  I, L: NativeInt;
 begin
   L := Length(StringArray) - 1;
   for I := Index to L - 1 do
@@ -4269,7 +4264,7 @@ type
 
 procedure DeleteIndexArr1(Index: Integer; var BooleanArray: TDynArray1);
 var
-  L: Integer;
+  L: NativeInt;
 begin
   L := Length(BooleanArray) - 1;
   if Index = L then
@@ -4347,7 +4342,7 @@ end;
 
 function TCustomMetaGrant.GetSize: Integer;
 begin
-  Result := Length(FUserList)
+  Result := Integer(Length(FUserList)) // grants of one object
 end;
 
 procedure TCustomMetaGrant.LoadFromDataBase(QGrants: TFIBQuery; const Name: string; Pack: boolean = True);
@@ -4412,7 +4407,7 @@ begin
   SetSize(I);
   if Pack then
   begin
-    for I := Length(FUserList) - 1 downto 1 do
+    for I := Count - 1 downto 1 do
     begin
       for J := I - 1 downto 0 do
         if Length(FUserList[I]) < 1024 then
@@ -4430,7 +4425,7 @@ begin
           end;
     end;
 
-    for I := Length(FUserList) - 1 downto 1 do
+    for I := Count - 1 downto 1 do
     begin
       for J := I - 1 downto 0 do
         if Length(FUserList[I]) < 1024 then
@@ -4716,7 +4711,7 @@ end;
 
 function TMetaStoredFunc.GetInputFieldsCount: Integer;
 begin
-  Result := FItems[Ord(soProcFieldIn)].Childs.Count;
+  Result := GetChildsCount(Ord(soProcFieldIn));
 end;
 
 function TMetaStoredFunc.GetReturn: TMetaProcOutField;

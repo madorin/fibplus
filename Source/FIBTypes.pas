@@ -1087,6 +1087,12 @@ begin
     W[Idx + 1] := (W[Idx + 1] and not Int64Rec(Mask).Hi) or Int64Rec(V).Hi;
 end;
 
+// Bits of a DECFLOAT: 2 words (DECFLOAT(16)) or 4 words (DECFLOAT(34))
+function DecFloatBits(const W: array of Cardinal): Integer;
+begin
+  Result := Integer(Length(W)) * 32;
+end;
+
 // 10 bit declet -> 0..999
 function DPDToBin(D: Cardinal): Cardinal;
 var
@@ -1188,7 +1194,7 @@ var
   end;
 
 begin
-  TotalBits := Length(W) * 32;
+  TotalBits := DecFloatBits(W);
   Res.Negative := GetBits(W, TotalBits - 1, 1) = 1;
   Res.Count := 0;
   Res.Exponent := 0;
@@ -1250,9 +1256,10 @@ end;
 // Zeroes W and sets the sign, NaN and Infinity. Returns False for finite values.
 function EncodeDecFloatSpecial(var W: array of Cardinal; Kind: TFBDecimalKind; Negative: Boolean): Boolean;
 var
-  TotalBits, i: Integer;
+  TotalBits: Integer;
+  i: NativeInt;
 begin
-  TotalBits := Length(W) * 32;
+  TotalBits := DecFloatBits(W);
   for i := 0 to High(W) do
     W[i] := 0;
   if Negative then
@@ -1279,7 +1286,7 @@ var
 begin
   Result := False;
   EncodeDecFloatSpecial(W, dkFinite, V.Negative);
-  TotalBits := Length(W) * 32;
+  TotalBits := DecFloatBits(W);
   MinExp := -Bias;
   MaxExp := 3 * (1 shl ExpBits) - 1 - Bias;
   if V.Count > Digits then

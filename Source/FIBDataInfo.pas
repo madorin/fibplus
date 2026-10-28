@@ -534,6 +534,7 @@ var
   KeyName, KeyList: string;
   DropKey: boolean;
   ColumnLength, i: integer;
+  ColumnName: string;
 
   procedure ExecDDL(const SQL: string);
   begin
@@ -558,10 +559,10 @@ begin
         'from RDB$RELATION_FIELDS rf ' +
         'join RDB$FIELDS f on f.RDB$FIELD_NAME = rf.RDB$FIELD_SOURCE ' +
         'where rf.RDB$RELATION_NAME = :TABLE_NAME and rf.RDB$FIELD_NAME = :COLUMN_NAME';
-      for i := Low(ColumnNames) to High(ColumnNames) do
+      for ColumnName in ColumnNames do
       begin
         qry.Params[0].asString := TableName;
-        qry.Params[1].asString := ColumnNames[i];
+        qry.Params[1].asString := ColumnName;
         qry.ExecQuery;
         if not qry.Eof then
         begin
@@ -570,7 +571,7 @@ begin
           else
             ColumnLength := qry.Fields[0].asInteger;
           if ColumnLength < NewLength then
-            Narrow.Add(ColumnNames[i]);
+            Narrow.Add(ColumnName);
         end;
         qry.Close;
       end;

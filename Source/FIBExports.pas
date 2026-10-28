@@ -400,11 +400,10 @@ end;
 
 function TiSQLParser.SectionInArray(Section: TiSQLSection; ArrS: TiSQLSections): boolean;
 var
-  i, L: Integer;
+  i: NativeInt;
 begin
   Result := False;
-  L := Length(ArrS) - 1;
-  for i := 0 to L do
+  for i := 0 to High(ArrS) do
     if ArrS[i] = Section then
     begin
       Result := True;

@@ -1511,7 +1511,8 @@ var
 
   procedure AddArray(NewArray: TSQLSections);
   var
-    j, k: integer;
+    j: NativeInt;
+    k: Integer;
   begin
     SetLength(Result, Length(Result) + Length(NewArray));
     k := 1;
