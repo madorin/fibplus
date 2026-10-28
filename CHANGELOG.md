@@ -238,6 +238,9 @@ The lists of old and new names, and what an application has to change, are in
 - `DisplayFormat` and `EditFormat` of `TFIBBCDField` and `TFIBClientBCDField` round half to even,
   as `TBCDField` and `TFMTBCDField` do: `0` on 2.5 gives `2`, on 3.5 `4` (it rounded half up).
   All the decimals of the value are used, not 4 as by `Currency`.
+- `DisplayText` of `TFIBBCDField` and `TFIBClientBCDField` with a `DisplayFormat` (and `Text`
+  with an `EditFormat`) is about 2.5 times faster: `FormatNumericString` (`StdFuncs`) rounds the
+  value once and builds the text without copying the format sections.
 
 #### Schema extract
 
