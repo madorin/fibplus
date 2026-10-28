@@ -395,6 +395,10 @@ The lists of old and new names, and what an application has to change, are in
   or "not a valid floating point value").
 - `CompareVariantsEQ` (`VariantRtn`) returned `False` for two equal `AnsiString` (`varString`)
   variants.
+- `CompareVariants` and `CompareVariantsEQ` (sorting): a number compared with a string variant
+  (`varUString`, every string on Delphi 2009 and later), a `Boolean`, a `UInt64` or an `FMTBcd`
+  variant was taken for equal. The string is now parsed as a `WideString` is, and the other
+  types are compared as variants.
 - After `DoSort`, reopening the dataset without `poPersistentSorting` kept
   `Sorted` and `SortedFields` of the local sort, while the rows came in the
   server order. With `psGetOrderInfo` they are now read again from the `ORDER BY`
