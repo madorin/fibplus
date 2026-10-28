@@ -38,7 +38,7 @@ begin
       end;
     varSingle:
       begin
-        if Abs(P^ - TVarData(v).VDouble) < 1E-11 then
+        if Abs(P^ - TVarData(v).VSingle) < 1E-11 then
           Result := 0
         else
           if P^ > TVarData(v).VSingle then

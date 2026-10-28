@@ -544,6 +544,8 @@ The lists of old and new names, and what an application has to change, are in
 - Win64: `TFIBGuidField.AsGuid` and `AsString` (`GUIDAsString` of `StrUtil`) raised an access
   violation: the destination address was kept in 32 bits.
 - `StringAsGUID` (`StrUtil`) rejected lowercase hex digits.
+- `CompareVariants` (sorting, `Locate`): a `varSingle` variant was compared through the bytes of
+  a `Double`, so 2 and a `Single` 2 were not equal.
 
 ## [7.9.1] - 2026-10-09
 
