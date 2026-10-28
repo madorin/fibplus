@@ -4600,13 +4600,11 @@ end;
 
 function TFIBCustomDataSet.FetchNext(FetchCount: Integer): Integer;
 var
-  Buffer: TRecordBuffer;
   iCurScreenState: Integer;
 begin
   Result := 0;
   if AllFetched then
     Exit;
-  Buffer := AllocRecordBuffer;
   ChangeScreenCursor(iCurScreenState);
   try
     while (Result < FetchCount) and (FQSelect.Next <> nil) do
@@ -4619,7 +4617,6 @@ begin
       end; }
   finally
     RestoreScreenCursor(iCurScreenState);
-    FreeRecordBuffer(Buffer);
   end
 end;
 /// / PrepareOptions Stream
