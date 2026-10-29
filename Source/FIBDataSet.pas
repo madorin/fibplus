@@ -5983,7 +5983,11 @@ begin
   SetModified(False);
   WriteRecordCache(PRecordData(Buff)^.rdRecordNumber, Buff);
   if not CachedUpdates then
+  begin
+    // The old values are those of the posted row, also without a refresh
+    SaveOldBuffer(Buff);
     AutoCommitUpdateTransaction;
+  end;
 
   if not EmptyStrings(FQRefresh.SQL) and (poRefreshAfterPost in Options) and
     (CacheModelOptions.CacheModelKind = cmkStandard) then

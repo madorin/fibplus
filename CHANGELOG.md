@@ -514,6 +514,11 @@ The lists of old and new names, and what an application has to change, are in
   `ifsNoBlob` and `ifsOnlyBlob`; it now takes the BLOB columns from the field definitions.
 - Under `UpdateOnlyModifiedFields` the per-post `InsertSQL` and `UpdateSQL` were assigned, and
   so prepared, again at each post although the text was the same.
+- Without `poRefreshAfterPost`, `OldValue` after a post gave the values before the edit, and
+  after an insert the values of another row, so `GenerateSQLText(skModify)` under
+  `UpdateOnlyModifiedFields` gave an `UPDATE` instead of `No Action`. The old values are now
+  the posted row, as with `poRefreshAfterPost`
+  ([Upgrading](Docs/guide/upgrading.md#generated-statements)).
 - `Post` called again from the dataset's own `BeforePost` recursed until the stack overflowed;
   it is now ignored, and a `Post` from `AfterPost` still posts.
 - `ApplyUpdates` with `AutoCommit` committed after each inserted or modified row; it now

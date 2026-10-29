@@ -239,6 +239,10 @@ error is raised, as they were before, because the cache marks them as applied.
   although the dataset showed it as posted; it is now inserted with `DEFAULT VALUES`.
 - `UseRowsClause` adds `ROWS 1` only to the generated `UPDATE`; the `INSERT` and `UPDATE OR
   INSERT` no longer get it.
+- Without `poRefreshAfterPost`, `OldValue` after a post returns the posted values, as with
+  `poRefreshAfterPost`; it returned the values before the edit. In `AfterPost`, `OldValue`
+  now equals `Value`: code that compares them there (an audit log) must read the old values in
+  `BeforePost`.
 
 #### NULL in `Filter` comparisons
 
