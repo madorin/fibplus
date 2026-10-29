@@ -4497,6 +4497,7 @@ var
   Query: TFIBQuery;
   i: Integer;
   c: Integer;
+  HasParams: Boolean;
 
 begin
   Result := False;
@@ -4504,6 +4505,7 @@ begin
     Query := GetQueryForUse(aTransaction, aSQL)
   else
     Query := GetQueryForUse(FInternalTransaction, aSQL);
+  HasParams := Query.Params.Count > 0;
   c := Query.Params.Count - 1;
   if High(ParamValues) < c then
     c := Integer(High(ParamValues));
@@ -4543,12 +4545,10 @@ begin
     finally
       if Transaction.InTransaction and (aTransaction = nil) then
         Transaction.Commit;
-      if c < 0 then
-        Query.Free
-      else if aCacheQuery then
+      if HasParams and aCacheQuery then
         FreeQueryForUse(Query)
       else
-        Query.Free
+        Query.Free;
     end;
 end;
 

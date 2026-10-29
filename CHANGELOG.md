@@ -356,6 +356,9 @@ The lists of old and new names, and what an application has to change, are in
 - `DBParams`: a last `shutdown` value of one character (`shutdown=2`) was ignored, and an unknown
   word or a word with spaces (`shutdown=force, full`) set every bit of the value. The words are
   now trimmed; an unknown word or a number over 255 raises the new `feParamValueInvalid`.
+- `TFIBDatabase.QueryValues` of a statement without parameters (also `EXECUTE PROCEDURE`) kept it
+  in the query cache when it returned a row, while `QueryValue` freed it. Only a statement with
+  parameters is cached now, as documented; `aCacheQuery` allows the caching.
 
 #### Queries and parameters
 
