@@ -500,6 +500,7 @@ type
     procedure SQLChanging(Sender: TObject);
     procedure SQLChange(Sender: TObject);
     procedure DoTransactionEnding(Sender: TObject);
+    procedure DoTransactionEnded(Sender: TObject);
     // Added procedures
     procedure SaveRestoreValues(SQLDA: TFIBXSQLDA; IsSave: boolean);
 
@@ -3397,6 +3398,7 @@ begin
     OnDatabaseDisconnecting := DatabaseDisconnecting;
     OnDatabaseConnectionLost := DatabaseConnectionLost;
     OnTransactionEnding := DoTransactionEnding;
+    OnTransactionEnded := DoTransactionEnded;
   end;
   FSQL := TStringList.Create;
   TStringList(FSQL).OnChanging := SQLChanging;
@@ -6379,10 +6381,18 @@ end;
 
 procedure TFIBQuery.DoTransactionEnding(Sender: TObject);
 begin
+  if Assigned(FTransactionEnding) then
+    FTransactionEnding(Sender);
   if Transaction.State in [tsDoRollback, tsDoCommit] then
     if FAutoCloseOnTransactionEnd then
       if (FOpen) then
         Close;
+end;
+
+procedure TFIBQuery.DoTransactionEnded(Sender: TObject);
+begin
+  if Assigned(FTransactionEnded) then
+    FTransactionEnded(Sender);
 end;
 
 /// / Routine work

@@ -384,6 +384,8 @@ The lists of old and new names, and what an application has to change, are in
 - `StopFetching` in `TFIBQuery.OnSQLFetch` and `BeforeFetchRecord` made `Next`
   return `nil` but left `Eof` at `False`, so a `while not Eof` loop did not end.
   It is now a final stop: `Eof` is set as at the end of the data.
+- `TFIBQuery.TransactionEnding` and `TransactionEnded` were published but never called; they are
+  now called before and after the transaction of the query ends, as in `TFIBDataSet`.
 - `TFIBQuery` fields and parameters of a date, time, number or boolean type: `AsString` passed
   the formatted text through the system code page, so locale texts outside it (for example the
   AM/PM designators) became `?`.
