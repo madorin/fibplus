@@ -47,7 +47,7 @@ Available in the Object Inspector. When the component is dropped on a form at de
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `AutoReconnect` | `Boolean` | `False` | When a component needs the connection and it is closed, connect again. The `UseLoginPrompt` value is ignored for this and restored afterwards. With an empty `ConnectParams.Password` there is one attempt, with the login dialog. With a password the first attempt has no dialog; if it fails, a second attempt is made with the dialog. Connect errors are swallowed in both cases. |
+| `AutoReconnect` | `Boolean` | `False` | When a component needs the connection and it is closed, connect again. The `UseLoginPrompt` value is ignored for this and restored afterwards. With an empty `ConnectParams.Password` there is one attempt, with the login dialog. With a password the first attempt has no dialog; if it fails, a second attempt is made with the dialog. The error of the last attempt is raised. |
 | `Connected` | `Boolean` | | Opens or closes the connection. While the form loads, the value is kept and applied after loading. |
 | `ConnectParams` | `TConnectParams` | | Typed access to common `DBParams` entries, see [ConnectParams](#connectparams). |
 | `DBName` | `string` | | Database name as passed to the client library, for example `server:C:\Data\Sales.fdb`. When the value changes, it raises while connected at run time; at design time it closes the connection. `DatabaseName` is the same property under another name. |
@@ -306,7 +306,7 @@ Write-ahead log values (`LogFile`, `CurLogFileName`, `CurLogPartitionOffset`, `N
 | `ForceClose` | The same as `Close`, but errors while ending transactions and detaching are ignored and the handle is always reset. Does nothing when the database is closed. |
 | `TestConnected` | Read a value from the server. If that fails, close the connection with `ForceClose` and return `False`. |
 | `PingAttachment` | Return `0` if the server answers, else the error code. Raises nothing; safe to call while handling an error. |
-| `CheckActive(TryReconnect)` | If a `Connected = True` stored in the form is still pending, open it first. When the database is closed: at run time without `AutoReconnect` it raises, and `TryReconnect` has no effect; at design time it does not raise. It tries to connect when `AutoReconnect` is `True`, or when `TryReconnect` is `True` at design time, with the attempts described for `AutoReconnect`; connect errors are swallowed. |
+| `CheckActive(TryReconnect)` | If a `Connected = True` stored in the form is still pending, open it first. When the database is closed: at run time without `AutoReconnect` it raises, and `TryReconnect` has no effect; at design time it does not raise. It tries to connect when `AutoReconnect` is `True`, or when `TryReconnect` is `True` at design time, with the attempts described for `AutoReconnect`; the error of the last attempt is raised. |
 | `CheckInactive` | Raise if the database is connected. |
 | `CheckDatabaseName` | Raise if `DBName` is empty. |
 | `FindTransaction(TR)` | Index of `TR` in `Transactions`, or `-1`. |
@@ -452,8 +452,8 @@ For descendant authors.
 | `OnErrorRestoreConnect` | A restore attempt failed. Choose `Actions`. |
 | `AfterRestoreConnect` | A restore attempt succeeded. |
 | `BeforeStartTransaction` | A [TFIBTransaction](TFIBTransaction.md) whose `DefaultDatabase` is this database is about to start. `Sender` is the transaction. |
-| `AfterStartTransaction` | After the transaction started. Does not run when the start was skipped without an error (see `AutoReconnect` in [TFIBTransaction](TFIBTransaction.md#starting-and-ending)). |
-| `BeforeEndTransaction` | A transaction of this database is about to end. `Action` and `Force` tell how. Runs before the check that the transaction is active. |
+| `AfterStartTransaction` | After the transaction started. Does not run when the start fails. |
+| `BeforeEndTransaction` | A transaction of this database is about to end. `Action` and `Force` tell how. Does not run for an inactive transaction, which raises `feNotInTransaction` first. |
 | `AfterEndTransaction` | The same transaction ended. |
 | `OnAcceptCacheSchema` | A cached table entry is being validated, see [Schema cache](#schema-cache). |
 

@@ -286,7 +286,8 @@ procedure TfrmFields.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   if qryFL.State in [dsEdit, dsInsert] then
     qryFL.Post;
-  iTr.Commit;
+  if GetOrdProp(InfoTransaction, 'Active') <> 0 then
+    iTr.Commit;
 end;
 
 procedure TfrmFields.EdFilterChange(Sender: TObject);

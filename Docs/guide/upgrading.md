@@ -149,11 +149,20 @@ The components on the palette were `TpFIBDatabase` and `TpFIBTransaction`. Their
 
 - `Open` on a connected database does nothing; it raised. `ForceClose` on a closed database does nothing; it raised.
 - `StartTransaction` on an active transaction raises `EFIBClientError` (`feInTransaction`) for every transaction, before any event runs. `TpFIBTransaction` did nothing. `Active := True` on an active transaction still does nothing. Check `InTransaction` before `StartTransaction` where the transaction may be active.
-- `AfterStart` and `AfterStartTransaction` run only when the transaction started. `TpFIBTransaction` also raised them when the start was skipped without an error (a database that could not be connected with `AutoReconnect`); `BeforeStart` still runs in that case.
+- `AfterStart` and `AfterStartTransaction` run only when the transaction started. `TpFIBTransaction` also raised them when the start was skipped without an error (a database that could not be connected with `AutoReconnect`); that start raises now, see [Failed reconnects and inactive transactions](#failed-reconnects-and-inactive-transactions). `BeforeStart` still runs in that case.
 - `BeforeConnect` (and `OnLogin`), the schema cache, and the alias on `Open` work for every connection. Nothing runs unless it is set: `CacheSchemaOptions` is off and `AliasName` is empty.
 - `DifferenceTime` is used for every database when a new row gets a client time as its default value.
 - Lost-connection handling by `TFIBErrorHandler` applies to every connection, see below.
 - `CacheSchemaOptions := Value` in code copies the values into the existing object. It replaced the object before.
+
+#### Failed reconnects and inactive transactions
+
+Errors of a reconnect are no longer hidden, and ending an inactive transaction no longer starts one.
+
+- With `AutoReconnect` (and `CheckActive(True)`), a failed connect raises the error of the last attempt from the call that needed the connection. It was swallowed and `Connected` stayed `False`.
+- `StartTransaction` raises `EFIBClientError` (`feDatabaseClosed`) when a database of the transaction is still not connected. It returned with the transaction inactive. A form with a stored active transaction and a closed database shows the error in the IDE while it loads.
+- `Commit`, `Rollback`, `CommitRetaining`, and `RollbackRetaining` of an inactive transaction raise `feNotInTransaction` before `BeforeEnd` and the database's `BeforeEndTransaction` run. With `AutoReconnect` on every database, and at design time, they started and ended a transaction. Test `InTransaction` first where the transaction may be inactive.
+- `CheckInTransaction` only raises; it no longer starts the transaction. Queries, datasets, `ExecSQLImmediate`, and `TFIBDatabase.ApplyUpdates` still start it at design time and with `AutoReconnect`, as before.
 
 #### `TPBMode` and `TRParams`
 

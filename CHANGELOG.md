@@ -164,6 +164,15 @@ The lists of old and new names, and what an application has to change, are in
   `AfterEndTransaction` are raised for every transaction of the database (they
   were raised only for `TpFIBTransaction`), except those with `Internal` set to
   `True`, which the library sets on its own transactions.
+- A failed reconnect raises: `AutoReconnect` and `CheckActive(True)` raise the
+  error of the last connect attempt (it was swallowed), and `StartTransaction`
+  raises `feDatabaseClosed` when a database is still not connected (it
+  returned with the transaction inactive), also while a form loads in the IDE.
+  `Commit`, `Rollback` and the retaining variants of an inactive transaction
+  raise `feNotInTransaction` before `BeforeEnd` (with `AutoReconnect` and at
+  design time they started and ended a transaction), and `CheckInTransaction`
+  no longer starts the transaction; queries still start it as before. See
+  [Upgrading](Docs/guide/upgrading.md#failed-reconnects-and-inactive-transactions).
 - `TFIBErrorHandler` runs the lost-connection action on the database of the
   failing object (a database, a query, a transaction or a BLOB stream) for every
   `TFIBDatabase`. Without a database it pings each connected database and acts

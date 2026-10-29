@@ -885,6 +885,8 @@ type
     function AddFIBBase(ds: TFIBBase): Integer;
 
     procedure CreateTimeoutTimer;
+    // Starts it at design time or when every database has AutoReconnect, else raises
+    procedure EnsureInTransaction;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -1068,7 +1070,7 @@ uses
   RegUtils,
 {$ENDIF}
   FIBMiscellaneous, FIBDataInfo, FIBQuery, FIBDataSet, StrUtil, FIBCacheQueries,
-  FIBConsts, FIBTypes, FIBCharSets;
+  FIBConsts, FIBTypes, FIBCharSets, IB_ErrorCodes;
 
 type
 {$IFNDEF NO_MONITOR}
@@ -1881,16 +1883,22 @@ begin
         OldUseLoginPrompt := FUseLoginPrompt;
         FUseLoginPrompt := (ConnectParams.Password = '');
         try
-          Connected := True;
-        except
-          if not FUseLoginPrompt then
-            try
-              FUseLoginPrompt := True;
-              Connected := True;
-            except
-            end;
+          try
+            Connected := True;
+          except
+            // Ask for the login only after a login error, else keep the original error
+            on E: Exception do
+              begin
+                if FUseLoginPrompt or not Assigned(FIBLoginDialog) or not (E is EFIBError) or
+                  not EFIBError(E).HasErrorCode(isc_login) then
+                  raise;
+                FUseLoginPrompt := True;
+                Connected := True;
+              end;
+          end;
+        finally
+          FUseLoginPrompt := OldUseLoginPrompt;
         end;
-        FUseLoginPrompt := OldUseLoginPrompt;
       end;
 end;
 
@@ -2325,7 +2333,7 @@ begin
     if (TR = nil) or (DS.UpdateTransaction <> TR) then
       FIBError(feUpdateWrongTR, [CmpFullName(DS)]);
   end;
-  TR.CheckInTransaction;
+  TR.EnsureInTransaction;
   for i := 0 to High(DataSets) do
     if DataSets[i] is TFIBCustomDataSet then
       TFIBCustomDataSet(DataSets[i]).ApplyUpdToBase;
@@ -4995,6 +5003,14 @@ begin
 end;
 
 procedure TFIBTransaction.CheckInTransaction;
+begin
+  if FStreamedActive and (not InTransaction) then
+    Loaded;
+  if FHandle = nil then
+    FIBError(feNotInTransaction, [CmpFullName(Self)]);
+end;
+
+procedure TFIBTransaction.EnsureInTransaction;
 var
   i: Integer;
   NeedAutoStart: Boolean;
@@ -5123,11 +5139,11 @@ var
   end;
 
 begin
+  CheckInTransaction;
   if (FDefaultDatabase <> nil) and not FInternal and Assigned(FDefaultDatabase.FBeforeEndTransaction) then
     FDefaultDatabase.FBeforeEndTransaction(Self, Action, Force);
   if Assigned(FBeforeEnd) then
     FBeforeEnd(Self, Action, Force);
-  CheckInTransaction;
   if Assigned(MainDatabase.FSQLLogger) then
     begin
       case Action of
@@ -5490,7 +5506,7 @@ begin
     begin
       Databases[i].CheckActive(not(trsInLoaded in FTransactionRunStates));
       if not Databases[i].Connected then
-        Exit;
+        FIBError(feDatabaseClosed, [CmpFullName(Databases[i])]);
     end;
   vIsFB21orMore := MainDatabase.FIsFB21OrMore;
   (*
@@ -5566,8 +5582,7 @@ begin
         then
           begin
             FHandle := nil;
-            if not(trsInLoaded in FTransactionRunStates) then
-              IBError(MainDatabase, Self);
+            IBError(MainDatabase, Self);
           end;
         for i := Pred(FAfterStartTransactionEvents.Count) downto 0 do
           FAfterStartTransactionEvents.Event[i](Self);
@@ -5602,7 +5617,7 @@ procedure TFIBTransaction.ExecSQLImmediate(const SQLText: WideString);
 var
   vSQLText: AnsiString;
 begin
-  CheckInTransaction;
+  EnsureInTransaction;
   vSQLText := EncodeString(SQLText, MainDatabase.Capabilities.CodePage);
   Call(MainDatabase.ClientLibrary.isc_dsql_execute_immediate(StatusVector,
     @MainDatabase.Handle, @FHandle, 0, PAnsiChar(vSQLText), Word(MainDatabase.SQLDialect), nil), True);
@@ -5779,7 +5794,7 @@ begin
       FIBError(feTransactionNotAssigned, [CmpFullName(TComponent(Self.Owner))])
     else
       FIBError(feTransactionNotAssigned, [nil]);
-  FTransaction.CheckInTransaction;
+  FTransaction.EnsureInTransaction;
 end;
 
 function TFIBBase.GetDBHandle: PISC_DB_HANDLE;

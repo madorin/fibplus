@@ -247,7 +247,7 @@ A non-zero timeout stored in a form makes the connect fail on a server without t
 
 ## Errors and pitfalls
 
-- **Reconnect errors are hidden.** `AutoReconnect` ignores the errors of its connect attempts. If they fail, `Connected` stays `False`; `StartTransaction` then returns with the transaction inactive and raises nothing. After such a call check `Database.Connected` or `Transaction.Active`.
+- **A failed reconnect raises.** When the connect attempts of `AutoReconnect` fail, the error of the last attempt is raised from the call that needed the connection, for example `StartTransaction` or `ExecQuery`.
 - **Changing parameters while connected.** `DBName` and `DBParams` raise at run time while the database is connected, and `LibraryName` raises at any time. Call `Close` first.
 - **The password in the form.** `DBParams` is stored in the form with the password. Use `ddoNotSavePassword`, or set the password in code.
 - **A stored `Connected = True`.** The form connects while it loads. If the server is not reachable, the program raises an error at start-up. Turn off `ddoStoreConnected` for forms that must start without the server.

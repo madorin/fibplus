@@ -4345,7 +4345,7 @@ begin
   if Database.IsIB2007Connect then
   begin
     if not(qoStartTransaction in Options) then
-      Transaction.CheckInTransaction
+      FBase.CheckTransaction
     else
       Database.CheckActive;
 

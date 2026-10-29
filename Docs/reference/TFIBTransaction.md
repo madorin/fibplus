@@ -213,14 +213,14 @@ Assigning `Handle` attaches the component to a transaction started elsewhere. En
 
 | Name | Description |
 |------|-------------|
-| `StartTransaction` | Start the transaction on all its databases with one call. Raises `EFIBClientError` (`feInTransaction`) if it is already active, before any event runs (`Active := True` on an active transaction does nothing). Raises if it has no database. Calls the start events around the start, see [Events](#events). At run time, a database that is not connected raises, unless `AutoReconnect` is `True`. With `AutoReconnect`, the database connects first; if that fails, no error is raised and the transaction stays inactive. |
+| `StartTransaction` | Start the transaction on all its databases with one call. Raises `EFIBClientError` (`feInTransaction`) if it is already active, before any event runs (`Active := True` on an active transaction does nothing). Raises if it has no database. Calls the start events around the start, see [Events](#events). At run time, a database that is not connected raises, unless `AutoReconnect` is `True`. With `AutoReconnect`, and at design time, the database connects first; if that fails, the connect error is raised. A database that is still not connected raises `feDatabaseClosed`. |
 | `Commit` | Commit and end. |
 | `CommitRetaining` | Commit and keep the transaction and its cursors open. |
 | `Rollback` | Roll back and end. |
 | `RollbackRetaining` | Roll back and keep the transaction open. |
 | `FIBDataSetsCount`, `FIBQueryCount` | Number of entries of `FIBDataSets` and `FIBQueries`. |
 
-When the transaction is not active, each of these methods first calls `CheckInTransaction`. At run time it raises, unless every database has `AutoReconnect` set to `True`; then a transaction is started and ended at once. At design time a transaction is always started first.
+When the transaction is not active, the four end methods raise `EFIBClientError` (`feNotInTransaction`) through `CheckInTransaction`, before any end event runs.
 
 *Protected:* `EndTransaction(Action, Force)` is virtual and does the work of all four methods. It calls the end events around the end, so they run for `Commit`, `Rollback`, the retaining variants, a timeout, a disconnect, and destroying the component. `Force` set to `True` ends the transaction even when the server call fails.
 
@@ -230,7 +230,7 @@ Before the end, the transaction calls the `OnTransactionEnding` hook of every at
 
 | Name | Description |
 |------|-------------|
-| `ExecSQLImmediate(SQLText)` | Run one statement without a prepared statement, in this transaction. Returns no rows. |
+| `ExecSQLImmediate(SQLText)` | Run one statement without a prepared statement, in this transaction. Returns no rows. An inactive transaction is started as for a query: at design time, or when every database has `AutoReconnect` set to `True`; otherwise it raises. |
 | `SetSavePoint(Name)` | Run `SAVEPOINT Name`. |
 | `RollBackToSavePoint(Name)` | Run `ROLLBACK TO SAVEPOINT Name`. |
 | `ReleaseSavePoint(Name)` | Run `RELEASE SAVEPOINT Name`. |
@@ -250,7 +250,7 @@ Before the end, the transaction calls the `OnTransactionEnding` hook of every at
 | Name | Description |
 |------|-------------|
 | `CheckDatabasesInList` | Raise if the transaction has no database. |
-| `CheckInTransaction` | Ensure the transaction is active. At design time it starts the transaction. At run time it starts it only when every database has `AutoReconnect` set to `True`; otherwise it raises. |
+| `CheckInTransaction` | Raise `EFIBClientError` (`feNotInTransaction`) if the transaction is not active. Does not start it. |
 | `CheckNotInTransaction` | Raise if the transaction is active. |
 | `IsReadOnly` | `True` if `TRParams` contains `read`. |
 | `IsReadCommitedTransaction` | `True` if `TRParams` contains `read_committed` or `read_consistency`. |
@@ -278,8 +278,8 @@ Unlike a published event, these lists take any number of handlers. Components th
 |------|-------------|
 | `OnTimeout` | `Timeout` elapsed and `TimeoutAction` was applied; called after the action. With a retaining action the transaction stays active. |
 | `BeforeStart` | Before the transaction starts. |
-| `AfterStart` | After the transaction started. Does not run when the start was skipped without an error (see `AutoReconnect` in [Starting and ending](#starting-and-ending)); `BeforeStart` has run by then. |
-| `BeforeEnd` | Before the transaction ends. `Action` and `Force` tell how. Runs before the check that the transaction is active, so it also runs for `Commit` or `Rollback` on an inactive transaction. |
+| `AfterStart` | After the transaction started. Does not run when the start fails; `BeforeStart` has run by then. |
+| `BeforeEnd` | Before the transaction ends. `Action` and `Force` tell how. Does not run for `Commit` or `Rollback` on an inactive transaction, which raises first. |
 | `AfterEnd` | After the transaction ended. |
 | `BeforeSQLExecute` | A query attached to the transaction is about to run. `SQLType` is the statement type. |
 | `AfterSQLExecute` | The query ran. |

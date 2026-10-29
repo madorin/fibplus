@@ -120,7 +120,7 @@ except
 end;
 ```
 
-Calling `Commit` or `Rollback` on an inactive transaction raises `EFIBClientError`, unless every database has `AutoReconnect` set to `True`; then a transaction is started and ended at once. Test `Transaction.InTransaction` first when you cannot be sure.
+Calling `Commit` or `Rollback` on an inactive transaction raises `EFIBClientError` ("Transaction is not active"), also with `AutoReconnect`; `BeforeEnd` does not run. Test `Transaction.InTransaction` first when you cannot be sure.
 
 An SQL `COMMIT` or `ROLLBACK` statement executed with `ExecQuery` calls `Transaction.Commit` or `Transaction.Rollback`, so cursors and datasets are affected in the same way.
 
@@ -286,7 +286,6 @@ The default is `TARollback`. Choose `TACommit` when the work in the transaction 
 - **Inactive transaction.** Without `qoStartTransaction` or `poStartTransaction`, a statement raises `EFIBClientError` ("Transaction is not active"). Start the transaction first, or set the option.
 - **Uncommitted work at an automatic end.** The default `TimeoutAction` is `TARollback`; a disconnect or a destroyed transaction component rolls back what you did not commit.
 - **Databases with different client libraries in one transaction.** `AddDatabase` raises. Give all databases of the transaction the same `LibraryName`.
-- **Silent no-start with `AutoReconnect`.** When the connection cannot be made, `StartTransaction` returns without an error and the transaction stays inactive. Check `InTransaction` when `AutoReconnect` is on.
 
 ## See also
 
