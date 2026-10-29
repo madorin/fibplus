@@ -8245,7 +8245,7 @@ begin
   if not(csDesigning in ComponentState) then
     if (vSelectSQLTextChanged or FAutoUpdateOptions.Modified) and FAutoUpdateOptions.AutoReWriteSqls then
     begin
-      if not FAutoUpdateOptions.UpdateOnlyModifiedFields then
+      if not FAutoUpdateOptions.UpdateOnlyModifiedFieldsInEffect then
         GenerateSQLs
       else
         with FAutoUpdateOptions do
@@ -8399,17 +8399,22 @@ begin
       if UpdateStatus = usUnModified then
       begin
         LockRecord(True);
-        if EmptyStrings(RefreshSQL) and (AutoReWriteSqls or UpdateOnlyModifiedFields) then
+        if EmptyStrings(RefreshSQL) and (AutoReWriteSqls or UpdateOnlyModifiedFieldsInEffect) then
         begin
           QRefresh.SQL.Text := GenerateSQLText(UpdateTableName, KeyFields, skRefresh);
         end;
         InternalRefresh;
-        if EmptyStrings(UpdateSQL) and (AutoReWriteSqls or UpdateOnlyModifiedFields) then
+        if EmptyStrings(UpdateSQL) and (AutoReWriteSqls or UpdateOnlyModifiedFieldsInEffect) then
         begin
-          oldUM := UpdateOnlyModifiedFields;
-          UpdateOnlyModifiedFields := False;
-          QUpdate.SQL.Text := GenerateSQLText(UpdateTableName, KeyFields, skModify);
-          UpdateOnlyModifiedFields := oldUM;
+          oldUM := UpdateOnlyModifiedFieldsInEffect;
+          if oldUM then
+            UpdateOnlyModifiedFields := False;
+          try
+            QUpdate.SQL.Text := GenerateSQLText(UpdateTableName, KeyFields, skModify);
+          finally
+            if oldUM then
+              UpdateOnlyModifiedFields := True;
+          end;
         end;
       end;
   if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
@@ -13866,7 +13871,7 @@ end;
 function TFIBCustomDataSet.WillGenerateSQLs: boolean;
 begin
   with FAutoUpdateOptions do
-    Result := UpdateOnlyModifiedFields and AutoReWriteSqls and CanChangeSQLs and
+    Result := UpdateOnlyModifiedFieldsInEffect and
       (KeyFields <> '') and (UpdateTableName <> '');
 end;
 
@@ -14761,7 +14766,7 @@ begin
   if LockTxt = '' then
   begin
     if (EmptyStrings(QUpdate.SQL) or (AutoUpdateOptions.AutoReWriteSqls and
-      (AutoUpdateOptions.UpdateOnlyModifiedFields))) then
+      AutoUpdateOptions.UpdateOnlyModifiedFieldsInEffect)) then
       with AutoUpdateOptions do
         if AutoReWriteSqls then
         begin
@@ -15127,7 +15132,7 @@ var
   tmp: TIncludeFieldsToSQL;
 begin
   with FAutoUpdateOptions do
-    if UpdateOnlyModifiedFields and (KeyFields <> '') and (UpdateTableName <> '') then
+    if UpdateOnlyModifiedFieldsInEffect and (KeyFields <> '') and (UpdateTableName <> '') then
     begin
       if SeparateBlobUpdate then
         tmp := ifsNoBlob
@@ -15136,13 +15141,13 @@ begin
       case ForState of
         dsEdit:
           begin
-            s := GenerateSQLText(UpdateTableName, KeyFields, skModify, tmp);
+            s := GenerateSQLText(UpdateTableName, KeyFields, skModify, tmp, UseReturningFields);
             if s <> UpdateSQL.Text then
               UpdateSQL.Text := s;
           end;
         dsInsert:
           begin
-            s := GenerateSQLText(UpdateTableName, KeyFields, FIBDataSet.skInsert, tmp);
+            s := GenerateSQLText(UpdateTableName, KeyFields, FIBDataSet.skInsert, tmp, UseReturningFields);
             if s <> InsertSQL.Text then
               InsertSQL.Text := s;
           end;
@@ -15173,6 +15178,7 @@ var
   OldForceIsNull: boolean;
   vCanNtIncToWhere: boolean;
   vSQLTxt: string;
+  MatchingStr: string;
 
   procedure GetFieldList(List: TList; const FieldNames: string);
   var
@@ -15303,6 +15309,7 @@ begin
 
       // Validate KeyFields
       pWhereClause := '';
+      MatchingStr := '';
       for KeyIndex := KeyFieldList.Count - 1 downto 0 do
       begin
         RelTableName := EasyFormatIdentifier(Database.SQLDialect,
@@ -15328,7 +15335,8 @@ begin
         begin
           vFieldName := TField(KeyFieldList[KeyIndex]).FieldName;
           pWhereClause := pWhereClause + iifStr(pWhereClause = '', '', ' and ')
-            + vAliasTableName + '.' + RealKeyFieldName + '=' + FieldValueToStr(TField(KeyFieldList[KeyIndex]), True)
+            + vAliasTableName + '.' + RealKeyFieldName + '=' + FieldValueToStr(TField(KeyFieldList[KeyIndex]), True);
+          MatchingStr := RealKeyFieldName + iifStr(MatchingStr = '', '', ',') + MatchingStr;
         end;
       end;
       if KeyFieldList.Count = 0 then
@@ -15373,6 +15381,11 @@ begin
         Result := SetOrderClause(Result, '');
         Exit;
       end;
+    skMerge:
+      begin
+        Result := 'Update or insert into ' + FormatTableName + '(';
+        InsValuesStr := 'values (';
+      end;
   end;
 
   AcceptCount := 0;
@@ -15385,7 +15398,7 @@ begin
         Continue;
 
       if SK <> FIBDataSet.skDelete then
-        if FAutoUpdateOptions.UpdateOnlyModifiedFields then
+        if FAutoUpdateOptions.UpdateOnlyModifiedFieldsInEffect then
         begin
           case SK of
             skModify:
@@ -15438,7 +15451,7 @@ begin
     InsValuesStr := InsValuesStr + iifStr(AcceptCount = 1, '', ',');
     case SK of
       skModify: Result := Result + Indent + RealFieldName + '=' + FieldValueToStr(FBN(vFieldName), False);
-      FIBDataSet.skInsert:
+      FIBDataSet.skInsert, skMerge:
         begin
           Result := Result + Indent + RealFieldName;
           InsValuesStr := InsValuesStr + Indent + FieldValueToStr(FBN(vFieldName), False);
@@ -15447,13 +15460,16 @@ begin
   end; // end for
   if AcceptCount = 0 then
     case SK of
-      skModify: Result := '';
+      skModify, skMerge: Result := '';
       FIBDataSet.skInsert: Result := 'Insert into ' + FormatTableName + ' default values';
     end
   else
     case SK of
       skModify: Result := Result + ' where ' + pWhereClause;
       FIBDataSet.skInsert: Result := Result + sLineBreak + ')' + InsValuesStr + ')';
+      skMerge:
+        Result := Result + sLineBreak + ')' + InsValuesStr + ')' + sLineBreak +
+          'matching (' + MatchingStr + ')';
     end;
 end;
 
@@ -15483,6 +15499,8 @@ var
   vCanNtIncToWhere: boolean;
   vSQLTxt: string;
   sReturningFields: string;
+  MatchingStr: string;
+  ReturnOnly: Boolean;
 
   procedure GetFieldList(List: TList; const FieldNames: string);
   var
@@ -15533,7 +15551,7 @@ begin
   end;
 
   vFieldsCreated := FieldCount > 0;
-  if FAutoUpdateOptions.UpdateOnlyModifiedFields and not vFieldsCreated then
+  if FAutoUpdateOptions.UpdateOnlyModifiedFieldsInEffect and not vFieldsCreated then
     Exit;
   if not vFieldsCreated then
     FieldDefs.Update;
@@ -15541,7 +15559,8 @@ begin
   if vpFIBTableInfo = nil then
     Exit;
 
-  if (Length(FAutoUpdateOptions.WhereCondition) = 0) or
+  MatchingStr := '';
+  if (Length(FAutoUpdateOptions.WhereCondition) = 0) or (SK = skMerge) or
     ((rfKeyFields in ReturningFields) and not(rfAll in ReturningFields)) then
   begin // begin create added where condition
     KeyFieldList := TList.Create;
@@ -15582,6 +15601,7 @@ begin
           pWhereClause := pWhereClause + iifStr(pWhereClause = '', '', ' and ')
             + vAliasTableName + '.' + RealKeyFieldName + '=?' + EasyFormatIdentifier(Database.SQLDialect,
             'OLD_' + vFieldName, False);
+          MatchingStr := RealKeyFieldName + iifStr(MatchingStr = '', '', ',') + MatchingStr;
           if (rfKeyFields in ReturningFields) and not(rfAll in ReturningFields) then
             sReturningFields := sReturningFields + RealKeyFieldName + ','
         end;
@@ -15634,6 +15654,11 @@ begin
         Result := SetOrderClause(Result, '');
         Exit;
       end;
+    skMerge:
+      begin
+        Result := 'Update or insert into ' + FormatTableName + '(';
+        InsValuesStr := 'values (';
+      end;
   end;
 
   AcceptCount := 0;
@@ -15644,6 +15669,7 @@ begin
     fc := FieldDefs.Count - 1;
   for i := 0 to fc do
   begin
+    ReturnOnly := False;
     if vFieldsCreated then
     begin
       if (Fields[i].FieldKind <> fkData) then
@@ -15658,7 +15684,7 @@ begin
       end;
 
       if SK <> FIBDataSet.skDelete then
-        if FAutoUpdateOptions.UpdateOnlyModifiedFields then
+        if FAutoUpdateOptions.UpdateOnlyModifiedFieldsInEffect then
         begin
           case SK of
             skModify:
@@ -15683,8 +15709,14 @@ begin
                   Continue;
               end;
             FIBDataSet.skInsert:
-              if Fields[i].isNull then
-                Continue;
+              if Fields[i].IsNull then
+              begin
+                // The server fills the unset field: only return it
+                if not (rfAll in ReturningFields) and
+                  not ((rfBlobFields in ReturningFields) and Fields[i].IsBlob) then
+                  Continue;
+                ReturnOnly := True;
+              end;
           end;
         end;
 
@@ -15718,6 +15750,11 @@ begin
     vFi := vpFIBTableInfo.FieldInfo(RealFieldName);
     if (vFi = nil) or (vFi.IsComputed and not(psCanEditComputedFields in PrepareOptions)) then
       Continue;
+    if ReturnOnly then
+    begin
+      sReturningFields := sReturningFields + RealFieldName + ',';
+      Continue;
+    end;
     Inc(AcceptCount);
     Result := Result + iifStr(AcceptCount = 1, '', ',') + sLineBreak;
     InsValuesStr := InsValuesStr + iifStr(AcceptCount = 1, '', ',') + sLineBreak;
@@ -15731,7 +15768,7 @@ begin
           else if (rfBlobFields in ReturningFields) and Fields[i].IsBlob then
             sReturningFields := sReturningFields + RealFieldName + ','
         end;
-      FIBDataSet.skInsert:
+      FIBDataSet.skInsert, skMerge:
         begin
           Result := Result + Indent + RealFieldName;
           InsValuesStr := InsValuesStr + Indent + '?' + EasyFormatIdentifier(Database.SQLDialect,
@@ -15745,20 +15782,27 @@ begin
   end; // end for
   if AcceptCount = 0 then
   begin
-    Result := SNoAction;
+    // An insert without set fields still writes the row
+    if SK <> FIBDataSet.skInsert then
+      Exit(SNoAction);
+    Result := 'Insert into ' + FormatTableName + sLineBreak + 'default values';
   end
   else
     case SK of
       skModify: Result := Result + sLineBreak + 'where ' + pWhereClause;
       FIBDataSet.skInsert: Result := Result + sLineBreak + ')' + sLineBreak + InsValuesStr + sLineBreak + ')';
+      skMerge:
+        Result := Result + sLineBreak + ')' + sLineBreak + InsValuesStr + sLineBreak + ')' + sLineBreak +
+          'matching (' + MatchingStr + ')';
     end;
+  // Firebird accepts ROWS only on UPDATE and DELETE, before RETURNING
+  if FAutoUpdateOptions.UseRowsClause and (SK = skModify) then
+    Result := Result + sLineBreak + 'ROWS 1';
   if Length(sReturningFields) > 0 then
   begin
     SetLength(sReturningFields, Length(sReturningFields) - 1);
     Result := Result + sLineBreak + 'RETURNING ' + sReturningFields
   end;
-  if FAutoUpdateOptions.UseRowsClause then
-    Result := Result + sLineBreak + ' ROWS 1'
 end;
 
 function TFIBCustomDataSet.GenerateSQLTextWA(const TableName: string; SK: TFIBSQLKind;

@@ -228,6 +228,18 @@ or `OnUpdateRecord` (`uaSkip`) stays in the cache, and the rows applied before a
 committed. When an error stops `ApplyUpdates`, the rows applied before it are committed before the
 error is raised, as they were before, because the cache marks them as applied.
 
+#### Generated statements
+
+- `AutoUpdateOptions.UpdateOnlyModifiedFields` keeps the assigned value. Assigned before
+  `AutoReWriteSqls` and `CanChangeSQLs`, it was reset to `False`; now the dataset generates the
+  `INSERT` and `UPDATE` for each post once the other two are `True`. Remove the line from the
+  form if you relied on the old order. `UpdateOnlyModifiedFieldsInEffect` returns whether it
+  applies.
+- Under `UpdateOnlyModifiedFields`, a new row without any field set was not written (`No Action`)
+  although the dataset showed it as posted; it is now inserted with `DEFAULT VALUES`.
+- `UseRowsClause` adds `ROWS 1` only to the generated `UPDATE`; the `INSERT` and `UPDATE OR
+  INSERT` no longer get it.
+
 #### Integer parameter values
 
 `AsInteger`, `AsInt64` and `AsShort` assigned before `Prepare` are converted to the parameter type

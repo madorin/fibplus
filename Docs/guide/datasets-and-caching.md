@@ -158,7 +158,7 @@ The dataset generates the statements after `Open`, at run time, when the text of
 | `SeparateBlobUpdate` | Leave BLOB fields out of the generated `INSERT` and `UPDATE`; send them with a second `UPDATE` after the row. |
 | `UseExecuteBlock` | With `CachedUpdates`, `ApplyUpdates` sends the changes in `EXECUTE BLOCK` batches of generated statements (at most 255 each) instead of running the statements of the dataset and its update objects. See [Applying cached updates](../reference/TFIBDataSet.md#applying-cached-updates). |
 | `UseReturningFields` | Add a `RETURNING` clause to the `INSERT` and `UPDATE` made with `AutoReWriteSqls`. |
-| `UseRowsClause` | Add `ROWS 1` to generated `INSERT` and `UPDATE`. |
+| `UseRowsClause` | Add `ROWS 1` to the generated `UPDATE`, before `RETURNING`. |
 
 Members of the table that are in the dataset are included. Fields that come from other tables of a join, calculated fields, and computed columns are not. Computed columns are included only with `psCanEditComputedFields` in `PrepareOptions`. The dataset reads the table definition from the server; see [Metadata cache](#metadata-cache).
 
@@ -166,9 +166,9 @@ You can generate the statements yourself with `GenerateSQLs`, or get the text of
 
 ### Only the changed fields
 
-With `UpdateOnlyModifiedFields`, the dataset writes the `UPDATE` and `INSERT` again at each `Post`. The `UPDATE` sets only the fields that changed. The `INSERT` lists only the fields that are not null. The statements use the same `NEW_` and `OLD_` parameters. When no field of the table changed, nothing is sent.
+With `UpdateOnlyModifiedFields`, the dataset writes the `UPDATE` and `INSERT` again at each `Post`. The `UPDATE` sets only the fields that changed. The `INSERT` lists only the fields that are not null; when all are null, it is `INSERT INTO <table> DEFAULT VALUES`. The statements use the same `NEW_` and `OLD_` parameters. When no field of the table changed in an edited row, nothing is sent.
 
-The property is `True` only if `AutoReWriteSqls` and `CanChangeSQLs` are `True` when you set it, so set those first. The dataset generates the statements only when `KeyFields` and `UpdateTableName` are not empty.
+The property is in effect only while `AutoReWriteSqls` and `CanChangeSQLs` are `True`, whatever the assignment order. The dataset generates the statements only when `KeyFields` and `UpdateTableName` are not empty.
 
 ```delphi
 with DataSet.AutoUpdateOptions do
@@ -181,7 +181,7 @@ begin
 end;
 ```
 
-In this mode, after `Open` only `RefreshSQL` and `DeleteSQL` are generated. `UseReturningFields` does not apply.
+In this mode, after `Open` only `RefreshSQL` and `DeleteSQL` are generated. The statements made for each post get the `RETURNING` clause of `UseReturningFields`; `rfAll` returns the written columns of an `UPDATE`, and every column of an `INSERT`, so the values the server filled in for the null fields come back.
 
 ### Generators
 
@@ -473,7 +473,6 @@ When `OnAcceptCacheSchema` is assigned and `ValidateAfterLoad` is `True`, the lo
 - **Commit or rollback of `Transaction` closes the dataset.** With `CachedUpdates` or `poDontCloseAfterEndTransaction`, the dataset reads all remaining rows first and keeps them. `CommitRetaining` and `RollbackRetaining` do not close it. A disconnect behaves the same way. See [Transactions](transactions.md).
 - **`CachedUpdates` needs a closed dataset.** Setting it on an open dataset raises an error. Turning it off on an open dataset calls `CancelUpdates`.
 - **`SelectSQL` cannot change while the dataset is open** at run time. Close it first.
-- **`UpdateOnlyModifiedFields` stays `False` when set in the wrong order.** Set `AutoReWriteSqls` and `CanChangeSQLs` first.
 - **Altered tables are not noticed.** See [Metadata cache](#metadata-cache).
 - **Prepared cached queries can block DDL.** See [Clearing the query cache](#clearing-the-query-cache).
 - **`DoSort` on a large result set.** It fetches all rows first. Sort on the server with `ORDER BY` instead.

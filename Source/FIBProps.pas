@@ -170,7 +170,6 @@ type
     function GetGenBeforePost: boolean;
     procedure SetGenBeforePost(Value: boolean);
     procedure SetParamFieldLinks(const Value: TStrings);
-    procedure SetUpdateOnlyModifiedFields(const Value: boolean);
     procedure SetKeyFields(const Value: string);
     function GetAliasModifiedTable: string;
     function GetModifiedTable: string;
@@ -185,6 +184,7 @@ type
   public
     constructor Create(Owner: TComponent);
     destructor Destroy; override;
+    function UpdateOnlyModifiedFieldsInEffect: Boolean;
     property Owner: TComponent read FOwner;
     property SelectGenID: boolean read GetSelectGenID write SetSelectGenID;
     property GenBeforePost: boolean read GetGenBeforePost write SetGenBeforePost;
@@ -202,7 +202,8 @@ type
     property AutoReWriteSqls: boolean read FAutoReWriteSqls write FAutoReWriteSqls default False;
     property CanChangeSQLs: boolean read FCanChangeSQLs write FCanChangeSQLs default False;
     property GeneratorName: string read FGeneratorName write FGeneratorName;
-    property UpdateOnlyModifiedFields: boolean read FUpdateOnlyModifiedFields write SetUpdateOnlyModifiedFields default False;
+    property UpdateOnlyModifiedFields: Boolean read FUpdateOnlyModifiedFields write FUpdateOnlyModifiedFields
+      default False;
     property WhenGetGenID: TWhenGetGenID read FWhenGetGenID write FWhenGetGenID default wgNever;
     property GeneratorStep: integer read FGeneratorStep write FGeneratorStep default 1;
     property ParamsToFieldsLinks: TStrings read FParamFieldLinks write SetParamFieldLinks;
@@ -1673,9 +1674,10 @@ begin
   FValueFromStream := True
 end;
 
-procedure TAutoUpdateOptions.SetUpdateOnlyModifiedFields(const Value: boolean);
+function TAutoUpdateOptions.UpdateOnlyModifiedFieldsInEffect: Boolean;
 begin
-  FUpdateOnlyModifiedFields := Value and FAutoReWriteSqls and FCanChangeSQLs;
+  // The property is kept as assigned, in any order; it works only with these two
+  Result := FUpdateOnlyModifiedFields and FAutoReWriteSqls and FCanChangeSQLs;
 end;
 
 procedure TAutoUpdateOptions.SetKeyFields(const Value: string);
