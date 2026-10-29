@@ -221,6 +221,17 @@ at `Prepare`, as `AsDouble` and `AsVariant` already were: a `BOOLEAN` parameter 
 value other than zero, a `DATE` or `TIMESTAMP` parameter the `TDateTime` with that day number.
 Before, the value was sent as an integer and the server raised a conversion error.
 
+#### Scripter
+
+- `TFIBScripter` raises "Parse script error. Invalid statement" for a statement it can't parse
+  (starting with `-`, `/` or a bare `{`); it sent it to the server. The error is not passed to
+  `OnExecuteError`. A `BeforeStatementExecute` handler can still skip the statement.
+- `CONNECT` on an assigned `Database` keeps its `DBParams` and sets only the clauses of the
+  statement: a missing `USER`, `PASSWORD` or `ROLE` keeps the value of the database. The charset
+  of `CONNECT` is no longer replaced by an earlier `SET NAMES`.
+- `ExecuteFromFile` detects a UTF-8 or UTF-16 BOM; a file without one is still read in the system
+  code page. Pass the encoding of such files to the new `ExecuteFromFile(FileName, Encoding)`.
+
 ## 7.9.1
 
 ### Build

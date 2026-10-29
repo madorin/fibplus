@@ -76,6 +76,12 @@
 - `EFIBError.ErrorArgument(Code, Index)`: a string argument of the status
   vector, for example the constraint name of `isc_unique_key_violation`.
 
+#### Scripter
+
+- `TFIBScripter.ExecuteFromFile(FileName, Encoding)` reads a script file without a byte order
+  mark in the given encoding (e.g. `TEncoding.UTF8`); a UTF-8 or UTF-16 BOM still selects the
+  encoding, and its `INPUT` files get the same encoding.
+
 ### Changed
 
 The lists of old and new names, and what an application has to change, are in
@@ -653,6 +659,14 @@ The lists of old and new names, and what an application has to change, are in
   character 32 codes above a keyword letter for that letter: `{DIFDEF X}` was read as
   `{$IFDEF X}`, `RDBDGET_CONTEXT` was highlighted as `RDB$GET_CONTEXT`, and a non-ASCII letter
   could match an ASCII one (`Ѧ` as `F`). Only `a`..`z` now match `A`..`Z`.
+- `TFIBScripter` sent statements it could not parse (starting with `-`, `/` or a bare `{`) to
+  the server; they now raise a parse error.
+- `TFIBScripter`: `SET CHARACTER` in `CONNECT` was replaced by the `SET NAMES` charset, and a
+  `CONNECT` on an assigned `Database` cleared its `DBParams`. `CONNECT` now keeps the
+  `DBParams` and sets only its own clauses (and `SET NAMES`, when given).
+- `TFIBScripter.ExecuteFromFile` read the file in the system code page and passed a byte order
+  mark to the parser; a UTF-8 or UTF-16 BOM now selects the encoding, as in
+  `TStrings.LoadFromFile`.
 
 #### SQL monitor
 

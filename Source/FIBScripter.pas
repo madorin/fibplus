@@ -251,6 +251,7 @@ type
     FScriptMap: TScriptMap;
     FLineCountInFile: Integer;
     FRunDepth: Integer; // nesting of ExecuteScript and ExecuteFromFile (INPUT)
+    FFileEncoding: TEncoding; // Encoding of the file being run, used by its INPUT files
     procedure DoOnChangeScript(Sender: TObject);
   private
     FDatabase: TFIBDatabase;
@@ -270,6 +271,7 @@ type
     FHaveDMLStatements: boolean;
     FHaveUnknownStatements: boolean;
     FNeedRestoreForceWrite: boolean;
+    FDBParamsFromCreate: Boolean; // DBParams were replaced by CREATE DATABASE
     vReinsPrepared: boolean;
     vLastInsertStmt: string;
   private
@@ -297,7 +299,7 @@ type
     procedure SetTransaction(const Value: TFIBTransaction);
     function GetTransaction: TFIBTransaction;
     procedure DoReconnect;
-    procedure SetConnectParams(StartToken: TStmtCoord; EndCoord: TStmtCoord);
+    procedure SetConnectParams(StartToken: TStmtCoord; EndCoord: TStmtCoord; KeepDBParams: Boolean = False);
     procedure TryFillBlobParams;
     function PrepareReinsert(const InsTxt, ReInsTxt: string): string;
     procedure BeginRun(Resume: Boolean);
@@ -333,7 +335,9 @@ type
     destructor Destroy; override;
     procedure Parse(Terminator: string = ';');
     procedure ExecuteScript(FromStmt: Integer = 1);
-    procedure ExecuteFromFile(const FileName: string; Terminator: string = ';');
+    procedure ExecuteFromFile(const FileName: string; Terminator: string = ';'); overload;
+    procedure ExecuteFromFile(const FileName: string; Encoding: TEncoding;
+      Terminator: string = ';'); overload;
     function ExecuteStatement(StmtTxt: TStrings; Stmt: PStatementDesc; StmtNo: Integer;
       TmpSQL: TStrings = nil; LineInFile: Integer = -1): Boolean;
     procedure ClearPrepared;
@@ -401,6 +405,16 @@ procedure RaiseParserDirectiveError(const DirName: string; Line: Integer);
 begin
   raise Exception.Create('Parse script error.' + sLineBreak + 'Can''t resolve directive  "' + DirName + '"' + sLineBreak + 'Line ' +
     IntToStr(Line));
+end;
+
+procedure RaiseInvalidStatement(Line: Integer; StmtTxt: TStrings);
+var
+  S: string;
+begin
+  S := 'Parse script error.' + sLineBreak + 'Invalid statement' + sLineBreak + 'Line ' + IntToStr(Line);
+  if Assigned(StmtTxt) then
+    S := S + sLineBreak + TrimRight(StmtTxt.Text);
+  raise Exception.Create(S);
 end;
 
 function StatementTypeName(tn: TStmtType): string;
@@ -1046,6 +1060,8 @@ begin
         FBeforeStatementExecute(Self, Line, StmtNo + 1, Stmt^, StmtTxt);
       if SkipStatement then
         Exit;
+      if Stmt.smtType = sInvalid then
+        RaiseInvalidStatement(Line, StmtTxt);
 
       case Stmt.smtType of
         sCreateDatabase:
@@ -1059,6 +1075,7 @@ begin
             FDatabase.DBName := FParser.GetToken(vToken);
             vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
             CopyFragment(vToken, Stmt.smdEnd, FDatabase.DBParams);
+            FDBParamsFromCreate := True;
             FDatabase.SQLDialect := FSQLDialect;
             if FLibraryName <> '' then
               FDatabase.LibraryName := FLibraryName;
@@ -1145,7 +1162,9 @@ begin
               vToken := FParser.NextTokenPos(Stmt.smdBegin, Stmt.smdEnd);
               FDatabase.DBName := FParser.GetToken(vToken);
               vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-              SetConnectParams(vToken, Stmt.smdEnd);
+              // An assigned database keeps its DBParams, CONNECT sets only its own clauses
+              SetConnectParams(vToken, Stmt.smdEnd, not vInternalDatabase and not FDBParamsFromCreate);
+              FDBParamsFromCreate := False;
               FDatabase.Connected := True;
 
               PreparePreDefines;
@@ -1380,7 +1399,7 @@ begin
             // FileName
             tmpStr := FParser.GetToken(vToken); // FileName
             WasPaused := FPaused; // BeginRun of the file clears it
-            ExecuteFromFile(tmpStr);
+            ExecuteFromFile(tmpStr, FFileEncoding);
             FPaused := FPaused or WasPaused;
           end;
       else
@@ -1609,6 +1628,7 @@ begin
       vInternalDatabase := False;
     end;
   FDatabase := Value;
+  FDBParamsFromCreate := False;
   if Assigned(FDatabase) then
     FreeNotification(FDatabase);
   FTransaction.DefaultDatabase := FDatabase;
@@ -1683,13 +1703,16 @@ begin
     end;
 end;
 
-procedure TFIBScripter.SetConnectParams(StartToken: TStmtCoord; EndCoord: TStmtCoord);
+procedure TFIBScripter.SetConnectParams(StartToken: TStmtCoord; EndCoord: TStmtCoord; KeepDBParams: Boolean = False);
 var
   vToken: TStmtCoord;
   tmpStr: String;
+  CharSetGiven: Boolean;
 begin
   FDatabase.Connected := False;
-  FDatabase.DBParams.Clear;
+  if not KeepDBParams then
+    FDatabase.DBParams.Clear;
+  CharSetGiven := False;
   vToken := StartToken;
   while (vToken.X <> 0) do
   begin
@@ -1721,10 +1744,12 @@ begin
         if IsClause('CHARACTER', tmpStr, 1) then
         begin
           vToken := FParser.NextTokenPos(vToken, EndCoord);
+          if (vToken.X <> 0) and SameText(FParser.GetToken(vToken), 'SET') then
+            vToken := FParser.NextTokenPos(vToken, EndCoord); // SET CHARACTER SET cs
           if vToken.X <> 0 then
           begin
-            tmpStr := FParser.GetToken(vToken);
             FDatabase.ConnectParams.CharSet := FParser.GetToken(vToken);
+            CharSetGiven := True;
           end
         end
       end
@@ -1735,7 +1760,8 @@ begin
   FDatabase.SQLDialect := FSQLDialect;
   if FLibraryName <> '' then
     FDatabase.LibraryName := FLibraryName;
-  FDatabase.ConnectParams.CharSet := FCharSet;
+  if not CharSetGiven and ((FCharSet <> '') or not KeepDBParams) then
+    FDatabase.ConnectParams.CharSet := FCharSet;
 end;
 
 function TFIBScripter.StatementsCount: Integer;
@@ -1743,20 +1769,49 @@ begin
   Result := Integer(Length(FScriptMap)) // statements of one script text
 end;
 
-function GetLineCountInFile(const FileName: string): Integer;
+// A byte order mark selects the encoding; without one Encoding is used (nil = TEncoding.Default).
+// The BOM is detected here: TStreamReader.DetectBOM differs between Delphi versions.
+function CreateScriptReader(const FileName: string; Encoding: TEncoding;
+  out Stream: TFileStream): TStreamReader;
 var
-  F: TextFile;
+  Preamble: TBytes;
+  BomEncoding: TEncoding;
+  BomLength: Integer;
+begin
+  Stream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+  try
+    SetLength(Preamble, 4);
+    SetLength(Preamble, Stream.Read(Preamble[0], Length(Preamble)));
+    BomEncoding := nil;
+    BomLength := TEncoding.GetBufferEncoding(Preamble, BomEncoding);
+    if BomLength > 0 then
+      Encoding := BomEncoding
+    else if Encoding = nil then
+      Encoding := TEncoding.Default;
+    Stream.Position := BomLength;
+    Result := TStreamReader.Create(Stream, Encoding, False);
+  except
+    FreeAndNil(Stream);
+    raise;
+  end;
+end;
+
+function GetLineCountInFile(const FileName: string; Encoding: TEncoding): Integer;
+var
+  Stream: TFileStream;
+  Reader: TStreamReader;
 begin
   Result := 0;
-  AssignFile(F, FileName);
-  Reset(F);
+  Reader := CreateScriptReader(FileName, Encoding, Stream);
   try
-    repeat
-      ReadLn(F);
-      Inc(Result)
-    until Eof(F);
+    while not Reader.EndOfStream do
+    begin
+      Reader.ReadLine;
+      Inc(Result);
+    end;
   finally
-    CloseFile(F);
+    Reader.Free;
+    Stream.Free;
   end;
 end;
 
@@ -1777,28 +1832,36 @@ end;
 // The file is parsed while it is read and every statement is executed as soon
 // as it is complete, so only the lines of the current statement are kept.
 procedure TFIBScripter.ExecuteFromFile(const FileName: string; Terminator: string = ';');
+begin
+  ExecuteFromFile(FileName, nil, Terminator);
+end;
+
+procedure TFIBScripter.ExecuteFromFile(const FileName: string; Encoding: TEncoding;
+  Terminator: string = ';');
 var
-  F: TextFile;
-  S: string;
+  Stream: TFileStream;
+  Reader: TStreamReader;
   Lines, TmpSQL: TStrings;
   SavedParser: TFIBScriptParser;
-  StmtNo: Integer;
+  SavedEncoding: TEncoding;
+  SavedLineCount, StmtNo: Integer;
 begin
-  FLineCountInFile := GetLineCountInFile(FileName);
-  AssignFile(F, FileName);
-  Reset(F);
+  SavedLineCount := FLineCountInFile;
+  FLineCountInFile := GetLineCountInFile(FileName, Encoding);
+  Reader := CreateScriptReader(FileName, Encoding, Stream);
   Lines := TStringList.Create;
   TmpSQL := TStringList.Create;
   SavedParser := FParser;
   FParser := TFIBScriptParser.Create;
+  SavedEncoding := FFileEncoding;
+  FFileEncoding := Encoding;
   try
     BeginRun(False);
     FParser.BeginParse(Lines, Terminator);
     StmtNo := 0;
-    while not FPaused and not Eof(F) do
+    while not FPaused and not Reader.EndOfStream do
     begin
-      ReadLn(F, S);
-      Lines.Add(S);
+      Lines.Add(Reader.ReadLine);
       FParser.Scan;
       if ExecuteParsed(StmtNo, TmpSQL) then
         FParser.DiscardParsed;
@@ -1816,11 +1879,16 @@ begin
     try
       EndRun;
     finally
+      FFileEncoding := SavedEncoding;
+      // A file run by INPUT gives the line count back to the calling file
+      if FRunDepth > 0 then
+        FLineCountInFile := SavedLineCount;
       FParser.Free;
       FParser := SavedParser;
       TmpSQL.Free;
       Lines.Free;
-      CloseFile(F);
+      Reader.Free;
+      Stream.Free;
     end;
   end;
 end;

@@ -55,14 +55,15 @@ Guides: [Scripting](../guide/scripting.md).
 | Name | Description |
 |------|-------------|
 | `ExecuteScript(FromStmt)` | Run the statements of `Script` from statement number `FromStmt` (1-based, default `1`; a smaller value means `1`). Calls `Parse` first when the script is not prepared. See [Pausing and resuming](#pausing-and-resuming). |
-| `ExecuteFromFile(FileName, Terminator)` | Run a script file without loading it into `Script`. The file is parsed while it is read, so only the current statement is kept in memory. The default terminator is `;`. A run from a file cannot be resumed. |
+| `ExecuteFromFile(FileName, Terminator)` | Run a script file without loading it into `Script`. The file is parsed while it is read, so only the current statement is kept in memory. A UTF-8 or UTF-16 byte order mark selects the encoding; without one the file is read in the system code page (`TEncoding.Default`). The default terminator is `;`. A run from a file cannot be resumed. |
+| `ExecuteFromFile(FileName, Encoding, Terminator)` | As above, but a file without a byte order mark is read in `Encoding` (e.g. `TEncoding.UTF8`; `nil` means `TEncoding.Default`). A byte order mark still selects the encoding. The `INPUT` files of the script get the same `Encoding`. |
 | `ExecuteStatement(StmtTxt, Stmt, StmtNo, TmpSQL, LineInFile)` | Run one parsed statement; does nothing when `Stmt` is `nil`. Returns `False` when the statement did not run because the pending `EXECUTE BLOCK`, run first, paused the run (the error handler left `Stop` as `True`, or an event handler set `Paused`). Outside `ExecuteScript` and `ExecuteFromFile`, statements are not grouped. `StmtNo` is 0-based; the events receive `StmtNo + 1`. `ExecuteScript` calls it with the statement text as both `StmtTxt` and `TmpSQL`; `TmpSQL` is the text that is run. A `LineInFile` other than `-1` replaces the line number passed to `BeforeStatementExecute` and `AfterStatementExecute`; `OnExecuteError` always receives the parsed line. |
 
 ### Parsing
 
 | Name | Description |
 |------|-------------|
-| `Parse(Terminator)` | Split `Script` into statements and set `Prepared`. The default terminator is `;`; an empty string also means `;`. Raises an `Exception` for an unbalanced `{$ENDIF}`, an invalid `SET TERM`, and an unexpected `{`. |
+| `Parse(Terminator)` | Split `Script` into statements and set `Prepared`. The default terminator is `;`; an empty string also means `;`. Raises an `Exception` for an unbalanced `{$ENDIF}`, an invalid `SET TERM`, and an unexpected `{`. A statement that starts with `-`, `/` or a `{` that is not a directive gets the type `sInvalid`; running it raises an `Exception` (a parse error, not passed to `OnExecuteError`). |
 | `ClearPrepared` | Discard the parsed script. |
 | `StatementsCount` | Number of parsed statements. `SET TERM` commands are not counted. |
 | `GetStatement(StmtNo, Text)` | Return a `PStatementDesc` for statement `StmtNo` (1-based) and copy its text to `Text`. Raises when the number does not exist. The pointer refers to the parsed script and is not valid after `ClearPrepared` or another `Parse`. |
@@ -89,13 +90,13 @@ A statement is handled by the scripter or sent to the server, depending on its f
 
 | Statement | Handling |
 |-----------|----------|
-| `CONNECT 'db' [USER u] [PASSWORD p] [ROLE r]` | Closes the database if it is connected, sets `DBName`, user, password, role, SQL dialect, and library name, clears `DBParams`, and connects. The character set is the one set by the last `SET NAMES`; it is empty otherwise. |
+| `CONNECT 'db' [USER u] [PASSWORD p] [ROLE r] [SET CHARACTER cs]` | Closes the database if it is connected, sets `DBName`, SQL dialect, library name, and the user, password, and role that are given, and connects. An assigned `Database` keeps its `DBParams`; the temporary database, and a database after `CREATE DATABASE`, start with empty `DBParams`. The character set is the one of `SET CHARACTER`, otherwise the one of the last `SET NAMES`; without both, an assigned database keeps its own and the temporary one has none. |
 | `CREATE DATABASE 'db' ...` | Closes the database if it is connected, sets `DBName`, dialect, and library name, copies the rest of the statement to `DBParams`, and calls `CreateDatabase`. When `NeedUTFEncodeDDL` is true and the attachment character set ID is `0`, it then reconnects with `force_write=0` added to `DBParams`, and the end of the top-level run reconnects again with `force_write` set to `1`. |
 | `DROP DATABASE 'db' [USER u] [PASSWORD p]` | Sets `DBName` and library name, connects with the given user and password, and calls `DropDatabase`. |
 | `DISCONNECT` | Closes the connection. |
 | `RECONNECT` | Commits an active transaction and connects again. |
 | `COMMIT`, `ROLLBACK` | Ends the transaction when it is active. |
-| `INPUT 'file'` | Runs the file with `ExecuteFromFile` and the terminator `;`. |
+| `INPUT 'file'` | Runs the file with `ExecuteFromFile`, the terminator `;` and the `Encoding` given to the running `ExecuteFromFile` (`TEncoding.Default` otherwise); a byte order mark of the file still wins. |
 | `DESCRIBE` | Sets the description of a domain, table, view, trigger, field, parameter, procedure, exception, function, UDF, generator, or package with an `UPDATE` of its `RDB$DESCRIPTION` column. Other object types raise an `Exception`. |
 | `BATCH START`, `BATCH EXECUTE` | Collects the statements between them and runs them as a batch. Needs the `SUPPORT_IB2007` compiler define, which is off in `FIB.inc`; without it `BATCH EXECUTE` raises an `Exception`. |
 | `REINSERT` | Takes the text after `REINSERT` and appends it to the previous `INSERT` statement up to its `VALUES`, then runs the result. |
