@@ -75,7 +75,7 @@ procedure SetSQLPropertiesHighlights;
 implementation
 
 uses
-  SysUtils, TypInfo, StFilSys,
+  SysUtils, TypInfo, DesignIntf, StFilSys,
 {$IFDEF C23}
   Vcl.Forms, Vcl.Controls,
 {$ELSE}
@@ -204,6 +204,19 @@ begin
   Result := nil;
 end;
 
+// The IDE strings file system resolves "ext.Form.Component.Property", ext being the designer extension
+function PropModuleIdent(Component: TComponent; const PropName: string): string;
+var
+  Designer: IDesigner;
+  Extension: string;
+begin
+  Extension := 'dfm';
+  if Supports(FindRootDesigner(Component), IDesigner, Designer) and
+    (Designer.GetDesignerExtension <> '') then
+    Extension := Designer.GetDesignerExtension;
+  Result := Extension + DotSep + Component.Owner.Name + DotSep + Component.Name + DotSep + PropName;
+end;
+
 function FindPropInCode(Component: TComponent; const PropName: string): Boolean;
 var
   Ident: string;
@@ -214,7 +227,7 @@ begin
   if (Component.Owner = nil) then
     Exit;
   ModuleServices := BorlandIDEServices as IOTAModuleServices;
-  Ident := Component.Owner.Name + DotSep + Component.Name + DotSep + PropName;
+  Ident := PropModuleIdent(Component, PropName);
   Module := ModuleServices.FindModule(Ident);
   if (Module <> nil) and (Module.GetModuleFileCount > 0) then
   begin
@@ -241,7 +254,7 @@ end;
 
 procedure SaveModule(Component: TComponent; const PropName: string);
 begin
-  SaveModule(Component.Owner.Name + DotSep + Component.Name + DotSep + PropName);
+  SaveModule(PropModuleIdent(Component, PropName));
 end;
 
 procedure SaveCloseModule(const Ident: string);
@@ -275,7 +288,7 @@ end;
 
 function CloseModule(Component: TComponent; const PropName: string): Boolean;
 begin
-  Result := CloseModule(Component.Owner.Name + DotSep + Component.Name + DotSep + PropName);
+  Result := CloseModule(PropModuleIdent(Component, PropName));
 end;
 
 function CreatePropInCode(Component: TComponent; const PropName: string; PropValue: TStrings; aModified: Boolean): Boolean;
@@ -314,8 +327,7 @@ begin
 
   end;
 
-  Ident := Component.Owner.Name + DotSep + Component.Name + DotSep + pName;
-  // Ident := Component.Owner.Name + DotSep + Component.Name + DotSep + PropName;
+  Ident := PropModuleIdent(Component, pName);
   SaveCloseModule(Ident);
   // this used to be done in LibMain's TLibrary.Create but now its done here
   // the unregister is done over in ComponentDesigner's finalization

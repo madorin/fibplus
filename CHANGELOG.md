@@ -702,6 +702,10 @@ The lists of old and new names, and what an application has to change, are in
   sections of the editor, sections stayed at their rows when lines were inserted or deleted
   above them, and a paste of plain text did not set `Modified`.
 - SQL editor: undo dropped all the sections of the editor, only the text came back.
+- SQL editors, **Edit in code editor**: the SQL tab was named without the designer extension
+  (`Form1.Query1.SQL` instead of `dfm.Form1.Query1.SQL`), so the IDE could not find the component
+  of the tab ("Unable to find component") and the edited text was not written back to the
+  property.
 
 ## [7.9.1] - 2026-10-09
 
