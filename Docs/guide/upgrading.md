@@ -313,6 +313,14 @@ non-ASCII password failed as a wrong password. The services raise the same error
 also with `utf8_filename`: the Firebird client reads the `CREATE DATABASE` text in the system
 code page.
 
+#### Table alias of a field
+
+`TableAliasForField` of `TFIBQuery` and `TFIBDataSet` and `TableAliasForFieldByName` return the
+alias as the server stores it, unquoted: `MyAlias` for `"MyAlias"`, `т` for `"т"`. Code that puts
+the result into SQL text must format it with `FormatIdentifier(3, Alias)`. `Field.Origin` with
+`FieldOriginRule = forTableAliasAndFieldName` changes the same way (`т.NAME` instead of
+`"т".NAME`).
+
 ## 7.9.1
 
 ### Build

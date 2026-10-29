@@ -558,6 +558,10 @@ The lists of old and new names, and what an application has to change, are in
   `feFormatVersionNotSupported`. The BLOB swap files keep the table and field names and the key
   values in UTF-8 too (swap version 2; older swap files are written again); see
   [Upgrading](Docs/guide/upgrading.md#dataset-streams-and-batch-files).
+- `TableAliasForField` of `TFIBQuery` and `TFIBDataSet` returns the alias unquoted, as the server
+  stores it (`MyAlias` for `"MyAlias"`), as `GetRelationTableName` returns the table; it was
+  quoted when the alias needed quotes. After `LoadFromStream` the last field had no alias; see
+  [Upgrading](Docs/guide/upgrading.md#table-alias-of-a-field).
 - `TFIBDatabase.MemoSubtypes` kept the sub types in a byte, so for example `-1000` also matched
   the sub type 24.
 - SQL generation: `AutoUpdateOptions.UpdateOnlyModifiedFields` stayed `False` when assigned

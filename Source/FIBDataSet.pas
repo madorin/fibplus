@@ -7396,7 +7396,7 @@ begin
   else
     begin
       tf := FBN(aFieldName);
-      if Assigned(tf) and (tf.FieldKind = fkData) and (vFieldDescrList.Capacity > tf.FieldNo) then
+      if Assigned(tf) and (tf.FieldKind = fkData) and (tf.FieldNo > 0) and (tf.FieldNo <= vFieldDescrList.Capacity) then
         begin
           fi := vFieldDescrList[tf.FieldNo - 1];
           Result := fi^.fdTableAlias
@@ -14566,7 +14566,7 @@ begin
           if not Fields[i].ReadOnly and AutoUpdateOptions.ModifiedTableHaveAlias then
           begin
             Fields[i].ReadOnly := not IsEquelSQLNames
-              (TableAliasForField(Fields[i].FieldName), vModifyTableAlias);
+              (FormatIdentifier(3, TableAliasForField(Fields[i].FieldName)), vModifyTableAlias);
           end;
         end
         else if not CachedUpdates or not Assigned(OnUpdateRecord) then
@@ -15431,7 +15431,7 @@ begin
         end;
 
       FieldTableName := EasyFormatIdentifier(Database.SQLDialect, GetRelationTableName(Fields[i]), False);
-      FieldTableAlias := TableAliasForField(Fields[i].FieldName)
+      FieldTableAlias := EasyFormatIdentifier(Database.SQLDialect, TableAliasForField(Fields[i].FieldName), False);
     end;
 
     if (FieldTableName <> FormatTableName) or (FieldTableAlias <> vAliasTableName) then
@@ -15744,12 +15744,12 @@ begin
         end;
 
       FieldTableName := EasyFormatIdentifier(Database.SQLDialect, GetRelationTableName(Fields[i]), False);
-      FieldTableAlias := TableAliasForField(Fields[i].FieldName)
+      FieldTableAlias := EasyFormatIdentifier(Database.SQLDialect, TableAliasForField(Fields[i].FieldName), False);
     end
     else
     begin
       FieldTableName := EasyFormatIdentifier(Database.SQLDialect, GetRelationTableName(FieldDefs[i]), False);
-      FieldTableAlias := TableAliasForField(FieldDefs[i].Name)
+      FieldTableAlias := EasyFormatIdentifier(Database.SQLDialect, TableAliasForField(FieldDefs[i].Name), False);
     end;
 
     if (FieldTableName <> FormatTableName) or (FieldTableAlias <> vAliasTableName) then

@@ -572,7 +572,7 @@ With `cmkLimitedBufferSize`:
 | `RecordFieldValue(Field, RecNumber)` / `RecordFieldValue(Field, aBookmark)` | Value of a field in a cached row, without moving. `RecNumber` is 1-based. Requires an active dataset, and raises for a row outside the cached part with `cmkLimitedBufferSize`. `Null` for an invalid bookmark. |
 | `SQLFieldName(aFieldName)` | Name of a field as written in the SQL. |
 | `StringFieldCharSetID(Field)` | Character set ID of a string column, or `-1` for calculated and lookup fields. |
-| `TableAliasForField(aFieldName)` | Table alias used for a field in `SelectSQL`. |
+| `TableAliasForField(aFieldName)` | Table alias used for a field in `SelectSQL`, unquoted as the server stores it, also after `LoadFromStream`; format it with `FormatIdentifier` for SQL text. |
 
 ### Arrays
 

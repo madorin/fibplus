@@ -144,7 +144,7 @@ Each flag is saved in the form file as its own `qoXxx` entry.
 | `Current` | `TFIBXSQLDA` of the current row. |
 | `FieldCount`, `ParamCount` | Number of columns and parameters. |
 | `SQLFieldName(Name)` | Column as `Alias.SourceField` with formatted identifiers, or an empty string when the column is missing or has no source table. Prepares the statement if needed. |
-| `TableAliasForField(Index)` / `TableAliasForField(Name)` / `TableAliasForFieldByName(Name)` | Alias of the source table of a column, or an empty string. Only the index overload prepares the statement itself; prepare first when using a name. |
+| `TableAliasForField(Index)` / `TableAliasForField(Name)` / `TableAliasForFieldByName(Name)` | Alias of the source table of a column as the server stores it, unquoted (`MyAlias` for `"MyAlias"`, `A` for `a`), or an empty string. Format it with `FormatIdentifier` for SQL text. Only the index overload prepares the statement itself; prepare first when using a name. |
 
 ### SQL text and macros
 

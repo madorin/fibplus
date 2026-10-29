@@ -1229,7 +1229,7 @@ begin
               begin
 
                 curAlias := GetFieldOrigin(Fields[i]);
-                curAlias := GetTableAliasForField(curAlias);
+                curAlias := FStringer.FormatIdentifier(3, GetTableAliasForField(curAlias));
                 if curAlias = '' then
                 begin
                   curAlias := GetRelationTableName(Fields[i]);

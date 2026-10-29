@@ -5048,7 +5048,7 @@ begin
   begin
     rn := FSQLRecord.FXSQLVARs^[i].RelationName;
     if Length(rn) > 0 then
-      rn := AliasForTable(vSQL, FormatIdentifier(3, rn));
+      rn := UnquoteIdentifier(AliasForTable(vSQL, FormatIdentifier(3, rn)));
     FSQLRecord.FXSQLVARs^[i].FRelationAlias := rn;
   end;
 end;
@@ -5173,7 +5173,7 @@ begin
   if (FieldIndex < 0) or (FieldIndex >= FSQLRecord.Count) then
     Result := ''
   else
-    Result := FormatIdentifier(3, FSQLRecord[FieldIndex].RelationAlias);
+    Result := FSQLRecord[FieldIndex].RelationAlias;
 end;
 
 function TFIBQuery.TableAliasForFieldByName(const aFieldName: string): string;

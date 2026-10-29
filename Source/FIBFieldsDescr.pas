@@ -70,7 +70,7 @@ type
 implementation
 
 uses
-  FIBPlatforms, FIBProps;
+  FIBPlatforms, FIBProps, StrUtil;
 
 { TFIBFieldDescrList }
 
@@ -181,6 +181,9 @@ begin
         fdRelationTable := ReadUTF8StrFromStream(Stream, UTF8);
         fdRelationField := ReadUTF8StrFromStream(Stream, UTF8);
         fdTableAlias := ReadUTF8StrFromStream(Stream, UTF8);
+        // Older streams keep the alias quoted
+        if not UTF8 then
+          fdTableAlias := UnquoteIdentifier(fdTableAlias);
       end
     end;
   finally
