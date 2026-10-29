@@ -170,6 +170,13 @@ The lists of old and new names, and what an application has to change, are in
   only on those that report a lost connection, instead of on every database of
   the process; a lost service connection closes no database.
 
+#### Client library
+
+- `TFIBDatabase.ClientMajorVersion` and `ClientMinorVersion` (deprecated) return
+  `isc_get_client_major_version`/`isc_get_client_minor_version` of the client library: the same
+  values, but a client without these functions (InterBase 6.0 and older) raises an error; see
+  [Upgrading](Docs/guide/upgrading.md#800).
+
 #### Build
 
 - The packages are renamed: the runtime package is `FIBCore` (`FIBCore_Dxx`
@@ -215,9 +222,6 @@ The lists of old and new names, and what an application has to change, are in
   of `GetCalcFields(TRecordBuffer)`. Code calling the deprecated `TField.GetData`/`SetData`
   with a pointer and `NativeFormat = False` gets the `TDataSet` conversion; see
   [Upgrading](Docs/guide/upgrading.md#800).
-- `TFIBDatabase.ClientMajorVersion` and `ClientMinorVersion` (deprecated) return
-  `isc_get_client_major_version`/`isc_get_client_minor_version` of the client library: the same
-  values, but a client without these functions (InterBase 6.0 and older) raises an error.
 - Text types: `TFIBDatabase.AliasName`, `DBFileName` and `DBSiteName`,
   `TFIBCustomService.ServerName`, `TFIBRestoreService.FixCharset`, `SPBConstantNames`,
   `TFIBBlobStream.TableName` and `FieldName` are `string` (were `AnsiString`), and so are the
