@@ -122,5 +122,6 @@
     'O valor de %s tem %d bytes, o máximo é %d',
     'Valor inválido "%s" em %s',
     'Arquivo de blobs %s, parâmetro %s: %s',
-    '%s: os dados do lote têm o conjunto de caracteres %s, a conexão o conjunto de caracteres %s'
+    '%s: os dados do lote têm o conjunto de caracteres %s, a conexão o conjunto de caracteres %s',
+    'O valor de %s contém um caractere que a página de código %d não tem'
   );

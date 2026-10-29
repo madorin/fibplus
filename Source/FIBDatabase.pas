@@ -3083,6 +3083,13 @@ begin
       * Attach to the database, and raise an IB error if
       * the statement doesn't execute correctly.
     *)
+    if DPBUsesUTF8(FDBParams, FConnectParams.IsFirebird) then
+      begin
+        UTF8Name := UTF8Encode(FDBName);
+        SetString(AttachName, PAnsiChar(UTF8Name), Length(UTF8Name));
+      end
+    else
+      AttachName := EncodeParam('DBName', FDBName, FIBCodePageSystem);
     SV := StatusVector;
     // The crypt callback is per thread, set only around this attachment
     UseCryptKey := (FCryptKey <> '') or Assigned(FOnCryptKeyRequest);
@@ -3092,13 +3099,6 @@ begin
           FCryptKeyCallback := TFIBCryptKeyCallback.Create(Self, DoCryptKeyRequest);
         Call(FCryptKeyCallback.Activate(FClientLibrary, SV), True);
       end;
-    if DPBUsesUTF8(FDBParams, FConnectParams.IsFirebird) then
-      begin
-        UTF8Name := UTF8Encode(FDBName);
-        SetString(AttachName, PAnsiChar(UTF8Name), Length(UTF8Name));
-      end
-    else
-      AttachName := AnsiString(FDBName);
     try
       // length 0: null terminated
       isc_res := Call(FClientLibrary.isc_attach_database(SV, 0,

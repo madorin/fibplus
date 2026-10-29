@@ -122,5 +122,6 @@
     'Valoarea %s are %d octeți, maximul este %d',
     'Valoare nevalidă "%s" în %s',
     'Fișierul de blob-uri %s, parametrul %s: %s',
-    '%s: datele lotului au setul de caractere %s, conexiunea are setul de caractere %s'
+    '%s: datele lotului au setul de caractere %s, conexiunea are setul de caractere %s',
+    'Valoarea %s conține un caracter pe care pagina de cod %d nu îl are'
   );

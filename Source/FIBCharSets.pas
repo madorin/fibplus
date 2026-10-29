@@ -33,6 +33,8 @@ function DecodeString(const Bytes: FIBByteString; CodePage: Word): string; overl
 function DecodeServerText(Buffer: PAnsiChar; Length: Integer): string;
 // Not tagged with CodePage: concatenating tagged AnsiStrings converts them
 function EncodeString(const S: string; CodePage: Word): FIBByteString;
+// As EncodeString, but the error names the parameter instead of quoting the value
+function EncodeParam(const Name, Value: string; CodePage: Word): FIBByteString;
 // Bytes of S in CodePage, without the transliteration check of EncodeString
 function EncodedLength(const S: string; CodePage: Word): Integer;
 function IsCodePageAvailable(CodePage: Word): Boolean;
@@ -216,24 +218,38 @@ begin
   SetLength(Result, L);
 end;
 
-function EncodeString(const S: string; CodePage: Word): FIBByteString;
+// False when S has a character that CodePage doesn't have
+function TryEncodeString(const S: string; CodePage: Word; out Bytes: FIBByteString): Boolean;
 var
   L: Integer;
   UsedDefault: LongBool;
 begin
-  Result := '';
+  Bytes := '';
   if S = '' then
-    Exit;
+    Exit(True);
   CodePage := ActualCodePage(CodePage);
   UsedDefault := False;
   L := FromUnicode(CodePage, PWideChar(S), Length(S), nil, 0, @UsedDefault);
   if L = 0 then
     CodePageError(CodePage);
-  // as the server does
   if UsedDefault then
-    FIBError(feCantTransliterate, [Copy(S, 1, 100), CodePage]);
-  SetLength(Result, L);
-  FromUnicode(CodePage, PWideChar(S), Length(S), PAnsiChar(Result), L, nil);
+    Exit(False);
+  SetLength(Bytes, L);
+  FromUnicode(CodePage, PWideChar(S), Length(S), PAnsiChar(Bytes), L, nil);
+  Result := True;
+end;
+
+function EncodeString(const S: string; CodePage: Word): FIBByteString;
+begin
+  // as the server does
+  if not TryEncodeString(S, CodePage, Result) then
+    FIBError(feCantTransliterate, [Copy(S, 1, 100), ActualCodePage(CodePage)]);
+end;
+
+function EncodeParam(const Name, Value: string; CodePage: Word): FIBByteString;
+begin
+  if not TryEncodeString(Value, CodePage, Result) then
+    FIBError(feCantTransliterateParam, [Name, ActualCodePage(CodePage)]);
 end;
 
 function EncodedLength(const S: string; CodePage: Word): Integer;

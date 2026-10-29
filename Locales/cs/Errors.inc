@@ -122,5 +122,6 @@
     'Hodnota %s má %d bajtů, maximum je %d',
     'Neplatná hodnota "%s" v %s',
     'Soubor blobů %s, parametr %s: %s',
-    '%s: dávková data mají znakovou sadu %s, připojení má znakovou sadu %s'
+    '%s: dávková data mají znakovou sadu %s, připojení má znakovou sadu %s',
+    'Hodnota %s obsahuje znak, který kódová stránka %d nemá'
   );

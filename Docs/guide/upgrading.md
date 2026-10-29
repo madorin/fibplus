@@ -293,6 +293,14 @@ Before, the value was sent as an integer and the server raised a conversion erro
 the page size of the backup. A form that kept the old default stores no value and now loads `0`;
 a value set in the form stays. Set `PageSize := 4096` for the old result.
 
+#### Characters outside the system code page
+
+Without `utf8_filename`, a `DBParams` value or a `DBName` with a character outside the system code
+page raises `feCantTransliterateParam` on `Open`; it was sent with `?` in its place, so a
+non-ASCII password failed as a wrong password. The services raise the same error for their
+`Params` and text start parameters. The message names the parameter, not the value. Add
+`utf8_filename` to `DBParams` to send the values in UTF-8.
+
 ## 7.9.1
 
 ### Build

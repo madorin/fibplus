@@ -211,7 +211,7 @@ Base class of services that return text, such as backup, restore, statistics, an
 
 Calling `GetNextLine`, `GetNextChunk`, or `GetNextBuf` before an action was started raises `feQueryParamsError`.
 
-The server writes the output, the user names, and the database and file names in the code page of its system. `GetNextLine`, `GetNextChunk`, and the string results of the query services decode them as UTF-8 when the bytes are valid UTF-8 (a Linux server, user names of *Firebird 3+*), else in the system code page (a Windows server). Database and file names, user names, and the other text parameters are sent in the system code page, which a *Firebird 3+* client library converts to UTF-8; a character outside it raises `feCantTransliterate`.
+The server writes the output, the user names, and the database and file names in the code page of its system. `GetNextLine`, `GetNextChunk`, and the string results of the query services decode them as UTF-8 when the bytes are valid UTF-8 (a Linux server, user names of *Firebird 3+*), else in the system code page (a Windows server). Database and file names, user names, and the other text parameters are sent in the system code page, which a *Firebird 3+* client library converts to UTF-8; a character outside it raises `feCantTransliterateParam`, whose message names the parameter, not the value.
 
 ### Events
 
@@ -484,7 +484,7 @@ end;
 | `Password` | `string` | | Password. |
 | `SecAdmin` | `Boolean` | `False` | Marks the user as a security administrator. Sent only when set since the last action, also to `False` to revoke the rights. |
 
-Text values are sent in the system code page, which a *Firebird 3+* client library converts to UTF-8; a character outside the system code page raises `feCantTransliterate`. When modifying, only the properties set since the last action are sent. `UserID` and `GroupID` are always sent when adding. After a successful `ServiceStart` (also through `AddUser`, `ModifyUser`, and `DeleteUser`), and when the component finishes loading, `FirstName`, `MiddleName`, `LastName`, `UserID`, `GroupID`, `Password`, and `SecAdmin` are cleared; `UserName` and `SQlRole` are kept. When the call fails they are kept, so it can be retried; a server error detaches the service, so call `Attach` again first.
+Text values are sent in the system code page, which a *Firebird 3+* client library converts to UTF-8; a character outside the system code page raises `feCantTransliterateParam`, whose message names the parameter, not the value. When modifying, only the properties set since the last action are sent. `UserID` and `GroupID` are always sent when adding. After a successful `ServiceStart` (also through `AddUser`, `ModifyUser`, and `DeleteUser`), and when the component finishes loading, `FirstName`, `MiddleName`, `LastName`, `UserID`, `GroupID`, `Password`, and `SecAdmin` are cleared; `UserName` and `SQlRole` are kept. When the call fails they are kept, so it can be retried; a server error detaches the service, so call `Attach` again first.
 
 ### Run-time properties and methods
 

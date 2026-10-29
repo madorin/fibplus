@@ -376,6 +376,10 @@ The lists of old and new names, and what an application has to change, are in
 - `DBParams`: a last `shutdown` value of one character (`shutdown=2`) was ignored, and an unknown
   word or a word with spaces (`shutdown=force, full`) set every bit of the value. The words are
   now trimmed; an unknown word or a number over 255 raises the new `feParamValueInvalid`.
+- Without `utf8_filename`, a `DBParams` value or a `DBName` with a character outside the system
+  code page was sent with `?` in its place (a non-ASCII password failed as a wrong password). It
+  raises the new `feCantTransliterateParam`, which names the parameter but not the value; see
+  [Upgrading](Docs/guide/upgrading.md#characters-outside-the-system-code-page).
 - `TFIBDatabase.QueryValues` of a statement without parameters (also `EXECUTE PROCEDURE`) kept it
   in the query cache when it returned a row, while `QueryValue` freed it. Only a statement with
   parameters is cached now, as documented; `aCacheQuery` allows the caching.
@@ -640,7 +644,8 @@ The lists of old and new names, and what an application has to change, are in
   by the client from the system code page, so every non-ASCII character was stored garbled (`é`
   as `Ã©`). The text parameters of the services (also database and file names, and `Params` of
   the attachment) are now sent in the system code page, which the client converts; a character
-  outside it raises "Cannot transliterate" instead of being sent as `?`. An older client library
+  outside it raises `feCantTransliterateParam`, which names the parameter but not the value (a
+  password), instead of being sent as `?`. An older client library
   does not convert: with it the server gets the names in the system code page of the client.
 - Text the server sends back was decoded in the system code page: the output of the services
   (`GetNextLine`, `GetNextChunk`), `TFIBSecurityService.UserInfo`, the attached database names

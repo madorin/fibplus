@@ -1032,7 +1032,7 @@ begin
     case SPBVal of
       isc_spb_command_line, isc_spb_user_name, isc_spb_password, isc_spb_sql_role_name:
         begin
-          AnsiValue := EncodeString(param_value, FIBCodePageSystem);
+          AnsiValue := EncodeParam(param_name, param_value, FIBCodePageSystem);
           if Length(AnsiValue) > 255 then
             FIBError(feParamValueTooLong, [param_name, Length(AnsiValue), 255]);
           SPB := SPB + AnsiChar(SPBServerVal) + AnsiChar(Length(AnsiValue)) + AnsiValue;
@@ -1334,12 +1334,14 @@ procedure TFIBControlService.ServiceStartAddParam(const Value: string; param: In
 var
   Bytes: FIBByteString;
   Len: Integer;
+  ParamName: string;
 begin
-  Bytes := EncodeString(Value, FIBCodePageSystem);
+  ParamName := Format('ServiceStartParams (%d)', [param]);
+  Bytes := EncodeParam(ParamName, Value, FIBCodePageSystem);
   Len := Length(Bytes);
   // a 2-byte length
   if Len > High(Word) then
-    FIBError(feParamValueTooLong, [Format('ServiceStartParams (%d)', [param]), Len, High(Word)]);
+    FIBError(feParamValueTooLong, [ParamName, Len, High(Word)]);
   if Len > 0 then
     FStartParams := FStartParams + AnsiChar(param) + PAnsiChar(@Len)[0] + PAnsiChar(@Len)[1] + Bytes;
 end;

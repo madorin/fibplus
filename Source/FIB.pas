@@ -190,7 +190,8 @@ type
     feParamValueTooLong,
     feParamValueInvalid,
     feBlobFileError,
-    feBatchCharsetMismatch
+    feBatchCharsetMismatch,
+    feCantTransliterateParam
   );
 
   TStatusVector = array [0 .. 19] of ISC_STATUS;
@@ -990,7 +991,7 @@ begin
           SetString(param_value, PAnsiChar(UTF8Value), Length(UTF8Value));
         end
       else
-        param_value := AnsiString(Value);
+        param_value := EncodeParam(param_name, Value, FIBCodePageSystem);
       DoLowerCase(param_name);
 
       if (Pos(DPBPrefix, param_name) = 1) then
