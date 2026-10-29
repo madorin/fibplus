@@ -360,6 +360,14 @@ The lists of old and new names, and what an application has to change, are in
 - A text BLOB parameter set with `AsString` before `Prepare` read `(BLOB)`
   after `ExecQuery`; it now returns the string, as when it is set after
   `Prepare`.
+- `AsInteger`, `AsInt64`, `AsShort` and an integer `AsVariant` on a `BOOLEAN` parameter raised
+  "Incompatible column/host variable data type"; a value other than zero is now `True`, as
+  `AsBoolean`. Set before `Prepare`, these setters now also convert to the parameter's type, so
+  an integer for a `DATE` or `TIMESTAMP` parameter becomes a `TDateTime` day number, as with
+  `AsDouble` ([Upgrading](Docs/guide/upgrading.md#integer-parameter-values)).
+- A parameter used twice in the statement, once for a BLOB and once for a `VARCHAR` or another
+  charset, got the BLOB ID with the subtype of the other column ("Filter not found to convert
+  type 4 to type 1"); every occurrence now declares the subtype and charset of the value.
 - `StopFetching` in `TFIBQuery.OnSQLFetch` and `BeforeFetchRecord` made `Next`
   return `nil` but left `Eof` at `False`, so a `while not Eof` loop did not end.
   It is now a final stop: `Eof` is set as at the end of the data.

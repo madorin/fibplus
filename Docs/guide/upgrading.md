@@ -214,6 +214,13 @@ value out of the range of an `INTEGER` key field, a service start parameter of 6
 more. `lock_timeout` of `TRParams` is checked by Firebird 2.5 and later (1 to 32767). Use `AsInt64`,
 `BIGINT` columns or a smaller value.
 
+#### Integer parameter values
+
+`AsInteger`, `AsInt64` and `AsShort` assigned before `Prepare` are converted to the parameter type
+at `Prepare`, as `AsDouble` and `AsVariant` already were: a `BOOLEAN` parameter gets `True` for a
+value other than zero, a `DATE` or `TIMESTAMP` parameter the `TDateTime` with that day number.
+Before, the value was sent as an integer and the server raised a conversion error.
+
 ## 7.9.1
 
 ### Build
