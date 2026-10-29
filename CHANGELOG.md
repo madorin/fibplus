@@ -574,7 +574,8 @@ The lists of old and new names, and what an application has to change, are in
 - `GenerateSQLText` on a dataset without field objects failed with `rfBlobFields` and ignored
   `ifsNoBlob` and `ifsOnlyBlob`; it now takes the BLOB columns from the field definitions.
 - Under `UpdateOnlyModifiedFields` the per-post `InsertSQL` and `UpdateSQL` were assigned, and
-  so prepared, again at each post although the text was the same.
+  so prepared, again at each post although the text was the same. The same for the statement of
+  the BLOB columns with `SeparateBlobUpdate`.
 - Without `poRefreshAfterPost`, `OldValue` after a post gave the values before the edit, and
   after an insert the values of another row, so `GenerateSQLText(skModify)` under
   `UpdateOnlyModifiedFields` gave an `UPDATE` instead of `No Action`. The old values are now

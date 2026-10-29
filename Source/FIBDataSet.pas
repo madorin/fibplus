@@ -15892,6 +15892,8 @@ begin
 end;
 
 procedure TFIBCustomDataSet.GenerateUpdateBlobsSQL;
+var
+  BlobsSQL: string;
 begin
   with FAutoUpdateOptions do
     if SeparateBlobUpdate and (BlobFieldCount > 0) then
@@ -15905,7 +15907,10 @@ begin
         ExecuteOrder := oeAfterDefault;
         KindUpdate := ukModify;
         DataSet := Self;
-        FBlobsUpdate.SQL.Text := GenerateSQLText(UpdateTableName, KeyFields, skModify, ifsOnlyBlob);
+        BlobsSQL := GenerateSQLText(UpdateTableName, KeyFields, skModify, ifsOnlyBlob);
+        // TStrings.Text ends with a line break
+        if BlobsSQL <> TrimRight(SQL.Text) then
+          SQL.Text := BlobsSQL;
         if (SQL.Count > 0) and (SQL[0] <> SNoAction) then
           Active := True;
       end;
