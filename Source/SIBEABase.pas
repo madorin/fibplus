@@ -68,6 +68,7 @@ uses
 type
   TSIBEventThread = class;
   TSIBAlertEvent = procedure(Sender: TObject; EventName: string; EventCount: Longint) of object;
+  TFIBEventErrorEvent = procedure(Sender: TObject; E: Exception) of object;
 
   { TSIBEventAlerter }
 
@@ -76,6 +77,7 @@ type
     { Private declarations }
     FClientLibrary: IIBClientLibrary;
     FOnEventAlert: TSIBAlertEvent;
+    FOnError: TFIBEventErrorEvent;
     FEvents: TStrings;
     FThreads: TList;
     FEndedThreads: TList;
@@ -105,6 +107,7 @@ type
     property VCLSynchronize: Boolean read FVCLSynchro write FVCLSynchro default True;
     property Events: TStrings read FEvents write SetEvents;
     property OnEventAlert: TSIBAlertEvent read FOnEventAlert write FOnEventAlert;
+    property OnError: TFIBEventErrorEvent read FOnError write FOnError;
   end;
 
   { TSIBEventThread }
@@ -134,8 +137,12 @@ type
     FExceptObject: TObject;
     FExceptAddr: Pointer;
     FVCLSynchro: Boolean;
+    FRunning: Boolean;
+    FQueued: Boolean;
   protected
     procedure Execute; override;
+    procedure QueueFirstEvents; virtual;
+    procedure StartThread;
     procedure SignalEvent; virtual;
     procedure SignalTerminate; virtual;
     procedure RegisterEvents; virtual;
@@ -151,6 +158,7 @@ type
     procedure SIBEventBlock; virtual;
     procedure DoEvent; virtual;
     procedure DoHandleException; virtual;
+    procedure DoApplicationHandleException;
     function HandleException: Boolean; virtual;
     procedure UpdateResultBuffer(Length: SIB_UShort; Updated: PAnsiChar); virtual;
   public
@@ -301,8 +309,10 @@ begin
   Buffer[0] := #0;
   ErrorVector := @StatusVector;
   repeat
-    Synchronize(SIBInterpretError);
-    // SIBInterpretError;
+    if FRunning then
+      Synchronize(SIBInterpretError)
+    else
+      SIBInterpretError;
     errCode := ResultStatus;
     if (AnsiString(lastMsg) <> AnsiString(Buffer)) then
     begin
@@ -330,6 +340,27 @@ begin
     if (ResultStatus <> 0) then
       raise ESIBError.Create(GetIBErrorString);
   end;
+end;
+
+// registers and queues the events in the calling thread, before the thread starts
+procedure TSIBEventThread.QueueFirstEvents;
+begin
+  RegisterEvents;
+  EventsReceived := False;
+  Signal.ResetEvent;
+  SIBQueEvents;
+  if (ResultStatus <> 0) then
+    raise ESIBError.Create(GetIBErrorString);
+  FQueued := True;
+end;
+
+procedure TSIBEventThread.StartThread;
+begin
+{$IFDEF C21}
+  Start;
+{$ELSE}
+  Resume;
+{$ENDIF}
 end;
 
 // call the event handler for any events received
@@ -416,7 +447,24 @@ end;
 
 procedure TSIBEventThread.DoHandleException;
 begin
-  SysUtils.ShowException(FExceptObject, FExceptAddr);
+  if Assigned(Parent.FOnError) and (FExceptObject is Exception) then
+    Parent.FOnError(Parent, Exception(FExceptObject))
+  else
+    SysUtils.ShowException(FExceptObject, FExceptAddr);
+end;
+
+procedure TSIBEventThread.DoApplicationHandleException;
+var
+  E: TObject;
+begin
+  E := FExceptObject;
+  FExceptObject := nil;
+  // ApplicationHandleException reads ExceptObject of the main thread; the except block frees E
+  try
+    raise E at FExceptAddr;
+  except
+    Classes.ApplicationHandleException(Parent);
+  end;
 end;
 
 function TSIBEventThread.HandleException: Boolean;
@@ -427,15 +475,24 @@ begin
   begin
     Result := True;
     Parent.ThreadException := True;
-    FExceptObject := ExceptObject;
+    if (ExceptObject is EAbort) then
+      Exit;
+    FExceptObject := TObject(AcquireExceptionObject);
     FExceptAddr := ExceptAddr;
     try
-      if not(FExceptObject is EAbort) then
+      if Assigned(Parent.FOnError) then
+      begin
         if FVCLSynchro then
           Synchronize(DoHandleException)
         else
           DoHandleException;
+      end
+      else if FVCLSynchro and Assigned(Classes.ApplicationHandleException) then
+        Synchronize(DoApplicationHandleException)
+      else
+        DoHandleException;
     finally
+      FExceptObject.Free;
       FExceptObject := nil;
       FExceptAddr := nil;
     end;
@@ -448,10 +505,15 @@ end;
 // waiting for events to be received
 procedure TSIBEventThread.Execute;
 begin
+  FRunning := True;
   try
-    RegisterEvents;
-    QueueEvents;
-    repeat
+    if not FQueued then
+    begin
+      RegisterEvents;
+      QueueEvents;
+    end;
+    while not Terminated do
+    begin
       // wait for an event to be signaled
       Signal.WaitFor(INFINITE);
       if EventsReceived then
@@ -461,7 +523,7 @@ begin
         // queue the events
         QueueEvents;
       end;
-    until Terminated;
+    end;
     // thread completed OK
     ReturnValue := 0;
   except
@@ -479,8 +541,8 @@ constructor TSIBEventThread.Create(ClientLibrary: IIBClientLibrary;
   Owner: TSIBEventAlerter; DBHandle: SIB_DBHandle; EventGrp: Integer;
   TermEvent: TNotifyEvent; aVCLSynchro: Boolean);
 begin
-  // starts after the constructor (AfterConstruction)
-  inherited Create(False);
+  // started by StartThread, after QueueFirstEvents
+  inherited Create(True);
   FClientLibrary := ClientLibrary;
   Signal := TSimpleEvent.Create;
   Parent := Owner;
@@ -544,6 +606,7 @@ procedure TSIBEventAlerter.RegisterEvents;
 var
   i: Integer;
   DBH: SIB_DBHandle;
+  Thread: TSIBEventThread;
 begin
   FreeEndedThreads;
   if (FThreads.Count = 0) then
@@ -551,8 +614,26 @@ begin
     DBH := NativeHandle;
     if (FEvents.Count > 0) then
     begin
-      for i := 0 to ((FEvents.Count - 1) div SIB_MAX_EVENT_BLOCK) do
-        FThreads.Add(TSIBEventThread.Create(FClientLibrary, Self, DBH, i, ThreadEnded, FVCLSynchro));
+      try
+        for i := 0 to ((FEvents.Count - 1) div SIB_MAX_EVENT_BLOCK) do
+        begin
+          Thread := TSIBEventThread.Create(FClientLibrary, Self, DBH, i, ThreadEnded, FVCLSynchro);
+          FThreads.Add(Thread);
+          Thread.QueueFirstEvents;
+        end;
+      except
+        // the threads have not started: Free cancels the groups already queued
+        while (FThreads.Count > 0) do
+        begin
+          Thread := TSIBEventThread(FThreads[FThreads.Count - 1]);
+          FThreads.Delete(FThreads.Count - 1);
+          Thread.OnTerminate := nil;
+          Thread.Free;
+        end;
+        raise;
+      end;
+      for i := 0 to (FThreads.Count - 1) do
+        TSIBEventThread(FThreads[i]).StartThread;
     end;
   end
   else

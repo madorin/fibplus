@@ -82,6 +82,14 @@
   mark in the given encoding (e.g. `TEncoding.UTF8`); a UTF-8 or UTF-16 BOM still selects the
   encoding, and its `INPUT` files get the same encoding.
 
+#### Events
+
+- `TFIBEventAlerter.OnError(Sender, E)` receives the errors of a running event thread (a lost
+  connection), in the main thread when `VCLSynchronize` is `True`. Without a handler the error
+  goes to `Classes.ApplicationHandleException` in the main thread (`Application.OnException` or
+  the error dialog) instead of `SysUtils.ShowException`; with `VCLSynchronize = False`, or
+  without an application object, it is still shown with `SysUtils.ShowException`.
+
 ### Changed
 
 The lists of old and new names, and what an application has to change, are in
@@ -178,6 +186,14 @@ The lists of old and new names, and what an application has to change, are in
   `TFIBDatabase`. Without a database it pings each connected database and acts
   only on those that report a lost connection, instead of on every database of
   the process; a lost service connection closes no database.
+
+#### Events
+
+- `TFIBEventAlerter.RegisterEvents` queues the first events in the calling thread, before the
+  event threads start: an error (an invalid handle, a server whose events port can't be reached)
+  raises from `RegisterEvents` and `Registered := True`, and the groups already queued are
+  cancelled. With `AutoRegister` the error raises from `Database.Open`, with the database
+  connected; see [Upgrading](Docs/guide/upgrading.md#event-registration-errors).
 
 #### Client library
 
@@ -578,8 +594,8 @@ The lists of old and new names, and what an application has to change, are in
   could overwrite the handles of the event thread. The event counts, which the client writes as
   32-bit values, have their own array now.
 - An error while registering events (an invalid database handle, a server whose events port
-  can't be reached) ended the event thread without a message; it is now reported like an error
-  after the registration.
+  can't be reached) ended the event thread without a message; it is now raised by
+  `RegisterEvents` (see Changed).
 - `UnRegisterEvents` raised `EListError` when another event thread ended with an error while it
   waited for a thread to stop.
 - An event thread that ended with an error was never freed: its events stayed queued and its

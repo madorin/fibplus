@@ -65,6 +65,7 @@ With `AutoRegister` set, the alerter registers its events after the database con
 | `Registered` | `True` while the events are registered. |
 | `RegisterEvents` / `UnRegisterEvents` | Start or stop listening. |
 | `OnEventAlert(Sender, EventName, EventCount)` | One call for each event name that fired, with the number of times it fired. |
+| `OnError(Sender, E)` | An error of a running event thread, for example a lost connection. |
 
 ### Rules for event names
 
@@ -84,7 +85,8 @@ The first notification after a registration only initializes the event buffers. 
 
 - `RegisterEvents` raises `ESIBError` when the events are already registered, and when no database is assigned or the database is not connected.
 - `UnRegisterEvents` raises `ESIBError` when the events are not registered. Setting `Registered := False` ignores that error.
-- When an event thread fails, the alerter cancels all registrations and shows the exception with `SysUtils.ShowException`.
+- `RegisterEvents` queues the first events in the calling thread, so an error of the server (an invalid database handle, an events port that can't be reached) raises `ESIBError` from `RegisterEvents` or `Registered := True`, and nothing stays registered. With `AutoRegister` the error raises from `Database.Open`, and the database stays connected. Changing `Events` or `Database` of a registered alerter registers again and can raise the same error.
+- When a running event thread fails, the alerter cancels all registrations and calls `OnError`, in the main thread when `VCLSynchronize` is `True`. Without a handler the error goes to `Classes.ApplicationHandleException` in the main thread (`Application.OnException` or the error dialog); with `VCLSynchronize = False`, or in a program without an application object, it is shown with `SysUtils.ShowException` in the event thread, so an application whose main thread does not process messages does not block the event thread.
 
 ## Error handling
 
