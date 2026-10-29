@@ -407,6 +407,10 @@ The lists of old and new names, and what an application has to change, are in
   `INTEGER` key field (`AutoUpdateOptions`) was cut; the field raises an error now.
 - `TFIBDataSetProvider`: `RefreshRecord` of the client dataset wrote a NULL `NUMERIC` of the
   source as a number (0 or garbage).
+- `ApplyUpdates` of a `TClientDataSet` over a `TFIBDataSet` sent the text `No Action` of
+  `InsertSQL`, `UpdateSQL`, `DeleteSQL` or an update object to the server (syntax error); the
+  row now counts as applied with nothing sent, and a `No Action` delete runs no update object, as
+  a direct post or delete.
 - FIBPlus fields in a dataset that is not FIBPlus (e.g. persistent fields copied to a
   `TClientDataSet`): the first read of a `TFIBStringField` could raise an access violation, and
   `TFIBDateTimeField.AsTimeStamp` gave a wrong value in `OnValidate`, or raised `EIntOverflow`

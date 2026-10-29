@@ -77,8 +77,8 @@ The prefixes are case-insensitive.
 
 `TFIBDataSet.PSUpdateRecord`, used when the dataset serves a [TFIBDataSetProvider](TFIBClientDataSet.md#tfibdatasetprovider), also runs update objects, with these differences:
 
-- An object runs when it is `Active`, its `ExecuteOrder` matches, and its `SQL` is not empty. The text `No Action` is not tested.
-- Only the parameters `Field`, `NEW_Field`, and `OLD_Field` are filled. `MAS_Field` is not supported.
+- An object runs when it is `Active`, its `ExecuteOrder` matches, and its `SQL` is neither empty nor `No Action`, as for a direct post; a `DeleteSQL` of `No Action` skips the delete objects too.
+- Only the parameters `Field`, `NEW_Field`, and `OLD_Field` are filled. `MAS_Field` is not supported: the master dataset on the server is not positioned on the master of the applied row. Use the linking fields of the detail itself (`NEW_MasterID`), which the delta carries; fill them on the client (`OnNewRecord`) or in `BeforeUpdateRecord` when the server generates the master key.
 - No returned row is read back.
 - When `OnUpdateRecord` is assigned, the update objects are not run.
 

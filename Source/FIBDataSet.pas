@@ -16420,10 +16420,11 @@ function TFIBCustomDataSet.PSUpdateRecord(UpdateKind: TUpdateKind; Delta: TDataS
 var
   UpdateAction: TFIBUpdateAction;
   j: TFIBListIndex;
-  UpdQry: TFIBQuery;
+  UpdQry, MainQry: TFIBQuery;
   CurParam: TFIBXSQLVAR;
   ListUO: TList;
   NewBcd, OldBcd: TBcd;
+  NoAction: Boolean;
 
   procedure ExecUpdate;
   var
@@ -16544,28 +16545,34 @@ begin
   end
   else
   begin
-    Result := False;
+    case UpdateKind of
+      ukModify: MainQry := QUpdate;
+      ukInsert: MainQry := QInsert;
+    else
+      MainQry := QDelete;
+    end;
+    // No Action sends nothing and the row counts as applied, as in a direct post or delete
+    NoAction := (MainQry.SQL.Count > 0) and (MainQry.SQL[0] = SNoAction);
+    if NoAction and (UpdateKind = ukDelete) then
+      Exit(True);
     ListUO := ListForUO(UpdateKind);
     for j := 0 to Pred(ListUO.Count) do
       with TFIBUpdateObject(ListUO[j]) do
-        if Active and (ExecuteOrder = oeBeforeDefault) and (not EmptyStrings(SQL)) then
+        if Active and (ExecuteOrder = oeBeforeDefault) and (not EmptyStrings(SQL)) and (SQL[0] <> SNoAction) then
         begin
           UpdQry := TFIBUpdateObject(ListUO[j]);
           ExecUpdate;
           Result := True;
         end;
-    case UpdateKind of
-      ukModify: UpdQry := QUpdate;
-      ukInsert: UpdQry := QInsert;
-    else
-      UpdQry := QDelete;
-    end;
-    Result := Result or (UpdQry.SQL.Count > 0);
-    if (not EmptyStrings(UpdQry.SQL)) then
+    Result := Result or (MainQry.SQL.Count > 0);
+    if not EmptyStrings(MainQry.SQL) and not NoAction then
+    begin
+      UpdQry := MainQry;
       ExecUpdate;
+    end;
     for j := 0 to Pred(ListUO.Count) do
       with TFIBUpdateObject(ListUO[j]) do
-        if Active and (ExecuteOrder = oeAfterDefault) and (not EmptyStrings(SQL)) then
+        if Active and (ExecuteOrder = oeAfterDefault) and (not EmptyStrings(SQL)) and (SQL[0] <> SNoAction) then
         begin
           UpdQry := TFIBUpdateObject(ListUO[j]);
           ExecUpdate;
