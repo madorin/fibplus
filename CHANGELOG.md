@@ -504,11 +504,14 @@ The lists of old and new names, and what an application has to change, are in
   `UpdateOnlyModifiedFieldsInEffect` tells whether it applies. The `INSERT` and `UPDATE` made
   for each post under it had no `RETURNING` of `UseReturningFields`; `GenerateSQLText` with
   `skMerge` made a broken statement, it now makes `UPDATE OR INSERT ... MATCHING` on the key
-  fields. Under `UpdateOnlyModifiedFields` an inserted row with all fields null was never
-  written (`No Action`); it is now `INSERT ... DEFAULT VALUES`, and `rfAll` also returns the
-  null columns the server filled. `UseRowsClause` put `ROWS 1` on the `INSERT` and after
-  `RETURNING`, which Firebird rejects; it now goes only on the `UPDATE`, before `RETURNING`
+  fields, which it inserts also with `ifsOnlyBlob`. Under `UpdateOnlyModifiedFields` an
+  inserted row with all fields null was never written (`No Action`); it is now
+  `INSERT ... DEFAULT VALUES`, and `rfAll` also returns the null columns the server filled.
+  `UseRowsClause` put `ROWS 1` on the `INSERT` and after `RETURNING`, which Firebird rejects;
+  it now goes only on the `UPDATE`, before `RETURNING`
   ([Upgrading](Docs/guide/upgrading.md#generated-statements)).
+- `GenerateSQLText` on a dataset without field objects failed with `rfBlobFields` and ignored
+  `ifsNoBlob` and `ifsOnlyBlob`; it now takes the BLOB columns from the field definitions.
 - `Post` called again from the dataset's own `BeforePost` recursed until the stack overflowed;
   it is now ignored, and a `Post` from `AfterPost` still posts.
 - `ApplyUpdates` with `AutoCommit` committed after each inserted or modified row; it now
