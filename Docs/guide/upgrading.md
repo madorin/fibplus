@@ -265,9 +265,12 @@ error is raised, as they were before, because the cache marks them as applied.
 
 #### NULL in `Filter` comparisons
 
-A row whose operand of `>`, `>=`, `<` or `<=` is NULL no longer matches the `Filter`, as in SQL;
-before, `GETDATE() > D` or `D < 5` also matched a NULL `D`, so add `or (D is null)` to keep such
-rows.
+A row whose operand of `=`, `<>`, `>`, `>=`, `<`, `<=`, `LIKE` or `IN` is NULL no longer matches
+the `Filter`, as in SQL and the VCL `TClientDataSet`. Before, `STATUS <> 'closed'`,
+`GETDATE() > D` and `D < 5` also matched a NULL field, `A = B` matched when both were NULL,
+`S like '%'` matched a NULL `S`, and a NULL Boolean field matched the filter `B`. Add
+`or (STATUS is null)` to keep such rows. `not` still negates the result, so `not (D = 5)` and
+`not B` match a NULL `D` or `B`.
 
 #### Integer parameter values
 

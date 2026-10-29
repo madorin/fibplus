@@ -300,7 +300,7 @@ DataSet.Filtered := True;
 | String functions | `UPPER`, `LOWER`, `TRIM`, `TRIMLEFT`, `TRIMRIGHT`, `SUBSTRING(NAME, 1, 3)` |
 | Date functions | `YEAR`, `MONTH`, `DAY`, `HOUR`, `MINUTE`, `SECOND`, `DATE` |
 
-`foCaseInsensitive` in `FilterOptions` ignores case in comparisons. A function of a null value is null, as in SQL, and `>`, `>=`, `<`, `<=` with a null operand do not match. An unknown function, for example `TIME`, raises when the filter is applied.
+`foCaseInsensitive` in `FilterOptions` ignores case in comparisons. A function of a null value is null, and a comparison with a null operand (`=`, `<>`, `>`, `>=`, `<`, `<=`, `LIKE`, `IN`) does not match, as in SQL; `IS NULL` matches null values. `not` negates the result, so `not (D = 5)` matches a null `D`. An unknown function, for example `TIME`, raises when the filter is applied.
 
 `OnFilterRecord` runs for the rows that `Filter` accepts, so a row must pass both. `RecordCount` counts all cached rows; `VisibleRecordCount` counts the rows that pass the filter. With `poVisibleRecno` in `Options`, `RecordCount` and `RecNo` count only the visible rows, which a grid scroll bar needs.
 

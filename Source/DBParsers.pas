@@ -154,7 +154,6 @@ var
     S1, S2: Variant;
     S: string;
     us: UnicodeString;
-    null1, null2: Boolean;
     p, p1: Integer;
   type
     PWordBool = ^WordBool;
@@ -265,17 +264,17 @@ var
           Inc(pArg2, CANEXPRSIZE + PWord(@pfd[2])^);
           case iOperator of
             coAssign: Result := ParseNode(pfdStart, pArg1);
-            coEQ: Result := ParseNode(pfdStart, pArg1) = ParseNode(pfdStart, pArg2);
-            coNE: Result := ParseNode(pfdStart, pArg1) <> ParseNode(pfdStart, pArg2);
-            coGT, coGE, coLT, coLE:
+            coEQ, coNE, coGT, coGE, coLT, coLE:
               begin
                 Arg1 := ParseNode(pfdStart, pArg1);
                 Arg2 := ParseNode(pfdStart, pArg2);
-                // as in SQL, an order comparison with NULL does not match
+                // as in SQL and TClientDataSet, a comparison with NULL does not match
                 if VarIsNull(Arg1) or VarIsNull(Arg2) then
                   Result := False
                 else
                   case iOperator of
+                    coEQ: Result := Arg1 = Arg2;
+                    coNE: Result := Arg1 <> Arg2;
                     coGT: Result := Arg1 > Arg2;
                     coGE: Result := Arg1 >= Arg2;
                     coLT: Result := Arg1 < Arg2;
@@ -294,7 +293,9 @@ var
               begin
                 Arg1 := ParseNode(pfdStart, pArg1);
                 Arg2 := ParseNode(pfdStart, pArg2);
-                if VarIsArray(Arg2) then
+                if VarIsNull(Arg1) then
+                  Result := False
+                else if VarIsArray(Arg2) then
                   begin
                     Result := False;
                     AD := VarArrayHighBound(Arg2, 1);
@@ -302,17 +303,22 @@ var
                       begin
                         if VarIsEmpty(Arg2[i]) then
                           break;
-                        Result := (Arg1 = Arg2[i]);
+                        Result := not VarIsNull(Arg2[i]) and (Arg1 = Arg2[i]);
                         if Result then
                           break;
                       end;
                   end
                 else
-                  Result := (Arg1 = Arg2);
+                  Result := not VarIsNull(Arg2) and (Arg1 = Arg2);
               end;
             coLike:
               if Assigned(FMatchesMask) then
-                Result := FMatchesMask(VarToStr(ParseNode(pfdStart, pArg1)), VarToStr(ParseNode(pfdStart, pArg2)))
+              begin
+                Arg1 := ParseNode(pfdStart, pArg1);
+                Arg2 := ParseNode(pfdStart, pArg2);
+                Result := not VarIsNull(Arg1) and not VarIsNull(Arg2) and
+                  FMatchesMask(VarToStr(Arg1), VarToStr(Arg2));
+              end
               else
                 DatabaseError(SExprIncorrect);
             else
@@ -328,18 +334,11 @@ var
 
           S1 := ParseNode(pfdStart, pArg1);
           S2 := ParseNode(pfdStart, pArg2);
-          null1 := VarIsNull(S1);
-          null2 := VarIsNull(S2);
-          if (null1 <> null2) then
-            begin
-              Result := iOperator = coNE;
-              Exit;
-            end
-          else if null1 then
-            begin
-              Result := iOperator <> coNE;
-              Exit;
-            end;
+          if VarIsNull(S1) or VarIsNull(S2) then
+          begin
+            Result := False;
+            Exit;
+          end;
           if IgnoreCase <> 0 then
             begin
               S1 := AnsiUpperCase(S1);
