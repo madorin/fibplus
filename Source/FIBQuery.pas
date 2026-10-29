@@ -3487,52 +3487,56 @@ begin
   if not Result then
     Exit;
   InputObject.FParams := Self.FUserSQLParams;
-  // Self.FUserSQLParams.Initialize;
-  InputObject.ReadyStream;
-  Result := InputObject.State = bsFileReady;
-  if Result and (InputObject.FVersion > 2) and (string(InputObject.FCharset) <> Database.ConnectParams.Charset) then
-    raise Exception.Create(Format(SErrorInProc, [CmpFullName(Self),
-      'BatchInput']) + Format(SEInvalidCharsetData, [InputObject.FCharset, Database.ConnectParams.Charset]));
+  try
+    // Self.FUserSQLParams.Initialize;
+    InputObject.ReadyStream;
+    Result := InputObject.State = bsFileReady;
+    if Result and (InputObject.FVersion > 2) and
+      (string(InputObject.FCharset) <> Database.ConnectParams.Charset) then
+      FIBError(feBatchCharsetMismatch, [CmpFullName(Self) + '.BatchInput', string(InputObject.FCharset),
+        Database.ConnectParams.Charset]);
 
-  RecNum := 1;
-  BatchAction := baContinue;
-  while InputObject.ReadParameters do
-  begin
-    if Assigned(FOnBatching) then
+    RecNum := 1;
+    BatchAction := baContinue;
+    while InputObject.ReadParameters do
     begin
-      FOnBatching(boInput, RecNum, BatchAction);
-      Inc(RecNum);
-    end;
+      if Assigned(FOnBatching) then
+      begin
+        FOnBatching(boInput, RecNum, BatchAction);
+        Inc(RecNum);
+      end;
 
-    case BatchAction of
-      baContinue:
-        begin
-          ErrorAction := beRetry;
-          while ErrorAction = beRetry do
-            try
-              ExecQuery;
-              ErrorAction := beIgnore;
-            except
-              on E: EFIBError do
-                if Assigned(FOnBatchError) then
-                begin
-                  ErrorAction := beFail;
-                  FOnBatchError(E, ErrorAction);
-                  case ErrorAction of //
-                    beFail: raise;
-                    beAbort: Abort;
-                  end; // case
-                end
-                else
-                  raise
-            end;
-        end;
-      baStop: Exit;
-    else
-      BatchAction := baContinue;
+      case BatchAction of
+        baContinue:
+          begin
+            ErrorAction := beRetry;
+            while ErrorAction = beRetry do
+              try
+                ExecQuery;
+                ErrorAction := beIgnore;
+              except
+                on E: EFIBError do
+                  if Assigned(FOnBatchError) then
+                  begin
+                    ErrorAction := beFail;
+                    FOnBatchError(E, ErrorAction);
+                    case ErrorAction of //
+                      beFail: raise;
+                      beAbort: Abort;
+                    end; // case
+                  end
+                  else
+                    raise
+              end;
+          end;
+        baStop: Exit;
+      else
+        BatchAction := baContinue;
+      end;
     end;
+  finally
+    InputObject.FParams := nil;
   end;
-  InputObject.FParams := nil
 end;
 
 function TFIBQuery.BatchOutput(OutputObject: TFIBBatchOutputStream): Boolean;
@@ -3572,10 +3576,9 @@ begin
       end;
       Next;
     end;
+  finally
     Close;
-  except
-    Close;
-    Result := False
+    OutputObject.FColumns := nil;
   end;
 end;
 
@@ -4581,32 +4584,52 @@ end;
 
 procedure TFIBQuery.ExecWPS(ParamSource: ISQLObject; AllRecords: boolean = True);
 var
+  RecNum: Integer;
+  BatchAction: TBatchAction;
   ErrorAction: TBatchErrorAction;
 begin
-  if AllRecords then
-    while not ParamSource.IEof do
-    begin
-      AssignSQLObjectParams(Self, [ParamSource]);
-      try
-        ExecQuery;
-      except
-        on E: EFIBError do
-          if Assigned(FOnBatchError) then
-          begin
-            ErrorAction := beFail;
-            FOnBatchError(E, ErrorAction);
-            case ErrorAction of //
-              beFail: raise;
-              beAbort: Abort;
-            end; // case
-          end
-          else
-            raise
-      end;
-      ParamSource.INext
-    end
-  else
+  if not AllRecords then
+  begin
     ExecWPS([ParamSource]);
+    Exit;
+  end;
+  RecNum := 1;
+  while not ParamSource.IEof do
+  begin
+    BatchAction := baContinue;
+    if Assigned(FOnBatching) then
+    begin
+      FOnBatching(boInput, RecNum, BatchAction);
+      Inc(RecNum);
+    end;
+    case BatchAction of
+      baContinue:
+        begin
+          AssignSQLObjectParams(Self, [ParamSource]);
+          ErrorAction := beRetry;
+          while ErrorAction = beRetry do
+            try
+              ExecQuery;
+              ErrorAction := beIgnore;
+            except
+              on E: EFIBError do
+                if Assigned(FOnBatchError) then
+                begin
+                  ErrorAction := beFail;
+                  FOnBatchError(E, ErrorAction);
+                  case ErrorAction of
+                    beFail: raise;
+                    beAbort: Abort;
+                  end;
+                end
+                else
+                  raise;
+            end;
+        end;
+      baStop: Exit;
+    end;
+    ParamSource.INext;
+  end;
 end;
 
 function TFIBQuery.GetEOF: boolean;

@@ -121,5 +121,6 @@
     '%s: Nie można załadować metadanych.',
     'Wartość %s ma %d bajtów, maksimum to %d',
     'Nieprawidłowa wartość "%s" w %s',
-    'Plik blobów %s, parametr %s: %s'
+    'Plik blobów %s, parametr %s: %s',
+    '%s: dane wsadowe mają zestaw znaków %s, połączenie zestaw znaków %s'
   );

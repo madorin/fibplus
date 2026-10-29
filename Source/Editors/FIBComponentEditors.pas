@@ -1078,8 +1078,7 @@ begin
         ('INSERT INTO FIB$DATASETS_INFO (DS_ID,UPDATE_ONLY_MODIFIED_FIELDS) VALUES(' + IntToStr(DS_ID) + ',1)');
     if Length(GetPropStringValue(DataSet, 'AutoUpdateOptions.KeyFields')) > 68 then
       WidenDataSetKeyField(idb);
-    // Execute returns False instead of raising
-    if not idb.Execute('Update FIB$DATASETS_INFO SET '#13#10 + 'SELECT_SQL=''' +
+    idb.Execute('Update FIB$DATASETS_INFO SET '#13#10 + 'SELECT_SQL=''' +
       TStrings(GetObjectProp(DataSet, 'SelectSQL')).Text + ''','#13#10 +
       'INSERT_SQL=''' + TStrings(GetObjectProp(DataSet, 'InsertSQL')).Text +
       ''','#13#10 + 'UPDATE_SQL=''' + TStrings(GetObjectProp(DataSet,
@@ -1098,8 +1097,7 @@ begin
       'CONDITIONS=''' + GetConditionsExchangeStr(TStrings(GetObjectProp(DataSet,
       'Conditions'))) + ''''#13#10 +
 
-      'WHERE DS_ID=' + IntToStr(DS_ID)) then
-      raise Exception.Create(SCompEditUnableSaveInfoRecord);
+      'WHERE DS_ID=' + IntToStr(DS_ID));
   end
 end;
 

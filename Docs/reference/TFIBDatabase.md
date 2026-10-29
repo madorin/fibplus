@@ -362,14 +362,14 @@ Both methods read the system tables in the internal transaction of the database 
 
 | Name | Description |
 |------|-------------|
-| `Execute(SQL)` | Run a statement and return `True`. Any exception is swallowed and gives `False`. |
+| `Execute(SQL)` | Run a statement. Errors are raised; the result is always `True`. |
 | `Gen_Id(GeneratorName, Step, aTransaction)` | Next value of a generator. With `Step = 1` and a usable `GeneratorsCache`, values come from the client cache; otherwise the method runs `gen_id(Name, Step)`. It runs in `FirstActiveTransaction` if there is one, else in `aTransaction`, else in the internal transaction; it starts and commits a transaction only if the one it uses is not active. |
 | `QueryValue(SQL, FieldNo, [ParamValues], aTransaction, aCacheQuery)` | Run a query and return one column of the first row as a `Variant`. `ParamValues` fill the parameters in order. BLOB values come back as strings. `aCacheQuery` allows caching: a statement with parameters is kept prepared in the query cache for the next call; a statement without parameters is always freed after the call. With `aCacheQuery = False` the query is always freed. |
 | `QueryValues(SQL, [ParamValues], aTransaction, aCacheQuery)` | Like `QueryValue` for all columns: a `Variant` array. |
 | `QueryValueAsStr(SQL, FieldNo, [ParamValues])` | Like `QueryValue`, as a string; `Null` gives an empty string. |
 | `InternalQueryValue(SQL, FieldNo, ParamValues, aTransaction, aCacheQuery)` | The implementation of the methods above. |
 | `ClearQueryCacheList` | Clear the cached prepared queries of this database. |
-| `CreateGUIDDomain` | Run `CREATE DOMAIN TGUID AS CHAR(16) CHARACTER SET OCTETS` through `Execute`, so errors, for example an existing domain, are swallowed. |
+| `CreateGUIDDomain` | Run `CREATE DOMAIN TGUID AS CHAR(16) CHARACTER SET OCTETS` through `Execute` when the domain `TGUID` does not exist yet. |
 | `GetServerTime` | Current time of the server. |
 | `GetContextVariable(ContextSpace, VarName, aTransaction)` | Value from `rdb$get_context`. *Firebird 2+*; raises on older servers and on InterBase. |
 | `SetContextVariable(ContextSpace, VarName, VarValue, aTransaction)` | Set a value with `rdb$set_context`. *Firebird 2+*. |

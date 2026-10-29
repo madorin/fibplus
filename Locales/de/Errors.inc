@@ -121,5 +121,6 @@
     '%s: Die Metadaten können nicht geladen werden.',
     'Der Wert von %s hat %d Bytes, das Maximum ist %d',
     'Ungültiger Wert "%s" in %s',
-    'Blob-Datei %s, Parameter %s: %s'
+    'Blob-Datei %s, Parameter %s: %s',
+    '%s: die Batch-Daten haben den Zeichensatz %s, die Verbindung den Zeichensatz %s'
   );

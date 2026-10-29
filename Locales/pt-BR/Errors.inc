@@ -121,5 +121,6 @@
     '%s: Não é possível carregar os metadados.',
     'O valor de %s tem %d bytes, o máximo é %d',
     'Valor inválido "%s" em %s',
-    'Arquivo de blobs %s, parâmetro %s: %s'
+    'Arquivo de blobs %s, parâmetro %s: %s',
+    '%s: os dados do lote têm o conjunto de caracteres %s, a conexão o conjunto de caracteres %s'
   );

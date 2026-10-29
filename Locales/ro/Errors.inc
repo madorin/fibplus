@@ -121,5 +121,6 @@
     '%s: Metadatele nu au putut fi încărcate.',
     'Valoarea %s are %d octeți, maximul este %d',
     'Valoare nevalidă "%s" în %s',
-    'Fișierul de blob-uri %s, parametrul %s: %s'
+    'Fișierul de blob-uri %s, parametrul %s: %s',
+    '%s: datele lotului au setul de caractere %s, conexiunea are setul de caractere %s'
   );

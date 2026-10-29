@@ -189,7 +189,8 @@ type
     feCantLoadMetadata,
     feParamValueTooLong,
     feParamValueInvalid,
-    feBlobFileError
+    feBlobFileError,
+    feBatchCharsetMismatch
   );
 
   TStatusVector = array [0 .. 19] of ISC_STATUS;

@@ -162,12 +162,12 @@ Each flag is saved in the form file as its own `qoXxx` entry.
 
 | Name | Description |
 |------|-------------|
-| `BatchInput(Stream)` | Run the statement once for each row read from a `TFIBBatchInputStream`. Returns `False` without reading unless the statement is `INSERT`, `UPDATE`, `DELETE` or `EXECUTE PROCEDURE`. For batch file version 3 and later it raises an `Exception` when the file character set differs from `Database.ConnectParams.Charset`. |
-| `BatchOutput(Stream)` | Execute a `SELECT` and write every row to a `TFIBBatchOutputStream`. The cursor must be closed first or the call raises. Returns `False` for any other statement type. Any exception raised while executing or writing is caught, the cursor is closed and `False` is returned. |
+| `BatchInput(Stream)` | Run the statement once for each row read from a `TFIBBatchInputStream`. Returns `False` without reading unless the statement is `INSERT`, `UPDATE`, `DELETE` or `EXECUTE PROCEDURE`. For batch file version 3 and later it raises an `EFIBClientError` when the file character set differs from `Database.ConnectParams.Charset`. |
+| `BatchOutput(Stream)` | Execute a `SELECT` and write every row to a `TFIBBatchOutputStream`. The cursor must be closed first or the call raises. Returns `False` for any other statement type, or when the stream is not ready. Errors while executing or writing are raised; the cursor is closed in any case. |
 | `BatchInputRawFile(File)` / `BatchOutputRawFile(File, Version)` | The same with a raw batch file. `BatchOutputRawFile` ignores `Version` and always writes version 3. Neither reports the result. |
 | `BatchToQuery(ToQuery, Mappings)` | Run `ToQuery` once per row of this query's result. `Mappings` holds `ParamName=ColumnName` lines. Columns without a mapping go to the parameter with the same name, and columns without a matching parameter are skipped. `Mappings = nil` maps by identical names. |
 
-`BatchInput`, `BatchOutput` and `BatchToQuery` call `OnBatching` for each row. `BatchInput` and `BatchToQuery` handle failures with `OnBatchError`; `BatchOutput` does not use it. `ExecWPS` does not call `OnBatching`.
+`BatchInput`, `BatchOutput`, `BatchToQuery` and `ExecWPS(ParamSource, True)` call `OnBatching` for each row (`ExecWPS` with `boInput`). `BatchInput`, `BatchToQuery` and `ExecWPS(ParamSource, True)` handle failures with `OnBatchError`; `BatchOutput` does not use it.
 
 ### Checks
 

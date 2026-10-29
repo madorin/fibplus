@@ -118,7 +118,7 @@ end;
 Query.ExecWPS(SourceQuery);
 ```
 
-If a row fails and `OnBatchError` is assigned, the handler can answer `beFail` (raise the error again) or `beAbort` (stop with `EAbort`). Any other answer, including `beRetry`, continues with the next row; the row is not run again. `ExecWPS` does not call `OnBatching`. The `OnBatchError` handler is described under [Events](#events).
+With `AllRecords` set to `True`, `ExecWPS` calls `OnBatching` (with `boInput`) and `OnBatchError` for each row as `BatchInput` does, `beRetry` included. The handlers are described under [Events](#events).
 
 ### Null in WHERE conditions
 
@@ -222,7 +222,7 @@ The batch methods run one statement for many rows without a dataset.
 | `BatchOutput(Stream)` | Writes the rows of a `SELECT` to a `TFIBBatchOutputStream` |
 | `BatchInputRawFile(File)`, `BatchOutputRawFile(File)` | `BatchInput` and `BatchOutput` with the raw file format |
 
-`BatchInput` works for `INSERT`, `UPDATE`, `DELETE`, and `EXECUTE PROCEDURE` statements; `BatchOutput` works for a `SELECT`. For another statement type, both return `False` and do nothing. `BatchOutput` also raises an error when the query is already open.
+`BatchInput` works for `INSERT`, `UPDATE`, `DELETE`, and `EXECUTE PROCEDURE` statements; `BatchOutput` works for a `SELECT`. For another statement type, both return `False` and do nothing. Errors while executing, reading or writing are raised. `BatchOutput` also raises an error when the query is already open.
 
 The stream classes are in the unit `FIBMiscellaneous`: `TFIBInputDelimitedFile` and `TFIBOutputDelimitedFile` for delimited text files, `TFIBInputRawFile` and `TFIBOutputRawFile` for the raw format. You can also derive your own class from `TFIBBatchInputStream` or `TFIBBatchOutputStream`. Set `FileName` on the stream before the call. The delimited output separates columns with a tab unless you set `ColDelimiter`. In the sample, `Output` is a `TFIBOutputDelimitedFile` variable and `SourceQuery` holds a closed `SELECT`:
 
@@ -231,7 +231,7 @@ Output := TFIBOutputDelimitedFile.Create;
 try
   Output.FileName := 'customers.txt';
   if not SourceQuery.BatchOutput(Output) then
-    ShowMessage('The export failed');
+    ShowMessage('Nothing exported');
 finally
   Output.Free;
 end;
@@ -257,10 +257,10 @@ The raw file methods write and read a binary file with the column data. `BatchOu
 
 | Event | Called | Used by | Your answer |
 |-------|--------|---------|-------------|
-| `OnBatching` | For each row | `BatchInput`, `BatchOutput`, `BatchToQuery` | `BatchAction`: `baContinue`, `baStop`, or `baSkip` |
+| `OnBatching` | For each row | `BatchInput`, `BatchOutput`, `BatchToQuery`, `ExecWPS` | `BatchAction`: `baContinue`, `baStop`, or `baSkip` |
 | `OnBatchError` | When a row fails with `EFIBError` | `BatchInput`, `BatchToQuery`, `ExecWPS` | `BatchErrorAction`: `beFail`, `beAbort`, `beRetry`, or `beIgnore` |
 
-`beFail` (the default) raises the error again, `beAbort` ends silently with `EAbort`, `beRetry` runs the row again, and `beIgnore` goes to the next row. Without an `OnBatchError` handler the error is raised. `ExecWPS` honors only `beFail` and `beAbort`, see [Parameters from another object](#parameters-from-another-object). `BatchOutput` does not call `OnBatchError`.
+`beFail` (the default) raises the error again, `beAbort` ends silently with `EAbort`, `beRetry` runs the row again, and `beIgnore` goes to the next row. Without an `OnBatchError` handler the error is raised. `BatchOutput` does not call `OnBatchError`: its errors are raised.
 
 ```delphi
 procedure TMainForm.QueryBatchError(E: EFIBError; var BatchErrorAction: TBatchErrorAction);

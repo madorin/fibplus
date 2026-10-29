@@ -365,7 +365,6 @@ ResourceString
   SCompEditDataSetInfoNotExists   = 'Table FIB$DATASETS_INFO does not exist.';
   SCompEditDataSetInfoForbid      = 'Can''t use FIB$DATASETS_INFO.'#13#10 + 'urDataSetInfo not included into Database.UseRepositories.';
   SCompEditUnableInsertInfoRecord = 'Error of inserting new information record';
-  SCompEditUnableSaveInfoRecord   = 'Error of saving the dataset information record';
   SCompEditSaveDataSetProperty    = 'Save FIBDataSet properties';
   SCompEditDataSetDesc            = 'Set dataset description';
   SCompEditFieldInfoLoadError     = 'Error of loading FieldInfo from stream';

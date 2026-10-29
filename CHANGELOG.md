@@ -251,9 +251,20 @@ The lists of old and new names, and what an application has to change, are in
   `TFIBDatabase.IsMemoSubtype` and `TMemoSubtypes.IsMemoSubtype` take a `SmallInt` (was
   `ShortInt`), and `TFIBFieldDescrList.LoadFromStream` an `Integer` version (was `Byte`).
 
+#### Queries and errors
+
+- `TFIBQuery.BatchOutput`, `BatchOutputRawFile` and `TFIBDatabase.Execute` raise their errors
+  instead of returning `False` (`Execute` always returns `True`); `BatchOutput` and `BatchInput`
+  return `False` only when there is nothing to do (another statement type, stream not ready).
+  A charset mismatch in `BatchInput` raises `EFIBClientError` (`feBatchCharsetMismatch`)
+  instead of `Exception`, and `ExecWPS(ParamSource, True)` calls `OnBatching` and runs the row
+  again on `beRetry`, as `BatchInput`. `TFIBDatabase.CreateGUIDDomain` creates the domain only
+  when it doesn't exist, and raises the other errors; see
+  [Upgrading](Docs/guide/upgrading.md#batch-and-execute-errors).
 - `AsString`, `AsAnsiString` and `AsWideString` of a BLOB column raise the read error, as
   `TBlobField.AsString`, instead of returning `(BLOB)`; a BLOB parameter without a value returns
   an empty string; see [Upgrading](Docs/guide/upgrading.md#blob-text-read-errors).
+
 #### Fields
 
 - `AsInt64` of `TFIBBCDField` rounds half to even, as `TBCDField.AsLargeInt` (it truncated).

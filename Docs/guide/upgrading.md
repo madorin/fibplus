@@ -277,6 +277,12 @@ Before, the value was sent as an integer and the server raised a conversion erro
 - `ExecuteFromFile` detects a UTF-8 or UTF-16 BOM; a file without one is still read in the system
   code page. Pass the encoding of such files to the new `ExecuteFromFile(FileName, Encoding)`.
 
+#### Batch and Execute errors
+
+`TFIBDatabase.Execute` raises the error of the statement; it returned `False`. Code that runs a statement which may fail harmlessly (a `DROP` of an object that may not exist) needs a `try`/`except` around `Execute`; `if not Execute(...)` checks never see `False` any more. `TFIBQuery.BatchOutput` and `BatchOutputRawFile` raise the errors of the query and of the stream, the cursor is still closed; `False` from `BatchOutput` and `BatchInput` only means that there was nothing to do (another statement type, or the stream is not ready). A charset mismatch in `BatchInput` raises `EFIBClientError` with `SQLCode = Ord(feBatchCharsetMismatch)` instead of `Exception`.
+
+`ExecWPS(ParamSource, True)` calls `OnBatching` with `boInput` for each row, and runs the row again when `OnBatchError` answers `beRetry` (it went on with the next row). A handler that answers `beRetry` for an error that stays must change its answer, or the row is run forever.
+
 #### BLOB text read errors
 
 `AsString`, `AsAnsiString` and `AsWideString` of a BLOB column raise the error when the content can't be read (for example when the transaction is not active); they returned `(BLOB)`. A BLOB parameter without a value returns an empty string instead of `(BLOB)`.

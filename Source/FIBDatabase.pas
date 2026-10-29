@@ -4585,14 +4585,11 @@ begin
   Result := InternalQueryValue(aSQL, -1, ParamValues, aTransaction, aCacheQuery);
 end;
 
+// raises on errors; the Boolean is kept for IFIBConnect
 function TFIBDatabase.Execute(const SQL: string): Boolean;
 begin
-  try
-    QueryValue(SQL, -1, nil, True);
-    Result := True
-  except
-    Result := False;
-  end;
+  QueryValue(SQL, -1, nil, True);
+  Result := True;
 end;
 
 procedure TFIBDatabase.ClearQueryCacheList;
@@ -4602,7 +4599,8 @@ end;
 
 procedure TFIBDatabase.CreateGUIDDomain;
 begin
-  Execute('CREATE DOMAIN TGUID AS CHAR(16) CHARACTER SET OCTETS');
+  if QueryValue('SELECT COUNT(*) FROM RDB$FIELDS WHERE RDB$FIELD_NAME = ''TGUID''', 0) = 0 then
+    Execute('CREATE DOMAIN TGUID AS CHAR(16) CHARACTER SET OCTETS');
 end;
 
 function TFIBDatabase.Gen_Id(const GeneratorName: string; Step: Int64; aTransaction: TFIBTransaction = nil): Int64;
