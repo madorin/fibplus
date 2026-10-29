@@ -96,7 +96,7 @@ A statement is handled by the scripter or sent to the server, depending on its f
 | `DISCONNECT` | Closes the connection. |
 | `RECONNECT` | Commits an active transaction and connects again. |
 | `COMMIT`, `ROLLBACK` | Ends the transaction when it is active. |
-| `INPUT 'file'` | Runs the file with `ExecuteFromFile`, the terminator `;` and the `Encoding` given to the running `ExecuteFromFile` (`TEncoding.Default` otherwise); a byte order mark of the file still wins. |
+| `INPUT 'file'` | Runs the file with `ExecuteFromFile`, the terminator `;` and the `Encoding` given to the running `ExecuteFromFile` (`TEncoding.Default` otherwise); a byte order mark of the file still wins. The encoding detected from the byte order mark of the calling file is not passed on: each file is read on its own. |
 | `DESCRIBE` | Sets the description of a domain, table, view, trigger, field, parameter, procedure, exception, function, UDF, generator, or package with an `UPDATE` of its `RDB$DESCRIPTION` column. Other object types raise an `Exception`. |
 | `BATCH START`, `BATCH EXECUTE` | Collects the statements between them and runs them as a batch. Needs the `SUPPORT_IB2007` compiler define, which is off in `FIB.inc`; without it `BATCH EXECUTE` raises an `Exception`. |
 | `REINSERT` | Takes the text after `REINSERT` and appends it to the previous `INSERT` statement up to its `VALUES`, then runs the result. |
