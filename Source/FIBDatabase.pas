@@ -2527,6 +2527,7 @@ end;
 procedure TFIBDatabase.CreateDatabase;
 var
   tr_handle: TISC_TR_HANDLE;
+  Statement: AnsiString;
 begin
   // Create database interprets the DBParams string list
   // as mere text. It makes it extremely simple to do this way.
@@ -2534,9 +2535,11 @@ begin
   FAttachmentID := 0;
   LoadLibrary;
   tr_handle := nil;
+  // The client reads the statement in the system code page: it has no utf8_filename
+  Statement := 'CREATE DATABASE ''' + EncodeParam('DBName', FDBName, FIBCodePageSystem) + ''' ' +
+    EncodeParam('DBParams', DBParams.Text, FIBCodePageSystem);
   Call(FClientLibrary.isc_dsql_execute_immediate(StatusVector, @FHandle,
-    @tr_handle, 0, PAnsiChar('CREATE DATABASE ''' + AnsiString(FDBName) + ''' ' +
-    AnsiString(DBParams.Text)), Word(SQLDialect), nil), True);
+    @tr_handle, 0, PAnsiChar(Statement), Word(SQLDialect), nil), True);
   FConnectionSerial := NextConnectionSerial;
 
   FServerMajorVersion := -1;

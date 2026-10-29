@@ -309,7 +309,9 @@ Without `utf8_filename`, a `DBParams` value or a `DBName` with a character outsi
 page raises `feCantTransliterateParam` on `Open`; it was sent with `?` in its place, so a
 non-ASCII password failed as a wrong password. The services raise the same error for their
 `Params` and text start parameters. The message names the parameter, not the value. Add
-`utf8_filename` to `DBParams` to send the values in UTF-8.
+`utf8_filename` to `DBParams` to send the values in UTF-8. `CreateDatabase` raises the same error
+also with `utf8_filename`: the Firebird client reads the `CREATE DATABASE` text in the system
+code page.
 
 ## 7.9.1
 

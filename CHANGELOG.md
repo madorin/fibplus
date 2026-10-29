@@ -396,6 +396,8 @@ The lists of old and new names, and what an application has to change, are in
   code page was sent with `?` in its place (a non-ASCII password failed as a wrong password). It
   raises the new `feCantTransliterateParam`, which names the parameter but not the value; see
   [Upgrading](Docs/guide/upgrading.md#characters-outside-the-system-code-page).
+- `TFIBDatabase.CreateDatabase` sent a character of `DBName` or `DBParams` outside the system
+  code page as `?` (a wrong file name or password); it raises `feCantTransliterateParam` too.
 - `TFIBDatabase.QueryValues` of a statement without parameters (also `EXECUTE PROCEDURE`) kept it
   in the query cache when it returned a row, while `QueryValue` freed it. Only a statement with
   parameters is cached now, as documented; `aCacheQuery` allows the caching.

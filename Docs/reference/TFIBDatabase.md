@@ -154,7 +154,7 @@ Events are listed in [Events](#events).
 
 All `config=` lines go into one DPB value. A value can be longer than 255 bytes only when `ConnectParams.IsFirebird` is `True` and the client library is *Firebird 3+*: the DPB is then sent as `isc_dpb_version2`, which *Firebird 2.5* servers do not read. Otherwise `Open` raises "The value of *name* has *N* bytes, the maximum is 255". With `utf8_filename` the length counts UTF-8 bytes.
 
-The text values and `DBName` are sent in the system code page. A character that the code page doesn't have raises "The value of *name* has a character that code page *N* doesn't have" (`feCantTransliterateParam`); the message names the parameter, not the value. Add a line `utf8_filename` (*Firebird 2.5+*) to send them in UTF-8.
+The text values and `DBName` are sent in the system code page. A character that the code page doesn't have raises "The value of *name* has a character that code page *N* doesn't have" (`feCantTransliterateParam`); the message names the parameter, not the value. Add a line `utf8_filename` (*Firebird 2.5+*) to send them in UTF-8 (not with `CreateDatabase`).
 
 `DBParams` is also the text that `CreateDatabase` appends to `CREATE DATABASE`, and the source of the parameters of `ShutDown` and `Online`.
 
@@ -347,7 +347,7 @@ Both methods read the system tables in the internal transaction of the database 
 
 | Name | Description |
 |------|-------------|
-| `CreateDatabase` | Run `CREATE DATABASE` with `DBName` and the text of `DBParams`. The new attachment is open afterwards. Raises if already connected. |
+| `CreateDatabase` | Run `CREATE DATABASE` with `DBName` and the text of `DBParams`. The new attachment is open afterwards. Raises if already connected. The statement is sent in the system code page, also with `utf8_filename`; a character outside it raises `feCantTransliterateParam`. |
 | `DropDatabase` | Delete the connected database. |
 | `ShutDown(ShutParams, Delay)` | Connect with the `shutdown` parameter built from the `isc_dpb_shut_*` values in `ShutParams`, and with `shutdown_delay` when `Delay` is greater than `0`; then disconnect. Only the user name and password of the old parameters are kept for the call; `DBParams` is restored afterwards. |
 | `Online` | Bring a shut down database online with the `online` parameter, in the same way as `ShutDown`. |
