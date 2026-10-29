@@ -242,6 +242,9 @@ The lists of old and new names, and what an application has to change, are in
   `TFIBDatabase.IsMemoSubtype` and `TMemoSubtypes.IsMemoSubtype` take a `SmallInt` (was
   `ShortInt`), and `TFIBFieldDescrList.LoadFromStream` an `Integer` version (was `Byte`).
 
+- `AsString`, `AsAnsiString` and `AsWideString` of a BLOB column raise the read error, as
+  `TBlobField.AsString`, instead of returning `(BLOB)`; a BLOB parameter without a value returns
+  an empty string; see [Upgrading](Docs/guide/upgrading.md#blob-text-read-errors).
 #### Fields
 
 - `AsInt64` of `TFIBBCDField` rounds half to even, as `TBCDField.AsLargeInt` (it truncated).

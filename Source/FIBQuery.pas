@@ -1389,10 +1389,9 @@ begin
       // 0: Result:='';
       SQL_ARRAY: Result := '(ARRAY)';
       SQL_BLOB:
-        try
-          Result := '(BLOB)'; { return on error }
-          if IsParam and (FStreamValue = nil) then
-            Exit; // BlobHandle may be invalid
+        // an unassigned blob parameter has no valid blob ID: ''
+        if not IsParam or (FStreamValue <> nil) then
+        begin
           if FStreamValue <> nil then
           begin
             if FStreamValue.Size = 0 then
@@ -1428,8 +1427,6 @@ begin
               bs.Free;
             end;
           end;
-        except
-          // BlobHandle is invalid!
         end;
 
       SQL_TEXT, SQL_VARYING:
@@ -2535,10 +2532,11 @@ begin
     with FXSQLVAR^ do
       case SQLType and (not 1) of
         SQL_BLOB:
-          try
-            Result := '(BLOB)'; { return on error }
-            if IsParam and (FStreamValue = nil) then
-              Exit; // BlobHandle may be invalid
+          // an unassigned blob parameter has no valid blob ID
+          if IsNull or (IsParam and (FStreamValue = nil)) then
+            Result := ''
+          else
+          begin
             if FStreamValue <> nil then
             begin
               if FStreamValue.Size = 0 then
@@ -2574,8 +2572,6 @@ begin
                 bs.Free;
               end;
             end
-          except
-            // BlobHandle is invalid!
           end;
 
       else

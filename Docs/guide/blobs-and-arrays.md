@@ -80,7 +80,7 @@ For a text BLOB, `AsString`, `AsWideString`, and `AsAnsiString` return the conte
 
 Setting `AsString` on a parameter works the same way for BLOB parameters. A string longer than 32767 bytes is sent as a BLOB even when the parameter type is not yet known.
 
-`AsString` returns `(BLOB)` instead of raising an error when the content cannot be read, for example when the transaction is not active. It also returns `(BLOB)` for a parameter that holds no stream.
+`AsString` raises an error when the content cannot be read, for example when the transaction is not active. A parameter that holds no stream returns an empty string.
 
 ### Code pages of text BLOBs
 
@@ -252,7 +252,7 @@ Database.RegisterBlobFilter(-100, PIBBlobFilterProc(@EncodeNote), PIBBlobFilterP
 ## Pitfalls
 
 - `AsVariant` of a binary BLOB returns text. Use `SaveToStream` for binary data.
-- `AsString` hides read errors by returning `(BLOB)`. Check that the transaction is active before you read.
+- `AsString` of a BLOB reads the content from the server: the transaction must be active, or the read raises an error.
 - `LoadFromFile(FileName, Callback)` on a parameter writes the BLOB at once. `LoadFromFile(FileName)` and `LoadFromStream` wait for `ExecQuery`.
 - A data-aware grid shows `(ARRAY)` for an array field, or `(Array)` when it is null. Edit arrays through the methods above.
 - `CanCloneFromDataSet` is `False` for datasets with `ftBlob` or `ftBytes` fields, see [TFIBDataSet](../reference/TFIBDataSet.md).
