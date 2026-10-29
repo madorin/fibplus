@@ -220,6 +220,14 @@ A `Post` called again from the dataset's own `BeforePost` returns without doing 
 outer `Post` posts the record. Before, it recursed until the stack overflowed. `Edit` and `Post`
 in `AfterPost` still post again.
 
+#### Commit of `ApplyUpdates`
+
+With `CachedUpdates` and `AutoCommit`, `ApplyUpdates` commits the update transaction once, after
+the last row; it committed after each inserted or modified row. A row skipped by `OnUpdateError`
+or `OnUpdateRecord` (`uaSkip`) stays in the cache, and the rows applied before and after it are
+committed. When an error stops `ApplyUpdates`, the rows applied before it are committed before the
+error is raised, as they were before, because the cache marks them as applied.
+
 #### Integer parameter values
 
 `AsInteger`, `AsInt64` and `AsShort` assigned before `Prepare` are converted to the parameter type

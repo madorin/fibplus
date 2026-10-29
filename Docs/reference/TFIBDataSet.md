@@ -321,9 +321,9 @@ In both samples `DataSet` is a `TFIBDataSet`, `Database` a `TFIBDatabase`, and `
 2. When the action is `uaApply` or `uaRetry`, run the statements for the row, but only when `CanEdit`, `CanInsert`, or `CanDelete` allows it. Without `UseExecuteBlock` these are the update objects and the dataset statement, see [Update objects](#update-objects). With `UseExecuteBlock` the row is added to an `EXECUTE BLOCK` batch instead, see below. Then the action becomes `uaApplied`, and `AfterUpdateRecord` is called with `Resume` set to `True`. When the handler sets `Resume` to `False`, `ApplyUpdates` ends with a silent `EAbort`; the remaining rows are not sent, and a batch that was not sent yet is dropped.
 3. When `EFIBError` is raised in step 1 or 2, call `OnUpdateError` with `UpdateAction` set to `uaFail`. Other exceptions are not passed to the event.
 
-At the end of a normal run, `UpdatesPending` is `True` only when `OnUpdateError` chose `uaSkip` for some row. When it is `False` and `AutoCommit` is set, the update transaction is committed. The client fields are recalculated. When `ApplyUpdates` ends with an exception or `EAbort`, `UpdatesPending` stays `True`.
+At the end of a normal run, `UpdatesPending` is `True` only when `OnUpdateError` chose `uaSkip` for some row. With `AutoCommit`, the update transaction is committed at the end, also when rows were skipped, and before an exception is raised (the rows applied before it are marked applied). The client fields are recalculated. When `ApplyUpdates` ends with an exception or `EAbort`, `UpdatesPending` stays `True`.
 
-Without `UseExecuteBlock`, the insert and update statement of a row ends with an `AutoCommit` commit of the update transaction (`CommitRetaining` when it is the same as `Transaction`, or when its `TimeoutAction` is `TACommitRetaining`). This happens after each inserted or modified row, even with `CachedUpdates`; a delete is committed this way only without `CachedUpdates`. Rows that were committed stay committed when a later row fails or is skipped.
+The `AutoCommit` commit uses `CommitRetaining` when the update transaction is the same as `Transaction`, or when its `TimeoutAction` is `TACommitRetaining`. Rows are not committed one by one during `ApplyUpdates`; without `CachedUpdates`, each posted or deleted row is committed.
 
 Cached status after the statements ran, without `UseExecuteBlock`:
 
@@ -740,7 +740,7 @@ The events `BeforeOpen`, `AfterOpen`, `BeforeClose`, `AfterClose`, `BeforeInsert
 | `AddedFilterRecord(DataSet, Accept)` | Virtual and empty. Called last when a row passes `Filter` and `OnFilterRecord`, only when `Filtered` is `True`; set `Accept` to `False` to hide the row. |
 | `ClearModifFlags(Kind, NeedRefreshFields)` | Set the cached status of all rows. `Kind` `0` is `CommitUpdToCach`; `1` makes every row that is not unmodified or `cusDeletedApplied` unmodified (used by `poProtectedEdit`). |
 | `InternalDeleteRecord(Qry, Buff)` | Override. Runs the delete update objects and `DeleteSQL`, then applies `poRefreshAfterDelete` and `AutoCommit`. Returns at once when `DeleteSQL` is `No Action`. |
-| `InternalPostRecord(Qry, Buff)` | Override. Runs the update objects and the insert or update statement, applies `poRefreshAfterPost`, and commits with `AutoCommit` (also with `CachedUpdates`). |
+| `InternalPostRecord(Qry, Buff)` | Override. Runs the update objects and the insert or update statement, applies `poRefreshAfterPost`, and commits with `AutoCommit` when `CachedUpdates` is off. |
 | `DoOnApplyDefaultValue(Field, Applied)` | Dynamic. Raises the containers' events and `OnApplyDefaultValue`. |
 | `UpdateFieldsProps` | Virtual. Applies `DefaultFormats`, `PrepareOptions`, and repository settings to the fields. Runs when the dataset opens. |
 

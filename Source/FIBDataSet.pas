@@ -5982,8 +5982,8 @@ begin
   PRecordData(Buff)^.rdFlags := byte(cusUnmodified);
   SetModified(False);
   WriteRecordCache(PRecordData(Buff)^.rdRecordNumber, Buff);
-  // if not CachedUpdates then
-  AutoCommitUpdateTransaction;
+  if not CachedUpdates then
+    AutoCommitUpdateTransaction;
 
   if not EmptyStrings(FQRefresh.SQL) and (poRefreshAfterPost in Options) and
     (CacheModelOptions.CacheModelKind = cmkStandard) then
@@ -14282,156 +14282,162 @@ begin
   AutoStartUpdateTransaction;
   Buff := AllocRecordBuffer;
   try
-    bRecordsSkipped := False;
-    BlockErrorHandled := False;
-    for i := 0 to Pred(FRecordCount) do
-    begin
-      ReadRecordCache(i, Buff, False);
-      with PRecordData(Buff)^ do
+    try
+      bRecordsSkipped := False;
+      BlockErrorHandled := False;
+      for i := 0 to Pred(FRecordCount) do
       begin
-        if TCachedUpdateStatus(rdFlags) in [cusUnmodified, cusUnInserted, cusDeletedApplied] then
-          Continue;
-        cus := TCachedUpdateStatus(rdFlags and 7);
-        FUpdatesPending := True;
-        case TCachedUpdateStatus(rdFlags and 7) of
-          cusModified: UpdateKind := ukModify;
-          cusInserted: UpdateKind := ukInsert;
-          cusDeleted: UpdateKind := ukDelete;
-        else
-          Continue
-        end;
-        try
-          vTypeDispositionField := dfRRecNumber;
-          vInspectRecno := i;
-          if (Assigned(FOnUpdateRecord)) then
-          begin
-            UpdateAction := uaRetry;
-            while UpdateAction = uaRetry do
-            begin
-              UpdateAction := uaFail;
-              FOnUpdateRecord(Self, UpdateKind, UpdateAction);
-            end
-          end
-          else
-            UpdateAction := uaApply;
-          vTypeDispositionField := dfNormal;
-        except
-          on E: EFIBError do
-          begin
-            UpdateAction := uaFail;
-            if Assigned(FOnUpdateError) then
-              FOnUpdateError(Self, E, UpdateKind, UpdateAction);
-            vTypeDispositionField := dfNormal;
-            case UpdateAction of
-              uaFail: raise;
-              uaAbort: raise EAbort.Create(E.Message);
-            end;
-            case UpdateAction of
-              uaFail: FIBError(feUserAbort, [nil]);
-              uaAbort:
-                raise EAbort.Create(Format(SFIBErrorAbortUpdates, [iifStr(Self.Owner <> nil, Self.Owner.Name + '.', ''),
-                  Self.Name]));
-              uaSkip: bRecordsSkipped := True
-            end;
-          end;
-        end;
-
-        while (UpdateAction in [uaApply, uaRetry]) do
+        ReadRecordCache(i, Buff, False);
+        with PRecordData(Buff)^ do
         begin
+          if TCachedUpdateStatus(rdFlags) in [cusUnmodified, cusUnInserted, cusDeletedApplied] then
+            Continue;
+          cus := TCachedUpdateStatus(rdFlags and 7);
+          FUpdatesPending := True;
+          case TCachedUpdateStatus(rdFlags and 7) of
+            cusModified: UpdateKind := ukModify;
+            cusInserted: UpdateKind := ukInsert;
+            cusDeleted: UpdateKind := ukDelete;
+          else
+            Continue
+          end;
           try
             vTypeDispositionField := dfRRecNumber;
             vInspectRecno := i;
-            case TCachedUpdateStatus(rdFlags and 7) of
-              cusModified:
-                if CanEdit then
-                begin
-                  if FAutoUpdateOptions.UseExecuteBlock then
-                  begin
-                    AddRecordToExecuteBlock(skModify);
-                  end
-                  else
-                  begin
-                    AutoGenerateSQLText(dsEdit);
-                    InternalPostRecord(FQUpdate, Buff);
-                  end;
-                end;
-              cusInserted:
-                if CanInsert then
-                begin
-                  if FAutoUpdateOptions.UseExecuteBlock then
-                  begin
-                    AddRecordToExecuteBlock(FIBDataSet.skInsert)
-                  end
-                  else
-                  begin
-                    AutoGenerateSQLText(dsInsert);
-                    InternalPostRecord(FQInsert, Buff);
-                  end
-                end;
-              cusDeleted:
-                if CanDelete then
-                  if FAutoUpdateOptions.UseExecuteBlock then
-                  begin
-                    AddRecordToExecuteBlock(FIBDataSet.skDelete);
-                  end
-                  else
-                  begin
-                    InternalDeleteRecord(FQDelete, Buff);
-                  end
-            end;
-            if DontChangeCacheFlags and not FAutoUpdateOptions.UseExecuteBlock then
+            if (Assigned(FOnUpdateRecord)) then
             begin
-              // Restore CU status
-              rdFlags := byte(cus);
-              WriteRecordCache(i, Buff);
-            end;
-            UpdateAction := uaApplied;
-
-            if Assigned(FAfterUpdateRecord) then
-            begin
-              vResume := True;
-              FAfterUpdateRecord(Self, UpdateKind, vResume);
-              if not vResume then
-                Abort;
-            end;
-
+              UpdateAction := uaRetry;
+              while UpdateAction = uaRetry do
+              begin
+                UpdateAction := uaFail;
+                FOnUpdateRecord(Self, UpdateKind, UpdateAction);
+              end
+            end
+            else
+              UpdateAction := uaApply;
+            vTypeDispositionField := dfNormal;
           except
-            (*
-              * If there is an exception, then allow the user
-              * to intervene (decide what to do about it).
-            *)
             on E: EFIBError do
             begin
-              // a failed block was already reported to OnUpdateError
-              if BlockErrorHandled then
-                raise;
               UpdateAction := uaFail;
               if Assigned(FOnUpdateError) then
                 FOnUpdateError(Self, E, UpdateKind, UpdateAction);
+              vTypeDispositionField := dfNormal;
               case UpdateAction of
                 uaFail: raise;
                 uaAbort: raise EAbort.Create(E.Message);
-                uaSkip: bRecordsSkipped := True;
+              end;
+              case UpdateAction of
+                uaFail: FIBError(feUserAbort, [nil]);
+                uaAbort:
+                  raise EAbort.Create(Format(SFIBErrorAbortUpdates, [iifStr(Self.Owner <> nil, Self.Owner.Name + '.', ''),
+                    Self.Name]));
+                uaSkip: bRecordsSkipped := True
+              end;
+            end;
+          end;
+
+          while (UpdateAction in [uaApply, uaRetry]) do
+          begin
+            try
+              vTypeDispositionField := dfRRecNumber;
+              vInspectRecno := i;
+              case TCachedUpdateStatus(rdFlags and 7) of
+                cusModified:
+                  if CanEdit then
+                  begin
+                    if FAutoUpdateOptions.UseExecuteBlock then
+                    begin
+                      AddRecordToExecuteBlock(skModify);
+                    end
+                    else
+                    begin
+                      AutoGenerateSQLText(dsEdit);
+                      InternalPostRecord(FQUpdate, Buff);
+                    end;
+                  end;
+                cusInserted:
+                  if CanInsert then
+                  begin
+                    if FAutoUpdateOptions.UseExecuteBlock then
+                    begin
+                      AddRecordToExecuteBlock(FIBDataSet.skInsert)
+                    end
+                    else
+                    begin
+                      AutoGenerateSQLText(dsInsert);
+                      InternalPostRecord(FQInsert, Buff);
+                    end
+                  end;
+                cusDeleted:
+                  if CanDelete then
+                    if FAutoUpdateOptions.UseExecuteBlock then
+                    begin
+                      AddRecordToExecuteBlock(FIBDataSet.skDelete);
+                    end
+                    else
+                    begin
+                      InternalDeleteRecord(FQDelete, Buff);
+                    end
+              end;
+              if DontChangeCacheFlags and not FAutoUpdateOptions.UseExecuteBlock then
+              begin
+                // Restore CU status
+                rdFlags := byte(cus);
+                WriteRecordCache(i, Buff);
+              end;
+              UpdateAction := uaApplied;
+
+              if Assigned(FAfterUpdateRecord) then
+              begin
+                vResume := True;
+                FAfterUpdateRecord(Self, UpdateKind, vResume);
+                if not vResume then
+                  Abort;
+              end;
+
+            except
+              (*
+                * If there is an exception, then allow the user
+                * to intervene (decide what to do about it).
+              *)
+              on E: EFIBError do
+              begin
+                // a failed block was already reported to OnUpdateError
+                if BlockErrorHandled then
+                  raise;
+                UpdateAction := uaFail;
+                if Assigned(FOnUpdateError) then
+                  FOnUpdateError(Self, E, UpdateKind, UpdateAction);
+                case UpdateAction of
+                  uaFail: raise;
+                  uaAbort: raise EAbort.Create(E.Message);
+                  uaSkip: bRecordsSkipped := True;
+                end;
               end;
             end;
           end;
         end;
       end;
-    end;
 
-    // more than the EXECUTE BLOCK line: records without changes add no statement
-    if FAutoUpdateOptions.UseExecuteBlock and (FExecBlockStatement <> nil) then
-      if FExecBlockStatement.Count > 1 then
-        ExecuteBlock
-      else
-      begin
-        FExecBlockStatement.Clear;
-        SaveFlagsForRecordsInExecBlock;
-      end;
+      // more than the EXECUTE BLOCK line: records without changes add no statement
+      if FAutoUpdateOptions.UseExecuteBlock and (FExecBlockStatement <> nil) then
+        if FExecBlockStatement.Count > 1 then
+          ExecuteBlock
+        else
+        begin
+          FExecBlockStatement.Clear;
+          SaveFlagsForRecordsInExecBlock;
+        end;
 
-    FUpdatesPending := bRecordsSkipped;
-    if not FUpdatesPending then
+      FUpdatesPending := bRecordsSkipped;
+    except
+      // The cache already marks the rows applied before the error
       AutoCommitUpdateTransaction;
+      raise;
+    end;
+    // Skipped records stay cached, the applied ones are committed
+    AutoCommitUpdateTransaction;
 
   finally
     if Assigned(FExecBlockStatement) then

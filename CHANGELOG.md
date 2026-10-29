@@ -493,6 +493,9 @@ The lists of old and new names, and what an application has to change, are in
   the sub type 24.
 - `Post` called again from the dataset's own `BeforePost` recursed until the stack overflowed;
   it is now ignored, and a `Post` from `AfterPost` still posts.
+- `ApplyUpdates` with `AutoCommit` committed after each inserted or modified row; it now
+  commits once, at the end, also when rows were skipped (they stay cached), and before an error
+  is raised.
 
 #### Events
 
