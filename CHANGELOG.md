@@ -514,6 +514,9 @@ The lists of old and new names, and what an application has to change, are in
 - `ApplyUpdates` with `AutoCommit` committed after each inserted or modified row; it now
   commits once, at the end, also when rows were skipped (they stay cached), and before an error
   is raised.
+- `Filter`: `>`, `>=`, `<` and `<=` with a NULL operand matched in one operand order (a row
+  with NULL `D` matched `GETDATE() > D` and `D < 5`); as in SQL, such a row no longer matches; see
+  [Upgrading](Docs/guide/upgrading.md#null-in-filter-comparisons).
 
 #### Events
 

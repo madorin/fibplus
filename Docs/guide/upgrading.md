@@ -240,6 +240,12 @@ error is raised, as they were before, because the cache marks them as applied.
 - `UseRowsClause` adds `ROWS 1` only to the generated `UPDATE`; the `INSERT` and `UPDATE OR
   INSERT` no longer get it.
 
+#### NULL in `Filter` comparisons
+
+A row whose operand of `>`, `>=`, `<` or `<=` is NULL no longer matches the `Filter`, as in SQL;
+before, `GETDATE() > D` or `D < 5` also matched a NULL `D`, so add `or (D is null)` to keep such
+rows.
+
 #### Integer parameter values
 
 `AsInteger`, `AsInt64` and `AsShort` assigned before `Prepare` are converted to the parameter type

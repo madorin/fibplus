@@ -267,10 +267,22 @@ var
             coAssign: Result := ParseNode(pfdStart, pArg1);
             coEQ: Result := ParseNode(pfdStart, pArg1) = ParseNode(pfdStart, pArg2);
             coNE: Result := ParseNode(pfdStart, pArg1) <> ParseNode(pfdStart, pArg2);
-            coGT: Result := ParseNode(pfdStart, pArg1) > ParseNode(pfdStart, pArg2);
-            coGE: Result := ParseNode(pfdStart, pArg1) >= ParseNode(pfdStart, pArg2);
-            coLT: Result := ParseNode(pfdStart, pArg1) < ParseNode(pfdStart, pArg2);
-            coLE: Result := ParseNode(pfdStart, pArg1) <= ParseNode(pfdStart, pArg2);
+            coGT, coGE, coLT, coLE:
+              begin
+                Arg1 := ParseNode(pfdStart, pArg1);
+                Arg2 := ParseNode(pfdStart, pArg2);
+                // as in SQL, an order comparison with NULL does not match
+                if VarIsNull(Arg1) or VarIsNull(Arg2) then
+                  Result := False
+                else
+                  case iOperator of
+                    coGT: Result := Arg1 > Arg2;
+                    coGE: Result := Arg1 >= Arg2;
+                    coLT: Result := Arg1 < Arg2;
+                  else
+                    Result := Arg1 <= Arg2;
+                  end;
+              end;
             coOR: Result := WordBool(ParseNode(pfdStart, pArg1)) or WordBool(ParseNode(pfdStart, pArg2));
             coAND: Result := WordBool(ParseNode(pfdStart, pArg1)) and WordBool(ParseNode(pfdStart, pArg2));
             coADD: Result := ParseNode(pfdStart, pArg1) + ParseNode(pfdStart, pArg2);
