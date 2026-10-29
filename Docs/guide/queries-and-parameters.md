@@ -251,7 +251,7 @@ finally
 end;
 ```
 
-The raw file methods write and read a binary file with the column data. `BatchOutputRawFile` always writes format version 3, whatever you pass for `Version`. That format records the connection character set, and `BatchInput` raises an error when it differs from the character set of the current connection.
+The raw file methods write and read a binary file with the column data. `BatchOutputRawFile` writes format version 4 by default, with the column names in UTF-8; `Version` 1 to 3 writes an older format (the names in the system code page), which FIBPlus 7.x can read. Versions 3 and 4 record the connection character set, and `BatchInput` raises an error when it differs from the character set of the current connection.
 
 ### Events
 

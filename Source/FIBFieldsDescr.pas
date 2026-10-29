@@ -70,32 +70,7 @@ type
 implementation
 
 uses
-  FIBPlatforms;
-
-// The names are in the system code page in the stream
-procedure WriteName(Stream: TStream; const Name: string);
-var
-  Bytes: Ansistring;
-  k: Integer;
-begin
-  Bytes := Ansistring(Name);
-  k := Length(Bytes);
-  Stream.WriteBuffer(k, SizeOf(Integer));
-  if k > 0 then
-    Stream.WriteBuffer(Bytes[1], k);
-end;
-
-function ReadName(Stream: TStream): string;
-var
-  Bytes: Ansistring;
-  c: Integer;
-begin
-  Stream.ReadBuffer(c, SizeOf(Integer));
-  SetLength(Bytes, c);
-  if c > 0 then
-    Stream.ReadBuffer(Bytes[1], c);
-  Result := string(Bytes);
-end;
+  FIBPlatforms, FIBProps;
 
 { TFIBFieldDescrList }
 
@@ -181,8 +156,11 @@ procedure TFIBFieldDescrList.LoadFromStream(Stream: TStream; StreamVersion: Inte
 var
   i, c: Integer;
   p: PFIBFieldDescr;
+  UTF8: Boolean;
 begin
   Clear;
+  // version 7 has the names in the system code page
+  UTF8 := StreamVersion >= 8;
   Stream.ReadBuffer(c, SizeOf(Integer));
   Capacity := c;
   New(p);
@@ -200,9 +178,9 @@ begin
       FieldInfo[i]^.fdSubType := p^.fdSubType;
       with FieldInfo[i]^ do
       begin
-        fdRelationTable := ReadName(Stream);
-        fdRelationField := ReadName(Stream);
-        fdTableAlias := ReadName(Stream);
+        fdRelationTable := ReadUTF8StrFromStream(Stream, UTF8);
+        fdRelationField := ReadUTF8StrFromStream(Stream, UTF8);
+        fdTableAlias := ReadUTF8StrFromStream(Stream, UTF8);
       end
     end;
   finally
@@ -219,9 +197,9 @@ begin
   for i := 0 to FieldCount - 1 do
   begin
     Stream.WriteBuffer(PFIBFieldDescr(vFieldInfoList[i])^, SizeOf(TFIBFieldDescr) - SizeOf(Pstring) * 3);
-    WriteName(Stream, PFIBFieldDescr(vFieldInfoList[i])^.fdRelationTable);
-    WriteName(Stream, PFIBFieldDescr(vFieldInfoList[i])^.fdRelationField);
-    WriteName(Stream, PFIBFieldDescr(vFieldInfoList[i])^.fdTableAlias);
+    WriteUTF8StrToStream(PFIBFieldDescr(vFieldInfoList[i])^.fdRelationTable, Stream);
+    WriteUTF8StrToStream(PFIBFieldDescr(vFieldInfoList[i])^.fdRelationField, Stream);
+    WriteUTF8StrToStream(PFIBFieldDescr(vFieldInfoList[i])^.fdTableAlias, Stream);
   end;
 end;
 

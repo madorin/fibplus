@@ -123,5 +123,6 @@
     'Neplatná hodnota "%s" v %s',
     'Soubor blobů %s, parametr %s: %s',
     '%s: dávková data mají znakovou sadu %s, připojení má znakovou sadu %s',
-    'Hodnota %s obsahuje znak, který kódová stránka %d nemá'
+    'Hodnota %s obsahuje znak, který kódová stránka %d nemá',
+    '%s: verze formátu %d není podporována, maximum je %d'
   );

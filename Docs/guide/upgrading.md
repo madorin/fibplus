@@ -195,6 +195,10 @@ The transaction of the SQL logger uses `nowait` and no longer the server default
 
 The schema cache files (`CacheSchemaOptions.LocalCacheFile` and its `.dt` and `.err` files, `SaveSchemaToFile`) keep their texts in UTF-8. Files saved by older versions are still read. Older versions ignore the new `.err` file, but read the other two as text in the system code page and garble the characters outside ASCII (SQL texts, defaults, labels), so delete these files when you go back to an older version.
 
+#### Dataset streams and batch files
+
+`TFIBDataSet.SaveToStream` (and `SaveToFile`) writes stream version 8 and `BatchOutputRawFile` writes raw file version 4: the field, relation, alias and parameter names are in UTF-8, as in the data packets of `TClientDataSet`, no longer in the system code page, where the characters outside it became `?`. Streams of version 7 and raw files of versions 1 to 3 written by older versions are still read; a newer version raises `feFormatVersionNotSupported`. Older versions can't read the new streams and files: pass `Version = 3` to `BatchOutputRawFile` for a file that 7.x must read. The BLOB swap files (`BlobSwapSupport`) have a new version as well: the files written before are not used and are written again on the next read.
+
 #### Codes of client errors
 
 The errors of array fields and parameters, of the conversion to a code page, of the `ORDER BY` of a dataset with a limited cache and of the metadata load had `SQLCode` -1 and an English text. They now have their own value in `TFIBClientError` (`feArrayColumnNotFound` to `feCantLoadMetadata`), `SQLCode` is its ordinal, and the text follows `FIBLocale`. Code that tested `SQLCode = -1` for them must test the new value, for example `E.SQLCode = Ord(feArrayValueNotArray)`.

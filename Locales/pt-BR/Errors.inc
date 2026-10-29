@@ -123,5 +123,6 @@
     'Valor inválido "%s" em %s',
     'Arquivo de blobs %s, parâmetro %s: %s',
     '%s: os dados do lote têm o conjunto de caracteres %s, a conexão o conjunto de caracteres %s',
-    'O valor de %s contém um caractere que a página de código %d não tem'
+    'O valor de %s contém um caractere que a página de código %d não tem',
+    '%s: a versão %d do formato não é suportada, a máxima é %d'
   );

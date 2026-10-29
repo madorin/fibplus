@@ -123,5 +123,6 @@
     'Ungültiger Wert "%s" in %s',
     'Blob-Datei %s, Parameter %s: %s',
     '%s: die Batch-Daten haben den Zeichensatz %s, die Verbindung den Zeichensatz %s',
-    'Der Wert von %s enthält ein Zeichen, das die Codepage %d nicht hat'
+    'Der Wert von %s enthält ein Zeichen, das die Codepage %d nicht hat',
+    '%s: Formatversion %d wird nicht unterstützt, das Maximum ist %d'
   );

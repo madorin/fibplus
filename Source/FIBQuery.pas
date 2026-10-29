@@ -555,7 +555,7 @@ type
     function BatchOutput(OutputObject: TFIBBatchOutputStream): Boolean;
 
     procedure BatchInputRawFile(const FileName: string);
-    procedure BatchOutputRawFile(const FileName: string; Version: integer = 3);
+    procedure BatchOutputRawFile(const FileName: string; Version: Integer = 4);
 
     procedure BatchToQuery(ToQuery: TFIBQuery; Mappings: TStrings);
   public
@@ -3595,7 +3595,7 @@ begin
   end;
 end;
 
-procedure TFIBQuery.BatchOutputRawFile(const FileName: string; Version: integer = 3);
+procedure TFIBQuery.BatchOutputRawFile(const FileName: string; Version: Integer = 4);
 var
   RawOutput: TFIBOutputRawFile;
 begin

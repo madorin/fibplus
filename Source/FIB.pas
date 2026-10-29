@@ -191,7 +191,8 @@ type
     feParamValueInvalid,
     feBlobFileError,
     feBatchCharsetMismatch,
-    feCantTransliterateParam
+    feCantTransliterateParam,
+    feFormatVersionNotSupported
   );
 
   TStatusVector = array [0 .. 19] of ISC_STATUS;

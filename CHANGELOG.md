@@ -426,6 +426,11 @@ The lists of old and new names, and what an application has to change, are in
 - `TFIBInputDelimitedFile` read the UTF-16 file of `TFIBOutputDelimitedFile` through the system
   code page: characters outside it became `?` or a similar letter. `BatchInputRawFile` and
   `BatchOutputRawFile` could not use a file name outside the system code page.
+- The raw batch file kept the column names in the system code page: a name outside it became
+  `?` and its parameter was not found, so `BatchInputRawFile` left it `NULL`. Raw file version 4,
+  the default of `BatchOutputRawFile`, keeps them in UTF-8; versions 1 to 3 are still read, a
+  newer version raises `feFormatVersionNotSupported`; see
+  [Upgrading](Docs/guide/upgrading.md#dataset-streams-and-batch-files).
 - Win64: `TFIBQuery.BatchOutput` to a `TFIBOutputDelimitedFile` or a raw file
   (`BatchOutputRawFile`) raised an access violation, kept the buffer address in 32 bits, and
   returned `False` with an empty file, so a `BatchInput` from it inserted no row.
@@ -529,6 +534,12 @@ The lists of old and new names, and what an application has to change, are in
 - `TFIBDataSet.CacheRefreshByArrMap` read past the end of the shorter of the two field arrays.
 - `BlobSwapSupport`: with a table or field name outside the system code page the swap file was
   not written (the path had `?` in it).
+- `TFIBDataSet.SaveToStream` kept the field, relation and alias names in the system code page,
+  so names outside it became `?` after `LoadFromStream`. Stream version 8 keeps them in UTF-8, as
+  the data packets of `TClientDataSet`; version 7 is still read, a newer version raises
+  `feFormatVersionNotSupported`. The BLOB swap files keep the table and field names and the key
+  values in UTF-8 too (swap version 2; older swap files are written again); see
+  [Upgrading](Docs/guide/upgrading.md#dataset-streams-and-batch-files).
 - `TFIBDatabase.MemoSubtypes` kept the sub types in a byte, so for example `-1000` also matched
   the sub type 24.
 - SQL generation: `AutoUpdateOptions.UpdateOnlyModifiedFields` stayed `False` when assigned

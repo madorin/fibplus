@@ -123,5 +123,6 @@
     'Invalid value "%s" in %s',
     'Blob file %s, parameter %s: %s',
     '%s: the batch data has charset %s, the connection has charset %s',
-    'The value of %s has a character that code page %d doesn''t have'
+    'The value of %s has a character that code page %d doesn''t have',
+    '%s: format version %d is not supported, the maximum is %d'
   );

@@ -668,9 +668,9 @@ These methods change the cache only. They send no statement and do not mark a ro
 | Name | Description |
 |------|-------------|
 | `LoadFromFile(FileName)` / `LoadFromFile(FileName, AddInfo)` | `LoadFromStream` from a file, then read the sort information from `SelectSQL`. |
-| `LoadFromStream(Stream, SeekBegin)` / `LoadFromStream(Stream, SeekBegin, AddInfo)` | Read the field definitions and rows written by `SaveToStream` and open the dataset if it is closed. Moves to the first row. `AddInfo` returns the string saved with the data. Does nothing at design time. Raises when the stream signature or version (7 or later) is wrong, or the stream does not fit the fields. |
+| `LoadFromStream(Stream, SeekBegin)` / `LoadFromStream(Stream, SeekBegin, AddInfo)` | Read the field definitions and rows written by `SaveToStream` and open the dataset if it is closed. Moves to the first row. `AddInfo` returns the string saved with the data. Does nothing at design time. Raises when the stream signature or version is wrong (7 and 8 are read; a newer version raises `feFormatVersionNotSupported`), or the stream does not fit the fields. |
 | `SaveToFile(FileName, AddInfo)` | `SaveToStream` into a new file. |
-| `SaveToStream(Stream, SeekBegin, AddInfo)` | Fetch all rows, then write the signature `FIB$DATASET`, the field definitions, the cache, and `AddInfo`. With `SeekBegin`, go to the start of the stream first. |
+| `SaveToStream(Stream, SeekBegin, AddInfo)` | Fetch all rows, then write the signature `FIB$DATASET`, the field definitions, the cache, and `AddInfo`. With `SeekBegin`, go to the start of the stream first. Writes stream version 8, with the field, relation and alias names in UTF-8; older versions of FIBPlus can't read it. |
 
 ### `ISQLObject` members
 

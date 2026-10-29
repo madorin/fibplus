@@ -307,7 +307,8 @@ begin
 end;
 
 var
-  SwapVersion: Integer = 1;
+  // 2: the names and the key values are in UTF-8
+  SwapVersion: Integer = 2;
   BlobCacheSignature: AnsiString = 'FIB$BLOB_BODY';
   BlobCacheOperation: TCriticalSection;
 
@@ -1327,12 +1328,10 @@ end;
 
 procedure TFIBBlobStream.SaveToStream(Stream: TStream; IsCacheStream: Boolean = False);
 var
-  L: Integer;
   KeyCount: Integer;
   vFiltered: Boolean;
   Temp: PAnsiChar;
   TempSize: Integer;
-  tmpStr: AnsiString;
 begin
   CheckReadable;
   EnsureInitialized;
@@ -1357,24 +1356,9 @@ begin
 
       Stream.Write(TempSize, SizeOf(TempSize));
       Stream.Write(KeyCount, SizeOf(KeyCount));
-      // the cache file has the names and the key values in the system code page
-      tmpStr := AnsiString(FTableName);
-      L := Length(tmpStr);
-      Stream.Write(L, SizeOf(L));
-      if L > 0 then
-        Stream.Write(tmpStr[1], L);
-
-      tmpStr := AnsiString(FFieldName);
-      L := Length(tmpStr);
-      Stream.Write(L, SizeOf(L));
-      if L > 0 then
-        Stream.Write(tmpStr[1], L);
-
-      tmpStr := AnsiString(GetRecKeyValuesAsStr);
-      L := Length(tmpStr);
-      Stream.Write(L, SizeOf(L));
-      if L > 0 then
-        Stream.Write(tmpStr[1], L);
+      WriteUTF8StrToStream(FTableName, Stream);
+      WriteUTF8StrToStream(FFieldName, Stream);
+      WriteUTF8StrToStream(GetRecKeyValuesAsStr, Stream);
       if vFiltered then
       begin
         try
@@ -1393,10 +1377,11 @@ end;
 
 function TFIBBlobStream.LoadFromStream(Stream: TStream; IsCacheStream: Boolean = False): Boolean;
 var
-  tmpStr, tmpStr1: AnsiString;
+  tmpStr: AnsiString;
   tmpInt: Integer;
   tmpBlobId: TISC_QUAD;
   KeyCount: Integer;
+  StoredName: string;
 begin
   Result := False;
   if IsCacheStream then
@@ -1420,34 +1405,13 @@ begin
     Stream.Read(KeyCount, SizeOf(KeyCount));
     if KeyCount <> Length(FKeyValues) then
       Exit;
-    Stream.Read(tmpInt, SizeOf(tmpInt));
-    if tmpInt > 0 then
-    begin
-      SetLength(tmpStr, tmpInt);
-      Stream.Read(tmpStr[1], tmpInt);
-      if AnsiString(FTableName) <> tmpStr then
-        Exit;
-    end;
-    Stream.Read(tmpInt, SizeOf(tmpInt));
-    if tmpInt > 0 then
-    begin
-      SetLength(tmpStr, tmpInt);
-      Stream.Read(tmpStr[1], tmpInt);
-      if AnsiString(FFieldName) <> tmpStr then
-        Exit;
-    end;
-    tmpStr := AnsiString(GetRecKeyValuesAsStr);
-    Stream.Read(tmpInt, SizeOf(tmpInt));
-    if Length(tmpStr) <> tmpInt then
+    StoredName := ReadUTF8StrFromStream(Stream);
+    if (StoredName <> '') and (StoredName <> FTableName) then
       Exit;
-    if tmpInt > 0 then
-    begin
-      SetLength(tmpStr1, tmpInt);
-      Stream.Read(tmpStr1[1], tmpInt);
-    end
-    else
-      tmpStr1 := '';
-    if tmpStr <> tmpStr1 then
+    StoredName := ReadUTF8StrFromStream(Stream);
+    if (StoredName <> '') and (StoredName <> FFieldName) then
+      Exit;
+    if ReadUTF8StrFromStream(Stream) <> GetRecKeyValuesAsStr then
       Exit;
 
     if FDataSize <> 0 then
@@ -1901,20 +1865,24 @@ end;
 
 // TFIBOutputRawFile
 
+const
+  // 4: the parameter names are in UTF-8
+  RawFileVersion = 4;
+
 constructor TFIBOutputRawFile.CreateEx(AVersion: Integer; const CharSet: string);
 begin
   inherited Create;
-  if AVersion in [1, 2, 3] then
+  if AVersion in [1 .. RawFileVersion] then
     FVersion := AVersion
   else
-    FVersion := 3;
+    FVersion := RawFileVersion;
   FCharSet := AnsiString(CharSet)
 end;
 
 constructor TFIBOutputRawFile.Create;
 begin
   inherited Create;
-  FVersion := 3;
+  FVersion := RawFileVersion;
 end;
 
 const
@@ -1939,7 +1907,10 @@ begin
       for i := 0 to Columns.Count - 1 do
         with Columns[i].Data^ do
         begin
-          st := AnsiString(Columns[i].AliasName);
+          if FVersion >= 4 then
+            st := UTF8Encode(Columns[i].AliasName)
+          else
+            st := AnsiString(Columns[i].AliasName);
           L := Length(st);
           WriteValue(L, SizeOf(L));
           WriteValue(st[1], L);
@@ -2093,7 +2064,7 @@ var
   end;
 
 begin
-  if not(FVersion in [1, 2, 3]) then
+  if not(FVersion in [1 .. RawFileVersion]) then
     FVersion := 1;
   Result := False;
   bs := nil;
@@ -2179,6 +2150,11 @@ begin
     begin
       BytesRead := FFile.Read(ast[1], 1);
       FVersion := StrToInt(string(ast[1]));
+      if FVersion > RawFileVersion then
+      begin
+        CloseFile;
+        FIBError(feFormatVersionNotSupported, [FileName, FVersion, RawFileVersion]);
+      end;
       if FVersion > 1 then
       begin
         if Assigned(FMap) then
@@ -2195,7 +2171,10 @@ begin
           SetLength(s, L);
           if L > 0 then
             BytesRead := FFile.Read(s[1], L);
-          CurPar := Params.ByName[string(s)];
+          if FVersion >= 4 then
+            CurPar := Params.ByName[UTF8ToString(s)]
+          else
+            CurPar := Params.ByName[string(s)];
           FMap.Add(CurPar);
 
           if CurPar = nil then

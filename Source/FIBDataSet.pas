@@ -13437,6 +13437,8 @@ const
   );
 
   StreamSignature: Ansistring = 'FIB$DATASET';
+  // 8: the names are in UTF-8
+  StreamVersion = 8;
 
 function UseFormat(const sFormat: string; Scale: integer): string;
 var
@@ -13883,7 +13885,6 @@ procedure TFIBCustomDataSet.SaveToStream(Stream: TStream; SeekBegin: boolean; Ad
 var
   i, fc, fs: integer;
   Version: integer;
-  ast: Ansistring;
 begin
   FetchAll;
   with Stream do
@@ -13894,7 +13895,7 @@ begin
 
     WriteBuffer(StreamSignature[1], Length(StreamSignature));
 
-    Version := 7;
+    Version := StreamVersion;
     WriteBuffer(Version, SizeOf(integer));
     //
     fc := Length(AddInfo);
@@ -13921,11 +13922,7 @@ begin
 
         fs := FieldNo;
         WriteBuffer(fs, SizeOf(integer));
-        // the stream has the names in the system code page
-        ast := Ansistring(Name);
-        fs := Length(ast);
-        WriteBuffer(fs, SizeOf(integer));
-        WriteBuffer(ast[1], fs);
+        WriteUTF8StrToStream(Name, Stream);
       end;
 
     vFieldDescrList.SaveToStream(Stream);
@@ -13960,7 +13957,7 @@ var
   ft: TFieldType;
   s: Ansistring;
   vSize: integer;
-  Name: Ansistring;
+  Name: string;
   vDefaultFields: boolean;
   procedure RaizeErrStream;
   begin
@@ -13985,6 +13982,8 @@ begin
         if Version < 7 then
           raise Exception.Create
             ('Can''t load dataset cache from Stream.Incorrect version.');
+        if Version > StreamVersion then
+          FIBError(feFormatVersionNotSupported, [CmpFullName(Self) + '.LoadFromStream', Version, StreamVersion]);
 
         if Version >= 7 then
         begin
@@ -14012,11 +14011,9 @@ begin
             ReadBuffer(vSize, SizeOf(integer));
             ReadBuffer(ft, SizeOf(TFieldType));
             ReadBuffer(FieldNo, SizeOf(integer));
-            ReadBuffer(fs, SizeOf(integer));
-            SetLength(Name, fs);
-            if fs > 0 then
-              ReadBuffer(Name[1], fs);
-            with TFieldDef.Create(FieldDefs, string(Name), ft, vSize, False, FieldNo) do
+            // version 7 has the names in the system code page
+            Name := ReadUTF8StrFromStream(Stream, Version >= 8);
+            with TFieldDef.Create(FieldDefs, Name, ft, vSize, False, FieldNo) do
               InternalCalcField := False;
           end;
 
