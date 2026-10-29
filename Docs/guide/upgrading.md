@@ -214,6 +214,12 @@ value out of the range of an `INTEGER` key field, a service start parameter of 6
 more. `lock_timeout` of `TRParams` is checked by Firebird 2.5 and later (1 to 32767). Use `AsInt64`,
 `BIGINT` columns or a smaller value.
 
+#### `Post` from `BeforePost`
+
+A `Post` called again from the dataset's own `BeforePost` returns without doing anything; the
+outer `Post` posts the record. Before, it recursed until the stack overflowed. `Edit` and `Post`
+in `AfterPost` still post again.
+
 #### Integer parameter values
 
 `AsInteger`, `AsInt64` and `AsShort` assigned before `Prepare` are converted to the parameter type

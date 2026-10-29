@@ -491,6 +491,8 @@ The lists of old and new names, and what an application has to change, are in
   not written (the path had `?` in it).
 - `TFIBDatabase.MemoSubtypes` kept the sub types in a byte, so for example `-1000` also matched
   the sub type 24.
+- `Post` called again from the dataset's own `BeforePost` recursed until the stack overflowed;
+  it is now ignored, and a `Post` from `AfterPost` still posts.
 
 #### Events
 

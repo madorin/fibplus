@@ -4342,6 +4342,9 @@ end;
 
 procedure TFIBCustomDataSet.Post;
 begin
+  // A Post called again from BeforePost (master/detail) would recurse
+  if drsInPost in FRunState then
+    Exit;
   Include(FRunState, drsInPost);
   try
     inherited Post;
@@ -8558,6 +8561,8 @@ procedure TFIBCustomDataSet.DoAfterPost;
 var
   ActBuff: TRecordBuffer;
 begin
+  // The record is posted: AfterPost may edit and post again
+  Exclude(FRunState, drsInPost);
   if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
     GlobalContainer.DataSetEvent(Self, deAfterPost);
 
