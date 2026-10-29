@@ -258,6 +258,12 @@ Before, the value was sent as an integer and the server raised a conversion erro
 - `ExecuteFromFile` detects a UTF-8 or UTF-16 BOM; a file without one is still read in the system
   code page. Pass the encoding of such files to the new `ExecuteFromFile(FileName, Encoding)`.
 
+#### Restore page size
+
+`TFIBRestoreService.PageSize` is `0` by default (it was `4096`): the database is restored with
+the page size of the backup. A form that kept the old default stores no value and now loads `0`;
+a value set in the form stays. Set `PageSize := 4096` for the old result.
+
 ## 7.9.1
 
 ### Build

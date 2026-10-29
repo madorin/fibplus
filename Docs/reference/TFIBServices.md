@@ -338,7 +338,7 @@ Restores a database from a backup with the server's restore service.
 |------|------|---------|-------------|
 | `BackupFile` | `TStrings` | | Backup files to read, one per line, as in [TFIBBackupService](#tfibbackupservice). |
 | `DatabaseName` | `TStrings` | | Database files to create, one per line: a file name, or `name=length`. Empty lines are skipped. |
-| `PageSize` | `Integer` | `4096` | Page size of the new database. Sent only when greater than `0`, so with the default a database with larger pages is restored with 4096-byte pages. `0` keeps the page size of the backup. |
+| `PageSize` | `Integer` | `0` | Page size of the new database. Sent only when greater than `0`; the default `0` keeps the page size of the backup, as gbak without `-page`. |
 | `PageBuffers` | `Integer` | | Page buffers. Sent only when greater than `0`. |
 | `FixCharset` | `string` | | Character set name for `FixFssMetadata` and `FixFssData`. Both flags are sent only when this is not empty. |
 | `Options` | `TRestoreOptions` | `[CreateNewDB]` | Restore flags, see below. |

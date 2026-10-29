@@ -610,6 +610,9 @@ The lists of old and new names, and what an application has to change, are in
 - A service start parameter of 65536 bytes or more was dropped or sent with a wrong length; it
   raises an error now. A `BufferSize` of 65536 or more was cut to 2 bytes (65536 gave "Unexpected
   Output buffer value"); the service API gets at most 65535 bytes.
+- `TFIBRestoreService.PageSize` was `4096` by default and always sent, so a database with larger
+  pages was restored with 4096-byte pages. The default is `0`, which keeps the page size of the
+  backup as gbak does without `-page`; see [Upgrading](Docs/guide/upgrading.md#restore-page-size).
 
 #### Schema cache
 

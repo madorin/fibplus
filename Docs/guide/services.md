@@ -120,14 +120,13 @@ while not Backup.Eof do
 Restore.BackupFile.Text := '/var/backup/sales.fbk';
 Restore.DatabaseName.Text := '/var/lib/firebird/data/sales_copy.fdb';
 Restore.Options := [CreateNewDB, Replace];
-Restore.PageSize := 0;
 Restore.ServiceStart;
 while not Restore.Eof do
   Restore.GetNextLine;
 ```
 
 - `Options` of a restore is `[CreateNewDB]` by default, so the restore fails when the database file exists. Add `Replace` to overwrite it.
-- `PageSize` is `4096` by default and is sent to the server, so a database with larger pages comes back with 4096-byte pages. Set `PageSize := 0` to keep the page size of the backup, or set the size you want.
+- `PageSize` is `0` by default: the database keeps the page size of the backup, as with gbak without `-page`. Set a size to change it.
 - A backup in several files, or a database in several files, has one `name=length` line for each file.
 - The backup and restore options are in [TFIBBackupService](../reference/TFIBServices.md#tfibbackupservice) and [TFIBRestoreService](../reference/TFIBServices.md#tfibrestoreservice). `ParallelWorkers` (*Firebird 5+*) runs the task with several threads.
 
@@ -319,7 +318,7 @@ while not Stats.Eof do
 - **The component is detached after an error.** Every server error detaches it. Set `Active := True` before the next task.
 - **The task is not finished when `ServiceStart` returns.** Read the output until `Eof`, or assign `OnTextNotify`.
 - **A truncated backup restores without an error.** The database stays shut down. Restore with `Verbose` and check the last lines; see [Success and failure](#success-and-failure).
-- **The restored database has smaller pages.** `PageSize` is `4096` by default. Set it to `0`.
+- **The restored database has another page size than the original.** `PageSize` is not `0`. Set it to `0` to keep the page size of the backup.
 - **`unavailable database` with a path on another server.** Services work only on databases of their own server. Use a `stdout` backup to get the file on the client.
 - **`Secondary server attachments cannot validate databases`.** Close the other connections, or shut the database down.
 - **`Database shutdown unsuccessful`.** Connections or transactions were still active after `Wait` seconds. Use `Forced`, or a longer `Wait`.

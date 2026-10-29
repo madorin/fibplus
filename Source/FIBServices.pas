@@ -403,7 +403,7 @@ type
     { a name=value pair of filename and length }
     property DatabaseName: TStrings read FDatabaseName write SetDatabaseName;
     property BackupFile: TStrings read FBackupFile write SetBackupFile;
-    property PageSize: Integer read FPageSize write FPageSize default 4096;
+    property PageSize: Integer read FPageSize write FPageSize default 0;
     property PageBuffers: Integer read FPageBuffers write FPageBuffers;
     property FixCharset: string read FFixCharset write FFixCharset;
     property Options: TRestoreOptions read FOptions write FOptions default [CreateNewDB];
@@ -1651,7 +1651,7 @@ begin
   FDatabaseName := TStringList.Create;
   FBackupFile := TStringList.Create;
   Include(FOptions, CreateNewDB);
-  FPageSize := 4096;
+  FPageSize := 0;
 end;
 
 destructor TFIBRestoreService.Destroy;
