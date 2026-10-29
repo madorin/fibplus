@@ -3119,7 +3119,7 @@ begin
     TryHexToInt64(Copy(ParamName, 2, Separator - 2), Offset) and
     TryHexToInt64(Copy(ParamName, Separator + 1, MaxInt), SizeValue) and (SizeValue <= MaxInt);
   if Result then
-    Size := SizeValue;
+    Size := Integer(SizeValue);
 end;
 
 procedure TFIBScripter.TryFillBlobParams;

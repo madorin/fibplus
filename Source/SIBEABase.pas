@@ -116,7 +116,7 @@ type
     FClientLibrary: IIBClientLibrary;
     WhichEvent: Integer;
     ErrorBuffer: PAnsiChar;
-    ErrorBufferLength: Integer;
+    ErrorBufferLength: ULong;
     ErrorVector: SIB_PStatusVector;
     StatusVector: SIB_StatusVector;
     EventCounts: SIB_EventCountVector;
@@ -277,7 +277,7 @@ procedure TSIBEventThread.DoEvent;
 
 begin
   Parent.FOnEventAlert(Parent, Parent.FEvents[((EventGroup * SIB_MAX_EVENT_BLOCK) + WhichEvent)],
-    EventCounts[WhichEvent])
+    Longint(EventCounts[WhichEvent]))
 end;
 
 // called by the IB event callback to copy an update resultbuffer

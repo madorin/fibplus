@@ -730,7 +730,7 @@ begin
   if (BCD.Precision = 0) or (BCD.SignSpecialPlaces and $40 <> 0) then
     Exit;
   Places := BCD.SignSpecialPlaces and $3F;
-  Scale := Places;
+  Scale := Byte(Places);
   FirstDecimal := BCD.Precision - Places;
   // accumulated negative, so that Low(Int64) fits
   for I := 0 to BCD.Precision - 1 do
@@ -746,7 +746,7 @@ begin
     else
     begin
       // decimals that don't fit: round half away from zero at this digit
-      Scale := I - FirstDecimal;
+      Scale := Byte(I - FirstDecimal);
       if Digit >= 5 then
         if Value > Low(Int64) then
           Dec(Value)
