@@ -210,7 +210,7 @@ Base class of services that return text, such as backup, restore, statistics, an
 
 Calling `GetNextLine`, `GetNextChunk`, or `GetNextBuf` before an action was started raises `feQueryParamsError`.
 
-The server writes the output, the user names, and the database and file names in the code page of its system. `GetNextLine`, `GetNextChunk`, and the string results of the query services decode them as UTF-8 when the bytes are valid UTF-8 (a Linux server, user names of *Firebird 3+*), else in the system code page (a Windows server). Database and file names, user names, and the other text parameters are sent in the system code page, which a *Firebird 3+* client library converts to UTF-8.
+The server writes the output, the user names, and the database and file names in the code page of its system. `GetNextLine`, `GetNextChunk`, and the string results of the query services decode them as UTF-8 when the bytes are valid UTF-8 (a Linux server, user names of *Firebird 3+*), else in the system code page (a Windows server). Database and file names, user names, and the other text parameters are sent in the system code page, which a *Firebird 3+* client library converts to UTF-8; on Delphi 2009 and later a character outside the system code page raises a "Cannot transliterate" error.
 
 ### Events
 

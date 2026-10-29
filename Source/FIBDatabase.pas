@@ -2979,8 +2979,7 @@ begin
       DBInfoCommand := AnsiChar(isc_info_db_id);
       Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1,
         @DBInfoCommand, FIBLocalBufferLength, local_buffer), True);
-      local_buffer[5 + Int(local_buffer[4])] := #0;
-      Result := PAnsiChar(@local_buffer[5]);
+      Result := AnsiString(DecodeServerText(@local_buffer[5], Int(local_buffer[4])));
       FDBFileName := Result
     end
   else
@@ -2998,9 +2997,7 @@ begin
   Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1,
     @DBInfoCommand, FIBLocalBufferLength, local_buffer), True);
   p := @local_buffer[5 + Int(local_buffer[4])]; // DBSiteName Length
-  p := p + Int(p^) + 1; // End of DBSiteName
-  p^ := #0; // Null it.
-  Result := PAnsiChar(@local_buffer[6 + Int(local_buffer[4])]);
+  Result := AnsiString(DecodeServerText(p + 1, Int(p^)));
 end;
 
 function TFIBDatabase.GetIsRemoteConnect: Boolean;
@@ -3709,6 +3706,7 @@ var
   Query: TFIBQuery;
   i: Integer;
   c: Integer;
+  HasParams: Boolean;
 
 begin
   Result := False;
@@ -3716,6 +3714,7 @@ begin
     Query := GetQueryForUse(aTransaction, aSQL)
   else
     Query := GetQueryForUse(FInternalTransaction, aSQL);
+  HasParams := Query.Params.Count > 0;
   with Query.Params do
     if High(ParamValues) < Count - 1 then
       c := High(ParamValues)
@@ -3757,12 +3756,10 @@ begin
     finally
       if Transaction.InTransaction and (aTransaction = nil) then
         Transaction.Commit;
-      if c < 0 then
-        Query.Free
-      else if aCacheQuery then
+      if HasParams and aCacheQuery then
         FreeQueryForUse(Query)
       else
-        Query.Free
+        Query.Free;
     end;
 end;
 

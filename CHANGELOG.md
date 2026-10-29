@@ -50,6 +50,9 @@
 - `TFIBTransaction`: `lock_timeout` was sent in 2 bytes, so a value from 65536
   up was cut (65546 started the transaction with a timeout of 10 seconds). It is
   sent in 4 bytes; Firebird 2.5 and later check the range.
+- `TFIBDatabase.DBFileName` and `DBSiteName` kept the bytes the server sent, so a
+  non-ASCII file name from a Linux server (UTF-8) was garbled (`é` as `Ã©`). They
+  are now decoded like the other database info texts and kept in the system code page.
 - `LibraryName` of `TFIBDatabase` went through the system code page: a client
   library in a folder with a name outside it could not be loaded.
 - `DBParams`: a last `shutdown` value of one character (`shutdown=2`) was ignored, and an unknown
@@ -99,6 +102,14 @@
   type 1").
 - Win64: `BatchOutput` to a delimited or a raw file raised an access violation, which it reports
   only as `False`, and left the file empty.
+- `BatchInput` left the stream with the parameters of the query after `baStop` or an error, and
+  `BatchOutput` left it with the columns of the query; both are cleared at the end now.
+- `TransactionEnding` and `TransactionEnded` of `TFIBQuery` were published but never called.
+  `TransactionEnding` now runs before the open cursor is closed at the end of the transaction,
+  and `TransactionEnded` after the transaction ended, as in `TpFIBDataSet`.
+- `TFIBDatabase.QueryValues` of a statement without parameters that returned a row kept it in
+  the query cache, while `QueryValue` freed it; only statements with parameters are cached now,
+  and only with `aCacheQuery`.
 
 #### Datasets and fields
 
@@ -154,6 +165,12 @@
   Firebird rejects; it now goes only on the `UPDATE`, before `RETURNING`. `GenerateSQLText`
   and `GenerateSQLTextNoParams` with `skMerge` made a broken statement; they now make
   `UPDATE OR INSERT ... MATCHING` on the key fields.
+- `GenerateSQLText` on a dataset without field objects failed with `rfBlobFields` and ignored
+  `ifsNoBlob` and `ifsOnlyBlob`; it now takes the BLOB columns from the field definitions.
+  `skMerge` with `ifsOnlyBlob` left the key fields out, so the `MATCHING` columns were missing;
+  the key fields are always included for `skMerge`.
+- Under `AutoUpdateOptions.UpdateOnlyModifiedFields`, `InsertSQL` and `UpdateSQL` were assigned
+  and prepared again at every post, even when the generated text was the same.
 - `ApplyUpdates` of a `TClientDataSet` over a `TpFIBDataSet` sent the text `No Action` of
   `InsertSQL`, `UpdateSQL`, `DeleteSQL` or an update object to the server (syntax error); the
   row now counts as applied with nothing sent, and a `No Action` delete runs no update object,
@@ -269,6 +286,11 @@
   in the system code page, which the client converts; on Delphi 2009 and later
   a character outside it raises "Cannot transliterate" instead of being sent as
   `?`.
+- The other text parameters of the services (database, backup and file names,
+  the table names of `TpFIBStatisticalService`, `Params` of the attachment) were
+  sent with `?` for a character outside the system code page, so the server
+  reported a missing file or a wrong password. On Delphi 2009 and later they
+  raise "Cannot transliterate", as the security service does.
 - Text the server sends back was decoded in the system code page: the output of
   the services (`GetNextLine`, `GetNextChunk`), `TpFIBSecurityService.UserInfo`,
   the attached database names and the other strings of
@@ -358,6 +380,7 @@
   datasets" error of `TpFIBClientDataSet` with the address of its message.
 - `StringAsGUID` (`StrUtil`) rejected lowercase hex digits and read some other characters (`G`,
   a space, `/`, `:`, `@`) as 0. `HexStr2Int` (`StdFuncs`) reads lowercase hex digits.
+- Delphi 13: `StringAsGUID` (`StrUtil`) gave the implicit conversion warning W1071.
 - `TCallBackList.Delete` ignored the index 0 and did not free the deleted entry.
 - `BCDToInt64WithScale` (`StdFuncs`) dropped the leading digit of 19 digit values, never
   reported an overflow, and left `Scale` unset for a zero precision `TBcd`. `BCDToExtended` gave

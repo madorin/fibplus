@@ -175,7 +175,7 @@ Values come from the server while connected.
 |------|------|-------------|
 | `BaseLevel`, `DBSQLDialect`, `ReadOnly`, `NoReserve` | `Long`, `Word`, `Long`, `Long` | Base level, database dialect, read-only flag, and page reserve of the database. |
 | `CreationDate` | `TDateTime` | Date the database was created, as the server reports it. `0` if the server does not report it. |
-| `DBFileName`, `DBSiteName`, `IsRemoteConnect` | `AnsiString`, `AnsiString`, `Boolean` | File and host from `isc_info_db_id`, and whether the connection is remote. |
+| `DBFileName`, `DBSiteName`, `IsRemoteConnect` | `AnsiString`, `AnsiString`, `Boolean` | File and host from `isc_info_db_id` (decoded as UTF-8 when the bytes are valid UTF-8, else in the system code page), and whether the connection is remote. |
 | `DBImplementationClass`, `DBImplementationNo` | `Long` | Server implementation and class. |
 | `DifferenceTime` | `Double` | Client clock minus server time, in days, measured at connect when `SynchronizeTime` is `True`; otherwise `0`. |
 | `FBVersion` | `string` | Firebird version string of the server. |
@@ -246,7 +246,7 @@ Write-ahead log values (`LogFile`, `CurLogFileName`, `CurLogPartitionOffset`, `N
 |------|-------------|
 | `Execute(SQL)` | Run a statement and return `True`. Any exception is swallowed and gives `False`. |
 | `Gen_Id(GeneratorName, Step, aTransaction)` | Next value of a generator. With `Step = 1` and a usable `GeneratorsCache`, values come from the client cache; otherwise the method runs `gen_id(Name, Step)`. It runs in `FirstActiveTransaction` if there is one, else in `aTransaction`, else in the internal transaction; it starts and commits a transaction only if the one it uses is not active. |
-| `QueryValue(SQL, FieldNo, [ParamValues], aTransaction, aCacheQuery)` | Run a query and return one column of the first row as a `Variant`. `ParamValues` fill the parameters in order. BLOB values come back as strings. `aCacheQuery` keeps the prepared query for reuse. |
+| `QueryValue(SQL, FieldNo, [ParamValues], aTransaction, aCacheQuery)` | Run a query and return one column of the first row as a `Variant`. `ParamValues` fill the parameters in order. BLOB values come back as strings. `aCacheQuery` allows caching: a statement with parameters is kept prepared in the query cache for the next call; a statement without parameters is always freed after the call. With `aCacheQuery = False` the query is always freed. |
 | `QueryValues(SQL, [ParamValues], aTransaction, aCacheQuery)` | Like `QueryValue` for all columns: a `Variant` array. |
 | `QueryValueAsStr(SQL, FieldNo, [ParamValues])` | Like `QueryValue`, as a string; `Null` gives an empty string. |
 | `InternalQueryValue(SQL, FieldNo, ParamValues, aTransaction, aCacheQuery)` | The implementation of the methods above. |

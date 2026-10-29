@@ -427,7 +427,7 @@ function StringAsGUID(const AStr: AnsiString): TGUID;
     LowNibble := HexDigitValue(AStr[Index + 1]);
     if (HighNibble < 0) or (LowNibble < 0) then
       InvalidGUID;
-    Result := HighNibble shl 4 or LowNibble;
+    Result := Byte(HighNibble shl 4 or LowNibble);
   end;
 
 begin

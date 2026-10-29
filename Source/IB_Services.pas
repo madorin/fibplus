@@ -1045,7 +1045,7 @@ begin
     case SPBVal of
       isc_spb_command_line, isc_spb_user_name, isc_spb_password, isc_spb_sql_role_name:
         begin
-          AnsiValue := AnsiString(param_value);
+          AnsiValue := EncodeString(param_value, FIBCodePageSystem);
           if Length(AnsiValue) > 255 then
             FIBError(feParamValueTooLong, [param_name, Length(AnsiValue), 255]);
           SPB := SPB + AnsiChar(SPBServerVal) + AnsiChar(Length(AnsiValue)) + AnsiValue;
@@ -1375,10 +1375,10 @@ begin
       Continue;
     EqualsPos := Pos('=', Line);
     if EqualsPos = 0 then
-      ServiceStartAddParam(Line, FileParam)
+      ServiceStartAddParam(EncodeString(Line, FIBCodePageSystem), FileParam)
     else
     begin
-      ServiceStartAddParam(Trim(Copy(Line, 1, EqualsPos - 1)), FileParam);
+      ServiceStartAddParam(EncodeString(Trim(Copy(Line, 1, EqualsPos - 1)), FIBCodePageSystem), FileParam);
       ServiceStartAddParam(StrToInt(Trim(Copy(Line, EqualsPos + 1, MaxInt))), LengthParam);
     end;
   end;
@@ -1426,7 +1426,7 @@ end;
 procedure TpFIBConfigService.ActivateShadow;
 begin
   ServiceStartParams := AnsiChar(isc_action_svc_properties);
-  ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
+  ServiceStartAddParam(EncodeString(FDatabaseName, FIBCodePageSystem), SPBConstantValues[isc_spb_dbname]);
   ServiceStartAddParam(isc_spb_prp_activate, SPBConstantValues[isc_spb_options]);
   InternalServiceStart;
 end;
@@ -1434,7 +1434,7 @@ end;
 procedure TpFIBConfigService.BringDatabaseOnline;
 begin
   ServiceStartParams := AnsiChar(isc_action_svc_properties);
-  ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
+  ServiceStartAddParam(EncodeString(FDatabaseName, FIBCodePageSystem), SPBConstantValues[isc_spb_dbname]);
   ServiceStartAddParam(isc_spb_prp_db_online, SPBConstantValues[isc_spb_options]);
   InternalServiceStart;
 end;
@@ -1442,7 +1442,7 @@ end;
 procedure TpFIBConfigService.SetAsyncMode(Value: Boolean);
 begin
   ServiceStartParams := AnsiChar(isc_action_svc_properties);
-  ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
+  ServiceStartAddParam(EncodeString(FDatabaseName, FIBCodePageSystem), SPBConstantValues[isc_spb_dbname]);
   ServiceStartParams := ServiceStartParams + AnsiChar(isc_spb_prp_write_mode);
   if Value then
     ServiceStartParams := ServiceStartParams + AnsiChar(isc_spb_prp_wm_async)
@@ -1459,7 +1459,7 @@ end;
 procedure TpFIBConfigService.SetPageBuffers(Value: Integer);
 begin
   ServiceStartParams := AnsiChar(isc_action_svc_properties);
-  ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
+  ServiceStartAddParam(EncodeString(FDatabaseName, FIBCodePageSystem), SPBConstantValues[isc_spb_dbname]);
   ServiceStartAddParam(Value, isc_spb_prp_page_buffers);
   InternalServiceStart;
 end;
@@ -1467,7 +1467,7 @@ end;
 procedure TpFIBConfigService.SetReadOnly(Value: Boolean);
 begin
   ServiceStartParams := AnsiChar(isc_action_svc_properties);
-  ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
+  ServiceStartAddParam(EncodeString(FDatabaseName, FIBCodePageSystem), SPBConstantValues[isc_spb_dbname]);
   ServiceStartParams := ServiceStartParams + AnsiChar(isc_spb_prp_access_mode);
   if Value then
     ServiceStartParams := ServiceStartParams + AnsiChar(isc_spb_prp_am_readonly)
@@ -1479,7 +1479,7 @@ end;
 procedure TpFIBConfigService.SetReserveSpace(Value: Boolean);
 begin
   ServiceStartParams := AnsiChar(isc_action_svc_properties);
-  ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
+  ServiceStartAddParam(EncodeString(FDatabaseName, FIBCodePageSystem), SPBConstantValues[isc_spb_dbname]);
   ServiceStartParams := ServiceStartParams + AnsiChar(isc_spb_prp_reserve_space);
   if Value then
     ServiceStartParams := ServiceStartParams + AnsiChar(isc_spb_prp_res)
@@ -1491,7 +1491,7 @@ end;
 procedure TpFIBConfigService.SetSweepInterval(Value: Integer);
 begin
   ServiceStartParams := AnsiChar(isc_action_svc_properties);
-  ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
+  ServiceStartAddParam(EncodeString(FDatabaseName, FIBCodePageSystem), SPBConstantValues[isc_spb_dbname]);
   ServiceStartAddParam(Value, isc_spb_prp_sweep_interval);
   InternalServiceStart;
 end;
@@ -1499,7 +1499,7 @@ end;
 procedure TpFIBConfigService.SetDBSqlDialect(Value: Integer);
 begin
   ServiceStartParams := AnsiChar(isc_action_svc_properties);
-  ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
+  ServiceStartAddParam(EncodeString(FDatabaseName, FIBCodePageSystem), SPBConstantValues[isc_spb_dbname]);
   ServiceStartAddParam(Value, isc_spb_prp_set_sql_dialect);
   InternalServiceStart;
 end;
@@ -1507,7 +1507,7 @@ end;
 procedure TpFIBConfigService.ShutdownDatabase(Options: TShutdownMode; Wait: Integer);
 begin
   ServiceStartParams := AnsiChar(isc_action_svc_properties);
-  ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
+  ServiceStartAddParam(EncodeString(FDatabaseName, FIBCodePageSystem), SPBConstantValues[isc_spb_dbname]);
   if (Options = Forced) then
     ServiceStartAddParam(Wait, isc_spb_prp_shutdown_db)
   else if (Options = DenyTransaction) then
@@ -1583,10 +1583,10 @@ begin
 
   Action := isc_action_svc_db_stats;
   ServiceStartParams := AnsiChar(isc_action_svc_db_stats);
-  ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
+  ServiceStartAddParam(EncodeString(FDatabaseName, FIBCodePageSystem), SPBConstantValues[isc_spb_dbname]);
   ServiceStartAddParam(param, SPBConstantValues[isc_spb_options]);
   if (StatTables in Options) then
-    ServiceStartAddParam(FTableNames, SPBConstantValues[isc_spb_command_line]);
+    ServiceStartAddParam(EncodeString(FTableNames, FIBCodePageSystem), SPBConstantValues[isc_spb_command_line]);
 end;
 
 { TpFIBBackupService }
@@ -1613,7 +1613,7 @@ begin
     Param := Param or isc_spb_bkp_convert;
   Action := isc_action_svc_backup;
   ServiceStartParams := AnsiChar(isc_action_svc_backup);
-  ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
+  ServiceStartAddParam(EncodeString(FDatabaseName, FIBCodePageSystem), SPBConstantValues[isc_spb_dbname]);
   ServiceStartAddParam(Param, SPBConstantValues[isc_spb_options]);
   if Verbose then
     ServiceStartParams := ServiceStartParams + AnsiChar(SPBConstantValues[isc_spb_verbose]);
@@ -1725,10 +1725,10 @@ begin
     FIBError(feStartParamsError, [nil]);
   Action := isc_action_svc_nbak;
   ServiceStartParams := Char(isc_action_svc_nbak);
-  ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
+  ServiceStartAddParam(EncodeString(FDatabaseName, FIBCodePageSystem), SPBConstantValues[isc_spb_dbname]);
   // ServiceStartAddParam(0, SPBConstantValues[isc_spb_options]);
 
-  ServiceStartAddParam(FBackupFile, isc_spb_nbk_file);
+  ServiceStartAddParam(EncodeString(FBackupFile, FIBCodePageSystem), isc_spb_nbk_file);
   ServiceStartAddParam(FLevel, isc_spb_nbk_level);
 end;
 
@@ -1773,12 +1773,12 @@ begin
     FIBError(feStartParamsError, [nil]);
   Action := isc_action_svc_nrest;
   ServiceStartParams := Char(isc_action_svc_nrest);
-  ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
+  ServiceStartAddParam(EncodeString(FDatabaseName, FIBCodePageSystem), SPBConstantValues[isc_spb_dbname]);
   for i := 0 to FBackupFiles.Count - 1 do
   begin
     if (Trim(FBackupFiles[i]) = '') then
       continue;
-    ServiceStartAddParam(FBackupFiles[i], isc_spb_nbk_file);
+    ServiceStartAddParam(EncodeString(FBackupFiles[i], FIBCodePageSystem), isc_spb_nbk_file);
   end;
 end;
 
@@ -1908,7 +1908,7 @@ var
   i, RepairParam: Integer;
 begin
   ServiceStartParams := AnsiChar(isc_action_svc_repair);
-  ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
+  ServiceStartAddParam(EncodeString(FDatabaseName, FIBCodePageSystem), SPBConstantValues[isc_spb_dbname]);
   for i := 0 to High(FLimboTransactionInfo) do
   begin
     case FGlobalAction of
@@ -1959,7 +1959,7 @@ begin
   if (ValidateDB in Options) then
     param := param or isc_spb_rpr_validate_db;
   ServiceStartParams := AnsiChar(isc_action_svc_repair);
-  ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
+  ServiceStartAddParam(EncodeString(FDatabaseName, FIBCodePageSystem), SPBConstantValues[isc_spb_dbname]);
   if param > 0 then
     ServiceStartAddParam(param, SPBConstantValues[isc_spb_options]);
   if (SweepDB in Options) and (FParallelWorkers > 0) then

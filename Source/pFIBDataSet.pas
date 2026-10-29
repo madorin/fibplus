@@ -2759,13 +2759,14 @@ begin
         dsEdit:
           begin
             s := GenerateSQLText(UpdateTableName, KeyFields, skModify, tmp, UseReturningFields);
-            if s <> UpdateSQL.Text then
+            // TStrings.Text ends with a line break
+            if s <> TrimRight(UpdateSQL.Text) then
               UpdateSQL.Text := s;
           end;
         dsInsert:
           begin
             s := GenerateSQLText(UpdateTableName, KeyFields, FIBDataSet.skInsert, tmp, UseReturningFields);
-            if s <> InsertSQL.Text then
+            if s <> TrimRight(InsertSQL.Text) then
               InsertSQL.Text := s;
           end;
       end;
@@ -3179,6 +3180,30 @@ var
       end
   end;
 
+  function IsBlobField(Index: Integer): Boolean;
+  begin
+    if vFieldsCreated then
+      Result := Fields[Index].IsBlob
+    else
+      Result := FieldDefs[Index].DataType in [ftBlob, ftMemo, ftGraphic, ftFmtMemo
+{$IFDEF D2007+}
+        , ftWideMemo
+{$ENDIF}
+        ];
+  end;
+
+  function IsMatchingField(Index: Integer): Boolean;
+  var
+    Name: string;
+  begin
+    if vFieldsCreated then
+      Name := GetRelationFieldName(Fields[Index])
+    else
+      Name := GetRelationFieldName(FieldDefs[Index]);
+    Name := EasyFormatIdentifier(Database.SQLDialect, Name, False);
+    Result := Pos(',' + Name + ',', ',' + MatchingStr + ',') > 0;
+  end;
+
 begin
   Result := '';
   if Length(TableName) = 0 then
@@ -3324,19 +3349,20 @@ begin
   for i := 0 to fc do
   begin
     ReturnOnly := False;
-    if vFieldsCreated then
-    begin
-      if (Fields[i].FieldKind <> fkData) then
-        Continue;
+    if vFieldsCreated and (Fields[i].FieldKind <> fkData) then
+      Continue;
+    // The MATCHING columns must be in the column list
+    if not ((SK = skMerge) and IsMatchingField(i)) then
       case IncludeFields of
         ifsNoBlob:
-          if Fields[i].IsBlob then
+          if IsBlobField(i) then
             Continue;
         ifsOnlyBlob:
-          if not Fields[i].IsBlob then
+          if not IsBlobField(i) then
             Continue;
       end;
-
+    if vFieldsCreated then
+    begin
       if SK <> FIBDataSet.skDelete then
         if FAutoUpdateOptions.UpdateOnlyModifiedFields then
         begin
@@ -3419,7 +3445,7 @@ begin
             'NEW_' + vFieldName, False);
           if (rfAll in ReturningFields) then
             sReturningFields := sReturningFields + RealFieldName + ','
-          else if (rfBlobFields in ReturningFields) and Fields[i].IsBlob then
+          else if (rfBlobFields in ReturningFields) and IsBlobField(i) then
             sReturningFields := sReturningFields + RealFieldName + ','
         end;
       FIBDataSet.skInsert, skMerge:
@@ -3429,7 +3455,7 @@ begin
             'NEW_' + vFieldName, False);
           if (rfAll in ReturningFields) then
             sReturningFields := sReturningFields + RealFieldName + ','
-          else if (rfBlobFields in ReturningFields) and Fields[i].IsBlob then
+          else if (rfBlobFields in ReturningFields) and IsBlobField(i) then
             sReturningFields := sReturningFields + RealFieldName + ','
         end;
     end;

@@ -503,6 +503,7 @@ type
     procedure SQLChanging(Sender: TObject);
     procedure SQLChange(Sender: TObject);
     procedure DoTransactionEnding(Sender: TObject);
+    procedure DoTransactionEnded(Sender: TObject);
     // Added procedures
     procedure SaveRestoreValues(SQLDA: TFIBXSQLDA; IsSave: boolean);
 
@@ -3491,6 +3492,7 @@ begin
     OnDatabaseDisconnecting := DatabaseDisconnecting;
     OnDatabaseConnectionLost := DatabaseConnectionLost;
     OnTransactionEnding := DoTransactionEnding;
+    OnTransactionEnded := DoTransactionEnded;
   end;
   FSQL := TStringList.Create;
   TStringList(FSQL).OnChanging := SQLChanging;
@@ -3579,52 +3581,55 @@ begin
   if not Result then
     Exit;
   InputObject.FParams := Self.FUserSQLParams;
-  // Self.FUserSQLParams.Initialize;
-  InputObject.ReadyStream;
-  Result := InputObject.State = bsFileReady;
-  if Result and (InputObject.FVersion > 2) and (InputObject.FCharset <> Database.ConnectParams.Charset) then
-    raise Exception.Create(Format(SErrorInProc, [CmpFullName(Self),
-      'BatchInput']) + Format(SEInvalidCharsetData, [InputObject.FCharset, Database.ConnectParams.Charset]));
+  try
+    // Self.FUserSQLParams.Initialize;
+    InputObject.ReadyStream;
+    Result := InputObject.State = bsFileReady;
+    if Result and (InputObject.FVersion > 2) and (InputObject.FCharset <> Database.ConnectParams.Charset) then
+      raise Exception.Create(Format(SErrorInProc, [CmpFullName(Self),
+        'BatchInput']) + Format(SEInvalidCharsetData, [InputObject.FCharset, Database.ConnectParams.Charset]));
 
-  RecNum := 1;
-  BatchAction := baContinue;
-  while InputObject.ReadParameters do
-  begin
-    if Assigned(FOnBatching) then
+    RecNum := 1;
+    BatchAction := baContinue;
+    while InputObject.ReadParameters do
     begin
-      FOnBatching(boInput, RecNum, BatchAction);
-      Inc(RecNum);
-    end;
+      if Assigned(FOnBatching) then
+      begin
+        FOnBatching(boInput, RecNum, BatchAction);
+        Inc(RecNum);
+      end;
 
-    case BatchAction of
-      baContinue:
-        begin
-          ErrorAction := beRetry;
-          while ErrorAction = beRetry do
-            try
-              ExecQuery;
-              ErrorAction := beIgnore;
-            except
-              on E: EFIBError do
-                if Assigned(FOnBatchError) then
-                begin
-                  ErrorAction := beFail;
-                  FOnBatchError(E, ErrorAction);
-                  case ErrorAction of //
-                    beFail: raise;
-                    beAbort: Abort;
-                  end; // case
-                end
-                else
-                  raise
-            end;
-        end;
-      baStop: Exit;
-    else
-      BatchAction := baContinue;
+      case BatchAction of
+        baContinue:
+          begin
+            ErrorAction := beRetry;
+            while ErrorAction = beRetry do
+              try
+                ExecQuery;
+                ErrorAction := beIgnore;
+              except
+                on E: EFIBError do
+                  if Assigned(FOnBatchError) then
+                  begin
+                    ErrorAction := beFail;
+                    FOnBatchError(E, ErrorAction);
+                    case ErrorAction of //
+                      beFail: raise;
+                      beAbort: Abort;
+                    end; // case
+                  end
+                  else
+                    raise
+              end;
+          end;
+        baStop: Exit;
+      else
+        BatchAction := baContinue;
+      end;
     end;
+  finally
+    InputObject.FParams := nil;
   end;
-  InputObject.FParams := nil
 end;
 
 function TFIBQuery.BatchOutput(OutputObject: TFIBBatchOutputStream): Boolean;
@@ -3665,8 +3670,10 @@ begin
       Next;
     end;
     Close;
+    OutputObject.FColumns := nil;
   except
     Close;
+    OutputObject.FColumns := nil;
     Result := False
   end;
 end;
@@ -6345,10 +6352,18 @@ end;
 
 procedure TFIBQuery.DoTransactionEnding(Sender: TObject);
 begin
+  if Assigned(FTransactionEnding) then
+    FTransactionEnding(Sender);
   if Transaction.State in [tsDoRollback, tsDoCommit] then
     if FAutoCloseOnTransactionEnd then
       if (FOpen) then
         Close;
+end;
+
+procedure TFIBQuery.DoTransactionEnded(Sender: TObject);
+begin
+  if Assigned(FTransactionEnded) then
+    FTransactionEnded(Sender);
 end;
 
 /// / Routine work
