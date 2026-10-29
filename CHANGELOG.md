@@ -512,6 +512,8 @@ The lists of old and new names, and what an application has to change, are in
   ([Upgrading](Docs/guide/upgrading.md#generated-statements)).
 - `GenerateSQLText` on a dataset without field objects failed with `rfBlobFields` and ignored
   `ifsNoBlob` and `ifsOnlyBlob`; it now takes the BLOB columns from the field definitions.
+- Under `UpdateOnlyModifiedFields` the per-post `InsertSQL` and `UpdateSQL` were assigned, and
+  so prepared, again at each post although the text was the same.
 - `Post` called again from the dataset's own `BeforePost` recursed until the stack overflowed;
   it is now ignored, and a `Post` from `AfterPost` still posts.
 - `ApplyUpdates` with `AutoCommit` committed after each inserted or modified row; it now

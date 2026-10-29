@@ -15142,13 +15142,14 @@ begin
         dsEdit:
           begin
             s := GenerateSQLText(UpdateTableName, KeyFields, skModify, tmp, UseReturningFields);
-            if s <> UpdateSQL.Text then
+            // TStrings.Text ends with a line break
+            if s <> TrimRight(UpdateSQL.Text) then
               UpdateSQL.Text := s;
           end;
         dsInsert:
           begin
             s := GenerateSQLText(UpdateTableName, KeyFields, FIBDataSet.skInsert, tmp, UseReturningFields);
-            if s <> InsertSQL.Text then
+            if s <> TrimRight(InsertSQL.Text) then
               InsertSQL.Text := s;
           end;
       end;
