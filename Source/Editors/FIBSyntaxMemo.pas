@@ -4272,9 +4272,13 @@ begin
           Lines.State := Lines.State - [ssUndoProcess];
       end;
 
-      if AdjustSections then
-        for N := n2 - n1 downto 1 do
-          Sections.InsertRow(fStart.Y + Ord(fStart.X > 0));
+      if AdjustSections and (n2 > n1) then
+        begin
+          for N := n2 - n1 downto 1 do
+            Sections.InsertRow(fStart.Y + Ord(fStart.X > 0));
+          // The added lines have no section yet, and the editor paints before EndUpdate
+          Sections.ReIndex;
+        end;
 
       // Set the new cursor position
       fEnd := NewSelEnd;
