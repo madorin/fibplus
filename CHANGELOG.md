@@ -50,7 +50,7 @@
   IDE closes the connections of the design time components before **Run** and
   **Run without debugging**, so the program doesn't compete with them for the
   database. Connections opened by code running in the IDE stay open.
-- The design time packages `dclFIB` and `dclFIBTools` can be installed in
+- The design time packages `dclFIBCore` and `dclFIBTools` can be installed in
   the 64-bit IDE of Delphi 12.3 and 13 (Win64 platform).
 
 #### Schema extract
@@ -166,18 +166,20 @@ The lists of old and new names, and what an application has to change, are in
 
 #### Build
 
-- The packages are renamed: the runtime package is `FIB`, the design time
-  packages start with `dcl`, as in Delphi and other libraries, and the editors
-  packages are merged into them; the old and new names are in
-  [Upgrading](Docs/guide/upgrading.md#packages).
+- The packages are renamed: the runtime package is `FIBCore` (`FIBCore_Dxx`
+  before 10.4) and its design time package `dclFIBCore` (`dclFIBCore_Dxx`),
+  with `dcl` before the name of the runtime package, as in Delphi and other
+  libraries; the editors packages are merged into it. The old and new names
+  are in [Upgrading](Docs/guide/upgrading.md#packages).
   - Delphi 10.4 and later have one package of each kind for all versions,
-    through `{$LIBSUFFIX AUTO}`, in `Packages\FIB.groupproj`: `FIB`
-    (`FIB270.bpl` to `FIB370.bpl`), `dclFIB`, `dclFIBTools` (was `FIBTools`)
-    and `FIBFMX` (was `FIBPlusFMX`), which is also built for Delphi 10.4 to 12.
-  - Delphi 2009 to 10.3 Rio have `FIB_Dxx` and `dclFIB_Dxx`, named after the
-    package version, from `FIB_D12` (Delphi 2009) to `FIB_D26` (10.3 Rio), in
-    `FIB_Dxx.groupproj`. The duplicate packages of Delphi XE7 are merged into
-    `FIB_D21` and `dclFIB_D21`.
+    through `{$LIBSUFFIX AUTO}`, in `Packages\FIB.groupproj`: `FIBCore`
+    (`FIBCore270.bpl` to `FIBCore370.bpl`), `dclFIBCore`, `dclFIBTools` (was
+    `FIBTools`) and `FIBFMX` (was `FIBPlusFMX`), which is also built for
+    Delphi 10.4 to 12.
+  - Delphi 2009 to 10.3 Rio have `FIBCore_Dxx` and `dclFIBCore_Dxx`, named
+    after the package version, from `FIBCore_D12` (Delphi 2009) to
+    `FIBCore_D26` (10.3 Rio), in `FIB_Dxx.groupproj`. The duplicate packages
+    of Delphi XE7 are merged into `FIBCore_D21` and `dclFIBCore_D21`.
 - `FIBPlus.inc` is renamed to `FIB.inc`, and `RegFIBPlus`, `RegFIBPlusEditors`
   and `RegFIBPlus.dcr` to `RegFIB`, `RegFIBEditors` and `RegFIB.dcr`.
 - The unit `fib` is renamed to `FIB` (`FIB.pas`), like the other units with the

@@ -3,13 +3,13 @@
         <ProjectGuid>{761A3621-064E-4446-92AA-3B4BABC23EA5}</ProjectGuid>
     </PropertyGroup>
     <ItemGroup>
-        <Projects Include="FIB.dproj">
+        <Projects Include="FIBCore.dproj">
             <Dependencies/>
         </Projects>
         <Projects Include="FIBFMX.dproj">
             <Dependencies/>
         </Projects>
-        <Projects Include="dclFIB.dproj">
+        <Projects Include="dclFIBCore.dproj">
             <Dependencies/>
         </Projects>
         <Projects Include="dclFIBTools.dproj">
@@ -23,14 +23,14 @@
             <Default.Personality/>
         </BorlandProject>
     </ProjectExtensions>
-    <Target Name="FIB">
-        <MSBuild Projects="FIB.dproj"/>
+    <Target Name="FIBCore">
+        <MSBuild Projects="FIBCore.dproj"/>
     </Target>
-    <Target Name="FIB:Clean">
-        <MSBuild Projects="FIB.dproj" Targets="Clean"/>
+    <Target Name="FIBCore:Clean">
+        <MSBuild Projects="FIBCore.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="FIB:Make">
-        <MSBuild Projects="FIB.dproj" Targets="Make"/>
+    <Target Name="FIBCore:Make">
+        <MSBuild Projects="FIBCore.dproj" Targets="Make"/>
     </Target>
     <Target Name="FIBFMX">
         <MSBuild Projects="FIBFMX.dproj"/>
@@ -41,14 +41,14 @@
     <Target Name="FIBFMX:Make">
         <MSBuild Projects="FIBFMX.dproj" Targets="Make"/>
     </Target>
-    <Target Name="dclFIB">
-        <MSBuild Projects="dclFIB.dproj"/>
+    <Target Name="dclFIBCore">
+        <MSBuild Projects="dclFIBCore.dproj"/>
     </Target>
-    <Target Name="dclFIB:Clean">
-        <MSBuild Projects="dclFIB.dproj" Targets="Clean"/>
+    <Target Name="dclFIBCore:Clean">
+        <MSBuild Projects="dclFIBCore.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="dclFIB:Make">
-        <MSBuild Projects="dclFIB.dproj" Targets="Make"/>
+    <Target Name="dclFIBCore:Make">
+        <MSBuild Projects="dclFIBCore.dproj" Targets="Make"/>
     </Target>
     <Target Name="dclFIBTools">
         <MSBuild Projects="dclFIBTools.dproj"/>
@@ -60,13 +60,13 @@
         <MSBuild Projects="dclFIBTools.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="FIB;FIBFMX;dclFIB;dclFIBTools"/>
+        <CallTarget Targets="FIBCore;FIBFMX;dclFIBCore;dclFIBTools"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="FIB:Clean;FIBFMX:Clean;dclFIB:Clean;dclFIBTools:Clean"/>
+        <CallTarget Targets="FIBCore:Clean;FIBFMX:Clean;dclFIBCore:Clean;dclFIBTools:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="FIB:Make;FIBFMX:Make;dclFIB:Make;dclFIBTools:Make"/>
+        <CallTarget Targets="FIBCore:Make;FIBFMX:Make;dclFIBCore:Make;dclFIBTools:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

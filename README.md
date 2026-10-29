@@ -23,22 +23,22 @@ The [samples](Samples/README.md) are small applications that show one feature ea
 
 ## 📦 Installation
 
-FIBPlus 8 supports Delphi 2009 and later; use 7.9.x for Delphi 6 to 2007. The project groups are in the `Packages` folder: `FIB.groupproj` for Delphi 10.4 and later, and `FIB_Dxx.groupproj` for older versions, where `xx` is the [package version](https://docwiki.embarcadero.com/RADStudio/en/Compiler_Versions), from `FIB_D12` (Delphi 2009) to `FIB_D26` (10.3 Rio).
+FIBPlus 8 supports Delphi 2009 and later; use 7.9.x for Delphi 6 to 2007. The project groups are in the `Packages` folder: `FIB.groupproj` for Delphi 10.4 and later, and `FIB_Dxx.groupproj` for older versions, where `xx` is the [package version](https://docwiki.embarcadero.com/RADStudio/en/Compiler_Versions), from `FIB_D12.groupproj` (Delphi 2009) to `FIB_D26.groupproj` (10.3 Rio).
 
 | Package | Type | Purpose |
 |---------|------|---------|
-| `FIB` (`FIB_Dxx` before 10.4) | runtime | Components, required by the other packages |
-| `dclFIB` (`dclFIB_Dxx` before 10.4) | design time | Tool Palette registration, property and component editors, IDE login dialog |
+| `FIBCore` (`FIBCore_Dxx` before 10.4) | runtime | Components, required by the other packages |
+| `dclFIBCore` (`dclFIBCore_Dxx` before 10.4) | design time | Tool Palette registration, property and component editors, IDE login dialog |
 | `dclFIBTools` | design time, optional | **Tools > FIBPlus** menu; closes the design-time connections before the program runs from the IDE |
 | `FIBFMX` | runtime | FireMonkey login dialog (`FIBLoginDlgFMX`) |
 
-`dclFIBTools` and `FIBFMX` exist for Delphi 10.4 and later, where each package is one `.dpk` for all versions and `{$LIBSUFFIX AUTO}` adds the version suffix to the BPL, e.g. `FIB370.bpl` for Delphi 13.
+`dclFIBTools` and `FIBFMX` exist for Delphi 10.4 and later, where each package is one `.dpk` for all versions and `{$LIBSUFFIX AUTO}` adds the version suffix to the BPL, e.g. `FIBCore370.bpl` for Delphi 13.
 
 ### 🛠️ Steps
 
 1. Open the project group and select the **Win32** platform for all packages.
 2. Right-click the project group and choose **Build All**.
-3. Right-click `dclFIB` and choose **Install**; optionally install `dclFIBTools` too.
+3. Right-click `dclFIBCore` and choose **Install**; optionally install `dclFIBTools` too.
 4. In **Tools > Options > Language > Delphi > Library**, add the `Source` folder to the **Library path** of every target platform you use.
 
 **64-bit IDE** (Delphi 12.3 and later): select **Windows 64-bit** instead of Win32 and install the packages from `BplWin64`, which must be on the PATH of the 64-bit IDE. Win64x (Modern C++) is not what the 64-bit IDE loads.

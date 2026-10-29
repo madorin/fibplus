@@ -28,18 +28,18 @@ Find the version you use now, then read every section above it, from the one jus
 
 ### Packages
 
-The runtime package is `FIB` and the design time packages start with `dcl`. Delphi 10.4 and later have one package of each kind for all versions (`{$LIBSUFFIX AUTO}`) in `FIB.groupproj`. Older versions have the [package version](https://docwiki.embarcadero.com/RADStudio/en/Compiler_Versions) in the name (`FIB_D12` for 120) and the project groups `FIB_Dxx.groupproj`.
+The runtime package is `FIBCore` (`FIBCore_Dxx` before 10.4) and its design time package is `dclFIBCore` (`dclFIBCore_Dxx`): a design time package has the name of the runtime package it registers, with `dcl` before it. Delphi 10.4 and later have one package of each kind for all versions (`{$LIBSUFFIX AUTO}`) in `FIB.groupproj`. Older versions have the [package version](https://docwiki.embarcadero.com/RADStudio/en/Compiler_Versions) in the name (`FIBCore_D12` for 120) and the project groups `FIB_Dxx.groupproj`.
 
 | Delphi | Old | New |
 |--------|-----|-----|
-| 10.4 to 13 | `FIBPlus_D27`..`FIBPlus_D37` | `FIB` (`FIB270.bpl`..`FIB370.bpl`) |
+| 10.4 to 13 | `FIBPlus_D27`..`FIBPlus_D37` | `FIBCore` (`FIBCore270.bpl`..`FIBCore370.bpl`) |
 | 10.4 to 13 | `FIBPlusFMX` (Delphi 13 only) | `FIBFMX` (`FIBFMX270.bpl`..`FIBFMX370.bpl`) |
-| 10.4 to 13 | `DclFIBPlus_Dxx`, `FIBPlusEditors_Dxx` | `dclFIB` (`dclFIB270.bpl`..`dclFIB370.bpl`) |
+| 10.4 to 13 | `DclFIBPlus_Dxx`, `FIBPlusEditors_Dxx` | `dclFIBCore` (`dclFIBCore270.bpl`..`dclFIBCore370.bpl`) |
 | 10.4 to 13 | `FIBTools` | `dclFIBTools` |
-| XE6 to 10.3 | `FIBPlus_D20`..`FIBPlus_D26` | `FIB_D20`..`FIB_D26` |
-| XE2 to XE5, XE7 | `FIBPlus_XE2`..`FIBPlus_XE5`, `FIBPlus_XE7` | `FIB_D16`..`FIB_D19`, `FIB_D21` |
-| 2009, 2010, XE | `FIBPlus2009`, `FIBPlus2010`, `FIBPlus2011` | `FIB_D12`, `FIB_D14`, `FIB_D15` |
-| 2009 to 10.3 | `DclFIBPlus_Dxx`, `FIBPlusEditors...` | `dclFIB_Dxx` |
+| XE6 to 10.3 | `FIBPlus_D20`..`FIBPlus_D26` | `FIBCore_D20`..`FIBCore_D26` |
+| XE2 to XE5, XE7 | `FIBPlus_XE2`..`FIBPlus_XE5`, `FIBPlus_XE7` | `FIBCore_D16`..`FIBCore_D19`, `FIBCore_D21` |
+| 2009, 2010, XE | `FIBPlus2009`, `FIBPlus2010`, `FIBPlus2011` | `FIBCore_D12`, `FIBCore_D14`, `FIBCore_D15` |
+| 2009 to 10.3 | `DclFIBPlus_Dxx`, `FIBPlusEditors...` | `dclFIBCore_Dxx` |
 
 - In **Component > Install Packages**, remove the old packages, then build and install the new ones from the project group.
 - Applications built with runtime packages: replace the old name in the runtime packages list and deploy the new BPL.

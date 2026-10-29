@@ -3,10 +3,10 @@
         <ProjectGuid>{761A3621-064E-4446-92AA-3B4BABC23EA5}</ProjectGuid>
     </PropertyGroup>
     <ItemGroup>
-        <Projects Include="FIB_D21.dproj">
+        <Projects Include="FIBCore_D21.dproj">
             <Dependencies/>
         </Projects>
-        <Projects Include="dclFIB_D21.dproj">
+        <Projects Include="dclFIBCore_D21.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -17,32 +17,32 @@
             <Default.Personality/>
         </BorlandProject>
     </ProjectExtensions>
-    <Target Name="FIB_D21">
-        <MSBuild Projects="FIB_D21.dproj"/>
+    <Target Name="FIBCore_D21">
+        <MSBuild Projects="FIBCore_D21.dproj"/>
     </Target>
-    <Target Name="FIB_D21:Clean">
-        <MSBuild Projects="FIB_D21.dproj" Targets="Clean"/>
+    <Target Name="FIBCore_D21:Clean">
+        <MSBuild Projects="FIBCore_D21.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="FIB_D21:Make">
-        <MSBuild Projects="FIB_D21.dproj" Targets="Make"/>
+    <Target Name="FIBCore_D21:Make">
+        <MSBuild Projects="FIBCore_D21.dproj" Targets="Make"/>
     </Target>
-    <Target Name="dclFIB_D21">
-        <MSBuild Projects="dclFIB_D21.dproj"/>
+    <Target Name="dclFIBCore_D21">
+        <MSBuild Projects="dclFIBCore_D21.dproj"/>
     </Target>
-    <Target Name="dclFIB_D21:Clean">
-        <MSBuild Projects="dclFIB_D21.dproj" Targets="Clean"/>
+    <Target Name="dclFIBCore_D21:Clean">
+        <MSBuild Projects="dclFIBCore_D21.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="dclFIB_D21:Make">
-        <MSBuild Projects="dclFIB_D21.dproj" Targets="Make"/>
+    <Target Name="dclFIBCore_D21:Make">
+        <MSBuild Projects="dclFIBCore_D21.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="FIB_D21;dclFIB_D21"/>
+        <CallTarget Targets="FIBCore_D21;dclFIBCore_D21"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="FIB_D21:Clean;dclFIB_D21:Clean"/>
+        <CallTarget Targets="FIBCore_D21:Clean;dclFIBCore_D21:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="FIB_D21:Make;dclFIB_D21:Make"/>
+        <CallTarget Targets="FIBCore_D21:Make;dclFIBCore_D21:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

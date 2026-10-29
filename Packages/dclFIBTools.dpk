@@ -35,7 +35,7 @@ requires
   vcl,
   vclimg,
   designide,
-  FIB;
+  FIBCore;
 
 contains
   RegFIBTools in '..\Source\Tools\RegFIBTools.pas',

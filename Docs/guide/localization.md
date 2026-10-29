@@ -10,7 +10,7 @@ FIBPlus raises its own errors (`EFIBClientError`) with texts from a table of mes
 | Login dialog, VCL (`FIBLoginDlg`) and FMX (`FIBLoginDlgFMX`) | `LoginDlg.inc` | Yes, in the languages below |
 | Other FIBPlus exceptions: update errors, connection and parameter errors, event alerter, scripter, SQL parser details and others | none, `resourcestring` in `FIBConsts`, `SIBGlobals`, `FIBEventAlerter`, or the code of the units | No, English; see [Other texts](#other-texts) |
 | Server errors (`EFIBInterBaseError`) | none, from Firebird | No: Firebird has only English messages; see [Server messages](#server-messages) |
-| Design time editors and IDE tools | none, `dclFIB`, `dclFIBTools` | No, English |
+| Design time editors and IDE tools | none, `dclFIBCore`, `dclFIBTools` | No, English |
 
 ## Languages
 

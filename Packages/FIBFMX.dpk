@@ -33,7 +33,7 @@ package FIBFMX;
 requires
   rtl,
   fmx,
-  FIB;
+  FIBCore;
 
 contains
   FIBLoginDlgFMX in '..\Source\FIBLoginDlgFMX.pas' {FIBLoginFormFMX};
