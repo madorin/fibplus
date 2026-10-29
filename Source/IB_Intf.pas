@@ -1820,23 +1820,17 @@ begin
   if Assigned(Ffb_shutdown) and LibraryLoaded then
     Ffb_shutdown(0, fb_shutrsn_app_stopped);
   Ffb_shutdown := nil;
-{$IFDEF WINDOWS}
-  if (FLibraryHandle > HINSTANCE_ERROR) then
+  // FreeLibrary is dlclose on POSIX, as LoadLibrary is dlopen
+  if LibraryLoaded then
   begin
     FreeLibrary(FLibraryHandle);
     FLibraryHandle := HINSTANCE_ERROR
   end;
-{$ENDIF}
 end;
 
 function TIBClientLibrary.LibraryLoaded: boolean;
 begin
-{$IFDEF WINDOWS}
-  Result := FLibraryHandle > HINSTANCE_ERROR
-{$ENDIF}
-{$IFDEF MACOS}
-    Result := FLibraryHandle > HINSTANCE_ERROR
-{$ENDIF}
+  Result := FLibraryHandle > HINSTANCE_ERROR;
 end;
 
 function TIBClientLibrary.fb_cancel_operation(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; option: UShort): ISC_STATUS;

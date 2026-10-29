@@ -338,6 +338,8 @@ The lists of old and new names, and what an application has to change, are in
   and later check the range.
 - `LibraryName` of `TFIBDatabase` went through the system code page: a client library in a
   folder with a name outside it could not be loaded.
+- macOS: the client library was never unloaded, neither by `IIBClientLibrary.FreeIBLibrary` nor
+  at program exit.
 - `DBParams`: a last `shutdown` value of one character (`shutdown=2`) was ignored, and an unknown
   word or a word with spaces (`shutdown=force, full`) set every bit of the value. The words are
   now trimmed; an unknown word or a number over 255 raises the new `feParamValueInvalid`.
