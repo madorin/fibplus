@@ -73,6 +73,17 @@ begin
   end;
 end;
 
+function CompareAsVariants(const V, V1: Variant): Integer;
+begin
+  if V = V1 then
+    Result := 0
+  else
+    if V > V1 then
+      Result := 1
+    else
+      Result := -1;
+end;
+
 {$DEFINE BODY_NUMERIC_COMPARE_EQ}
 {$WARNINGS OFF}
 
@@ -267,12 +278,7 @@ function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
                               (GetVariantData(v), v1);
                           // {$ENDIF}
                         else
-                          if v = v1 then
-                            result := 0
-                          else if v > v1 then
-                            result := 1
-                          else
-                            result := -1
+                          result := CompareAsVariants(v, v1);
                         end;
                       end;
 

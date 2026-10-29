@@ -27,6 +27,7 @@ resourcestring
   SUnknownClientLibrary       = 'Can''t perform operation %s. Unknown client library';
   STransactionForOtherLibrary = '%s.' + sLineBreak + 'Transaction can''t work with different client library.';
   SCryptKeyTooLong            = 'The crypt key has %d bytes, but the server accepts at most %d';
+  SFieldNeedsFIBDataSet       = '%s needs a FIBPlus dataset';
 
   SEdErrorPrefix       = 'Error of record updating:';
   SEdDeadLockMess      = 'Deadlock detected';

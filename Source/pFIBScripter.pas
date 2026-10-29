@@ -443,42 +443,14 @@ begin
 end;
 
 function IsClause(const EtalonClause: string; const Source: string; Position: Integer): boolean;
-// EtalonClause must be if UpperCase
+// EtalonClause must be in UpperCase
 var
-  Len: Integer;
-  LenEtalon: Byte;
-  pSource: PChar;
-  pEtalon: PChar;
-  pEtalon1: PChar;
+  LenEtalon: Integer;
 begin
-  Len := Length(Source);
+  Result := IsKeywordAt(EtalonClause, Source, Position);
   LenEtalon := Length(EtalonClause);
-  if Len - Position + 1 < LenEtalon then
-    Result := False
-  else
-  begin
-    pSource := Pointer(Source);
-    Inc(pSource, Position - 1);
-    pEtalon := Pointer(EtalonClause);
-    pEtalon1 := Pointer(EtalonClause);
-    Inc(pEtalon1, LenEtalon);
-    Result := True;
-    while (pEtalon <> pEtalon1) do
-    begin
-      if pSource^ <> pEtalon^ then
-      begin
-        if Byte(pSource^) - 32 <> Byte(pEtalon^) then
-        begin
-          Result := False;
-          Break;
-        end;
-      end;
-      Inc(pSource);
-      Inc(pEtalon);
-    end;
-    if Result and (Len - Position >= LenEtalon) then
-      Result := Source[Position + LenEtalon] in [' ', #13, #9, #10, '/', '-', ';', '^', ',', '}']
-  end
+  if Result and (Length(Source) - Position >= LenEtalon) then
+    Result := CharInSet(Source[Position + LenEtalon], [' ', #13, #9, #10, '/', '-', ';', '^', ',', '}'])
 end;
 
 function StrIsIfDirective(const CheckStr: string; X: Integer): boolean;
@@ -1786,6 +1758,17 @@ begin
   end;
 end;
 
+// Skips a UTF-8 byte order mark at the start of a text file opened by Reset
+procedure SkipUTF8BOM(var F: TextFile);
+begin
+  // Eof fills the buffer
+  if not Eof(F) then
+    with TTextRec(F) do
+      if (BufEnd >= BufPos + 3) and (BufPtr[BufPos] = #$EF) and (BufPtr[BufPos + 1] = #$BB) and
+        (BufPtr[BufPos + 2] = #$BF) then
+        Inc(BufPos, 3);
+end;
+
 // Executes the complete statements of the current parser, False when paused
 function TpFIBScripter.ExecuteParsed(var StmtNo: Integer; StmtTxt: TStrings): boolean;
 var
@@ -1808,11 +1791,13 @@ var
   S: string;
   Lines, TmpSQL: TStrings;
   SavedParser: TpFIBScriptParser;
-  StmtNo: Integer;
+  SavedLineCount, StmtNo: Integer;
 begin
+  SavedLineCount := FLineCountInFile;
   FLineCountInFile := GetLineCountInFile(FileName);
   AssignFile(F, FileName);
   Reset(F);
+  SkipUTF8BOM(F);
   Lines := TStringList.Create;
   TmpSQL := TStringList.Create;
   SavedParser := FParser;
@@ -1842,6 +1827,9 @@ begin
     try
       EndRun;
     finally
+      // A file run by INPUT gives the line count back to the calling file
+      if FRunDepth > 0 then
+        FLineCountInFile := SavedLineCount;
       FParser.Free;
       FParser := SavedParser;
       TmpSQL.Free;
@@ -3066,42 +3054,71 @@ end;
 
 // Blob File Supports
 
+// Strict hexadecimal number: 1 to 15 digits, nothing else
+function TryHexToInt64(const S: string; out Value: Int64): Boolean;
+var
+  i, Digit: Integer;
+begin
+  Value := 0;
+  Result := (Length(S) > 0) and (Length(S) <= 15);
+  if not Result then
+    Exit;
+  for i := 1 to Length(S) do
+  begin
+    case S[i] of
+      '0' .. '9': Digit := Ord(S[i]) - Ord('0');
+      'A' .. 'F': Digit := Ord(S[i]) - Ord('A') + 10;
+      'a' .. 'f': Digit := Ord(S[i]) - Ord('a') + 10;
+    else
+      Result := False;
+      Exit;
+    end;
+    Value := Value shl 4 or Digit;
+  end;
+end;
+
+// A blob file reference is a parameter named H<offset>_<size>, both hexadecimal
+function TryParseBlobReference(const ParamName: string; out Offset: Int64; out Size: Integer): Boolean;
+var
+  Separator: Integer;
+  SizeValue: Int64;
+begin
+  Separator := Pos('_', ParamName);
+  Result := (Length(ParamName) > 0) and ((ParamName[1] = 'H') or (ParamName[1] = 'h')) and (Separator > 2) and
+    TryHexToInt64(Copy(ParamName, 2, Separator - 2), Offset) and
+    TryHexToInt64(Copy(ParamName, Separator + 1, MaxInt), SizeValue) and (SizeValue <= MaxInt);
+  if Result then
+    Size := Integer(SizeValue);
+end;
+
 procedure TpFIBScripter.TryFillBlobParams;
 var
-  i: Integer;
-  pn: string;
-  bPos, Len: Integer;
-  m: TMemoryStream;
-  p_: Integer;
+  i, Size: Integer;
+  Offset: Int64;
+  Data: TMemoryStream;
 begin
-  with FQuery do
-    for i := FQuery.ParamCount - 1 downto 0 do
-    begin
-      pn := FQuery.ParamName(i);
-      if (pn <> '') and (pn[1] in ['H', 'h']) then
+  for i := FQuery.ParamCount - 1 downto 0 do
+    if TryParseBlobReference(FQuery.ParamName(i), Offset, Size) then
+      if Size = 0 then
+        FQuery.Params[i].Clear
+      else
       begin
-        p_ := Pos('_', pn);
-        bPos := HexStr2Int(Copy(pn, 2, p_ - 2));
-        Len := HexStr2Int(Copy(pn, p_ + 1, Length(pn) - p_));
-        if Len = 0 then
-          FQuery.Params[i].Clear
-        else
-        begin
-          if not Assigned(FBlobFileStream) then
-            FBlobFileStream := TFileStream.Create(FBlobFile, fmOpenRead, fmShareDenyWrite);
-          m := TMemoryStream.Create;
+        if not Assigned(FBlobFileStream) then
+          FBlobFileStream := TFileStream.Create(FBlobFile, fmOpenRead, fmShareDenyWrite);
+        Data := TMemoryStream.Create;
+        try
           try
-            m.Size := Len;
-            m.Position := 0;
-            FBlobFileStream.Position := bPos;
-            FBlobFileStream.Read(m.Memory^, Len);
-            FQuery.Params[i].LoadFromStream(m);
-          finally
-            m.Free;
-          end
+            FBlobFileStream.Position := Offset;
+            Data.CopyFrom(FBlobFileStream, Size);
+          except
+            on E: EStreamError do
+              FIBError(feBlobFileError, [FBlobFile, FQuery.ParamName(i), E.Message]);
+          end;
+          FQuery.Params[i].LoadFromStream(Data);
+        finally
+          Data.Free;
         end;
       end;
-    end
 end;
 
 // Reinsert

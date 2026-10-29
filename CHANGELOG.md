@@ -42,8 +42,8 @@
 - `lock_read`/`lock_write` table names in `TRParams` were sent in the system
   code page; the server takes them in the charset of the connection, so a
   non-ASCII table name was not found or was a malformed string. They are now
-  sent in the metadata code page of the connection (Firebird 2.5 still takes
-  them in UNICODE_FSS only).
+  sent in the metadata code page of the connection, and in UTF-8 to Firebird 2.1
+  to 2.5, which look them up in the stored names without converting them.
 - `TFIBTransaction`: a database of a multi-database transaction without its own parameters got
   the `lock_read`/`lock_write` table names in the code page of `MainDatabase`, and the TPB was
   not rebuilt when the metadata code page changed.
@@ -52,7 +52,10 @@
   sent in 4 bytes; Firebird 2.5 and later check the range.
 - `LibraryName` of `TFIBDatabase` went through the system code page: a client
   library in a folder with a name outside it could not be loaded.
-- `DBParams`: a last `shutdown` value of one character (`shutdown=2`) was ignored.
+- `DBParams`: a last `shutdown` value of one character (`shutdown=2`) was ignored, and an unknown
+  word or a word with spaces (`shutdown=force, full`) set every bit of the value. The words are
+  now trimmed; an unknown word or a number over 255 raises the new `feParamValueInvalid`.
+- macOS: `FreeIBLibrary` did not unload the client library, also at program exit.
 
 #### Queries and parameters
 
@@ -88,6 +91,14 @@
   text up to the next space into its name, and one at the very end of the text
   was not replaced. A new form macro (`@@Name@`) without the closing `@` went
   to the server as it was; it now raises "EOF in macro detected".
+- `AsInteger`, `AsInt64` and `AsShort` on a `BOOLEAN` parameter sent an integer, and the server
+  raised "Incompatible column/host variable data type"; a value other than zero is now sent as
+  `True`, as `AsBoolean` reads it, before and after `Prepare`.
+- A parameter used twice, for a BLOB and for a `VARCHAR` or a column of another charset, sent
+  the BLOB ID with the subtype of the other column ("Filter not found to convert type 4 to
+  type 1").
+- Win64: `BatchOutput` to a delimited or a raw file raised an access violation, which it reports
+  only as `False`, and left the file empty.
 
 #### Datasets and fields
 
@@ -133,6 +144,69 @@
 - `TpFIBDataSet.CacheRefreshByArrMap` read past the end of the shorter of the two field arrays.
 - `TFIBDatabase.MemoSubtypes` kept the sub types in a byte, so for example
   `-1000` also matched the sub type 24.
+- `Post` called again from the dataset's own `BeforePost` recursed until the stack overflowed;
+  it is now ignored, and a `Post` from `AfterPost` still posts.
+- SQL generation under `AutoUpdateOptions.UpdateOnlyModifiedFields`: an inserted row with all
+  fields null was never written (`No Action`) although the dataset showed it as posted; it is
+  now `INSERT ... DEFAULT VALUES`. The `INSERT` and `UPDATE` made for each post had no
+  `RETURNING` of `UseReturningFields`; with `rfAll` an `INSERT` also returns the null columns
+  the server filled. `UseRowsClause` put `ROWS 1` on the `INSERT` and after `RETURNING`, which
+  Firebird rejects; it now goes only on the `UPDATE`, before `RETURNING`. `GenerateSQLText`
+  and `GenerateSQLTextNoParams` with `skMerge` made a broken statement; they now make
+  `UPDATE OR INSERT ... MATCHING` on the key fields.
+- `ApplyUpdates` of a `TClientDataSet` over a `TpFIBDataSet` sent the text `No Action` of
+  `InsertSQL`, `UpdateSQL`, `DeleteSQL` or an update object to the server (syntax error); the
+  row now counts as applied with nothing sent, and a `No Action` delete runs no update object,
+  as a direct post or delete.
+- `CompareVariants` (sorting, `Locate`): a number compared with a Unicode string variant (every
+  string variant on Delphi 2009 and later), a `Boolean`, a `UInt64` or an `FMTBcd` variant was
+  taken as equal.
+- FIBPlus fields in a dataset that is not FIBPlus (e.g. persistent fields copied to a
+  `TClientDataSet`): the first read of a `TFIBStringField` could raise an access violation,
+  `AsNativeData` and `AsOctetsData` of the string fields wrote into the memory of that dataset,
+  and `TFIBWideStringField` did not work there at all. `TFIBDateTimeField.AsTimeStamp` gave a
+  wrong value in `OnValidate`, or raised `EIntOverflow` there when assigned.
+  `TFIBFloatField.Scale` and `AsFloat :=` read garbage, and the value of a `TFIBArrayField` was
+  lost. `GetBlobInfo`, `Blob_ID` and `ArrayID` raise a clear error there.
+- `DisplayFormat` and `EditFormat` of `TFIBBCDField` and `TpFIBClientBCDField` on a rounded
+  value: the zeros of the carry were dropped (`0.00` on 1.296 gave `1.3`), the thousand
+  separators stayed where they were before the carry (`#,##0.00` on 9999.996 gave `1,0000`), a
+  format without a decimal point kept the decimals, literals after the digits counted as
+  decimals (`$ #,##0.00 USD` did not round), the trailing zeros of the optional `#` decimals
+  were kept, the section was chosen before rounding (`0.0;(0.0)` on -0.004 gave `(0.0)`), an
+  empty negative section was not handled, and the sign went after a leading literal (`$ -1.00`
+  instead of `-$ 1.00`).
+- Calculated `TFIBBCDField`: `AsExtended`, `AsInt64` and `FieldModified` read the `TBcd` of the
+  value into an `Int64` (access violation or a wrong value), and `AsExtended :=` wrote an
+  `Int64` over it.
+- `AsCurrency` of `TFIBBCDField` and `TpFIBClientBCDField`: a value out of the `Currency` range
+  (a `NUMERIC(18,0)` of 123456789012345678) gave a wrong number or raised `EInvalidOp`, and a
+  value with more than 4 decimals was not rounded exactly. It is exact now and raises
+  `EOverflow` out of the range. `AsFloat` and `AsLargeInt` don't go through `Currency`, and
+  `TFIBBCDField.Value` of such a value is an `FMTBcd` variant.
+- `TFIBBCDField.AsBCD :=` rescaled through floating point and wrote an out of range value;
+  `TpFIBClientBCDField.AsBCD` and `AsBCD :=` went through `Currency` (4 decimals,
+  `EConvertError` out of its range). Both are exact now, rounded half away from zero to the
+  scale of the field, and raise `EOverflow` out of the range.
+- `TpFIBClientBCDField.AsInt64 :=` stored the value as already scaled (77 on a scale 2 field
+  stored 0.77), `TFIBBCDField.AsInt64 :=` and `TpFIBClientBCDField.AsInt64` lost digits on
+  Win64, and `AsLargeInt :=` of both fields failed beyond 9.2E14.
+- `TpFIBClientDataSet` ignored the scale of a stored BCD value with fewer decimals than the
+  field.
+
+#### Events
+
+- Win64: the event thread of `TSIBfibEventAlerter` gave the client a status vector of 32-bit
+  entries, while the client writes 64-bit ones: an error while registering or cancelling events
+  could overwrite the handles of the thread. The event counts have their own array now.
+- An error while registering events (an invalid database handle, a server whose events port
+  can't be reached) ended the event thread without a message; it is now reported like an error
+  after the registration.
+- `UnRegisterEvents` raised `EListError` when another event thread ended with an error while it
+  waited for a thread to stop.
+- An event thread that ended with an error was never freed: its events stayed queued and its
+  buffers leaked. It is freed on the next register or unregister or when the alerter is
+  destroyed. Its error text is read with `fb_interpret` where the client has it.
 
 #### Errors and messages
 
@@ -259,6 +333,18 @@
   as one item with several lines (e.g. `Script.Add` of a multi-line string):
   the comment ran to the end of the item, not of the line
   ([#95](https://github.com/madorin/fibplus/issues/95)).
+- `TpFIBScripter` with `SET BLOBFILE`: every parameter whose name starts with `H` (`:HIRE_DATE`)
+  was read from the blob file, and lowercase hex digits of a reference were read as 0. Only
+  `H<offset>_<size>` in hex digits is a reference now. A reference past the end of the file
+  loaded zeros; it raises the new `feBlobFileError`, with the file and the parameter.
+- `TpFIBScripter`, the SQL parser (`SqlTxtRtns`) and the SQL editor highlighting took any
+  character 32 codes above a keyword letter for that letter: `{DIFDEF X}` was read as
+  `{$IFDEF X}`, `RDBDGET_CONTEXT` was highlighted as `RDB$GET_CONTEXT`, and a non-ASCII letter
+  could match an ASCII one. Only `a`..`z` now match `A`..`Z`.
+- `TpFIBScripter.ExecuteFromFile` passed a UTF-8 byte order mark to the parser, so the first
+  statement failed; the mark is skipped (the file is still read in the system code page).
+- `TpFIBScripter.LineCountInCurrentFile` kept the line count of a file run by `INPUT` after it
+  returned to the calling file.
 
 #### SQL monitor
 
@@ -270,8 +356,12 @@
 - Win64: `StreamToVariant` and `StreamToVariantArray` (`StdFuncs`) cut the
   memory addresses to 32 bits (access violation), and so did the "nested
   datasets" error of `TpFIBClientDataSet` with the address of its message.
-- `StringAsGUID` (`StrUtil`) rejected lowercase hex digits.
+- `StringAsGUID` (`StrUtil`) rejected lowercase hex digits and read some other characters (`G`,
+  a space, `/`, `:`, `@`) as 0. `HexStr2Int` (`StdFuncs`) reads lowercase hex digits.
 - `TCallBackList.Delete` ignored the index 0 and did not free the deleted entry.
+- `BCDToInt64WithScale` (`StdFuncs`) dropped the leading digit of 19 digit values, never
+  reported an overflow, and left `Scale` unset for a zero precision `TBcd`. `BCDToExtended` gave
+  a wrong value for an integer part beyond `Int64`, so `CompareBCD` compared garbage.
 
 #### IDE, editors and packages
 
@@ -307,6 +397,19 @@
   position were highlighted at a wrong place.
 - Conditions editor: a narrow conditions list auto-sized its column instead of
   shrinking it.
+- SQL editor: copy and paste of several lines with their sections pasted the characters outside
+  the system code page as garbage, and cut the text on a double-byte code page (932, 936). On
+  Delphi 2009 and later the data is now also put in UTF-16; the old `MP_SYN_MEMO` data still
+  pastes and is still written for older editors.
+- SQL editor: a `LiteralDecimalPoint` outside Latin-1 split the numbers in the highlighting.
+- SQL editor: pasting text with sections raised an access violation, every paste dropped the
+  sections of the editor, sections stayed at their rows when lines were inserted or deleted
+  above them, and a paste of plain text did not set `Modified`.
+- SQL editor: undo dropped all the sections of the editor, only the text came back.
+- SQL editors, **Edit in code editor**: on Delphi 2005 and later the SQL tab was named without
+  the designer extension (`Form1.Query1.SQL` instead of `dfm.Form1.Query1.SQL`), so the IDE
+  could not find the component of the tab ("Unable to find component") and the edited text was
+  not written back to the property.
 
 ## [7.9.1] - 2026-10-09
 

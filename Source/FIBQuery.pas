@@ -71,6 +71,8 @@ type
     FBeginPosInText: integer;
     FEndPosInText: integer;
     FIsDefferedSetting: boolean;
+    // Deferred by an integer setter only so that a BOOLEAN parameter can take the value
+    FDeferredForBoolean: Boolean;
     FStreamValue: TMemoryStream;
     FWideTempValue: WideString;
     FParDataIsPrepared: boolean;
@@ -152,6 +154,7 @@ type
     // keeps the long value which the BLOB ID was written from
     procedure SetQuadValue(const aValue: TISC_QUAD);
     procedure SetAsShort(aValue: Short);
+    function TrySetIntegerAsBoolean(IsTrue: Boolean): Boolean;
     procedure InternalSetAsString(aValue: Pointer; IsWide: boolean; AdjustDeffered: boolean = False);
     procedure SetAsString(const aValue: string);
     procedure SetAsWideString(const aValue: WideString);
@@ -2151,6 +2154,9 @@ begin
         tspValue:
           begin
             InternalSetValue(xvar, aSQLType, aSize, aValue);
+            // Text and BLOB IDs are in the charset or subtype of this variable
+            if (xvar <> Self) and ((aSQLType = SQL_TEXT) or (aSQLType = SQL_BLOB)) then
+              xvar.FXSQLVAR^.SQLSubtype := FXSQLVAR^.SQLSubtype;
             if ws <> nil then
               xvar.FWideTempValue := ws^
             else if (aSQLType <> SQL_BLOB) and (aSQLType <> SQL_ARRAY) then
@@ -2179,8 +2185,8 @@ begin
       SetAsDouble(aValue)
     else
       SetAsLong(Long(aValue))
-  else
-    SetValue(SQL_INT64, SizeOf(Int64), tspValue, aValue)
+  else if not TrySetIntegerAsBoolean(aValue <> 0) then
+    SetValue(SQL_INT64, SizeOf(Int64), tspValue, aValue);
 end;
 
 procedure TFIBXSQLVAR.SetAsCurrency(aValue: Currency);
@@ -2291,7 +2297,26 @@ end;
 
 procedure TFIBXSQLVAR.SetAsLong(aValue: Long);
 begin
-  SetValue(SQL_LONG, SizeOf(Long), tspValue, aValue);
+  if not TrySetIntegerAsBoolean(aValue <> 0) then
+    SetValue(SQL_LONG, SizeOf(Long), tspValue, aValue);
+end;
+
+// BOOLEAN takes no integer: non-zero is True, as AsBoolean reads it
+function TFIBXSQLVAR.TrySetIntegerAsBoolean(IsTrue: Boolean): Boolean;
+var
+  ServerType: Integer;
+begin
+  ServerType := ServerSQLType;
+  Result := ServerType = SQL_BOOLEAN;
+  if Result then
+    SetValue(SQL_BOOLEAN, SizeOf(Boolean), tspValue, IsTrue)
+  else if (ServerType = 0) and not FIsDefferedSetting then
+  begin
+    // The server type is not known yet, AdjustDefferedSettings completes it for BOOLEAN only
+    FIsDefferedSetting := True;
+    FDeferredForBoolean := True;
+    FParent.FHasDefferedSettings := True;
+  end;
 end;
 
 procedure TFIBXSQLVAR.SetAsQuad(aValue: TISC_QUAD);
@@ -2318,7 +2343,8 @@ end;
 
 procedure TFIBXSQLVAR.SetAsShort(aValue: Short);
 begin
-  SetValue(SQL_SHORT, SizeOf(Short), tspValue, aValue)
+  if not TrySetIntegerAsBoolean(aValue <> 0) then
+    SetValue(SQL_SHORT, SizeOf(Short), tspValue, aValue);
 end;
 
 procedure TFIBXSQLVAR.InternalSetAsString(aValue: Pointer; IsWide: boolean; AdjustDeffered: boolean = False);
@@ -2661,6 +2687,7 @@ begin
   begin
     FParent.FHasDefferedSettings := True;
     FIsDefferedSetting := True;
+    FDeferredForBoolean := False;
   end;
 
   if (sSQLType = SQL_TIMESTAMP) or (sSQLType = SQL_TYPE_DATE) then
@@ -3051,7 +3078,9 @@ begin
         end
         else
         begin
-          if (uSType = SQL_INT64) or (uSType = SQL_INT128) then
+          if (sSType = SQL_BOOLEAN) and (uSType = SQL_INT64) then
+            AsBoolean := UsrPar.AsBoolean
+          else if (uSType = SQL_INT64) or (uSType = SQL_INT128) then
           begin
             if (sSType = SQL_BLOB) or (sSType = SQL_ARRAY) then
               AsInt64 := 0;
@@ -3179,7 +3208,8 @@ begin
               end;
             end;
           SQL_DOUBLE, SQL_INT64, SQL_LONG, SQL_FLOAT, SQL_SHORT:
-            if ((sSQLType = SQL_TIMESTAMP) or (sSQLType = SQL_TYPE_DATE) or (sSQLType = SQL_TYPE_TIME)) then
+            if ((sSQLType = SQL_TIMESTAMP) or (sSQLType = SQL_TYPE_DATE) or (sSQLType = SQL_TYPE_TIME)) and
+              not FXSQLVARs^[i].FDeferredForBoolean then
             begin
               FXSQLVARs^[i].SetAsDateTime(FXSQLVARs^[i].Value)
             end;
@@ -3191,6 +3221,7 @@ begin
         end;
       end;
       FXSQLVARs^[i].FIsDefferedSetting := False;
+      FXSQLVARs^[i].FDeferredForBoolean := False;
     end;
   FHasDefferedSettings := False
 end;

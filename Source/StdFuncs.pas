@@ -70,9 +70,14 @@ function ExtendedToBCD(const Value: Extended; NeedScale: Integer): TBCD;
 
 function Int64ToBCD(Value: Int64; Scale: Integer; var BCD: TBCD): Boolean;
 // {$IFDEF D2005+} inline;{$ENDIF}
+// Value with FromScale decimals as ToScale decimals, rounded half away from zero (half to even with
+// HalfToEven, as Round); False on overflow
+function RescaleInt64(Value: Int64; FromScale, ToScale: Integer; var Rescaled: Int64;
+  HalfToEven: Boolean = False): Boolean;
 
 function BCDToExtended(BCD: TBCD; var Value: Extended): Boolean;
 function BCDToCompWithScale(BCD: TBCD; var Value: Int64; var Scale: byte): Boolean;
+// Value scaled by Scale decimals (decimals beyond Int64 rounded half away from zero); False on overflow
 function BCDToInt64WithScale(BCD: TBCD; var Value: Int64; var Scale: byte): Boolean;
 function BCDToSQLStr(BCD: TBCD): String;
 function CompareBCD(const BCD1, BCD2: TBCD): Integer; {$IFDEF D2005+} inline; {$ENDIF}
@@ -615,41 +620,115 @@ begin
   Result := BCDToInt64WithScale(BCD, Value, Scale)
 end;
 
+function RescaleInt64(Value: Int64; FromScale, ToScale: Integer; var Rescaled: Int64;
+  HalfToEven: Boolean): Boolean;
+const
+  HalfOf1E19 = 5000000000000000000;
+var
+  Divisor, Remainder: Int64;
+  RoundHalfAway: Boolean;
+begin
+  Result := True;
+  if ToScale = FromScale then
+    Rescaled := Value
+  else if ToScale > FromScale then
+  begin
+    if Value = 0 then
+      Rescaled := 0
+    else if ToScale - FromScale > High(IE10) then
+      Result := False
+    else
+    begin
+      Divisor := IE10[ToScale - FromScale];
+      Result := (Value <= High(Int64) div Divisor) and (Value >= Low(Int64) div Divisor);
+      if Result then
+        Rescaled := Value * Divisor;
+    end;
+  end
+  else if FromScale - ToScale > High(IE10) + 1 then
+    Rescaled := 0
+  else if FromScale - ToScale = High(IE10) + 1 then
+  begin
+    // |Value| < 1E19
+    if (Value > HalfOf1E19) or (Value = HalfOf1E19) and not HalfToEven then
+      Rescaled := 1
+    else if (Value < -HalfOf1E19) or (Value = -HalfOf1E19) and not HalfToEven then
+      Rescaled := -1
+    else
+      Rescaled := 0;
+  end
+  else
+  begin
+    Divisor := IE10[FromScale - ToScale];
+    Rescaled := Value div Divisor;
+    Remainder := (Value mod Divisor) * 2;
+    RoundHalfAway := not HalfToEven or Odd(Rescaled);
+    if (Remainder > Divisor) or (Remainder = Divisor) and RoundHalfAway then
+      Inc(Rescaled)
+    else if (Remainder < -Divisor) or (Remainder = -Divisor) and RoundHalfAway then
+      Dec(Rescaled);
+  end;
+end;
+
 function BCDToInt64WithScale(BCD: TBCD; var Value: Int64; var Scale: byte): Boolean;
 var
-  Sign: Integer;
-  c: Currency;
-begin
-  with BCD do
+  Places, FirstDecimal, I, Digit: Integer;
+
+  // Low(Int64) with one decimal less, rounded half away from zero
+  function DropLastDecimal: Boolean;
   begin
-    if Precision = 0 then
+    Result := Scale > 0;
+    if Result then
     begin
-      Result := true;
-      Value := 0;
-      Exit;
+      Value := Low(Int64) div 10 - 1;
+      Dec(Scale);
     end;
-    if SignSpecialPlaces >= 128 then
+  end;
+
+begin
+  Result := True;
+  Value := 0;
+  Scale := 0;
+  // Zero precision or null
+  if (BCD.Precision = 0) or (BCD.SignSpecialPlaces and $40 <> 0) then
+    Exit;
+  Places := BCD.SignSpecialPlaces and $3F;
+  Scale := Byte(Places);
+  FirstDecimal := BCD.Precision - Places;
+  // Accumulated negative, so that Low(Int64) fits
+  for I := 0 to BCD.Precision - 1 do
+  begin
+    if Odd(I) then
+      Digit := BCD.Fraction[I div 2] and $0F
+    else
+      Digit := BCD.Fraction[I div 2] shr 4;
+    if Value >= (Low(Int64) + Digit) div 10 then
+      Value := Value * 10 - Digit
+    else if I < FirstDecimal then
     begin
-      Sign := -1;
-      Scale := SignSpecialPlaces - 128;
+      Result := False;
+      Exit;
     end
     else
     begin
-      Sign := 1;
-      Scale := SignSpecialPlaces;
+      // The decimals that don't fit: rounded half away from zero at this digit
+      Scale := Byte(I - FirstDecimal);
+      if Digit >= 5 then
+        if Value > Low(Int64) then
+          Dec(Value)
+        else if not DropLastDecimal then
+        begin
+          Result := False;
+          Exit;
+        end;
+      Break;
     end;
-    if Scale >= 64 then
-    begin
-      // null
-      Result := true;
-      Value := 0;
-      Exit;
-    end;
-    SignSpecialPlaces := 4;
   end;
-  Result := BCDToCurr(BCD, c);
-  if Result then
-    Value := Sign * PInt64(@c)^;
+  if BCD.SignSpecialPlaces and $80 = 0 then
+    if (Value > Low(Int64)) or DropLastDecimal then
+      Value := -Value
+    else
+      Result := False;
 end;
 
 function BCDToSQLStr(BCD: TBCD): String;
@@ -669,97 +748,6 @@ end;
 const
   ZeroStr = '000000000000000000';
 
-{$IFNDEF D2005+}
-
-function RoundAt(const Value: string; Position: SmallInt): string;
-
-  Procedure RoundChar(const PrevChar: SmallInt; var Carry: Boolean);
-  begin
-    if Result[PrevChar] in ['0' .. '9'] then
-    begin
-      if Result[PrevChar] = '9' then
-      begin
-        Result[PrevChar] := '0';
-        Carry := true;
-      end
-      else
-      begin
-        Result[PrevChar] := Char(byte(Result[PrevChar]) + 1);
-        Carry := False;
-      end;
-    end;
-  end;
-
-var
-  c, Dot: Char;
-  PrevChar, i, DecPos, DecDigits: SmallInt;
-  Carry: Boolean;
-  Neg: string;
-begin
-  Dot := DecimalSeparator;
-  if Value[1] = '-' then
-  begin
-    Result := FastCopy(Value, 2, MaxInt);
-    Neg := '-';
-  end
-  else
-  begin
-    Result := Value;
-    Neg := '';
-  end;
-  DecPos := Pos(Dot, Result);
-  if DecPos > 0 then
-    DecDigits := Length(Result) - DecPos
-  else
-    DecDigits := 0;
-  if (DecPos = 0) or (DecDigits <= Position) then
-  { nothing to round }
-  begin
-    Result := Value;
-    Exit;
-  end;
-  if Result[DecPos + Position + 1] < '5' then
-  begin
-    { no possible rounding required }
-    if Position = 0 then
-      Result := Neg + Copy(Result, 1, DecPos + Position - 1)
-    else
-      Result := Neg + Copy(Result, 1, DecPos + Position);
-  end
-  else
-  begin
-    Carry := False;
-    PrevChar := 1;
-    for i := DecPos + DecDigits downto (DecPos + 1 + Position) do
-    begin
-      c := Result[i];
-      PrevChar := i - 1;
-      if Result[PrevChar] = Dot then
-      begin
-        Dec(PrevChar);
-        Dec(Position);
-      end;
-      if (byte(c) >= 53) or Carry then { if '5' or greater }
-        RoundChar(PrevChar, Carry);
-    end;
-    while Carry do
-    begin
-      if PrevChar >= DecPos then
-        Dec(Position);
-      Dec(PrevChar);
-      if PrevChar = 0 then
-        Break;
-      if Result[PrevChar] <> Dot then
-        RoundChar(PrevChar, Carry);
-    end;
-    if Carry then
-      Result := Neg + '1' + Copy(Result, 1, DecPos + Position)
-    else
-      Result := Neg + Copy(Result, 1, DecPos + Position);
-  end;
-end;
-{$ENDIF}
-
 function IsZero(const Str: string): Boolean;
 var
   i: Integer;
@@ -772,6 +760,71 @@ begin
       if not Result then
         Exit;
     end;
+end;
+
+// Value rounded half up to Decimals digits, keeping them (1.296 -> 1.30, 9.996 -> 10.00); no
+// decimal separator for 0 decimals, no sign when the result is zero
+function RoundDecimalString(const Value: string; Decimals: Integer; DecimalSeparator: Char): string;
+var
+  Sign: string;
+  SeparatorPos, I: Integer;
+  Carry: Boolean;
+begin
+  if (Value <> '') and (Value[1] = '-') then
+  begin
+    Sign := '-';
+    Result := Copy(Value, 2, MaxInt);
+  end
+  else
+  begin
+    Sign := '';
+    Result := Value;
+  end;
+  SeparatorPos := Pos(DecimalSeparator, Result);
+  if (SeparatorPos = 0) or (Length(Result) - SeparatorPos <= Decimals) then
+  begin
+    Result := Value;
+    Exit;
+  end;
+  Carry := Result[SeparatorPos + Decimals + 1] >= '5';
+  if Decimals = 0 then
+    SetLength(Result, SeparatorPos - 1)
+  else
+    SetLength(Result, SeparatorPos + Decimals);
+  I := Length(Result);
+  while Carry and (I > 0) do
+  begin
+    if (Result[I] >= '0') and (Result[I] <= '9') then
+      if Result[I] < '9' then
+      begin
+        Result[I] := Succ(Result[I]);
+        Carry := False;
+      end
+      else
+        Result[I] := '0';
+    Dec(I);
+  end;
+  if Carry then
+    Result := '1' + Result;
+  for I := 1 to Length(Result) do
+    if (Result[I] >= '1') and (Result[I] <= '9') then
+    begin
+      Result := Sign + Result;
+      Exit;
+    end;
+end;
+
+// Number of '0' and '#' decimal places of a one section numeric format
+function FormatDecimalCount(const Format: string): Integer;
+var
+  SeparatorPos, I: Integer;
+begin
+  Result := 0;
+  SeparatorPos := PosCh('.', Format);
+  if SeparatorPos > 0 then
+    for I := SeparatorPos + 1 to Length(Format) do
+      if CharInSet(Format[I], ['0', '#']) then
+        Inc(Result);
 end;
 
 function FormatNumericString(const Format, Source: string; OneSectionFormat: Boolean = False): string;
@@ -790,6 +843,9 @@ var
   PosDecSepInFormat: Integer;
   PosDecSepInString: Integer;
   vLiterals: array of TLiteral;
+  PositiveFormat, NegativeFormat, ZeroFormat, SectionFormat: string;
+  UnsignedSource: string;
+  UseNegativeSection: Boolean;
 const
   cFormatChars = ['#', '0', ',', '.'];
 
@@ -805,23 +861,37 @@ begin
     i := PosCh(';', Format);
     if i > 0 then
     begin
-      case Source[1] of
-        '+', '1' .. '9': Result := FormatNumericString(FastCopy(Format, 1, i - 1), Source, true);
-      else
-        L := PosCh(';', FastCopy(Format, i + 1, MaxInt));
-        case Source[1] of
-          '0':
-            if (L = 0) or not IsZero(Source) then
-              Result := FormatNumericString(FastCopy(Format, 1, i - 1), Source, true)
-            else
-              Result := FormatNumericString(FastCopy(Format, L + i + 1, MaxInt), Source, true)
-        else
-          if L = 0 then
-            Result := FormatNumericString(FastCopy(Format, i + 1, MaxInt), Source, true)
-          else
-            Result := FormatNumericString(FastCopy(Format, i + 1, L - 1), Source, true)
-        end;
+      // As FormatFloat: an empty section falls back to the first one (keeping the sign for a
+      // negative value), and a value that rounds to zero is formatted as 0 by the zero section
+      PositiveFormat := FastCopy(Format, 1, i - 1);
+      NegativeFormat := FastCopy(Format, i + 1, MaxInt);
+      ZeroFormat := '';
+      L := PosCh(';', NegativeFormat);
+      if L > 0 then
+      begin
+        ZeroFormat := FastCopy(NegativeFormat, L + 1, MaxInt);
+        SetLength(NegativeFormat, L - 1);
       end;
+      if CharInSet(Source[1], ['+', '-']) then
+        UnsignedSource := FastCopy(Source, 2, MaxInt)
+      else
+        UnsignedSource := Source;
+      UseNegativeSection := (Source[1] = '-') and (NegativeFormat <> '');
+      if UseNegativeSection then
+        SectionFormat := NegativeFormat
+      else
+        SectionFormat := PositiveFormat;
+{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+        if IsZero(RoundDecimalString(UnsignedSource, FormatDecimalCount(SectionFormat), DecimalSeparator)) then
+        begin
+          if ZeroFormat <> '' then
+            SectionFormat := ZeroFormat
+          else
+            SectionFormat := PositiveFormat;
+          Result := FormatNumericString(SectionFormat, '0', True);
+        end
+        else
+          Result := FormatNumericString(SectionFormat, Source, UseNegativeSection);
       Exit;
     end;
   end;
@@ -870,17 +940,20 @@ begin
 
       PosDecSepInFormat := PosCh('.', Format);
       NeedDecimalCount := 0;
-      CanHaveDecimalCount := L - PosDecSepInFormat;
-      for i := L downto PosDecSepInFormat do
-      begin
-        if (NeedDecimalCount = 0) and (Format[i] = '0') then
+      CanHaveDecimalCount := 0;
+      if PosDecSepInFormat > 0 then
+        for i := L downto PosDecSepInFormat do
         begin
-          NeedDecimalCount := i - PosDecSepInFormat;
-        end
-        else if NeedDecimalCount <> 0 then
-          if not CharInSet(Format[i], cFormatChars) then
-            Dec(NeedDecimalCount);
-      end;
+          if CharInSet(Format[i], ['0', '#']) then
+            Inc(CanHaveDecimalCount);
+          if (NeedDecimalCount = 0) and (Format[i] = '0') then
+          begin
+            NeedDecimalCount := i - PosDecSepInFormat;
+          end
+          else if NeedDecimalCount <> 0 then
+            if not CharInSet(Format[i], cFormatChars) then
+              Dec(NeedDecimalCount);
+        end;
 
       i := PosDecSepInFormat - 1;
       if (i > 1) and not CharInSet(Format[i], cFormatChars) then
@@ -896,7 +969,7 @@ begin
       end;
 
       i := PosDecSepInFormat + 1;
-      if (i < L) and not CharInSet(Format[i], cFormatChars) then
+      if (PosDecSepInFormat > 0) and (i < L) and not CharInSet(Format[i], cFormatChars) then
       begin
         SetLength(vLiterals, 4);
         vLiterals[3].lPosType := pAfterDecimalSep;
@@ -923,8 +996,13 @@ begin
         end
         else if Length(Result) - PosDecSepInString > CanHaveDecimalCount then
         begin
-          Result := RoundAt(Result, CanHaveDecimalCount)
+          Result := RoundDecimalString(Result, CanHaveDecimalCount, DecimalSeparator);
+          PosDecSepInString := Pos(DecimalSeparator, Result);
         end;
+        // The zeros of the optional '#' decimals
+        if PosDecSepInString > 0 then
+          while (Length(Result) - PosDecSepInString > NeedDecimalCount) and (Result[Length(Result)] = '0') do
+            SetLength(Result, Length(Result) - 1);
       end;
       //
       if Length(vLiterals) > 3 then
@@ -983,7 +1061,11 @@ begin
         Result := Result + vLiterals[0].lBody;
         if Length(vLiterals) > 1 then
         begin
-          Result := vLiterals[1].lBody + Result;
+          // The sign goes before the leading literal, as FormatFloat puts it
+          if Result[1] = '-' then
+            Result := '-' + vLiterals[1].lBody + FastCopy(Result, 2, MaxInt)
+          else
+            Result := vLiterals[1].lBody + Result;
         end;
       end;
     end;
@@ -998,10 +1080,34 @@ function BCDToExtended(BCD: TBCD; var Value: Extended): Boolean;
 var
   c: Int64;
   Scale: byte;
+  Places, I: Integer;
 begin
-  Result := BCDToInt64WithScale(BCD, c, Scale);
-  if Result then
-    Value := c * E10[-Scale]
+  Result := True;
+  if BCDToInt64WithScale(BCD, c, Scale) then
+  begin
+    Value := c;
+    Places := Scale;
+  end
+  else
+  begin
+    // The integer part doesn't fit Int64: all digits, approximate
+    Value := 0;
+    for I := 0 to BCD.Precision - 1 do
+      if Odd(I) then
+        Value := Value * 10 + (BCD.Fraction[I div 2] and $0F)
+      else
+        Value := Value * 10 + (BCD.Fraction[I div 2] shr 4);
+    if BCD.SignSpecialPlaces and $80 <> 0 then
+      Value := -Value;
+    Places := BCD.SignSpecialPlaces and $3F;
+  end;
+  // E10 holds 18 decimals
+  while Places > High(E10) do
+  begin
+    Value := Value * E10[-High(E10)];
+    Dec(Places, High(E10));
+  end;
+  Value := Value * E10[-Places];
 end;
 
 function CompareBCD(const BCD1, BCD2: TBCD): Integer;
@@ -1354,6 +1460,7 @@ begin
       '2': Inc(Result, j * 2);
       '3' .. '9': Inc(Result, j * HexezDecimal[pEnd^]);
       'A' .. 'F': Inc(Result, j * Hexez[pEnd^]);
+      'a' .. 'f': Inc(Result, j * (Ord(pEnd^) - Ord('a') + 10));
     end;
     j := j * 16;
     Dec(pEnd)

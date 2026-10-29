@@ -170,7 +170,9 @@ type
     feCantUseField,
     feFB2feature,
     feFeatureNotSupported,
-    feParamValueTooLong
+    feParamValueTooLong,
+    feParamValueInvalid,
+    feBlobFileError
   );
 
   TStatusVector = array [0 .. 19] of ISC_STATUS;
@@ -779,70 +781,54 @@ begin
 end;
 
 function GetDPBShutParamValue(const ParamString: AnsiString): Integer;
-var
-  i, j: Integer;
-  s: AnsiString;
+type
+  TShutdownWord = record
+    Name: string;
+    Value: Integer;
+  end;
+const
+  ShutdownWords: array [0 .. 9] of TShutdownWord = (
+    (Name: 'attachment'; Value: isc_dpb_shut_attachment),
+    (Name: 'cache'; Value: isc_dpb_shut_cache),
+    (Name: 'force'; Value: isc_dpb_shut_force),
+    (Name: 'transaction'; Value: isc_dpb_shut_transaction),
+    (Name: 'mode_mask'; Value: isc_dpb_shut_mode_mask),
+    (Name: 'default'; Value: isc_dpb_shut_default),
+    (Name: 'normal'; Value: isc_dpb_shut_normal),
+    (Name: 'multi'; Value: isc_dpb_shut_multi),
+    (Name: 'single'; Value: isc_dpb_shut_single),
+    (Name: 'full'; Value: isc_dpb_shut_full)
+  );
 
-  function CurParamValue: Integer;
+  function PartValue(const Part: string): Integer;
+  var
+    i, Code: Integer;
   begin
-    Result := -1;
-    s := LowerCase(s);
-    case s[1] of
-      '0' .. '9': Result := StrToInt(s);
-      'a':
-        if s = 'attachment' then
-          Result := isc_dpb_shut_attachment;
-      'c':
-        if s = 'cache' then
-          Result := isc_dpb_shut_cache;
-      'f':
-        if s = 'force' then
-          Result := isc_dpb_shut_force
-        else if s = 'full' then
-          Result := isc_dpb_shut_full;
-
-      'm':
-        if s = 'mode_mask' then
-          Result := isc_dpb_shut_mode_mask
-        else if s = 'multi' then
-          Result := isc_dpb_shut_multi;
-      'n':
-        if s = 'normal' then
-          Result := isc_dpb_shut_normal;
-
-      's':
-        if s = 'single' then
-          Result := isc_dpb_shut_single;
-
-      't':
-        if s = 'transaction' then
-          Result := isc_dpb_shut_transaction;
-
-    end;
+    for i := Low(ShutdownWords) to High(ShutdownWords) do
+      if SameText(Part, ShutdownWords[i].Name) then
+      begin
+        Result := ShutdownWords[i].Value;
+        Exit;
+      end;
+    Val(Part, Result, Code);
+    if (Code <> 0) or (Result < 0) or (Result > High(Byte)) then
+      FIBError(feParamValueInvalid, [Part, 'DBParams shutdown']);
   end;
 
+var
+  i, PartStart: Integer;
+  Params, Part: string;
 begin
   Result := 0;
-  j := 1;
-  for i := 1 to Length(ParamString) do
+  Params := string(ParamString);
+  PartStart := 1;
+  for i := 1 to Length(Params) + 1 do
+    if (i > Length(Params)) or (Params[i] = ',') or (Params[i] = ';') then
     begin
-      if ParamString[i] in [',', ';'] then
-        begin
-          if (i - j > 0) then
-            begin
-              SetLength(s, i - j);
-              Move(ParamString[j], s[1], i - j);
-              Result := Result or CurParamValue
-            end;
-          j := i + 1;
-        end
-    end;
-  i := Length(ParamString);
-  if j <= i then
-    begin
-      SetLength(s, i - j + 1);
-      Move(ParamString[j], s[1], i - j + 1);
-      Result := Result or CurParamValue
+      Part := Trim(Copy(Params, PartStart, i - PartStart));
+      if Part <> '' then
+        Result := Result or PartValue(Part);
+      PartStart := i + 1;
     end;
 end;
 

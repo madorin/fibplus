@@ -2280,7 +2280,7 @@ begin
   end
   else
   begin
-    System.Move(ValBuffer, Pointer(Longint(FBuffer) + FBuffPos)^, Count);
+    System.Move(ValBuffer, FBuffer[FBuffPos], Count);
     Inc(FBuffPos, Count);
     Result := Count;
   end

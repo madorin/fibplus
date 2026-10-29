@@ -171,8 +171,38 @@ begin
             Result := -1
       end;
 {$ENDIF}
+{$IFDEF D2009+}
+    varUString:
+{$IFDEF C_INT64}
+      begin
+        if P^ = StrToInt64(string(TVarData(V).VUString)) then
+          Result := 0
+        else
+          if P^ > StrToInt64(string(TVarData(V).VUString)) then
+            Result := 1
+          else
+            Result := -1
+      end;
+{$ELSE}
+      begin
+        if P^ = StrToFloat(string(TVarData(V).VUString)) then
+          Result := 0
+        else
+          if P^ > StrToFloat(string(TVarData(V).VUString)) then
+            Result := 1
+          else
+            Result := -1
+      end;
+{$ENDIF}
+    // The Variant compare of a negative Int64 with a UInt64 raises an overflow
+    varUInt64:
+      if P^ < 0 then
+        Result := -1
+      else
+        Result := CompareAsVariants(P^, V);
+{$ENDIF}
     else
-      result := 0;
+      Result := CompareAsVariants(P^, V);
   end;
 end;
 {$ENDIF}

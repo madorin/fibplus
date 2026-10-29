@@ -965,6 +965,8 @@ procedure TpFIBDataSet.DoAfterPost;
 var
   ActBuff: TRecordBuffer;
 begin
+  // The record is posted: AfterPost may edit and post again
+  Exclude(FRunState, drsInPost);
   if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
     GlobalContainer.DataSetEvent(Self, deAfterPost);
 
@@ -1549,8 +1551,11 @@ begin
         begin
           oldUM := UpdateOnlyModifiedFields;
           UpdateOnlyModifiedFields := False;
-          QUpdate.SQL.Text := GenerateSQLText(UpdateTableName, KeyFields, skModify);
-          UpdateOnlyModifiedFields := oldUM;
+          try
+            QUpdate.SQL.Text := GenerateSQLText(UpdateTableName, KeyFields, skModify);
+          finally
+            UpdateOnlyModifiedFields := oldUM;
+          end;
         end;
       end;
   if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
@@ -2753,13 +2758,13 @@ begin
       case ForState of
         dsEdit:
           begin
-            s := GenerateSQLText(UpdateTableName, KeyFields, skModify, tmp);
+            s := GenerateSQLText(UpdateTableName, KeyFields, skModify, tmp, UseReturningFields);
             if s <> UpdateSQL.Text then
               UpdateSQL.Text := s;
           end;
         dsInsert:
           begin
-            s := GenerateSQLText(UpdateTableName, KeyFields, FIBDataSet.skInsert, tmp);
+            s := GenerateSQLText(UpdateTableName, KeyFields, FIBDataSet.skInsert, tmp, UseReturningFields);
             if s <> InsertSQL.Text then
               InsertSQL.Text := s;
           end;
@@ -2804,6 +2809,7 @@ var
   OldForceIsNull: boolean;
   vCanNtIncToWhere: boolean;
   vSQLTxt: string;
+  MatchingStr: string;
 
   procedure GetFieldList(List: TList; const FieldNames: string);
   var
@@ -2956,6 +2962,7 @@ begin
 
       // Validate KeyFields
       pWhereClause := '';
+      MatchingStr := '';
       for i := Pred(KeyFieldList.Count) downto 0 do
       begin
         RelTableName := EasyFormatIdentifier(Database.SQLDialect,
@@ -2981,7 +2988,8 @@ begin
         begin
           vFieldName := TField(KeyFieldList[i]).FieldName;
           pWhereClause := pWhereClause + iifStr(pWhereClause = '', '', ' and ')
-            + vAliasTableName + '.' + RealKeyFieldName + '=' + FieldValueToStr(TField(KeyFieldList[i]), True)
+            + vAliasTableName + '.' + RealKeyFieldName + '=' + FieldValueToStr(TField(KeyFieldList[i]), True);
+          MatchingStr := RealKeyFieldName + iifStr(MatchingStr = '', '', ',') + MatchingStr;
         end;
       end;
       if KeyFieldList.Count = 0 then
@@ -3013,6 +3021,11 @@ begin
     FIBDataSet.skInsert:
       begin
         Result := 'Insert into ' + FormatTableName + '(';
+        InsValuesStr := 'values (';
+      end;
+    skMerge:
+      begin
+        Result := 'Update or insert into ' + FormatTableName + '(';
         InsValuesStr := 'values (';
       end;
     FIBDataSet.skDelete:
@@ -3091,7 +3104,7 @@ begin
     InsValuesStr := InsValuesStr + iifStr(AcceptCount = 1, '', ',');
     case SK of
       skModify: Result := Result + Indent + RealFieldName + '=' + FieldValueToStr(FBN(vFieldName), False);
-      FIBDataSet.skInsert:
+      FIBDataSet.skInsert, skMerge:
         begin
           Result := Result + Indent + RealFieldName;
           InsValuesStr := InsValuesStr + Indent + FieldValueToStr(FBN(vFieldName), False);
@@ -3100,13 +3113,16 @@ begin
   end; // end for
   if AcceptCount = 0 then
     case SK of
-      skModify: Result := '';
+      skModify, skMerge: Result := '';
       FIBDataSet.skInsert: Result := 'Insert into ' + FormatTableName + ' default values';
     end
   else
     case SK of
       skModify: Result := Result + ' where ' + pWhereClause;
       FIBDataSet.skInsert: Result := Result + sLineBreak + ')' + InsValuesStr + ')';
+      skMerge:
+        Result := Result + sLineBreak + ')' + InsValuesStr + ')' + sLineBreak +
+          'matching (' + MatchingStr + ')';
     end;
 end;
 
@@ -3137,6 +3153,8 @@ var
   vCanNtIncToWhere: boolean;
   vSQLTxt: string;
   sReturningFields: string;
+  MatchingStr: string;
+  ReturnOnly: Boolean;
 
   procedure GetFieldList(List: TList; const FieldNames: string);
   var
@@ -3195,7 +3213,8 @@ begin
   if vpFIBTableInfo = nil then
     Exit;
 
-  if (Length(FAutoUpdateOptions.WhereCondition) = 0) or
+  MatchingStr := '';
+  if (Length(FAutoUpdateOptions.WhereCondition) = 0) or (SK = skMerge) or
     ((rfKeyFields in ReturningFields) and not(rfAll in ReturningFields)) then
   begin // begin create added where condition
     KeyFieldList := TList.Create;
@@ -3236,6 +3255,7 @@ begin
           pWhereClause := pWhereClause + iifStr(pWhereClause = '', '', ' and ')
             + vAliasTableName + '.' + RealKeyFieldName + '=?' + EasyFormatIdentifier(Database.SQLDialect,
             'OLD_' + vFieldName, False);
+          MatchingStr := RealKeyFieldName + iifStr(MatchingStr = '', '', ',') + MatchingStr;
           if (rfKeyFields in ReturningFields) and not(rfAll in ReturningFields) then
             sReturningFields := sReturningFields + RealKeyFieldName + ','
         end;
@@ -3277,6 +3297,11 @@ begin
         Result := 'Insert into ' + FormatTableName + '(';
         InsValuesStr := 'values (';
       end;
+    skMerge:
+      begin
+        Result := 'Update or insert into ' + FormatTableName + '(';
+        InsValuesStr := 'values (';
+      end;
     FIBDataSet.skDelete:
       begin
         Result := 'Delete from ' + FormatTableName + ' ' + vAliasTableName + sLineBreak + 'where ' + pWhereClause;
@@ -3298,6 +3323,7 @@ begin
     fc := FieldDefs.Count - 1;
   for i := 0 to fc do
   begin
+    ReturnOnly := False;
     if vFieldsCreated then
     begin
       if (Fields[i].FieldKind <> fkData) then
@@ -3337,8 +3363,14 @@ begin
                   Continue;
               end;
             FIBDataSet.skInsert:
-              if Fields[i].isNull then
-                Continue;
+              if Fields[i].IsNull then
+              begin
+                // The server fills the unset field: only return it
+                if not (rfAll in ReturningFields) and
+                  not ((rfBlobFields in ReturningFields) and Fields[i].IsBlob) then
+                  Continue;
+                ReturnOnly := True;
+              end;
           end;
         end;
 
@@ -3372,6 +3404,11 @@ begin
     vFi := vpFIBTableInfo.FieldInfo(RealFieldName);
     if (vFi = nil) or (vFi.IsComputed and not(psCanEditComputedFields in PrepareOptions)) then
       Continue;
+    if ReturnOnly then
+    begin
+      sReturningFields := sReturningFields + RealFieldName + ',';
+      Continue;
+    end;
     Inc(AcceptCount);
     Result := Result + iifStr(AcceptCount = 1, '', ',') + sLineBreak;
     InsValuesStr := InsValuesStr + iifStr(AcceptCount = 1, '', ',') + sLineBreak;
@@ -3385,7 +3422,7 @@ begin
           else if (rfBlobFields in ReturningFields) and Fields[i].IsBlob then
             sReturningFields := sReturningFields + RealFieldName + ','
         end;
-      FIBDataSet.skInsert:
+      FIBDataSet.skInsert, skMerge:
         begin
           Result := Result + Indent + RealFieldName;
           InsValuesStr := InsValuesStr + Indent + '?' + EasyFormatIdentifier(Database.SQLDialect,
@@ -3399,20 +3436,30 @@ begin
   end; // end for
   if AcceptCount = 0 then
   begin
-    Result := SNoAction;
+    // An insert without set fields still writes the row
+    if SK <> FIBDataSet.skInsert then
+    begin
+      Result := SNoAction;
+      Exit;
+    end;
+    Result := 'Insert into ' + FormatTableName + sLineBreak + 'default values';
   end
   else
     case SK of
       skModify: Result := Result + sLineBreak + 'where ' + pWhereClause;
       FIBDataSet.skInsert: Result := Result + sLineBreak + ')' + sLineBreak + InsValuesStr + sLineBreak + ')';
+      skMerge:
+        Result := Result + sLineBreak + ')' + sLineBreak + InsValuesStr + sLineBreak + ')' + sLineBreak +
+          'matching (' + MatchingStr + ')';
     end;
+  // Firebird accepts ROWS only on UPDATE and DELETE, before RETURNING
+  if FAutoUpdateOptions.UseRowsClause and (SK = skModify) then
+    Result := Result + sLineBreak + 'ROWS 1';
   if Length(sReturningFields) > 0 then
   begin
     SetLength(sReturningFields, Length(sReturningFields) - 1);
     Result := Result + sLineBreak + 'RETURNING ' + sReturningFields
   end;
-  if FAutoUpdateOptions.UseRowsClause then
-    Result := Result + sLineBreak + ' ROWS 1'
 end;
 
 function TpFIBDataSet.GenerateSQLTextWA(const TableName: string; SK: TpSQLKind;
@@ -4052,10 +4099,11 @@ function TpFIBDataSet.PSUpdateRecord(UpdateKind: TUpdateKind; Delta: TDataSet): 
 var
   UpdateAction: TFIBUpdateAction;
   j: integer;
-  UpdQry: TFIBQuery;
+  UpdQry, MainQry: TFIBQuery;
   CurParam: TFIBXSQLVAR;
   ListUO: TList;
   NewBcd, OldBcd: TBcd;
+  NoAction: Boolean;
 
   procedure ExecUpdate;
   var
@@ -4176,28 +4224,37 @@ begin
   end
   else
   begin
-    Result := False;
+    case UpdateKind of
+      ukModify: MainQry := QUpdate;
+      ukInsert: MainQry := QInsert;
+    else
+      MainQry := QDelete;
+    end;
+    // No Action sends nothing and the row counts as applied, as in a direct post or delete
+    NoAction := (MainQry.SQL.Count > 0) and (MainQry.SQL[0] = SNoAction);
+    if NoAction and (UpdateKind = ukDelete) then
+    begin
+      Result := True;
+      Exit;
+    end;
     ListUO := ListForUO(UpdateKind);
     for j := 0 to Pred(ListUO.Count) do
       with TpFIBUpdateObject(ListUO[j]) do
-        if Active and (ExecuteOrder = oeBeforeDefault) and (not EmptyStrings(SQL)) then
+        if Active and (ExecuteOrder = oeBeforeDefault) and (not EmptyStrings(SQL)) and (SQL[0] <> SNoAction) then
         begin
           UpdQry := TpFIBUpdateObject(ListUO[j]);
           ExecUpdate;
           Result := True;
         end;
-    case UpdateKind of
-      ukModify: UpdQry := QUpdate;
-      ukInsert: UpdQry := QInsert;
-    else
-      UpdQry := QDelete;
-    end;
-    Result := Result or (UpdQry.SQL.Count > 0);
-    if (not EmptyStrings(UpdQry.SQL)) then
+    Result := Result or (MainQry.SQL.Count > 0);
+    if not EmptyStrings(MainQry.SQL) and not NoAction then
+    begin
+      UpdQry := MainQry;
       ExecUpdate;
+    end;
     for j := 0 to Pred(ListUO.Count) do
       with TpFIBUpdateObject(ListUO[j]) do
-        if Active and (ExecuteOrder = oeAfterDefault) and (not EmptyStrings(SQL)) then
+        if Active and (ExecuteOrder = oeAfterDefault) and (not EmptyStrings(SQL)) and (SQL[0] <> SNoAction) then
         begin
           UpdQry := TpFIBUpdateObject(ListUO[j]);
           ExecUpdate;

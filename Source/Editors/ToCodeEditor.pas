@@ -76,18 +76,15 @@ implementation
 
 uses
   SysUtils, TypInfo, StFilSys,
+{$IFDEF D2006+}
+  DesignIntf,
+{$ENDIF}
 {$IFDEF D_XE2}
   Vcl.Forms, Vcl.Controls,
 {$ELSE}
   Forms, Controls,
 {$ENDIF}
   ToCodeEditorIntfs;
-
-{$IFDEF D9+}
-
-const
-  cDfmExt = 'dfm';
-{$ENDIF}
 
 type
   TToCodeEditor = class(TComponent, IStringsToCodeEditor)
@@ -210,6 +207,28 @@ begin
   Result := nil;
 end;
 
+// The IDE strings file system resolves "ext.Form.Component.Property" since Delphi 2005, ext being the designer extension
+function PropModuleIdent(Component: TComponent; const PropName: string): string;
+{$IFDEF D2005+}
+var
+{$IFDEF D2006+}
+  Designer: IDesigner;
+{$ENDIF}
+  Extension: string;
+{$ENDIF}
+begin
+  Result := Component.Owner.Name + DotSep + Component.Name + DotSep + PropName;
+{$IFDEF D2005+}
+  Extension := 'dfm';
+{$IFDEF D2006+}
+  if Supports(FindRootDesigner(Component), IDesigner, Designer) and
+    (Designer.GetDesignerExtension <> '') then
+    Extension := Designer.GetDesignerExtension;
+{$ENDIF}
+  Result := Extension + DotSep + Result;
+{$ENDIF}
+end;
+
 function FindPropInCode(Component: TComponent; const PropName: string): Boolean;
 var
   Ident: string;
@@ -220,11 +239,7 @@ begin
   if (Component.Owner = nil) then
     Exit;
   ModuleServices := BorlandIDEServices as IOTAModuleServices;
-{$IFDEF D9+}
-  Ident := cDfmExt + DotSep + Component.Owner.Name + DotSep + Component.Name + DotSep + PropName;
-{$ELSE}
-  Ident := Component.Owner.Name + DotSep + Component.Name + DotSep + PropName;
-{$ENDIF}
+  Ident := PropModuleIdent(Component, PropName);
   Module := ModuleServices.FindModule(Ident);
   if (Module <> nil) and (Module.GetModuleFileCount > 0) then
   begin
@@ -251,7 +266,7 @@ end;
 
 procedure SaveModule(Component: TComponent; const PropName: string);
 begin
-  SaveModule(Component.Owner.Name + DotSep + Component.Name + DotSep + PropName);
+  SaveModule(PropModuleIdent(Component, PropName));
 end;
 
 procedure SaveCloseModule(const Ident: string);
@@ -285,7 +300,7 @@ end;
 
 function CloseModule(Component: TComponent; const PropName: string): Boolean;
 begin
-  Result := CloseModule(Component.Owner.Name + DotSep + Component.Name + DotSep + PropName);
+  Result := CloseModule(PropModuleIdent(Component, PropName));
 end;
 
 function CreatePropInCode(Component: TComponent; const PropName: string; PropValue: TStrings; aModified: Boolean): Boolean;
@@ -324,12 +339,7 @@ begin
 
   end;
 
-{$IFDEF D9+}
-  Ident := cDfmExt + DotSep + Component.Owner.Name + DotSep + Component.Name + DotSep + pName;
-{$ELSE}
-  Ident := Component.Owner.Name + DotSep + Component.Name + DotSep + pName;
-{$ENDIF}
-  // Ident := Component.Owner.Name + DotSep + Component.Name + DotSep + PropName;
+  Ident := PropModuleIdent(Component, pName);
   SaveCloseModule(Ident);
   // this used to be done in LibMain's TLibrary.Create but now its done here
   // the unregister is done over in ComponentDesigner's finalization

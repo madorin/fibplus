@@ -371,7 +371,7 @@ type
   protected
     procedure AddRef;
     procedure Release;
-    procedure Assign(original: TMPSMSectionClone);
+    procedure Assign(Source: TMPSMSectionClone);
   public
     property RefCount: Integer read fRefCount;
   end;
@@ -970,7 +970,8 @@ uses
   Math, StrUtils, Variants;
 
 var
-  CF_SYNTAX: THandle;
+  CF_SYNTAX: UINT;
+  CF_SYNTAX_LEGACY: UINT;
 
   // Results of RangeRowToScreenRow()
 const
@@ -1720,13 +1721,13 @@ var
   i, wordbeg: Integer;
   InWord, InLit, InLitChar: Boolean;
   { }
-  function HasChars(const s: string; StartPos: Integer; Chars: TCharSet): Boolean;
+  function HasChars(const s: string; StartPos: Integer; Chars: TCharSet; ExtraChar: Char = #0): Boolean;
   var
     i: Integer;
   begin
     Result := False;
     for i := StartPos to Length(s) do
-      if not(s[i] in Chars) then
+      if not (s[i] in Chars) and ((ExtraChar = #0) or (s[i] <> ExtraChar)) then
         Exit;
     Result := True;
   end;
@@ -1836,7 +1837,7 @@ begin
                     begin
                       if HasChars(si, 2, ['0' .. '9']) then
                         Result := tokInteger
-                      else if HasChars(si, 2, ['0' .. '9', PA.LiteralDecimalPoint]) then
+                      else if HasChars(si, 2, ['0' .. '9'], PA.LiteralDecimalPoint) then
                         Result := tokFloat
                     end;
 
@@ -2082,10 +2083,8 @@ type
   var
     Token: TToken;
     wordbeg: Integer;
-    ValidChars: TCharSet;
   begin
     Token := tokInteger;
-    ValidChars := IntChars + [PA.LiteralDecimalPoint];
     wordbeg := Pos;
     repeat
       Inc(Pos);
@@ -2094,7 +2093,7 @@ type
           Token := tokFloat
         else
           Break;
-    until (Pos > Length(Line)) or not(Line[Pos] in ValidChars);
+    until (Pos > Length(Line)) or not ((Line[Pos] in IntChars) or (Line[Pos] = PA.LiteralDecimalPoint));
     AddToken(wordbeg, Pos - wordbeg, Token);
   end;
 
@@ -2759,14 +2758,36 @@ begin
     Free;
 end;
 
-// SiO: Make a copy
-procedure TMPSMSectionClone.Assign(original: TMPSMSectionClone);
+// Copies a section with its nested sections
+function CloneSection(const Father, Sec: TMPSynMemoSection): TMPSynMemoSection;
+var
+  I: Integer;
 begin
-  fParent := original.fParent;
-  fRowBeg := original.fRowBeg;
-  fRowEnd := original.fRowEnd;
-  fLevel := original.fLevel;
-  fCollapsed := original.fCollapsed;
+  Result := TMPSynMemoSection.Create;
+  Result.fParent := Father;
+  Result.fRowBeg := Sec.fRowBeg;
+  Result.fRowEnd := Sec.fRowEnd;
+  Result.fLevel := Sec.fLevel;
+  Result.fCollapsed := Sec.fCollapsed;
+  for I := 0 to Sec.Count - 1 do
+    Result.Add(CloneSection(Result, Sec.Sections[I]));
+end;
+
+// Makes a deep copy of the section tree
+procedure TMPSMSectionClone.Assign(Source: TMPSMSectionClone);
+var
+  I: Integer;
+begin
+  if Source = Self then
+    Exit;
+  fParent := Source.fParent;
+  fRowBeg := Source.fRowBeg;
+  fRowEnd := Source.fRowEnd;
+  fLevel := Source.fLevel;
+  fCollapsed := Source.fCollapsed;
+  Clear;
+  for I := 0 to Source.Count - 1 do
+    Add(CloneSection(Self, Source.Sections[I]));
 end;
 
 // Class TMPSynMemoSection Implementation
@@ -3251,25 +3272,8 @@ end;
 { TODO : THIS IS WHAT WE WILL SORT OUT - tomorrow morning }
 // The current section tree becomes unique
 procedure TMPSynMemoSections.MakeUnique;
-{ Creates a copy of the section - recurse }
-  function Clone(const Father, Sec: TMPSynMemoSection): TMPSynMemoSection;
-  var
-    i: Integer;
-  begin
-    Result := TMPSynMemoSection.Create;
-    Result.fParent := Father;
-    Result.fRowBeg := Sec.fRowBeg;
-    Result.fRowEnd := Sec.fRowEnd;
-    Result.fLevel := Sec.fLevel;
-    Result.fCollapsed := Sec.fCollapsed;
-    for i := 0 to Sec.Count - 1 do
-      Result.Add(Clone(Result, Sec.Sections[i]));
-  end;
-
-{ }
 var
   NewRoot: TMPSMSectionClone;
-  i: Integer;
 begin
   if ssUndoProcess in fRichMemo.Lines.State then
     Exit;
@@ -3280,13 +3284,7 @@ begin
       { } {$ENDIF}
       { Create a real /with its own memory/ clone of the section tree }
       NewRoot := TMPSMSectionClone.Create;
-      NewRoot.fParent := nil;
-      NewRoot.fRowBeg := fRoot.fRowBeg;
-      NewRoot.fRowEnd := fRoot.fRowEnd;
-      NewRoot.fLevel := 0;
-      NewRoot.fCollapsed := False;
-      for i := 0 to fRoot.Count - 1 do
-        NewRoot.Add(Clone(NewRoot, fRoot.Sections[i]));
+      NewRoot.Assign(fRoot);
       SetRoot(NewRoot);
     end
   else
@@ -3824,113 +3822,145 @@ begin
     SetPos(Point(0, Sec.RowBeg));
 end;
 
+// Puts a copy of the buffer on the open clipboard
+procedure SetSyntaxClipboardData(Format: UINT; Buffer: Pointer; Size: Integer);
+var
+  Data: HGLOBAL;
+begin
+  Data := GlobalAlloc(GMEM_MOVEABLE, Cardinal(Size));
+  if Data = 0 then
+    RaiseLastOSError;
+  try
+    Move(Buffer^, GlobalLock(Data)^, Size);
+    GlobalUnlock(Data);
+    Clipboard.SetAsHandle(Format, Data);
+  except
+    GlobalFree(Data);
+    raise;
+  end;
+end;
+
 // Copies text and nested section info to the clipboard
 procedure TMPSynMemoRange.CopyToClipboard;
 var
-  Data: THandle;
-  DataPtr: Pointer;
   s: string;
+{$IFDEF D2009+}
   sa: AnsiString;
+{$ENDIF}
 begin
   if IsEmpty then
     Exit;
 {$IFDEF SYNDEBUG}
   fRichMemo.Log('Range.CopyToClipboard');
 {$ENDIF}
-  // Just copy the text
-  Clipboard.AsText := Self.GetText;
-  // Unless disabled, and if the selection bounds are on different lines,
-  // save the nested section boundary info
-  if not(smoSkipSectionsOnCopy in fRichMemo.Options) and (fStart.Y <> fEnd.Y) then
-    begin
-      s := GetMarkedText;
-      sa := s;
-
-      // Open the clipboard
-      OpenClipboard(Application.Handle);
-      try
-        // Allocate a global memory block
-        Data := GlobalAlloc(GMEM_MOVEABLE + GMEM_DDESHARE, Length(s) * SizeOf(Char) + SizeOf(Char));
-        try
-          // Get a pointer to it
-          DataPtr := GlobalLock(Data);
-          try
-  {$IFDEF D11+}
-            if s = sa then
-              Move(PAnsiChar(sa)^, DataPtr^, Length(s) * SizeOf(AnsiChar) + SizeOf(AnsiChar))
-            else
-              Move(PChar(s)^, DataPtr^, Length(s) * SizeOf(Char) + SizeOf(Char));
-  {$ELSE}
-            Move(PChar(s)^, DataPtr^, Length(s) * SizeOf(Char) + SizeOf(Char));
-  {$ENDIF}
-            SetClipboardData(CF_SYNTAX, Data);
-          finally
-            GlobalUnlock(Data);
-          end;
-        except
-          GlobalFree(Data);
-          raise;
-        end;
-      finally
-        // Close the clipboard
-        CloseClipboard;
+  Clipboard.Open;
+  try
+    // Just copy the text
+    Clipboard.AsText := Self.GetText;
+    // Unless disabled, and if the selection bounds are on different lines,
+    // save the nested section boundary info
+    if not(smoSkipSectionsOnCopy in fRichMemo.Options) and (fStart.Y <> fEnd.Y) then
+      begin
+        s := GetMarkedText;
+{$IFDEF D2009+}
+        SetSyntaxClipboardData(CF_SYNTAX, PChar(s), (Length(s) + 1) * SizeOf(Char));
+        // The old format is ANSI: only when the text survives the code page
+        sa := AnsiString(s);
+        if string(sa) = s then
+          SetSyntaxClipboardData(CF_SYNTAX_LEGACY, PAnsiChar(sa), Length(sa) + 1);
+{$ELSE}
+        SetSyntaxClipboardData(CF_SYNTAX_LEGACY, PChar(s), Length(s) + 1);
+{$ENDIF}
       end;
-    end;
+  finally
+    Clipboard.Close;
+  end;
+end;
+
+// UTF-16, or for MP_SYN_MEMO ANSI when it has CR LF before its first zero byte
+function SyntaxClipboardText(Data: HGLOBAL; OldFormat: Boolean): string;
+var
+  P: PAnsiChar;
+  Size, AnsiLength, WideLength: Cardinal;
+  HasLineBreak: Boolean;
+  Ansi: AnsiString;
+  Wide: WideString;
+begin
+  Result := '';
+  P := GlobalLock(Data);
+  if P = nil then
+    Exit;
+  try
+    Size := GlobalSize(Data);
+    if OldFormat then
+      begin
+        AnsiLength := 0;
+        HasLineBreak := False;
+        while (AnsiLength < Size) and (P[AnsiLength] <> #0) do
+          begin
+            if (AnsiLength > 0) and (P[AnsiLength - 1] = #13) and (P[AnsiLength] = #10) then
+              HasLineBreak := True;
+            Inc(AnsiLength);
+          end;
+        if HasLineBreak then
+          begin
+            SetString(Ansi, P, AnsiLength);
+            Result := string(Ansi);
+            Exit;
+          end;
+      end;
+    WideLength := 0;
+    while (WideLength < Size div SizeOf(WideChar)) and (PWideChar(P)[WideLength] <> #0) do
+      Inc(WideLength);
+    SetString(Wide, PWideChar(P), WideLength);
+    Result := Wide;
+  finally
+    GlobalUnlock(Data);
+  end;
 end;
 
 // Inserts lines into the text and, if info is present, text sections
 procedure TMPSynMemoRange.PasteFromClipboard;
 var
-  Data: THandle;
-  oldDirAccess: Boolean;
-  p: Pointer;
+  Data: HGLOBAL;
   s: string;
-  sa: AnsiString;
+  Marked, OldFormat: Boolean;
 begin
   if smoReadOnly in fRichMemo.fOptions then
     Exit;
 {$IFDEF SYNDEBUG}
   fRichMemo.Log('Range.PasteFromClipboard');
 {$ENDIF}
-  // Remember the insert position to adjust sections
   fRichMemo.Lines.BeginUpdate;
-  oldDirAccess := fRichMemo.Lines.fDirectAccess;
-  fRichMemo.Lines.fDirectAccess := True;
   try
-    if not(smoSkipSectionsOnPaste in fRichMemo.Options) and Clipboard.HasFormat(CF_SYNTAX) then
+    Marked := False;
+    if not(smoSkipSectionsOnPaste in fRichMemo.Options) then
       begin
-        // Open the clipboard
-        OpenClipboard(Application.Handle);
-        Data := GetClipboardData(CF_SYNTAX);
+        Clipboard.Open;
         try
           // Using the received section boundary info of the passed text,
           // create them at the new location
-          p := GlobalLock(Data);
-          s := PChar(p);
-          sa := PAnsiChar(p);
-  {$IFDEF D11+}
-          if sa = s then
-            SetMarkedText(s)
-          else
-            SetMarkedText(sa);
-  {$ELSE}
-          SetMarkedText(s);
-  {$ENDIF}
+          Data := GetClipboardData(CF_SYNTAX);
+          OldFormat := Data = 0;
+          if OldFormat then
+            Data := GetClipboardData(CF_SYNTAX_LEGACY);
+          Marked := Data <> 0;
+          if Marked then
+            s := SyntaxClipboardText(Data, OldFormat);
         finally
-          GlobalUnlock(Data);
-          CloseClipboard;
+          Clipboard.Close;
         end;
-      end
+      end;
+    if Marked then
+      SetMarkedText(s)
     else
       // If there is no syntax or it is disabled, insert plain text
       if Clipboard.HasFormat(CF_TEXT) then
         SetTextEx(Clipboard.AsText, ukRangeInserted);
   finally
-    fRichMemo.Lines.fDirectAccess := oldDirAccess;
-    fRichMemo.Sections.Scan;
     // Repaint, reindex and reparse are needed
     fRichMemo.NeedRedrawAll;
-    fRichMemo.Lines.fState := [ssNeedReIndex, ssNeedReparseAll];
+    fRichMemo.Lines.fState := fRichMemo.Lines.fState + [ssNeedReIndex, ssNeedReparseAll];
   end;
   fRichMemo.Lines.EndUpdate;
   fRichMemo.MakeVisible(PosX, PosY)
@@ -4176,15 +4206,8 @@ begin
   Result.uiSelEnd := fEnd;
   Result.uiSealing := fSealing;
   Result.uiKind := ukNone;
-  Result.uiSections := fRichMemo.Sections.EntireSection;
   Result.uiText := UndoText;
-
-  // SiO: And who is going to create the objects for us?!!
-  // Spent three damn hours hunting the cause of "Runtime error 204"!
-  // P.S. Then as long again figuring out why undo stopped working.
-  // And all it took was making a _copy_.
-  // How it worked before - no idea.
-
+  // A copy: the editor keeps changing its own section tree
   Result.uiSections := TMPSMSectionClone.Create;
   Result.uiSections.Assign(fRichMemo.Sections.EntireSection);
   Result.uiSections.AddRef;
@@ -4350,6 +4373,7 @@ var
 
 var
   ui: TMPSynMemoUndoItem;
+  AdjustSections: Boolean;
 begin
   { } {$IFDEF SYNDEBUG}
   { } fRichMemo.LogFmt('Range.SetText("%.20s")', [Value]);
@@ -4446,47 +4470,72 @@ begin
       // Buzz
       if Lines.Capacity < fStart.Y + n2 - n1 then
         Lines.Capacity := fStart.Y + n2 - n1;
-      // p:=fStart.Y+n2-n1;
-      p := Lines.Count - 1;
-      for N := n2 - n1 downto 1 do
-        if fStart.X = 0 then
-          Lines.Add('')
-        else
-          Lines.Add('');
-      P1 := Lines.Count - 1;
-      for N := p + 1 - fStart.Y downto 1 do
+      // Lines are added and deleted at the end and moved into place: shift the sections at the
+      // edited rows instead of the last ones
+      AdjustSections := not (ssUndoProcess in Lines.State) and not Lines.DirectAccess;
+      if AdjustSections then
         begin
-          if p < 0 then
-            Break;
-          TMPSyntaxParser(Lines.Objects[p]).fNeedReparse := True;
-          Lines.Exchange(p, P1);
-          dec(p);
-          dec(P1);
-        end;
-      { for n := n2 - n1 downto 1 do
-      if fStart.X = 0
-      then Lines.Insert(fStart.Y, '')
-      else Lines.Insert(fStart.Y + n1, ''); }
-
-      if n1 > n2 then
-        begin
-          p := fStart.Y;
-          // p1:=Lines.Count-(n1 - n2);
-          for N := p + (n1 - n2) to Lines.Count - 1 do
-            begin
-              Lines.Exchange(N, p);
-              Inc(p);
-            end;
+          if ssNeedReIndex in Lines.State then
+            Sections.ReIndex;
+          // Bottom up, so the rows still to delete keep their indexes
           for N := n1 - n2 downto 1 do
-            Lines.Delete(Lines.Count - 1);
-          NeedReDrawLE(fStart.Y);
-          // The last line is always empty
+            Sections.DeleteRow(fStart.Y + Ord((fStart.X > 0) or (fEnd.X > 0)) + N - 1);
+          Lines.State := Lines.State + [ssUndoProcess];
         end;
-      { for n := n1 - n2 downto 1 do
-      Lines.Delete(fStart.Y); }
+      try
+        // p:=fStart.Y+n2-n1;
+        p := Lines.Count - 1;
+        for N := n2 - n1 downto 1 do
+          if fStart.X = 0 then
+            Lines.Add('')
+          else
+            Lines.Add('');
+        P1 := Lines.Count - 1;
+        for N := p + 1 - fStart.Y downto 1 do
+          begin
+            if p < 0 then
+              Break;
+            TMPSyntaxParser(Lines.Objects[p]).fNeedReparse := True;
+            Lines.Exchange(p, P1);
+            dec(p);
+            dec(P1);
+          end;
+        { for n := n2 - n1 downto 1 do
+        if fStart.X = 0
+        then Lines.Insert(fStart.Y, '')
+        else Lines.Insert(fStart.Y + n1, ''); }
 
-      for N := 0 to n2 - 1 do
-        Lines[fStart.Y + N] := Sl[N];
+        if n1 > n2 then
+          begin
+            p := fStart.Y;
+            // p1:=Lines.Count-(n1 - n2);
+            for N := p + (n1 - n2) to Lines.Count - 1 do
+              begin
+                Lines.Exchange(N, p);
+                Inc(p);
+              end;
+            for N := n1 - n2 downto 1 do
+              Lines.Delete(Lines.Count - 1);
+            NeedReDrawLE(fStart.Y);
+            // The last line is always empty
+          end;
+        { for n := n1 - n2 downto 1 do
+        Lines.Delete(fStart.Y); }
+
+        for N := 0 to n2 - 1 do
+          Lines[fStart.Y + N] := Sl[N];
+      finally
+        if AdjustSections then
+          Lines.State := Lines.State - [ssUndoProcess];
+      end;
+
+      if AdjustSections and (n2 > n1) then
+        begin
+          for N := n2 - n1 downto 1 do
+            Sections.InsertRow(fStart.Y + Ord(fStart.X > 0));
+          // The added lines have no section yet, and the editor paints before EndUpdate
+          Sections.ReIndex;
+        end;
 
       // Set the new cursor position
       fEnd := NewSelEnd;
@@ -8286,7 +8335,8 @@ end;
 
 initialization
 
-CF_SYNTAX := RegisterClipboardFormat('MP_SYN_MEMO');
+CF_SYNTAX := RegisterClipboardFormat('FIBSyntaxMemoUnicode');
+CF_SYNTAX_LEGACY := RegisterClipboardFormat('MP_SYN_MEMO');
 DefUserTokenEventProc := nil;
 DefProposal[0] := TStringList.Create;
 DefProposal[1] := TStringList.Create;

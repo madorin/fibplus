@@ -84,6 +84,9 @@ type
     procedure SetEvents(Value: TStrings);
     function GetRegistered: Boolean;
     procedure SetRegistered(const Value: Boolean);
+  private
+    FEndedThreads: TList;
+    procedure FreeEndedThreads;
   protected
     { Protected declarations }
     procedure SetNativeHandle(const Value: SIB_DBHandle); virtual;
@@ -114,8 +117,11 @@ type
     FClientLibrary: IIBClientLibrary;
     WhichEvent: Integer;
     ErrorBuffer: PAnsiChar;
-    ErrorVector: SIB_PStatusVector;
-    StatusVector: SIB_StatusVector;
+    ErrorBufferLength: ULong;
+    ErrorVector: PISC_STATUS;
+    // The client writes ISC_STATUS entries (64-bit on Win64) and 32-bit counts
+    StatusVector: array [0 .. 19] of ISC_STATUS;
+    EventCounts: array [0 .. SIB_MAX_EVENT_BLOCK - 1] of UISC_LONG;
     ResultStatus: SIB_Status;
     EventID: SIB_Long;
     DB: SIB_DBHandle;
@@ -199,21 +205,21 @@ end;
 // stub for synchronizing with main thread
 procedure TSIBEventThread.SIBQueEvents;
 begin
-  ResultStatus := SIB_QueEvents(FClientLibrary, @StatusVector, @DB, @EventID,
+  ResultStatus := SIB_QueEvents(FClientLibrary, SIB_PStatusVector(@StatusVector), @DB, @EventID,
     EventBufferLen, PAnsiChar(EventBuffer), EventCallback, Self);
 end;
 
 // stub for synchronizing with main thread
 procedure TSIBEventThread.SIBInterpretError;
 begin
-  ResultStatus := FClientLibrary.isc_interprete(ErrorBuffer, PPISC_STATUS(@ErrorVector));
+  ResultStatus := FClientLibrary.fb_Interpret(ErrorBuffer, ErrorBufferLength, PPISC_STATUS(@ErrorVector));
   Set8087CW(Default8087CW);
 end;
 
 // stub for synchronizing with main thread
 procedure TSIBEventThread.SIBEventCounts;
 begin
-  SIB_EventCounts(FClientLibrary, @StatusVector, EventBufferLen, EventBuffer, ResultBuffer);
+  SIB_EventCounts(FClientLibrary, SIB_PStatusVector(@EventCounts), EventBufferLen, EventBuffer, ResultBuffer);
 end;
 
 // stub for synchronizing with main thread
@@ -228,7 +234,7 @@ end;
 // stub for synchronizing with main thread
 procedure TSIBEventThread.SIBCancelEvents;
 begin
-  ResultStatus := SIB_CancelEvents(FClientLibrary, @StatusVector, @DB, @EventID);
+  ResultStatus := SIB_CancelEvents(FClientLibrary, SIB_PStatusVector(@StatusVector), @DB, @EventID);
   SIBFree
 end;
 
@@ -270,7 +276,7 @@ procedure TSIBEventThread.DoEvent;
 
 begin
   Parent.FOnEventAlert(Parent, Parent.FEvents[((EventGroup * SIB_MAX_EVENT_BLOCK) + WhichEvent)],
-    StatusVector[WhichEvent])
+    Longint(EventCounts[WhichEvent]))
 end;
 
 // called by the IB event callback to copy an update resultbuffer
@@ -282,7 +288,7 @@ end;
 
 function TSIBEventThread.GetIBErrorString: string;
 var
-  Buffer: array [0 .. 255] of AnsiChar;
+  Buffer: array [0 .. 1023] of AnsiChar;
   lastMsg: string;
   errCode: SIB_Status;
 begin
@@ -290,6 +296,8 @@ begin
   if Terminated then
     Exit;
   ErrorBuffer := @Buffer;
+  ErrorBufferLength := SizeOf(Buffer);
+  Buffer[0] := #0;
   ErrorVector := @StatusVector;
   repeat
     Synchronize(SIBInterpretError);
@@ -344,7 +352,7 @@ begin
     for i := 0 to (EventCount - 1) do
     begin
       // if this particular event occured, call the event handler
-      if (StatusVector[i] <> 0) then
+      if (EventCounts[i] <> 0) then
       begin
         WhichEvent := i;
         if FVCLSynchro then
@@ -439,10 +447,9 @@ end;
 // waiting for events to be received
 procedure TSIBEventThread.Execute;
 begin
-  RegisterEvents;
-  QueueEvents;
-
   try
+    RegisterEvents;
+    QueueEvents;
     repeat
       // wait for an event to be signaled
       Signal.WaitFor(INFINITE);
@@ -514,22 +521,20 @@ end;
 // loop through all the running event threads and kill them
 procedure TSIBEventAlerter.UnRegisterEvents;
 var
-  i: Integer;
   Temp: TSIBEventThread;
 begin
-  if (FThreads.Count > 0) then
-  begin
-    for i := (FThreads.Count - 1) downto 0 do
-    begin
-      Temp := TSIBEventThread(FThreads[i]);
-      FThreads.Delete(i);
-      Temp.SignalTerminate;
-      Temp.WaitFor;
-      Temp.Free;
-    end;
-  end
-  else
+  FreeEndedThreads;
+  if (FThreads.Count = 0) then
     raise ESIBError.Create(SIB_RS_NOT_REGISTERED);
+  // WaitFor runs ThreadEnded of other threads, which removes them from the list
+  while (FThreads.Count > 0) do
+  begin
+    Temp := TSIBEventThread(FThreads[FThreads.Count - 1]);
+    FThreads.Delete(FThreads.Count - 1);
+    Temp.SignalTerminate;
+    Temp.WaitFor;
+    Temp.Free;
+  end;
 end;
 
 // calculate how many event threads we need to hold the events
@@ -539,6 +544,7 @@ var
   i: Integer;
   DBH: SIB_DBHandle;
 begin
+  FreeEndedThreads;
   if (FThreads.Count = 0) then
   begin
     DBH := NativeHandle;
@@ -621,7 +627,7 @@ begin
   end;
   FVCLSynchro := True;
   FThreads := TList.Create;
-
+  FEndedThreads := TList.Create;
 end;
 
 destructor TSIBEventAlerter.Destroy;
@@ -631,6 +637,8 @@ begin
       UnRegisterEvents;
   except
   end;
+  FreeEndedThreads;
+  FEndedThreads.Free;
   FThreads.Free;
   FEvents.Free;
   FClientLibrary := nil;
@@ -685,7 +693,23 @@ begin
 
       // Clear the thread exception
       ThreadException := False;
-    end
+    end;
+    // The thread waits for this call to return: it is freed later, by FreeEndedThreads
+    if (ThreadIdx > -1) then
+      FEndedThreads.Add(Sender);
+  end;
+end;
+
+// Frees the threads that ended with an error; their ThreadEnded calls have returned
+procedure TSIBEventAlerter.FreeEndedThreads;
+var
+  Thread: TSIBEventThread;
+begin
+  while (FEndedThreads.Count > 0) do
+  begin
+    Thread := TSIBEventThread(FEndedThreads[FEndedThreads.Count - 1]);
+    FEndedThreads.Delete(FEndedThreads.Count - 1);
+    Thread.Free;
   end;
 end;
 
