@@ -355,7 +355,7 @@ begin
   SetScaledValue(C);
 end;
 
-// The value scaled by Size, for Size 4 the Currency bits (as TDataSet.DataConvert converts it)
+// The value scaled by Size
 function TFIBClientBCDField.GetScaledValue(var Value: Int64): Boolean;
 {$IFDEF C24}
 var
@@ -365,12 +365,7 @@ begin
   Result := GetBcdData(Self, Bcd);
   if not Result then
     Exit;
-  if Size = 4 then
-    begin
-      if not BCDToCurr(Bcd, PCurrency(@Value)^) then
-        raise EOverFlow.CreateFmt(SFieldOutOfRange, [DisplayName]);
-    end
-  else if not BCDToInt64WithScale(Bcd, Value, Scale) or not RescaleInt64(Value, Scale, Size, Value) then
+  if not BCDToInt64WithScale(Bcd, Value, Scale) or not RescaleInt64(Value, Scale, Size, Value) then
     raise EOverFlow.CreateFmt(SFieldOutOfRange, [DisplayName]);
 end;
 {$ELSE}
@@ -385,10 +380,7 @@ var
   Bcd: TBcd;
 begin
   FillChar(Bcd, SizeOf(Bcd), 0);
-  if Size = 4 then
-    CurrToBCD(PCurrency(@Value)^, Bcd, 32, Size)
-  else
-    Int64ToBCD(Value, Size, Bcd);
+  Int64ToBCD(Value, Size, Bcd);
   SetBcdData(Self, Bcd);
 end;
 {$ELSE}
@@ -402,7 +394,8 @@ begin
   if Source = nil then
     Clear
   else if Source is TField then
-    Value := TField(Source).Value
+    // the variant, not the Extended Value of this class
+    AsVariant := TField(Source).Value
   else
     inherited Assign(Source);
 end;
@@ -424,9 +417,10 @@ var
   C: Int64;
 begin
   if GetScaledValue(C) then
-    Result := C * E10[-Size]
+    // the nearest Double: 10^-Size is not exact
+    Result := C / IE10[Size]
   else
-    Result := 0
+    Result := 0;
 end;
 
 function TFIBClientBCDField.GetAsFloat: Double;
@@ -434,9 +428,9 @@ var
   C: Int64;
 begin
   if GetScaledValue(C) then
-    Result := C * E10[-Size]
+    Result := C / IE10[Size]
   else
-    Result := 0
+    Result := 0;
 end;
 
 // Rounded half to even, as TBCDField.AsLargeInt
@@ -467,16 +461,26 @@ begin
 end;
 
 function TFIBClientBCDField.GetAsVariant: variant;
+var
+  C: Int64;
+  CurrencyValue: System.Currency;
 begin
-  if IsNull then
+  if not GetScaledValue(C) then
     Result := Null
+  else if Size = 0 then
+    Result := C
+  else if (Size <= 4) and RescaleInt64(C, Size, 4, PInt64(@CurrencyValue)^) then
+    Result := CurrencyValue
   else
-    case Size of
-      0: Result := AsInt64;
-      4: Result := asCurrency
-    else
-      Result := AsExtended
-    end
+  begin
+    // exact, as TFIBBCDField
+    VarFMTBcdCreate(Result, GetAsBCD);
+{$IFDEF C22}
+{$IFNDEF C23}
+    Result := Result + 0; // Avoid bug BCD in XE
+{$ENDIF}
+{$ENDIF}
+  end;
 end;
 
 procedure TFIBClientBCDField.GetText(var Text: string; DisplayText: Boolean);
@@ -503,7 +507,7 @@ begin
               Format := ffCurrency
             else
               Format := ffFixed;
-            Text := CurrToStrF(C * E10[-Size], Format, Digits);
+            Text := ScaledCurrToStrF(C, Size, Format, Digits);
           end
           else
           begin
@@ -512,7 +516,7 @@ begin
           end;
         end
         else if Size = 4 then
-          Text := FormatCurr(FmtStr, C * E10[-Size])
+          Text := FormatCurr(FmtStr, PCurrency(@C)^)
         else
         begin
           Text := FormatNumericString(FmtStr, Int64WithScaleToStr(C, Size, DecimalSeparator));
@@ -527,20 +531,22 @@ begin
 end;
 
 procedure TFIBClientBCDField.SetAsCurrency(Value: Currency);
+var
+  C: Int64;
 begin
-  SetAsExtended(Value)
+  // exact, rounded half away from zero as AsBCD and AsString
+  if not RescaleInt64(PInt64(@Value)^, 4, Size, C) then
+    raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
+  SetScaledValue(C);
 end;
 
 procedure TFIBClientBCDField.SetAsExtended(Value: Extended);
 var
-  RndComp: Comp;
+  C: Int64;
 begin
-  try
-    RndComp := Value * E10[Size];
-    SetScaledValue(PInt64(@RndComp)^);
-  except
-    raise
-  end;
+  if not ExtendedToScaledInt64(Value, Size, C) then
+    raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
+  SetScaledValue(C);
 end;
 
 procedure TFIBClientBCDField.SetAsFloat(Value: Double);
@@ -568,10 +574,10 @@ procedure TFIBClientBCDField.SetAsString(const Value: string);
 begin
   if Value = '' then
     Clear
-  else if (Size = 0) then
+  else if Size = 0 then
     SetAsInt64(StrToInt64(Value))
   else
-    SetAsExtended(StrToFloat(Value))
+    SetAsBCD(StrToBcd(Trim(Value)));
 end;
 
 procedure TFIBClientBCDField.SetVarValue(const Value: variant);
@@ -581,7 +587,8 @@ begin
     varString, varOleStr, varUString:
       AsString := Value;
     varSmallint, varInteger, varWord, varLongWord: AsInteger := Value;
-    varInt64: AsInt64 := Value
+    varInt64: AsInt64 := Value;
+    varCurrency: AsCurrency := Value;
   else
     if VarIsFMTBcd(Value) then
       AsBCD := VarToBcd(Value)

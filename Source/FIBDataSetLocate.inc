@@ -18,12 +18,26 @@
 {$ENDIF}
 
 {$IFDEF FIB_IMPLEMENT}
+// The TBcd of a calculated BCD field as the Int64 scaled by Scale that Locate compares; False when
+// it doesn't fit
+function LocateBcdToScaled(Bcd: TBcd; Scale: Integer; var Scaled: Int64): Boolean;
+var
+  BcdScale: Byte;
+begin
+  Result := BCDToInt64WithScale(Bcd, Scaled, BcdScale) and RescaleInt64(Scaled, BcdScale, Scale, Scaled);
+end;
+
+// A BCD field whose calculated value is a TBcd (a FIBPlus lookup field stores the scaled Int64)
+function StoresCalculatedBcd(Field: TField): Boolean;
+begin
+  Result := (Field.DataType = ftBCD) and not ((Field is TFIBBCDField) and TFIBBCDField(Field).HasScaledData);
+end;
+
 procedure TFIBCustomDataSet.GetFieldDataPointer(Field:TField;RecNumber:integer; var  IsString:boolean;var OutRes:Pointer);
 var
    P1:Pointer;
    fi:PFIBFieldDescr;
    fn:Integer;
-   c:Currency;
    OutRes1:Pointer;   
 begin
 
@@ -54,16 +68,11 @@ begin
       IsString:=False;
       if not GetFieldData(Field,PAnsiChar(OutRes)) then // ForceCalculate
        OutRes:=nil
-      else
-      case Field.DataType of
-       ftBCD:
-       begin
-        BCDToCurr(TBcd(OutRes^), c);
-        if TBCDField(Field).Size<=4 then
-          PInt64(OutRes)^:=(PInt64(@c)^ div IE10[4-TBCDField(Field).Size])
-        else
-          PInt64(OutRes)^:=PInt64(@c)^ *IE10[TBCDField(Field).Size-4];
-       end;
+      else if StoresCalculatedBcd(Field) then
+      begin
+        // a value beyond the range of the field matches no key
+        if not LocateBcdToScaled(TBcd(OutRes^), Field.Size, PInt64(OutRes)^) then
+          OutRes := nil;
       end;
      finally
       vTypeDispositionField:=dfNormal
@@ -107,18 +116,10 @@ begin
         Inc(PAnsiChar(OutRes1),SizeOf(Boolean));
         IsString:=False;
 
-        case Field.DataType of
-         ftBCD:
-         begin
-          BCDToCurr(TBcd(OutRes1^), c);
-          if TBCDField(Field).Size<=4 then
-            PInt64(OutRes)^:=(PInt64(@c)^ div IE10[4-TBCDField(Field).Size])
-          else
-            PInt64(OutRes)^:=PInt64(@c)^ *IE10[TBCDField(Field).Size-4];
-         end;
-        else
-         OutRes:=OutRes1
-        end;
+        if not StoresCalculatedBcd(Field) then
+          OutRes := OutRes1
+        else if not LocateBcdToScaled(TBcd(OutRes1^), Field.Size, PInt64(OutRes)^) then
+          OutRes := nil;
       end
     end;
 end;
@@ -147,6 +148,8 @@ var
   vCalcBuffer:PAnsiChar;
   CodePages: array of Word;
   DateAdjusted: array of Boolean;
+  // 1 or -1: the BCD key is above or below the range of the field
+  KeyOverflow: array of Integer;
 
 // To compare a string field as Unicode; 0: as bytes
 function LocateCodePage(Field: TField): Word;
@@ -299,13 +302,16 @@ var
       CalcSize:integer;
       fdt  :TFieldType ;
       CurrencyKey: Currency;
+      BcdKey: TBcd;
       ScaledKey: Int64;
-      Scale: integer;
+      Scale: Byte;
+      KeyFits, KeyNegative: Boolean;
       MSecsKey: Double;
 begin
   CalcSize:=0;
   SetLength(CodePages, fl.Count);
   SetLength(DateAdjusted, fl.Count);
+  SetLength(KeyOverflow, fl.Count);
   for i:=Pred(fl.Count) downto 0 do
   begin
      CodePages[i] := LocateCodePage(TField(fl.List^[i]));
@@ -372,28 +378,31 @@ begin
       end;
       ftLargeint   : KeyValues[i]:=VarAsType(KeyValues[i],varInt64);
       ftBCD        :
-        if VarType(KeyValues[i]) = varCurrency then
         begin
-          // Currency is an Int64 scaled by 10^4, a Double loses digits above 2^53
-          CurrencyKey := KeyValues[i];
-          ScaledKey := PInt64(@CurrencyKey)^;
-          Scale := TField(fl.List^[i]).Size;
-          if Scale < 4 then
+          // exact, rounded half away from zero to the scale of the field as AsBCD
+          if VarType(KeyValues[i]) = varCurrency then
           begin
-            if ScaledKey >= 0 then
-              ScaledKey := (ScaledKey + IE10[4 - Scale] div 2) div IE10[4 - Scale]
-            else
-              ScaledKey := (ScaledKey - IE10[4 - Scale] div 2) div IE10[4 - Scale];
+            CurrencyKey := KeyValues[i];
+            KeyNegative := CurrencyKey < 0;
+            KeyFits := RescaleInt64(PInt64(@CurrencyKey)^, 4, TField(fl.List^[i]).Size, ScaledKey);
           end
           else
-            ScaledKey := ScaledKey * IE10[Scale - 4];
+          begin
+            BcdKey := VarToBcd(KeyValues[i]);
+            KeyNegative := BcdKey.SignSpecialPlaces and $80 <> 0;
+            KeyFits := BCDToInt64WithScale(BcdKey, ScaledKey, Scale) and
+              RescaleInt64(ScaledKey, Scale, TField(fl.List^[i]).Size, ScaledKey);
+          end;
+          if not KeyFits then
+          begin
+            ScaledKey := 0;
+            if KeyNegative then
+              KeyOverflow[i] := -1
+            else
+              KeyOverflow[i] := 1;
+          end;
           KeyValues[i] := ScaledKey;
-        end
-        else
-        if TField(fl.List^[i]).Size=0 then
-         KeyValues[i]:=VarAsType(KeyValues[i],varInt64)
-        else
-         KeyValues[i]:=VarAsType(KeyValues[i]*E10[TField(fl.List^[i]).Size],varInt64);
+        end;
       ftTime:
       begin
        KeyValues[i]:= VarAsType(KeyValues[i],varDate);
@@ -492,7 +501,7 @@ var
              StrValue:=PAnsiString(p)^;
              // ftString here has the system code page
              if eloCaseInsensitive in Options then
-              StrValue:=AnsiString(AnsiUppercase(string(StrValue)));
+              StrValue := AnsiString(AnsiUppercase(string(StrValue)));
              Arrow:=TArrow(vSortInfos[i].Asc xor  (UDFCompStr(StrValue)>0))
            end;
            ftWideString:
@@ -608,6 +617,9 @@ var
 
                ftBCD    :
                begin
+                if KeyOverflow[i] <> 0 then
+                 cResult := -KeyOverflow[i]
+                else
                 if Int64(P^)=TVarData(KeyValues[i]).VInt64 then
                  cResult:=0
                 else
@@ -746,7 +758,7 @@ begin
              end
              else
              begin
-              L:=Length(PAnsiChar(p));
+              L := Length(PAnsiChar(p));
               if L>TField(fl.List^[i]).Size then
                L:=TField(fl.List^[i]).Size;
               if poTrimCharFields in Self.Options then
@@ -779,7 +791,7 @@ begin
              end
              else
              begin
-              L:=Length(PAnsiChar(p));
+              L := Length(PAnsiChar(p));
               if L>TField(fl.List^[i]).Size then
                L:=TField(fl.List^[i]).Size;
 
@@ -839,7 +851,7 @@ begin
                 end
                 else
                 begin
-                  L:=Length(PAnsiChar(p));
+                  L := Length(PAnsiChar(p));
                   if L>TField(fl.List^[i]).DataSize-1 then
                    L:=TField(fl.List^[i]).DataSize-1;
 

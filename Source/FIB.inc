@@ -25,8 +25,6 @@
 // {$DEFINE UNICODE_TO_STRING_FIELDS}
 // {$DEFINE OBSOLETE_PROPS}           // load old dfms
 // {$DEFINE USE_DEPRECATE_METHODS1}
-// {$DEFINE USE_DEPRECATE_METHODS2}   // FIBDabase.DataSets -> FIBDabase.Bases
-// {$DEFINE DFM_VERSION1}             // save dfm in the old format (Conditions and FIBDataSet.Options)
 
 // The locale of the error messages and of the login dialog is set in FIBLocale.inc
 
@@ -55,12 +53,6 @@
 
 // Platform
 
-{$IFNDEF NO_GUI}
-  {$IFNDEF C23}
-    {$DEFINE DIRECT_USE_DB_LOGIN_FORM}
-  {$ENDIF}
-{$ENDIF}
-
 {$IFDEF MSWINDOWS}
   {$DEFINE WINDOWS}
 {$ELSE}
@@ -69,6 +61,12 @@
     {$DEFINE NO_REGISTRY}
     {$DEFINE NO_MONITOR}
     {$DEFINE NO_GUI}
+  {$ENDIF}
+{$ENDIF}
+
+{$IFNDEF NO_GUI}
+  {$IFNDEF C23}
+    {$DEFINE DIRECT_USE_DB_LOGIN_FORM}
   {$ENDIF}
 {$ENDIF}
 

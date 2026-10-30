@@ -336,6 +336,7 @@ type
   private
     FDataAsComp: Boolean;
     FDataSet: TDataSet;
+    function HasScaledData: Boolean;
     function ServerType: Integer;
   protected
     procedure LoadRoundByScale(Reader: TReader);
@@ -353,6 +354,7 @@ type
     function GetAsExtended: Extended; override;
     procedure SetAsExtended(Value: Extended); override;
     function GetAsFloat: Double; override;
+    procedure SetAsFloat(Value: Double); override;
 {$IFDEF C21}
     function GetAsLargeInt: Largeint; override;
     procedure SetAsLargeInt(Value: Largeint); override;
@@ -815,6 +817,7 @@ type
 
     procedure InternalPostRecord(Qry: TFIBQuery; Buff: Pointer); virtual;
     function InternalRefreshRow(Qry: TFIBQuery; Buff: TRecordBuffer): Boolean;
+    function RefreshAppliedRow(Buff: TRecordBuffer): Boolean;
     procedure InternalRevertRecord(RecordNumber: Integer; WithUnInserted: Boolean);
     function IsVisibleStat(Buffer: TRecordBuffer): Boolean;
     function IsVisible(Buffer: TRecordBuffer): Boolean; virtual;
@@ -1285,12 +1288,7 @@ type
     property AfterFetchRecord: TOnFetchRecord read FAfterFetchRecord write FAfterFetchRecord;
     property OnGetRecordError: TDataSetErrorEvent read FOnGetRecordError write FOnGetRecordError;
     property Options: TFIBDataSetOptions read FOptions write SetOptions
-{$IFDEF DFM_VERSION1}
-    default [poTrimCharFields, poStartTransaction, poAutoFormatFields,
-      poRefreshAfterPost];
-{$ELSE}
     stored false;
-{$ENDIF}
     property FieldOriginRule: TFieldOriginRule read FFieldOriginRule write FFieldOriginRule default forTableAndFieldName;
 
     property DetailConditions: TDetailConditions read GetDetailConditions write SetDetailConditions stored false;
@@ -1343,10 +1341,6 @@ type
     vDeletes: TList;
     vInserts: TList;
 
-    FReceiveEvents: TStrings;
-{$IFDEF USE_DEPRECATE_METHODS2}
-    FOnUserEvent: TUserEvent;
-{$ENDIF}
     FHaveUncommitedChanges: Boolean;
     FHaveRollbackedChanges: Boolean;
 
@@ -1371,9 +1365,6 @@ type
 
     procedure ClearMidasCommand;
     procedure SetContainer(Value: TDataSetsContainer);
-{$IFDEF USE_DEPRECATE_METHODS2}
-    procedure SetReceiveEvents(Value: TStrings);
-{$ENDIF}
     // UpdateObjects support
     function ListForUO(KindUpdate: TUpdateKind): TList;
     procedure SynchroOrdersUO(List: TList);
@@ -1471,9 +1462,6 @@ type
     function FieldByFieldNo(FieldNo: Integer): TField;
     function ParamNameCount(const aParamName: string): Integer;
     procedure ExecUpdateObjects(KindUpdate: TUpdateKind; Buff: TRecordBuffer; aExecuteOrder: TFIBOrderExecUO);
-{$IFDEF USE_DEPRECATE_METHODS2}
-    procedure DoUserEvent(Sender: TObject; const UDE: string; var Info: string); dynamic; deprecated;
-{$ENDIF}
     procedure OpenWP(const ParamValues: array of Variant); overload;
     procedure OpenWP(const ParamNames: string; const ParamValues: array of Variant); overload;
     procedure OpenWPS(const ParamSources: array of ISQLObject);
@@ -1535,10 +1523,6 @@ type
     property OnPostError: TDataSetErrorEvent read vUserOnPostError write vUserOnPostError;
     property OnDeleteError: TDataSetErrorEvent read vUserOnDeleteError write vUserOnDeleteError;
     property OnLockError: TLockErrorEvent read FOnLockError write FOnLockError;
-{$IFDEF USE_DEPRECATE_METHODS2}
-    property OnUserEvent: TUserEvent read FOnUserEvent write FOnUserEvent;
-    property ReceiveEvents: TStrings read FReceiveEvents write SetReceiveEvents;
-{$ENDIF}
     property DataSet_ID: Integer read FDataSet_ID write SetDataSet_ID default 0;
     property Description: string read FDescription write FDescription;
     property Container: TDataSetsContainer read FContainer write SetContainer;
@@ -1675,10 +1659,6 @@ type
     property StatementTimeout;
     property DefaultFormats;
     property OnLockError;
-{$IFDEF USE_DEPRECATE_METHODS2}
-    property OnUserEvent;
-    property ReceiveEvents;
-{$ENDIF}
     property DataSet_ID;
     property Description;
     property Container;
@@ -1778,6 +1758,8 @@ const
 
 type
   THackField = class(TField);
+  // SetTempState and RestoreState of any dataset
+  TUnprotectedDataSet = class(TDataSet);
 
 // Value of a field in the format of its dataset. TField.GetData/SetData(Pointer) are deprecated
 // (XE3+): a FIBPlus dataset is called directly, its pointer methods are the implementation;
@@ -2069,11 +2051,11 @@ function TFIBStringField.SqlSubType: Integer;
 var
   fi: PFIBFieldDescr;
 begin
-  if (FieldKind <> fkData) or not(DataSet is TFIBDataSet) then
+  if (FieldKind <> fkData) or not (DataSet is TFIBCustomDataSet) then
     Result := -1
   else
     begin
-      fi := TFIBDataSet(DataSet).vFieldDescrList[FieldNo - 1];
+      fi := TFIBCustomDataSet(DataSet).vFieldDescrList[FieldNo - 1];
       Result := fi.fdSubType;
     end;
 end;
@@ -2487,9 +2469,9 @@ begin
             FCharacterSetName := F.CharacterSet;
             FDataSize := F.Size;
 
-            if (DataSet is TFIBDataSet) then
+            if DataSet is TFIBCustomDataSet then
               begin
-                with TFIBDataSet(DataSet).Database do
+                with TFIBCustomDataSet(DataSet).Database do
                   FNeedUnicodeConvert := NeedUnicodeFieldTranslation
                     (Byte(F.SqlSubType)) and (Byte(F.SqlSubType) in UnicodeCharSets)
               end
@@ -2536,11 +2518,11 @@ function TFIBWideStringField.SqlSubType: Integer;
 var
   fi: PFIBFieldDescr;
 begin
-  if (FieldKind <> fkData) or not(DataSet is TFIBDataSet) then
+  if (FieldKind <> fkData) or not (DataSet is TFIBCustomDataSet) then
     Result := -1
   else
     begin
-      fi := TFIBDataSet(DataSet).vFieldDescrList[FieldNo - 1];
+      fi := TFIBCustomDataSet(DataSet).vFieldDescrList[FieldNo - 1];
       Result := fi.fdSubType;
     end;
 end;
@@ -2568,11 +2550,11 @@ begin
   if FieldKind in [fkData, fkInternalCalc] then
     begin
       SaveState := DataSet.State;
-      TFIBCustomDataSet(DataSet).SetTempState(dsOldValue);
+      TUnprotectedDataSet(DataSet).SetTempState(dsOldValue);
       try
         Result := AsLargeInt;
       finally
-        TFIBCustomDataSet(DataSet).RestoreState(SaveState);
+        TUnprotectedDataSet(DataSet).RestoreState(SaveState);
       end;
     end
   else
@@ -2967,8 +2949,9 @@ begin
   else
     Result := FIBCodePageSystem;
   // psSupportUnicodeBlobs, for servers that send the column bytes
-  if (Result = FIBCodePageSystem) and (FCharSetID > 0) and (FCharSetID < 256) and (DataSet is TFIBDataSet) and
-    Assigned(TFIBDataSet(DataSet).Database) and (FCharSetID in TFIBDataSet(DataSet).Database.UnicodeCharSets) then
+  if (Result = FIBCodePageSystem) and (FCharSetID > 0) and (FCharSetID < 256) and (DataSet is TFIBCustomDataSet) and
+    Assigned(TFIBCustomDataSet(DataSet).Database) and
+    (FCharSetID in TFIBCustomDataSet(DataSet).Database.UnicodeCharSets) then
     Result := FIBCodePageUTF8;
 end;
 
@@ -3183,15 +3166,15 @@ end;
 
 function TFIBBooleanField.GetDataSize: Integer;
 var
-  D: TFIBDataSet;
+  D: TFIBCustomDataSet;
   fi: PFIBFieldDescr;
 begin
-  if (FieldKind <> fkData) or not(DataSet is TFIBDataSet) then
+  if (FieldKind <> fkData) or not (DataSet is TFIBCustomDataSet) then
     begin
       Result := inherited GetDataSize; // SizeOf( WordBool )
       Exit;
     end;
-  D := TFIBDataSet(DataSet);
+  D := TFIBCustomDataSet(DataSet);
   if D.vFieldDescrList.Capacity = 0 then
     begin
       Result := inherited GetDataSize; // SizeOf( WordBool )
@@ -3483,7 +3466,7 @@ end;
 
 function TFIBBCDField.GetAsCurrency: Currency;
 begin
-  if (FieldKind = fkCalculated) { or (Scale=-4) } then
+  if not HasScaledData then
     Result := inherited GetAsCurrency
   else if not GetValue(Result) then
     Result := 0;
@@ -3494,7 +3477,7 @@ var
   C: Int64;
   Success: Boolean;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     Result := inherited GetAsString
   else
     begin
@@ -3514,7 +3497,7 @@ var
   C: Int64;
   CurrencyValue: System.Currency;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     Result := inherited GetAsVariant
   else if not GetData(@C) then
     Result := Null
@@ -3537,31 +3520,19 @@ begin
 end;
 
 function TFIBBCDField.GetDataSize: Integer;
-var
-  lTF: TField;
 begin
-  case FieldKind of
-    fkCalculated: Result := inherited GetDataSize;
-    fkLookup:
-      if Assigned(LookupDataSet) then
-        begin
-          lTF := LookupDataSet.FindField(LookupResultField);
-          if Assigned(lTF) then
-            Result := lTF.DataSize
-          else
-            Result := SizeOf(Int64);
-        end
-      else
-        Result := SizeOf(Int64);
-    else
-      Result := 8;
-      {
-      if (ServerType=SQL_DOUBLE) then
-      Result := 8
-      else
-      Result := SizeOf(Int64);
-    }
-  end
+  // also a lookup field: its value is assigned through SetVarValue
+  if HasScaledData then
+    Result := SizeOf(Int64)
+  else
+    Result := inherited GetDataSize;
+end;
+
+// A FIBPlus dataset stores an Int64 scaled by Size; a calculated field and another dataset store
+// the TBcd of TBCDField
+function TFIBBCDField.HasScaledData: Boolean;
+begin
+  Result := (FieldKind <> fkCalculated) and (DataSet is TFIBCustomDataSet);
 end;
 
 function TFIBBCDField.ServerType: Integer;
@@ -3569,11 +3540,11 @@ var
   fi: PFIBFieldDescr;
 begin
 
-  if (FieldKind <> fkData) or not(DataSet is TFIBDataSet) then
+  if (FieldKind <> fkData) or not (DataSet is TFIBCustomDataSet) then
     Result := -1
   else
     begin
-      fi := TFIBDataSet(DataSet).vFieldDescrList[FieldNo - 1];
+      fi := TFIBCustomDataSet(DataSet).vFieldDescrList[FieldNo - 1];
       Result := fi.fdDataType;
     end;
 end;
@@ -3585,7 +3556,7 @@ var
   TC: Int64;
   Format: TFloatFormat;
 begin
-  if FieldKind in [fkCalculated] then
+  if not HasScaledData then
     inherited GetText(Text, DisplayText)
   else
     begin
@@ -3618,7 +3589,7 @@ begin
                           Format := ffCurrency
                         else
                           Format := ffFixed;
-                        Text := CurrToStrF(TC * E10[-Size], Format, Digits);
+                        Text := ScaledCurrToStrF(TC, Size, Format, Digits);
                       end
                     else
                       begin
@@ -3627,7 +3598,7 @@ begin
                       end;
                   end
                 else if Size = 4 then
-                  Text := FormatCurr(FmtStr, TC * E10[-Size])
+                  Text := FormatCurr(FmtStr, PCurrency(@TC)^)
                 else
                   begin
                     Text := FormatNumericString(FmtStr, Int64WithScaleToStr(TC, Size, DecimalSeparator));
@@ -3641,7 +3612,7 @@ function TFIBBCDField.GetValue(var Value: Currency): Boolean;
 var
   C: Int64;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     Result := inherited GetValue(Value)
   else if Size = 4 then
     Result := GetData(@Value)
@@ -3657,7 +3628,7 @@ end;
 
 procedure TFIBBCDField.SetAsString(const Value: string); // override;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     inherited SetAsString(Value)
   else
     begin
@@ -3677,37 +3648,36 @@ end;
 
 procedure TFIBBCDField.SetAsCurrency(Value: Currency);
 var
-  C: Comp;
+  C: Int64;
+  Rounded: System.Currency;
 begin
-  if FieldKind = fkCalculated then
-    inherited SetAsCurrency(Value)
-  else
-    try
-      if Size = 0 then
-        begin
-          C := Value;
-          WriteFieldData(Self, @C, SizeOf(C));
-        end
+  if not HasScaledData then
+    begin
+      inherited SetAsCurrency(Value);
+      Exit;
+    end;
+  // exact, rounded half away from zero as AsBCD and AsString
+  if not RescaleInt64(PInt64(@Value)^, 4, Size, C) then
+    raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
+  try
+    if (MinValue <> 0) or (MaxValue <> 0) then
+      begin
+        Rounded := Value;
+        if Size < 4 then
+          RescaleInt64(C, Size, 4, PInt64(@Rounded)^);
+        if (Rounded < MinValue) or (Rounded > MaxValue) then
+          RangeError(Rounded, MinValue, MaxValue);
+      end;
+    WriteFieldData(Self, @C, SizeOf(C));
+  except
+    on E: Exception do
+      if Assigned(OnValidate) then
+        raise
+      else if Self.Name = '' then
+        raise Exception.Create(CmpFullName(Self) + '.' + FieldName + sLineBreak + E.Message)
       else
-        begin
-          if (MinValue <> 0) or (MaxValue <> 0) then
-            begin
-              Value := RoundExtend(Value, Size);
-              if (Value < MinValue) or (Value > MaxValue) then
-                RangeError(Value, MinValue, MaxValue);
-            end;
-          C := Value * E10[Size];
-          WriteFieldData(Self, @C, SizeOf(C));
-        end;
-    except
-      on E: Exception do
-        if Assigned(OnValidate) then
-          raise
-        else if Self.Name = '' then
-          raise Exception.Create(CmpFullName(Self) + '.' + FieldName + sLineBreak + E.Message)
-        else
-          raise Exception.Create(CmpFullName(Self) + sLineBreak + E.Message)
-    end
+        raise Exception.Create(CmpFullName(Self) + sLineBreak + E.Message);
+  end;
 end;
 
 function TFIBBCDField.GetAsExtended: Extended;
@@ -3715,19 +3685,20 @@ var
   C: Int64;
   Success: Boolean;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     Exit(inherited GetAsExtended);
   Success := GetData(@C);
   if not Success then
     Result := 0
   else
-    Result := C * E10[-Size]
+    // the nearest Double: 10^-Size is not exact
+    Result := C / IE10[Size];
 end;
 
 function TFIBBCDField.GetAsFloat: Double;
 begin
   // TBCDField.GetAsExtended of a calculated field calls GetAsFloat
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     Result := inherited GetAsFloat
   else
     Result := GetAsExtended;
@@ -3744,7 +3715,7 @@ function TFIBBCDField.GetAsBCD: TBcd;
 var
   C: Int64;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     Result := inherited GetAsBCD
   else
     begin
@@ -3759,7 +3730,7 @@ var
   C: Int64;
   Scale: Byte;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     inherited SetAsBCD(Value)
   else
     begin
@@ -3770,27 +3741,26 @@ begin
 end;
 
 procedure TFIBBCDField.SetVarValue(const Value: Variant);
-var
-  C: Comp;
 begin
   if VarIsNull(Value) then
     Clear
   else
     try
-      if FieldKind = fkCalculated then
+      if not HasScaledData then
         inherited SetVarValue(Value)
-
       else
         case VarType(Value) of
-          varInt64: SetAsInt64(Value);
+          varCurrency:
+            SetAsCurrency(Value);
+          varShortInt, varByte, varSmallint, varWord, varInteger, varLongWord, varInt64, varUInt64:
+            SetAsInt64(Value);
+        else
+          if VarIsStr(Value) then
+            SetAsString(Value)
+          else if VarIsFMTBcd(Value) then
+            SetAsBCD(VarToBcd(Value))
           else
-            if VarIsFMTBcd(Value) then
-              AsBcd := VarToBcd(Value)
-            else
-              begin
-                C := Value * E10[Size];
-                WriteFieldData(Self, @C, SizeOf(C));
-              end
+            SetAsExtended(Value);
         end;
     except
       on EVariantError do
@@ -3811,7 +3781,7 @@ var
   Value: System.Currency;
 begin
   // a calculated field gives the Currency bits: FieldModified compares it only by null
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     begin
       ValueIsNull := not GetValue(Value);
       if ValueIsNull then
@@ -3832,11 +3802,11 @@ begin
   if FieldKind in [fkData, fkInternalCalc] then
     begin
       SaveState := DataSet.State;
-      TFIBCustomDataSet(DataSet).SetTempState(dsOldValue);
+      TUnprotectedDataSet(DataSet).SetTempState(dsOldValue);
       try
         Result := GetInternalData(OldIsNull);
       finally
-        TFIBCustomDataSet(DataSet).RestoreState(SaveState);
+        TUnprotectedDataSet(DataSet).RestoreState(SaveState);
       end;
     end
   else
@@ -3851,7 +3821,7 @@ function TFIBBCDField.GetAsInt64: Int64;
 var
   CurrencyValue: System.Currency;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     begin
       CurrencyValue := inherited GetAsCurrency;
       RescaleInt64(PInt64(@CurrencyValue)^, 4, 0, Result, True);
@@ -3866,7 +3836,7 @@ procedure TFIBBCDField.SetAsInt64(const Value: Int64);
 var
   C: Int64;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     inherited SetVarValue(Value)
   else
   begin
@@ -3885,37 +3855,43 @@ end;
 
 procedure TFIBBCDField.SetAsExtended(Value: Extended);
 var
-  RndComp: Comp;
+  C: Int64;
 begin
-  if FieldKind = fkCalculated then
-    begin
-      inherited SetAsExtended(Value);
-      Exit;
-    end;
-  try
-    RndComp := Value * E10[Size];
-  except
-    on E: Exception do
-      begin
-        if Self.Name = '' then
-          raise Exception.Create(CmpFullName(Self) + '.' + FieldName + sLineBreak + E.Message)
-        else
-          raise Exception.Create(CmpFullName(Self) + sLineBreak + E.Message)
-      end;
-  end;
-  WriteFieldData(Self, @RndComp, SizeOf(RndComp));
+  if not HasScaledData then
+    inherited SetAsExtended(Value)
+  else if ExtendedToScaledInt64(Value, Size, C) then
+    WriteFieldData(Self, @C, SizeOf(C))
+  else
+    raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
 end;
 
-function TFIBBCDField.GetData(Buffer: Pointer): Boolean;
+// Through AsExtended: TBCDField goes through Currency
+procedure TFIBBCDField.SetAsFloat(Value: Double);
 begin
-  if FieldKind = fkCalculated then
-    Result := ReadFieldData(Self, Buffer, DataSize)
+  // TField.SetAsExtended of another dataset calls SetAsFloat
+  if not HasScaledData then
+    inherited SetAsFloat(Value)
   else
+    SetAsExtended(Value);
+end;
+
+// The value as an Int64 scaled by Size
+function TFIBBCDField.GetData(Buffer: Pointer): Boolean;
+var
+  CurrencyValue: System.Currency;
+begin
+  if HasScaledData then
     try
       FDataAsComp := True;
-      Result := ReadFieldData(Self, Buffer, DataSize);
+      Result := ReadFieldData(Self, Buffer, SizeOf(Int64));
     finally
-      FDataAsComp := false
+      FDataAsComp := False;
+    end
+  else
+    begin
+      Result := inherited GetValue(CurrencyValue);
+      if Result and not RescaleInt64(PInt64(@CurrencyValue)^, 4, Size, PInt64(Buffer)^) then
+        raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
     end;
 end;
 
@@ -4133,8 +4109,6 @@ begin
   vDeletes := TList.Create;
   vInserts := TList.Create;
 
-  FReceiveEvents := TStringList.Create;
-
   vQryRecordCount := TFIBQuery.Create(Self);
   vQryRecordCount.ParamCheck := True;
   vLockQry := TFIBQuery.Create(Self);
@@ -4148,7 +4122,6 @@ begin
   vUpdates.Free;
   vDeletes.Free;
   vInserts.Free;
-  FReceiveEvents.Free;
 
   if Assigned(FExecBlockStatement) then
     FExecBlockStatement.Free;
@@ -5687,7 +5660,7 @@ begin
   ExecUpdateObjects(ukDelete, Buff, oeAfterDefault);
   if poRefreshAfterDelete in Options then
   begin
-    vNeedDeleteFromCache := not InternalRefreshRow(QRefresh, Buff);
+    vNeedDeleteFromCache := not RefreshAppliedRow(Buff);
   end
   else
     vNeedDeleteFromCache := True;
@@ -5994,7 +5967,7 @@ begin
   begin
     DoBeforeRefresh;
 
-    if InternalRefreshRow(FQRefresh, Buff) and (StreamFieldCount > 0) then
+    if RefreshAppliedRow(Buff) and (StreamFieldCount > 0) then
     begin
       UpdateFieldStreams(Buff, ufsClearOldValue, False, False);
       if CachedUpdates then
@@ -6007,6 +5980,21 @@ begin
     DoAfterRefresh;
   end;
   UpdateFieldStreams(Buff, ufsClearOldValue, False, False);
+end;
+
+// The refresh after a write: while the write is not committed, only UpdateTransaction sees it
+function TFIBCustomDataSet.RefreshAppliedRow(Buff: TRecordBuffer): Boolean;
+var
+  RefreshTransaction: TFIBTransaction;
+begin
+  RefreshTransaction := FQRefresh.Transaction;
+  if (UpdateTransaction <> nil) and UpdateTransaction.InTransaction then
+    FQRefresh.Transaction := UpdateTransaction;
+  try
+    Result := InternalRefreshRow(FQRefresh, Buff);
+  finally
+    FQRefresh.Transaction := RefreshTransaction;
+  end;
 end;
 
 function TFIBCustomDataSet.InternalRefreshRow(Qry: TFIBQuery; Buff: TRecordBuffer): Boolean;
@@ -8558,7 +8546,6 @@ begin
   if AutoCommit and CachedUpdates then
   begin
     ApplyUpdToBase;
-    AutoCommitUpdateTransaction;
     CommitUpdToCach
   end;
   inherited;
@@ -8599,7 +8586,6 @@ begin
   if AutoCommit and CachedUpdates then
   begin
     ApplyUpdToBase;
-    AutoCommitUpdateTransaction;
     CommitUpdToCach
   end;
   if (dcForceMasterRefresh in FDetailConditions) and not CachedUpdates then
@@ -13260,7 +13246,10 @@ end;
 
 function TFIBGuidField.GetAsVariant: Variant;
 begin
-  Result := GetAsString
+  if IsNull then
+    Result := Null
+  else
+    Result := GetAsString;
 end;
 
 procedure TFIBGuidField.SetAsVariant(const Value: Variant);
@@ -13274,7 +13263,11 @@ begin
   else
     begin
       GuidValue := StringAsGuid(AnsiString(sValue));
-      WriteFieldData(Self, @GuidValue, SizeOf(GuidValue))
+      if DataSet is TFIBCustomDataSet then
+        WriteFieldData(Self, @GuidValue, SizeOf(GuidValue))
+      else
+        // another dataset stores the text, as for TGuidField
+        inherited SetAsString(GUIDToString(GuidValue));
     end;
 end;
 
@@ -13290,8 +13283,11 @@ procedure TFIBGuidField.SetAsGuid(const Value: TGUID);
 begin
   if IsEqualGUIDs(Value, fibGUID_NULL) then
     Clear
+  else if DataSet is TFIBCustomDataSet then
+    WriteFieldData(Self, @Value, SizeOf(Value))
   else
-    WriteFieldData(Self, @Value, SizeOf(Value));
+    // another dataset stores the text, as for TGuidField
+    inherited SetAsString(GUIDToString(Value));
 end;
 
 procedure TFIBGuidField.SetAsString(const Value: string);
@@ -14216,6 +14212,10 @@ var
   RecordsInExecBlock: array of integer;
   BlockErrorHandled: boolean;
   SQL: Widestring;
+  UseSavepoints: Boolean;
+  RunSavepoint, RowSavepoint: string;
+  CurrentRow: Integer;
+
   procedure SaveFlagsForRecordsInExecBlock;
   var
     j: NativeInt;
@@ -14280,14 +14280,109 @@ var
     AddRecordToListInExecBlock;
   end;
 
+  function SavepointsSupported: Boolean;
+  begin
+    Result := FCachedUpdates and (UpdateTransaction <> nil) and UpdateTransaction.InTransaction and
+      (Database <> nil) and (UpdateTransaction.MainDatabase = Database) and Database.IsFirebirdConnect and
+      (Database.ServerMajorVersion >= 2);
+  end;
+
+  function SavepointName(const Prefix: string): string;
+  begin
+    // OnUpdateRecord may apply the updates of another dataset in the same transaction
+    Result := Prefix + IntToHex(NativeInt(Self), SizeOf(Pointer) * 2);
+  end;
+
+  // The row runs more than one statement: it can fail after a statement that changed data
+  function RowCanFailHalfDone: Boolean;
+  begin
+    Result := not FAutoUpdateOptions.UseExecuteBlock and
+      (Assigned(FOnUpdateRecord) or (ListForUO(UpdateKind).Count > 0) or
+      ((UpdateKind = ukDelete) and (poRefreshAfterDelete in Options)));
+  end;
+
+  procedure StartRow;
+  begin
+    CurrentRow := i;
+    // Under the run savepoint a row needs its own only when OnUpdateError can continue the run
+    if UseSavepoints and RowCanFailHalfDone and ((RunSavepoint = '') or Assigned(FOnUpdateError)) then
+    begin
+      RowSavepoint := SavepointName('FIB_ROW_');
+      UpdateTransaction.SetSavePoint(RowSavepoint);
+    end;
+  end;
+
+  procedure RollBackRow;
+  begin
+    if RowSavepoint = '' then
+      Exit;
+    UpdateTransaction.RollBackToSavePoint(RowSavepoint);
+    // Nothing of the row is in the database: it stays pending
+    PRecordData(Buff)^.rdFlags := Byte(cus);
+    WriteRecordCache(CurrentRow, Buff);
+  end;
+
+  procedure FinishRow;
+  var
+    Savepoint: string;
+  begin
+    CurrentRow := -1;
+    if RowSavepoint = '' then
+      Exit;
+    Savepoint := RowSavepoint;
+    RowSavepoint := '';
+    UpdateTransaction.ReleaseSavePoint(Savepoint);
+  end;
+
+  // The database and the cache flags agree afterwards; it raises nothing, the caller raises the error
+  procedure UndoFailedRun;
+  var
+    RowUndone: Boolean;
+  begin
+    try
+      if RunSavepoint <> '' then
+      begin
+        // DontChangeCacheFlags: every row stays pending, so nothing of the run stays in the database
+        UpdateTransaction.RollBackToSavePoint(RunSavepoint);
+        UpdateTransaction.ReleaseSavePoint(RunSavepoint);
+        if CurrentRow >= 0 then
+        begin
+          PRecordData(Buff)^.rdFlags := Byte(cus);
+          WriteRecordCache(CurrentRow, Buff);
+        end;
+      end
+      else if not DontChangeCacheFlags then
+      begin
+        RowUndone := RowSavepoint <> '';
+        RollBackRow;
+        // The cache marks the rows before the failed one applied: they are committed
+        if RowUndone or (CurrentRow < 0) or not RowCanFailHalfDone then
+          AutoCommitUpdateTransaction;
+      end;
+    except
+      // The error that stopped the run is raised
+    end;
+    RowSavepoint := '';
+  end;
+
 begin
   if State in [dsEdit, dsInsert] then
     Post;
   if FRecordCount = 0 then
     Exit;
   AutoStartUpdateTransaction;
+  UseSavepoints := SavepointsSupported;
+  RunSavepoint := '';
+  RowSavepoint := '';
+  CurrentRow := -1;
   Buff := AllocRecordBuffer;
   try
+    // Without changing the cache flags a failed run leaves nothing in the database
+    if UseSavepoints and DontChangeCacheFlags then
+    begin
+      RunSavepoint := SavepointName('FIB_RUN_');
+      UpdateTransaction.SetSavePoint(RunSavepoint);
+    end;
     try
       bRecordsSkipped := False;
       BlockErrorHandled := False;
@@ -14307,6 +14402,7 @@ begin
           else
             Continue
           end;
+          StartRow;
           try
             vTypeDispositionField := dfRRecNumber;
             vInspectRecno := i;
@@ -14325,6 +14421,7 @@ begin
           except
             on E: EFIBError do
             begin
+              RollBackRow;
               UpdateAction := uaFail;
               if Assigned(FOnUpdateError) then
                 FOnUpdateError(Self, E, UpdateKind, UpdateAction);
@@ -14392,6 +14489,7 @@ begin
                 rdFlags := byte(cus);
                 WriteRecordCache(i, Buff);
               end;
+              FinishRow;
               UpdateAction := uaApplied;
 
               if Assigned(FAfterUpdateRecord) then
@@ -14412,6 +14510,7 @@ begin
                 // a failed block was already reported to OnUpdateError
                 if BlockErrorHandled then
                   raise;
+                RollBackRow;
                 UpdateAction := uaFail;
                 if Assigned(FOnUpdateError) then
                   FOnUpdateError(Self, E, UpdateKind, UpdateAction);
@@ -14423,6 +14522,7 @@ begin
               end;
             end;
           end;
+          FinishRow;
         end;
       end;
 
@@ -14438,12 +14538,14 @@ begin
 
       FUpdatesPending := bRecordsSkipped;
     except
-      // The cache already marks the rows applied before the error
-      AutoCommitUpdateTransaction;
+      UndoFailedRun;
       raise;
     end;
     // Skipped records stay cached, the applied ones are committed
-    AutoCommitUpdateTransaction;
+    if FAutoCommit then
+      AutoCommitUpdateTransaction
+    else if RunSavepoint <> '' then
+      UpdateTransaction.ReleaseSavePoint(RunSavepoint);
 
   finally
     if Assigned(FExecBlockStatement) then
@@ -14562,7 +14664,8 @@ begin
         if AutoUpdateOptions.AutoReWriteSqls then
         begin
           RelTable := FormatIdentifier(Database.SQLDialect, RelTable);
-          Fields[i].ReadOnly := not EquelStrings(RelTable, vModifyTable, False);
+          // Both are formatted identifiers: a quoted name is case sensitive
+          Fields[i].ReadOnly := RelTable <> vModifyTable;
           if not Fields[i].ReadOnly and AutoUpdateOptions.ModifiedTableHaveAlias then
           begin
             Fields[i].ReadOnly := not IsEquelSQLNames
@@ -15031,13 +15134,6 @@ end;
 
 // Containers stuff
 
-{$IFDEF USE_DEPRECATE_METHODS2}
-procedure TFIBCustomDataSet.SetReceiveEvents(Value: TStrings);
-begin
-  FReceiveEvents.Assign(Value)
-end;
-{$ENDIF}
-
 procedure TFIBCustomDataSet.SetContainer(Value: TDataSetsContainer);
 begin
   if FContainer <> Value then
@@ -15070,27 +15166,6 @@ begin
       end;
   end;
 end;
-
-{$IFDEF USE_DEPRECATE_METHODS2}
-procedure TFIBCustomDataSet.DoUserEvent(Sender: TObject; const UDE: string; var Info: string);
-begin
-  if FastUpperCase(UDE) = 'CLOSE' then
-    Close
-  else if FastUpperCase(UDE) = 'OPEN' then
-    Open
-  else
-  begin
-    if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
-      GlobalContainer.UserEvent(Sender, Self, UDE, Info);
-    if FContainer <> nil then
-      FContainer.UserEvent(Sender, Self, UDE, Info);
-  end;
-
-  if Assigned(FOnUserEvent) then
-    FOnUserEvent(Sender, Self, UDE, Info)
-
-end;
-{$ENDIF}
 
 function TFIBCustomDataSet.AddStatementToExecuteBlock(SK: TFIBSQLKind): boolean;
 var
@@ -16579,6 +16654,21 @@ begin
     else
       MainQry := QDelete;
     end;
+    // UpdateOnlyModifiedFields: the statement of the last direct post holds only the fields it changed
+    with FAutoUpdateOptions do
+      if (UpdateKind <> ukDelete) and UpdateOnlyModifiedFieldsInEffect and (KeyFields <> '') and
+        (UpdateTableName <> '') then
+      begin
+        UpdateOnlyModifiedFields := False;
+        try
+          if UpdateKind = ukModify then
+            MainQry.SQL.Text := GenerateSQLText(UpdateTableName, KeyFields, skModify)
+          else
+            MainQry.SQL.Text := GenerateSQLText(UpdateTableName, KeyFields, FIBDataSet.skInsert);
+        finally
+          UpdateOnlyModifiedFields := True;
+        end;
+      end;
     // No Action sends nothing and the row counts as applied, as in a direct post or delete
     NoAction := (MainQry.SQL.Count > 0) and (MainQry.SQL[0] = SNoAction);
     if NoAction and (UpdateKind = ukDelete) then
@@ -16644,7 +16734,7 @@ begin
   if ResultSet = nil then
   begin
     // shared by the query cache: keeps the Session value, a StatementTimeout would leak to other users
-    vQuery := GetQueryForUse(UpdateTransaction, sqlStr);
+    vQuery := GetQueryForUse(Database, UpdateTransaction, sqlStr);
     try
       AssignParams(vQuery);
       vQuery.ExecQuery;

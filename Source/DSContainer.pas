@@ -56,9 +56,6 @@ type
   TOnDataSetError = procedure(DataSet: TDataSet; Event: TKindDataSetError; E: EDatabaseError; var Action: TDataAction) of object;
 
   TOnCompareFieldValues = function(Field: TField; const S1, S2: variant; var Compared: Boolean): Integer of object;
-{$IFDEF USE_DEPRECATE_METHODS2}
-  TUserEvent = procedure(Sender: TObject; Receiver: TDataSet; const EventName: string; var Info: string) of object;
-{$ENDIF}
   TDataSetsContainer = class;
 
   TDataSetsContainer = class(TComponent)
@@ -72,9 +69,6 @@ type
     FOnCompareFieldValues: TOnCompareFieldValues;
     FOnReadBlobField: TOnBlobFieldProcessing;
     FOnWriteBlobField: TOnBlobFieldProcessing;
-{$IFDEF USE_DEPRECATE_METHODS2}
-    FOnUserEvent: TUserEvent;
-{$ENDIF}
     vDataSetsList: TList;
     FIsGlobalContainer: Boolean;
     procedure SetMasterContainer(Value: TDataSetsContainer);
@@ -87,11 +81,6 @@ type
     destructor Destroy; override;
     procedure AddDataSet(Value: TDataSet);
     procedure RemoveDataSet(Value: TDataSet);
-{$IFDEF USE_DEPRECATE_METHODS2}
-    procedure NotifyDataSets(Sender: TObject; const UDA, UDE: string; var Info: string); dynamic; deprecated;
-    // (UDA - user defined address)
-    // (UDE - user defined Event)
-{$ENDIF}
     procedure DataSetEvent(DataSet: TDataSet; Event: TKindDataSetEvent);
     procedure DoOnApplyDefaultValue(DataSet: TDataSet; Field: TField; var Applied: Boolean);
     procedure DoOnApplyFieldRepository(DataSet: TDataSet; Field: TField; FieldInfo: TFIBFieldInfo);
@@ -99,18 +88,12 @@ type
     function DataSetCompareFieldValues(DataSet: TDataSet; Field: TField; const S1, S2: variant; var Res: Integer): Boolean;
     procedure DoOnReadBlobField(Field: TBlobField; BlobSize: Integer; Progress: Integer; var Stop: Boolean);
     procedure DoOnWriteBlobField(Field: TBlobField; BlobSize: Integer; Progress: Integer; var Stop: Boolean);
-{$IFDEF USE_DEPRECATE_METHODS2}
-    procedure UserEvent(Sender: TObject; Receiver: TDataSet; const EventName: string; var Info: string); deprecated;
-{$ENDIF}
     function DataSetCount: Integer;
     function DataSet(Index: Integer): TDataSet;
   published
     property Active: Boolean read FActive write FActive default true;
     property OnDataSetEvent: TOnDataSetEvent read FOnDataSetEvent write FOnDataSetEvent;
     property OnDataSetError: TOnDataSetError read FOnDataSetError write FOnDataSetError;
-{$IFDEF USE_DEPRECATE_METHODS2}
-    property OnUserEvent: TUserEvent read FOnUserEvent write FOnUserEvent;
-{$ENDIF}
     property OnApplyDefaultValue: TOnApplyDefaultValue read FOnApplyDefaultValue write FOnApplyDefaultValue;
     property OnApplyFieldRepository: TOnApplyFieldRepository read FOnApplyFieldRepository write FOnApplyFieldRepository;
     property MasterContainer: TDataSetsContainer read FMasterContainer write SetMasterContainer;
@@ -195,19 +178,6 @@ begin
     end;
 end;
 
-{$IFDEF USE_DEPRECATE_METHODS2}
-procedure TDataSetsContainer.UserEvent(Sender: TObject; Receiver: TDataSet; const EventName: string; var Info: string);
-begin
-  if Assigned(FMasterContainer) then
-    FMasterContainer.UserEvent(Sender, Receiver, EventName, Info);
-  if Active then
-    begin
-      if Assigned(FOnUserEvent) then
-        FOnUserEvent(Sender, Receiver, EventName, Info)
-    end;
-end;
-{$ENDIF}
-
 procedure TDataSetsContainer.SetMasterContainer(Value: TDataSetsContainer);
 var
   i: Integer;
@@ -258,24 +228,6 @@ begin
   if MasterContainer <> nil then
     MasterContainer.RemoveDataSet(Value);
 end;
-
-{$IFDEF USE_DEPRECATE_METHODS2}
-procedure TDataSetsContainer.NotifyDataSets(Sender: TObject; const UDA, UDE: string; var Info: string);
-var
-  i: Integer;
-begin
-  for i := 0 to DataSetCount - 1 do
-    begin
-      if (UDA = '') or WildStringCompare
-        (FastUpperCase(TDataSet(vDataSetsList[i]).Owner.Name + '.' +
-          TDataSet(vDataSetsList[i]).Name), FastUpperCase(UDA)) then
-        if (TDataSet(vDataSetsList[i]) is TFIBDataSet) then
-          with TFIBDataSet(vDataSetsList[i]) do
-            if (ReceiveEvents.Count = 0) or (WldIndexOf(ReceiveEvents, UDE, false) <> -1) then
-              DoUserEvent(Sender, UDE, Info)
-    end;
-end;
-{$ENDIF}
 
 function TDataSetsContainer.DataSetCount: Integer;
 begin

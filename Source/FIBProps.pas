@@ -433,9 +433,6 @@ type
     procedure Put(Index: integer; const S: string); override;
     procedure DefineProperties(Filer: TFiler); override;
     procedure ReadEnabled(Reader: TReader);
-{$IFDEF DFM_VERSION1}
-    procedure WriteEnabled(Writer: TWriter);
-{$ENDIF}
     procedure ReadStrings(Reader: TReader);
     procedure ReadData(Reader: TReader);
     procedure WriteData(Writer: TWriter);
@@ -1348,11 +1345,6 @@ var
 begin
   { Filer.DefineProperty('Strings', ReadData, WriteData, DoWriteConditions);
     Filer.DefineProperty('Enabled',  ReadEnabled, WriteEnabled,   DoWriteConditions); }
-{$IFDEF DFM_VERSION1}
-  inherited;
-  Filer.DefineProperty('Enabled', ReadEnabled, WriteEnabled, DoWriteCondEnabled);
-  Filer.DefineProperty('Data', ReadData, nil, False);
-{$ELSE}
   Filer.DefineProperty('Strings', ReadStrings, nil, False);
   Filer.DefineProperty('Enabled', ReadEnabled, nil, False);
   if Assigned(FFIBQuery) and (csAncestor in FFIBQuery.ComponentState) and
@@ -1361,22 +1353,7 @@ begin
   else
     HasData := DoWriteConditions;
   Filer.DefineProperty('Data', ReadData, WriteData, HasData);
-{$ENDIF}
 end;
-
-{$IFDEF DFM_VERSION1}
-procedure TConditions.WriteEnabled(Writer: TWriter);
-var
-  S: string;
-  I: integer;
-begin
-  S := '[';
-  for I := 0 to Pred(Count) do
-    S := S + IntToStr(integer(Condition[I].Enabled)) + ',';
-  S[Length(S)] := ']';
-  Writer.WriteString(S)
-end;
-{$ENDIF}
 
 procedure TConditions.ReadEnabled(Reader: TReader);
 var
@@ -1770,6 +1747,7 @@ end;
 procedure TAutoUpdateOptions.PrepareUpdateTableStrings;
 var
   Dialect: Integer;
+  TableInSQL, TableAlias: string;
 begin
   if Length(FModifiedTable) = 0 then
   begin
@@ -1785,13 +1763,19 @@ begin
     else
     begin
       FModifiedTable := UpdateTableName;
+      FAliasModifiedTable := UpdateTableName;
       if FOwner <> nil then
-        FAliasModifiedTable := AliasForTable(TFIBDataSet(FOwner).QSelect.ReadySQLText(False), UpdateTableName)
-      else
-        FAliasModifiedTable := UpdateTableName;
-      // An alias found in SelectSQL is SQL text: unquoted means uppercase
-      if FAliasModifiedTable <> UpdateTableName then
-        FAliasModifiedTable := NormalizeIdentifier(Dialect, FAliasModifiedTable);
+      begin
+        // AliasForTable compares SQL text: the stored name is looked up as the generated SQL writes it
+        if Assigned(TFIBDataSet(FOwner).Database) then
+          TableInSQL := EasyFormatIdentifier(Dialect, UpdateTableName, TFIBDataSet(FOwner).Database.EasyFormatsStr)
+        else
+          TableInSQL := FormatIdentifier(Dialect, UpdateTableName);
+        TableAlias := AliasForTable(TFIBDataSet(FOwner).QSelect.ReadySQLText(False), TableInSQL);
+        // An alias found in SelectSQL is SQL text: unquoted means uppercase
+        if TableAlias <> TableInSQL then
+          FAliasModifiedTable := NormalizeIdentifier(Dialect, TableAlias);
+      end;
     end;
     if Assigned(FOwner) and Assigned(TFIBDataSet(FOwner).Database) then
       with TFIBDataSet(FOwner).Database do
