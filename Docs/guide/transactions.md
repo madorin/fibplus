@@ -167,7 +167,7 @@ The commit ends the **whole transaction**, not only the statement. Every other c
 
 ### Datasets
 
-`AutoCommit` of a dataset commits `UpdateTransaction` after each `Post` and `Delete` is sent to the server. With `CachedUpdates`, `ApplyUpdates` commits once at the end, also when rows were skipped or an error stopped it. It uses `CommitRetaining` when `UpdateTransaction` is the same component as `Transaction`, or when its `TimeoutAction` is `TACommitRetaining`; otherwise it uses `Commit`. Without `AutoCommit`, nothing is committed for you: call `Commit` or `CommitRetaining` yourself.
+`AutoCommit` of a dataset commits `UpdateTransaction` after each `Post` and `Delete` is sent to the server. With `CachedUpdates`, `ApplyUpdates` commits once at the end, also when rows were skipped or an error stopped it (the failing row is rolled back to a savepoint first, *Firebird 2+*). It uses `CommitRetaining` when `UpdateTransaction` is the same component as `Transaction`, or when its `TimeoutAction` is `TACommitRetaining`; otherwise it uses `Commit`. Without `AutoCommit`, nothing is committed for you: call `Commit` or `CommitRetaining` yourself.
 
 ## Reading and updating with two transactions
 

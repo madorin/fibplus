@@ -24,6 +24,8 @@ Find the version you use now, then read every section above it, from the one jus
 | The login dialog units `FIBDBLoginDlg` and `FIB_FMX_DBLoginDlg` are renamed to `FIBLoginDlg` and `FIBLoginDlgFMX`. The form classes `TfrmFIBDBLoginDlg` and `TfmxFIBDBLoginDlg` are now `TFIBLoginForm` and `TFIBLoginFormFMX`. | Change the `uses` clause: `FIBDBLoginDlg` → `FIBLoginDlg`, `FIB_FMX_DBLoginDlg` → `FIBLoginDlgFMX`. |
 | `Source\FIB_MESSAGES.INC` moved to `Locales\en\Errors.inc`, and `Resources\Russian` to `Locales\ru`. The language of the messages and of the login dialog is set in `Source\FIBLocale.inc`, for example `FIBLocale = 'ru';`; see [Localization](localization.md). | If you copied a translation over `Source\FIB_MESSAGES.INC`, set its code in `FIBLocale.inc` instead. `FIB.pas` and `FIBConsts.pas` include the files from `..\Locales`, so keep the `Locales` folder next to `Source`. |
 | The compiler version symbols of `FIB.inc` are renamed to `C<CompilerVersion>`: `D2010+` → `C21`, `D_XE` → `C22`, `D_XE2` → `C23`, `D_XE3` → `C24`, `D_XE4` → `C25`, `D_XE5` → `C26`, `D_20`..`D_29` → `C27`..`C36`, `D_30` → `C37`. `TWideDataSet` (Delphi 2009 to XE2) is removed: test `{$IFNDEF C24}`. | Only for code that includes `FIB.inc` and tests these symbols: rename them. |
+| `D6+`, `D7+`, `D2005+`, `D2006+`, `D2007+`, `D2009+` and `NO_USE_COMP` are removed from `FIB.inc`. With Delphi 2009 and later they were always defined. | Only for code that includes `FIB.inc`: a test of these symbols now takes the other branch without a warning. Keep the code of the `{$IFDEF D2009+}` branch (or of `{$IFDEF NO_USE_COMP}`) and remove the test. |
+| The `FIB.inc` switches `USE_DEPRECATE_METHODS2` and `DFM_VERSION1` are removed, with what they enabled: `OnUserEvent` and `ReceiveEvents` of the dataset, `UserEvent`, `NotifyDataSets` and `OnUserEvent` of `TDataSetsContainer`, `TUserEvent`, and forms saved in the old format. | They no longer compiled. Nothing to do. |
 | The packages write DCU files to `$(BDSCOMMONDIR)\Dcu\FIB\$(Platform)\$(Config)` instead of `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`. | If the Library path has the old folder, replace it with the new one, and delete the old folder. |
 
 ### Packages
@@ -35,7 +37,6 @@ The runtime package is `FIBCore` (`FIBCore_Dxx` before 10.4) and its design time
 | 10.4 to 13 | `FIBPlus_D27`..`FIBPlus_D37` | `FIBCore` (`FIBCore270.bpl`..`FIBCore370.bpl`) |
 | 10.4 to 13 | `FIBPlusFMX` (Delphi 13 only) | `FIBFMX` (`FIBFMX270.bpl`..`FIBFMX370.bpl`) |
 | 10.4 to 13 | `DclFIBPlus_Dxx`, `FIBPlusEditors_Dxx` | `dclFIBCore` (`dclFIBCore270.bpl`..`dclFIBCore370.bpl`) |
-| 10.4 to 13 | `FIBTools` | `dclFIBTools` |
 | XE6 to 10.3 | `FIBPlus_D20`..`FIBPlus_D26` | `FIBCore_D20`..`FIBCore_D26` |
 | XE2 to XE5, XE7 | `FIBPlus_XE2`..`FIBPlus_XE5`, `FIBPlus_XE7` | `FIBCore_D16`..`FIBCore_D19`, `FIBCore_D21` |
 | 2009, 2010, XE | `FIBPlus2009`, `FIBPlus2010`, `FIBPlus2011` | `FIBCore_D12`, `FIBCore_D14`, `FIBCore_D15` |
@@ -44,6 +45,7 @@ The runtime package is `FIBCore` (`FIBCore_Dxx` before 10.4) and its design time
 - In **Component > Install Packages**, remove the old packages, then build and install the new ones from the project group.
 - Applications built with runtime packages: replace the old name in the runtime packages list and deploy the new BPL.
 - Packages that require the old runtime package (your own, or third-party ones such as the EhLib and FastReport FIBPlus packages and the Data Abstract FIBPlus driver) must require the new one.
+- The design-time defaults saved in the FIBPlus preferences are read by `dclFIBTools` (Delphi 10.4 and later). Without it installed, new components get the built-in defaults.
 
 ### Renamed classes and units
 
@@ -51,35 +53,34 @@ Classes, types and units lost the `p` of their names. The old units below stay a
 
 | Old unit | New unit | Old names → new names |
 |----------|----------|-----------------------|
-| `pFIBDataSet` | `FIBDataSet` | `TpFIBDataSet` → `TFIBDataSet`, `TpSQLKind` → `TFIBSQLKind`. Also exports `TLockStatus`, `TLockErrorEvent`, `TCachRefreshKind`, `TOnGetSQLTextProc`, `TIncludeFieldsToSQL`, `FieldInArray`. |
-| `pFIBDatabase` | `FIBDatabase` | `TpFIBDatabase` → `TFIBDatabase`, `TpFIBTransaction` → `TFIBTransaction`, `TpFIBDBEventType` → `TFIBDatabaseEventType`, `TpFIBTrEventType` → `TFIBTransactionEventType`, `TpFIBAcceptCacheSchema` → `TFIBAcceptCacheSchemaEvent`. Also exports `TFIBLoginEvent`, `TOnLostConnectActions` (`laTerminateApp` ...), `TFIBLostConnectEvent`, `TFIBRestoreConnectEvent`, `TOnSQLExecute`, `WriteDBParamsToAlias`. |
+| `pFIBDataSet` | `FIBDataSet` | `TpFIBDataSet` → `TFIBDataSet`, `TpSQLKind` → `TFIBSQLKind` (`TpSQLKind` was declared in `FIBDataSet` before: code that uses it with only `FIBDataSet` must use the new name or add `pFIBDataSet`). Also exports `TLockStatus`, `TLockErrorEvent`, `TCachRefreshKind`, `TOnGetSQLTextProc`, `TIncludeFieldsToSQL`, `FieldInArray`. |
+| `pFIBDatabase` | `FIBDatabase` | `TpFIBDatabase` → `TFIBDatabase`, `TpFIBTransaction` → `TFIBTransaction`, `TpFIBDBEventType` → `TFIBDatabaseEventType`, `TpFIBTrEventType` → `TFIBTransactionEventType` (both were declared in `FIBDatabase` before: code that uses them with only `FIBDatabase` must use the new names or add `pFIBDatabase`), `TpFIBAcceptCacheSchema` → `TFIBAcceptCacheSchemaEvent`. Also exports `TFIBLoginEvent`, `TOnLostConnectActions` (`laTerminateApp` ...), `TFIBLostConnectEvent`, `TFIBRestoreConnectEvent`, `TOnSQLExecute`, `WriteDBParamsToAlias`. |
 | `pFIBQuery` | `FIBQuery`, `FIBDataSet` | `TpFIBQuery` → `TFIBQuery`, `TpFIBUpdateObject` → `TFIBUpdateObject` (in `FIBDataSet`). |
 | `pFIBStoredProc` | `FIBStoredProc` | `TpFIBStoredProc` → `TFIBStoredProc`. |
 | `pFIBScripter` | `FIBScripter` | `TpFIBScripter` → `TFIBScripter`, `TpFIBScriptParser` → `TFIBScriptParser`. |
 | `pFIBErrorHandler` | `FIBErrorHandler` | `TpFibErrorHandler` → `TFIBErrorHandler`. |
 | `pFIBDataRefresh` | `FIBDataRefresh` | `TpFIBTableChangesReader` → `TFIBTableChangesReader`. |
-| `pFIBProps` | `FIBProps` | `TpFIBDsOption(s)` → `TFIBDataSetOption(s)`, `TpPrepareOption(s)` → `TFIBPrepareOption(s)`, `TpFIBQueryOption(s)` → `TFIBQueryOption(s)`, `TpFIBExistObject` → `TFIBExistObject`, `TpFIBFieldInfo` → `TFIBFieldInfo` (also in handlers of `TDataSetsContainer.OnApplyFieldRepository`). Also exports the types, the values of the enumerated types (`poTrimCharFields`, `qoAutoCommit`, `tpbReadCommitted` ...) and the constants. |
+| `pFIBProps` | `FIBProps` | `TpFIBDsOption(s)` → `TFIBDataSetOption(s)`, `TpPrepareOption(s)` → `TFIBPrepareOption(s)`, `TpFIBQueryOption(s)` → `TFIBQueryOption(s)`, `TpFIBExistObject` → `TFIBExistObject`, `TpFIBFieldInfo` → `TFIBFieldInfo` (also in handlers of `TDataSetsContainer.OnApplyFieldRepository`). Also exports the types, the values of the enumerated types (`poTrimCharFields`, `qoAutoCommit`, `tpbReadCommitted` ...), the constants and the writable defaults (`DefaultOptions`, `DefaultPrepareOptions`, `DefaultDetailConditions`, `DefTPBMode`, `DefQueryOptions`, `DefSQLDialect`, the `RDef...` and `dDef...` formats and the others); an assignment through the old unit changes the value in `FIBProps`. |
 | `pFIBMetaData` | `FIBMetaData` | `TpFIBDBSchemaExtract` → `TFIBDBSchemaExtract`. Also exports the types, the values of the enumerated types, the constants and `FullExtractDDL`. |
 | `pFIBSQLLog` | `FIBSQLLog` | `TpFIBStatistics` → `TFIBSQLLogger`. |
 | `pFIBClientDataSet` | `FIBClientDataSet` | `TpFIBClientDataSet` → `TFIBClientDataSet`, `TpFIBDataSetProvider` → `TFIBDataSetProvider`, `TpFIBClientBCDField` → `TFIBClientBCDField`. |
 | `pFIBArray` | `FIBArray` | `TpFIBArray` → `TFIBArray`. |
-| `IB_Services` | `FIBServices` | `TpFIBCustomService`, `TpFIBServerProperties`, `TpFIBControlService`, `TpFIBControlAndQueryService`, `TpFIBConfigService`, `TpFIBLogService`, `TpFIBStatisticalService`, `TpFIBBackupRestoreService`, `TpFIBBackupService`, `TpFIBRestoreService`, `TpFIBNBackupService`, `TpFIBNRestoreService`, `TpFIBValidationService`, `TpFIBSecurityService` → the same names with `TFIB`. Also exports the types, the values of the enumerated types (`IgnoreLimbo`, `SweepDB`, `ActionAddUser` ...), `DefaultBufferSize` and `SPBPrefix`. |
+| `IB_Services` | `FIBServices` | `TpFIBCustomService`, `TpFIBServerProperties`, `TpFIBControlService`, `TpFIBControlAndQueryService`, `TpFIBConfigService`, `TpFIBLogService`, `TpFIBStatisticalService`, `TpFIBBackupRestoreService`, `TpFIBBackupService`, `TpFIBRestoreService`, `TpFIBNBackupService`, `TpFIBNRestoreService`, `TpFIBValidationService`, `TpFIBSecurityService` → the same names with `TFIB`. Also exports the types, the values of the enumerated types (`IgnoreLimbo`, `SweepDB`, `ActionAddUser` ...), `DefaultBufferSize`, `SPBPrefix`, `SPBConstantNames` and `SPBConstantValues`; an assignment through the old unit changes the value in `FIBServices`. |
 | `SIBFIBEA` | `FIBEventAlerter` | `TSIBfibEventAlerter` → `TFIBEventAlerter`. |
 
 These have no old name, so the code that uses them must change:
 
 | Old | New | What to do |
 |-----|-----|------------|
-| Writable defaults of `pFIBProps`: `DefaultOptions`, `DefaultPrepareOptions`, `DefaultDetailConditions`, `DefTPBMode`, `DefTimeOutAction`, `DefQueryOptions`, `DefCharSet`, `DefSQLDialect`, the `RDef...` and `dDef...` formats and the others | The same names, only in `FIBProps` | Add `FIBProps` to the `uses` clause. The old unit cannot export a variable. |
-| `SPBConstantNames`, `SPBConstantValues` (`IB_Services`) | The same names, only in `FIBServices` | Add `FIBServices` to the `uses` clause. The old unit cannot export a typed constant. |
 | Variable `pFIBLoginDialog`, type `TpFIBLoginDialog` (unit `fib`), functions `pFIBLoginDialogEx` (`FIBLoginDlg`) and `pFIBLoginDialogFMX` (`FIBLoginDlgFMX`) | `FIBLoginDialog`, `TFIBLoginDialogFunc`, `FIBLoginDialogEx`, `FIBLoginDialogFMX` | Rename in code that installs its own login dialog, tests the variable or calls the functions. |
 | Texts of the login dialog in `FIBConsts`: `SLoginDlgLoginCaption`, `SDBEditUserName`, `SDBEditPassword`, `SDBEditSQLRole`, `SOKButton`, `SCancelButton` | `SLoginDlgCaption`, `SLoginDlgUserName`, `SLoginDlgPassword`, `SLoginDlgRole`, `SLoginDlgOK`, `SLoginDlgCancel` (`SLoginDlgDatabase` keeps its name) | Rename in code that uses them, for example an own login dialog. They are now translated with `FIBLocale`. |
 | `TFIBXSQLVAR.FIBArray`, `TFIBArrayStream.FIBArray` | `ArrayInfo` | Rename. The property had the name of the new unit `FIBArray`. |
-| Units `pFIBDataInfo`, `pFIBLists`, `pFIBCacheQueries`, `pFIBEventLists`, `pFIBFieldsDescr`, `pFIBExports`, `pFIBInterfaces`, `pTestInfo`, include file `pFIBMacroComp.inc` | The same names without `p` (`FIBTestInfo` for `pTestInfo`) | Change the `uses` clause. The old units stop the compilation with a message that names the new unit. The names inside the units are the same, except those of the next row. |
+| Units `pFIBDataInfo`, `pFIBLists`, `pFIBCacheQueries`, `pFIBEventLists`, `pFIBFieldsDescr`, `pFIBExports`, `pFIBInterfaces`, `pTestInfo` | The same names without `p` (`FIBTestInfo` for `pTestInfo`) | Change the `uses` clause. The old units stop the compilation with a message that names the new unit. The names inside the units are the same, except those of the next row. `TpFIBFieldInfo` (now `TFIBFieldInfo`), `TExtBoolean` and its values `eFalse`, `eTrue`, `eUnknown` of `pFIBDataInfo` are in `FIBProps`: replace `pFIBDataInfo` with `FIBDataInfo`, and add `FIBProps` when you use them. |
+| Include file `pFIBMacroComp.inc` | `FIBMacroComp.inc` | Change the `{$I}` directive. The old file is gone: the build fails with "File not found". |
 | `TpFIBTableInfo`, `TpFIBTableInfoCollect`, `TpDataSetInfo`, `TpDataSetInfoCollect`, `TpErrorMessage`, `TpErrorMessagesCollect` (`pFIBDataInfo`) | `TFIBTableInfo`, `TFIBTableInfoCache`, `TFIBDataSetInfo`, `TFIBDataSetInfoCache`, `TFIBErrorMessage`, `TFIBErrorMessageCache` (`FIBDataInfo`) | Rename. The variables `ListTableInfo`, `ListDataSetInfo` and `ListErrorMessages` keep their names. |
 | Design-time units `pFIBComponentEditors`, `pFIBAutoUpdEditor`, `pFIBConditionsEdit`, `pFIBDBEdit`, `pFIBDataSetOptions`, `pFIBEditorsConsts`, `pFIBPreferences`, `pFIBRepositoryOperations`, `pFIBSyntaxMemo`, `pFIBTrEdit`; `RegFIBPlus`, `RegFIBPlusEditors` | The same names without `p`; `RegFIB`, `RegFIBEditors` | Change the `uses` clause of design-time code. `FIBPreferences` is in the `dclFIBTools` package (Delphi 10.4 and later). |
 | Editors `TpFIBDataSetOptionsEditor`, `TpFIBDatabaseEditor`, `TpFIBTransactionEditor`, `TpFIBTRParamsEditor`, `TpFIBSQLPropEdit`, `TpFIBAutoUpdateOptionsEditor`, `TpFIBGeneratorsProperty`, `TpFIBDeltaReceiverEditor` | The same names with `TFIB` | Rename in design-time code that registers them. |
-| IDE preferences in the registry keys `pFIBDataSet`, `pFIBQuery`, `pFIBDataBase`, `pFIBTransaction` | Keys `FIBDataSet`, `FIBQuery`, `FIBDatabase`, `FIBTransaction` | The saved design-time defaults for new components are not read from the old keys. Set them again once in the FIBPlus preferences. |
+| IDE preferences in the registry keys `pFIBDataSet`, `pFIBQuery`, `pFIBDataBase`, `pFIBTransaction` | Keys `FIBDataSet`, `FIBQuery`, `FIBDatabase`, `FIBTransaction` | The saved design-time defaults for new components are not read from the old keys. Set them again once in the FIBPlus preferences (**Tools > FIBPlus > Preferences...**). They are read only by `dclFIBTools` (Delphi 10.4 and later): without it installed, they are not applied. |
 
 ### Changed types and signatures
 
@@ -89,7 +90,7 @@ These have no old name, so the code that uses them must change:
 | `TFIBUpdateObject.DataSet: TFIBDataSet` | `TFIBCustomDataSet` | Any FIBPlus dataset is accepted. Code that reads the property needs a cast to `TFIBDataSet` to use the published members, and `QSelect`, `Params`, `Prepared` and similar are protected in `TFIBCustomDataSet`. |
 | `TOnSQLExecute = procedure(Query: TFIBQuery; SQLType: TFIBSQLTypes) of object` | `procedure(Query: TComponent; SQLType: TFIBSQLTypes) of object` | Change the parameter type of the handlers you assign in code (`BeforeSQLExecute`, `AfterSQLExecute`, `AfterFirstFetch`). A handler bound in a form keeps working at run time; the IDE reports it as incompatible until you change it. |
 | `FIBDataSets[Index]: TFIBCustomDataSet`, `FIBQueries[Index]: TFIBQuery` (of `TpFIBDatabase` and `TpFIBTransaction`) | `FIBDataSets[Index]: TDataSet`, `FIBQueries[Index]: TComponent` | Cast the result to `TFIBCustomDataSet` or `TFIBQuery`. The items and their order are the same. |
-| `TFIBSQLTypes` and its values (`FIBQuery`), `TOnBlobFieldProcessing` (`FIBDataSet`), `TExtBoolean` (`pFIBDataInfo`) | Declared in `FIBProps` | `FIBQuery` and `FIBDataSet` export them, so code compiles without a change. The `FIBDataInfo` routines that took `TFIBDataSet` now take `TFIBCustomDataSet`. |
+| `TFIBSQLTypes` and its values (`FIBQuery`), `TOnBlobFieldProcessing` (`FIBDataSet`), `TExtBoolean` (`pFIBDataInfo`) | Declared in `FIBProps` | `FIBQuery` and `FIBDataSet` export `TFIBSQLTypes` and `TOnBlobFieldProcessing`, so that code compiles without a change. `FIBDataInfo` does not export `TExtBoolean`: add `FIBProps`. The `FIBDataInfo` routines that took `TFIBDataSet` now take `TFIBCustomDataSet`. |
 | `TFIBTableInfo.TableName`, `TFIBFieldInfo.DefaultValue`, `DomainName`, `DisplayLabel`, `EditFormat`, `DisplayFormat`, `TFIBErrorMessage.ErrorMsg` (`AnsiString`) | `string` | Nothing for most code. Assigning them to an `AnsiString` loses the characters outside the system code page, as before. `TFIBFieldInfo.LoadFromStream` has a new `UTF8` parameter (default `True`, the format `SaveToStream` writes now). |
 | `StrUtil.TFastStringStream` (an alias of `TStringStream` on Delphi XE5 and later, an own class before), parameter of `GenerateDDLText`, `GenerateObjectDDL` and the other DDL methods of `FIBMetaData` | `TStringStream` | Rename in descendants that override these methods. Create the stream with `TEncoding.Unicode`, as `GetAsDDL` does, to keep the characters outside the system code page. |
 | `TFIBSQLMonitorHook.ServiceAttach`, `ServiceDetach`, `ServiceQuery`, `ServiceStart` (parameter `TpFIBCustomService`) | Parameter `TFIBCustomService` | The same class; rename in descendants that override them. |
@@ -125,6 +126,8 @@ These have no old name, so the code that uses them must change:
 | `SCodePageNotAvailable`, `SCannotTransliterate` (`FIBConsts`) | The errors are `feCodePageNotAvailable` and `feCantTransliterate` now; see [Codes of client errors](#codes-of-client-errors). |
 | `TFIBLicensingService`, `TpFIBLicensingService`, `TLicensingAction` (`LicenseAdd`, `LicenseRemove`) | The service added and removed InterBase license keys; Firebird has none, and InterBase registers licenses with its License Manager. Delete the component from forms and code: a form that contains it no longer loads. |
 | `TMetaTable.GenerateDDLTextOnlyTable` (protected) | Call `GenerateObjectDDL`, then write the terminator. |
+| Editors units `FindCmp` and `uFrmSearchResult` (**Find Component**, which no menu opened) | Remove them from the `uses` clause of design-time code. |
+| Editors unit `RegistryUtils` | Use `RegUtils`, which has the same routines (`DefReadFromRegistry`, `DefWriteToRegistry` and the others). |
 | Units `IB_Install`, `IB_InstallHeader`, `TpFIBInstall`, `TpFIBUnInstall`, `LoadIBInstallLibrary`, `FreeIBInstallLibrary`, `CheckIBInstallLoaded` and the `isc_install_...` variables (`IB_Intf`), symbol `IBINSTALL_SUPPORT`, `feInterBaseInstallMissing`, the messages `SCantLoadLibrary`, `SSuccess`, `SDelphiException`, `SNoOptionsSet`, `SNoDestinationDirectory`, `SNosourceDirectory`, `SNoUninstallFile`, `SOptionNeedsClient`, `SOptionNeedsServer`, `SInvalidOption`, `SInvalidOnErrorResult`, `SInvalidOnStatusResult` (`FIBConsts`) | They wrapped the InterBase 6 install library `ibinstall.dll`, which Firebird does not have. Remove them from the `uses` clause and the code. |
 
 ### Changed behavior
@@ -189,9 +192,9 @@ The transaction of the SQL logger uses `nowait` and no longer the server default
 
 #### Event registration errors
 
-`TFIBEventAlerter.RegisterEvents` queues the first events in the calling thread, before the event threads start. An error there (an invalid database handle, a server whose events port can't be reached through a firewall or a Docker port mapping) now raises from `RegisterEvents` and from `Registered := True`, and the alerter stays unregistered. Before, the event thread ended and showed the error with `ShowException`, and `RegisterEvents` returned as if the events were registered. With `AutoRegister` the error raises from `Database.Open` (or `Connected := True`; when a form with a connected database is loaded, the form is not created) with the database already connected, and the `AfterConnect` handlers of the other components that follow the alerter are not called. Put `Open` in a `try..except` that handles `ESIBError` (`SIBGlobals`), or register the events yourself after `Open`.
+`TFIBEventAlerter.RegisterEvents` queues the first events in the calling thread, before the event threads start. An error there (an invalid database handle, a server whose events port can't be reached through a firewall or a Docker port mapping) now raises from `RegisterEvents` and from `Registered := True`, and the alerter stays unregistered. Before, the event thread ended and showed the error with `ShowException`, and `RegisterEvents` returned as if the events were registered. With `AutoRegister` the error raises from `Database.Open` (or `Connected := True`; when a form with a connected database is loaded, the form is not created) with the database already connected. `Open` completes the connect before it raises: the other handlers added with `AddEvent(..., detOnConnect)`, the connect notifications of the components, the SQL log entry and the end of `Open` (the schema cache file, `SaveAliasParamsAfterConnect`, the end of a restore-connect wait) run first, then `Open` raises the first error of these handlers. Put `Open` in a `try..except` that handles `ESIBError` (`SIBGlobals`), or register the events yourself after `Open`.
 
-Errors of a running event thread, such as a lost connection, go to the new `OnError` event. Without a handler they go to `Classes.ApplicationHandleException` in the main thread (`Application.OnException` or the error dialog), not to `SysUtils.ShowException`; with `VCLSynchronize = False` they still go to `SysUtils.ShowException`.
+Errors of a running event thread, such as a lost connection, go to the new `OnError` event. Without a handler they go to `Classes.ApplicationHandleException` in the main thread (`Application.OnException` or the error dialog), not to `SysUtils.ShowException`; with `VCLSynchronize = False` they still go to `SysUtils.ShowException`. `OnError` runs after the alerter has cancelled all registrations: `Registered` is already `False` there, so `UnRegisterEvents` in the handler raises "Events not registered"; `Registered := False` does nothing, and `RegisterEvents` registers again.
 
 #### Role name in quotes
 
@@ -214,6 +217,8 @@ A feature that the client library doesn't support raises `feClientFeatureNotSupp
 #### Schema extract
 
 - `GetDDLText`, `GetObjectDDL`, `AsDDL` and `FullExtractDDL` write the descriptions as `COMMENT ON` statements; see the [changelog](../../CHANGELOG.md). `TFIBDBSchemaExtract.DDLTextOptions` is `[dtoIncludeComments]` by default, and `DefDDLTextOptions` of `TMetaDataBase` has it too. A form saved before has `DDLTextOptions = []` stored and writes no comments: add `dtoIncludeComments` in the Object Inspector. Remove the option to get the old output.
+- `LoadOptions.DBObjects` defaults to `DefObjects`, which now has `otStoredFunctions` and `otPackage`, also for `TMetaDataBase` and `FullExtractDDL`. A form saved with the old default stores no value and now extracts the PSQL functions and packages too; a set chosen in the Object Inspector stays. Remove the two values to get the old output.
+- The script of `GetDDLText` writes the database and DDL triggers at the end, and with *Firebird 3+* a generator as `CREATE GENERATOR g START WITH n` (with `INCREMENT BY m` when the step is not 1) before `SET GENERATOR`. Tools that compare scripts made by different versions show these differences.
 - `TMetaGenerator.Value` is `Int64`. Code that assigns it to an `Integer` still compiles but cuts values over 2147483647: use an `Int64` variable.
 - `DDLTextOptions` of the component is kept by its meta database (`GetMetaDataBase.DDLTextOptions`); the protected field `FDDLTextOptions` is removed. Descendants use the property.
 - `GetObjectDDL` of a package or a PSQL function returns an empty string on a server before Firebird 3; it raised "Table unknown". The DDL text also changes in details (terminators, quoting, single spaces): tools that compare scripts made by different versions show these differences.
@@ -245,7 +250,20 @@ With `CachedUpdates` and `AutoCommit`, `ApplyUpdates` commits the update transac
 the last row; it committed after each inserted or modified row. A row skipped by `OnUpdateError`
 or `OnUpdateRecord` (`uaSkip`) stays in the cache, and the rows applied before and after it are
 committed. When an error stops `ApplyUpdates`, the rows applied before it are committed before the
-error is raised, as they were before, because the cache marks them as applied.
+error is raised, as they were before, because the cache marks them as applied. The failing row
+itself is rolled back to a savepoint when it ran more than one statement (update objects,
+`OnUpdateRecord`, `poRefreshAfterDelete`), so none of its work is committed; this needs
+*Firebird 2+* and an update transaction whose `MainDatabase` is the database of the dataset.
+Without the savepoint such a row leaves the transaction uncommitted.
+
+A `Post` or `Delete` with `CachedUpdates` and `AutoCommit` commits once. When it fails, the rows it
+applied are rolled back to a savepoint (with the same conditions) and stay pending in the cache;
+before, the rows applied before the error were committed.
+
+The refresh after a post or a delete (`poRefreshAfterPost`, `poRefreshAfterDelete`) reads the row
+in `UpdateTransaction` while it is active; it read it in `Transaction`. With a separate update
+transaction that is not committed yet, the refresh now sees the posted row: an inserted row no
+longer vanishes, and a deleted row no longer stays.
 
 #### Generated statements
 
@@ -275,12 +293,25 @@ the `Filter`, as in SQL and the VCL `TClientDataSet`. Before, `STATUS <> 'closed
 `or (STATUS is null)` to keep such rows. `not` still negates the result, so `not (D = 5)` and
 `not B` match a NULL `D` or `B`.
 
+#### Numbers compared with text
+
+`CompareVariants` and `CompareVariantsEQ` (`VariantRtn`), used by the local sort and `Locate`,
+compare a number or a date with a string variant by its text: a text that is a number is
+compared as a number, a date text with a date as a date (`'01.01.2024'`), and any other text
+(`'abc'`, or `'1.5'` where the decimal separator is `,`) as text, without an error. Before, a
+number and a `string` variant were taken for equal, and an `AnsiString` or `WideString` text that
+is not a number raised `EConvertError`.
+
 #### Integer parameter values
 
 `AsInteger`, `AsInt64` and `AsShort` assigned before `Prepare` are converted to the parameter type
 at `Prepare`, as `AsDouble` and `AsVariant` already were: a `BOOLEAN` parameter gets `True` for a
 value other than zero, a `DATE` or `TIMESTAMP` parameter the `TDateTime` with that day number.
 Before, the value was sent as an integer and the server raised a conversion error.
+
+#### `StopFetching`
+
+`StopFetching` set in `TFIBQuery.OnSQLFetch` or `TFIBDataSet.BeforeFetchRecord` now ends the fetch for good: `Eof` is set as at the end of the data, and with `qoAutoCommit` or `qoFreeHandleAfterExecute` the query is closed. Before, `Next` returned `nil` but `Eof` stayed `False`, so a later fetch could go on, and code used it as a pause. A `TFIBDataSet` sets `AllFetched` and keeps the cached rows as the whole result until it is reopened. To pause a `TFIBQuery`, stop calling `Next`; to read the rest of a dataset later, don't set `StopFetching`.
 
 #### Scripter
 
@@ -302,6 +333,8 @@ Before, the value was sent as an integer and the server raised a conversion erro
 #### BLOB text read errors
 
 `AsString`, `AsAnsiString` and `AsWideString` of a BLOB column raise the error when the content can't be read (for example when the transaction is not active); they returned `(BLOB)`. A BLOB parameter without a value returns an empty string instead of `(BLOB)`.
+
+`TFIBQuery.BlobToStrings` and `BlobAsString` read the text as `AsString` does, in the charset of the column, and raise the read error; `BlobToStrings` returned `False` and `BlobAsString` an empty string. `BlobAsString` no longer ends with a line break.
 
 #### Restore page size
 
@@ -334,6 +367,10 @@ in `aTransaction`; it stays active with the work done in it before the call, and
 decides whether to commit or roll it back. Code that called `QueryValue` in its own transaction
 and relied on the rollback after an error must call `Rollback` itself. Without `aTransaction`
 nothing changes: the internal transaction is committed, or rolled back on an error.
+
+`TFIBDatabase.Gen_Id` runs in `aTransaction` when one is passed; it ran in `FirstActiveTransaction`
+when the database had an active transaction. Without `aTransaction` it still takes
+`FirstActiveTransaction`, else the internal transaction.
 
 ## 7.9.1
 

@@ -29,7 +29,7 @@ FIBPlus 8 supports Delphi 2009 and later; use 7.9.x for Delphi 6 to 2007. The pr
 |---------|------|---------|
 | `FIBCore` (`FIBCore_Dxx` before 10.4) | runtime | Components, required by the other packages |
 | `dclFIBCore` (`dclFIBCore_Dxx` before 10.4) | design time | Tool Palette registration, property and component editors, IDE login dialog |
-| `dclFIBTools` | design time, optional | **Tools > FIBPlus** menu; closes the design-time connections before the program runs from the IDE |
+| `dclFIBTools` | design time, optional | **Tools > FIBPlus** menu with the preferences, which apply only while it is installed; optionally closes the design-time connections before the program runs from the IDE |
 | `FIBFMX` | runtime | FireMonkey login dialog (`FIBLoginDlgFMX`) |
 
 `dclFIBTools` and `FIBFMX` exist for Delphi 10.4 and later, where each package is one `.dpk` for all versions and `{$LIBSUFFIX AUTO}` adds the version suffix to the BPL, e.g. `FIBCore370.bpl` for Delphi 13.
@@ -41,11 +41,11 @@ FIBPlus 8 supports Delphi 2009 and later; use 7.9.x for Delphi 6 to 2007. The pr
 3. Right-click `dclFIBCore` and choose **Install**; optionally install `dclFIBTools` too.
 4. In **Tools > Options > Language > Delphi > Library**, add the `Source` folder to the **Library path** of every target platform you use.
 
-**64-bit IDE** (Delphi 12.3 and later): select **Windows 64-bit** instead of Win32 and install the packages from `BplWin64`, which must be on the PATH of the 64-bit IDE. Win64x (Modern C++) is not what the 64-bit IDE loads.
+**64-bit IDE** (Delphi 12.3 and later): select **Windows 64-bit** instead of Win32 and install the packages from `$(BDSCOMMONDIR)\Bpl\Win64`, which must be on the PATH of the 64-bit IDE. Win64x (Modern C++) is not what the 64-bit IDE loads.
 
 ### 📝 Notes
 
-- Build `FIB` and `FIBFMX` for other platforms only if your application uses runtime packages.
+- Build `FIBCore` and `FIBFMX` for the other platforms their projects declare (Win64, Win64x) only if your application uses runtime packages.
 - DCUs go to `$(BDSCOMMONDIR)\Dcu\FIB\$(Platform)\$(Config)`. Add this folder to the library path before `Source` to avoid recompiling FIBPlus in each project.
 - **Language**: messages and the login dialog are in English by default. To switch, set e.g. `FIBLocale = 'ro';` in `Source\FIBLocale.inc` and rebuild. See [Localization](Docs/guide/localization.md) for the available languages.
 

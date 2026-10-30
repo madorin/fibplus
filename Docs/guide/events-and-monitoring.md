@@ -79,14 +79,16 @@ With `AutoRegister` set, the alerter registers its events after the database con
 
 `OnEventAlert` runs in the main thread because `VCLSynchronize` is `True`. Set it to `False` to run the handler in the event thread; then the handler must not touch the VCL without its own synchronization.
 
+`OnEventAlert` and `OnError` can unregister the events (`UnRegisterEvents`, `Registered := False`, `Database.Close`) or free the alerter; the event thread of the handler ends after the handler returns.
+
 The first notification after a registration only initializes the event buffers. It does not call `OnEventAlert`.
 
 ### Errors and pitfalls
 
 - `RegisterEvents` raises `ESIBError` when the events are already registered, and when no database is assigned or the database is not connected.
 - `UnRegisterEvents` raises `ESIBError` when the events are not registered. Setting `Registered := False` ignores that error.
-- `RegisterEvents` queues the first events in the calling thread, so an error of the server (an invalid database handle, an events port that can't be reached) raises `ESIBError` from `RegisterEvents` or `Registered := True`, and nothing stays registered. With `AutoRegister` the error raises from `Database.Open`, and the database stays connected. Changing `Events` or `Database` of a registered alerter registers again and can raise the same error.
-- When a running event thread fails, the alerter cancels all registrations and calls `OnError`, in the main thread when `VCLSynchronize` is `True`. Without a handler the error goes to `Classes.ApplicationHandleException` in the main thread (`Application.OnException` or the error dialog); with `VCLSynchronize = False`, or in a program without an application object, it is shown with `SysUtils.ShowException` in the event thread, so an application whose main thread does not process messages does not block the event thread.
+- `RegisterEvents` queues the first events in the calling thread, so an error of the server (an invalid database handle, an events port that can't be reached) raises `ESIBError` from `RegisterEvents` or `Registered := True`, and nothing stays registered. With `AutoRegister` the error raises from `Database.Open` after the connect is complete (the other connect handlers, the components and the schema cache have run), and the database stays connected. Changing `Events` or `Database` of a registered alerter registers again and can raise the same error.
+- When a running event thread fails, the alerter cancels all registrations and calls `OnError`, in the main thread when `VCLSynchronize` is `True`. `Registered` is already `False` in the handler: call `RegisterEvents` there to register again (`UnRegisterEvents` raises "Events not registered"). Without a handler the error goes to `Classes.ApplicationHandleException` in the main thread (`Application.OnException` or the error dialog); with `VCLSynchronize = False`, or in a program without an application object, it is shown with `SysUtils.ShowException` in the event thread, so an application whose main thread does not process messages does not block the event thread.
 
 ## Error handling
 
@@ -119,7 +121,7 @@ The unit is `FIBErrorHandler`. Drop one `TFIBErrorHandler` on a data module or t
 
 | Value | Effect |
 |-------|--------|
-| `oeException` | For `keException`, extract the exception number into `ExceptionNumber` and the text into the message. On *Firebird 2+*, also extract the exception name into `ExceptionName` and remove the stack trace (the `At ...` lines that follow the text). The SQL monitor and `TFIBSQLLogger` still show the server text with the stack trace, as does `EFIBError.IBMessage`. |
+| `oeException` | For `keException`, take the exception number from the status vector into `ExceptionNumber` and put the text into the message. On *Firebird 2+*, also take the exception name from the status vector into `ExceptionName` (without the quotes and the schema of *Firebird 6*) and remove the stack trace (the `At ...` lines that follow the text). The SQL monitor and `TFIBSQLLogger` still show the server text with the stack trace, as does `EFIBError.IBMessage`. |
 | `oeForeignKey` | Replace the message with the text stored for the constraint, when there is one. Without a stored text the message stays as it is. |
 | `oeCheck` | Set `ConstraintName` and replace the message with the stored text. Without a stored text, the message becomes the server message (`IBMessage`) only. |
 | `oeUniqueViolation` | The same as `oeCheck`, for a unique key violation. |

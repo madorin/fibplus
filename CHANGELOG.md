@@ -36,7 +36,7 @@
 - `dclFIBTools` design time package for Delphi 10.4 Sydney and later: one
   `Packages\dclFIBTools.dpk` for all versions (`dclFIBTools270.bpl` to
   `dclFIBTools370.bpl`, through `{$LIBSUFFIX AUTO}`). It is
-  optional and is in the `FIB` project group. It needs only `FIB`
+  optional and is in the `FIB` project group. It needs only `FIBCore`
   ([#67](https://github.com/madorin/fibplus/issues/67)).
 - The **Tools > FIBPlus** menu with **Preferences...** and **About FIBPlus...**.
   FIBPlus is also shown on the IDE splash screen and in the IDE About box.
@@ -46,10 +46,11 @@
   `poRefreshAfterDelete`, `poDontCloseAfterEndTransaction`, `qoTrimCharFields`,
   `qoNoForceIsNull` and `qoFreeHandleAfterExecute` can now be set as design time
   defaults.
-- **Close design-time connections before the program runs** in Preferences: the
-  IDE closes the connections of the design time components before **Run** and
-  **Run without debugging**, so the program doesn't compete with them for the
-  database. Connections opened by code running in the IDE stay open.
+- **Close design-time connections before the program runs** in Preferences (off
+  by default): the IDE closes the connections of the design time components
+  before **Run** and **Run without debugging**, so the program doesn't compete
+  with them for the database. Connections opened by code running in the IDE
+  stay open.
 - The design time packages `dclFIBCore` and `dclFIBTools` can be installed in
   the 64-bit IDE of Delphi 12.3 and 13 (Win64 platform).
 
@@ -70,11 +71,16 @@
   literal.
 - `TMetaPackage.Procedures` and `Functions` (with `ProceduresCount` and
   `FunctionsCount`): the routines of a package, with their parameters.
+- Read-only properties of the meta objects: `TMetaGenerator.InitialValue` and
+  `Increment`, `TMetaTableField.Collation`, `TMetaIndex.Expression` and
+  `Condition` (the `WHERE` of a partial index), `TCustomMetaTrigger.TriggerType`.
 
 #### Errors
 
 - `EFIBError.ErrorArgument(Code, Index)`: a string argument of the status
   vector, for example the constraint name of `isc_unique_key_violation`.
+- `EFIBError.ErrorNumber(Code, Index)`: a number argument of the status vector,
+  for example the exception number of `isc_except`.
 
 #### Scripter
 
@@ -88,7 +94,9 @@
   connection), in the main thread when `VCLSynchronize` is `True`. Without a handler the error
   goes to `Classes.ApplicationHandleException` in the main thread (`Application.OnException` or
   the error dialog) instead of `SysUtils.ShowException`; with `VCLSynchronize = False`, or
-  without an application object, it is still shown with `SysUtils.ShowException`.
+  without an application object, it is still shown with `SysUtils.ShowException`. `OnError`
+  runs after the registrations are cancelled: `Registered` is already `False` there, and the
+  handler can register again or free the alerter.
 
 ### Changed
 
@@ -110,17 +118,22 @@ The lists of old and new names, and what an application has to change, are in
   stay as deprecated units with the old names as deprecated aliases, and forms
   with the old class names load while the old unit is linked. They will be
   removed in a later major version.
+- The writable defaults of `FIBProps` (`DefaultOptions`, `DefTPBMode`, the
+  `RDef...` and `dDef...` formats and the others) and `SPBConstantNames` and
+  `SPBConstantValues` of `FIBServices` are also in `pFIBProps` and `IB_Services`;
+  an assignment through the old unit changes the value in the new one.
 - Without an old name, so the code needs a change: the login dialog hook
   (`pFIBLoginDialog` is now `FIBLoginDialog`), the property `FIBArray` of
-  `TFIBXSQLVAR` and `TFIBArrayStream` (now `ArrayInfo`), the writable defaults
-  of `FIBProps` and the typed constants of `FIBServices`, the helper units
+  `TFIBXSQLVAR` and `TFIBArrayStream` (now `ArrayInfo`), the helper units
   (`pFIBDataInfo`, `pFIBLists` and the others stop the compilation with a
-  message that names the new unit), the design-time units and editors.
+  message that names the new unit), the include file `pFIBMacroComp.inc`
+  (now `FIBMacroComp.inc`), the design-time units and editors.
   `TpFIBDBEventType`, `TpFIBTrEventType` and `TpSQLKind` are now only in
   `pFIBDatabase` and `pFIBDataSet`.
 - The IDE preferences are stored under registry keys without the `p`
   (`FIBDataSet`, `FIBQuery`, `FIBDatabase`, `FIBTransaction`): set them again
-  once in the FIBPlus preferences.
+  once in the FIBPlus preferences. The stored preferences are read by
+  `dclFIBTools` (Delphi 10.4 and later); without it they are not applied.
 
 #### Merged components
 
@@ -175,7 +188,9 @@ The lists of old and new names, and what an application has to change, are in
 - A failed reconnect raises: `AutoReconnect` and `CheckActive(True)` raise the
   error of the last connect attempt (it was swallowed), and `StartTransaction`
   raises `feDatabaseClosed` when a database is still not connected (it
-  returned with the transaction inactive), also while a form loads in the IDE.
+  returned with the transaction inactive), also while a form loads in the IDE,
+  where a transaction loaded before its database shows no second error after
+  the connect error of the database.
   `Commit`, `Rollback` and the retaining variants of an inactive transaction
   raise `feNotInTransaction` before `BeforeEnd` (with `AutoReconnect` and at
   design time they started and ended a transaction), and `CheckInTransaction`
@@ -193,7 +208,11 @@ The lists of old and new names, and what an application has to change, are in
   event threads start: an error (an invalid handle, a server whose events port can't be reached)
   raises from `RegisterEvents` and `Registered := True`, and the groups already queued are
   cancelled. With `AutoRegister` the error raises from `Database.Open`, with the database
-  connected; see [Upgrading](Docs/guide/upgrading.md#event-registration-errors).
+  connected. `Open` completes the connect first: an error of a handler added with
+  `AddEvent(..., detOnConnect)` (such as `AutoRegister`) is raised after the other handlers,
+  the connect notifications of the components, the SQL log entry and the end of `Open` (schema
+  cache file, `SaveAliasParamsAfterConnect`) have run; see
+  [Upgrading](Docs/guide/upgrading.md#event-registration-errors).
 
 #### Client library
 
@@ -211,13 +230,15 @@ The lists of old and new names, and what an application has to change, are in
   are in [Upgrading](Docs/guide/upgrading.md#packages).
   - Delphi 10.4 and later have one package of each kind for all versions,
     through `{$LIBSUFFIX AUTO}`, in `Packages\FIB.groupproj`: `FIBCore`
-    (`FIBCore270.bpl` to `FIBCore370.bpl`), `dclFIBCore`, `dclFIBTools` (was
-    `FIBTools`) and `FIBFMX` (was `FIBPlusFMX`), which is also built for
-    Delphi 10.4 to 12.
+    (`FIBCore270.bpl` to `FIBCore370.bpl`), `dclFIBCore`, `dclFIBTools` and
+    `FIBFMX` (was `FIBPlusFMX`), which is also built for Delphi 10.4 to 12.
   - Delphi 2009 to 10.3 Rio have `FIBCore_Dxx` and `dclFIBCore_Dxx`, named
     after the package version, from `FIBCore_D12` (Delphi 2009) to
     `FIBCore_D26` (10.3 Rio), in `FIB_Dxx.groupproj`. The duplicate packages
     of Delphi XE7 are merged into `FIBCore_D21` and `dclFIBCore_D21`.
+  - The runtime packages are run only and are described as **FIBPlus
+    Components**; the design time packages register the components (`RegFIB`)
+    and are described as **FIBPlus Components (Design)**.
 - `FIBPlus.inc` is renamed to `FIB.inc`, and `RegFIBPlus`, `RegFIBPlusEditors`
   and `RegFIBPlus.dcr` to `RegFIB`, `RegFIBEditors` and `RegFIB.dcr`.
 - The unit `fib` is renamed to `FIB` (`FIB.pas`), like the other units with the
@@ -228,7 +249,10 @@ The lists of old and new names, and what an application has to change, are in
 - The compiler version symbols of `FIB.inc` are named after
   `CompilerVersion`: `C21` (Delphi 2010) to `C37` (Delphi 13) replace `D2010+`,
   `D_XE`..`D_XE5` and `D_20`..`D_30`; `TWideDataSet` is removed (`C24` not
-  defined).
+  defined). `D6+`, `D7+`, `D2005+`, `D2006+`, `D2007+`, `D2009+` and
+  `NO_USE_COMP`, always defined with Delphi 2009 and later, are removed: code
+  that tests them takes the other branch now; see
+  [Upgrading](Docs/guide/upgrading.md#build).
 - The packages write DCU files to `$(BDSCOMMONDIR)\Dcu\FIB\$(Platform)\$(Config)`
   instead of `$(BDSCOMMONDIR)\Dcu\FIBPlus\$(Platform)\$(Config)`.
 
@@ -266,6 +290,8 @@ The lists of old and new names, and what an application has to change, are in
   and `SIB_EventCounts` a `SIB_PEventCountVector`.
   `TFIBDatabase.IsMemoSubtype` and `TMemoSubtypes.IsMemoSubtype` take a `SmallInt` (was
   `ShortInt`), and `TFIBFieldDescrList.LoadFromStream` an `Integer` version (was `Byte`).
+- `DBPrimaryKeyFields` (`FIBDataInfo`) has a last parameter `Database` (default `nil`: the
+  default database of the transaction). `FIBPlatforms.CLRF` is deprecated: use `sLineBreak`.
 
 #### Queries and errors
 
@@ -280,6 +306,9 @@ The lists of old and new names, and what an application has to change, are in
 - `AsString`, `AsAnsiString` and `AsWideString` of a BLOB column raise the read error, as
   `TBlobField.AsString`, instead of returning `(BLOB)`; a BLOB parameter without a value returns
   an empty string; see [Upgrading](Docs/guide/upgrading.md#blob-text-read-errors).
+- `TFIBQuery.BlobToStrings` and `BlobAsString` read the text as `AsString` does: in the charset
+  of the column (it was decoded in the system code page), and they raise a read error
+  (`BlobToStrings` returned `False`). `BlobAsString` no longer adds a line break at the end.
 
 #### Fields
 
@@ -292,6 +321,8 @@ The lists of old and new names, and what an application has to change, are in
 - `DisplayText` of `TFIBBCDField` and `TFIBClientBCDField` with a `DisplayFormat` (and `Text`
   with an `EditFormat`) is about 2.5 times faster: `FormatNumericString` (`StdFuncs`) rounds the
   value once and builds the text without copying the format sections.
+- `TFIBClientBCDField.Value` is a `Currency` variant up to scale 4 and an `FMTBcd` variant
+  above, as `TFIBBCDField.Value`; it was a `Double` for the scales other than 0 and 4.
 
 #### Schema extract
 
@@ -305,6 +336,14 @@ The lists of old and new names, and what an application has to change, are in
   indices, foreign keys), and `ForFieldsCount` and `ForFields` of
   `TMetaForeignKey`, are `Integer` (were `Word`), as in the rest of the meta
   objects.
+- `DefObjects`, the default of `LoadOptions.DBObjects` of `TFIBDBSchemaExtract` and of
+  `TMetaDataBase` (`FullExtractDDL`), has `otStoredFunctions` and `otPackage`: PSQL functions
+  and packages are extracted by default. Forms saved with the old default load the new one; see
+  [Upgrading](Docs/guide/upgrading.md#schema-extract).
+- The script of `GetDDLText` writes the database and DDL triggers at the end. With Firebird 3
+  and later a generator is written as `CREATE GENERATOR g START WITH n`, with
+  `INCREMENT BY m` when the step is not 1, then `SET GENERATOR g TO value`; `START WITH` is
+  always written because its default differs (0 in Firebird 3, 1 in Firebird 4 and later).
 
 #### Editors
 
@@ -348,6 +387,11 @@ The lists of old and new names, and what an application has to change, are in
   library `ibinstall.dll`, never registered: `IBINSTALL_SUPPORT` was off) with their
   messages in `FIBConsts`. Firebird has neither; see
   [Upgrading](Docs/guide/upgrading.md#800).
+- The `FIB.inc` switches `USE_DEPRECATE_METHODS2` (`OnUserEvent` and `ReceiveEvents` of the
+  dataset, `UserEvent` and `NotifyDataSets` of `TDataSetsContainer`) and `DFM_VERSION1` (forms
+  saved in the old format), which no longer compiled.
+- The **Find Component** editor units `FindCmp` and `uFrmSearchResult`, which no menu opened,
+  and the editors unit `RegistryUtils`: use `RegUtils`, which has the same routines.
 
 ### Fixed
 
@@ -362,7 +406,9 @@ The lists of old and new names, and what an application has to change, are in
 - A `DBParams` value over 255 bytes (several `config=` lines, or a long non-ASCII
   password with `utf8_filename`) had its one-byte length wrapped and made a
   corrupt DPB. With a Firebird 3+ client the DPB is now sent as
-  `isc_dpb_version2` (4-byte lengths) when a value needs it; otherwise, and for
+  `isc_dpb_version2` (4-byte lengths) when a value needs it; the server must be
+  Firebird 3+ too: Firebird 2.5 rejects such a DPB with "Invalid clumplet
+  buffer structure", also through a newer client. Otherwise, and for
   long lock table names in `TRParams` and values in the `TFIBServices` `Params`,
   a clear error names the parameter.
 - Numeric `DBParams` (`num_buffers`, `dummy_packet_interval`,
@@ -392,6 +438,10 @@ The lists of old and new names, and what an application has to change, are in
 - `DBParams`: a last `shutdown` value of one character (`shutdown=2`) was ignored, and an unknown
   word or a word with spaces (`shutdown=force, full`) set every bit of the value. The words are
   now trimmed; an unknown word or a number over 255 raises the new `feParamValueInvalid`.
+- `DBParams`: `sql_dialect=` without a value raised an access violation, and a value that was not
+  a single digit sent an invalid dialect; a value other than 1, 2 or 3 raises
+  `feParamValueInvalid`. `Open` no longer trims the lines of `DBParams` in place, which also
+  made it build the DPB again at each connect.
 - Without `utf8_filename`, a `DBParams` value or a `DBName` with a character outside the system
   code page was sent with `?` in its place (a non-ASCII password failed as a wrong password). It
   raises the new `feCantTransliterateParam`, which names the parameter but not the value; see
@@ -414,6 +464,9 @@ The lists of old and new names, and what an application has to change, are in
   `aTransaction`, with the work done in it before the call. Only the internal transaction is
   rolled back now; a passed transaction stays active; see
   [Upgrading](Docs/guide/upgrading.md#queryvalue-in-a-passed-transaction).
+- `TFIBDatabase.Gen_Id` ran in `FirstActiveTransaction` even when `aTransaction` was passed, and
+  a transaction it had started stayed active when the statement failed. It runs in
+  `aTransaction` when one is passed, and rolls back only a transaction it started.
 
 #### Queries and parameters
 
@@ -438,7 +491,9 @@ The lists of old and new names, and what an application has to change, are in
   `AsDouble` ([Upgrading](Docs/guide/upgrading.md#integer-parameter-values)).
 - A parameter used twice in the statement, once for a BLOB and once for a `VARCHAR` or another
   charset, got the BLOB ID with the subtype of the other column ("Filter not found to convert
-  type 4 to type 1"); every occurrence now declares the subtype and charset of the value.
+  type 4 to type 1"), and the value was converted for the first column only ("Malformed
+  string", or wrong characters stored with a `NONE` connection). Each occurrence now gets the
+  value for its own column, and a BLOB the subtype and charset of its text.
 - `StopFetching` in `TFIBQuery.OnSQLFetch` and `BeforeFetchRecord` made `Next`
   return `nil` but left `Eof` at `False`, so a `while not Eof` loop did not end.
   It is now a final stop: `Eof` is set as at the end of the data.
@@ -465,6 +520,8 @@ The lists of old and new names, and what an application has to change, are in
 - Win64: `TFIBQuery.BatchOutput` to a `TFIBOutputDelimitedFile` or a raw file
   (`BatchOutputRawFile`) raised an access violation, kept the buffer address in 32 bits, and
   returned `False` with an empty file, so a `BatchInput` from it inserted no row.
+- `BatchOutputRawFile` wrote the second and later BLOB columns of a row with the BLOBs before
+  them in that row in front of their own content.
 
 #### Datasets and fields
 
@@ -483,19 +540,36 @@ The lists of old and new names, and what an application has to change, are in
   `InsertSQL`, `UpdateSQL`, `DeleteSQL` or an update object to the server (syntax error); the
   row now counts as applied with nothing sent, and a `No Action` delete runs no update object, as
   a direct post or delete.
+- `ApplyUpdates` of a `TClientDataSet` over a `TFIBDataSet` with `UpdateOnlyModifiedFields` ran
+  the `UPDATE` or `INSERT` generated for the last direct post, which held only the fields that
+  post changed: the changes to the other fields were lost without an error. The provider now
+  generates the statement with all the fields.
+- `TFIBDataSet.PSExecuteStatement` (`IProviderSupport`) took the database from the update
+  transaction instead of the dataset: with a transaction of another database the statement ran
+  there, and with a transaction over several databases it raised an access violation.
+- `TFIBDataSet`: the metadata queries of the primary key fields, the table ID and the version of
+  the dataset info ran in the default database of the transaction instead of the database of the
+  dataset.
 - FIBPlus fields in a dataset that is not FIBPlus (e.g. persistent fields copied to a
   `TClientDataSet`): the first read of a `TFIBStringField` could raise an access violation, and
   `TFIBDateTimeField.AsTimeStamp` gave a wrong value in `OnValidate`, or raised `EIntOverflow`
   there when it was assigned. `AsNativeData` and `AsOctetsData` of the string fields wrote into
   the memory of that dataset, `TFIBWideStringField` did not work there at all,
   `TFIBFloatField.Scale` and `AsFloat :=` and `TFIBTimeField.ShowMsec` in `OnValidate` read
-  garbage, and the value of a `TFIBArrayField` was lost. `GetBlobInfo`, `Blob_ID` and `ArrayID`
-  raise a clear error there.
+  garbage, and the value of a `TFIBArrayField` was lost. `TFIBBCDField` read and wrote an 8-byte
+  `Int64` over the `TBcd` of that dataset (`AsCurrency := 12.34` read back 5.3, and memory after
+  it was overwritten); it works there as `TBCDField`. `TFIBGuidField.AsGuid :=` and `Value :=`
+  wrote the 16 binary bytes into the text of the GUID; they write the text, as `TGuidField`.
+  `GetBlobInfo`, `Blob_ID` and `ArrayID` raise a clear error there.
+- `TFIBGuidField.Value` of a NULL field was an empty string instead of `Null`, so the `Filter`
+  `G is null` found no rows.
 - `TFIBBCDField.AsBCD :=` rescaled through floating point and stored an out of range value
   without an error; a value with 19 significant digits lost its leading digit. It is exact now,
   rounded half away from zero to the scale of the field, and raises `EOverflow` out of the range.
-  `CompareBCD` and `BCDToExtended` (`StdFuncs`) handle values with more than 18 decimals or an
-  integer part beyond `Int64`.
+  `BCDToExtended` (`StdFuncs`) handles values with more than 18 decimals or an integer part
+  beyond `Int64`. `CompareBCD` compared through floating point, so two values that differ only
+  in the last of 19 digits were equal on Win64 and a detail dataset missed the change of such a
+  master value; it compares exactly now.
 - `DisplayFormat` and `EditFormat` of `TFIBBCDField` and `TFIBClientBCDField` with sections or a
   leading literal: the minus sign went after the literal (`$ -1,00`, `FormatCurr` gives
   `-$ 1,00`), a value that rounds to zero took the negative section (`0.0;(0.0)` on -0.004 gave
@@ -504,6 +578,7 @@ The lists of old and new names, and what an application has to change, are in
   without a `0` before the decimal point: the text was shown with its quotes (`"Neg" 0.0`), a `;`
   in quotes split the sections, and `#.##` kept the zero integer part (`0,05`, `FormatCurr`
   gives `,05`, and an empty text for zero). Text between the digits was dropped (`0" x "0`).
+  A scientific format (`0.00E+00`) is applied as by `FormatFloat`.
 - `DisplayFormat` and `EditFormat` of `TFIBBCDField` and `TFIBClientBCDField` when the value is
   rounded: the zeros of the carry were dropped (`0.00` on 1.296 gave `1.3`, on 0.996 `1`), the
   thousand separators stayed where they were before the carry (`#,##0.00` on 9999.996 gave
@@ -517,7 +592,19 @@ The lists of old and new names, and what an application has to change, are in
   with more than 4 decimals was not rounded exactly (999999999999.99999 gave
   1000000000000.0001). It is exact now and raises `EOverflow` out of the range; `AsFloat` and
   `AsLargeInt` don't go through `Currency`, and `TFIBBCDField.Value` of such a value is an
-  `FMTBcd` variant.
+  `FMTBcd` variant. `AsFloat` and `AsExtended` give the nearest `Double` of the value (a
+  `NUMERIC(18,1)` of 0.3 gave 0.30000000000000004).
+- `AsCurrency :=` and `AsFloat :=` of `TFIBBCDField` and `TFIBClientBCDField` went through floating
+  point: values near the limit of `Currency` changed on Win64, 0.125 on a scale 2 field stored
+  0.12, and `AsFloat := 1E20` stored a wrong value without an error. They round half away from
+  zero, as `AsBCD`, and raise `EOverflow` out of the range; `MinValue` and `MaxValue` of
+  `TFIBBCDField` also apply at scale 0. `TFIBClientBCDField.AsString :=` and `Value` no longer
+  go through `Double`, and `TFIBBCDField.Value :=` with a `Currency` value no longer wraps
+  (`F.Value := F.Value` on a `NUMERIC(18,4)` of 922337203685.4775 stored -92233720368.5478).
+- `DisplayText` of `TFIBBCDField` and `TFIBClientBCDField`: with a `DisplayFormat` or `EditFormat`
+  at scale 4 the value went through floating point (123456789012345.6789 showed ...345.6848);
+  with the `Currency` property and no format the text wrapped beyond the range of the `Currency`
+  type and was rounded twice above 4 decimals.
 - `TFIBClientBCDField.AsBCD` and `AsBCD :=` went through `Currency`, like `TBCDField`: 4
   decimals, `EConvertError` out of its range. They are exact now, rounded half away from zero
   to the scale of the field, and an `FMTBcd` variant is assigned through `AsBCD`.
@@ -539,6 +626,11 @@ The lists of old and new names, and what an application has to change, are in
 - `Locate` with several `TIMESTAMP` keys: a text key for one of them made the
   others ignore the milliseconds of the row, so a `TDateTime` key with
   milliseconds was not found. Only the field of the text key ignores them now.
+- `Locate` on a `NUMERIC` or `DECIMAL` field (`TFIBBCDField`) with a text, `FMTBcd` or `Int64` key
+  went through `Double` (`Locate('N184', '123456789012345.6789', [])` found no row), a `Currency`
+  key wrapped on a field with more than 4 decimals, and a calculated BCD field went through
+  `Currency`. The key is now rescaled exactly to the scale of the field; a key out of its range
+  matches no row.
 - `AnsiCompareString` as `OnCompareFieldValues` took every field that is not
   `ftString` or `ftFixedChar` (e.g. a UTF8 column) for equal, so `DoSort` gave
   a random order. A NULL in a string field was also taken for equal
@@ -553,8 +645,11 @@ The lists of old and new names, and what an application has to change, are in
   variants.
 - `CompareVariants` and `CompareVariantsEQ` (sorting): a number compared with a string variant
   (`varUString`, every string on Delphi 2009 and later), a `Boolean`, a `UInt64` or an `FMTBcd`
-  variant was taken for equal. The string is now parsed as a `WideString` is, and the other
-  types are compared as variants.
+  variant was taken for equal. A text that is a number is now compared as a number (also a
+  decimal text with an `Int64`), a date text with a date as a date (`'01.01.2024'`), and any other
+  text (`'abc'`, or `'1.5'` where the decimal separator is `,`) as text, without an error; the
+  other types are compared as variants; see
+  [Upgrading](Docs/guide/upgrading.md#numbers-compared-with-text).
 - After `DoSort`, reopening the dataset without `poPersistentSorting` kept
   `Sorted` and `SortedFields` of the local sort, while the rows came in the
   server order. With `psGetOrderInfo` they are now read again from the `ORDER BY`
@@ -595,6 +690,17 @@ The lists of old and new names, and what an application has to change, are in
   `pfSetReadOnlyFields` made every field read-only. As in SQL, an alias without quotes now
   means the uppercase name (`A`); a quoted alias (`"a"`) keeps its case
   ([Upgrading](Docs/guide/upgrading.md#generated-statements)).
+- SQL generation: a table alias written with `AS` (`from T AS X` in `SelectSQL`, or `'T AS X'`
+  in `UpdateTableName`) was read as `AS X`, so the statements generated for the table and the
+  lookups of its fields by alias used a wrong alias.
+- SQL generation: a mixed-case `UpdateTableName` whose table is quoted and aliased in `SelectSQL`
+  (`from "RevMixed" t`, `UpdateTableName` `RevMixed`) was not found there, so no field matched
+  its alias and an edit was not written (`No Action`), without an error. A quote inside a quoted
+  identifier or alias (`"Q""A"`) was not doubled in the generated SQL.
+- `EquelStrings` (`StrUtil`) took any two characters 32 codes apart for the same letter (`'T0'`
+  matched `'TP'`, `'A$B'` matched `'ADB'`); only `a`..`z` and `A`..`Z` match now.
+  `pfSetReadOnlyFields` also took a table that differs only in case from `UpdateTableName` for
+  it.
 - `GenerateSQLText` on a dataset without field objects failed with `rfBlobFields` and ignored
   `ifsNoBlob` and `ifsOnlyBlob`; it now takes the BLOB columns from the field definitions.
 - Under `UpdateOnlyModifiedFields` the per-post `InsertSQL` and `UpdateSQL` were assigned, and
@@ -608,8 +714,17 @@ The lists of old and new names, and what an application has to change, are in
 - `Post` called again from the dataset's own `BeforePost` recursed until the stack overflowed;
   it is now ignored, and a `Post` from `AfterPost` still posts.
 - `ApplyUpdates` with `AutoCommit` committed after each inserted or modified row; it now
-  commits once, at the end, also when rows were skipped (they stay cached), and before an error
-  is raised.
+  commits once, at the end, also when rows were skipped (they stay cached). When a row fails, the
+  statements it already ran (update objects, `OnUpdateRecord`) are rolled back to a savepoint
+  (Firebird 2 and later), the rows that the cache marks applied are committed, and the error is
+  raised; without a savepoint such a row leaves the transaction uncommitted. A `Post` or
+  `Delete` with `CachedUpdates` and `AutoCommit` commits once; when it fails, the rows it applied
+  are rolled back to a savepoint and stay pending in the cache (it committed them while the
+  cache kept them pending).
+- The refresh after a post or delete (`poRefreshAfterPost`, `poRefreshAfterDelete`) read the row
+  in `Transaction`, so with a separate `UpdateTransaction` that was not committed yet it read the
+  old row: a refreshed insert could vanish, a refreshed delete stay visible. It runs in
+  `UpdateTransaction` while that is active.
 - `Filter`: a comparison with a NULL operand matched in some cases (a row with NULL `D` matched
   `D <> 5`, `GETDATE() > D` and `D < 5`, two NULL fields matched `A = B`, and a NULL Boolean
   field matched the filter `B`); as in SQL and the VCL `TClientDataSet`, `=`, `<>`, `>`, `>=`,
@@ -631,6 +746,11 @@ The lists of old and new names, and what an application has to change, are in
   buffers leaked. It is freed on the next register or unregister or when the alerter is
   destroyed. The error text is read with `fb_interpret` and the buffer length where the client
   has it.
+- An `OnEventAlert` handler that unregistered the events (`UnRegisterEvents`,
+  `Registered := False`, `Database.Close`) or freed the alerter waited for its own event thread
+  and hung.
+- With `VCLSynchronize = False`, an event thread that failed read the error text through
+  `Synchronize` and blocked in a program whose main thread doesn't call `CheckSynchronize`.
 
 #### Errors and messages
 
@@ -673,13 +793,19 @@ The lists of old and new names, and what an application has to change, are in
   a `NONE` connection, where the server sends the metadata charset). Firebird
   2.5 sends the names in UTF-8 and the exception texts in the charset of the
   connection, so on a connection that is not `UTF8` or `NONE` the names stay
-  garbled there. The server errors of array fields and of
+  garbled there; text that is not valid UTF-8 (the exception texts of Firebird
+  2.5 on a `NONE` connection) is decoded in the system code page, and so are
+  the Windows texts of network errors. The server errors of array fields and of
   `TFIBBlobStream.BlobToFile` now also give their database, for the decoding
   and for `OnLostConnect`.
 - `TFIBErrorHandler`: the message of a user exception was cut at an "at" in its
   text, or kept the stack trace (`At procedure ...`). The SQL monitor and the
   SQL logger got the message after the error handler changed it; they now show
   the server text with the stack trace.
+- `TFIBErrorHandler.ExceptionName` and `ExceptionNumber` were read from the
+  message: a name with a dot was cut (`CONNERR.EX` gave `CONNERR`, and the
+  message kept `EX.`), and with Firebird 6 the name was `"PUBLIC"`. Both come
+  from the status vector now, the name without the quotes and the schema.
 - `EFIBClientError.IBErrorCode` had the code of an earlier server error of the
   thread: after a statement timeout a client error had `isc_cancelled`, so
   `TFIBErrorHandler` took it for a cancelled statement. It is now 0.
@@ -711,7 +837,9 @@ The lists of old and new names, and what an application has to change, are in
   are valid UTF-8, else in the system code page (a Windows server).
 - A service start parameter of 65536 bytes or more was dropped or sent with a wrong length; it
   raises an error now. A `BufferSize` of 65536 or more was cut to 2 bytes (65536 gave "Unexpected
-  Output buffer value"); the service API gets at most 65535 bytes.
+  Output buffer value"); the service API gets at most 65535 bytes. `GetNextChunk`, `GetNextLine`
+  and `GetNextBuf` raised the same error for a chunk of 32768 bytes or more (a `BufferSize` from
+  32768).
 - `TFIBRestoreService.PageSize` was `4096` by default and always sent, so a database with larger
   pages was restored with 4096-byte pages. The default is `0`, which keeps the page size of the
   backup as gbak does without `-page`; see [Upgrading](Docs/guide/upgrading.md#restore-page-size).
@@ -756,9 +884,29 @@ The lists of old and new names, and what an application has to change, are in
   `LoadOptions.DBObjects` had no `otTable`, the views had no columns and their
   triggers were not written. A procedure, function or external function got the
   parameters of a packaged one with the same name, and `GetObjectDDL(otUDF)`
-  could take a packaged or PSQL function. `CREATE FUNCTION`, `RETURNS` and
-  `COMPUTED BY` had two spaces. The script has no empty `UNIQUE`, `CHECKS` or
-  `TRIGGERS` sections.
+  could take a packaged or PSQL function. `CREATE FUNCTION`, `RETURNS`,
+  `COMPUTED BY`, `SET NAMES`, `SET CLIENTLIB` and `CREATE EXCEPTION` had two
+  spaces. The script has no empty `UNIQUE`, `CHECKS` or `TRIGGERS` sections.
+- `TFIBDBSchemaExtract` and `FullExtractDDL` skipped PSQL functions and packages
+  and their comments by default, so a script whose procedures or triggers call
+  them failed with "Function unknown" (see Changed).
+- `GetDDLText` and `GetObjectDDL(otTable)` raised "Field not found" for a table
+  with an expression index, and "Invalid data conversion" for a DDL trigger
+  (Firebird 3 and later), whose header (`BEFORE CREATE TABLE ...`,
+  `ANY DDL STATEMENT`) was not written.
+- Script of `GetDDLText`: the stub `BEGIN SUSPEND; END` of a procedure without
+  output parameters failed on Firebird 3 and later; a `TYPE OF COLUMN`
+  parameter was written as `TYPE OF` its domain, or failed in the stub made
+  before the tables; the DDL triggers fired on the rest of the script.
+- Lost in the extracted DDL: the defaults of procedure and function
+  parameters, the collations of domains and columns, the names of `UNIQUE`
+  constraints, the `WHERE` of partial indices (Firebird 5), `START WITH` and
+  `INCREMENT BY` of sequences and identity columns, and `INACTIVE` of triggers.
+- `CREATE DESCENDING UNIQUE INDEX` was invalid, and an inactive index had no
+  terminator before `ALTER INDEX ... INACTIVE`; the columns of a unique
+  constraint over several columns could be mixed up; grantee and role names
+  were not quoted. A non-ASCII exception message was encoded twice (`Ã¼` for
+  `ü`).
 - Reloading or clearing the metadata leaked the previous meta objects, and
   `GetObjectDDL` of a database trigger leaked one object on each call.
 - `TFIBDBSchemaExtract.GetObjectDDL` of a package or a PSQL function on a server before
@@ -777,12 +925,13 @@ The lists of old and new names, and what an application has to change, are in
 - `TFIBScripter` cut a statement at a `--` comment when the script was added
   as one item with several lines (e.g. `Script.Add` of a multi-line string):
   the comment ran to the end of the item, not of the line
-  ([#95](https://github.com/madorin/fibplus/issues/95); also in 7.9.2).
+  ([#95](https://github.com/madorin/fibplus/issues/95)).
 - `TFIBScripter` with `SET BLOBFILE`: every parameter whose name starts with `H` (`:HIRE_DATE`)
   was read from the blob file, and lowercase hex digits of a reference were read as 0. Only
   `H<offset>_<size>` in hex digits is a reference now. A reference past the end of the file loaded
   zeros, and a read error stopped the script with the bare stream error: both raise the new
-  `feBlobFileError`, with the file and the parameter, and reach `OnExecuteError`.
+  `feBlobFileError`, with the file and the parameter, and reach `OnExecuteError`. The blob file
+  was opened exclusively; other programs can read it while the script runs.
 - `TFIBScripter`, the SQL parser (`SqlTxtRtns`) and the SQL editor highlighting took any
   character 32 codes above a keyword letter for that letter: `{DIFDEF X}` was read as
   `{$IFDEF X}`, `RDBDGET_CONTEXT` was highlighted as `RDB$GET_CONTEXT`, and a non-ASCII letter
@@ -814,11 +963,12 @@ The lists of old and new names, and what an application has to change, are in
 
 - `FIBArray` did not compile on Delphi 10.1 Berlin: "Invalid typecast" in
   `TFIBArray.ReadElement`
-  ([#94](https://github.com/madorin/fibplus/issues/94); also in 7.9.2).
+  ([#94](https://github.com/madorin/fibplus/issues/94)).
 - The editors did not save text and some integer settings on Delphi 2009 and
   later: the font name, style and charset and the syntax highlighting styles of
   the SQL editor, and the user transaction kinds of the transaction editor were
-  lost when the IDE was closed.
+  lost when the IDE was closed. `Byte`, `ShortInt` and `WideString` values
+  are now written too.
 - Editors at a display scaling over 100%: the saved size of a window was
   restored in pixels of 100%, so the window was too small for its content
   (sizes are now saved with the DPI of the window); the **Cancel** button of
@@ -835,8 +985,9 @@ The lists of old and new names, and what an application has to change, are in
 - SQL editor: the characters U+0080 to U+00FF were measured as the character of the same byte in
   the system code page (all of them on a Central European or Cyrillic Windows), so the text after
   them was drawn at a wrong offset.
-- SQL editor: a mouse click in a line with characters outside Latin-1 (Cyrillic) put the caret
-  in a wrong column.
+- SQL editor: in a line with characters outside Latin-1 (Cyrillic), a mouse click put the caret
+  in a wrong column, and the caret and the selection were placed at a wrong offset: these
+  characters are now measured in the font style of their token.
 - SQL editor: selecting with the mouse in an editor without lines raised an
   "index out of bounds" error.
 - SQL editor: a code completion item chosen on the empty line after the last
@@ -854,6 +1005,7 @@ The lists of old and new names, and what an application has to change, are in
   sections of the editor, sections stayed at their rows when lines were inserted or deleted
   above them, and a paste of plain text did not set `Modified`.
 - SQL editor: undo dropped all the sections of the editor, only the text came back.
+- SQL editor: each editor leaked the syntax data of its lines when it was destroyed.
 - SQL editors, **Edit in code editor**: the SQL tab was named without the designer extension
   (`Form1.Query1.SQL` instead of `dfm.Form1.Query1.SQL`), so the IDE could not find the component
   of the tab ("Unable to find component") and the edited text was not written back to the

@@ -122,7 +122,7 @@ Each flag is saved in the form file as its own `qoXxx` entry.
 | `ExecuteAsBatch` / `ExecuteAsBatch(SQLs)` | *InterBase 2007 only*, when compiled with `SUPPORT_IB2007`; does nothing on other connections. Sends several statements in one call with `isc_dsql_batch_execute_immed`. Without arguments it splits `SQL.Text` on `;`; with an array it sends those statements. |
 | `ExecWP(Values)` | Set parameters from an array in order, then `ExecQuery`. |
 | `ExecWP(Names, Values)` | Same, with parameter names separated by `;`. The number of names must equal the number of values. |
-| `ExecWPS(Source, AllRecords)` / `ExecWPS(Sources)` | Fill the parameters from `ISQLObject` sources, such as another query or dataset, then `ExecQuery`. A parameter takes the value of the column with the same name, otherwise of a source parameter with that name; with several sources, a later source overrides an earlier one. A `NEW_` or `OLD_` prefix on the parameter name is ignored when matching columns (`OLD_` reads the old value). With `AllRecords = True` (default) the statement runs once per source row until `IEof`, advancing with `INext`; `OnBatchError` handles failures, and `beRetry` continues with the next row. With `False`, or with the array overload, it runs once. |
+| `ExecWPS(Source, AllRecords)` / `ExecWPS(Sources)` | Fill the parameters from `ISQLObject` sources, such as another query or dataset, then `ExecQuery`. A parameter takes the value of the column with the same name, otherwise of a source parameter with that name; with several sources, a later source overrides an earlier one. A `NEW_` or `OLD_` prefix on the parameter name is ignored when matching columns (`OLD_` reads the old value). With `AllRecords = True` (default) the statement runs once per source row until `IEof`, advancing with `INext`; `OnBatching` is called with `boInput` for each row, `OnBatchError` handles failures, and `beRetry` runs the row again. With `False`, or with the array overload, it runs once. |
 | `Next` | Fetch the next row. Returns `Current`, or `nil` at the end of the data or when `OnSQLFetch` stops the fetch. |
 | `Close` | Close the cursor. |
 | `FreeHandle` | Release the statement on the server. The next run prepares again. |
@@ -135,8 +135,8 @@ Each flag is saved in the form file as its own `qoXxx` entry.
 | `FN(Name)` | Short form of `FieldByName`: raises when the column does not exist. Use `FindField` to get `nil`. |
 | `FindField(Name)` | Column by name, or `nil`. |
 | `FieldIsNull(Field)` | Returns `Field.IsNull`. |
-| `BlobToStrings(BlobFieldName, Destination)` | Loads a text `BLOB` column of the current row into `Destination`. Returns `False` when the cursor is not open, `Destination` is `nil`, the column does not exist, the column is not a `BLOB` with the text subtype, or reading fails. No exception is raised. |
-| `BlobAsString(BlobFieldName)` | The same as one string. Returns an empty string when `BlobToStrings` returns `False`. |
+| `BlobToStrings(BlobFieldName, Destination)` | Loads a text `BLOB` column of the current row into `Destination`, read as `AsString` reads it (in the charset of the column). Returns `False` when the cursor is not open, `Destination` is `nil`, the column does not exist, or the column is not a `BLOB` with the text subtype. A read error is raised. |
+| `BlobAsString(BlobFieldName)` | The same as one string, without a line break added at the end. Returns an empty string in the cases where `BlobToStrings` returns `False`. |
 | `FieldByOrigin(Table, Field)` | Column by source table and field. |
 | `ParamByName(Name)` | Parameter by name. For an `EXECUTE PROCEDURE` statement it falls back to the output column of that name. Raises when neither exists. |
 | `FindParam(Name)` | Parameter by name, or `nil`. |
