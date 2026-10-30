@@ -55,6 +55,7 @@ function CurrentThreadID: DWORD;
 
 const
   ZeroData = 0;
+  CLRF = sLineBreak deprecated 'Use sLineBreak';
 
 implementation
 

@@ -5,7 +5,7 @@ interface
 {$I FIB.inc}
 
 uses
-  FIBServices;
+  ibase, FIBServices;
 
 {$IFDEF INC_SERVICE_SUPPORT}
 type
@@ -145,6 +145,10 @@ const
   ModifyPassword = FIBServices.ModifyPassword;
   ModifySecAdmin = FIBServices.ModifySecAdmin;
 {$ENDIF}
+
+var
+  SPBConstantNames: array [1 .. isc_spb_last_spb_constant] of string absolute FIBServices.SPBConstantNames;
+  SPBConstantValues: array [1 .. isc_spb_last_spb_constant] of Integer absolute FIBServices.SPBConstantValues;
 
 implementation
 

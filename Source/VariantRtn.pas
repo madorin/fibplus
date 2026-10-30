@@ -82,6 +82,71 @@ begin
       Result := -1;
 end;
 
+function CompareNumbers(const Value, Number: Extended): Integer;
+begin
+  if Value = Number then
+    Result := 0
+  else
+    if Value > Number then
+      Result := 1
+    else
+      Result := -1;
+end;
+
+function CompareTexts(const ValueText, Text: string): Integer;
+begin
+  Result := AnsiCompareStr(ValueText, Text);
+  if Result > 0 then
+    Result := 1
+  else
+    if Result < 0 then
+      Result := -1;
+end;
+
+// A text that is not a number is compared with the number as text, without raising
+function CompareFloatAndText(const Value: Extended; const Text: string): Integer;
+var
+  Number: Extended;
+begin
+  if TryStrToFloat(Text, Number) then
+    Result := CompareNumbers(Value, Number)
+  else
+    Result := CompareTexts(FloatToStr(Value), Text);
+end;
+
+function CompareInt64AndText(const Value: Int64; const Text: string): Integer;
+var
+  Number: Int64;
+begin
+  if TryStrToInt64(Text, Number) then
+  begin
+    if Value = Number then
+      Result := 0
+    else
+      if Value > Number then
+        Result := 1
+      else
+        Result := -1;
+  end
+  else
+    Result := CompareFloatAndText(Value, Text);
+end;
+
+// A text that is neither a number nor a date is compared with the date as text
+function CompareDateAndText(const Value: TDateTime; const Text: string): Integer;
+var
+  Number: Extended;
+  Date: TDateTime;
+begin
+  if TryStrToFloat(Text, Number) then
+    Result := CompareNumbers(Value, Number)
+  else
+    if TryStrToDateTime(Text, Date) then
+      Result := CompareNumbers(Value, Date)
+    else
+      Result := CompareTexts(DateTimeToStr(Value), Text);
+end;
+
 {$DEFINE BODY_NUMERIC_COMPARE_EQ}
 
 // P^ holds a value of an integer type up to 32 bits; strings are parsed as floats
@@ -94,7 +159,9 @@ function ComparePDoubleAndVariant(P: PDouble; const V: Variant): Integer;
 function ComparePCurrencyAndVariant(P: PCurrency; const V: Variant): Integer;
 {$I VarFnc.inc}
 function ComparePDateAndVariant(P: PDateTime; const V: Variant): Integer;
+{$DEFINE C_DATE}
 {$I VarFnc.inc}
+{$UNDEF C_DATE}
 function ComparePInt64AndVariant(P: PInt64; const V: Variant): Integer;
 {$DEFINE C_INT64}
 {$I VarFnc.inc}

@@ -76,28 +76,6 @@ begin
           else
             Result := -1
       end;
-    varOleStr:
- {$IFDEF C_INT64}
-      begin
-        if P^ = StrToInt64(WideString(TVarData(V).VOleStr)) then
-          Result := 0
-        else
-          if P^ > StrToInt64(WideString(TVarData(V).VOleStr)) then
-            Result := 1
-          else
-            Result := -1
-      end;
- {$ELSE}
-      begin
-        if P^ = StrToFloat(WideString(TVarData(V).VOleStr)) then
-          Result := 0
-        else
-          if P^ > StrToFloat(WideString(TVarData(V).VOleStr)) then
-            Result := 1
-          else
-            Result := -1
-      end;
- {$ENDIF}
     varShortInt:
       begin
         if P^ = TVarData(v).VShortInt then
@@ -148,49 +126,15 @@ begin
           else
             Result := -1
       end;
-    varString:
+    varString, varOleStr, varUString:
 {$IFDEF C_INT64}
-      begin
-        if P^ = StrToInt64(string(AnsiString(TVarData(V).VString))) then
-          Result := 0
-        else
-          if P^ > StrToInt64(string(AnsiString(TVarData(V).VString))) then
-            Result := 1
-          else
-            Result := -1
-      end;
+      Result := CompareInt64AndText(P^, VarToStr(V));
 {$ELSE}
-      begin
-        if P^ = StrToFloat(string(AnsiString(TVarData(V).VString))) then
-          Result := 0
-        else
-          if P^ > StrToFloat(string(AnsiString(TVarData(V).VString))) then
-            Result := 1
-          else
-            Result := -1
-      end;
+{$IFDEF C_DATE}
+      Result := CompareDateAndText(P^, VarToStr(V));
+{$ELSE}
+      Result := CompareFloatAndText(P^, VarToStr(V));
 {$ENDIF}
-    varUString:
-{$IFDEF C_INT64}
-      begin
-        if P^ = StrToInt64(string(TVarData(V).VUString)) then
-          Result := 0
-        else
-          if P^ > StrToInt64(string(TVarData(V).VUString)) then
-            Result := 1
-          else
-            Result := -1
-      end;
-{$ELSE}
-      begin
-        if P^ = StrToFloat(string(TVarData(V).VUString)) then
-          Result := 0
-        else
-          if P^ > StrToFloat(string(TVarData(V).VUString)) then
-            Result := 1
-          else
-            Result := -1
-      end;
 {$ENDIF}
     // the Variant compare of a negative Int64 with a UInt64 raises an overflow
     varUInt64:

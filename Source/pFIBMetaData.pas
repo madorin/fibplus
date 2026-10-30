@@ -41,6 +41,8 @@ type
   TMetaRoleGrant = FIBMetaData.TMetaRoleGrant;
   TMetaGenerator = FIBMetaData.TMetaGenerator;
   TArrBounds = FIBMetaData.TArrBounds;
+  TFieldDimensions = FIBMetaData.TFieldDimensions;
+  TCustomMetaField = FIBMetaData.TCustomMetaField;
   TMetaField = FIBMetaData.TMetaField;
   TMetaProcField = FIBMetaData.TMetaProcField;
   TMetaProcInField = FIBMetaData.TMetaProcInField;

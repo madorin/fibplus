@@ -164,6 +164,37 @@ const
   RegPreferences = FIBProps.RegPreferences;
   RegRepository = FIBProps.RegRepository;
 
+// The writable defaults of FIBProps, assignments go through to them
+var
+  DefaultPrepareOptions: TFIBPrepareOptions absolute FIBProps.DefaultPrepareOptions;
+  DefaultOptions: TFIBDataSetOptions absolute FIBProps.DefaultOptions;
+  DefaultDetailConditions: TDetailConditions absolute FIBProps.DefaultDetailConditions;
+  DefStoreConnected: Boolean absolute FIBProps.DefStoreConnected;
+  DefSynchronizeTime: Boolean absolute FIBProps.DefSynchronizeTime;
+  DefUpperOldNames: Boolean absolute FIBProps.DefUpperOldNames;
+  DefUseLoginPrompt: Boolean absolute FIBProps.DefUseLoginPrompt;
+  DefCharSet: string absolute FIBProps.DefCharSet;
+  DefSQLDialect: Integer absolute FIBProps.DefSQLDialect;
+  DefTimeOutAction: TTransactionAction1 absolute FIBProps.DefTimeOutAction;
+  DefTimeOut: Integer absolute FIBProps.DefTimeOut;
+  DefTPBMode: TTPBMode absolute FIBProps.DefTPBMode;
+  DefParamCheck: Boolean absolute FIBProps.DefParamCheck;
+  DefGoToFirstRecordOnExecute: Boolean absolute FIBProps.DefGoToFirstRecordOnExecute;
+  DefQueryOptions: TFIBQueryOptions absolute FIBProps.DefQueryOptions;
+  DefPrefixGenName: string absolute FIBProps.DefPrefixGenName;
+  DefSufixGenName: string absolute FIBProps.DefSufixGenName;
+  DefEmptyStrToNull: Boolean absolute FIBProps.DefEmptyStrToNull;
+  FF_UseRuntimeDefaults: Boolean absolute FIBProps.FF_UseRuntimeDefaults;
+  RDefDateFormat: string absolute FIBProps.RDefDateFormat;
+  RDefTimeFormat: string absolute FIBProps.RDefTimeFormat;
+  RDefDisplayFormatNum: string absolute FIBProps.RDefDisplayFormatNum;
+  RDefEditFormatNum: string absolute FIBProps.RDefEditFormatNum;
+  dDefDateFormat: string absolute FIBProps.dDefDateFormat;
+  dDefTimeFormat: string absolute FIBProps.dDefTimeFormat;
+  dDefDateTimeFormat: string absolute FIBProps.dDefDateTimeFormat;
+  dDefDisplayFormatNum: string absolute FIBProps.dDefDisplayFormatNum;
+  dDefEditFormatNum: string absolute FIBProps.dDefEditFormatNum;
+
 procedure WriteStrToStream(const s: AnsiString; Stream: TStream); deprecated 'Use FIBProps.WriteStrToStream';
 procedure ReadStrFromStream(const Stream: TStream; var ResStr: AnsiString); deprecated 'Use FIBProps.ReadStrFromStream';
 
