@@ -577,6 +577,13 @@ The lists of old and new names, and what an application has to change, are in
   `UseRowsClause` put `ROWS 1` on the `INSERT` and after `RETURNING`, which Firebird rejects;
   it now goes only on the `UPDATE`, before `RETURNING`
   ([Upgrading](Docs/guide/upgrading.md#generated-statements)).
+- SQL generation: a table alias without quotes in `AutoUpdateOptions.UpdateTableName`
+  (`'TABLE a'`) or in `SelectSQL` was taken as a quoted one (`"a"`) with `UpperOldNames`
+  `False`, so no field matched it: the generated statements left out every field, the
+  `RefreshSQL` used `"a".ID` ("Column does not belong to referenced table") and
+  `pfSetReadOnlyFields` made every field read-only. As in SQL, an alias without quotes now
+  means the uppercase name (`A`); a quoted alias (`"a"`) keeps its case
+  ([Upgrading](Docs/guide/upgrading.md#generated-statements)).
 - `GenerateSQLText` on a dataset without field objects failed with `rfBlobFields` and ignored
   `ifsNoBlob` and `ifsOnlyBlob`; it now takes the BLOB columns from the field definitions.
 - Under `UpdateOnlyModifiedFields` the per-post `InsertSQL` and `UpdateSQL` were assigned, and

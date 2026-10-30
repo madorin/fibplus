@@ -96,6 +96,7 @@ function FormatIdentifierValue(Dialect: Integer; const Value: string): string; i
 function FormatIdentifier(Dialect: Integer; const Value: string): string; inline;
 function NormalizeName(Dialect: Integer; const Name: string): string; inline;
 function UnquoteIdentifier(const Value: string): string;
+function NormalizeIdentifier(Dialect: Integer; const Value: string): string;
 function EasyFormatIdentifier(Dialect: Integer; const Value: string; DoEasy: Boolean): string; inline;
 function EquelNames(CI: Boolean; const Value, Value1: String): Boolean; inline;
 function NeedQuote(const Name: string): Boolean;
@@ -928,6 +929,12 @@ begin
     Result := StringReplace(Copy(Value, 2, Length(Value) - 2), '""', '"', [rfReplaceAll])
   else
     Result := UpperCase(Value);
+end;
+
+// An identifier written in SQL, formatted as the generated SQL writes it: 'a' -> 'A', '"A"' -> 'A', '"a"' -> '"a"'
+function NormalizeIdentifier(Dialect: Integer; const Value: string): string;
+begin
+  Result := FormatIdentifier(Dialect, UnquoteIdentifier(Value));
 end;
 
 {$IFDEF CPUX86}

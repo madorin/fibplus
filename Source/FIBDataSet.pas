@@ -15296,7 +15296,7 @@ begin
       else
       begin
         FormatTableName := EasyFormatIdentifier(SQLDialect, CutTableName(TableName), EasyFormatsStr);
-        vAliasTableName := EasyFormatIdentifier(SQLDialect, CutAlias(TableName), EasyFormatsStr);
+        vAliasTableName := NormalizeIdentifier(SQLDialect, CutAlias(TableName));
       end;
   end;
 
@@ -15568,7 +15568,7 @@ begin
       else
       begin
         FormatTableName := EasyFormatIdentifier(SQLDialect, CutTableName(TableName), EasyFormatsStr);
-        vAliasTableName := EasyFormatIdentifier(SQLDialect, CutAlias(TableName), EasyFormatsStr);
+        vAliasTableName := NormalizeIdentifier(SQLDialect, CutAlias(TableName));
       end;
   end;
 

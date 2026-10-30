@@ -1768,13 +1768,19 @@ begin
 end;
 
 procedure TAutoUpdateOptions.PrepareUpdateTableStrings;
+var
+  Dialect: Integer;
 begin
   if Length(FModifiedTable) = 0 then
   begin
+    if Assigned(FOwner) and Assigned(TFIBDataSet(FOwner).Database) then
+      Dialect := TFIBDataSet(FOwner).Database.SQLDialect
+    else
+      Dialect := 3;
     if FModifiedTableHaveAlias then
     begin
       FModifiedTable := CutTableName(UpdateTableName);
-      FAliasModifiedTable := CutAlias(UpdateTableName);
+      FAliasModifiedTable := NormalizeIdentifier(Dialect, CutAlias(UpdateTableName));
     end
     else
     begin
@@ -1783,6 +1789,9 @@ begin
         FAliasModifiedTable := AliasForTable(TFIBDataSet(FOwner).QSelect.ReadySQLText(False), UpdateTableName)
       else
         FAliasModifiedTable := UpdateTableName;
+      // An alias found in SelectSQL is SQL text: unquoted means uppercase
+      if FAliasModifiedTable <> UpdateTableName then
+        FAliasModifiedTable := NormalizeIdentifier(Dialect, FAliasModifiedTable);
     end;
     if Assigned(FOwner) and Assigned(TFIBDataSet(FOwner).Database) then
       with TFIBDataSet(FOwner).Database do

@@ -262,6 +262,9 @@ error is raised, as they were before, because the cache marks them as applied.
   `poRefreshAfterPost`; it returned the values before the edit. In `AfterPost`, `OldValue`
   now equals `Value`: code that compares them there (an audit log) must read the old values in
   `BeforePost`.
+- A table alias without quotes in `AutoUpdateOptions.UpdateTableName` means the uppercase name,
+  as in SQL: `'T a'` matches `from T a`, no longer `from T "a"`. Write the alias as in
+  `SelectSQL` (`'T "a"'`).
 
 #### NULL in `Filter` comparisons
 
