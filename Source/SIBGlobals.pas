@@ -5,6 +5,8 @@ unit SIBGlobals;
 // dhbecker@jps.net
 // www.jps.net/dhbecker/superib
 
+{$I FIB.inc}
+
 interface
 
 uses

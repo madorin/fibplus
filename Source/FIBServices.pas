@@ -599,11 +599,11 @@ begin
 end;
 
 // The service API takes 2-byte lengths
-function ServiceBufferLength(Length: Integer; const Name: string): Word;
+function ServiceBufferLength(BufferLength: Integer; const Name: string): Word;
 begin
-  if Length > High(Word) then
-    FIBError(feParamValueTooLong, [Name, Length, High(Word)]);
-  Result := Word(Length);
+  if BufferLength > High(Word) then
+    FIBError(feParamValueTooLong, [Name, BufferLength, High(Word)]);
+  Result := Word(BufferLength);
 end;
 
 { TFIBCustomService }
@@ -2251,7 +2251,8 @@ begin
   if (OutputBuffer[0] <> AnsiChar(isc_info_svc_to_eof)) then
     FIBError(feOutputParsingError, [nil]);
   LoadLibrary;
-  Length := FClientLibrary.isc_vax_integer(OutputBuffer + 1, 2);
+  // unsigned: isc_vax_integer extends the sign of the 2 bytes
+  Length := Word(FClientLibrary.isc_vax_integer(OutputBuffer + 1, 2));
   if (OutputBuffer[3 + Length] = AnsiChar(isc_info_truncated)) then
     FEof := False
   else if (OutputBuffer[3 + Length] = AnsiChar(isc_info_end)) then
@@ -2292,7 +2293,8 @@ begin
   if (OutputBuffer[0] <> AnsiChar(isc_info_svc_line)) then
     FIBError(feOutputParsingError, [nil]);
   LoadLibrary;
-  Length := FClientLibrary.isc_vax_integer(OutputBuffer + 1, 2);
+  // unsigned: isc_vax_integer extends the sign of the 2 bytes
+  Length := Word(FClientLibrary.isc_vax_integer(OutputBuffer + 1, 2));
   if (OutputBuffer[3 + Length] <> AnsiChar(isc_info_end)) then
     FIBError(feOutputParsingError, [nil]);
   if (Length <> 0) then
@@ -2371,7 +2373,8 @@ begin
   if (OutputBuffer[0] <> AnsiChar(isc_info_svc_to_eof)) then
     FIBError(feOutputParsingError, [nil]);
   // LoadLibrary;
-  ALength := ClientLibrary.isc_vax_integer(OutputBuffer + 1, 2);
+  // unsigned: isc_vax_integer extends the sign of the 2 bytes
+  ALength := Word(ClientLibrary.isc_vax_integer(OutputBuffer + 1, 2));
   if (OutputBuffer[3 + ALength] = AnsiChar(isc_info_truncated)) then
     Self.FEof := False
   else if (OutputBuffer[3 + ALength] = AnsiChar(isc_info_end)) then

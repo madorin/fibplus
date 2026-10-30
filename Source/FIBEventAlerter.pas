@@ -9,6 +9,8 @@ unit FIBEventAlerter;
 
 interface
 
+{$I FIB.inc}
+
 uses
   Classes, SIBEABase, SIBAPI, FIBDatabase;
 

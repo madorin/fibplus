@@ -100,7 +100,7 @@ type
     objName: string;
     DirectiveNum: Integer;
     DirectiveElse: boolean;
-    HasReturning: boolean;
+    HasReturning: Boolean;
   end;
 
   PStatementDesc = ^TStatementDesc;
@@ -189,7 +189,7 @@ type
     FInBody: boolean; // in the body of a PSQL module, after AS
     FBlockDepth: Integer; // BEGIN and CASE blocks open in the body
     FLastWordIsEnd: boolean;
-    FCheckReturning: boolean;
+    FCheckReturning: Boolean;
     FInSetTerm: boolean;
     FNewTerminator: string;
     FNewTerminatorDone: boolean;
@@ -1781,7 +1781,7 @@ begin
   Stream := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
   try
     SetLength(Preamble, 4);
-    SetLength(Preamble, Stream.Read(Preamble[0], Length(Preamble)));
+    SetLength(Preamble, Stream.Read(Preamble[0], Integer(Length(Preamble))));
     BomEncoding := nil;
     BomLength := TEncoding.GetBufferEncoding(Preamble, BomEncoding);
     if BomLength > 0 then
@@ -1926,12 +1926,12 @@ end;
 
 { TFIBScriptParser }
 
-function IsBlank(C: Char): boolean; inline;
+function IsBlank(C: Char): Boolean; inline;
 begin
   Result := CharInSet(C, [' ', #9, #10, #13]);
 end;
 
-function IsWordChar(C: Char): boolean; inline;
+function IsWordChar(C: Char): Boolean; inline;
 begin
   Result := CharInSet(C, ['A' .. 'Z', 'a' .. 'z', '0' .. '9', '_', '$']);
 end;
@@ -3138,7 +3138,7 @@ begin
         try
           try
             if not Assigned(FBlobFileStream) then
-              FBlobFileStream := TFileStream.Create(FBlobFile, fmOpenRead, fmShareDenyWrite);
+              FBlobFileStream := TFileStream.Create(FBlobFile, fmOpenRead or fmShareDenyWrite);
             FBlobFileStream.Position := Offset;
             Data.CopyFrom(FBlobFileStream, Size);
           except

@@ -84,10 +84,19 @@ type
     FNativeHandle: SIB_DBHandle;
     ThreadException: Boolean;
     FVCLSynchro: Boolean;
+    // guards FThreads and FEndedThreads, changed by event threads when VCLSynchronize is False
+    FLock: TCriticalSection;
     procedure SetEvents(Value: TStrings);
     function GetRegistered: Boolean;
     procedure SetRegistered(const Value: Boolean);
     procedure FreeEndedThreads;
+    function TakeThread(out Thread: TSIBEventThread): Boolean;
+    function RemoveThread(Thread: TSIBEventThread): Boolean;
+    procedure AddEndedThread(Thread: TSIBEventThread);
+    function TakeEndedThread(out Thread: TSIBEventThread): Boolean;
+    procedure StopThreads;
+    procedure StopThread(Thread: TSIBEventThread);
+    function ThreadFailed(Thread: TSIBEventThread): Boolean;
   protected
     { Protected declarations }
     procedure SetNativeHandle(const Value: SIB_DBHandle); virtual;
@@ -139,8 +148,17 @@ type
     FVCLSynchro: Boolean;
     FRunning: Boolean;
     FQueued: Boolean;
+    // removed from the thread list by the alerter: it ends without calling ThreadEnded
+    FDetached: Boolean;
+    // the alerter was destroyed by a handler of this thread: the thread frees itself
+    FOrphan: Boolean;
+    // the thread that runs a handler of the alerter for this thread, 0 when none
+    FHandlerThreadID: Cardinal;
+    function BlockedByCaller: Boolean;
+    procedure ReportException;
   protected
     procedure Execute; override;
+    procedure DoTerminate; override;
     procedure QueueFirstEvents; virtual;
     procedure StartThread;
     procedure SignalEvent; virtual;
@@ -284,8 +302,16 @@ end;
 procedure TSIBEventThread.DoEvent;
 
 begin
-  Parent.FOnEventAlert(Parent, Parent.FEvents[((EventGroup * SIB_MAX_EVENT_BLOCK) + WhichEvent)],
-    Longint(EventCounts[WhichEvent]))
+  // unregistered while the call waited for the main thread
+  if Terminated then
+    Exit;
+  FHandlerThreadID := CurrentThreadID;
+  try
+    Parent.FOnEventAlert(Parent, Parent.FEvents[((EventGroup * SIB_MAX_EVENT_BLOCK) + WhichEvent)],
+      Longint(EventCounts[WhichEvent]));
+  finally
+    FHandlerThreadID := 0;
+  end;
 end;
 
 // called by the IB event callback to copy an update resultbuffer
@@ -309,7 +335,7 @@ begin
   Buffer[0] := #0;
   ErrorVector := @StatusVector;
   repeat
-    if FRunning then
+    if FRunning and FVCLSynchro then
       Synchronize(SIBInterpretError)
     else
       SIBInterpretError;
@@ -383,6 +409,9 @@ begin
   begin
     for i := 0 to (EventCount - 1) do
     begin
+      // a handler unregistered the events or destroyed the alerter
+      if Terminated then
+        Exit;
       // if this particular event occured, call the event handler
       if (EventCounts[i] <> 0) then
       begin
@@ -445,12 +474,37 @@ begin
   end;
 end;
 
+// True when the caller is this thread or runs a handler this thread waits for: the caller
+// can't wait for the thread to end
+function TSIBEventThread.BlockedByCaller: Boolean;
+begin
+  Result := (ThreadID = CurrentThreadID) or (FHandlerThreadID = CurrentThreadID);
+end;
+
+// runs in the main thread when it is synchronized, otherwise in the event thread
 procedure TSIBEventThread.DoHandleException;
 begin
-  if Assigned(Parent.FOnError) and (FExceptObject is Exception) then
-    Parent.FOnError(Parent, Exception(FExceptObject))
-  else
-    SysUtils.ShowException(FExceptObject, FExceptAddr);
+  FHandlerThreadID := CurrentThreadID;
+  try
+    try
+      // the registrations are cancelled first, so the handler can unregister or register again
+      if Parent.ThreadFailed(Self) then
+        if Assigned(Parent.FOnError) and (FExceptObject is Exception) then
+          Parent.FOnError(Parent, Exception(FExceptObject))
+        else if FVCLSynchro and Assigned(Classes.ApplicationHandleException) then
+          DoApplicationHandleException
+        else
+          SysUtils.ShowException(FExceptObject, FExceptAddr);
+    except
+      // an exception raised by the handler
+      if FVCLSynchro and Assigned(Classes.ApplicationHandleException) then
+        Classes.ApplicationHandleException(Self)
+      else
+        SysUtils.ShowException(ExceptObject, ExceptAddr);
+    end;
+  finally
+    FHandlerThreadID := 0;
+  end;
 end;
 
 procedure TSIBEventThread.DoApplicationHandleException;
@@ -470,35 +524,35 @@ end;
 function TSIBEventThread.HandleException: Boolean;
 begin
   // if a thread exception has already occurred, then
-  // don't show another one
-  if not Parent.ThreadException then
+  // don't show another one; a thread the alerter stopped reports nothing
+  if not FDetached and not Parent.ThreadException then
   begin
     Result := True;
     Parent.ThreadException := True;
-    if (ExceptObject is EAbort) then
-      Exit;
-    FExceptObject := TObject(AcquireExceptionObject);
-    FExceptAddr := ExceptAddr;
-    try
-      if Assigned(Parent.FOnError) then
-      begin
-        if FVCLSynchro then
-          Synchronize(DoHandleException)
-        else
-          DoHandleException;
-      end
-      else if FVCLSynchro and Assigned(Classes.ApplicationHandleException) then
-        Synchronize(DoApplicationHandleException)
-      else
-        DoHandleException;
-    finally
-      FExceptObject.Free;
-      FExceptObject := nil;
-      FExceptAddr := nil;
+    // reported by ReportException, after Execute has left the except block
+    if not (ExceptObject is EAbort) then
+    begin
+      FExceptObject := TObject(AcquireExceptionObject);
+      FExceptAddr := ExceptAddr;
     end;
   end
   else
     Result := False;
+end;
+
+// calls OnError after the alerter has cancelled the registrations of the failed thread
+procedure TSIBEventThread.ReportException;
+begin
+  try
+    if FVCLSynchro and (Assigned(Parent.FOnError) or Assigned(Classes.ApplicationHandleException)) then
+      Synchronize(DoHandleException)
+    else
+      DoHandleException;
+  finally
+    FExceptObject.Free;
+    FExceptObject := nil;
+    FExceptAddr := nil;
+  end;
 end;
 
 // set everything up with IB and sit in a loop
@@ -535,6 +589,17 @@ begin
     else
       ReturnValue := 0;
   end;
+  if Assigned(FExceptObject) then
+    ReportException;
+  // the alerter was destroyed by a handler and could not free this thread
+  if FOrphan then
+    FreeOnTerminate := True;
+end;
+
+procedure TSIBEventThread.DoTerminate;
+begin
+  if not FDetached then
+    inherited DoTerminate;
 end;
 
 constructor TSIBEventThread.Create(ClientLibrary: IIBClientLibrary;
@@ -557,16 +622,7 @@ begin
   try
     UnRegisterEvents;
   except
-    // thread had a problem, if we're the first
-    // thread to report handle the problem, return
-    // with an error code, otherwise return OK
-    try
-      if HandleException then
-        ReturnValue := 1
-      else
-        ReturnValue := 0;
-    except
-    end;
+    // the registration ends with the thread: an error of the cancel is not reported
   end;
   Signal.Free;
   FClientLibrary := nil;
@@ -583,21 +639,133 @@ end;
 
 // loop through all the running event threads and kill them
 procedure TSIBEventAlerter.UnRegisterEvents;
-var
-  Temp: TSIBEventThread;
 begin
   FreeEndedThreads;
   if (FThreads.Count = 0) then
     raise ESIBError.Create(SIB_RS_NOT_REGISTERED);
+  StopThreads;
+end;
+
+procedure TSIBEventAlerter.StopThreads;
+var
+  Thread: TSIBEventThread;
+begin
   // WaitFor runs ThreadEnded of other threads, which removes them from the list
-  while (FThreads.Count > 0) do
+  while TakeThread(Thread) do
+    StopThread(Thread);
+end;
+
+// a thread that waits for the caller (a handler that unregisters) is freed later
+procedure TSIBEventAlerter.StopThread(Thread: TSIBEventThread);
+begin
+  Thread.SignalTerminate;
+  if Thread.BlockedByCaller then
+    AddEndedThread(Thread)
+  else
   begin
-    Temp := TSIBEventThread(FThreads[FThreads.Count - 1]);
-    FThreads.Delete(FThreads.Count - 1);
-    Temp.SignalTerminate;
-    Temp.WaitFor;
-    Temp.Free;
+    Thread.WaitFor;
+    Thread.Free;
   end;
+end;
+
+function TSIBEventAlerter.TakeThread(out Thread: TSIBEventThread): Boolean;
+begin
+  Thread := nil;
+  FLock.Enter;
+  try
+    Result := FThreads.Count > 0;
+    if Result then
+    begin
+      Thread := TSIBEventThread(FThreads[FThreads.Count - 1]);
+      FThreads.Delete(FThreads.Count - 1);
+      Thread.FDetached := True;
+    end;
+  finally
+    FLock.Leave;
+  end;
+end;
+
+function TSIBEventAlerter.RemoveThread(Thread: TSIBEventThread): Boolean;
+var
+  Index: TFIBListIndex;
+begin
+  FLock.Enter;
+  try
+    Index := FThreads.IndexOf(Thread);
+    Result := Index >= 0;
+    if Result then
+      FThreads.Delete(Index);
+  finally
+    FLock.Leave;
+  end;
+end;
+
+procedure TSIBEventAlerter.AddEndedThread(Thread: TSIBEventThread);
+begin
+  FLock.Enter;
+  try
+    FEndedThreads.Add(Thread);
+  finally
+    FLock.Leave;
+  end;
+end;
+
+// takes an ended thread that can be freed: not one that waits for the caller
+function TSIBEventAlerter.TakeEndedThread(out Thread: TSIBEventThread): Boolean;
+var
+  Index: TFIBListIndex;
+begin
+  Thread := nil;
+  Result := False;
+  FLock.Enter;
+  try
+    for Index := FEndedThreads.Count - 1 downto 0 do
+      if not TSIBEventThread(FEndedThreads[Index]).BlockedByCaller then
+      begin
+        Thread := TSIBEventThread(FEndedThreads[Index]);
+        FEndedThreads.Delete(Index);
+        Result := True;
+        Break;
+      end;
+  finally
+    FLock.Leave;
+  end;
+end;
+
+// cancels the registrations after an error of Thread; False when they were already cancelled
+function TSIBEventAlerter.ThreadFailed(Thread: TSIBEventThread): Boolean;
+var
+  Others: TList;
+  Index: TFIBListIndex;
+begin
+  Others := TList.Create;
+  try
+    // taken together, so that threads registered meanwhile by another thread are kept
+    FLock.Enter;
+    try
+      Result := FThreads.IndexOf(Thread) >= 0;
+      if Result then
+      begin
+        for Index := 0 to FThreads.Count - 1 do
+          if FThreads[Index] <> Thread then
+          begin
+            TSIBEventThread(FThreads[Index]).FDetached := True;
+            Others.Add(FThreads[Index]);
+          end;
+        FThreads.Clear;
+        Thread.FDetached := True;
+        // freed by FreeEndedThreads after the handler has returned
+        FEndedThreads.Add(Thread);
+      end;
+    finally
+      FLock.Leave;
+    end;
+    for Index := Others.Count - 1 downto 0 do
+      StopThread(TSIBEventThread(Others[Index]));
+  finally
+    Others.Free;
+  end;
+  ThreadException := False;
 end;
 
 // calculate how many event threads we need to hold the events
@@ -605,6 +773,7 @@ end;
 procedure TSIBEventAlerter.RegisterEvents;
 var
   i: Integer;
+  Index: TFIBListIndex;
   DBH: SIB_DBHandle;
   Thread: TSIBEventThread;
 begin
@@ -618,22 +787,31 @@ begin
         for i := 0 to ((FEvents.Count - 1) div SIB_MAX_EVENT_BLOCK) do
         begin
           Thread := TSIBEventThread.Create(FClientLibrary, Self, DBH, i, ThreadEnded, FVCLSynchro);
-          FThreads.Add(Thread);
+          FLock.Enter;
+          try
+            FThreads.Add(Thread);
+          finally
+            FLock.Leave;
+          end;
           Thread.QueueFirstEvents;
         end;
       except
         // the threads have not started: Free cancels the groups already queued
-        while (FThreads.Count > 0) do
+        while TakeThread(Thread) do
         begin
-          Thread := TSIBEventThread(FThreads[FThreads.Count - 1]);
-          FThreads.Delete(FThreads.Count - 1);
           Thread.OnTerminate := nil;
           Thread.Free;
         end;
         raise;
       end;
-      for i := 0 to (FThreads.Count - 1) do
-        TSIBEventThread(FThreads[i]).StartThread;
+      // a thread that fails at once waits for the lock to remove itself
+      FLock.Enter;
+      try
+        for Index := 0 to FThreads.Count - 1 do
+          TSIBEventThread(FThreads[Index]).StartThread;
+      finally
+        FLock.Leave;
+      end;
     end;
   end
   else
@@ -710,9 +888,12 @@ begin
   FVCLSynchro := True;
   FThreads := TList.Create;
   FEndedThreads := TList.Create;
+  FLock := TCriticalSection.Create;
 end;
 
 destructor TSIBEventAlerter.Destroy;
+var
+  Index: TFIBListIndex;
 begin
   try
     if Registered then
@@ -720,8 +901,15 @@ begin
   except
   end;
   FreeEndedThreads;
+  // a handler of these threads destroys the alerter: they free themselves when they end
+  for Index := 0 to FEndedThreads.Count - 1 do
+  begin
+    TSIBEventThread(FEndedThreads[Index]).FOrphan := True;
+    TSIBEventThread(FEndedThreads[Index]).OnTerminate := nil;
+  end;
   FEndedThreads.Free;
   FThreads.Free;
+  FLock.Free;
   FEvents.Free;
   FClientLibrary := nil;
   inherited Destroy;
@@ -763,34 +951,29 @@ begin
   if (Sender is TSIBEventThread) then
   begin
     // Remove terminating thread from thread list
-    EndedOnItsOwn := FThreads.Remove(Sender) >= 0;
+    EndedOnItsOwn := RemoveThread(TSIBEventThread(Sender));
 
     // if any thread had an exception, then unregister everything
     if (TSIBEventThread(Sender).ReturnValue = 1) then
     begin
-      if Registered then
-        UnRegisterEvents;
+      StopThreads;
 
       // Clear the thread exception
       ThreadException := False;
     end;
     // The thread waits for this call to return: it is freed later, by FreeEndedThreads
     if EndedOnItsOwn then
-      FEndedThreads.Add(Sender);
+      AddEndedThread(TSIBEventThread(Sender));
   end;
 end;
 
-// Frees the threads that ended with an error; their ThreadEnded calls have returned
+// Frees the threads that ended with an error or were stopped by their handler
 procedure TSIBEventAlerter.FreeEndedThreads;
 var
   Thread: TSIBEventThread;
 begin
-  while (FEndedThreads.Count > 0) do
-  begin
-    Thread := TSIBEventThread(FEndedThreads[FEndedThreads.Count - 1]);
-    FEndedThreads.Delete(FEndedThreads.Count - 1);
+  while TakeEndedThread(Thread) do
     Thread.Free;
-  end;
 end;
 
 function TSIBEventAlerter.GetNativeHandle: SIB_DBHandle;

@@ -17,6 +17,8 @@ unit FIBSQLLog;
 
 interface
 
+{$I FIB.inc}
+
 uses
   SysUtils, Classes,
   FIBTestInfo, FIBInterfaces, FIBDatabase, FIBProps, FIB, StdFuncs,
