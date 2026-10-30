@@ -169,55 +169,37 @@ begin
 
 end;
 
+// The text BLOB column of the open query, nil if there is none of that name
+function FindTextBlobField(Query: TpFIBQuery; const BlobFieldName: string): TFIBXSQLVAR;
+begin
+  Result := nil;
+  if not Query.Open then
+    Exit;
+  Result := Query.FindField(BlobFieldName);
+  if (Result <> nil) and ((Result.Data^.sqltype and (not 1) <> SQL_BLOB) or
+    (Result.Data^.sqlsubtype <> isc_blob_text)) then
+    Result := nil;
+end;
+
 function TpFIBQuery.BlobToStrings(const BlobFieldName: string; Destination: Tstrings): boolean;
 var
-  bs: TFIBBlobStream;
-  fi: integer;
-  fld: TFIBXSQLVAR;
+  Field: TFIBXSQLVAR;
 begin
-  Result := false;
-  if not Open or (Destination = nil) then
-    Exit;
-  fi := GetFieldIndex(BlobFieldName);
-  if fi < 0 then
-    Exit;
-  fld := FieldByName(BlobFieldName);
-  if (fld.data.sqltype and (not 1) <> SQL_BLOB) then
-    Exit;
-  if (fld.data.sqlsubtype <> isc_blob_text) then
-    Exit;
-
-  bs := TFIBBlobStream.Create;
-  with bs do
-    try
-      try
-        Mode := bmRead;
-        Database := Self.Database;
-        Transaction := Self.Transaction;
-        BlobID := fld.AsQuad;
-        Seek(0, soFromBeginning);
-        Destination.LoadFromStream(bs);
-        Result := true;
-      except
-        Result := false
-      end
-    finally
-      bs.Free
-    end;
+  Field := FindTextBlobField(Self, BlobFieldName);
+  Result := (Field <> nil) and (Destination <> nil);
+  if Result then
+    Destination.Text := Field.AsString;
 end;
 
 function TpFIBQuery.BlobAsString(const BlobFieldName: string): string;
 var
-  ts: Tstrings;
+  Field: TFIBXSQLVAR;
 begin
-  Result := '';
-  ts := TStringList.Create;
-  try
-    if BlobToStrings(BlobFieldName, ts) then
-      Result := ts.Text
-  finally
-    ts.Free
-  end;
+  Field := FindTextBlobField(Self, BlobFieldName);
+  if Field = nil then
+    Result := ''
+  else
+    Result := Field.AsString;
 end;
 
 function TpFIBQuery.FN(const FieldName: string): TFIBXSQLVAR;

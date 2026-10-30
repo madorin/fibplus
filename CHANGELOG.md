@@ -59,6 +59,28 @@
   word or a word with spaces (`shutdown=force, full`) set every bit of the value. The words are
   now trimmed; an unknown word or a number over 255 raises the new `feParamValueInvalid`.
 - macOS: `FreeIBLibrary` did not unload the client library, also at program exit.
+- `CreateDatabase` doubles a quote inside `DBName`, so a path such as
+  `D:\O'Brien\x.fdb` no longer breaks the `CREATE DATABASE` statement.
+- `QueryValue`, `QueryValues` and `Execute` without `ParamValues` set the
+  first parameter to NULL instead of 0. A cached `QueryValue` query no longer
+  keeps the parameter values of its last call.
+- `QueryValue`, `QueryValues` and `Gen_Id` run the query in the database they
+  are called on; before, a transaction of another database ran it there, and a
+  transaction over several databases with no default database gave a nil
+  query.
+- An error in `QueryValue` or `QueryValues` no longer rolls back the
+  transaction passed in `aTransaction` with the work done in it; only the
+  internal transaction is ended, and a failed commit no longer skips the
+  release of the query. `Gen_Id` prefers the transaction passed to it.
+- `DBParams`: `sql_dialect=` without a value no longer raises an access
+  violation, and a value other than 1, 2 or 3 raises `feParamValueInvalid`.
+- `Open` no longer rebuilds the DPB at every connect; it is cached until
+  `DBParams` change, and rebuilt after a failed `GenerateDPB`.
+- `Open` no longer stops at the first error of an `AddEvent(detOnConnect)`
+  handler such as an AutoRegister `TSIBfibEventAlerter`: it completes the
+  connect and raises the first error at the end. At design time, a transaction
+  loaded before its database no longer shows a second error after the
+  connection error.
 
 #### Queries and parameters
 
@@ -110,6 +132,30 @@
 - `TFIBDatabase.QueryValues` of a statement without parameters that returned a row kept it in
   the query cache, while `QueryValue` freed it; only statements with parameters are cached now,
   and only with `aCacheQuery`.
+- A parameter used twice, for columns of different character sets or for a
+  BLOB and a VARCHAR, was converted for the first column only, giving
+  "Malformed string" errors or wrong characters on a NONE connection. Each
+  occurrence now gets the description of its own server parameter, and the
+  other occurrences of a BLOB parameter get its ID, subtype and character set.
+- `TpFIBQuery.BlobToStrings` and `BlobAsString` decoded the text in the system
+  code page whatever the character set of the column, `BlobAsString` added a
+  line break and `BlobToStrings` hid read errors. They now read the text as
+  `AsString` does and raise read errors.
+- `BatchOutputRawFile` wrote the second and later BLOB columns of a row with
+  the earlier BLOBs of that row in front of them.
+- `CutAlias` returned `AS X` as the alias of `T AS X`, so alias lookups failed
+  for tables aliased with `AS`.
+- `FormatIdentifier` and `EasyFormatIdentifier` did not double a quote inside a
+  quoted name; `EquelStrings` compared by a code difference of 32, so `'T0'`
+  matched `'TP'`. It now folds only ASCII letters.
+- `TableAliasForField` of `TFIBQuery` and `TpFIBDataSet` returned a table
+  alias that needs quotes in quotes (`"MyAlias"`); it now returns it unquoted,
+  as the server stores it, also when read from the SQL text or a loaded
+  stream. The generated SQL does not change; `Field.Origin` with
+  `forTableAliasAndFieldName` changes the same way.
+- The primary key, table ID and dataset info queries of `pFIBDataInfo` ran in
+  the default database of the transaction; they run in their own database, and
+  `DBPrimaryKeyFields` has an optional `Database` parameter.
 
 #### Datasets and fields
 
@@ -210,6 +256,31 @@
   Win64, and `AsLargeInt :=` of both fields failed beyond 9.2E14.
 - `TpFIBClientDataSet` ignored the scale of a stored BCD value with fewer decimals than the
   field.
+- An unquoted lowercase table alias in `AutoUpdateOptions.UpdateTableName` or
+  in `SelectSQL` was taken in lowercase, so no field matched and the generated
+  statements left out every field (`pfSetReadOnlyFields` made all of them
+  read-only). Such an alias is read as uppercase; a quoted one keeps its case.
+  A quoted mixed-case `UpdateTableName` with an alias in `SelectSQL` is found.
+- `SeparateBlobUpdate` prepared the BLOB update statement again at every post;
+  the text is compared first.
+- With a separate `UpdateTransaction`, the refresh after an applied insert,
+  update or delete runs in `UpdateTransaction`.
+- An error in `ApplyUpdates`, or in an `AutoCommit` post with `CachedUpdates`,
+  committed the half-done work of the failing row. The row is rolled back to a
+  savepoint, only the rows the cache marks as applied are committed and the
+  original error is raised. With `AutoCommit`, `ApplyUpdates` commits once at
+  the end, and `AfterPost` and `AfterDelete` no longer commit twice.
+- With `UpdateOnlyModifiedFields`, `PSUpdateRecord` reused the statement of the
+  last direct post and lost the changes of other fields; `PSExecuteStatement`
+  takes the database of the dataset.
+- `TFIBBCDField`: `Value :=` with a Currency value wrapped silently on large
+  values. `AsCurrency`, `AsFloat` and `Value` are exact, the display text keeps
+  all digits, and the setters round half away from zero and raise `EOverflow`
+  out of range. In a dataset that is not FIBPlus it no longer reads and writes
+  an `Int64` over the `TBcd` (a heap overrun).
+- `Locate` on NUMERIC keys and `CompareBCD` compare exactly. `TFIBGuidField`
+  returns Null for NULL and stores text in other datasets.
+  `TpFIBClientBCDField` has the same BCD fixes.
 
 #### Events
 
@@ -224,6 +295,12 @@
 - An event thread that ended with an error was never freed: its events stayed queued and its
   buffers leaked. It is freed on the next register or unregister or when the alerter is
   destroyed. Its error text is read with `fb_interpret` where the client has it.
+- An `OnEventAlert` handler of `TSIBfibEventAlerter` that called
+  `UnRegisterEvents`, set `Registered := False`, closed the database or freed
+  the alerter hung waiting for its own event thread. A thread is no longer
+  waited for from its own handler, and the thread lists are guarded by a
+  critical section. With `VCLSynchronize = False`, a failed event thread no
+  longer reads the error text through `Synchronize`.
 
 #### Errors and messages
 
@@ -276,6 +353,18 @@
   with argument") instead of its message.
 - Typos and stray blanks in the English and Russian messages; two Russian
   messages (`feCantUseField`, `feFeatureNotSupported`) had a wrong grammar.
+- On Firebird 2.5 with a NONE connection, user exception texts with non-ASCII
+  characters showed U+FFFD. Text that is not valid UTF-8 is decoded in the
+  system code page, and the Windows texts of network errors
+  (`isc_arg_win32`) always are.
+- `TpFIBErrorHandler` takes `ExceptionName` and `ExceptionNumber` from the
+  status vector, so a name with a dot is not cut and Firebird 6 no longer
+  gives "PUBLIC". New `EFIBError.ErrorNumber` reads a number argument of the
+  status vector.
+- The English message of `SetParamValues` lost its typo ("equel").
+- `CompareVariants` raised `EConvertError` for a number compared with text
+  that is not a number; that text is compared as text, a date with a date text
+  as a date, and an integer with a decimal text as a number.
 
 #### Services
 
@@ -303,6 +392,9 @@
   wrong length; it raises an error now. A `BufferSize` of 65536 or more was cut
   to 2 bytes (65536 gave "Unexpected Output buffer value"); the service API gets
   at most 65535 bytes.
+- `GetNextChunk`, `GetNextLine` and `GetNextBuf` read the chunk length as a
+  signed number and raised "Unexpected Output buffer value" for chunks of 32768
+  bytes or more.
 
 #### Schema cache
 
@@ -340,6 +432,17 @@
   `GetObjectDDL` of a database trigger leaked one object on each call.
 - `TpFIBDBSchemaExtract.GetObjectDDL` of a package or a PSQL function on a server before
   Firebird 3 raised "Table unknown" instead of returning an empty string.
+- `TpFIBDBSchemaExtract` extracts PSQL functions and packages by default
+  (`DefObjects`), so a script whose procedures call them runs.
+- `GetDDLText` raised for a table with an expression index and for a DDL
+  trigger, and the stub of a procedure without output parameters failed on
+  Firebird 3+. `TYPE OF COLUMN` parameters were written as `TYPE OF` their
+  domain, and `DESCENDING UNIQUE` or inactive indexes gave invalid DDL.
+- The extract lost parameter defaults, collations, the names of UNIQUE
+  constraints, partial index conditions, `START WITH` and `INCREMENT BY` of
+  sequences and identity columns, and `INACTIVE` of triggers. Grantee names are
+  quoted, a non-ASCII exception message is no longer double-encoded, and
+  database and DDL triggers come at the end of the script.
 
 #### Scripter
 
@@ -367,6 +470,8 @@
   statement failed; the mark is skipped (the file is still read in the system code page).
 - `TpFIBScripter.LineCountInCurrentFile` kept the line count of a file run by `INPUT` after it
   returned to the calling file.
+- `TpFIBScripter` opened the `SET BLOBFILE` file with the sharing mode in the
+  place of the rights argument, so it was not opened for shared reading.
 
 #### SQL monitor
 
@@ -433,6 +538,15 @@
   the designer extension (`Form1.Query1.SQL` instead of `dfm.Form1.Query1.SQL`), so the IDE
   could not find the component of the tab ("Unable to find component") and the edited text was
   not written back to the property.
+- SQL editor: pasting text copied with sections added a line break after it,
+  and characters above #255 were measured in bold instead of the style of
+  their token, so the caret and selection drifted on Cyrillic or CJK text.
+  Each editor leaked the syntax data of its lines.
+- `RegUtils.WriteToRegistry` did not write ShortInt, Byte and WideString
+  values.
+- The packages `FIBPlus_XE2` and `FIBPlus_XE4` included `FIBPlus.inc` in the
+  package source and did not compile. The `RELEASE` define of the package
+  projects keeps the inherited defines.
 
 ## [7.9.1] - 2026-10-09
 

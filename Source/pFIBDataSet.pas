@@ -836,15 +836,15 @@ begin
   PRecordData(Buff)^.rdFlags := byte(cusUnmodified);
   SetModified(False);
   WriteRecordCache(PRecordData(Buff)^.rdRecordNumber, Buff);
-  // if not CachedUpdates then
-  AutoCommitUpdateTransaction;
+  if not CachedUpdates then
+    AutoCommitUpdateTransaction;
 
   if not EmptyStrings(FQRefresh.SQL) and (poRefreshAfterPost in Options) and
     (CacheModelOptions.CacheModelKind = cmkStandard) then
   begin
     DoBeforeRefresh;
 
-    if InternalRefreshRow(FQRefresh, Buff) and (StreamFieldCount > 0) then
+    if RefreshAppliedRow(Buff) and (StreamFieldCount > 0) then
     begin
       UpdateFieldStreams(Buff, ufsClearOldValue, False, False);
       if CachedUpdates then
@@ -882,7 +882,7 @@ begin
   ExecUpdateObjects(ukDelete, Buff, oeAfterDefault);
   if poRefreshAfterDelete in Options then
   begin
-    vNeedDeleteFromCache := not InternalRefreshRow(QRefresh, Buff);
+    vNeedDeleteFromCache := not RefreshAppliedRow(Buff);
   end
   else
     vNeedDeleteFromCache := True;
@@ -988,7 +988,6 @@ begin
   if AutoCommit and CachedUpdates then
   begin
     ApplyUpdToBase;
-    AutoCommitUpdateTransaction;
     CommitUpdToCach
   end;
   if (dcForceMasterRefresh in FDetailConditions) and not CachedUpdates then
@@ -1080,7 +1079,6 @@ begin
   if AutoCommit and CachedUpdates then
   begin
     ApplyUpdToBase;
-    AutoCommitUpdateTransaction;
     CommitUpdToCach
   end;
   inherited
@@ -1726,6 +1724,9 @@ var
   RecordsInExecBlock: array of integer;
   BlockErrorHandled: boolean;
   SQL: Widestring;
+  UseSavepoints: Boolean;
+  RunSavepoint, RowSavepoint: string;
+  CurrentRow: Integer;
   procedure SaveFlagsForRecordsInExecBlock;
   var
     j: integer;
@@ -1797,164 +1798,272 @@ var
     AddRecordToListInExecBlock;
   end;
 
+  function SavepointsSupported: Boolean;
+  begin
+    Result := FCachedUpdates and (UpdateTransaction <> nil) and UpdateTransaction.InTransaction and
+      (Database <> nil) and (UpdateTransaction.MainDatabase = Database) and Database.IsFirebirdConnect and
+      (Database.ServerMajorVersion >= 2);
+  end;
+
+  function SavepointName(const Prefix: string): string;
+  begin
+    // OnUpdateRecord may apply the updates of another dataset in the same transaction
+    Result := Prefix + IntToHex(NativeInt(Self), SizeOf(Pointer) * 2);
+  end;
+
+  // The row runs more than one statement: it can fail after a statement that changed data
+  function RowCanFailHalfDone: Boolean;
+  begin
+    Result := not FAutoUpdateOptions.UseExecuteBlock and
+      (Assigned(FOnUpdateRecord) or (ListForUO(UpdateKind).Count > 0) or
+      ((UpdateKind = ukDelete) and (poRefreshAfterDelete in Options)));
+  end;
+
+  procedure StartRow;
+  begin
+    CurrentRow := i;
+    // Under the run savepoint a row needs its own only when OnUpdateError can continue the run
+    if UseSavepoints and RowCanFailHalfDone and ((RunSavepoint = '') or Assigned(FOnUpdateError)) then
+    begin
+      RowSavepoint := SavepointName('FIB_ROW_');
+      UpdateTransaction.SetSavePoint(RowSavepoint);
+    end;
+  end;
+
+  procedure RollBackRow;
+  begin
+    if RowSavepoint = '' then
+      Exit;
+    UpdateTransaction.RollBackToSavePoint(RowSavepoint);
+    // Nothing of the row is in the database: it stays pending
+    PRecordData(Buff)^.rdFlags := Byte(cus);
+    WriteRecordCache(CurrentRow, Buff);
+  end;
+
+  procedure FinishRow;
+  var
+    Savepoint: string;
+  begin
+    CurrentRow := -1;
+    if RowSavepoint = '' then
+      Exit;
+    Savepoint := RowSavepoint;
+    RowSavepoint := '';
+    UpdateTransaction.ReleaseSavePoint(Savepoint);
+  end;
+
+  // The database and the cache flags agree afterwards; it raises nothing, the caller raises the error
+  procedure UndoFailedRun;
+  var
+    RowUndone: Boolean;
+  begin
+    try
+      if RunSavepoint <> '' then
+      begin
+        // DontChangeCacheFlags: every row stays pending, so nothing of the run stays in the database
+        UpdateTransaction.RollBackToSavePoint(RunSavepoint);
+        UpdateTransaction.ReleaseSavePoint(RunSavepoint);
+        if CurrentRow >= 0 then
+        begin
+          PRecordData(Buff)^.rdFlags := Byte(cus);
+          WriteRecordCache(CurrentRow, Buff);
+        end;
+      end
+      else if not DontChangeCacheFlags then
+      begin
+        RowUndone := RowSavepoint <> '';
+        RollBackRow;
+        // The cache marks the rows before the failed one applied: they are committed
+        if RowUndone or (CurrentRow < 0) or not RowCanFailHalfDone then
+          AutoCommitUpdateTransaction;
+      end;
+    except
+      // The error that stopped the run is raised
+    end;
+    RowSavepoint := '';
+  end;
+
 begin
   if State in [dsEdit, dsInsert] then
     Post;
   if FRecordCount = 0 then
     Exit;
   AutoStartUpdateTransaction;
+  UseSavepoints := SavepointsSupported;
+  RunSavepoint := '';
+  RowSavepoint := '';
+  CurrentRow := -1;
   Buff := AllocRecordBuffer;
   try
-    bRecordsSkipped := False;
-    BlockErrorHandled := False;
-    for i := 0 to Pred(FRecordCount) do
+    // Without changing the cache flags a failed run leaves nothing in the database
+    if UseSavepoints and DontChangeCacheFlags then
     begin
-      ReadRecordCache(i, Buff, False);
-      with PRecordData(Buff)^ do
+      RunSavepoint := SavepointName('FIB_RUN_');
+      UpdateTransaction.SetSavePoint(RunSavepoint);
+    end;
+    try
+      bRecordsSkipped := False;
+      BlockErrorHandled := False;
+      for i := 0 to Pred(FRecordCount) do
       begin
-        if TCachedUpdateStatus(rdFlags) in [cusUnmodified, cusUnInserted, cusDeletedApplied] then
-          Continue;
-        cus := TCachedUpdateStatus(rdFlags and 7);
-        FUpdatesPending := True;
-        case TCachedUpdateStatus(rdFlags and 7) of
-          cusModified: UpdateKind := ukModify;
-          cusInserted: UpdateKind := ukInsert;
-          cusDeleted: UpdateKind := ukDelete;
-        else
-          Continue
-        end;
-        try
-          vTypeDispositionField := dfRRecNumber;
-          vInspectRecno := i;
-          if (Assigned(FOnUpdateRecord)) then
-          begin
-            UpdateAction := uaRetry;
-            while UpdateAction = uaRetry do
-            begin
-              UpdateAction := uaFail;
-              FOnUpdateRecord(Self, UpdateKind, UpdateAction);
-            end
-          end
-          else
-            UpdateAction := uaApply;
-          vTypeDispositionField := dfNormal;
-        except
-          on E: EFIBError do
-          begin
-            UpdateAction := uaFail;
-            if Assigned(FOnUpdateError) then
-              FOnUpdateError(Self, E, UpdateKind, UpdateAction);
-            vTypeDispositionField := dfNormal;
-            case UpdateAction of
-              uaFail: raise;
-              uaAbort: raise EAbort.Create(E.Message);
-            end;
-            case UpdateAction of
-              uaFail: FIBError(feUserAbort, [nil]);
-              uaAbort:
-                raise EAbort.Create(Format(SFIBErrorAbortUpdates, [iifStr(Self.Owner <> nil, Self.Owner.Name + '.', ''),
-                  Self.Name]));
-              uaSkip: bRecordsSkipped := True
-            end;
-          end;
-        end;
-
-        while (UpdateAction in [uaApply, uaRetry]) do
+        ReadRecordCache(i, Buff, False);
+        with PRecordData(Buff)^ do
         begin
+          if TCachedUpdateStatus(rdFlags) in [cusUnmodified, cusUnInserted, cusDeletedApplied] then
+            Continue;
+          cus := TCachedUpdateStatus(rdFlags and 7);
+          FUpdatesPending := True;
+          case TCachedUpdateStatus(rdFlags and 7) of
+            cusModified: UpdateKind := ukModify;
+            cusInserted: UpdateKind := ukInsert;
+            cusDeleted: UpdateKind := ukDelete;
+          else
+            Continue
+          end;
+          StartRow;
           try
             vTypeDispositionField := dfRRecNumber;
             vInspectRecno := i;
-            case TCachedUpdateStatus(rdFlags and 7) of
-              cusModified:
-                if CanEdit then
-                begin
-                  if FAutoUpdateOptions.UseExecuteBlock then
-                  begin
-                    AddRecordToExecuteBlock(skModify);
-                  end
-                  else
-                  begin
-                    AutoGenerateSQLText(dsEdit);
-                    InternalPostRecord(FQUpdate, Buff);
-                  end;
-                end;
-              cusInserted:
-                if CanInsert then
-                begin
-                  if FAutoUpdateOptions.UseExecuteBlock then
-                  begin
-                    AddRecordToExecuteBlock(FIBDataSet.skInsert)
-                  end
-                  else
-                  begin
-                    AutoGenerateSQLText(dsInsert);
-                    InternalPostRecord(FQInsert, Buff);
-                  end
-                end;
-              cusDeleted:
-                if CanDelete then
-                  if FAutoUpdateOptions.UseExecuteBlock then
-                  begin
-                    AddRecordToExecuteBlock(FIBDataSet.skDelete);
-                  end
-                  else
-                  begin
-                    InternalDeleteRecord(FQDelete, Buff);
-                  end
-            end;
-            if DontChangeCacheFlags and not FAutoUpdateOptions.UseExecuteBlock then
+            if (Assigned(FOnUpdateRecord)) then
             begin
-              // Restore CU status
-              rdFlags := byte(cus);
-              WriteRecordCache(i, Buff);
-            end;
-            UpdateAction := uaApplied;
-
-            if Assigned(FAfterUpdateRecord) then
-            begin
-              vResume := True;
-              FAfterUpdateRecord(Self, UpdateKind, vResume);
-              if not vResume then
-                Abort;
-            end;
-
+              UpdateAction := uaRetry;
+              while UpdateAction = uaRetry do
+              begin
+                UpdateAction := uaFail;
+                FOnUpdateRecord(Self, UpdateKind, UpdateAction);
+              end
+            end
+            else
+              UpdateAction := uaApply;
+            vTypeDispositionField := dfNormal;
           except
-            (*
-              * If there is an exception, then allow the user
-              * to intervene (decide what to do about it).
-            *)
             on E: EFIBError do
             begin
-              // a failed block was already reported to OnUpdateError
-              if BlockErrorHandled then
-                raise;
+              RollBackRow;
               UpdateAction := uaFail;
               if Assigned(FOnUpdateError) then
                 FOnUpdateError(Self, E, UpdateKind, UpdateAction);
+              vTypeDispositionField := dfNormal;
               case UpdateAction of
                 uaFail: raise;
                 uaAbort: raise EAbort.Create(E.Message);
-                uaSkip: bRecordsSkipped := True;
+              end;
+              case UpdateAction of
+                uaFail: FIBError(feUserAbort, [nil]);
+                uaAbort:
+                  raise EAbort.Create(Format(SFIBErrorAbortUpdates, [iifStr(Self.Owner <> nil, Self.Owner.Name + '.', ''),
+                    Self.Name]));
+                uaSkip: bRecordsSkipped := True
               end;
             end;
           end;
+
+          while (UpdateAction in [uaApply, uaRetry]) do
+          begin
+            try
+              vTypeDispositionField := dfRRecNumber;
+              vInspectRecno := i;
+              case TCachedUpdateStatus(rdFlags and 7) of
+                cusModified:
+                  if CanEdit then
+                  begin
+                    if FAutoUpdateOptions.UseExecuteBlock then
+                    begin
+                      AddRecordToExecuteBlock(skModify);
+                    end
+                    else
+                    begin
+                      AutoGenerateSQLText(dsEdit);
+                      InternalPostRecord(FQUpdate, Buff);
+                    end;
+                  end;
+                cusInserted:
+                  if CanInsert then
+                  begin
+                    if FAutoUpdateOptions.UseExecuteBlock then
+                    begin
+                      AddRecordToExecuteBlock(FIBDataSet.skInsert)
+                    end
+                    else
+                    begin
+                      AutoGenerateSQLText(dsInsert);
+                      InternalPostRecord(FQInsert, Buff);
+                    end
+                  end;
+                cusDeleted:
+                  if CanDelete then
+                    if FAutoUpdateOptions.UseExecuteBlock then
+                    begin
+                      AddRecordToExecuteBlock(FIBDataSet.skDelete);
+                    end
+                    else
+                    begin
+                      InternalDeleteRecord(FQDelete, Buff);
+                    end
+              end;
+              if DontChangeCacheFlags and not FAutoUpdateOptions.UseExecuteBlock then
+              begin
+                // Restore CU status
+                rdFlags := byte(cus);
+                WriteRecordCache(i, Buff);
+              end;
+              FinishRow;
+              UpdateAction := uaApplied;
+
+              if Assigned(FAfterUpdateRecord) then
+              begin
+                vResume := True;
+                FAfterUpdateRecord(Self, UpdateKind, vResume);
+                if not vResume then
+                  Abort;
+              end;
+
+            except
+              (*
+                * If there is an exception, then allow the user
+                * to intervene (decide what to do about it).
+              *)
+              on E: EFIBError do
+              begin
+                // a failed block was already reported to OnUpdateError
+                if BlockErrorHandled then
+                  raise;
+                RollBackRow;
+                UpdateAction := uaFail;
+                if Assigned(FOnUpdateError) then
+                  FOnUpdateError(Self, E, UpdateKind, UpdateAction);
+                case UpdateAction of
+                  uaFail: raise;
+                  uaAbort: raise EAbort.Create(E.Message);
+                  uaSkip: bRecordsSkipped := True;
+                end;
+              end;
+            end;
+          end;
+          FinishRow;
         end;
       end;
+
+      // more than the EXECUTE BLOCK line: records without changes add no statement
+      if FAutoUpdateOptions.UseExecuteBlock and (FExecBlockStatement <> nil) then
+        if FExecBlockStatement.Count > 1 then
+          ExecuteBlock
+        else
+        begin
+          FExecBlockStatement.Clear;
+          SaveFlagsForRecordsInExecBlock;
+        end;
+
+      FUpdatesPending := bRecordsSkipped;
+    except
+      UndoFailedRun;
+      raise;
     end;
-
-    // more than the EXECUTE BLOCK line: records without changes add no statement
-    if FAutoUpdateOptions.UseExecuteBlock and (FExecBlockStatement <> nil) then
-      if FExecBlockStatement.Count > 1 then
-        ExecuteBlock
-      else
-      begin
-        FExecBlockStatement.Clear;
-        SaveFlagsForRecordsInExecBlock;
-      end;
-
-    FUpdatesPending := bRecordsSkipped;
-    if not FUpdatesPending then
-      AutoCommitUpdateTransaction;
+    // Skipped records stay cached, the applied ones are committed
+    if FAutoCommit then
+      AutoCommitUpdateTransaction
+    else if RunSavepoint <> '' then
+      UpdateTransaction.ReleaseSavePoint(RunSavepoint);
 
   finally
     if Assigned(FExecBlockStatement) then
@@ -1964,7 +2073,6 @@ begin
     RefreshClientFields
   end;
 end;
-
 function TpFIBDataSet.RecordStatus(RecNumber: integer): TUpdateStatus;
 var
   Buff: TRecordBuffer;
@@ -2073,11 +2181,12 @@ begin
         if AutoUpdateOptions.AutoReWriteSqls then
         begin
           RelTable := FormatIdentifier(Database.SQLDialect, RelTable);
-          Fields[i].ReadOnly := not EquelStrings(RelTable, vModifyTable, False);
+          // Both are formatted identifiers: a quoted name is case sensitive
+          Fields[i].ReadOnly := RelTable <> vModifyTable;
           if not Fields[i].ReadOnly and AutoUpdateOptions.ModifiedTableHaveAlias then
           begin
             Fields[i].ReadOnly := not IsEquelSQLNames
-              (TableAliasForField(Fields[i].FieldName), vModifyTableAlias);
+              (FormatIdentifier(3, TableAliasForField(Fields[i].FieldName)), vModifyTableAlias);
           end;
         end
         else if not CachedUpdates or not Assigned(OnUpdateRecord) then
@@ -2948,7 +3057,7 @@ begin
       else
       begin
         FormatTableName := EasyFormatIdentifier(SQLDialect, CutTableName(TableName), EasyFormatsStr);
-        vAliasTableName := EasyFormatIdentifier(SQLDialect, CutAlias(TableName), EasyFormatsStr);
+        vAliasTableName := NormalizeIdentifier(SQLDialect, CutAlias(TableName));
       end;
   end;
 
@@ -3083,7 +3192,7 @@ begin
         end;
 
       FieldTableName := EasyFormatIdentifier(Database.SQLDialect, GetRelationTableName(Fields[i]), False);
-      FieldTableAlias := TableAliasForField(Fields[i].FieldName)
+      FieldTableAlias := EasyFormatIdentifier(Database.SQLDialect, TableAliasForField(Fields[i].FieldName), False);
     end;
 
     if (FieldTableName <> FormatTableName) or (FieldTableAlias <> vAliasTableName) then
@@ -3225,7 +3334,7 @@ begin
       else
       begin
         FormatTableName := EasyFormatIdentifier(SQLDialect, CutTableName(TableName), EasyFormatsStr);
-        vAliasTableName := EasyFormatIdentifier(SQLDialect, CutAlias(TableName), EasyFormatsStr);
+        vAliasTableName := NormalizeIdentifier(SQLDialect, CutAlias(TableName));
       end;
   end;
 
@@ -3401,12 +3510,12 @@ begin
         end;
 
       FieldTableName := EasyFormatIdentifier(Database.SQLDialect, GetRelationTableName(Fields[i]), False);
-      FieldTableAlias := TableAliasForField(Fields[i].FieldName)
+      FieldTableAlias := EasyFormatIdentifier(Database.SQLDialect, TableAliasForField(Fields[i].FieldName), False);
     end
     else
     begin
       FieldTableName := EasyFormatIdentifier(Database.SQLDialect, GetRelationTableName(FieldDefs[i]), False);
-      FieldTableAlias := TableAliasForField(FieldDefs[i].Name)
+      FieldTableAlias := EasyFormatIdentifier(Database.SQLDialect, TableAliasForField(FieldDefs[i].Name), False);
     end;
 
     if (FieldTableName <> FormatTableName) or (FieldTableAlias <> vAliasTableName) then
@@ -3552,6 +3661,8 @@ begin
 end;
 
 procedure TpFIBDataSet.GenerateUpdateBlobsSQL;
+var
+  BlobsSQL: string;
 begin
   with FAutoUpdateOptions do
     if SeparateBlobUpdate and (BlobFieldCount > 0) then
@@ -3565,7 +3676,9 @@ begin
         ExecuteOrder := oeAfterDefault;
         KindUpdate := ukModify;
         DataSet := Self;
-        FBlobsUpdate.SQL.Text := GenerateSQLText(UpdateTableName, KeyFields, skModify, ifsOnlyBlob);
+        BlobsSQL := GenerateSQLText(UpdateTableName, KeyFields, skModify, ifsOnlyBlob);
+        if BlobsSQL <> TrimRight(SQL.Text) then
+          SQL.Text := BlobsSQL;
         if (SQL.Count > 0) and (SQL[0] <> SNoAction) then
           Active := True;
       end;
@@ -4256,6 +4369,21 @@ begin
     else
       MainQry := QDelete;
     end;
+    // UpdateOnlyModifiedFields: the statement of the last direct post holds only the fields it changed
+    with FAutoUpdateOptions do
+      if (UpdateKind <> ukDelete) and UpdateOnlyModifiedFields and (KeyFields <> '') and
+        (UpdateTableName <> '') then
+      begin
+        UpdateOnlyModifiedFields := False;
+        try
+          if UpdateKind = ukModify then
+            MainQry.SQL.Text := GenerateSQLText(UpdateTableName, KeyFields, skModify)
+          else
+            MainQry.SQL.Text := GenerateSQLText(UpdateTableName, KeyFields, FIBDataSet.skInsert);
+        finally
+          UpdateOnlyModifiedFields := True;
+        end;
+      end;
     // No Action sends nothing and the row counts as applied, as in a direct post or delete
     NoAction := (MainQry.SQL.Count > 0) and (MainQry.SQL[0] = SNoAction);
     if NoAction and (UpdateKind = ukDelete) then
@@ -4324,7 +4452,7 @@ begin
   if ResultSet = nil then
   begin
     // shared by the query cache: keeps the Session value, a StatementTimeout would leak to other users
-    vQuery := GetQueryForUse(UpdateTransaction, sqlStr);
+    vQuery := GetQueryForUse(Database, UpdateTransaction, sqlStr);
     try
       AssignParams(vQuery);
       vQuery.ExecQuery;

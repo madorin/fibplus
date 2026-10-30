@@ -1989,7 +1989,9 @@ begin
               SQL_BLOB:
                 begin
                   if bs = nil then
-                    bs := TMemoryStream.Create;
+                    bs := TMemoryStream.Create
+                  else
+                    bs.Size := 0;
                   Columns[i].SaveToStream(bs);
                   Bytes := bs.Size;
                   WriteValue(Bytes, SizeOf(Integer));

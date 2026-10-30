@@ -3104,7 +3104,7 @@ begin
       else
       begin
         if not Assigned(FBlobFileStream) then
-          FBlobFileStream := TFileStream.Create(FBlobFile, fmOpenRead, fmShareDenyWrite);
+          FBlobFileStream := TFileStream.Create(FBlobFile, fmOpenRead or fmShareDenyWrite);
         Data := TMemoryStream.Create;
         try
           try

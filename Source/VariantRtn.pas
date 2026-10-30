@@ -84,6 +84,113 @@ begin
       Result := -1;
 end;
 
+function CompareNumbers(const Value, Number: Extended): Integer;
+begin
+  if Value = Number then
+    Result := 0
+  else
+    if Value > Number then
+      Result := 1
+    else
+      Result := -1;
+end;
+
+function CompareTexts(const ValueText, Text: string): Integer;
+begin
+  Result := AnsiCompareStr(ValueText, Text);
+  if Result > 0 then
+    Result := 1
+  else
+    if Result < 0 then
+      Result := -1;
+end;
+
+function TextToFloat(const Text: string; var Number: Extended): Boolean;
+begin
+{$IFDEF D7+}
+  Result := TryStrToFloat(Text, Number);
+{$ELSE}
+  try
+    Number := StrToFloat(Text);
+    Result := True;
+  except
+    Result := False;
+  end;
+{$ENDIF}
+end;
+
+function TextToInt64(const Text: string; var Number: Int64): Boolean;
+begin
+{$IFDEF D7+}
+  Result := TryStrToInt64(Text, Number);
+{$ELSE}
+  try
+    Number := StrToInt64(Text);
+    Result := True;
+  except
+    Result := False;
+  end;
+{$ENDIF}
+end;
+
+function TextToDateTime(const Text: string; var Date: TDateTime): Boolean;
+begin
+{$IFDEF D7+}
+  Result := TryStrToDateTime(Text, Date);
+{$ELSE}
+  try
+    Date := StrToDateTime(Text);
+    Result := True;
+  except
+    Result := False;
+  end;
+{$ENDIF}
+end;
+
+// A text that is not a number is compared with the number as text, without raising
+function CompareFloatAndText(const Value: Extended; const Text: string): Integer;
+var
+  Number: Extended;
+begin
+  if TextToFloat(Text, Number) then
+    Result := CompareNumbers(Value, Number)
+  else
+    Result := CompareTexts(FloatToStr(Value), Text);
+end;
+
+function CompareInt64AndText(const Value: Int64; const Text: string): Integer;
+var
+  Number: Int64;
+begin
+  if TextToInt64(Text, Number) then
+  begin
+    if Value = Number then
+      Result := 0
+    else
+      if Value > Number then
+        Result := 1
+      else
+        Result := -1;
+  end
+  else
+    Result := CompareFloatAndText(Value, Text);
+end;
+
+// A text that is neither a number nor a date is compared with the date as text
+function CompareDateAndText(const Value: TDateTime; const Text: string): Integer;
+var
+  Number: Extended;
+  Date: TDateTime;
+begin
+  if TextToFloat(Text, Number) then
+    Result := CompareNumbers(Value, Number)
+  else
+    if TextToDateTime(Text, Date) then
+      Result := CompareNumbers(Value, Date)
+    else
+      Result := CompareTexts(DateTimeToStr(Value), Text);
+end;
+
 {$DEFINE BODY_NUMERIC_COMPARE_EQ}
 {$WARNINGS OFF}
 
@@ -98,7 +205,9 @@ function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
         function ComparePCurrencyAndVariant(P: PCurrency; const v: Variant): integer;
 {$I VarFnc.inc}
           function ComparePDateAndVariant(P: PDateTime; const v: Variant): integer;
+{$DEFINE C_DATE}
 {$I VarFnc.inc}
+{$UNDEF C_DATE}
             function ComparePInt64AndVariant(P: PInt64; const v: Variant): integer;
 {$DEFINE C_INT64}
 {$I VarFnc.inc}

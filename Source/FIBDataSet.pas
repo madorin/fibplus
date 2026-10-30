@@ -345,7 +345,9 @@ type
   private
     FDataAsComp: Boolean;
     FDataSet: TDataSet;
+    function HasScaledData: Boolean;
     function ServerType: Integer;
+    procedure WriteScaled(Value: Int64);
   protected
     procedure LoadRoundByScale(Reader: TReader);
     procedure DefineProperties(Filer: TFiler); override;
@@ -366,6 +368,7 @@ type
     function GetAsExtended: Extended; {$IFDEF D2009+} override; {$ENDIF}
     procedure SetAsExtended(Value: Extended); {$IFDEF D2009+} override; {$ENDIF}
     function GetAsFloat: Double; override;
+    procedure SetAsFloat(Value: Double); override;
 {$IFDEF D2010+}
     function GetAsLargeInt: Largeint; override;
     procedure SetAsLargeInt(Value: Largeint); override;
@@ -838,6 +841,7 @@ type
 
     procedure InternalPostRecord(Qry: TFIBQuery; Buff: Pointer); virtual;
     function InternalRefreshRow(Qry: TFIBQuery; Buff: TRecordBuffer): Boolean;
+    function RefreshAppliedRow(Buff: TRecordBuffer): Boolean;
     procedure InternalRevertRecord(RecordNumber: Integer; WithUnInserted: Boolean);
     function IsVisibleStat(Buffer: TRecordBuffer): Boolean;
     function IsVisible(Buffer: TRecordBuffer): Boolean; virtual;
@@ -1568,6 +1572,10 @@ uses
 const
   DiffSizesRecData = SizeOf(TRecordData) - SizeOf(TSavedRecordData);
   LocateParamPrefix = 'LOCATE_';
+
+type
+  // SetTempState and RestoreState of any dataset
+  TUnprotectedDataSet = class(TDataSet);
 
   // INT128, DECFLOAT(16) and DECFLOAT(34) values are cached in the server format
 function CacheToDecimal(fi: PFIBFieldDescr; Data: Pointer): TFBDecimal;
@@ -2336,11 +2344,11 @@ begin
   if FieldKind in [fkData, fkInternalCalc] then
     begin
       SaveState := DataSet.State;
-      TFIBCustomDataSet(DataSet).SetTempState(dsOldValue);
+      TUnprotectedDataSet(DataSet).SetTempState(dsOldValue);
       try
         Result := AsLargeInt;
       finally
-        TFIBCustomDataSet(DataSet).RestoreState(SaveState);
+        TUnprotectedDataSet(DataSet).RestoreState(SaveState);
       end;
     end
   else
@@ -3327,7 +3335,7 @@ end;
 
 function TFIBBCDField.GetAsCurrency: Currency;
 begin
-  if (FieldKind = fkCalculated) { or (Scale=-4) } then
+  if not HasScaledData then
     Result := inherited GetAsCurrency
   else if not GetValue(Result) then
     Result := 0;
@@ -3338,7 +3346,7 @@ var
   C: Int64;
   Success: Boolean;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     Result := inherited GetAsString
   else
     begin
@@ -3358,7 +3366,7 @@ var
   C: Int64;
   CurrencyValue: System.Currency;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     Result := inherited GetAsVariant
   else if not GetData(@C) then
     Result := Null
@@ -3381,31 +3389,28 @@ begin
 end;
 
 function TFIBBCDField.GetDataSize: Integer;
-var
-  lTF: TField;
 begin
-  case FieldKind of
-    fkCalculated: Result := inherited GetDataSize;
-    fkLookup:
-      if Assigned(LookupDataSet) then
-        begin
-          lTF := LookupDataSet.FindField(LookupResultField);
-          if Assigned(lTF) then
-            Result := lTF.DataSize
-          else
-            Result := SizeOf(Int64);
-        end
-      else
-        Result := SizeOf(Int64);
-    else
-      Result := 8;
-      {
-      if (ServerType=SQL_DOUBLE) then
-      Result := 8
-      else
-      Result := SizeOf(Int64);
-    }
-  end
+  // also a lookup field: its value is assigned through SetVarValue
+  if HasScaledData then
+    Result := SizeOf(Int64)
+  else
+    Result := inherited GetDataSize;
+end;
+
+// A FIBPlus dataset stores an Int64 scaled by Size; a calculated field and another dataset store
+// the TBcd of TBCDField
+function TFIBBCDField.HasScaledData: Boolean;
+begin
+  Result := (FieldKind <> fkCalculated) and (DataSet is TFIBCustomDataSet);
+end;
+
+procedure TFIBBCDField.WriteScaled(Value: Int64);
+begin
+{$IFDEF D_XE3}
+  TFIBCustomDataSet(DataSet).SetFieldData(Self, @Value);
+{$ELSE}
+  SetData(@Value);
+{$ENDIF}
 end;
 
 function TFIBBCDField.ServerType: Integer;
@@ -3413,11 +3418,11 @@ var
   fi: PFIBFieldDescr;
 begin
 
-  if (FieldKind <> fkData) or not(DataSet is TFIBDataSet) then
+  if (FieldKind <> fkData) or not(DataSet is TFIBCustomDataSet) then
     Result := -1
   else
     begin
-      fi := TFIBDataSet(DataSet).vFieldDescrList[FieldNo - 1];
+      fi := TFIBCustomDataSet(DataSet).vFieldDescrList[FieldNo - 1];
       Result := fi.fdDataType;
     end;
 end;
@@ -3430,7 +3435,7 @@ var
   Format: TFloatFormat;
   bcdValue: TBcd;
 begin
-  if FieldKind in [fkCalculated] then
+  if not HasScaledData then
     inherited GetText(Text, DisplayText)
   else
     begin
@@ -3466,7 +3471,7 @@ begin
                           Format := ffCurrency
                         else
                           Format := ffFixed;
-                        Text := CurrToStrF(TC * E10[-Size], Format, Digits);
+                        Text := ScaledCurrToStrF(TC, Size, Format, Digits);
                       end
                     else
                       begin
@@ -3475,7 +3480,7 @@ begin
                       end;
                   end
                 else if Size = 4 then
-                  Text := FormatCurr(FmtStr, TC * E10[-Size])
+                  Text := FormatCurr(FmtStr, PCurrency(@TC)^)
                 else
                   begin
                     Text := FormatNumericString(FmtStr, Int64WithScaleToStr(TC, Size, DecimalSeparator));
@@ -3489,7 +3494,7 @@ function TFIBBCDField.GetValue(var Value: Currency): Boolean;
 var
   C: Int64;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     Result := inherited GetValue(Value)
   else if Size = 4 then
     Result := GetData(@Value)
@@ -3505,7 +3510,7 @@ end;
 
 procedure TFIBBCDField.SetAsString(const Value: string); // override;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     inherited SetAsString(Value)
   else
     begin
@@ -3525,45 +3530,36 @@ end;
 
 procedure TFIBBCDField.SetAsCurrency(Value: Currency);
 var
-  C: Comp;
+  C: Int64;
+  Rounded: System.Currency;
 begin
-  if FieldKind = fkCalculated then
-    inherited SetAsCurrency(Value)
-  else
-    try
-      if Size = 0 then
-        begin
-          C := Value;
-  {$IFDEF D_XE3}
-          TFIBDataSet(DataSet).SetFieldData(Self, @C);
-  {$ELSE}
-          SetData(@C);
-  {$ENDIF}
-        end
+  if not HasScaledData then
+    begin
+      inherited SetAsCurrency(Value);
+      Exit;
+    end;
+  // exact, rounded half away from zero as AsBCD and AsString
+  if not RescaleInt64(PInt64(@Value)^, 4, Size, C) then
+    raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
+  try
+    if (MinValue <> 0) or (MaxValue <> 0) then
+      begin
+        Rounded := Value;
+        if Size < 4 then
+          RescaleInt64(C, Size, 4, PInt64(@Rounded)^);
+        if (Rounded < MinValue) or (Rounded > MaxValue) then
+          RangeError(Rounded, MinValue, MaxValue);
+      end;
+    WriteScaled(C);
+  except
+    on E: Exception do
+      if Assigned(OnValidate) then
+        raise
+      else if Self.Name = '' then
+        raise Exception.Create(CmpFullName(Self) + '.' + FieldName + sLineBreak + E.Message)
       else
-        begin
-          if (MinValue <> 0) or (MaxValue <> 0) then
-            begin
-              Value := RoundExtend(Value, Size);
-              if (Value < MinValue) or (Value > MaxValue) then
-                RangeError(Value, MinValue, MaxValue);
-            end;
-          C := Value * E10[Size];
-  {$IFDEF D_XE3}
-          TFIBDataSet(DataSet).SetFieldData(Self, @C);
-  {$ELSE}
-          SetData(@C);
-  {$ENDIF}
-        end;
-    except
-      on E: Exception do
-        if Assigned(OnValidate) then
-          raise
-        else if Self.Name = '' then
-          raise Exception.Create(CmpFullName(Self) + '.' + FieldName + sLineBreak + E.Message)
-        else
-          raise Exception.Create(CmpFullName(Self) + sLineBreak + E.Message)
-    end
+        raise Exception.Create(CmpFullName(Self) + sLineBreak + E.Message);
+  end;
 end;
 
 function TFIBBCDField.GetAsExtended: Extended;
@@ -3572,7 +3568,7 @@ var
   Success: Boolean;
 begin
   // A calculated field holds a TBcd
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
   begin
 {$IFDEF D2009+}
     Result := inherited GetAsExtended;
@@ -3585,23 +3581,17 @@ begin
   if not Success then
     Result := 0
   else
-    Result := C * E10[-Size]
+    // the nearest Double: 10^-Size is not exact
+    Result := C / IE10[Size];
 end;
 
 function TFIBBCDField.GetAsFloat: Double;
-var
-  C: Int64;
-  CurrencyValue: System.Currency;
 begin
-  // TBCDField reads it through AsCurrency: 4 decimals and the Currency range
-  if FieldKind = fkCalculated then
+  // TBCDField.GetAsExtended of a calculated field calls GetAsFloat
+  if not HasScaledData then
     Result := inherited GetAsFloat
-  else if not GetData(@C) then
-    Result := 0
-  else if (Size <= 4) and RescaleInt64(C, Size, 4, PInt64(@CurrencyValue)^) then
-    Result := CurrencyValue
   else
-    Result := C * E10[-Size];
+    Result := GetAsExtended;
 end;
 
 {$IFDEF D2010+}
@@ -3610,7 +3600,7 @@ function TFIBBCDField.GetAsLargeInt: Largeint;
 var
   C: Int64;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     Result := inherited GetAsLargeInt
   else if not GetData(@C) then
     Result := 0
@@ -3621,7 +3611,7 @@ end;
 // TBCDField goes through Currency, which overflows beyond 9.2E14
 procedure TFIBBCDField.SetAsLargeInt(Value: Largeint);
 begin
-  if (FieldKind = fkCalculated) or (MinValue <> 0) or (MaxValue <> 0) then
+  if not HasScaledData or (MinValue <> 0) or (MaxValue <> 0) then
     inherited SetAsLargeInt(Value)
   else
     SetAsInt64(Value);
@@ -3643,7 +3633,7 @@ end;
 
 procedure TFIBBCDField.SetAsComp(Value: Comp);
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     inherited SetVarValue(Value)
   else if Size = 0 then
     SetData(@Value)
@@ -3656,7 +3646,7 @@ function TFIBBCDField.GetAsBCD: TBcd;
 var
   C: Int64;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     Result := inherited GetAsBCD
   else
     begin
@@ -3671,46 +3661,38 @@ var
   C: Int64;
   lScale: Byte;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     inherited SetAsBCD(Value)
   else
     begin
       if not BCDToInt64WithScale(Value, C, lScale) or not RescaleInt64(C, lScale, Size, C) then
         raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
-  {$IFDEF D_XE3}
-      TFIBDataSet(DataSet).SetFieldData(Self, @C);
-  {$ELSE}
-      SetData(@C);
-  {$ENDIF}
+      WriteScaled(C);
     end
 end;
 
 procedure TFIBBCDField.SetVarValue(const Value: Variant);
-var
-  C: Comp;
 begin
   if VarIsNull(Value) then
     Clear
   else
     try
-      if FieldKind = fkCalculated then
+      if not HasScaledData then
         inherited SetVarValue(Value)
 
       else
         case VarType(Value) of
-          varInt64: SetAsInt64(Value);
+          varCurrency:
+            SetAsCurrency(Value);
+          varShortInt, varByte, varSmallint, varWord, varInteger, varLongWord, varInt64{$IFDEF D2009+}, varUInt64{$ENDIF}:
+            SetAsInt64(Value);
+        else
+          if VarIsStr(Value) then
+            SetAsString(Value)
+          else if VarIsFMTBcd(Value) then
+            SetAsBCD(VarToBcd(Value))
           else
-            if VarIsFMTBcd(Value) then
-              AsBcd := VarToBcd(Value)
-            else
-              begin
-                C := Value * E10[Size];
-    {$IFDEF D_XE3}
-                TFIBDataSet(DataSet).SetFieldData(Self, @C);
-    {$ELSE}
-                SetData(@C);
-    {$ENDIF}
-              end
+            SetAsExtended(Value);
         end;
     except
       on EVariantError do
@@ -3731,7 +3713,7 @@ var
   Value: System.Currency;
 begin
   // A calculated field gives the Currency bits: FieldModified compares it only by null
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
   begin
     ValueIsNull := not GetValue(Value);
     if ValueIsNull then
@@ -3752,11 +3734,11 @@ begin
   if FieldKind in [fkData, fkInternalCalc] then
     begin
       SaveState := DataSet.State;
-      TFIBCustomDataSet(DataSet).SetTempState(dsOldValue);
+      TUnprotectedDataSet(DataSet).SetTempState(dsOldValue);
       try
         Result := GetInternalData(OldIsNull);
       finally
-        TFIBCustomDataSet(DataSet).RestoreState(SaveState);
+        TUnprotectedDataSet(DataSet).RestoreState(SaveState);
       end;
     end
   else
@@ -3769,7 +3751,7 @@ end;
 function TFIBBCDField.GetAsInt64: Int64;
 begin
   // A calculated field holds a TBcd
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     Result := Trunc(inherited GetAsCurrency)
   else if not GetData(@Result) then
     Result := 0
@@ -3781,29 +3763,23 @@ procedure TFIBBCDField.SetAsInt64(const Value: Int64);
 var
   C: Int64;
 begin
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
     inherited SetVarValue(Value)
-  else if Size = 0 then
-    SetData(@Value)
   else
   begin
     // Exact, Extended loses digits on Win64
     if not RescaleInt64(Value, 0, Size, C) then
       raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
-{$IFDEF D_XE3}
-    TFIBDataSet(DataSet).SetFieldData(Self, @C);
-{$ELSE}
-    SetData(@C);
-{$ENDIF}
+    WriteScaled(C);
   end;
 end;
 
 procedure TFIBBCDField.SetAsExtended(Value: Extended);
 var
-  RndComp: Comp;
+  C: Int64;
 begin
   // A calculated field holds a TBcd
-  if FieldKind = fkCalculated then
+  if not HasScaledData then
   begin
 {$IFDEF D2009+}
     inherited SetAsExtended(Value);
@@ -3812,34 +3788,39 @@ begin
 {$ENDIF}
     Exit;
   end;
-  try
-    RndComp := Value * E10[Size];
-  except
-    on E: Exception do
-      begin
-        if Self.Name = '' then
-          raise Exception.Create(CmpFullName(Self) + '.' + FieldName + sLineBreak + E.Message)
-        else
-          raise Exception.Create(CmpFullName(Self) + sLineBreak + E.Message)
-      end;
-  end;
-{$IFDEF D_XE3}
-  TFIBDataSet(DataSet).SetFieldData(Self, @RndComp);
-{$ELSE}
-  SetData(@RndComp);
-{$ENDIF}
+  if ExtendedToScaledInt64(Value, Size, C) then
+    WriteScaled(C)
+  else
+    raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
 end;
 
-function TFIBBCDField.GetData(Buffer: Pointer): Boolean;
+// Through AsExtended: TBCDField goes through Currency
+procedure TFIBBCDField.SetAsFloat(Value: Double);
 begin
-  if FieldKind = fkCalculated then
-    Result := inherited GetData(Buffer)
+  // TField.SetAsExtended of another dataset calls SetAsFloat
+  if not HasScaledData then
+    inherited SetAsFloat(Value)
   else
+    SetAsExtended(Value);
+end;
+
+// The value as an Int64 scaled by Size
+function TFIBBCDField.GetData(Buffer: Pointer): Boolean;
+var
+  CurrencyValue: System.Currency;
+begin
+  if HasScaledData then
     try
       FDataAsComp := True;
       Result := inherited GetData(Buffer);
     finally
-      FDataAsComp := false
+      FDataAsComp := False;
+    end
+  else
+    begin
+      Result := inherited GetValue(CurrencyValue);
+      if Result and not RescaleInt64(PInt64(@CurrencyValue)^, 4, Size, PInt64(Buffer)^) then
+        raise EOverflow.CreateFmt(SFieldOutOfRange, [DisplayName]);
     end;
 end;
 
@@ -5561,7 +5542,7 @@ begin
     Qry.Next;
   if poRefreshAfterDelete in Options then
     begin
-      vNeedDeleteFromCache := not InternalRefreshRow(QRefresh, Buff);
+      vNeedDeleteFromCache := not RefreshAppliedRow(Buff);
     end
   else
     vNeedDeleteFromCache := True;
@@ -5828,6 +5809,21 @@ begin
 end;
 
 {$WARNINGS OFF}
+
+// The refresh after a write: while the write is not committed, only UpdateTransaction sees it
+function TFIBCustomDataSet.RefreshAppliedRow(Buff: TRecordBuffer): Boolean;
+var
+  RefreshTransaction: TFIBTransaction;
+begin
+  RefreshTransaction := FQRefresh.Transaction;
+  if (UpdateTransaction <> nil) and UpdateTransaction.InTransaction then
+    FQRefresh.Transaction := UpdateTransaction;
+  try
+    Result := InternalRefreshRow(FQRefresh, Buff);
+  finally
+    FQRefresh.Transaction := RefreshTransaction;
+  end;
+end;
 
 function TFIBCustomDataSet.InternalRefreshRow(Qry: TFIBQuery; Buff: TRecordBuffer): Boolean;
 var
@@ -7154,7 +7150,7 @@ begin
   else
     begin
       tf := FBN(aFieldName);
-      if Assigned(tf) and (tf.FieldKind = fkData) and (vFieldDescrList.Capacity > tf.FieldNo) then
+      if Assigned(tf) and (tf.FieldKind = fkData) and (tf.FieldNo > 0) and (tf.FieldNo <= vFieldDescrList.Capacity) then
         begin
           fi := vFieldDescrList[tf.FieldNo - 1];
           Result := fi^.fdTableAlias
@@ -12876,7 +12872,10 @@ end;
 
 function TFIBGuidField.GetAsVariant: Variant;
 begin
-  Result := GetAsString
+  if IsNull then
+    Result := Null
+  else
+    Result := GetAsString;
 end;
 
 procedure TFIBGuidField.SetAsVariant(const Value: Variant);
@@ -12890,7 +12889,11 @@ begin
   else
     begin
       GuidValue := StringAsGuid(AnsiString(sValue));
-      SetData(@GuidValue)
+      if DataSet is TFIBCustomDataSet then
+        SetData(@GuidValue)
+      else
+        // another dataset stores the text, as for TGuidField
+        inherited SetAsString(GUIDToString(GuidValue));
     end;
 end;
 
@@ -12906,12 +12909,15 @@ procedure TFIBGuidField.SetAsGuid(const Value: TGUID);
 begin
   if IsEqualGUIDs(Value, fibGUID_NULL) then
     Clear
-  else
+  else if DataSet is TFIBCustomDataSet then
 {$IFDEF D_XE3}
-    TFIBDataSet(DataSet).SetFieldData(Self, @Value);
+    TFIBCustomDataSet(DataSet).SetFieldData(Self, @Value)
 {$ELSE}
-    SetData(@Value);
+    SetData(@Value)
 {$ENDIF}
+  else
+    // another dataset stores the text, as for TGuidField
+    inherited SetAsString(GUIDToString(Value));
 end;
 
 procedure TFIBGuidField.SetAsString(const Value: string);

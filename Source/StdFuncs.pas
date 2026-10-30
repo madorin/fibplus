@@ -74,6 +74,10 @@ function Int64ToBCD(Value: Int64; Scale: Integer; var BCD: TBCD): Boolean;
 // HalfToEven, as Round); False on overflow
 function RescaleInt64(Value: Int64; FromScale, ToScale: Integer; var Rescaled: Int64;
   HalfToEven: Boolean = False): Boolean;
+// Value * 10^Scale (Scale 0..18) rounded half away from zero; False when it doesn't fit Int64
+function ExtendedToScaledInt64(Value: Extended; Scale: Integer; var Scaled: Int64): Boolean;
+// CurrToStrF of a value scaled by Scale, rounded once to Digits; exact beyond the Currency range
+function ScaledCurrToStrF(Value: Int64; Scale: Integer; Format: TFloatFormat; Digits: Integer): string;
 
 function BCDToExtended(BCD: TBCD; var Value: Extended): Boolean;
 function BCDToCompWithScale(BCD: TBCD; var Value: Int64; var Scale: byte): Boolean;
@@ -615,6 +619,104 @@ begin
   end;
 end;
 
+function ExtendedToScaledInt64(Value: Extended; Scale: Integer; var Scaled: Int64): Boolean;
+const
+  // 2^63, exact in floating point
+  Int64Limit = 9223372036854775808.0;
+var
+  Product, IntegerPart: Extended;
+begin
+  Product := Value * E10[Scale];
+  Result := (Product > -2 * Int64Limit) and (Product < 2 * Int64Limit);
+  if not Result then
+    Exit;
+  IntegerPart := Int(Product);
+  if Product - IntegerPart >= 0.5 then
+    IntegerPart := IntegerPart + 1
+  else if Product - IntegerPart <= -0.5 then
+    IntegerPart := IntegerPart - 1;
+  Result := (IntegerPart >= -Int64Limit) and (IntegerPart < Int64Limit);
+  if Result then
+    Scaled := Trunc(IntegerPart);
+end;
+
+// The format of CurrToStrF for FormatNumericString
+function CurrToStrFFormat(Format: TFloatFormat; Digits: Integer): string;
+var
+  Number, Symbol, Positive, Negative: string;
+begin
+  Number := '0';
+  if Digits > 0 then
+    Number := Number + '.' + StringOfChar('0', Digits);
+  if Format <> ffCurrency then
+  begin
+    Result := Number;
+    Exit;
+  end;
+  Number := '#,##' + Number;
+{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+  begin
+    if Pos('"', CurrencyString) = 0 then
+      Symbol := '"' + CurrencyString + '"'
+    else
+      Symbol := '''' + CurrencyString + '''';
+    case CurrencyFormat of
+      0: Positive := Symbol + Number;
+      1: Positive := Number + Symbol;
+      2: Positive := Symbol + ' ' + Number;
+    else
+      Positive := Number + ' ' + Symbol;
+    end;
+    case NegCurrFormat of
+      0: Negative := '(' + Symbol + Number + ')';
+      2: Negative := Symbol + '-' + Number;
+      3: Negative := Symbol + Number + '-';
+      4: Negative := '(' + Number + Symbol + ')';
+      5: Negative := '-' + Number + Symbol;
+      6: Negative := Number + '-' + Symbol;
+      7: Negative := Number + Symbol + '-';
+      8: Negative := '-' + Number + ' ' + Symbol;
+      9: Negative := '-' + Symbol + ' ' + Number;
+      10: Negative := Number + ' ' + Symbol + '-';
+      11: Negative := Symbol + ' ' + Number + '-';
+      12: Negative := Symbol + ' -' + Number;
+      13: Negative := Number + '- ' + Symbol;
+      14: Negative := '(' + Symbol + ' ' + Number + ')';
+      15: Negative := '(' + Number + ' ' + Symbol + ')';
+    else
+      Negative := '-' + Symbol + Number;
+    end;
+  end;
+  Result := Positive + ';' + Negative;
+end;
+
+function ScaledCurrToStrF(Value: Int64; Scale: Integer; Format: TFloatFormat; Digits: Integer): string;
+var
+  Rounded: Int64;
+  Places: Integer;
+begin
+  // half to even, as CurrToStrF
+  Places := Digits;
+  if Places < 0 then
+    Places := 0
+  else if Places > 4 then
+    Places := 4;
+  if Scale > Places then
+    RescaleInt64(Value, Scale, Places, Rounded, True)
+  else
+  begin
+    Rounded := Value;
+    Places := Scale;
+  end;
+  // Currency has 4 decimals
+  if ((Digits <= 4) or (Scale <= 4)) and RescaleInt64(Rounded, Places, 4, Rounded) then
+    Result := CurrToStrF(PCurrency(@Rounded)^, Format, Digits)
+  else
+{$IFDEF D_XE3}with FormatSettings do {$ENDIF}
+    Result := FormatNumericString(CurrToStrFFormat(Format, Digits),
+      Int64WithScaleToStr(Value, Scale, DecimalSeparator));
+end;
+
 function BCDToCompWithScale(BCD: TBCD; var Value: Int64; var Scale: byte): Boolean;
 begin
   Result := BCDToInt64WithScale(BCD, Value, Scale)
@@ -1111,17 +1213,8 @@ begin
 end;
 
 function CompareBCD(const BCD1, BCD2: TBCD): Integer;
-var
-  e1, e2: Extended;
 begin
-  BCDToExtended(BCD1, e1);
-  BCDToExtended(BCD2, e2);
-  if e1 = e2 then
-    Result := 0
-  else if e1 < e2 then
-    Result := -1
-  else
-    Result := 1
+  Result := BcdCompare(BCD1, BCD2);
 end;
 
 function Int64WithScaleToStr(Value: Int64; Scale: Integer; DSep: Char): string;

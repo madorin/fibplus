@@ -129,6 +129,8 @@ function StrIsInteger(const Str: string): Boolean;
 function FormatIdentifierValue(Dialect: Integer; const Value: string): string; {$IFDEF D2007+} inline; {$ENDIF}
 function FormatIdentifier(Dialect: Integer; const Value: string): string; {$IFDEF D2007+} inline; {$ENDIF}
 function NormalizeName(Dialect: Integer; const Name: string): string; {$IFDEF D2007+} inline; {$ENDIF}
+function UnquoteIdentifier(const Value: string): string;
+function NormalizeIdentifier(Dialect: Integer; const Value: string): string;
 function EasyFormatIdentifier(Dialect: Integer; const Value: string; DoEasy: Boolean): string; {$IFDEF D2007+} inline; {$ENDIF}
 function EquelNames(CI: Boolean; const Value, Value1: String): Boolean; {$IFDEF D2007+} inline; {$ENDIF}
 function NeedQuote(const Name: string): Boolean;
@@ -967,7 +969,7 @@ begin
       b := NeedQuote(Value);
     if b then
       if (Length(Value) > 0) and (Value[1] <> '"') then
-        Result := '"' + Value + '"'
+        Result := '"' + ReplaceStr(Value, '"', '""') + '"'
       else
         Result := Value
     else if (Length(Value) > 0) and (Value[1] <> '"') then
@@ -982,7 +984,7 @@ begin
   if Dialect = 1 then
     Result := UpperCase(Trim(Value))
   else if NeedQuote(Value) then
-    Result := '"' + Value + '"'
+    Result := '"' + ReplaceStr(Value, '"', '""') + '"'
   else
     Result := Value
 end;
@@ -995,6 +997,21 @@ begin
     Result := Name
   else
     Result := UpperCase(Name)
+end;
+
+// An identifier as the server stores it: '"My ""T"""' -> 'My "T"', 'abc' -> 'ABC'
+function UnquoteIdentifier(const Value: string): string;
+begin
+  if (Value <> '') and (Value[1] = '"') then
+    Result := ReplaceStr(Copy(Value, 2, Length(Value) - 2), '""', '"')
+  else
+    Result := UpperCase(Value);
+end;
+
+// An identifier written in SQL, formatted as the generated SQL writes it: 'a' -> 'A', '"A"' -> 'A', '"a"' -> '"a"'
+function NormalizeIdentifier(Dialect: Integer; const Value: string): string;
+begin
+  Result := FormatIdentifier(Dialect, UnquoteIdentifier(Value));
 end;
 
 {$IFDEF CPUX86}
@@ -1562,43 +1579,31 @@ end;
 
 function EquelStrings(const S, S1: string; CaseSensitive: Boolean): Boolean;
 var
-  L: Integer;
-  Source, Dest: PChar;
+  I: Integer;
+  Char1, Char2: Char;
 begin
   if CaseSensitive then
   begin
     Result := S = S1;
     Exit;
   end;
-  L := Length(S);
-  if L <> Length(S1) then
-  begin
-    Result := False;
+  Result := False;
+  if Length(S) <> Length(S1) then
     Exit;
-  end;
-  Source := Pointer(S);
-  Dest := Pointer(S1);
-  while L <> 0 do
+  // Only the ASCII letters are folded
+  for I := 1 to Length(S) do
   begin
-    if Source^ > Dest^ then
+    Char1 := S[I];
+    Char2 := S1[I];
+    if Char1 <> Char2 then
     begin
-      if (Byte(Source^) - 32) <> Byte(Dest^) then
-      begin
-        Result := False;
+      if (Char1 >= 'a') and (Char1 <= 'z') then
+        Dec(Char1, 32);
+      if (Char2 >= 'a') and (Char2 <= 'z') then
+        Dec(Char2, 32);
+      if Char1 <> Char2 then
         Exit;
-      end;
-    end
-    else if Source^ < Dest^ then
-    begin
-      if (Byte(Source^) + 32) <> Byte(Dest^) then
-      begin
-        Result := False;
-        Exit;
-      end;
     end;
-    Inc(Source);
-    Inc(Dest);
-    Dec(L);
   end;
   Result := True;
 end;

@@ -201,6 +201,7 @@ type
     FDBParamsChanged: Boolean; // Flag to determine if DPB must be regenerated
     FDPB: PAnsiChar; // Parameters to DB as passed to IB.
     FDPBLength: Short; // Length of parameter buffer
+    FDPBIsFirebird: Boolean; // ConnectParams.IsFirebird of FDPB
     FHandle: TISC_DB_HANDLE; // DB's handle
     FHandleIsShared: Boolean; // Is the handle shared with another DB?
     FUseLoginPrompt: Boolean; // Show a default login prompt?
@@ -235,6 +236,7 @@ type
     FInternalTransaction: TFIBTransaction;
 
     FAfterConnectEvents: TNotifyEventList;
+    FAfterConnectError: TObject;
     FBeforeDisconnectEvents: TNotifyEventList;
     FBeforeDestroyEvents: TNotifyEventList;
 
@@ -1708,7 +1710,13 @@ begin
       begin
         if not Connected then
           Break;
-        FAfterConnectEvents.Event[i](Self)
+        // Open raises the first error once the connect is complete
+        try
+          FAfterConnectEvents.Event[i](Self);
+        except
+          if FAfterConnectError = nil then
+            FAfterConnectError := AcquireExceptionObject;
+        end;
       end;
 end;
 
@@ -1743,7 +1751,7 @@ begin
   LoadLibrary;
   tr_handle := nil;
   Call(FClientLibrary.isc_dsql_execute_immediate(StatusVector, @FHandle,
-    @tr_handle, 0, PAnsiChar('CREATE DATABASE ''' + AnsiString(FDBName) + ''' ' +
+    @tr_handle, 0, PAnsiChar('CREATE DATABASE ' + AnsiString(QuotedStr(FDBName)) + ' ' +
     AnsiString(DBParams.Text)), SQLDialect, nil), True);
   FConnectionSerial := NextConnectionSerial;
 
@@ -2238,6 +2246,7 @@ var
   UseCryptKey: Boolean;
   AttachName: AnsiString;
   UTF8Name: UTF8String;
+  PendingError: TObject;
 begin
   // isc_res:=0;
   (*
@@ -2268,13 +2277,15 @@ begin
     (*
       * Generate a new DPB if necessary
     *)
-    if FDBParamsChanged then
+    if FDBParamsChanged or (FDPBIsFirebird <> FConnectParams.IsFirebird) then
       begin
-        FDBParamsChanged := False;
         GenerateDPB(FDBParams, DPB, FDPBLength, FConnectParams.IsFirebird,
           (FClientLibrary.Version.Product = fpFirebird) and (FClientLibrary.Version.Major >= 3));
         FIBAlloc(FDPB, 0, FDPBLength);
         Move(DPB[1], FDPB[0], FDPBLength);
+        FDPBIsFirebird := FConnectParams.IsFirebird;
+        // only now: GenerateDPB raises for a wrong line and the next open must build it again
+        FDBParamsChanged := False;
       end;
     (*
       * Attach to the database, and raise an IB error if
@@ -2345,15 +2356,28 @@ begin
   if FSynchronizeTime and not(csDesigning in ComponentState) then
     FDifferenceTime := Now - GetServerTime;
   FConnectType := 0;
-  DoOnConnect;
-  for i := 0 to FFIBBases.Count - 1 do
+  FAfterConnectError := nil;
+  try
+    DoOnConnect;
+    for i := 0 to FFIBBases.Count - 1 do
+      begin
+        if not Connected then
+          Break;
+        FIBBases[i].FOnDatabaseConnected;
+      end;
+    if Assigned(FSQLLogger) then
+      FSQLLogger.WriteData(CmpFullName(Self), 'Connect', '', lfConnect);
+  except
+    FAfterConnectError.Free;
+    FAfterConnectError := nil;
+    raise;
+  end;
+  if FAfterConnectError <> nil then
     begin
-      if not Connected then
-        Break;
-      FIBBases[i].FOnDatabaseConnected;
+      PendingError := FAfterConnectError;
+      FAfterConnectError := nil;
+      raise PendingError;
     end;
-  if Assigned(FSQLLogger) then
-    FSQLLogger.WriteData(CmpFullName(Self), 'Connect', '', lfConnect);
 end;
 
 procedure TFIBDatabase.DoCryptKeyRequest(Sender: TObject; const Data: FIBByteString; var Key: FIBByteString);
@@ -3704,69 +3728,71 @@ function TFIBDatabase.InternalQueryValue(const aSQL: string; FieldNo: Integer;
   aCacheQuery: Boolean): variant;
 var
   Query: TFIBQuery;
+  Tr: TFIBTransaction;
   i: Integer;
   c: Integer;
-  HasParams: Boolean;
-
+  CacheQuery: Boolean;
 begin
   Result := False;
   if Assigned(aTransaction) then
-    Query := GetQueryForUse(aTransaction, aSQL)
+    Tr := aTransaction
   else
-    Query := GetQueryForUse(FInternalTransaction, aSQL);
-  HasParams := Query.Params.Count > 0;
-  with Query.Params do
-    if High(ParamValues) < Count - 1 then
-      c := High(ParamValues)
-    else
-      c := Count - 1;
-
-  with Query do
+    Tr := FInternalTransaction;
+  // The database is given: the default database of Tr may be another one
+  Query := GetQueryForUse(Self, Tr, aSQL);
+  CacheQuery := aCacheQuery and (Query.Params.Count > 0);
+  try
+    if not Tr.Active then
+      Tr.StartTransaction;
     try
-      if not Transaction.Active then
-        Transaction.StartTransaction;
-      try
-        for i := 0 to c do
-          if not VarIsEmpty(ParamValues[i]) then
-            Params[i].Value := ParamValues[i];
-        ExecQuery;
-        if (Current.Count > 0) then
-          if (FieldNo >= 0) then
-            begin
-              if Fields[FieldNo].SQLType = SQL_BLOB then
-                Result := Fields[FieldNo].AsString
+      // Every parameter is set once: a query from the cache keeps the values of its last call,
+      // and a change to NULL and back would prepare it again
+      for i := 0 to Query.Params.Count - 1 do
+        if (i <= High(ParamValues)) and not VarIsEmpty(ParamValues[i]) then
+          Query.Params[i].Value := ParamValues[i]
+        else if Query.Params[i].IsMacro then
+          Query.Params[i].Value := Query.Params[i].DefMacroValue
+        else
+          Query.Params[i].IsNull := True;
+      Query.ExecQuery;
+      if Query.Current.Count > 0 then
+        if FieldNo >= 0 then
+          begin
+            if Query.Fields[FieldNo].SQLType = SQL_BLOB then
+              Result := Query.Fields[FieldNo].AsString
+            else
+              Result := Query.Fields[FieldNo].Value
+          end
+        else
+          begin
+            c := Pred(Query.Current.Count);
+            Result := VarArrayCreate([0, c], varVariant);
+            for i := 0 to c do
+              if Query.Fields[i].SQLType = SQL_BLOB then
+                Result[i] := Query.Fields[i].AsString
               else
-                Result := Fields[FieldNo].Value
-            end
-          else
-            begin
-              c := Pred(Current.Count);
-              Result := VarArrayCreate([0, c], varVariant);
-              for i := 0 to c do
-                if Fields[i].SQLType = SQL_BLOB then
-                  Result[i] := Fields[i].AsString
-                else
-                  Result[i] := Fields[i].Value
-            end;
-      except
-        if Transaction.Active then
-          Transaction.Rollback;
-        raise;
-      end
-    finally
-      if Transaction.InTransaction and (aTransaction = nil) then
-        Transaction.Commit;
-      if HasParams and aCacheQuery then
-        FreeQueryForUse(Query)
-      else
-        Query.Free;
+                Result[i] := Query.Fields[i].Value
+          end;
+    except
+      // Only the internal transaction is ended; a passed transaction stays as it is
+      if (aTransaction = nil) and Tr.Active then
+        Tr.Rollback;
+      raise;
     end;
+    if (aTransaction = nil) and Tr.InTransaction then
+      Tr.Commit;
+  finally
+    if CacheQuery then
+      FreeQueryForUse(Query)
+    else
+      Query.Free;
+  end;
 end;
 
 function TFIBDatabase.QueryValue(const aSQL: string; FieldNo: Integer;
   aTransaction: TFIBTransaction = nil; aCacheQuery: Boolean = True): variant;
 begin
-  Result := InternalQueryValue(aSQL, FieldNo, [varEmpty], aTransaction, aCacheQuery);
+  Result := InternalQueryValue(aSQL, FieldNo, [], aTransaction, aCacheQuery);
 end;
 
 function TFIBDatabase.QueryValue(const aSQL: string; FieldNo: Integer;
@@ -3778,7 +3804,7 @@ end;
 
 function TFIBDatabase.QueryValues(const aSQL: string; aTransaction: TFIBTransaction = nil; aCacheQuery: Boolean = True): variant;
 begin
-  Result := InternalQueryValue(aSQL, -1, [varEmpty], aTransaction, aCacheQuery);
+  Result := InternalQueryValue(aSQL, -1, [], aTransaction, aCacheQuery);
 end;
 
 function TFIBDatabase.QueryValues(const aSQL: string;
@@ -3812,7 +3838,7 @@ function TFIBDatabase.Gen_Id(const GeneratorName: string; Step: Int64; aTransact
 var
   Query: TFIBQuery;
   GenName: string;
-  vTransaction: TFIBTransaction;
+  Tr: TFIBTransaction;
   ForceOpenTr: Boolean;
   NeedSaveGenCache: Boolean;
 begin
@@ -3828,26 +3854,35 @@ begin
   else
     NeedSaveGenCache := False;
 
-  vTransaction := FirstActiveTransaction;
-  if vTransaction = nil then
-    if aTransaction <> nil then
-      vTransaction := aTransaction
-    else
-      vTransaction := FInternalTransaction;
+  if aTransaction <> nil then
+    Tr := aTransaction
+  else
+  begin
+    Tr := FirstActiveTransaction;
+    if Tr = nil then
+      Tr := FInternalTransaction;
+  end;
 
-  Query := GetQueryForUse(vTransaction, 'select gen_id(' + GenName + ', ' + IntToStr(Step) + ') from RDB$DATABASE');
-  with Query, Transaction do
+  Query := GetQueryForUse(Self, Tr, 'select gen_id(' + GenName + ', ' + IntToStr(Step) + ') from RDB$DATABASE');
+  try
+    ForceOpenTr := not Tr.InTransaction;
+    if ForceOpenTr then
+      Tr.StartTransaction;
     try
-      ForceOpenTr := not Transaction.InTransaction;
-      if ForceOpenTr then
-        StartTransaction;
-      ExecQuery;
-      Result := Fields[0].AsInt64;
-      if ForceOpenTr then
-        Commit;
-    finally
-      FreeQueryForUse(Query);
+      Query.ExecQuery;
+      Result := Query.Fields[0].AsInt64;
+      Query.Close;
+    except
+      // only a transaction started here is ended
+      if ForceOpenTr and Tr.InTransaction then
+        Tr.Rollback;
+      raise;
     end;
+    if ForceOpenTr then
+      Tr.Commit;
+  finally
+    FreeQueryForUse(Query);
+  end;
   if NeedSaveGenCache then
     begin
       FGenerators.InternalSetGenParams(GenName, Result);
@@ -4357,11 +4392,12 @@ begin
       on E: Exception do
         begin
           if not(csDesigning in ComponentState) then
-            raise
-          else
-            begin
-              ShowException(E, nil);
-            end;
+            raise;
+          // a database loaded only now by StartTransaction has shown the error of its connect
+          for i := 0 to FDatabases.Count - 1 do
+            if TFIBDatabase(FDatabases.List[i]).FStreammedConnectFail then
+              Exit;
+          ShowException(E, nil);
         end;
     end;
   finally

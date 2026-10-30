@@ -27,7 +27,6 @@ package FIBPlus_XE2;
 {$ENDIF IMPLICITBUILDING}
 {$DESCRIPTION 'FIBPlus'}
 {$IMPLICITBUILD OFF}
-{$I FIBPlus.inc}
 
 requires
   rtl,

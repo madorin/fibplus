@@ -41,6 +41,7 @@ type
     FIBErrorCode: Long;
     FErrorCodes: TFIBErrorCodes;
     FErrorArguments: array of TFIBErrorArguments; // the string arguments of each item of FErrorCodes
+    FErrorNumbers: array of TFIBErrorCodes; // the number arguments of each item of FErrorCodes
     FRaiserName: string; // IMS
     FSQLMessage: string;
     FIBMessage: string;
@@ -64,6 +65,8 @@ type
     function HasErrorCode(Code: Long): Boolean;
     // the Index-th string argument of the first status vector item with Code, '' without one
     function ErrorArgument(Code: Long; Index: Integer = 0): string;
+    // the Index-th number argument of the first status vector item with Code, 0 without one
+    function ErrorNumber(Code: Long; Index: Integer = 0): Long;
     function IsStatementTimeout: Boolean;
     property RaiserName: string read FRaiserName write FRaiserName; // IMS
     property SQLState: FIBByteString read FSQLState;
@@ -423,7 +426,27 @@ end;
   *  exception based on the current values in it.
 *)
 
-// Every gds code of the status vector and the string arguments that follow it; warnings are skipped
+// Bytes that are not valid UTF-8 (the exception texts of Firebird 2.5 on NONE) are in the system code page
+function DecodeStatusText(Buffer: PAnsiChar; Length: Integer; CodePage: Word): string;
+begin
+  if CodePage = FIBCodePageUTF8 then
+    Result := DecodeServerText(Buffer, Length)
+  else
+    Result := DecodeString(Buffer, Length, CodePage);
+end;
+
+// The client writes the text of an operating system error code in the system code page
+function StatusItemCodePage(Status: PISC_STATUS; CodePage: Word): Word;
+begin
+  case Status^ of
+    isc_arg_unix, isc_arg_dos, isc_arg_win32:
+      Result := FIBCodePageSystem;
+  else
+    Result := CodePage;
+  end;
+end;
+
+// Every gds code of the status vector and the string and number arguments that follow it; warnings are skipped
 procedure EFIBError.ReadStatusVector(Status: PISC_STATUS; CodePage: Word);
 var
   Count, Target, Len: Integer;
@@ -437,7 +460,18 @@ var
       Exit;
     Last := Length(FErrorArguments[Target]);
     SetLength(FErrorArguments[Target], Last + 1);
-    FErrorArguments[Target][Last] := DecodeString(PAnsiChar(Argument), Length(Argument), CodePage);
+    FErrorArguments[Target][Last] := DecodeStatusText(PAnsiChar(Argument), Length(Argument), CodePage);
+  end;
+
+  procedure AddNumber(Number: Long);
+  var
+    Last: Integer;
+  begin
+    if Target < 0 then
+      Exit;
+    Last := Length(FErrorNumbers[Target]);
+    SetLength(FErrorNumbers[Target], Last + 1);
+    FErrorNumbers[Target][Last] := Number;
   end;
 
 begin
@@ -445,6 +479,7 @@ begin
   Target := -1;
   FErrorCodes := nil;
   FErrorArguments := nil;
+  FErrorNumbers := nil;
   while Status^ <> isc_arg_end do
     case Status^ of
       isc_arg_gds:
@@ -452,6 +487,7 @@ begin
           Inc(Status);
           SetLength(FErrorCodes, Count + 1);
           SetLength(FErrorArguments, Count + 1);
+          SetLength(FErrorNumbers, Count + 1);
           FErrorCodes[Count] := Long(Status^);
           Target := Count;
           Inc(Count);
@@ -478,8 +514,14 @@ begin
           AddArgument;
           Inc(Status);
         end;
+      isc_arg_number:
+        begin
+          Inc(Status);
+          AddNumber(Long(Status^));
+          Inc(Status);
+        end;
     else
-      Inc(Status, 2); // number, interpreted, sql_state: one value
+      Inc(Status, 2); // interpreted, sql_state, system codes: one value
     end;
 end;
 
@@ -510,7 +552,7 @@ var
   tmpStr: string;
   L: Integer;
   vSQLState: FIBByteString;
-  CodePage: Word;
+  CodePage, ItemCodePage: Word;
 begin
   (*
     * Initialize the working user message.
@@ -556,10 +598,11 @@ begin
     vIBMessage := '';
   if (ShowIBMessage in IBErrorMessages) then
     begin
+      ItemCodePage := StatusItemCodePage(status_vector, CodePage);
       L := ClientLibrary.fb_Interpret(local_buffer, FIBHugeLocalBufferLength, @status_vector);
       while (L > 0) do
         begin
-          tmpStr := DecodeString(local_buffer, L, CodePage);
+          tmpStr := DecodeStatusText(local_buffer, L, ItemCodePage);
 
           if Length(tmpStr) > 0 then
             begin
@@ -570,6 +613,7 @@ begin
                 vIBMessage := vIBMessage + '.';
               vIBMessage := vIBMessage + CRLF;
             end;
+          ItemCodePage := StatusItemCodePage(status_vector, CodePage);
           L := ClientLibrary.fb_Interpret(local_buffer, FIBHugeLocalBufferLength, @status_vector);
         end;
     end;
@@ -754,6 +798,23 @@ begin
   Result := '';
 end;
 
+function EFIBError.ErrorNumber(Code: Long; Index: Integer = 0): Long;
+var
+  I: Integer;
+begin
+  for I := 0 to High(FErrorCodes) do
+    if FErrorCodes[I] = Code then
+    begin
+      if (Index >= 0) and (Index <= High(FErrorNumbers[I])) then
+      begin
+        Result := FErrorNumbers[I][Index];
+        Exit;
+      end;
+      Break;
+    end;
+  Result := 0;
+end;
+
 function EFIBError.IsStatementTimeout: Boolean;
 begin
   Result := (FIBErrorCode = isc_cancelled) and (HasErrorCode(isc_req_stmt_timeout) or
@@ -868,6 +929,7 @@ procedure GenerateDPB(sl: TStrings; var DPB: AnsiString; var DPBLength: Short; I
 var
   i: Integer;
   j, DPBVal: Integer;
+  Dialect: Integer;
   param_name, param_value: AnsiString;
   config: AnsiString;
   Line, Value: string;
@@ -938,11 +1000,10 @@ begin
       * and make sure that the name is all lowercase with
       * no leading 'isc_dpb_' prefix
     *)
-      sl[i] := Trim(sl[i]);
-      if sl[i] = '' then
+      Line := Trim(sl[i]);
+      if Line = '' then
         Continue;
 
-      Line := sl[i];
       j := Pos('=', Line);
       if j = 0 then
         j := Length(Line) + 1;
@@ -985,7 +1046,12 @@ begin
           isc_dpb_sql_dialect, isc_dpb_old_file, isc_dpb_sys_encrypt_password:
           begin
             if DPBVal = isc_dpb_sql_dialect then
-              param_value[1] := AnsiChar(Ord(param_value[1]) - 48);
+              begin
+                Dialect := StrToIntDef(Trim(Value), 0);
+                if (Dialect < 1) or (Dialect > 3) then
+                  FIBError(feParamValueInvalid, [Value, 'DBParams sql_dialect']);
+                param_value := AnsiChar(Dialect);
+              end;
             ApplyStrParam
           end;
         isc_dpb_instance_name:

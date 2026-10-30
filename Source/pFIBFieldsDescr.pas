@@ -69,6 +69,9 @@ type
 
 implementation
 
+uses
+  StrUtil;
+
 { TFIBFieldDescrList }
 
 function TFIBFieldDescrList.Add(afdDataType, afdDataScale, afdDataSize: Short;
@@ -187,7 +190,9 @@ begin
         SetLength(fdTableAlias, c);
         if c > 0 then
           Stream.ReadBuffer(fdTableAlias[1], c);
-
+        // Older streams keep the alias quoted
+        if (c > 0) and (fdTableAlias[1] = '"') then
+          fdTableAlias := UnquoteIdentifier(fdTableAlias);
       end
     end;
   finally

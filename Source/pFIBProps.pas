@@ -1678,21 +1678,37 @@ begin
 end;
 
 procedure TAutoUpdateOptions.PrepareUpdateTableStrings;
+var
+  Dialect: Integer;
+  TableInSQL, TableAlias: string;
 begin
   if Length(FModifiedTable) = 0 then
   begin
+    if Assigned(FOwner) and Assigned(TFIBDataSet(FOwner).Database) then
+      Dialect := TFIBDataSet(FOwner).Database.SQLDialect
+    else
+      Dialect := 3;
     if FModifiedTableHaveAlias then
     begin
       FModifiedTable := CutTableName(UpdateTableName);
-      FAliasModifiedTable := CutAlias(UpdateTableName);
+      FAliasModifiedTable := NormalizeIdentifier(Dialect, CutAlias(UpdateTableName));
     end
     else
     begin
       FModifiedTable := UpdateTableName;
+      FAliasModifiedTable := UpdateTableName;
       if FOwner <> nil then
-        FAliasModifiedTable := AliasForTable(TFIBDataSet(FOwner).QSelect.ReadySQLText(False), UpdateTableName)
-      else
-        FAliasModifiedTable := UpdateTableName;
+      begin
+        // AliasForTable compares SQL text: the stored name is looked up as the generated SQL writes it
+        if Assigned(TFIBDataSet(FOwner).Database) then
+          TableInSQL := EasyFormatIdentifier(Dialect, UpdateTableName, TFIBDataSet(FOwner).Database.EasyFormatsStr)
+        else
+          TableInSQL := FormatIdentifier(Dialect, UpdateTableName);
+        TableAlias := AliasForTable(TFIBDataSet(FOwner).QSelect.ReadySQLText(False), TableInSQL);
+        // An alias found in SelectSQL is SQL text: unquoted means uppercase
+        if TableAlias <> TableInSQL then
+          FAliasModifiedTable := NormalizeIdentifier(Dialect, TableAlias);
+      end;
     end;
     if Assigned(FOwner) and Assigned(TFIBDataSet(FOwner).Database) then
       with TFIBDataSet(FOwner).Database do
