@@ -1961,7 +1961,9 @@ begin
               SQL_BLOB:
                 begin
                   if bs = nil then
-                    bs := TMemoryStream.Create;
+                    bs := TMemoryStream.Create
+                  else
+                    bs.Size := 0;
                   Columns[i].SaveToStream(bs);
                   // a FIBPlus blob holds at most MaxInt bytes
                   Bytes := Integer(bs.Size);

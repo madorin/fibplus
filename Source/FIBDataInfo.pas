@@ -223,7 +223,8 @@ function GetOtherFieldInfo(Field: TField; const InfoName: string): string;
 procedure Update1RepositaryTable(Tr: TFIBTransaction);
 procedure Update2RepositaryTable(Tr: TFIBTransaction);
 
-function DBPrimaryKeyFields(const TableName: string; aTransaction: TFIBTransaction): string;
+function DBPrimaryKeyFields(const TableName: string; aTransaction: TFIBTransaction;
+  Database: TFIBDataBase = nil): string;
 
 implementation
 
@@ -994,7 +995,7 @@ begin
   Result := ExchangeDataSetInfo(DataSet, nil, Name);
 end;
 
-function DoGetTableId(const TableName: string; aTransaction: TFIBTransaction): integer;
+function DoGetTableId(const TableName: string; Database: TFIBDataBase; aTransaction: TFIBTransaction): Integer;
 var
   q: TFIBQuery;
 const
@@ -1002,12 +1003,12 @@ const
     'where RDB$RELATION_NAME=?TN';
 
 begin
-  if (aTransaction = nil) or (aTransaction.DefaultDatabase = nil) then
+  if (aTransaction = nil) or (Database = nil) then
   begin
     Result := -1;
     Exit;
   end;
-  q := GetQueryForUse(aTransaction, STabId);
+  q := GetQueryForUse(Database, aTransaction, STabId);
   with q do
     try
       Params[0].asString := TableName;
@@ -1023,7 +1024,8 @@ begin
     end
 end;
 
-function DBPrimaryKeyFields(const TableName: string; aTransaction: TFIBTransaction): string;
+function DBPrimaryKeyFields(const TableName: string; aTransaction: TFIBTransaction;
+  Database: TFIBDataBase = nil): string;
 var
   q: TFIBQuery;
 const
@@ -1040,12 +1042,14 @@ begin
     Result := '';
     Exit;
   end;
-  if (aTransaction = nil) or (aTransaction.DefaultDatabase = nil) then
+  if (Database = nil) and (aTransaction <> nil) then
+    Database := aTransaction.DefaultDatabase;
+  if (aTransaction = nil) or (Database = nil) then
   begin
     Result := SDefer;
     Exit;
   end;
-  q := GetQueryForUse(aTransaction, SGetPrimary);
+  q := GetQueryForUse(Database, aTransaction, SGetPrimary);
   Result := '';
   with q do
     try
@@ -1188,7 +1192,7 @@ begin
   vTransaction := TFriendDatabase(DB).GetInternalTransaction;
   if FPrimaryKeyFields = SDefer then
   begin
-    FPrimaryKeyFields := DBPrimaryKeyFields(FTableName, vTransaction);
+    FPrimaryKeyFields := DBPrimaryKeyFields(FTableName, vTransaction, DB);
   end;
   Result := FPrimaryKeyFields;
 end;
@@ -1200,7 +1204,7 @@ begin
   vTransaction := TFriendDatabase(DB).GetInternalTransaction;
   if FTableID = -1 then // deffer
   begin
-    FTableID := DoGetTableId(FTableName, vTransaction);
+    FTableID := DoGetTableId(FTableName, DB, vTransaction);
   end;
   Result := FTableID;
 end;
@@ -1314,7 +1318,7 @@ begin
 
   if (FTableName <> 'ALIAS') then
   begin
-    q := GetQueryForUse(vTransaction, FormatNumberSQL);
+    q := GetQueryForUse(DB, vTransaction, FormatNumberSQL);
     with q do
       try
         Options := [qoStartTransaction];
@@ -1328,7 +1332,7 @@ begin
   end;
   if Result and FWithFieldRepositaryInfo and ExistFRepositaryTable(DB) then
   begin
-    q := GetQueryForUse(vTransaction, FI_VersionSQL);
+    q := GetQueryForUse(DB, vTransaction, FI_VersionSQL);
     with q do
       try
         Options := [qoStartTransaction];
@@ -2061,7 +2065,7 @@ begin
   Result := 0;
   if DataSet = nil then
     Exit;
-  q := GetQueryForUse(DataSet.Transaction, 'SELECT FIB$VERSION FROM FIB$DATASETS_INFO WHERE DS_ID=:DS_ID');
+  q := GetQueryForUse(DataSet.Database, DataSet.Transaction, 'SELECT FIB$VERSION FROM FIB$DATASETS_INFO WHERE DS_ID=:DS_ID');
   try
     q.Params[0].asInteger := DataSet.DataSet_ID;
     q.ExecQuery;

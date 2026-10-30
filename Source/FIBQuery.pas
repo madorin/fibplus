@@ -138,6 +138,7 @@ type
     function GetServerSQLSubType: integer;
     function GetServerSQLSize: integer;
     function GetServerSQLScale: integer;
+    function ServerParam: TFIBXSQLVAR;
     // Array Support
 {$IFDEF SUPPORT_ARRAY_FIELD}
     procedure CheckArrayType;
@@ -1851,6 +1852,38 @@ begin
     (SQLType = SQL_TIME_TZ) or (SQLType = SQL_TIMESTAMP_TZ_EX) or (SQLType = SQL_TIME_TZ_EX)
 end;
 
+// A parameter used twice has a server variable for each occurrence, of its own column
+function TFIBXSQLVAR.ServerParam: TFIBXSQLVAR;
+var
+  ServerParams: TFIBXSQLDA;
+  i, Occurrence: Integer;
+begin
+  ServerParams := FQuery.FSQLParams;
+  if not FQuery.vDiffParams then
+  begin
+    if (FIndex < ServerParams.Count) and (ServerParams[FIndex].FName = FName) then
+      Result := ServerParams[FIndex]
+    else
+      Result := ServerParams.FindParam(FName);
+    Exit;
+  end;
+  // the server variables come in the order of the user ones, without the macros
+  Occurrence := 0;
+  for i := 0 to FIndex - 1 do
+    if FParent[i].FName = FName then
+      Inc(Occurrence);
+  for i := 0 to ServerParams.Count - 1 do
+    if ServerParams[i].FName = FName then
+      if Occurrence = 0 then
+      begin
+        Result := ServerParams[i];
+        Exit;
+      end
+      else
+        Dec(Occurrence);
+  Result := ServerParams.FindParam(FName);
+end;
+
 function TFIBXSQLVAR.GetServerSQLType: integer;
 var
   SrvSqlVar: TFIBXSQLVAR;
@@ -1870,7 +1903,7 @@ begin
           Result := FSrvSQLType
         else
         begin
-          SrvSqlVar := FQuery.FSQLParams.FindParam(FName);
+          SrvSqlVar := ServerParam;
           if SrvSqlVar = nil then
             Result := GetSQLType
           else if SrvSqlVar.FSrvSQLType = 0 then
@@ -1887,8 +1920,9 @@ var
   SrvSqlVar: TFIBXSQLVAR;
 begin
   with FParent do
+    // as described for a server parameter (see GetServerSQLSubType)
     if not FIsParams or (FParent.FQuery.FSQLParams = FParent) then
-      if FInitialized then
+      if FInitialized and not FIsParams then
         Result := GetScale
       else
         Result := FSrvSQLScale
@@ -1898,7 +1932,7 @@ begin
         Result := FSrvSQLScale
       else
       begin
-        SrvSqlVar := FQuery.FSQLParams.FindParam(FName);
+        SrvSqlVar := ServerParam;
         if SrvSqlVar = nil then
           Result := GetScale
         else if SrvSqlVar.FSrvSQLScale = 0 then
@@ -1929,7 +1963,7 @@ begin
           Result := FSrvSQLLen
         else
         begin
-          SrvSqlVar := FQuery.FSQLParams.FindParam(FName);
+          SrvSqlVar := ServerParam;
           if SrvSqlVar = nil then
             Result := GetSize
           else if SrvSqlVar.FSrvSQLLen = 0 then
@@ -1949,8 +1983,9 @@ begin
     Result := 0 // Unknown
   else
     with FParent do
+      // as described for a server parameter: a value copied from an equal-named one changes its own
       if not FIsParams or (FParent.FQuery.FSQLParams = FParent) then
-        if FInitialized then
+        if FInitialized and not FIsParams then
           Result := GetSQLSubtype
         else
           Result := FSrvSQLSubType
@@ -1960,7 +1995,7 @@ begin
           Result := FSrvSQLSubType
         else
         begin
-          SrvSqlVar := FQuery.FSQLParams.FindParam(FName);
+          SrvSqlVar := ServerParam;
           if SrvSqlVar = nil then
             Result := GetSQLSubtype
           // not initialized yet: as described (see GetServerSQLType)
@@ -2126,6 +2161,9 @@ begin
             // Text and BLOB IDs are in the charset or subtype of this variable
             if (xvar <> Self) and ((aSQLType = SQL_TEXT) or (aSQLType = SQL_BLOB)) then
               xvar.FXSQLVAR^.SQLSubtype := FXSQLVAR^.SQLSubtype;
+            // the value replaces a long string kept by another occurrence for its BLOB column
+            if (xvar <> Self) and (aSQLType <> SQL_BLOB) and (aSQLType <> SQL_ARRAY) then
+              FreeAndNil(xvar.FStreamValue);
             if ws <> nil then
               xvar.FWideTempValue := ws^
             else if (aSQLType <> SQL_BLOB) and (aSQLType <> SQL_ARRAY) then
@@ -2959,14 +2997,21 @@ var
   pc: integer;
   uSType, sSType: integer; // parameterType
   UsrPar, Srvpar: TFIBXSQLVAR;
+  ByOccurrence: Boolean;
+  BlobID: TISC_QUAD;
 begin
   // uSType - user Params[i].SQLType
   // sSType - real Params[i].SQLType
+  // the user parameters of the query: each occurrence of a name goes to its own server variable
+  ByOccurrence := (FQuery <> nil) and (Self = FQuery.FSQLParams) and (SourceSQLDA = FQuery.FUserSQLParams);
   pc := Pred(SourceSQLDA.Count);
   for i := 0 to pc do
   begin
     UsrPar := SourceSQLDA[i];
-    Srvpar := ByName[UsrPar.Name];
+    if ByOccurrence then
+      Srvpar := UsrPar.ServerParam
+    else
+      Srvpar := ByName[UsrPar.Name];
     if (Srvpar <> nil) and (UsrPar <> nil) then
       with Srvpar do
       begin
@@ -2982,7 +3027,15 @@ begin
           ((sSType = SQL_BLOB) or (sSType = SQL_ARRAY)) and not UsrPar.IsDefferedLongString then
         begin
           FreeAndNil(FStreamValue);
-          AsQuad := UsrPar.AsQuad
+          if ByOccurrence and (sSType = SQL_BLOB) then
+          begin
+            // only this occurrence, with the charset of the BLOB: the server converts it for its column
+            BlobID := UsrPar.AsQuad;
+            InternalSetValue(Srvpar, SQL_BLOB, SizeOf(TISC_QUAD), BlobID);
+            FXSQLVAR^.sqlscale := UsrPar.FXSQLVAR^.sqlscale;
+          end
+          else
+            AsQuad := UsrPar.AsQuad
         end
         else
         begin
@@ -4675,16 +4728,13 @@ begin
       InternalExecQuery;
     except
       on E: EFIBError do
-        if Assigned(FOnExecuteError) then
-        begin
-          FOnExecuteError(Self, E, Action);
-          case Action of
-            daFail: raise;
-            daAbort: Abort;
-          end;
-        end
-        else
-          raise
+      begin
+        FOnExecuteError(Self, E, Action);
+        case Action of
+          daFail: raise;
+          daAbort: Abort;
+        end;
+      end;
     end;
 end;
 
@@ -4722,52 +4772,37 @@ begin
   ExecProc;
 end;
 
+// The text BLOB column of the open query, nil if there is none of that name
+function FindTextBlobField(Query: TFIBQuery; const BlobFieldName: string): TFIBXSQLVAR;
+begin
+  Result := nil;
+  if not Query.Open then
+    Exit;
+  Result := Query.FindField(BlobFieldName);
+  if (Result <> nil) and ((Result.Data^.sqltype and (not 1) <> SQL_BLOB) or
+    (Result.Data^.sqlsubtype <> isc_blob_text)) then
+    Result := nil;
+end;
+
 function TFIBQuery.BlobToStrings(const BlobFieldName: string; Destination: TStrings): Boolean;
 var
-  bs: TFIBBlobStream;
-  fld: TFIBXSQLVAR;
+  Field: TFIBXSQLVAR;
 begin
-  Result := False;
-  if not Open or (Destination = nil) then
-    Exit;
-  fld := FindField(BlobFieldName);
-  if fld = nil then
-    Exit;
-  if (fld.data.sqltype and (not 1) <> SQL_BLOB) then
-    Exit;
-  if (fld.data.sqlsubtype <> isc_blob_text) then
-    Exit;
-
-  bs := TFIBBlobStream.Create;
-  try
-    try
-      bs.Mode := bmRead;
-      bs.Database := Database;
-      bs.Transaction := Transaction;
-      bs.BlobID := fld.AsQuad;
-      bs.Seek(0, soBeginning);
-      Destination.LoadFromStream(bs);
-      Result := True;
-    except
-      Result := False;
-    end;
-  finally
-    bs.Free;
-  end;
+  Field := FindTextBlobField(Self, BlobFieldName);
+  Result := (Field <> nil) and (Destination <> nil);
+  if Result then
+    Destination.Text := Field.AsString;
 end;
 
 function TFIBQuery.BlobAsString(const BlobFieldName: string): string;
 var
-  ts: TStrings;
+  Field: TFIBXSQLVAR;
 begin
-  Result := '';
-  ts := TStringList.Create;
-  try
-    if BlobToStrings(BlobFieldName, ts) then
-      Result := ts.Text;
-  finally
-    ts.Free;
-  end;
+  Field := FindTextBlobField(Self, BlobFieldName);
+  if Field = nil then
+    Result := ''
+  else
+    Result := Field.AsString;
 end;
 
 function TFIBQuery.GetAbout: string;
@@ -6135,25 +6170,20 @@ begin
                         else if tmpVar.IsBlob and (not IsBlob or IsDefferedLongString) then
                         begin
                           FPrepared := True;
-
-                          if (SQLType = SQL_TEXT) or IsBlob then
-                          begin
-                            if Length(FWideTempValue) > 0 then
-                            begin
-                              InternalSetAsString(@FWideTempValue, True, True)
-                            end;
-                            BlobValue := AsAnsiString
-                          end
-                          else
+                          // read before the type changes; a kept string is encoded once, below
+                          if Length(FWideTempValue) = 0 then
                             BlobValue := AsAnsiString;
 
                           FXSQLVAR^.SQLType := tmpVar.FXSQLVAR^.SQLType;
                           FXSQLVAR^.sqllen := tmpVar.FXSQLVAR^.sqllen;
                           ReallocMem(FXSQLVAR^.sqldata, tmpVar.FXSQLVAR^.sqllen);
                           FXSQLVAR^.SQLSubtype := tmpVar.FXSQLVAR^.SQLSubtype;
+                          // the charset of a text BLOB, of the column of this occurrence
+                          FXSQLVAR^.sqlscale := tmpVar.FXSQLVAR^.sqlscale;
                           FSrvSQLType := tmpVar.SQLType;
                           tmpVar.FSrvSQLType := tmpVar.SQLType;
                           FSrvSQLSubType := tmpVar.SQLSubtype;
+                          FSrvSQLScale := tmpVar.FXSQLVAR^.sqlscale;
                           // the string is kept to read it back, the stream is freed after the execute
                           if Length(FWideTempValue) > 0 then
                             InternalSetAsString(@FWideTempValue, True, True)
@@ -6256,7 +6286,10 @@ end;
 procedure TFIBQuery.SaveStreamedParams(toParams: TFIBXSQLDA);
 var
   bs: TFIBBlobStream;
-  i: integer;
+  i, j: Integer;
+  Charset: Short;
+  BlobID: TISC_QUAD;
+  Occurrence: TFIBXSQLVAR;
 begin
   if not FHaveStreamParams then
     Exit;
@@ -6284,7 +6317,23 @@ begin
                 Transaction.StartTransaction;
           end;
           bs.Finalize;
-          SetQuadValue(bs.BlobID);
+          BlobID := bs.BlobID;
+          // the charset of the written text
+          Charset := FXSQLVAR^.sqlscale;
+          InternalSetValue(toParams[i], SQL_BLOB, SizeOf(TISC_QUAD), BlobID);
+          FInitialized := True;
+          // the other occurrences of the parameter without a value of their own take this BLOB,
+          // the server converts it from its charset to the one of their column
+          for j := 0 to Pred(toParams.Count) do
+          begin
+            Occurrence := toParams[j];
+            if (j <> i) and (Occurrence.FName = FName) and (Occurrence.FStreamValue = nil) then
+            begin
+              InternalSetValue(Occurrence, SQL_BLOB, SizeOf(TISC_QUAD), BlobID);
+              Occurrence.FXSQLVAR^.SQLSubtype := FXSQLVAR^.SQLSubtype;
+              Occurrence.FXSQLVAR^.sqlscale := Charset;
+            end;
+          end;
           if toParams <> FUserSQLParams then
             FUserSQLParams.ByName[toParams[i].Name].SetQuadValue(AsQuad)
         end
