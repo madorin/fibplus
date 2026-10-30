@@ -728,10 +728,11 @@ begin
     p := PosAlias(SQLString)
   else
     p := AliasPosition;
-  if p + 3 <= Length(SQLString) then
-    if CharInSet(SQLString[p], ['A', 'a']) and CharInSet(SQLString[p + 1],
-      ['S', 's']) and CharInSet(SQLString[p], CharsAfterClause - ['"']) then
-      Inc(p, 3);
+  // skip the keyword of "Table AS Alias"
+  if (p > 0) and (p + 2 <= Length(SQLString)) then
+    if CharInSet(SQLString[p], ['A', 'a']) and CharInSet(SQLString[p + 1], ['S', 's']) and
+      CharInSet(SQLString[p + 2], CharsAfterClause) then
+      Inc(p, 2);
   if p = 0 then
     Result := Trim(SQLString)
   else
@@ -2168,9 +2169,9 @@ function TSQLParser.AddToMainWhere(const NewClause: string; ForceCLRF: boolean):
 var
   p: integer;
   StartPos, EndPos: integer;
-  sLineBreak: string;
+  Separator: string;
 begin
-  sLineBreak := iifStr(ForceCLRF, ForceNewStr, '');
+  Separator := iifStr(ForceCLRF, ForceNewStr, '');
   if IsBlank(NewClause) then
   begin
     Result := SQLText;
@@ -2181,13 +2182,13 @@ begin
   begin
     WhereClause(p, StartPos, EndPos);
     Result := FastCopy(SQLText, 1, StartPos + 4) + '( ' +
-      FastCopy(SQLText, StartPos + 5, EndPos - StartPos - 4) + sLineBreak +
-      ' ) and ( ' + NewClause + ' )' + sLineBreak + FastCopy(SQLText, EndPos + 1, MaxInt);
+      FastCopy(SQLText, StartPos + 5, EndPos - StartPos - 4) + Separator +
+      ' ) and ( ' + NewClause + ' )' + Separator + FastCopy(SQLText, EndPos + 1, MaxInt);
   end
   else
   begin
     p := DispositionMainFrom.Y;
-    Result := FastCopy(SQLText, 1, p) + #13#10 + BeginWhere + sLineBreak + NewClause +
+    Result := FastCopy(SQLText, 1, p) + #13#10 + BeginWhere + Separator + NewClause +
       #13#10 + FastCopy(SQLText, p + 1, MaxInt)
   end
 end;

@@ -98,7 +98,7 @@ function NormalizeName(Dialect: Integer; const Name: string): string; inline;
 function UnquoteIdentifier(const Value: string): string;
 function NormalizeIdentifier(Dialect: Integer; const Value: string): string;
 function EasyFormatIdentifier(Dialect: Integer; const Value: string; DoEasy: Boolean): string; inline;
-function EquelNames(CI: Boolean; const Value, Value1: String): Boolean; inline;
+function EquelNames(CI: Boolean; const Value, Value1: string): Boolean; inline;
 function NeedQuote(const Name: string): Boolean;
 function EasyNeedQuote(const Name: string): Boolean;
 
@@ -147,7 +147,7 @@ procedure DoCopy(const Source: AnsiString; var Dest: AnsiString; Index, Count: I
 // function  StrTrimmedLen(Str:PChar):Integer;
 
 function FastTrim(const S: string): string;
-function FastCopy(const S: String; Index: Integer; Count: Integer): String; overload; inline;
+function FastCopy(const S: string; Index: Integer; Count: Integer): string; overload; inline;
 function FastCopy(const S: AnsiString; Index: Integer; Count: Integer): AnsiString; overload; inline;
 // TStringList functions
 
@@ -420,7 +420,6 @@ begin
   TGUIDBytes(Result).FE := HexByte(34);
   TGUIDBytes(Result).FF := HexByte(36);
 end;
-{$R-}
 
 procedure GUIDAsStringToPChar(const AGUID: PGUID; Dest: PAnsiChar);
 var
@@ -892,7 +891,7 @@ begin
       b := NeedQuote(Value);
     if b then
       if (Length(Value) > 0) and (Value[1] <> '"') then
-        Result := '"' + Value + '"'
+        Result := '"' + ReplaceStr(Value, '"', '""') + '"'
       else
         Result := Value
     else if (Length(Value) > 0) and (Value[1] <> '"') then
@@ -907,7 +906,7 @@ begin
   if Dialect = 1 then
     Result := UpperCase(Trim(Value))
   else if NeedQuote(Value) then
-    Result := '"' + Value + '"'
+    Result := '"' + ReplaceStr(Value, '"', '""') + '"'
   else
     Result := Value
 end;
@@ -1483,43 +1482,27 @@ end;
 
 function EquelStrings(const S, S1: string; CaseSensitive: Boolean): Boolean;
 var
-  L: Integer;
-  Source, Dest: PChar;
+  I: Integer;
+  Char1, Char2: Char;
 begin
   if CaseSensitive then
+    Exit(S = S1);
+  if Length(S) <> Length(S1) then
+    Exit(False);
+  // Only the ASCII letters are folded
+  for I := 1 to Length(S) do
   begin
-    Result := S = S1;
-    Exit;
-  end;
-  L := Length(S);
-  if L <> Length(S1) then
-  begin
-    Result := False;
-    Exit;
-  end;
-  Source := Pointer(S);
-  Dest := Pointer(S1);
-  while L <> 0 do
-  begin
-    if Source^ > Dest^ then
+    Char1 := S[I];
+    Char2 := S1[I];
+    if Char1 <> Char2 then
     begin
-      if (Byte(Source^) - 32) <> Byte(Dest^) then
-      begin
-        Result := False;
-        Exit;
-      end;
-    end
-    else if Source^ < Dest^ then
-    begin
-      if (Byte(Source^) + 32) <> Byte(Dest^) then
-      begin
-        Result := False;
-        Exit;
-      end;
+      if (Char1 >= 'a') and (Char1 <= 'z') then
+        Dec(Char1, 32);
+      if (Char2 >= 'a') and (Char2 <= 'z') then
+        Dec(Char2, 32);
+      if Char1 <> Char2 then
+        Exit(False);
     end;
-    Inc(Source);
-    Inc(Dest);
-    Dec(L);
   end;
   Result := True;
 end;
