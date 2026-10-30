@@ -403,6 +403,17 @@ The lists of old and new names, and what an application has to change, are in
 - `TFIBDatabase.QueryValues` of a statement without parameters (also `EXECUTE PROCEDURE`) kept it
   in the query cache when it returned a row, while `QueryValue` freed it. Only a statement with
   parameters is cached now, as documented; `aCacheQuery` allows the caching.
+- `TFIBDatabase.QueryValue` and `QueryValues` without `ParamValues` (also `Execute`) set the first
+  parameter to `0` instead of leaving it `NULL`. A query taken from the query cache kept the
+  parameter values of its last call, so a parameter without a value got the old one instead of
+  `NULL`.
+- `TFIBDatabase.QueryValue`, `QueryValues` and `Gen_Id` with a transaction whose default database
+  is another one ran the statement in that database; with a transaction over several databases
+  and no default database they raised an access violation. They run in their own database now.
+- An error in `TFIBDatabase.QueryValue` or `QueryValues` rolled back the transaction passed in
+  `aTransaction`, with the work done in it before the call. Only the internal transaction is
+  rolled back now; a passed transaction stays active; see
+  [Upgrading](Docs/guide/upgrading.md#queryvalue-in-a-passed-transaction).
 
 #### Queries and parameters
 

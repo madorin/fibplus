@@ -4506,67 +4506,70 @@ function TFIBDatabase.InternalQueryValue(const aSQL: string; FieldNo: Integer;
   aCacheQuery: Boolean): variant;
 var
   Query: TFIBQuery;
+  Tr: TFIBTransaction;
   i: Integer;
   c: Integer;
-  HasParams: Boolean;
-
+  CacheQuery: Boolean;
 begin
   Result := False;
   if Assigned(aTransaction) then
-    Query := GetQueryForUse(aTransaction, aSQL)
+    Tr := aTransaction
   else
-    Query := GetQueryForUse(FInternalTransaction, aSQL);
-  HasParams := Query.Params.Count > 0;
-  c := Query.Params.Count - 1;
-  if High(ParamValues) < c then
-    c := Integer(High(ParamValues));
-
-  with Query do
+    Tr := FInternalTransaction;
+  // The database is given: the default database of Tr may be another one
+  Query := GetQueryForUse(Self, Tr, aSQL);
+  CacheQuery := aCacheQuery and (Query.Params.Count > 0);
+  try
+    // A query from the cache keeps the parameter values of its last call
+    Query.Params.ClearValues;
+    c := Query.Params.Count - 1;
+    if High(ParamValues) < c then
+      c := Integer(High(ParamValues));
+    if not Tr.Active then
+      Tr.StartTransaction;
     try
-      if not Transaction.Active then
-        Transaction.StartTransaction;
-      try
-        for i := 0 to c do
-          if not VarIsEmpty(ParamValues[i]) then
-            Params[i].Value := ParamValues[i];
-        ExecQuery;
-        if (Current.Count > 0) then
-          if (FieldNo >= 0) then
-            begin
-              if Fields[FieldNo].SQLType = SQL_BLOB then
-                Result := Fields[FieldNo].AsString
+      for i := 0 to c do
+        if not VarIsEmpty(ParamValues[i]) then
+          Query.Params[i].Value := ParamValues[i];
+      Query.ExecQuery;
+      if Query.Current.Count > 0 then
+        if FieldNo >= 0 then
+          begin
+            if Query.Fields[FieldNo].SQLType = SQL_BLOB then
+              Result := Query.Fields[FieldNo].AsString
+            else
+              Result := Query.Fields[FieldNo].Value
+          end
+        else
+          begin
+            c := Pred(Query.Current.Count);
+            Result := VarArrayCreate([0, c], varVariant);
+            for i := 0 to c do
+              if Query.Fields[i].SQLType = SQL_BLOB then
+                Result[i] := Query.Fields[i].AsString
               else
-                Result := Fields[FieldNo].Value
-            end
-          else
-            begin
-              c := Pred(Current.Count);
-              Result := VarArrayCreate([0, c], varVariant);
-              for i := 0 to c do
-                if Fields[i].SQLType = SQL_BLOB then
-                  Result[i] := Fields[i].AsString
-                else
-                  Result[i] := Fields[i].Value
-            end;
-      except
-        if Transaction.Active then
-          Transaction.Rollback;
-        raise;
-      end
-    finally
-      if Transaction.InTransaction and (aTransaction = nil) then
-        Transaction.Commit;
-      if HasParams and aCacheQuery then
-        FreeQueryForUse(Query)
-      else
-        Query.Free;
+                Result[i] := Query.Fields[i].Value
+          end;
+    except
+      // Only the internal transaction is ended; a passed transaction stays as it is
+      if (aTransaction = nil) and Tr.Active then
+        Tr.Rollback;
+      raise;
     end;
+    if (aTransaction = nil) and Tr.InTransaction then
+      Tr.Commit;
+  finally
+    if CacheQuery then
+      FreeQueryForUse(Query)
+    else
+      Query.Free;
+  end;
 end;
 
 function TFIBDatabase.QueryValue(const aSQL: string; FieldNo: Integer;
   aTransaction: TFIBTransaction = nil; aCacheQuery: Boolean = True): variant;
 begin
-  Result := InternalQueryValue(aSQL, FieldNo, [varEmpty], aTransaction, aCacheQuery);
+  Result := InternalQueryValue(aSQL, FieldNo, [], aTransaction, aCacheQuery);
 end;
 
 function TFIBDatabase.QueryValue(const aSQL: string; FieldNo: Integer;
@@ -4578,7 +4581,7 @@ end;
 
 function TFIBDatabase.QueryValues(const aSQL: string; aTransaction: TFIBTransaction = nil; aCacheQuery: Boolean = True): variant;
 begin
-  Result := InternalQueryValue(aSQL, -1, [varEmpty], aTransaction, aCacheQuery);
+  Result := InternalQueryValue(aSQL, -1, [], aTransaction, aCacheQuery);
 end;
 
 function TFIBDatabase.QueryValues(const aSQL: string;
@@ -4633,7 +4636,7 @@ begin
     else
       vTransaction := FInternalTransaction;
 
-  Query := GetQueryForUse(vTransaction, 'select gen_id(' + GenName + ', ' + IntToStr(Step) + ') from RDB$DATABASE');
+  Query := GetQueryForUse(Self, vTransaction, 'select gen_id(' + GenName + ', ' + IntToStr(Step) + ') from RDB$DATABASE');
   with Query, Transaction do
     try
       ForceOpenTr := not Transaction.InTransaction;

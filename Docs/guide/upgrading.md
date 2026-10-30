@@ -327,6 +327,14 @@ the result into SQL text must format it with `FormatIdentifier(3, Alias)`. `Fiel
 `FieldOriginRule = forTableAliasAndFieldName` changes the same way (`т.NAME` instead of
 `"т".NAME`).
 
+#### QueryValue in a passed transaction
+
+An error in `TFIBDatabase.QueryValue` or `QueryValues` no longer rolls back the transaction passed
+in `aTransaction`; it stays active with the work done in it before the call, and the caller
+decides whether to commit or roll it back. Code that called `QueryValue` in its own transaction
+and relied on the rollback after an error must call `Rollback` itself. Without `aTransaction`
+nothing changes: the internal transaction is committed, or rolled back on an error.
+
 ## 7.9.1
 
 ### Build
