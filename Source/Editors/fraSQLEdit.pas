@@ -165,7 +165,7 @@ implementation
 {$R *.dfm}
 
 uses
-  Math, TypInfo, RegistryUtils, ToCodeEditorIntfs, FIBEditorsConsts, RTTIRoutines,
+  Math, TypInfo, RegUtils, FIBProps, ToCodeEditorIntfs, FIBEditorsConsts, RTTIRoutines,
   uFIBScriptForm,
   IBSQLSyn, FIBSyntaxMemo, uFontEditor;
 

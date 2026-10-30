@@ -57,7 +57,7 @@ implementation
 {$R *.dfm}
 
 uses
-  TypInfo, RegistryUtils, RTTIRoutines, FIBInterfaces;
+  TypInfo, RegUtils, FIBProps, RTTIRoutines, FIBInterfaces;
 
 const
   RegFIBSQLEdOptions = 'SQLEditor';

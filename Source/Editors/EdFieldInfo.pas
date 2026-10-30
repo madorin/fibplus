@@ -28,7 +28,7 @@ uses
   ExtCtrls, StdCtrls, DBCtrls, Buttons, Menus,
 {$ENDIF}
   Db, FIBInterfaces, uFIBEditorForm,
-  RegistryUtils, Variants;
+  RegUtils, FIBProps, Variants;
 
 type
   TfrmFields = class(TFIBEditorCustomForm)

@@ -67,7 +67,7 @@ implementation
 
 uses
   Variants,
-  TypInfo, RegistryUtils, FIBEditorsConsts, RTTIRoutines;
+  TypInfo, RegUtils, FIBProps, FIBEditorsConsts, RTTIRoutines;
 
 function EditFIBTrParams(Transaction: TComponent): boolean;
 var

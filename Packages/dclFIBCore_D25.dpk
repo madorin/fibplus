@@ -20,12 +20,12 @@ package dclFIBCore_D25;
 {$STACKFRAMES OFF}
 {$TYPEDADDRESS OFF}
 {$VARSTRINGCHECKS ON}
-{$WRITEABLECONST ON}
+{$WRITEABLECONST OFF}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
 {$DEFINE RELEASE}
 {$ENDIF IMPLICITBUILDING}
-{$DESCRIPTION 'FIBPlus Access Components'}
+{$DESCRIPTION 'FIBPlus Components (Design)'}
 {$DESIGNONLY}
 {$IMPLICITBUILD ON}
 
@@ -64,7 +64,6 @@ contains
   FIBComponentEditors in '..\Source\Editors\FIBComponentEditors.pas',
   FIBEditorsConsts in '..\Source\Editors\FIBEditorsConsts.pas',
   FIBRepositoryOperations in '..\Source\Editors\FIBRepositoryOperations.pas',
-  RegistryUtils in '..\Source\Editors\RegistryUtils.pas',
   RegSynEditAlt in '..\Source\Editors\RegSynEditAlt.pas',
   uFIBScriptForm in '..\Source\Editors\uFIBScriptForm.pas' {frmScript},
   IBSQLSyn in '..\Source\Editors\IBSQLSyn.pas',

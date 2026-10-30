@@ -160,7 +160,7 @@ type
 implementation
 
 uses
-  RegistryUtils, FIBEditorsConsts, FIBDBEdit, FIBInterfaces, FIBRepositoryOperations, EdFieldInfo, EdErrorInfo,
+  RegUtils, FIBProps, FIBEditorsConsts, FIBDBEdit, FIBInterfaces, FIBRepositoryOperations, EdFieldInfo, EdErrorInfo,
   FIBConditionsEdit, EdDataSetInfo, FIBTrEdit, FIBDataSetOptions,
   FIBAutoUpdEditor, RegFIBEditors, RTTIRoutines, FIBSQLEditor,
   EdParamToFields, FIBDataSQLEditor, uFIBScriptForm;

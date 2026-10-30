@@ -65,6 +65,10 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
+        <VerInfo_MajorVer>8</VerInfo_MajorVer>
+        <VerInfo_MinorVer>0</VerInfo_MinorVer>
+        <VerInfo_Release>0</VerInfo_Release>
+        <DCC_Description>FIBPlus Components (Design)</DCC_Description>
         <DCC_DcuOutput>$(BDSCOMMONDIR)\Dcu\FIB\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_UnitSearchPath>..</DCC_UnitSearchPath>
         <DCC_ResourcePath>..</DCC_ResourcePath>
@@ -72,15 +76,13 @@
         <DCC_IncludePath>..</DCC_IncludePath>
         <SanitizedProjectName>dclFIBCore_D23</SanitizedProjectName>
         <DCC_UsePackage>rtl;dbrtl;$(DCC_UsePackage)</DCC_UsePackage>
-        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=8.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=8.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_Locale>1049</VerInfo_Locale>
         <DCC_ImageBase>00400000</DCC_ImageBase>
         <DesignOnlyPackage>true</DesignOnlyPackage>
-        <DCC_Description>FIBPlus Access Components</DCC_Description>
         <GenDll>true</GenDll>
-        <DCC_WriteableConstants>true</DCC_WriteableConstants>
         <GenPackage>true</GenPackage>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Android)'!=''">
@@ -102,7 +104,6 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <Version>7.0</Version>
-        <DCC_WriteableConstants>True</DCC_WriteableConstants>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <VerInfo_Locale>1033</VerInfo_Locale>
@@ -113,11 +114,10 @@
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <Version>7.0</Version>
         <DCC_DebugInformation>0</DCC_DebugInformation>
-        <DCC_WriteableConstants>True</DCC_WriteableConstants>
         <DCC_LocalDebugSymbols>False</DCC_LocalDebugSymbols>
         <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
         <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
-        <DCC_Define>RELEASE</DCC_Define>
+        <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
         <VerInfo_Locale>1033</VerInfo_Locale>
@@ -139,74 +139,73 @@
         <DCCReference Include="vclimg.dcp"/>
         <DCCReference Include="FIBCore_D23.dcp"/>
         <DCCReference Include="..\Source\RegFIB.pas"/>
-        <DCCReference Include="RegFIBEditors.pas"/>
-        <DCCReference Include="EdFieldInfo.pas">
+        <DCCReference Include="..\Source\Editors\RegFIBEditors.pas"/>
+        <DCCReference Include="..\Source\Editors\EdFieldInfo.pas">
             <Form>frmFields</Form>
         </DCCReference>
-        <DCCReference Include="EdDataSetInfo.pas">
+        <DCCReference Include="..\Source\Editors\EdDataSetInfo.pas">
             <Form>frmEdDataSetInfo</Form>
         </DCCReference>
-        <DCCReference Include="FIBDBEdit.pas">
+        <DCCReference Include="..\Source\Editors\FIBDBEdit.pas">
             <Form>DBEditForm</Form>
         </DCCReference>
-        <DCCReference Include="FIBTrEdit.pas">
+        <DCCReference Include="..\Source\Editors\FIBTrEdit.pas">
             <Form>frmTransEdit</Form>
         </DCCReference>
-        <DCCReference Include="FIBConditionsEdit.pas">
+        <DCCReference Include="..\Source\Editors\FIBConditionsEdit.pas">
             <Form>frmEditCheckStrings</Form>
         </DCCReference>
-        <DCCReference Include="FIBAutoUpdEditor.pas">
+        <DCCReference Include="..\Source\Editors\FIBAutoUpdEditor.pas">
             <Form>FIBAutoUpdateOptionForm</Form>
         </DCCReference>
-        <DCCReference Include="FIBDataSetOptions.pas">
+        <DCCReference Include="..\Source\Editors\FIBDataSetOptions.pas">
             <Form>FPDataSetOptionsForm</Form>
         </DCCReference>
-        <DCCReference Include="EdParamToFields.pas">
+        <DCCReference Include="..\Source\Editors\EdParamToFields.pas">
             <Form>frmEdParamToFields</Form>
         </DCCReference>
-        <DCCReference Include="fraSQLEdit.pas">
+        <DCCReference Include="..\Source\Editors\fraSQLEdit.pas">
             <Form>fSQLEdit</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
-        <DCCReference Include="fraDSSQLEdit.pas">
+        <DCCReference Include="..\Source\Editors\fraDSSQLEdit.pas">
             <Form>fDSSQLEdit</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
-        <DCCReference Include="fraAutoUpdEditor.pas">
+        <DCCReference Include="..\Source\Editors\fraAutoUpdEditor.pas">
             <Form>fAutoUpdateOptionForm</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
-        <DCCReference Include="fraConditionsEdit.pas">
+        <DCCReference Include="..\Source\Editors\fraConditionsEdit.pas">
             <Form>fraEdConditions</Form>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
-        <DCCReference Include="FIBSQLEditor.pas">
+        <DCCReference Include="..\Source\Editors\FIBSQLEditor.pas">
             <Form>frmSQLEdit</Form>
         </DCCReference>
-        <DCCReference Include="FIBDataSQLEditor.pas">
+        <DCCReference Include="..\Source\Editors\FIBDataSQLEditor.pas">
             <Form>frmDstSQLedit</Form>
         </DCCReference>
-        <DCCReference Include="EdErrorInfo.pas">
+        <DCCReference Include="..\Source\Editors\EdErrorInfo.pas">
             <Form>frmErrors</Form>
         </DCCReference>
-        <DCCReference Include="ToCodeEditor.pas"/>
-        <DCCReference Include="ToCodeEditorIntfs.pas"/>
-        <DCCReference Include="RTTIRoutines.pas"/>
-        <DCCReference Include="FIBComponentEditors.pas"/>
-        <DCCReference Include="FIBEditorsConsts.pas"/>
-        <DCCReference Include="FIBRepositoryOperations.pas"/>
-        <DCCReference Include="RegistryUtils.pas"/>
-        <DCCReference Include="RegSynEditAlt.pas"/>
-        <DCCReference Include="uFIBScriptForm.pas">
+        <DCCReference Include="..\Source\Editors\ToCodeEditor.pas"/>
+        <DCCReference Include="..\Source\Editors\ToCodeEditorIntfs.pas"/>
+        <DCCReference Include="..\Source\Editors\RTTIRoutines.pas"/>
+        <DCCReference Include="..\Source\Editors\FIBComponentEditors.pas"/>
+        <DCCReference Include="..\Source\Editors\FIBEditorsConsts.pas"/>
+        <DCCReference Include="..\Source\Editors\FIBRepositoryOperations.pas"/>
+        <DCCReference Include="..\Source\Editors\RegSynEditAlt.pas"/>
+        <DCCReference Include="..\Source\Editors\uFIBScriptForm.pas">
             <Form>frmScript</Form>
         </DCCReference>
-        <DCCReference Include="IBSQLSyn.pas"/>
-        <DCCReference Include="FIBSyntaxMemo.pas"/>
+        <DCCReference Include="..\Source\Editors\IBSQLSyn.pas"/>
+        <DCCReference Include="..\Source\Editors\FIBSyntaxMemo.pas"/>
         <DCCReference Include="..\Source\FIBLoginDlg.pas">
             <Form>FIBLoginForm</Form>
         </DCCReference>
-        <DCCReference Include="uFIBEditorForm.pas"/>
-        <DCCReference Include="uFontEditor.pas">
+        <DCCReference Include="..\Source\Editors\uFIBEditorForm.pas"/>
+        <DCCReference Include="..\Source\Editors\uFontEditor.pas">
             <Form>frmFontEditor</Form>
         </DCCReference>
         <BuildConfiguration Include="Base">
@@ -233,7 +232,7 @@
                 <VersionInfo>
                     <VersionInfo Name="IncludeVerInfo">True</VersionInfo>
                     <VersionInfo Name="AutoIncBuild">False</VersionInfo>
-                    <VersionInfo Name="MajorVer">1</VersionInfo>
+                    <VersionInfo Name="MajorVer">8</VersionInfo>
                     <VersionInfo Name="MinorVer">0</VersionInfo>
                     <VersionInfo Name="Release">0</VersionInfo>
                     <VersionInfo Name="Build">0</VersionInfo>
@@ -248,13 +247,13 @@
                 <VersionInfoKeys>
                     <VersionInfoKeys Name="CompanyName"/>
                     <VersionInfoKeys Name="FileDescription"/>
-                    <VersionInfoKeys Name="FileVersion">1.0.0.0</VersionInfoKeys>
+                    <VersionInfoKeys Name="FileVersion">8.0.0.0</VersionInfoKeys>
                     <VersionInfoKeys Name="InternalName"/>
                     <VersionInfoKeys Name="LegalCopyright"/>
                     <VersionInfoKeys Name="LegalTrademarks"/>
                     <VersionInfoKeys Name="OriginalFilename"/>
                     <VersionInfoKeys Name="ProductName"/>
-                    <VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys>
+                    <VersionInfoKeys Name="ProductVersion">8.0.0.0</VersionInfoKeys>
                     <VersionInfoKeys Name="Comments"/>
                 </VersionInfoKeys>
                 <Source>
@@ -262,7 +261,6 @@
                 </Source>
                 <Excluded_Packages>
                     <Excluded_Packages Name="$(BDS)\com\Bpl\dclibdac230.bpl">Devart InterBase Data Access Components</Excluded_Packages>
-                    <Excluded_Packages Name="C:\Users\Public\Documents\Embarcadero\Studio\17.0\Bpl\FIBPlusEditors_XE10.bpl">File C:\Users\Public\Documents\Embarcadero\Studio\17.0\Bpl\FIBPlusEditors_XE10.bpl not found</Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\bcboffice2k230.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\bcbofficexp230.bpl">Embarcadero C++Builder Office XP Servers Package</Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\dcloffice2k230.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>

@@ -32,11 +32,7 @@ implementation
 
 uses
 {$IFNDEF NO_REGISTRY} RegUtils, {$ENDIF} FIBDataSet, FIBQuery, FIBDatabase,
-  SqlTxtRtns, StrUtil, FIBDataInfo, FIBScripter;
-
-const
-  pnFIBPlus         = 'FIBPlus';
-  pnFIBPlusServices = 'FIBPlusServices';
+  SqlTxtRtns, StrUtil, FIBDataInfo, FIBScripter, FIB;
 
 {$R RegFIB.dcr}
 
@@ -53,14 +49,14 @@ begin
     TFIBFloatField, TFIBBCDField, TFIBFMTBCDField, TFIBBooleanField,
     TFIBDateField, TFIBTimeField, TFIBDateTimeField, TFIBWideStringField]);
 
-  RegisterComponents(pnFIBPlus, [TFIBDatabase, TFIBDataSet, TFIBTransaction,
+  RegisterComponents(FIBPalette, [TFIBDatabase, TFIBDataSet, TFIBTransaction,
     TFIBQuery, TFIBStoredProc, TFIBUpdateObject, TDataSetsContainer,
     TFIBErrorHandler, TFIBScripter, TFIBDBSchemaExtract, TFIBTableChangesReader, TFIBSQLLogger, TFIBEventAlerter,
     TFIBClientDataSet, TFIBDataSetProvider
 {$IFNDEF NO_MONITOR}, TFIBSQLMonitor{$ENDIF}]);
 
 {$IFDEF INC_SERVICE_SUPPORT}
-  RegisterComponents(pnFIBPlusServices, [TFIBServerProperties,
+  RegisterComponents(FIBPalette + 'Services', [TFIBServerProperties,
     TFIBConfigService, TFIBLogService,
     TFIBStatisticalService, TFIBBackupService, TFIBRestoreService,
     TFIBValidationService, TFIBSecurityService, TFIBNBackupService, TFIBNRestoreService]);

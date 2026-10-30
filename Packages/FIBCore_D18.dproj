@@ -51,6 +51,12 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <VerInfo_MajorVer>8</VerInfo_MajorVer>
+        <VerInfo_MinorVer>0</VerInfo_MinorVer>
+        <VerInfo_Release>0</VerInfo_Release>
+        <DCC_Description>FIBPlus Components</DCC_Description>
+        <RuntimeOnlyPackage>true</RuntimeOnlyPackage>
         <DCC_UNIT_DEPRECATED>false</DCC_UNIT_DEPRECATED>
         <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
         <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
@@ -68,19 +74,19 @@
     <PropertyGroup Condition="'$(Base_OSX32)'!=''">
         <Icns_MainIcns>$(BDS)\bin\delphi_PROJECTICNS.icns</Icns_MainIcns>
         <DCC_UsePackage>rtl;dbrtl;dsnap;$(DCC_UsePackage)</DCC_UsePackage>
-        <VerInfo_Keys>CFBundleName=$(MSBuildProjectName);CFBundleDisplayName=$(MSBuildProjectName);CFBundleIdentifier=$(MSBuildProjectName);CFBundleVersion=1.0.0;CFBundlePackageType=APPL;CFBundleSignature=????;CFBundleAllowMixedLocalizations=YES;CFBundleExecutable=$(MSBuildProjectName);NSHighResolutionCapable=true;LSApplicationCategoryType=public.app-category.utilities</VerInfo_Keys>
+        <VerInfo_Keys>CFBundleName=$(MSBuildProjectName);CFBundleDisplayName=$(MSBuildProjectName);CFBundleIdentifier=$(MSBuildProjectName);CFBundleVersion=8.0.0;CFBundlePackageType=APPL;CFBundleSignature=????;CFBundleAllowMixedLocalizations=YES;CFBundleExecutable=$(MSBuildProjectName);NSHighResolutionCapable=true;LSApplicationCategoryType=public.app-category.utilities</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <VerInfo_Locale>1033</VerInfo_Locale>
         <DCC_UsePackage>rtl;dbrtl;dsnap;vcl;$(DCC_UsePackage)</DCC_UsePackage>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
-        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=8.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=8.0.0.0;Comments=</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
-        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=8.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=8.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <DCC_UsePackage>rtl;dbrtl;dsnap;vcl;$(DCC_UsePackage)</DCC_UsePackage>
     </PropertyGroup>
@@ -93,7 +99,6 @@
         <DCC_RemoteDebug>true</DCC_RemoteDebug>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-        <DCC_Description>FIBPlus</DCC_Description>
         <DCC_Optimize>true</DCC_Optimize>
         <VerInfo_Debug>true</VerInfo_Debug>
         <VerInfo_Locale>1033</VerInfo_Locale>
@@ -116,68 +121,67 @@
         <DCCReference Include="rtl.dcp"/>
         <DCCReference Include="dbrtl.dcp"/>
         <DCCReference Include="dsnap.dcp"/>
-        <DCCReference Include="StdFuncs.pas"/>
-        <DCCReference Include="FIBTypes.pas"/>
-        <DCCReference Include="FIBCharSets.pas"/>
-        <DCCReference Include="FIBServices.pas"/>
-        <DCCReference Include="IB_Services.pas"/>
-        <DCCReference Include="ibase.pas"/>
-        <DCCReference Include="FIBDatabase.pas"/>
-        <DCCReference Include="pFIBDatabase.pas"/>
-        <DCCReference Include="FIBPlatforms.pas"/>
-        <DCCReference Include="IB_Intf.pas"/>
-        <DCCReference Include="FIBSafeTimer.pas"/>
-        <DCCReference Include="IBBlobFilter.pas"/>
-        <DCCReference Include="IB_Externals.pas"/>
-        <DCCReference Include="FIBDataInfo.pas"/>
-        <DCCReference Include="FIBEventLists.pas"/>
-        <DCCReference Include="FIBMiscellaneous.pas"/>
-        <DCCReference Include="FIBCacheQueries.pas"/>
-        <DCCReference Include="FIB.pas"/>
-        <DCCReference Include="SIBEABase.pas"/>
-        <DCCReference Include="pFIBDataSet.pas"/>
-        <DCCReference Include="DSContainer.pas"/>
-        <DCCReference Include="FIBExports.pas"/>
-        <DCCReference Include="VariantRtn.pas"/>
-        <DCCReference Include="FIBSQLMonitor.pas"/>
-        <DCCReference Include="FIBInterfaces.pas"/>
-        <DCCReference Include="FIBSQLLog.pas"/>
-        <DCCReference Include="pFIBSQLLog.pas"/>
-        <DCCReference Include="RegUtils.pas"/>
-        <DCCReference Include="StrUtil.pas"/>
-        <DCCReference Include="FIBQuery.pas"/>
-        <DCCReference Include="FIBDataSet.pas"/>
-        <DCCReference Include="FIBCacheManage.pas"/>
-        <DCCReference Include="FIBTestInfo.pas"/>
-        <DCCReference Include="SqlTxtRtns.pas"/>
-        <DCCReference Include="DBParsers.pas"/>
-        <DCCReference Include="FIBMetaData.pas"/>
-        <DCCReference Include="pFIBMetaData.pas"/>
-        <DCCReference Include="pFIBQuery.pas"/>
-        <DCCReference Include="FIBConsts.pas"/>
-        <DCCReference Include="FIBScripter.pas"/>
-        <DCCReference Include="pFIBScripter.pas"/>
-        <DCCReference Include="FIBProps.pas"/>
-        <DCCReference Include="pFIBProps.pas"/>
-        <DCCReference Include="FIBClientDataSet.pas"/>
-        <DCCReference Include="pFIBClientDataSet.pas"/>
-        <DCCReference Include="FIBErrorHandler.pas"/>
-        <DCCReference Include="pFIBErrorHandler.pas"/>
-        <DCCReference Include="FIBDataRefresh.pas"/>
-        <DCCReference Include="pFIBDataRefresh.pas"/>
-        <DCCReference Include="FIBArray.pas"/>
-        <DCCReference Include="pFIBArray.pas"/>
-        <DCCReference Include="FIBLists.pas"/>
-        <DCCReference Include="FIBStoredProc.pas"/>
-        <DCCReference Include="pFIBStoredProc.pas"/>
-        <DCCReference Include="IB_ErrorCodes.pas"/>
-        <DCCReference Include="RegFIB.pas"/>
-        <DCCReference Include="FIBCloneComponents.pas"/>
-        <DCCReference Include="FIBFieldsDescr.pas"/>
-        <DCCReference Include="SIBAPI.pas"/>
-        <DCCReference Include="FIBEventAlerter.pas"/>
-        <DCCReference Include="SIBFIBEA.pas"/>
-        <DCCReference Include="SIBGlobals.pas"/>
+        <DCCReference Include="..\Source\StdFuncs.pas"/>
+        <DCCReference Include="..\Source\FIBServices.pas"/>
+        <DCCReference Include="..\Source\IB_Services.pas"/>
+        <DCCReference Include="..\Source\ibase.pas"/>
+        <DCCReference Include="..\Source\FIBDatabase.pas"/>
+        <DCCReference Include="..\Source\pFIBDatabase.pas"/>
+        <DCCReference Include="..\Source\FIBPlatforms.pas"/>
+        <DCCReference Include="..\Source\IB_Intf.pas"/>
+        <DCCReference Include="..\Source\FIBSafeTimer.pas"/>
+        <DCCReference Include="..\Source\IBBlobFilter.pas"/>
+        <DCCReference Include="..\Source\IB_Externals.pas"/>
+        <DCCReference Include="..\Source\FIBDataInfo.pas"/>
+        <DCCReference Include="..\Source\FIBEventLists.pas"/>
+        <DCCReference Include="..\Source\FIBMiscellaneous.pas"/>
+        <DCCReference Include="..\Source\FIBCacheQueries.pas"/>
+        <DCCReference Include="..\Source\FIB.pas"/>
+        <DCCReference Include="..\Source\SIBEABase.pas"/>
+        <DCCReference Include="..\Source\pFIBDataSet.pas"/>
+        <DCCReference Include="..\Source\DSContainer.pas"/>
+        <DCCReference Include="..\Source\FIBExports.pas"/>
+        <DCCReference Include="..\Source\VariantRtn.pas"/>
+        <DCCReference Include="..\Source\FIBSQLMonitor.pas"/>
+        <DCCReference Include="..\Source\FIBInterfaces.pas"/>
+        <DCCReference Include="..\Source\FIBSQLLog.pas"/>
+        <DCCReference Include="..\Source\pFIBSQLLog.pas"/>
+        <DCCReference Include="..\Source\RegUtils.pas"/>
+        <DCCReference Include="..\Source\StrUtil.pas"/>
+        <DCCReference Include="..\Source\FIBQuery.pas"/>
+        <DCCReference Include="..\Source\FIBDataSet.pas"/>
+        <DCCReference Include="..\Source\FIBCacheManage.pas"/>
+        <DCCReference Include="..\Source\FIBTestInfo.pas"/>
+        <DCCReference Include="..\Source\SqlTxtRtns.pas"/>
+        <DCCReference Include="..\Source\DBParsers.pas"/>
+        <DCCReference Include="..\Source\FIBMetaData.pas"/>
+        <DCCReference Include="..\Source\pFIBMetaData.pas"/>
+        <DCCReference Include="..\Source\pFIBQuery.pas"/>
+        <DCCReference Include="..\Source\FIBConsts.pas"/>
+        <DCCReference Include="..\Source\FIBScripter.pas"/>
+        <DCCReference Include="..\Source\pFIBScripter.pas"/>
+        <DCCReference Include="..\Source\FIBProps.pas"/>
+        <DCCReference Include="..\Source\pFIBProps.pas"/>
+        <DCCReference Include="..\Source\FIBClientDataSet.pas"/>
+        <DCCReference Include="..\Source\pFIBClientDataSet.pas"/>
+        <DCCReference Include="..\Source\FIBErrorHandler.pas"/>
+        <DCCReference Include="..\Source\pFIBErrorHandler.pas"/>
+        <DCCReference Include="..\Source\FIBDataRefresh.pas"/>
+        <DCCReference Include="..\Source\pFIBDataRefresh.pas"/>
+        <DCCReference Include="..\Source\FIBArray.pas"/>
+        <DCCReference Include="..\Source\pFIBArray.pas"/>
+        <DCCReference Include="..\Source\FIBLists.pas"/>
+        <DCCReference Include="..\Source\FIBStoredProc.pas"/>
+        <DCCReference Include="..\Source\pFIBStoredProc.pas"/>
+        <DCCReference Include="..\Source\IB_ErrorCodes.pas"/>
+        <DCCReference Include="..\Source\FIBCloneComponents.pas"/>
+        <DCCReference Include="..\Source\FIBFieldsDescr.pas"/>
+        <DCCReference Include="..\Source\SIBAPI.pas"/>
+        <DCCReference Include="..\Source\FIBEventAlerter.pas"/>
+        <DCCReference Include="..\Source\SIBFIBEA.pas"/>
+        <DCCReference Include="..\Source\SIBGlobals.pas"/>
+        <DCCReference Include="..\Source\FIBTypes.pas"/>
+        <DCCReference Include="..\Source\FIBCharSets.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -198,7 +202,7 @@
                 <VersionInfo>
                     <VersionInfo Name="IncludeVerInfo">True</VersionInfo>
                     <VersionInfo Name="AutoIncBuild">False</VersionInfo>
-                    <VersionInfo Name="MajorVer">1</VersionInfo>
+                    <VersionInfo Name="MajorVer">8</VersionInfo>
                     <VersionInfo Name="MinorVer">0</VersionInfo>
                     <VersionInfo Name="Release">0</VersionInfo>
                     <VersionInfo Name="Build">0</VersionInfo>
@@ -213,13 +217,13 @@
                 <VersionInfoKeys>
                     <VersionInfoKeys Name="CompanyName"/>
                     <VersionInfoKeys Name="FileDescription"/>
-                    <VersionInfoKeys Name="FileVersion">1.0.0.0</VersionInfoKeys>
+                    <VersionInfoKeys Name="FileVersion">8.0.0.0</VersionInfoKeys>
                     <VersionInfoKeys Name="InternalName"/>
                     <VersionInfoKeys Name="LegalCopyright"/>
                     <VersionInfoKeys Name="LegalTrademarks"/>
                     <VersionInfoKeys Name="OriginalFilename"/>
                     <VersionInfoKeys Name="ProductName"/>
-                    <VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys>
+                    <VersionInfoKeys Name="ProductVersion">8.0.0.0</VersionInfoKeys>
                     <VersionInfoKeys Name="Comments"/>
                     <VersionInfoKeys Name="CFBundleName"/>
                     <VersionInfoKeys Name="CFBundleDisplayName"/>

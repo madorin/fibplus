@@ -25,7 +25,7 @@ package FIBCore_D25;
 {$IMAGEBASE $400000}
 {$DEFINE RELEASE}
 {$ENDIF IMPLICITBUILDING}
-{$DESCRIPTION 'FIBPlus Access Components'}
+{$DESCRIPTION 'FIBPlus Components'}
 {$RUNONLY}
 {$IMPLICITBUILD OFF}
 
@@ -36,8 +36,6 @@ requires
 
 contains
   StdFuncs in '..\Source\StdFuncs.pas',
-  FIBTypes in '..\Source\FIBTypes.pas',
-  FIBCharSets in '..\Source\FIBCharSets.pas',
   FIBServices in '..\Source\FIBServices.pas',
   IB_Services in '..\Source\IB_Services.pas',
   ibase in '..\Source\ibase.pas',
@@ -95,6 +93,8 @@ contains
   SIBAPI in '..\Source\SIBAPI.pas',
   FIBEventAlerter in '..\Source\FIBEventAlerter.pas',
   SIBFIBEA in '..\Source\SIBFIBEA.pas',
-  SIBGlobals in '..\Source\SIBGlobals.pas';
+  SIBGlobals in '..\Source\SIBGlobals.pas',
+  FIBTypes in '..\Source\FIBTypes.pas',
+  FIBCharSets in '..\Source\FIBCharSets.pas';
 
 end.

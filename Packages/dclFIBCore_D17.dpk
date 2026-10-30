@@ -20,11 +20,11 @@ package dclFIBCore_D17;
 {$STACKFRAMES OFF}
 {$TYPEDADDRESS OFF}
 {$VARSTRINGCHECKS ON}
-{$WRITEABLECONST ON}
+{$WRITEABLECONST OFF}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
 {$ENDIF IMPLICITBUILDING}
-{$DESCRIPTION 'FIBPlus Property Editors'}
+{$DESCRIPTION 'FIBPlus Components (Design)'}
 {$DESIGNONLY}
 {$IMPLICITBUILD OFF}
 
@@ -40,6 +40,7 @@ requires
   FIBCore_D17;
 
 contains
+  RegFIB in '..\Source\RegFIB.pas',
   RegFIBEditors in '..\Source\Editors\RegFIBEditors.pas',
   EdFieldInfo in '..\Source\Editors\EdFieldInfo.pas' {frmFields},
   EdDataSetInfo in '..\Source\Editors\EdDataSetInfo.pas' {frmEdDataSetInfo},
@@ -62,11 +63,13 @@ contains
   FIBComponentEditors in '..\Source\Editors\FIBComponentEditors.pas',
   FIBEditorsConsts in '..\Source\Editors\FIBEditorsConsts.pas',
   FIBRepositoryOperations in '..\Source\Editors\FIBRepositoryOperations.pas',
-  RegistryUtils in '..\Source\Editors\RegistryUtils.pas',
   RegSynEditAlt in '..\Source\Editors\RegSynEditAlt.pas',
   uFIBScriptForm in '..\Source\Editors\uFIBScriptForm.pas' {frmScript},
   IBSQLSyn in '..\Source\Editors\IBSQLSyn.pas',
-  FIBLoginDlg in '..\Source\FIBLoginDlg.pas' {FIBLoginForm};
+  FIBSyntaxMemo in '..\Source\Editors\FIBSyntaxMemo.pas',
+  FIBLoginDlg in '..\Source\FIBLoginDlg.pas' {FIBLoginForm},
+  uFIBEditorForm in '..\Source\Editors\uFIBEditorForm.pas',
+  uFontEditor in '..\Source\Editors\uFontEditor.pas' {frmFontEditor};
 
 end.
 

@@ -36,7 +36,7 @@ function RegistryInteger(const Values: Variant; Index: Integer; out Value: Integ
 implementation
 
 uses
-  SysUtils, Math, RegistryUtils;
+  SysUtils, Math, RegUtils, FIBProps;
 
 const
   DefaultPPI = 96;

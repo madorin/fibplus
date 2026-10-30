@@ -249,6 +249,7 @@ type
     property State: TStringsState read fState write fState;
   public
     constructor Create(const Owner: TMPCustomSyntaxMemo);
+    destructor Destroy; override;
     procedure Clear; override;
     function PositionToRC(Value: Integer): TPoint;
     function RCToPosition(Col, Row: Integer): Integer;
@@ -294,14 +295,8 @@ type
   end;
 
   TMPSMSectionClone = class(TMPSynMemoSection)
-  private
-    fRefCount: Integer;
   protected
-    procedure AddRef;
-    procedure Release;
     procedure Assign(Source: TMPSMSectionClone);
-  public
-    property RefCount: Integer read fRefCount;
   end;
 
   // Section Manager Class
@@ -320,7 +315,6 @@ type
     fErrorLine: Integer; // Index of the text line violating section management
     fErrorString: string; // Section management error
     procedure ReIndex;
-    procedure MakeUnique;
     procedure SetRoot(const Value: TMPSMSectionClone);
     function GetSection(const Row: Integer): TMPSynMemoSection;
     function GetVisibleRowCount: Integer;
@@ -692,6 +686,7 @@ type
     function CharPosToPixOffset(const Col, Row: Integer): Integer; overload;
     function CharPosToPixOffset(const Col: Integer; s: string; Sp: TMPSyntaxParser): Integer; overload;
     function PixOffsetToCharPos(const Pix, Row: Integer; const WordIndex: PInteger = nil): Integer;
+    function CharWidth(C: Char; Style: TFontStyles): Integer;
     procedure WndOffsetToPixOffset(OfsPoint: TPoint; var CharPix, Row: Integer; const TextRow: Boolean);
     function PixOffsetToWndOffsetEx(const CharPix, ScreenRow: Integer): TPoint;
     function GetSectionButtonRect(const ScreenRow, ALevel: Integer): TRect;
@@ -2048,6 +2043,16 @@ begin
 {$ENDIF}
 end;
 
+// Frees the line parsers, which TStringList does not own
+destructor TMPSynMemoStrings.Destroy;
+var
+  I: Integer;
+begin
+  for I := 0 to Count - 1 do
+    Objects[I].Free;
+  inherited;
+end;
+
 // Clear() Clears the content, removing key objects
 procedure TMPSynMemoStrings.Clear;
 var
@@ -2497,21 +2502,6 @@ end;
 
 { TMPSMSectionClone }
 
-// Increments the reference count by 1
-procedure TMPSMSectionClone.AddRef;
-begin
-  Inc(fRefCount);
-end;
-
-// Decrements the reference count by 1.
-// As soon as the count reaches 0, the object is destroyed
-procedure TMPSMSectionClone.Release;
-begin
-  dec(fRefCount);
-  if fRefCount <= 0 then
-    Free;
-end;
-
 // Copies a section with its nested sections
 function CloneSection(const Father, Sec: TMPSynMemoSection): TMPSynMemoSection;
 var
@@ -2579,7 +2569,6 @@ begin
   fRichMemo := Owner;
   fRoot := TMPSMSectionClone.Create;
   fIndexes := TList.Create;
-  fRoot.AddRef;
   Scan;
 end;
 
@@ -2827,8 +2816,6 @@ begin
   // Sections must be prepared
   if ssNeedReIndex in fRichMemo.Lines.State then
     ReIndex;
-  { TODO : Sort this out - something is wrong here.. }
-  MakeUnique;
   with fRichMemo.Lines do
     begin
       BeginUpdate;
@@ -2854,8 +2841,6 @@ begin
   // Sections must be prepared
   if ssNeedReIndex in fRichMemo.Lines.State then
     ReIndex;
-  { TODO : Sort this out - something is wrong here.. }
-  MakeUnique;
 
   // If one line belongs to section "A" and the other line
   // belongs to its parent ("^A") but is not its boundary,
@@ -2952,8 +2937,6 @@ begin
   { } {$IFDEF SYNDEBUG}
   { } fRichMemo.LogFmt('Sections.DeleteRow(%d)', [Row]);
   { } {$ENDIF}
-  { TODO : Sort this out - something is wrong here.. }
-  MakeUnique;
 
   // If the deleted line is a section boundary, the section is destroyed.
   with fRichMemo do
@@ -2995,8 +2978,6 @@ begin
   { } {$IFDEF SYNDEBUG}
   { } fRichMemo.LogFmt('Sections.InsertRow(%d)', [Row]);
   { } {$ENDIF}
-  { TODO : Sort this out - something is wrong here.. }
-  MakeUnique;
   ParentSec := fRoot;
   UpdateIndexes(fRoot);
   Section[Row] := ParentSec;
@@ -3028,34 +3009,6 @@ begin
   { } fRichMemo.Log('Sections.FillOutput');
   { } {$ENDIF}
   MarkSection(fRoot);
-end;
-
-{ TODO : THIS IS WHAT WE WILL SORT OUT - tomorrow morning }
-// The current section tree becomes unique
-procedure TMPSynMemoSections.MakeUnique;
-var
-  NewRoot: TMPSMSectionClone;
-begin
-  if ssUndoProcess in fRichMemo.Lines.State then
-    Exit;
-  if fRoot.fRefCount > 1 then
-    begin
-      { } {$IFDEF SYNDEBUG}
-      { } fRichMemo.LogFmt('Sections.MakeUnique %d->%d', [fRoot.fRefCount, fRoot.fRefCount + 1]);
-      { } {$ENDIF}
-      { Create a real /with its own memory/ clone of the section tree }
-      NewRoot := TMPSMSectionClone.Create;
-      NewRoot.Assign(fRoot);
-      SetRoot(NewRoot);
-    end
-  else
-    begin
-
-      { Create a virtual /reference-counted/ clone of the section tree }
-      { } {$IFDEF SYNDEBUG}
-      { } fRichMemo.Log('Sections.MakeUnique VIRTUAL');
-      { } {$ENDIF}
-    end;
 end;
 
 // Returns section data as multiline text
@@ -3144,7 +3097,7 @@ begin
   fRichMemo.Change([ciSections]);
 end;
 
-// Sets a new section root (it may have been saved in Undo)
+// Sets a new section root (e.g. one saved by Undo) and takes ownership of it
 procedure TMPSynMemoSections.SetRoot(const Value: TMPSMSectionClone);
 begin
 {$IFDEF SYNDEBUG}
@@ -3153,9 +3106,8 @@ begin
   { If the tree does not change, just reindex the lines }
   if fRoot <> Value then
     begin
-      fRoot.Release;
+      fRoot.Free;
       fRoot := Value;
-      fRoot.AddRef;
     end;
   { Update the lines }
   ReIndex;
@@ -3263,7 +3215,7 @@ end;
 destructor TMPSynMemoUndoItem.Destroy;
 begin
   // First frees the section tree
-  uiSections.Release;
+  uiSections.Free;
   inherited;
 end;
 
@@ -3613,7 +3565,7 @@ begin
         try
           Move(PChar(s)^, GlobalLock(Data)^, (Length(s) + 1) * SizeOf(Char));
           GlobalUnlock(Data);
-          Clipboard.SetAsHandle(CF_SYNTAX, Data);
+          Clipboard.SetAsHandle(Word(CF_SYNTAX), Data);
         except
           GlobalFree(Data);
           raise;
@@ -3909,6 +3861,7 @@ begin
 
           // Previous section tree
           Sections.EntireSection := uiSections;
+          uiSections := nil;
 
           // Old cursor position
           Lines.State := Lines.State + [ssUndoProcess];
@@ -3952,7 +3905,6 @@ begin
   // a copy: the editor keeps changing its own section tree
   Result.uiSections := TMPSMSectionClone.Create;
   Result.uiSections.Assign(fRichMemo.Sections.EntireSection);
-  Result.uiSections.AddRef;
 
   { Record the undo entry }
   if fUndoStack.Count >= fMaxUndoDepth then
@@ -3968,8 +3920,6 @@ begin
   fRichMemo.Log('Range.ClearUndo');
 {$ENDIF}
   fUndoStack.Clear;
-  Assert(fRichMemo.Sections.EntireSection.RefCount = 1,
-    'After ClearUndo fRichMemo.Sections.EntireSection.RefCount must be == 1');
   fRichMemo.Change([ciUndoStack]);
 end;
 
@@ -3988,7 +3938,9 @@ type
     i: Integer;
     Stack: TStack;
     Sm: TSectionMark;
+    EndsWithLineBreak: Boolean;
   begin
+    EndsWithLineBreak := (s = '') or CharInSet(s[Length(s)], [#10, #13]);
     Sl := TStringList.Create;
     Sl.Text := s;
     secs := nil;
@@ -4016,6 +3968,9 @@ type
       end;
     Stack.Free;
     s := Sl.Text;
+    // TStrings.Text ends every line with a line break
+    if not EndsWithLineBreak then
+      System.SetLength(s, Length(s) - Length(sLineBreak));
     Sl.Free;
   end;
 { }
@@ -5128,7 +5083,7 @@ function TMPCustomSyntaxMemo.CharPosToPixOffset(const Col: Integer; s: string; S
 var
   t: TMPSyntaxToken;
   i, j, WordIndex: Integer;
-  Bold: Boolean;
+  Style: TFontStyles;
 begin
   Result := 0;
   WordIndex := 0;
@@ -5141,18 +5096,13 @@ begin
       i := j;
       if i = Col then
         Break;
-      Bold := fsBold in fParseAttributes.FontStyle[t.stToken];
+      Style := fParseAttributes.FontStyle[t.stToken];
       j := Min(Col, t.stStart + t.stLength);
       if j > Length(s) then
         j := Length(s);
       while i < j do
         begin
-          if s[i + 1] <= High(AnsiChar) then
-            Inc(Result, fCharWidths[Bold][AnsiChar(s[i + 1])])
-          else
-            Inc(Result, Canvas.TextWidth(s[i + 1]));
-
-          // fCharWidths[Bold][AnsiChar(s[i+1])])
+          Inc(Result, CharWidth(s[i + 1], Style));
           Inc(i);
         end;
       if i = Col then
@@ -5173,6 +5123,18 @@ begin
     Result := 0;
 end;
 
+// Width of character C drawn in a token with the given font style
+function TMPCustomSyntaxMemo.CharWidth(C: Char; Style: TFontStyles): Integer;
+begin
+  if C <= High(AnsiChar) then
+    Result := fCharWidths[fsBold in Style][AnsiChar(C)]
+  else
+  begin
+    Canvas.Font.Style := Style;
+    Result := Canvas.TextWidth(C);
+  end;
+end;
+
 // PixOffsetToCharPos() Returns the position (0-based) of the character in line Row
 // by its offset from the line start in pixels Pix
 // If WordIndex <> nil, it returns the index of the word at this position:
@@ -5184,7 +5146,7 @@ var
   Sp: TMPSyntaxParser;
   s: string;
   Pos, WIndex: Integer;
-  Bold: Boolean;
+  Style: TFontStyles;
   t: TMPSyntaxToken;
 begin
   Result := 0;
@@ -5198,7 +5160,7 @@ begin
     while WIndex < Sp.Count do
       begin
         t := Sp[WIndex];
-        Bold := fsBold in fParseAttributes.FontStyle[t.stToken];
+        Style := fParseAttributes.FontStyle[t.stToken];
         while Result < t.stStart do
           begin
             Inc(Pos, fCharWidths[False][' ']);
@@ -5212,10 +5174,7 @@ begin
           end;
         while (Result < t.stStart + t.stLength) and (Result < Length(s)) do
           begin
-            if s[Result + 1] <= High(AnsiChar) then
-              Inc(Pos, fCharWidths[Bold][AnsiChar(s[Result + 1])])
-            else
-              Inc(Pos, Canvas.TextWidth(s[Result + 1]));
+            Inc(Pos, CharWidth(s[Result + 1], Style));
             if Pos > Pix then
               begin
                 if Assigned(WordIndex) then

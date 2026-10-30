@@ -97,7 +97,7 @@ const
 implementation
 
 uses
-  RegistryUtils, TypInfo, Variants, RegFIBEditors, FIBEditorsConsts,
+  RegUtils, FIBProps, TypInfo, Variants, RegFIBEditors, FIBEditorsConsts,
   RTTIRoutines, IBSQLSyn;
 
 {$R *.dfm}

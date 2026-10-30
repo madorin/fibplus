@@ -81,13 +81,13 @@ begin
         minPar := High(Values);
       for i := 0 to minPar do
         case VarType(Values[i]) of
-          varSmallint, varInteger, varWord, varLongWord, varInt64: WriteInteger(ParamNames[i], Values[i]);
+          varShortInt, varByte, varSmallint, varWord, varInteger, varLongWord, varInt64:
+            WriteInteger(ParamNames[i], Values[i]);
           varSingle, varDouble: WriteFloat(ParamNames[i], Values[i]);
           varCurrency: WriteCurrency(ParamNames[i], Values[i]);
           varBoolean: WriteBool(ParamNames[i], Values[i]);
-          varString: WriteString(ParamNames[i], Values[i]);
+          varString, varUString, varOleStr: WriteString(ParamNames[i], Values[i]);
           varDate: WriteDateTime(ParamNames[i], Values[i]);
-          varUString: WriteString(ParamNames[i], Values[i]);
         end
     finally
       CloseKey;

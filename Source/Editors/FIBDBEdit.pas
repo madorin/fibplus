@@ -103,7 +103,7 @@ implementation
 
 uses
   Variants,
-  RegistryUtils, RTTIRoutines, FIBEditorsConsts;
+  RegUtils, FIBProps, RTTIRoutines, FIBEditorsConsts;
 
 function EditFIBDatabase(Database: TComponent): boolean;
 begin

@@ -25,7 +25,8 @@ package FIBCore_D17;
 {$IMAGEBASE $400000}
 {$DEFINE DEBUG}
 {$ENDIF IMPLICITBUILDING}
-{$DESCRIPTION 'FIBPlus'}
+{$DESCRIPTION 'FIBPlus Components'}
+{$RUNONLY}
 {$IMPLICITBUILD OFF}
 
 requires
@@ -35,8 +36,6 @@ requires
 
 contains
   StdFuncs in '..\Source\StdFuncs.pas',
-  FIBTypes in '..\Source\FIBTypes.pas',
-  FIBCharSets in '..\Source\FIBCharSets.pas',
   FIBServices in '..\Source\FIBServices.pas',
   IB_Services in '..\Source\IB_Services.pas',
   ibase in '..\Source\ibase.pas',
@@ -89,12 +88,13 @@ contains
   FIBStoredProc in '..\Source\FIBStoredProc.pas',
   pFIBStoredProc in '..\Source\pFIBStoredProc.pas',
   IB_ErrorCodes in '..\Source\IB_ErrorCodes.pas',
-  RegFIB in '..\Source\RegFIB.pas',
   FIBCloneComponents in '..\Source\FIBCloneComponents.pas',
   FIBFieldsDescr in '..\Source\FIBFieldsDescr.pas',
   SIBAPI in '..\Source\SIBAPI.pas',
   FIBEventAlerter in '..\Source\FIBEventAlerter.pas',
   SIBFIBEA in '..\Source\SIBFIBEA.pas',
-  SIBGlobals in '..\Source\SIBGlobals.pas';
+  SIBGlobals in '..\Source\SIBGlobals.pas',
+  FIBTypes in '..\Source\FIBTypes.pas',
+  FIBCharSets in '..\Source\FIBCharSets.pas';
 
 end.

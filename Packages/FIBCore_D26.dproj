@@ -58,6 +58,12 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <VerInfo_MajorVer>8</VerInfo_MajorVer>
+        <VerInfo_MinorVer>0</VerInfo_MinorVer>
+        <VerInfo_Release>0</VerInfo_Release>
+        <DCC_Description>FIBPlus Components</DCC_Description>
+        <RuntimeOnlyPackage>true</RuntimeOnlyPackage>
         <DCC_UNIT_DEPRECATED>false</DCC_UNIT_DEPRECATED>
         <SanitizedProjectName>FIBCore_D26</SanitizedProjectName>
         <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
@@ -73,9 +79,7 @@
         <DCC_F>false</DCC_F>
         <DCC_K>false</DCC_K>
         <VerInfo_Locale>1048</VerInfo_Locale>
-        <VerInfo_Keys>CompanyName=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductVersion=1.0.0.0;Comments=;ProgramID=com.embarcadero.$(MSBuildProjectName);FileDescription=$(MSBuildProjectName);ProductName=$(MSBuildProjectName)</VerInfo_Keys>
-        <RuntimeOnlyPackage>true</RuntimeOnlyPackage>
-        <DCC_Description>FIBPlus Access Components</DCC_Description>
+        <VerInfo_Keys>CompanyName=;FileVersion=8.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductVersion=8.0.0.0;Comments=;ProgramID=com.embarcadero.$(MSBuildProjectName);FileDescription=$(MSBuildProjectName);ProductName=$(MSBuildProjectName)</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <VerInfo_Locale>1033</VerInfo_Locale>
@@ -130,8 +134,6 @@
         <DCCReference Include="dbrtl.dcp"/>
         <DCCReference Include="dsnap.dcp"/>
         <DCCReference Include="..\Source\StdFuncs.pas"/>
-        <DCCReference Include="..\Source\FIBTypes.pas"/>
-        <DCCReference Include="..\Source\FIBCharSets.pas"/>
         <DCCReference Include="..\Source\FIBServices.pas"/>
         <DCCReference Include="..\Source\IB_Services.pas"/>
         <DCCReference Include="..\Source\ibase.pas"/>
@@ -190,6 +192,8 @@
         <DCCReference Include="..\Source\FIBEventAlerter.pas"/>
         <DCCReference Include="..\Source\SIBFIBEA.pas"/>
         <DCCReference Include="..\Source\SIBGlobals.pas"/>
+        <DCCReference Include="..\Source\FIBTypes.pas"/>
+        <DCCReference Include="..\Source\FIBCharSets.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -210,7 +214,7 @@
                 <VersionInfo>
                     <VersionInfo Name="IncludeVerInfo">True</VersionInfo>
                     <VersionInfo Name="AutoIncBuild">False</VersionInfo>
-                    <VersionInfo Name="MajorVer">1</VersionInfo>
+                    <VersionInfo Name="MajorVer">8</VersionInfo>
                     <VersionInfo Name="MinorVer">0</VersionInfo>
                     <VersionInfo Name="Release">0</VersionInfo>
                     <VersionInfo Name="Build">0</VersionInfo>
@@ -225,13 +229,13 @@
                 <VersionInfoKeys>
                     <VersionInfoKeys Name="CompanyName"/>
                     <VersionInfoKeys Name="FileDescription"/>
-                    <VersionInfoKeys Name="FileVersion">1.0.0.0</VersionInfoKeys>
+                    <VersionInfoKeys Name="FileVersion">8.0.0.0</VersionInfoKeys>
                     <VersionInfoKeys Name="InternalName"/>
                     <VersionInfoKeys Name="LegalCopyright"/>
                     <VersionInfoKeys Name="LegalTrademarks"/>
                     <VersionInfoKeys Name="OriginalFilename"/>
                     <VersionInfoKeys Name="ProductName"/>
-                    <VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys>
+                    <VersionInfoKeys Name="ProductVersion">8.0.0.0</VersionInfoKeys>
                     <VersionInfoKeys Name="Comments"/>
                     <VersionInfoKeys Name="CFBundleName"/>
                     <VersionInfoKeys Name="CFBundleDisplayName"/>

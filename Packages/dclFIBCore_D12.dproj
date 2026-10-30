@@ -22,6 +22,7 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_Description>FIBPlus Components (Design)</DCC_Description>
 			<DCC_DcuOutput>$(BDSCOMMONDIR)\Dcu\FIB\$(Platform)\$(Config)</DCC_DcuOutput>
 			<DCC_UnitSearchPath>..</DCC_UnitSearchPath>
 			<DCC_ResourcePath>..</DCC_ResourcePath>
@@ -30,24 +31,20 @@
 			<DCC_SymbolReferenceInfo>1</DCC_SymbolReferenceInfo>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
 			<DesignOnlyPackage>true</DesignOnlyPackage>
-			<DCC_Description>FIBPlus Property Editors</DCC_Description>
 			<DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
 			<GenDll>true</GenDll>
-			<DCC_WriteableConstants>true</DCC_WriteableConstants>
 			<GenPackage>true</GenPackage>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<Version>7.0</Version>
-			<DCC_WriteableConstants>True</DCC_WriteableConstants>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_2)'!=''">
 			<Version>7.0</Version>
 			<DCC_DebugInformation>False</DCC_DebugInformation>
-			<DCC_WriteableConstants>True</DCC_WriteableConstants>
 			<DCC_LocalDebugSymbols>False</DCC_LocalDebugSymbols>
 			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
 			<DCC_CBuilderOutput>All</DCC_CBuilderOutput>
-			<DCC_Define>RELEASE</DCC_Define>
+			<DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
 		</PropertyGroup>
 		<ItemGroup>
 			<DelphiCompile Include="dclFIBCore_D12.dpk">
@@ -60,8 +57,9 @@
 			<DCCReference Include="rtl.dcp"/>
 			<DCCReference Include="dbrtl.dcp"/>
 			<DCCReference Include="vclactnband.dcp"/>
+			<DCCReference Include="vclimg.dcp"/>
 			<DCCReference Include="FIBCore_D12.dcp"/>
-			<DCCReference Include="xmlrtl.dcp"/>
+			<DCCReference Include="..\Source\RegFIB.pas"/>
 			<DCCReference Include="..\Source\Editors\RegFIBEditors.pas"/>
 			<DCCReference Include="..\Source\Editors\EdFieldInfo.pas">
 				<Form>frmFields</Form>
@@ -118,13 +116,19 @@
 			<DCCReference Include="..\Source\Editors\FIBComponentEditors.pas"/>
 			<DCCReference Include="..\Source\Editors\FIBEditorsConsts.pas"/>
 			<DCCReference Include="..\Source\Editors\FIBRepositoryOperations.pas"/>
-			<DCCReference Include="..\Source\Editors\RegistryUtils.pas"/>
 			<DCCReference Include="..\Source\Editors\RegSynEditAlt.pas"/>
 			<DCCReference Include="..\Source\Editors\uFIBScriptForm.pas">
 				<Form>frmScript</Form>
 			</DCCReference>
-			<DCCReference Include="..\Source\Editors\FIBSyntaxMemo.pas"/>
 			<DCCReference Include="..\Source\Editors\IBSQLSyn.pas"/>
+			<DCCReference Include="..\Source\Editors\FIBSyntaxMemo.pas"/>
+			<DCCReference Include="..\Source\FIBLoginDlg.pas">
+				<Form>FIBLoginForm</Form>
+			</DCCReference>
+			<DCCReference Include="..\Source\Editors\uFIBEditorForm.pas"/>
+			<DCCReference Include="..\Source\Editors\uFontEditor.pas">
+				<Form>frmFontEditor</Form>
+			</DCCReference>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>
@@ -152,7 +156,7 @@
 					<VersionInfo>
 						<VersionInfo Name="IncludeVerInfo">True</VersionInfo>
 						<VersionInfo Name="AutoIncBuild">False</VersionInfo>
-						<VersionInfo Name="MajorVer">1</VersionInfo>
+						<VersionInfo Name="MajorVer">8</VersionInfo>
 						<VersionInfo Name="MinorVer">0</VersionInfo>
 						<VersionInfo Name="Release">0</VersionInfo>
 						<VersionInfo Name="Build">0</VersionInfo>
@@ -167,13 +171,13 @@
 					<VersionInfoKeys>
 						<VersionInfoKeys Name="CompanyName"/>
 						<VersionInfoKeys Name="FileDescription"/>
-						<VersionInfoKeys Name="FileVersion">1.0.0.0</VersionInfoKeys>
+						<VersionInfoKeys Name="FileVersion">8.0.0.0</VersionInfoKeys>
 						<VersionInfoKeys Name="InternalName"/>
 						<VersionInfoKeys Name="LegalCopyright"/>
 						<VersionInfoKeys Name="LegalTrademarks"/>
 						<VersionInfoKeys Name="OriginalFilename"/>
 						<VersionInfoKeys Name="ProductName"/>
-						<VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys>
+						<VersionInfoKeys Name="ProductVersion">8.0.0.0</VersionInfoKeys>
 						<VersionInfoKeys Name="Comments"/>
 					</VersionInfoKeys>
 					<Source>
