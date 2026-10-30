@@ -1,7 +1,6 @@
 *.dcu
 *.res
 !Source/Tools/FIBToolsImages.res
-!Packages/*.res
 *.local
 *.identcache
 *.stat
