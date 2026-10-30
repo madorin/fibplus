@@ -133,7 +133,7 @@ type
 
 const
   DefObjects = [otDomain, otTable, otView, otProcedure, otGenerator,
-    otException, otUDF, otRole, otDBTrigger];
+    otException, otUDF, otRole, otDBTrigger, otStoredFunctions, otPackage];
   DefTableChilds = [soTableFields, soPrimaryKey, soForeignKey, soTableTriggers,
     soUniqueConstr, soIndex, soCheckConstr];
   DefViewChilds = [soViewFields, soViewTriggers];
@@ -269,6 +269,9 @@ type
   TMetaGenerator = class(TCustomMetaObject)
   private
     FValue: Int64;
+    FOptionsLoaded: Boolean;
+    FInitialValue: Int64;
+    FIncrement: Integer;
     procedure LoadFromDataBase(QName: TFIBQuery);
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
@@ -276,14 +279,20 @@ type
   public
     class function ClassIndex: Integer; override;
     property Value: Int64 read FValue;
+    property InitialValue: Int64 read FInitialValue;
+    property Increment: Integer read FIncrement;
   end;
 
   TArrBounds = record
     LOWER_BOUND: Integer;
-    UPPER_BOUND: Integer end;
-    TFieldDimensions = array of TArrBounds;
+    UPPER_BOUND: Integer;
+  end;
 
-    TCustomMetaField = class(TCustomMetaObject)private FScale: Word;
+  TFieldDimensions = array of TArrBounds;
+
+  TCustomMetaField = class(TCustomMetaObject)
+  private
+    FScale: Word;
     FLength: Smallint;
     FPrecision: Smallint;
     FFieldType: TFIBFieldType;
@@ -334,6 +343,8 @@ type
     FRelationField: string;
     FDefaultValue: string;
     procedure DoLoadFromQuery(QField, QCharset: TFIBQuery; CanUseParamDomain, CanUseProcParamRelation: boolean);
+    // BaseType: a TYPE OF COLUMN parameter as its type, for a routine made before the tables
+    procedure WriteDeclaration(Stream: TStringStream; BaseType: Boolean);
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
     function CommentKeyword: string; override;
@@ -357,6 +368,9 @@ type
     FDomainName: string;
     FComputedSource: string;
     FValidationSource: string;
+    FCollation: string;
+    FIdentityStart: Int64;
+    FIdentityIncrement: Integer;
     procedure LoadFromDataBase(Q: TFIBQuery; C: TFIBQuery); override;
     function GetDomain: TMetaDomain;
   protected
@@ -367,6 +381,7 @@ type
     property NotNull: boolean read FNotNull;
     property Domain: TMetaDomain read GetDomain;
     property ComputedSource: string read FComputedSource;
+    property Collation: string read FCollation;
   end;
 
   TMetaDomain = class(TMetaTableField)
@@ -441,6 +456,8 @@ type
     FUnique: boolean;
     FActive: boolean;
     FOrder: TIndexOrder;
+    FExpression: string;
+    FCondition: string;
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
     function CommentKeyword: string; override;
@@ -449,6 +466,10 @@ type
     property Unique: boolean read FUnique;
     property Active: boolean read FActive;
     property Order: TIndexOrder read FOrder;
+    // COMPUTED BY expression, in parentheses
+    property Expression: string read FExpression;
+    // WHERE clause of a partial index
+    property Condition: string read FCondition;
   end;
 
   TCustomMetaTrigger = class(TCustomMetaObject)
@@ -458,8 +479,12 @@ type
     FPosition: Smallint;
     FActive: boolean;
     FSource: string;
-    class function DecodePrefix(Value: Integer): TTriggerType;
-    class function DecodeSuffixes(Value: Integer): TTriggerActions;
+    FTriggerType: Int64;
+    class function DecodePrefix(Value: Int64): TTriggerType;
+    class function DecodeSuffixes(Value: Int64): TTriggerActions;
+    function IsDDLTrigger: Boolean;
+    function DDLEventsText: string;
+    procedure WriteHeaderDDL(Stream: TStringStream);
     procedure LoadFromDataBase(Q: TFIBQuery);
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
@@ -473,6 +498,8 @@ type
     property Position: Smallint read FPosition;
     property Active: boolean read FActive;
     property Source: string read FSource;
+    // RDB$TRIGGER_TYPE, also of the DDL triggers
+    property TriggerType: Int64 read FTriggerType;
   end;
 
   TMetaTableTrigger = class(TCustomMetaTrigger)
@@ -588,7 +615,7 @@ type
     function GetGrants(const Index: Integer): TCustomMetaGrant;
     function GetGrantsCount: Integer;
 
-    procedure InternalSaveToDDL(Stream: TStringStream; Operation: string);
+    procedure InternalSaveToDDL(Stream: TStringStream; Operation: string; BaseTypes: Boolean = False);
     procedure SaveToPostDDL(Stream: TStringStream);
     procedure SaveToAlterDDL(Stream: TStringStream);
   protected
@@ -617,7 +644,7 @@ type
     function GetInputFieldsCount: Integer;
 
     procedure LoadFromDataBase(QNames, QReturn, QInputs, QCharset: TFIBQuery);
-    procedure InternalSaveToDDL(Stream: TStringStream; Operation: string);
+    procedure InternalSaveToDDL(Stream: TStringStream; Operation: string; BaseTypes: Boolean = False);
     function GetReturn: TMetaProcOutField;
   protected
     procedure SaveEmptyDDL(Stream: TStringStream);
@@ -642,7 +669,7 @@ type
     procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
-    class function IsSubObject: boolean; override;
+    class function IsSubObject: Boolean; override;
     procedure GenerateDDLText(Stream: TStringStream); override;
   end;
 
@@ -651,7 +678,7 @@ type
     procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
-    class function IsSubObject: boolean; override;
+    class function IsSubObject: Boolean; override;
     procedure GenerateDDLText(Stream: TStringStream); override;
   end;
 
@@ -762,7 +789,12 @@ type
     FStoredFunctionsSupports: boolean;
     FPackagesSupports: boolean;
     FTabRelTypeSupports: boolean;
-    FCommentsSupports: boolean;
+    FCommentsSupports: Boolean;
+    // START WITH and INCREMENT BY of a sequence or an identity column
+    FSequenceOptionsSupports: Boolean;
+    FPartialIndicesSupports: Boolean;
+    // Firebird 3 and later limit a string literal to 64 KB, not the statement
+    FLongStatementsSupports: Boolean;
     // Of the SQL text, for the byte length of a COMMENT ON
     FCodePage: Word;
 
@@ -805,8 +837,8 @@ type
     procedure SetOptionalColumns(Query: TFIBQuery; ObjectType: TDBObjectType);
     function ProcFieldsSQL: string;
     function UDFFieldsSQL: string;
-    function CommentsIncluded(Options: TDDLTextOptions): boolean;
-    function CommentFits(const Statement, Text: string): boolean;
+    function CommentsIncluded(Options: TDDLTextOptions): Boolean;
+    function CommentFits(const Statement, Text: string): Boolean;
   public
     constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
     destructor Destroy; override;
@@ -1075,7 +1107,11 @@ const
     'RDB$FIELD_NAME = ''RDB$RELATION_NAME'') AS PARAM_RELATIONS, ' +
     // COMMENT ON came with Firebird 2.0, as the descriptions of generators and roles
     '(SELECT COUNT(*) FROM RDB$RELATION_FIELDS WHERE RDB$RELATION_NAME = ''RDB$GENERATORS'' AND ' +
-    'RDB$FIELD_NAME = ''RDB$DESCRIPTION'') AS COMMENTS ' +
+    'RDB$FIELD_NAME = ''RDB$DESCRIPTION'') AS COMMENTS, ' +
+    '(SELECT COUNT(*) FROM RDB$RELATION_FIELDS WHERE RDB$RELATION_NAME = ''RDB$GENERATORS'' AND ' +
+    'RDB$FIELD_NAME = ''RDB$GENERATOR_INCREMENT'') AS SEQUENCE_OPTIONS, ' +
+    '(SELECT COUNT(*) FROM RDB$RELATION_FIELDS WHERE RDB$RELATION_NAME = ''RDB$INDICES'' AND ' +
+    'RDB$FIELD_NAME = ''RDB$CONDITION_SOURCE'') AS PARTIAL_INDICES ' +
     'FROM RDB$DATABASE';
 
   // Optional columns, filled by the server features
@@ -1083,9 +1119,21 @@ const
   DescriptionColumn = ', RDB$DESCRIPTION';
   PackageNameMacro = '@@PACK_NAME@';
   PackageNameColumn = ', RDB$PACKAGE_NAME';
+  SequenceOptionsMacro = '@@SEQUENCE_OPTIONS@';
+  SequenceOptionsColumns = ', RDB$INITIAL_VALUE, RDB$GENERATOR_INCREMENT';
+  IndexConditionMacro = '@@CONDITION@';
+  IndexConditionColumn = ', IDX.RDB$CONDITION_SOURCE';
+
+  // The collation of a column: its own, else the one of its implicit domain
+  CollationColumns = ', RFR.RDB$COLLATION_ID AS COLUMN_COLLATION_ID, FLD.RDB$COLLATION_ID AS DOMAIN_COLLATION_ID, ' +
+    '(SELECT CO.RDB$COLLATION_NAME FROM RDB$COLLATIONS CO WHERE CO.RDB$CHARACTER_SET_ID = FLD.RDB$CHARACTER_SET_ID ' +
+    'AND CO.RDB$COLLATION_ID = RFR.RDB$COLLATION_ID) AS COLUMN_COLLATION, ' +
+    '(SELECT CO.RDB$COLLATION_NAME FROM RDB$COLLATIONS CO WHERE CO.RDB$CHARACTER_SET_ID = FLD.RDB$CHARACTER_SET_ID ' +
+    'AND CO.RDB$COLLATION_ID = FLD.RDB$COLLATION_ID) AS DOMAIN_COLLATION ';
 
   // FB3^^^^
-  QRYGenerators = 'SELECT RDB$GENERATOR_NAME ' + DescriptionMacro + ' FROM RDB$GENERATORS GEN WHERE ' +
+  QRYGenerators = 'SELECT RDB$GENERATOR_NAME ' + DescriptionMacro + ' ' + SequenceOptionsMacro +
+    ' FROM RDB$GENERATORS GEN WHERE ' +
     '(NOT GEN.RDB$GENERATOR_NAME STARTING WITH ''RDB$'') AND ' +
     '(NOT GEN.RDB$GENERATOR_NAME STARTING WITH ''SQL$'') AND ' +
     '((GEN.RDB$SYSTEM_FLAG IS NULL) OR (GEN.RDB$SYSTEM_FLAG <> 1)) ' +
@@ -1116,6 +1164,7 @@ const
     'FLD.RDB$SEGMENT_LENGTH, RFR.RDB$NULL_FLAG, RFR.RDB$DEFAULT_SOURCE, ' +
     'RFR.RDB$FIELD_SOURCE , FLD.RDB$COMPUTED_SOURCE, ' +
     '(Select Count(*) from  RDB$FIELD_DIMENSIONS  DIM where   DIM.rdb$field_name= RFR.RDB$FIELD_SOURCE)    is_Array, RFR.RDB$DESCRIPTION ' +
+    CollationColumns +
     'FROM RDB$RELATIONS REL, RDB$RELATION_FIELDS RFR, RDB$FIELDS FLD ' +
     'WHERE (RFR.RDB$FIELD_SOURCE = FLD.RDB$FIELD_NAME) AND ' +
     '(RFR.RDB$RELATION_NAME = REL.RDB$RELATION_NAME) AND ' +
@@ -1128,7 +1177,11 @@ const
     'FLD.RDB$SEGMENT_LENGTH, RFR.RDB$NULL_FLAG, RFR.RDB$DEFAULT_SOURCE, ' +
     'RFR.RDB$FIELD_SOURCE , FLD.RDB$COMPUTED_SOURCE, ' +
     '(Select Count(*) from  RDB$FIELD_DIMENSIONS  DIM where   DIM.rdb$field_name= RFR.RDB$FIELD_SOURCE)    is_Array, ' +
-    'RFR.RDB$IDENTITY_TYPE, RFR.RDB$DESCRIPTION ' +
+    'RFR.RDB$IDENTITY_TYPE, RFR.RDB$DESCRIPTION ' + CollationColumns +
+    ', (SELECT GEN.RDB$INITIAL_VALUE FROM RDB$GENERATORS GEN WHERE GEN.RDB$GENERATOR_NAME = RFR.RDB$GENERATOR_NAME) ' +
+    'AS IDENTITY_START, ' +
+    '(SELECT GEN.RDB$GENERATOR_INCREMENT FROM RDB$GENERATORS GEN WHERE GEN.RDB$GENERATOR_NAME = RFR.RDB$GENERATOR_NAME) ' +
+    'AS IDENTITY_INCREMENT ' +
     'FROM RDB$RELATIONS REL, RDB$RELATION_FIELDS RFR, RDB$FIELDS FLD ' +
     'WHERE (RFR.RDB$FIELD_SOURCE = FLD.RDB$FIELD_NAME) AND ' +
     '(RFR.RDB$RELATION_NAME = REL.RDB$RELATION_NAME) AND ' +
@@ -1149,10 +1202,12 @@ const
     'FROM RDB$RELATION_CONSTRAINTS RC, RDB$INDEX_SEGMENTS IDX ' +
     'WHERE (IDX.RDB$INDEX_NAME = RC.RDB$INDEX_NAME||'''') AND ' +
     '(RC.RDB$CONSTRAINT_TYPE = ?CT) ' + 'AND (RC.RDB$RELATION_NAME = ?RN) ' +
-    'ORDER BY IDX.RDB$FIELD_POSITION';
+    'ORDER BY RC.RDB$CONSTRAINT_NAME, IDX.RDB$FIELD_POSITION';
 
+  // An expression index has no segments
   QRYIndex = 'SELECT IDX.RDB$INDEX_NAME, ISG.RDB$FIELD_NAME, IDX.RDB$UNIQUE_FLAG, ' +
-    'IDX.RDB$INDEX_INACTIVE, IDX.RDB$INDEX_TYPE, IDX.RDB$DESCRIPTION FROM RDB$INDICES IDX ' +
+    'IDX.RDB$INDEX_INACTIVE, IDX.RDB$INDEX_TYPE, IDX.RDB$DESCRIPTION, IDX.RDB$EXPRESSION_SOURCE ' +
+    IndexConditionMacro + ' FROM RDB$INDICES IDX ' +
     'LEFT JOIN RDB$INDEX_SEGMENTS ISG ON ISG.RDB$INDEX_NAME = IDX.RDB$INDEX_NAME ' +
     'WHERE  NOT  EXISTS(SELECT * FROM RDB$RELATION_CONSTRAINTS C WHERE IDX.RDB$INDEX_NAME = C.RDB$INDEX_NAME) ' +
     ' AND (IDX.RDB$RELATION_NAME = ?RN) ' +
@@ -1210,7 +1265,10 @@ const
     'RDB$FIELD_NAME, RDB$SEGMENT_LENGTH, RDB$NULL_FLAG, RDB$DEFAULT_SOURCE, RDB$COMPUTED_SOURCE, ' +
     'RDB$VALIDATION_SOURCE AS CHECK_CONSTRAINT, ' +
     ' (Select Count(*) from  RDB$FIELD_DIMENSIONS  DIM where   DIM.rdb$field_name= RDB$FIELDS.rdb$field_name)    is_Array, ' +
-    'RDB$DESCRIPTION ' +
+    'RDB$DESCRIPTION, RDB$COLLATION_ID AS DOMAIN_COLLATION_ID, ' +
+    '(SELECT CO.RDB$COLLATION_NAME FROM RDB$COLLATIONS CO WHERE ' +
+    'CO.RDB$CHARACTER_SET_ID = RDB$FIELDS.RDB$CHARACTER_SET_ID AND ' +
+    'CO.RDB$COLLATION_ID = RDB$FIELDS.RDB$COLLATION_ID) AS DOMAIN_COLLATION ' +
     'FROM RDB$FIELDS';
 
   // The system flag also excludes the MON$ domains of Firebird 4 and later
@@ -1243,8 +1301,8 @@ const
     'F.RDB$SEGMENT_LENGTH AS SEGMENT_SIZE,' +
 
     'PP.rdb$parameter_mechanism AS MECHANIZM,' +
-    'PP.rdb$field_source AS F_BASED_ON_DOMAIN, ' + 'F.RDB$DEFAULT_SOURCE, ' +
-    'PP.RDB$DESCRIPTION ' +
+    'PP.rdb$field_source AS F_BASED_ON_DOMAIN, ' + 'PP.RDB$DEFAULT_SOURCE, ' +
+    'PP.RDB$DESCRIPTION, F.RDB$DEFAULT_SOURCE AS DOMAIN_DEFAULT_SOURCE ' +
 
     'FROM RDB$PROCEDURE_PARAMETERS PP ' +
     'JOIN RDB$FIELDS F ON F.RDB$FIELD_NAME = PP.RDB$FIELD_SOURCE ' +
@@ -1260,9 +1318,9 @@ const
     'F.RDB$SEGMENT_LENGTH AS SEGMENT_SIZE,' +
 
     'PP.rdb$parameter_mechanism AS MECHANIZM,' +
-    'PP.rdb$field_source AS F_BASED_ON_DOMAIN, ' + 'F.RDB$DEFAULT_SOURCE,' +
+    'PP.rdb$field_source AS F_BASED_ON_DOMAIN, ' + 'PP.RDB$DEFAULT_SOURCE, ' +
     'PP.RDB$RELATION_NAME, ' + 'PP.RDB$FIELD_NAME, ' +
-    'PP.RDB$DESCRIPTION ' +
+    'PP.RDB$DESCRIPTION, F.RDB$DEFAULT_SOURCE AS DOMAIN_DEFAULT_SOURCE ' +
 
     'FROM RDB$PROCEDURE_PARAMETERS PP ' +
     'JOIN RDB$FIELDS F ON F.RDB$FIELD_NAME = PP.RDB$FIELD_SOURCE ' +
@@ -1304,7 +1362,7 @@ const
   // The column order is read by TMetaProcField.DoLoadFromQuery; PN is '' outside a package
   QRYStoredFuncFieldsFB3Base = 'SELECT F.RDB$FIELD_TYPE, F.RDB$FIELD_SCALE, F.RDB$FIELD_LENGTH, ' +
     'F.RDB$FIELD_PRECISION, F.RDB$CHARACTER_SET_ID, F.RDB$FIELD_SUB_TYPE, PP.RDB$ARGUMENT_NAME, ' +
-    'F.RDB$SEGMENT_LENGTH, PP.RDB$ARGUMENT_MECHANISM, PP.RDB$FIELD_SOURCE, F.RDB$DEFAULT_SOURCE, ' +
+    'F.RDB$SEGMENT_LENGTH, PP.RDB$ARGUMENT_MECHANISM, PP.RDB$FIELD_SOURCE, PP.RDB$DEFAULT_SOURCE, ' +
     'PP.RDB$RELATION_NAME, PP.RDB$FIELD_NAME, PP.RDB$DESCRIPTION ' +
     'FROM RDB$FUNCTION_ARGUMENTS PP ' +
     'JOIN RDB$FUNCTIONS F1 ON F1.RDB$FUNCTION_NAME = PP.RDB$FUNCTION_NAME AND ' +
@@ -1567,6 +1625,12 @@ var
 begin
   Name := Trim(QName.Fields[0].AsString);
   LoadDescription(QName);
+  FOptionsLoaded := QName.FindField('RDB$GENERATOR_INCREMENT') <> nil;
+  if FOptionsLoaded then
+  begin
+    FInitialValue := QName.FieldByName('RDB$INITIAL_VALUE').AsInt64;
+    FIncrement := QName.FieldByName('RDB$GENERATOR_INCREMENT').AsInteger;
+  end;
   Query := CreateQuery(Format('select gen_id(%s, 0) from rdb$database', [FormatName]), QName.Transaction);
   try
     Query.ExecQuery;
@@ -1580,7 +1644,15 @@ end;
 
 procedure TMetaGenerator.GenerateObjectDDL(Stream: TStringStream);
 begin
-  Stream.WriteString(Format('CREATE GENERATOR %s;%sSET GENERATOR %0:s TO %2:d', [FormatName, sLineBreak, FValue]));
+  Stream.WriteString('CREATE GENERATOR ' + FormatName);
+  // Always START WITH: its default is 0 in Firebird 3, 1 in Firebird 4 and later
+  if FOptionsLoaded then
+  begin
+    Stream.WriteString(' START WITH ' + IntToStr(FInitialValue));
+    if FIncrement <> 1 then
+      Stream.WriteString(' INCREMENT BY ' + IntToStr(FIncrement));
+  end;
+  Stream.WriteString(Format(';%sSET GENERATOR %s TO %d', [sLineBreak, FormatName, FValue]));
 end;
 
 function TMetaGenerator.CommentKeyword: string;
@@ -1659,7 +1731,7 @@ procedure TMetaTable.LoadFromDataBase(QNames, QFields: TFIBQuery;
   ChildTypes: TTableChildTypes);
 var
   CurName: string;
-  RelationType: TFIBXSQLVAR;
+  RelationType, ConditionField: TFIBXSQLVAR;
 begin
   // Fields
   Name := QNames.Fields[0].AsString;
@@ -1694,16 +1766,23 @@ begin
     if soIndex in ChildTypes then
     begin
       CurName := '';
-      QIndex.Params[0].AsString := FName;
+      QIndex.ParamByName('RN').AsString := FName;
       QIndex.ExecQuery;
       while not QIndex.Eof do
       begin
         if CurName <> QIndex.Fields[0].AsString then
           with TMetaIndex.Create(Self) do
           begin
-            SetLength(FFields, 1);
             Name := QIndex.Fields[0].AsString;
-            FFields[0] := FindFieldIndex(QIndex.Fields[1].AsString);
+            FExpression := Trim(QIndex.FieldByName('RDB$EXPRESSION_SOURCE').AsString);
+            if FExpression = '' then
+            begin
+              SetLength(FFields, 1);
+              FFields[0] := FindFieldIndex(QIndex.Fields[1].AsString);
+            end;
+            ConditionField := QIndex.FindField('RDB$CONDITION_SOURCE');
+            if ConditionField <> nil then
+              FCondition := Trim(ConditionField.AsString);
             FUnique := QIndex.Fields[2].AsInteger = 1;
             FActive := QIndex.Fields[3].AsInteger = 0;
             if QIndex.Fields[4].AsInteger = 0 then
@@ -1727,6 +1806,7 @@ begin
     // UNIQUE
     if soUniqueConstr in ChildTypes then
     begin
+      CurName := '';
       QPrimary.Params[0].AsString := 'UNIQUE';
       if not(soPrimaryKey in ChildTypes) then
         QPrimary.Params[1].AsString := FName;
@@ -2146,6 +2226,8 @@ begin
       FClientLib := Transaction.DefaultDatabase.LibraryName;
 
       DetectServerFeatures;
+      if FPartialIndicesSupports then
+        QIndex.ParamByName('CONDITION').AsString := IndexConditionColumn;
 
       // DOMAINS
       if otDomain in FLoadObjects then
@@ -2551,7 +2633,7 @@ var
   var
     I, J: Integer;
     Parent: TCustomMetaObject;
-    HeaderWritten: boolean;
+    HeaderWritten: Boolean;
   begin
     HeaderWritten := False;
     for I := 0 to GetChildsCount(ParentType) - 1 do
@@ -2712,9 +2794,9 @@ var
 begin
 
   Stream.WriteString('SET SQL DIALECT ' + IntToStr(FSQLDialect) + ';' + sLineBreak);
-  Stream.WriteString('SET NAMES  ' + FConnectCharset + ';' + sLineBreak);
+  Stream.WriteString('SET NAMES ' + FConnectCharset + ';' + sLineBreak);
   if dtoUseSetClientLib in Options then
-    Stream.WriteString('SET CLIENTLIB  ''' + FClientLib + ''';' + sLineBreak + sLineBreak);
+    Stream.WriteString('SET CLIENTLIB ''' + FClientLib + ''';' + sLineBreak + sLineBreak);
 
   if dtoUseCreateDB in Options then
   begin
@@ -2740,7 +2822,6 @@ begin
   SaveMainObjects('PACKAGES', Ord(otPackage), vProcTerminator);
   SaveMainObjects('TABLES', Ord(otTable));
   SaveMainObjects('VIEWS', Ord(otView));
-  SaveMainObjects('DB TRIGGERS', Ord(otDBTrigger), vProcTerminator);
   SaveChilds('UNIQUE', Ord(otTable), Ord(soUniqueConstr));
   SaveChilds('PRIMARY', Ord(otTable), Ord(soPrimaryKey));
   SaveChilds('FOREIGN', Ord(otTable), Ord(soForeignKey));
@@ -2787,6 +2868,8 @@ begin
 
   if dtoUseSetTerm in Options then
     Stream.WriteString('SET TERM ;^' + sLineBreak + sLineBreak);
+  // Last: a DDL trigger fires on the statements after it
+  SaveMainObjects('DB TRIGGERS', Ord(otDBTrigger), vProcTerminator);
   if CommentsIncluded(Options) then
     SaveComments;
   Stream.WriteString('COMMIT WORK;');
@@ -2942,9 +3025,13 @@ begin
     FProcParamDomainSupports := Query.FieldByName('PARAM_DOMAINS').AsInteger > 0;
     FProcParamRelationSupports := Query.FieldByName('PARAM_RELATIONS').AsInteger > 0;
     FCommentsSupports := Query.FieldByName('COMMENTS').AsInteger > 0;
+    FSequenceOptionsSupports := Query.FieldByName('SEQUENCE_OPTIONS').AsInteger > 0;
+    FPartialIndicesSupports := Query.FieldByName('PARTIAL_INDICES').AsInteger > 0;
   finally
     Query.Free;
   end;
+  FLongStatementsSupports := FInternalTransaction.DefaultDatabase.IsFirebirdConnect and
+    (FInternalTransaction.DefaultDatabase.ServerMajorVersion >= 3);
   FCodePage := FInternalTransaction.DefaultDatabase.Capabilities.CodePage;
 end;
 
@@ -2952,8 +3039,12 @@ procedure TMetaDataBase.SetOptionalColumns(Query: TFIBQuery; ObjectType: TDBObje
 begin
   case ObjectType of
     otGenerator, otRole:
-      if FCommentsSupports then
-        Query.ParamByName('DESCRIPTION').AsString := DescriptionColumn;
+      begin
+        if FCommentsSupports then
+          Query.ParamByName('DESCRIPTION').AsString := DescriptionColumn;
+        if (ObjectType = otGenerator) and FSequenceOptionsSupports then
+          Query.ParamByName('SEQUENCE_OPTIONS').AsString := SequenceOptionsColumns;
+      end;
     otProcedure:
       if FPackagesSupports then
         Query.ParamByName('PACK_NAME').AsString := PackageNameColumn;
@@ -2981,19 +3072,18 @@ begin
   Result := Result + UDFFieldsOrder;
 end;
 
-function TMetaDataBase.CommentsIncluded(Options: TDDLTextOptions): boolean;
+function TMetaDataBase.CommentsIncluded(Options: TDDLTextOptions): Boolean;
 begin
   Result := (dtoIncludeComments in Options) and FCommentsSupports;
 end;
 
-function TMetaDataBase.CommentFits(const Statement, Text: string): boolean;
+function TMetaDataBase.CommentFits(const Statement, Text: string): Boolean;
 const
   // Bytes in the charset of the connection
   MaxLiteralLength = 65535;
   MaxStatementLength = 65533;
 begin
-  // Firebird 3 and later limit the literal, older servers the statement
-  if FStoredFunctionsSupports then
+  if FLongStatementsSupports then
     Result := EncodedLength(Text, FCodePage) <= MaxLiteralLength
   else
     Result := EncodedLength(Statement, FCodePage) <= MaxStatementLength;
@@ -3132,6 +3222,8 @@ begin
                 QFields := CreateQuery(QRYTableFields, FInternalTransaction);
               QPrimary := CreateQuery(QRYUnique, FInternalTransaction);
               QIndex := CreateQuery(QRYIndex, FInternalTransaction);
+              if FPartialIndicesSupports then
+                QIndex.ParamByName('CONDITION').AsString := IndexConditionColumn;
               QForeign := CreateQuery(QRYForeign, FInternalTransaction);
               QCheck := CreateQuery(QRYCheck, FInternalTransaction);
               QTrigger := CreateQuery(QRYTrigger, FInternalTransaction);
@@ -3220,7 +3312,11 @@ procedure TMetaUniqueConstraint.GenerateObjectDDL(Stream: TStringStream);
 var
   I: Integer;
 begin
-  Stream.WriteString(Format('ALTER TABLE %s ADD UNIQUE (', [TMetaTable(FOwner).FormatName]));
+  if Copy(FName, 1, 6) = 'INTEG_' then
+    Stream.WriteString(Format('ALTER TABLE %s ADD UNIQUE (', [TMetaTable(FOwner).FormatName]))
+  else
+    Stream.WriteString(Format('ALTER TABLE %s ADD CONSTRAINT %s UNIQUE (',
+      [TMetaTable(FOwner).FormatName, FormatName]));
   for I := 0 to FieldsCount - 1 do
   begin
     Stream.WriteString(Fields[I].FormatName);
@@ -3294,17 +3390,25 @@ begin
   if FOrder = IoDescending then
     Order := ' DESCENDING';
 
-  Stream.WriteString(Format('CREATE%s%s INDEX %s ON %s (', [Order, Unique, FormatName, TMetaTable(FOwner).FormatName]));
+  Stream.WriteString(Format('CREATE%s%s INDEX %s ON %s ', [Unique, Order, FormatName, TMetaTable(FOwner).FormatName]));
 
-  for I := 0 to FieldsCount - 1 do
+  if FExpression <> '' then
+    Stream.WriteString('COMPUTED BY ' + FExpression)
+  else
   begin
-    Stream.WriteString(Fields[I].FormatName);
-    if I <> FieldsCount - 1 then
-      Stream.WriteString(', ');
+    Stream.WriteString('(');
+    for I := 0 to FieldsCount - 1 do
+    begin
+      Stream.WriteString(Fields[I].FormatName);
+      if I <> FieldsCount - 1 then
+        Stream.WriteString(', ');
+    end;
+    Stream.WriteString(')');
   end;
-  Stream.WriteString(')');
+  if FCondition <> '' then
+    Stream.WriteString(' ' + FCondition);
   if not FActive then
-    Stream.WriteString(Format('%sALTER INDEX %s INACTIVE', [sLineBreak, FormatName]));
+    Stream.WriteString(Format('%s%sALTER INDEX %s INACTIVE', [DefTerminator, sLineBreak, FormatName]));
 end;
 
 { TMetaForeignKey }
@@ -3384,30 +3488,114 @@ end;
 
 { TCustomMetaTrigger }
 
-class function TCustomMetaTrigger.DecodePrefix(Value: Integer): TTriggerType;
+const
+  TriggerKindShift = 13;
+  TriggerKindDB = 1;
+  TriggerKindDDL = 2;
+  // All the event bits of ANY DDL STATEMENT: not the kind bits nor BEFORE/AFTER
+  DDLAnyStatement = Int64($7FFFFFFFFFFF9FFE);
+
+  // By the bit of RDB$TRIGGER_TYPE; 13 to 15 hold the trigger kind
+  DDLEvents: array [1 .. 47] of string = (
+    'CREATE TABLE',
+    'ALTER TABLE',
+    'DROP TABLE',
+    'CREATE PROCEDURE',
+    'ALTER PROCEDURE',
+    'DROP PROCEDURE',
+    'CREATE FUNCTION',
+    'ALTER FUNCTION',
+    'DROP FUNCTION',
+    'CREATE TRIGGER',
+    'ALTER TRIGGER',
+    'DROP TRIGGER',
+    '',
+    '',
+    '',
+    'CREATE EXCEPTION',
+    'ALTER EXCEPTION',
+    'DROP EXCEPTION',
+    'CREATE VIEW',
+    'ALTER VIEW',
+    'DROP VIEW',
+    'CREATE DOMAIN',
+    'ALTER DOMAIN',
+    'DROP DOMAIN',
+    'CREATE ROLE',
+    'ALTER ROLE',
+    'DROP ROLE',
+    'CREATE INDEX',
+    'ALTER INDEX',
+    'DROP INDEX',
+    'CREATE SEQUENCE',
+    'ALTER SEQUENCE',
+    'DROP SEQUENCE',
+    'CREATE USER',
+    'ALTER USER',
+    'DROP USER',
+    'CREATE COLLATION',
+    'DROP COLLATION',
+    'ALTER CHARACTER SET',
+    'CREATE PACKAGE',
+    'ALTER PACKAGE',
+    'DROP PACKAGE',
+    'CREATE PACKAGE BODY',
+    'DROP PACKAGE BODY',
+    'CREATE MAPPING',
+    'ALTER MAPPING',
+    'DROP MAPPING'
+  );
+
+class function TCustomMetaTrigger.DecodePrefix(Value: Int64): TTriggerType;
 begin
-  if Value < 1000 then
-    Result := TTriggerType((Value + 1) and 1)
+  case Integer((Value shr TriggerKindShift) and 3) of
+    TriggerKindDB: Result := ttON;
+    TriggerKindDDL: Result := TTriggerType(Value and 1);
   else
-    Result := TTriggerType(2)
+    Result := TTriggerType((Value + 1) and 1);
+  end;
 end;
 
-class function TCustomMetaTrigger.DecodeSuffixes(Value: Integer): TTriggerActions;
+class function TCustomMetaTrigger.DecodeSuffixes(Value: Int64): TTriggerActions;
 var
   V, Slot: Integer;
 begin
   Result := [];
-  if Value < 1000 then
-  begin
+  case Integer((Value shr TriggerKindShift) and 3) of
+    TriggerKindDB: Include(Result, TTriggerAction(Ord(taConnect) + (Value and $FF)));
+    TriggerKindDDL: ;
+  else
     for Slot := 1 to 3 do
     begin
       V := ((Value + 1) shr (Slot * 2 - 1)) and 3;
       if V > 0 then
         Include(Result, TTriggerAction(V - 1));
-    end
-  end
+    end;
+  end;
+end;
+
+function TCustomMetaTrigger.IsDDLTrigger: Boolean;
+begin
+  Result := (FTriggerType shr TriggerKindShift) and 3 = TriggerKindDDL;
+end;
+
+function TCustomMetaTrigger.DDLEventsText: string;
+var
+  Bit: Integer;
+begin
+  if FTriggerType and DDLAnyStatement = DDLAnyStatement then
+    Result := 'ANY DDL STATEMENT'
   else
-    Include(Result, TTriggerAction(3 + Byte(Value)));
+  begin
+    Result := '';
+    for Bit := Low(DDLEvents) to High(DDLEvents) do
+      if (DDLEvents[Bit] <> '') and (FTriggerType and (Int64(1) shl Bit) <> 0) then
+      begin
+        if Result <> '' then
+          Result := Result + ' OR ';
+        Result := Result + DDLEvents[Bit];
+      end;
+  end;
 end;
 
 procedure TCustomMetaTrigger.LoadFromDataBase(Q: TFIBQuery);
@@ -3415,8 +3603,10 @@ begin
   Name := Q.Fields[0].AsString;
   FSource := Q.Fields[1].AsString;
   FPosition := Q.Fields[2].AsShort;
-  FPrefix := DecodePrefix(Q.Fields[3].AsInteger);
-  FSuffix := DecodeSuffixes(Q.Fields[3].AsInteger);
+  // BIGINT in Firebird 3 and later, with the DDL events
+  FTriggerType := Q.Fields[3].AsInt64;
+  FPrefix := DecodePrefix(FTriggerType);
+  FSuffix := DecodeSuffixes(FTriggerType);
   FActive := Q.Fields[4].AsInteger = 0;
   LoadDescription(Q);
   FLoaded := True
@@ -3427,43 +3617,54 @@ begin
   Result := 'TRIGGER';
 end;
 
-procedure TCustomMetaTrigger.SaveFakeDDL(Stream: TStringStream);
+procedure TCustomMetaTrigger.WriteHeaderDDL(Stream: TStringStream);
 var
   Count: Smallint;
   Suf: TTriggerAction;
 begin
-  // For Updateble View
-  if FPrefix <> ttON then
-  begin
-    Stream.WriteString(Format('CREATE TRIGGER %s FOR %s%s', [FormatName, FOwner.FormatName, sLineBreak]));
-  end
+  if (FPrefix = ttON) or IsDDLTrigger then
+    Stream.WriteString(Format('CREATE TRIGGER %s%s', [FormatName, sLineBreak]))
   else
-  begin
-    Stream.WriteString(Format('CREATE TRIGGER %s%s', [FormatName, sLineBreak]));
-  end;
+    Stream.WriteString(Format('CREATE TRIGGER %s FOR %s%s', [FormatName, FOwner.FormatName, sLineBreak]));
 
   if FActive then
-    Stream.WriteString('ACTIVE ');
+    Stream.WriteString('ACTIVE ')
+  else
+    Stream.WriteString('INACTIVE ');
 
   Stream.WriteString(TriggerPrefixes[FPrefix] + ' ');
-  Count := 0;
-  for Suf := taInsert to taTransactionRollback do
-    if Suf in FSuffix then
-    begin
-      Inc(Count);
-      if Count > 1 then
-        Stream.WriteString(' OR ');
-      Stream.WriteString(TriggerSuffixes[Suf]);
-    end;
-  Stream.WriteString(Format(' POSITION %d%s%s', [FPosition, sLineBreak, 'AS BEGIN  POST_EVENT ''FAKE''; END']));
+  if IsDDLTrigger then
+    Stream.WriteString(DDLEventsText)
+  else
+  begin
+    Count := 0;
+    for Suf := taInsert to taTransactionRollback do
+      if Suf in FSuffix then
+      begin
+        Inc(Count);
+        if Count > 1 then
+          Stream.WriteString(' OR ');
+        Stream.WriteString(TriggerSuffixes[Suf]);
+      end;
+  end;
+  Stream.WriteString(' POSITION ' + IntToStr(FPosition));
+end;
+
+procedure TCustomMetaTrigger.SaveFakeDDL(Stream: TStringStream);
+begin
+  // For Updateble View
+  WriteHeaderDDL(Stream);
+  Stream.WriteString(sLineBreak + 'AS BEGIN POST_EVENT ''FAKE''; END');
 end;
 
 procedure TCustomMetaTrigger.SaveAlterDDL(Stream: TStringStream);
 begin
   Stream.WriteString(Format('ALTER TRIGGER %s%s', [FormatName, sLineBreak]));
   if FActive then
-    Stream.WriteString('ACTIVE ');
-  Stream.WriteString(Format(' %s%s', [sLineBreak, FSource]));
+    Stream.WriteString('ACTIVE')
+  else
+    Stream.WriteString('INACTIVE');
+  Stream.WriteString(sLineBreak + FSource);
 end;
 
 class function TCustomMetaTrigger.IsSubObject: boolean;
@@ -3472,34 +3673,9 @@ begin
 end;
 
 procedure TCustomMetaTrigger.GenerateObjectDDL(Stream: TStringStream);
-var
-  Count: Smallint;
-  Suf: TTriggerAction;
 begin
-  if FPrefix <> ttON then
-  begin
-    Stream.WriteString(Format('CREATE TRIGGER %s FOR %s%s', [FormatName, FOwner.FormatName, sLineBreak]));
-  end
-  else
-  begin
-    Stream.WriteString(Format('CREATE TRIGGER %s%s', [FormatName, sLineBreak]));
-  end;
-
-  if FActive then
-    Stream.WriteString('ACTIVE ');
-
-  Stream.WriteString(TriggerPrefixes[FPrefix] + ' ');
-  Count := 0;
-  for Suf := taInsert to taTransactionRollback do
-    if Suf in FSuffix then
-    begin
-      Inc(Count);
-      if Count > 1 then
-        Stream.WriteString(' OR ');
-      Stream.WriteString(TriggerSuffixes[Suf]);
-    end;
-  // Stream.WriteString(Format(' POSITION %d%s', [FPosition, NewLine,FSource]));
-  Stream.WriteString(' POSITION ' + IntToStr(FPosition) + sLineBreak + FSource);
+  WriteHeaderDDL(Stream);
+  Stream.WriteString(sLineBreak + FSource);
 end;
 
 { TMetaTableGrant }
@@ -3666,8 +3842,6 @@ begin
   GenerateChildCommentDDL(Stream, Ord(soViewTriggers));
 end;
 
-{ TMetaDomain }
-
 procedure TMetaDomain.GenerateObjectDDL(Stream: TStringStream);
 begin
   // Stream.WriteString(Format('CREATE DOMAIN %s AS ', [FormatName]));
@@ -3725,7 +3899,7 @@ begin
   Result := GetChildsCount(Ord(soProcFieldOut));
 end;
 
-procedure TMetaProcedure.InternalSaveToDDL(Stream: TStringStream; Operation: string);
+procedure TMetaProcedure.InternalSaveToDDL(Stream: TStringStream; Operation: string; BaseTypes: Boolean = False);
 var
   I: Integer;
 begin
@@ -3736,7 +3910,7 @@ begin
     for I := 0 to InputFieldsCount - 1 do
     begin
       Stream.WriteString(sLineBreak + '   ');
-      InputFields[I].GenerateObjectDDL(Stream);
+      InputFields[I].WriteDeclaration(Stream, BaseTypes);
       if I <> InputFieldsCount - 1 then
         Stream.WriteString(',');
     end;
@@ -3749,7 +3923,7 @@ begin
     for I := 0 to OutputFieldsCount - 1 do
     begin
       Stream.WriteString(sLineBreak + '   ');
-      OutputFields[I].GenerateObjectDDL(Stream);
+      OutputFields[I].WriteDeclaration(Stream, BaseTypes);
       if I <> OutputFieldsCount - 1 then
         Stream.WriteString(',');
     end;
@@ -3800,14 +3974,22 @@ end;
 procedure TMetaProcedure.SaveToAlterDDL(Stream: TStringStream);
 begin
   InternalSaveToDDL(Stream, 'ALTER');
-  Stream.WriteString(sLineBreak + 'AS ');
+  // Firebird 2.5 keeps the spaces after AS in the source, not a line break
+  Stream.WriteString(sLineBreak + 'AS' + sLineBreak);
   Stream.WriteString(FSource);
 end;
 
 procedure TMetaProcedure.SaveToPostDDL(Stream: TStringStream);
 begin
-  InternalSaveToDDL(Stream, 'CREATE');
-  Stream.WriteString(sLineBreak + 'AS' + sLineBreak + 'BEGIN' + sLineBreak + '  SUSPEND;' + sLineBreak + 'END');
+  // Before the tables: a TYPE OF COLUMN parameter is written as its type
+  InternalSaveToDDL(Stream, 'CREATE', True);
+  Stream.WriteString(sLineBreak + 'AS' + sLineBreak + 'BEGIN' + sLineBreak);
+  // SUSPEND needs output parameters in Firebird 3 and later
+  if OutputFieldsCount > 0 then
+    Stream.WriteString('  SUSPEND;')
+  else
+    Stream.WriteString('  EXIT;');
+  Stream.WriteString(sLineBreak + 'END');
 end;
 
 procedure TMetaProcedure.GenerateObjectDDL(Stream: TStringStream);
@@ -3852,9 +4034,25 @@ end;
 { TMetaException }
 
 procedure TMetaException.LoadFromDataBase(QName: TFIBQuery);
+var
+  MessageField: TFIBXSQLVAR;
+  Bytes: AnsiString;
+  CodePage: Word;
 begin
   Name := QName.Fields[0].AsString;
-  FMessage := QName.Fields[1].AsString;
+  MessageField := QName.Fields[1];
+  // RDB$MESSAGE has the charset NONE: the bytes of the statement that made the exception
+  if not MessageField.IsNull and (Byte(MessageField.Data.sqlsubtype) = 0) then
+  begin
+    Bytes := MessageField.AsAnsiString;
+    CodePage := QName.Database.Capabilities.MetadataCodePage;
+    if CodePage = FIBCodePageUTF8 then
+      FMessage := DecodeServerText(PAnsiChar(Bytes), Length(Bytes))
+    else
+      FMessage := DecodeString(PAnsiChar(Bytes), Length(Bytes), CodePage);
+  end
+  else
+    FMessage := MessageField.AsString;
   FNumber := QName.Fields[2].AsInteger;
   LoadDescription(QName);
   FLoaded := True
@@ -3862,7 +4060,7 @@ end;
 
 procedure TMetaException.GenerateObjectDDL(Stream: TStringStream);
 begin
-  Stream.WriteString(' CREATE EXCEPTION ' + FormatName + ' ' + QuotedStr(FMessage) + ' ');
+  Stream.WriteString('CREATE EXCEPTION ' + FormatName + ' ' + QuotedStr(FMessage));
 end;
 
 function TMetaException.CommentKeyword: string;
@@ -3978,8 +4176,38 @@ procedure TMetaTableField.LoadFromDataBase(Q: TFIBQuery; C: TFIBQuery);
 var
   QDims: TFIBQuery;
   J: Integer;
+  ColumnCollationID, DomainCollationID, IdentityStart, IdentityIncrement: TFIBXSQLVAR;
 begin
   inherited LoadFromDataBase(Q, C);
+  // A collation other than the default one of the charset, or other than the one of the domain
+  FCollation := '';
+  ColumnCollationID := Q.FindField('COLUMN_COLLATION_ID');
+  DomainCollationID := Q.FindField('DOMAIN_COLLATION_ID');
+  if (ColumnCollationID = nil) or ColumnCollationID.IsNull then
+  begin
+    if (DomainCollationID <> nil) and (DomainCollationID.AsInteger <> 0) and
+      ((Self is TMetaDomain) or (Copy(Q.Fields[10].AsString, 1, 4) = 'RDB$')) then
+      FCollation := Trim(Q.FieldByName('DOMAIN_COLLATION').AsString);
+  end
+  else if Copy(Q.Fields[10].AsString, 1, 4) = 'RDB$' then
+  begin
+    if ColumnCollationID.AsInteger <> 0 then
+      FCollation := Trim(Q.FieldByName('COLUMN_COLLATION').AsString);
+  end
+  else if ColumnCollationID.AsInteger <> DomainCollationID.AsInteger then
+    FCollation := Trim(Q.FieldByName('COLUMN_COLLATION').AsString);
+  IdentityStart := Q.FindField('IDENTITY_START');
+  IdentityIncrement := Q.FindField('IDENTITY_INCREMENT');
+  if (IdentityStart <> nil) and not IdentityStart.IsNull then
+  begin
+    FIdentityStart := IdentityStart.AsInt64;
+    FIdentityIncrement := IdentityIncrement.AsInteger;
+  end
+  else
+  begin
+    FIdentityStart := 0;
+    FIdentityIncrement := 1;
+  end;
   FNotNull := (Q.Fields[8].AsInteger = 1);
   if not Q.Fields[9].IsNull then
     FDefaultValue := CutDefaultValue(Q.Fields[9].AsString)
@@ -4032,7 +4260,13 @@ begin
 end;
 
 procedure TMetaTableField.GenerateObjectDDL(Stream: TStringStream);
+var
+  Collation: string;
 begin
+  Collation := FCollation;
+  if (FDomainName <> '') and (dtoDecodeDomains in MetaDataBase.DDLTextOptions) and (Collation = '') and
+    (Domain <> nil) then
+    Collation := Domain.FCollation;
   if (FDomainName <> '') and not(dtoDecodeDomains in MetaDataBase.DDLTextOptions) then
   begin
     Stream.WriteString(FormatName + ' ');
@@ -4046,8 +4280,18 @@ begin
   else
     inherited GenerateObjectDDL(Stream);
   case FIdentity of
-    0: Stream.WriteString(' GENERATED ALWAYS AS IDENTITY');
-    1: Stream.WriteString(' GENERATED BY DEFAULT AS IDENTITY');
+    0, 1:
+      begin
+        if FIdentity = 0 then
+          Stream.WriteString(' GENERATED ALWAYS AS IDENTITY')
+        else
+          Stream.WriteString(' GENERATED BY DEFAULT AS IDENTITY');
+        // Always START WITH: its default is 0 in Firebird 3, 1 in Firebird 4 and later
+        Stream.WriteString(' (START WITH ' + IntToStr(FIdentityStart));
+        if FIdentityIncrement <> 1 then
+          Stream.WriteString(' INCREMENT BY ' + IntToStr(FIdentityIncrement));
+        Stream.WriteString(')');
+      end;
   else
     if FDefaultValue <> '' then
       Stream.WriteString(' DEFAULT ' + FDefaultValue);
@@ -4055,6 +4299,8 @@ begin
       Stream.WriteString(' NOT NULL');
     if FValidationSource <> '' then
       Stream.WriteString(sLineBreak + FValidationSource);
+    if (Collation <> '') and (FComputedSource = '') then
+      Stream.WriteString(' COLLATE ' + FormatIdentifier(3, Collation));
   end;
 end;
 
@@ -4174,6 +4420,7 @@ end;
 procedure TMetaProcField.DoLoadFromQuery(QField: TFIBQuery; QCharset: TFIBQuery; CanUseParamDomain, CanUseProcParamRelation: boolean);
 var
   Check_PREFIX: string;
+  DomainDefault: TFIBXSQLVAR;
 begin
   inherited LoadFromDataBase(QField, QCharset);
   FUseRelation := False;
@@ -4189,11 +4436,13 @@ begin
       FRelationObject := QField.Fields[11].AsString;
       FRelationField := QField.Fields[12].AsString;
       FUseRelation := System.Length(FRelationField) > 0;
-      if not FUseDomain and not FUseRelation then
-        FDefaultValue := QField.Fields[10].AsString
-    end
-    else if not FUseDomain then
-      FDefaultValue := QField.Fields[10].AsString
+    end;
+    // "= value" or "DEFAULT value" of the parameter, whatever its type; Firebird 2.5 keeps the one
+    // of a parameter without a domain in its implicit domain
+    FDefaultValue := Trim(QField.Fields[10].AsString);
+    DomainDefault := QField.FindField('DOMAIN_DEFAULT_SOURCE');
+    if (FDefaultValue = '') and not FUseDomain and not FUseRelation and (DomainDefault <> nil) then
+      FDefaultValue := Trim(DomainDefault.AsString);
   end
   else
     FUseDomain := False;
@@ -4201,31 +4450,34 @@ begin
   FLoaded := True
 end;
 
-procedure TMetaProcField.GenerateObjectDDL(Stream: TStringStream);
+procedure TMetaProcField.WriteDeclaration(Stream: TStringStream; BaseType: Boolean);
 begin
-  if FUseDomain then
-  begin
-    if FormatName <> '' then
-      Stream.WriteString(FormatName + ' ');
-    case FMechanizm of
-      0: Stream.WriteString(FormatIdentifier(3, FDomain));
-      1: Stream.WriteString('TYPE OF ' + FDomain)
-    end
-  end
-  else if FUseRelation then
+  // TYPE OF COLUMN has the domain of the column as field source
+  if FUseRelation and not BaseType then
   begin
     if FormatName <> '' then
       Stream.WriteString(FormatName + ' ');
     Stream.WriteString('TYPE OF COLUMN ' + FormatIdentifier(3, FRelationObject) +
       '.' + FormatIdentifier(3, FRelationField))
   end
-  else
+  else if FUseDomain and not FUseRelation then
   begin
-    inherited GenerateObjectDDL(Stream);
-    if FDefaultValue <> '' then
-      Stream.WriteString(' ' + FDefaultValue);
-
+    if FormatName <> '' then
+      Stream.WriteString(FormatName + ' ');
+    case FMechanizm of
+      0: Stream.WriteString(FormatIdentifier(3, FDomain));
+      1: Stream.WriteString('TYPE OF ' + FormatIdentifier(3, FDomain))
+    end
   end
+  else
+    inherited GenerateObjectDDL(Stream);
+  if FDefaultValue <> '' then
+    Stream.WriteString(' ' + FDefaultValue);
+end;
+
+procedure TMetaProcField.GenerateObjectDDL(Stream: TStringStream);
+begin
+  WriteDeclaration(Stream, False);
 end;
 
 function TMetaProcField.CommentKeyword: string;
@@ -4295,7 +4547,7 @@ begin
   begin
     if FPrivileges[I] = [goRole] then
     begin
-      Stream.WriteString('GRANT  ' + FormatIdentifier(3, FObjectName) + ' TO ');
+      Stream.WriteString('GRANT ' + FormatIdentifier(3, FObjectName) + ' TO ');
       Stream.WriteString(sLineBreak + '  ' + FUserList[I]);
     end
     else if FPrivileges[I] = [goExecuteProc] then
@@ -4378,10 +4630,13 @@ begin
       SetSize(L);
     end;
 
-    CurUser := QGrants.Fields[0].AsString;
+    CurUser := Trim(QGrants.Fields[0].AsString);
+    // PUBLIC is a keyword, not a name
+    if CurUser <> 'PUBLIC' then
+      CurUser := FormatIdentifier(3, CurUser);
     s := QGrants.Fields[6].AsString;
     if (s <> 'USER') and (s <> 'ROLE') then
-      CurUser := QGrants.Fields[6].AsString + ' ' + FormatIdentifier(3, CurUser);
+      CurUser := QGrants.Fields[6].AsString + ' ' + CurUser;
     FUserList[I] := CurUser;
     // goSelect,goInsert,goUpdate,goDelete,goReference,goExecuteProc,goRole
     case QGrants.Fields[1].AsString[1] of
@@ -4730,7 +4985,7 @@ begin
     Result := nil
 end;
 
-procedure TMetaStoredFunc.InternalSaveToDDL(Stream: TStringStream; Operation: string);
+procedure TMetaStoredFunc.InternalSaveToDDL(Stream: TStringStream; Operation: string; BaseTypes: Boolean = False);
 var
   I: Integer;
   // Return:TMetaProcOutField;
@@ -4745,7 +5000,7 @@ begin
       for I := 0 to InputFieldsCount - 1 do
       begin
         Stream.WriteString(sLineBreak + '   ');
-        InputFields[I].GenerateObjectDDL(Stream);
+        InputFields[I].WriteDeclaration(Stream, BaseTypes);
         if I <> InputFieldsCount - 1 then
           Stream.WriteString(',');
       end;
@@ -4754,7 +5009,7 @@ begin
     else
     begin
       Stream.WriteString(' (');
-      InputFields[0].GenerateObjectDDL(Stream);
+      InputFields[0].WriteDeclaration(Stream, BaseTypes);
       Stream.WriteString(')');
     end;
   end;
@@ -4762,7 +5017,7 @@ begin
   Stream.WriteString(Format('%sRETURNS ', [sLineBreak]));
   // Return:=TMetaProcOutField(GetChildObject(Ord(soProcFieldOut), 0));
   if Return <> nil then
-    Return.GenerateObjectDDL(Stream);
+    Return.WriteDeclaration(Stream, BaseTypes);
 
 end;
 
@@ -4813,7 +5068,7 @@ end;
 
 procedure TMetaStoredFunc.SaveEmptyDDL(Stream: TStringStream);
 begin
-  InternalSaveToDDL(Stream, 'CREATE');
+  InternalSaveToDDL(Stream, 'CREATE', True);
   Stream.WriteString(sLineBreak + 'AS' + sLineBreak + 'BEGIN' + sLineBreak + 'END');
 end;
 
@@ -4825,14 +5080,12 @@ begin
 
 end;
 
-{ TMetaPackageProcedure }
-
 class function TMetaPackageProcedure.ClassIndex: Integer;
 begin
   Result := Ord(soPackageProcedures)
 end;
 
-class function TMetaPackageProcedure.IsSubObject: boolean;
+class function TMetaPackageProcedure.IsSubObject: Boolean;
 begin
   Result := True
 end;
@@ -4845,14 +5098,12 @@ procedure TMetaPackageProcedure.GenerateDDLText(Stream: TStringStream);
 begin
 end;
 
-{ TMetaPackageFunction }
-
 class function TMetaPackageFunction.ClassIndex: Integer;
 begin
   Result := Ord(soPackageFunctions)
 end;
 
-class function TMetaPackageFunction.IsSubObject: boolean;
+class function TMetaPackageFunction.IsSubObject: Boolean;
 begin
   Result := True
 end;
