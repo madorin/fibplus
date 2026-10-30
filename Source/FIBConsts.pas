@@ -77,7 +77,7 @@ resourcestring
   SFIBErrorCircularLinks                = 'Circular link is not allowed.';
   SFIBErrorParamNotExist                = 'Parameter "%s" does not exist in %s';
   SFIBErrorWideStringValueTooLong       = '%s. Value for WideString Parameter "%s" too long';
-  SFIBParamsCountNotEquelValuesCount    = '%s. Parameters count is not equel count of parameter values';
+  SFIBParamsCountNotEquelValuesCount    = '%s. Parameters count is not equal to the count of parameter values';
   SFIBErrorEOFInComments                = 'EOF in comment detected';
   SFIBErrorEOFInString                  = 'EOF in string detected';
   SFIBErrorEOFInMacro                   = 'EOF in macro detected';

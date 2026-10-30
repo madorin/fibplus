@@ -252,11 +252,77 @@ begin
   end;
 end;
 
+// A quoted name as Firebird 6 writes it ("PUBLIC"."IDX"): its last part unquoted; anything else as is
+function UnquotedObjectName(const Name: string): string;
+var
+  Len, Position, Start: Integer;
+  Part: string;
+begin
+  Len := Length(Name);
+  Position := 1;
+  while (Position <= Len) and (Name[Position] = '"') do
+  begin
+    Part := '';
+    repeat
+      Inc(Position);
+      Start := Position;
+      while (Position <= Len) and (Name[Position] <> '"') do
+        Inc(Position);
+      if Position > Len then
+        Exit(Name);
+      Part := Part + Copy(Name, Start, Position - Start);
+      Inc(Position);
+      // a doubled quote is a quote of the name
+      if (Position <= Len) and (Name[Position] = '"') then
+        Part := Part + '"'
+      else
+        Break;
+    until False;
+    if Position > Len then
+      Exit(Part);
+    if Name[Position] <> '.' then
+      Break;
+    Inc(Position);
+  end;
+  Result := Name;
+end;
+
+// Firebird 6 quotes the names of the status vector; unknown without a connected database
+function QuotesStatusVectorNames(Sender: TObject): Boolean;
+var
+  DB: TFIBDatabase;
+begin
+  DB := FindDatabaseForObject(Sender);
+  Result := (DB = nil) or not DB.Connected or (DB.ServerMajorVersion >= 6);
+end;
+
+// The name of a user exception as the server writes it: the argument of the item after isc_except
+function ExceptionNameArgument(ErrorValue: EFIBError): string;
+var
+  Codes: TFIBErrorCodes;
+  I: Integer;
+begin
+  Result := '';
+  Codes := ErrorValue.ErrorCodes;
+  for I := 0 to High(Codes) - 1 do
+  begin
+    // ErrorArgument reads the first isc_random item
+    if Codes[I] = isc_random then
+      Exit;
+    if Codes[I] = isc_except then
+    begin
+      if Codes[I + 1] = isc_random then
+        Result := ErrorValue.ErrorArgument(isc_random);
+      Exit;
+    end;
+  end;
+end;
+
 procedure TFIBErrorHandler.DefaultOnError(Sender: TObject; ErrorValue: EFIBError; HandledError: THandledError;
   var DoRaise: Boolean);
 var
   p: integer;
-  RepositoryText, AtLexem, LowerMessage: string;
+  RepositoryText, AtLexem, LowerMessage, ServerName: string;
   vDB: THackDatabase;
   LostCode: ISC_STATUS;
 begin
@@ -297,39 +363,46 @@ begin
             p := Pos(ErrorLexems.FException, AnsiLowerCase(Message));
             if p > 0 then
               Message := FastCopy(Message, p + Length(ErrorLexems.FException) + 1, MaxInt);
+            // the number and the name come from the status vector, the message lines are only cut off
             p := PosCh('.', Message);
-            if p > 0 then
-              try
-                HandledError.ExceptionNumber := StrToInt(FastCopy(Message, 1, p - 1));
-                Message := TrimCLRF(FastCopy(Message, p + 1, MaxInt));
-                HandledError.ExceptionName := 'Unknown';
-                vDB := THackDatabase(FindDatabaseForObject(Sender));
-                if vDB <> nil then
+            if HasErrorCode(isc_except) and (p > 0) and
+              (Trim(FastCopy(Message, 1, p - 1)) = IntToStr(ErrorNumber(isc_except))) then
+            begin
+              HandledError.ExceptionNumber := ErrorNumber(isc_except);
+              Message := TrimCLRF(FastCopy(Message, p + 1, MaxInt));
+              HandledError.ExceptionName := 'Unknown';
+              vDB := THackDatabase(FindDatabaseForObject(Sender));
+              if (vDB = nil) or vDB.IsFirebirdConnect and (vDB.ServerMajorVersion >= 2) then
+              begin
+                ServerName := ExceptionNameArgument(ErrorValue);
+                if ServerName <> '' then
                 begin
-                  if vDB.IsFirebirdConnect and (vDB.ServerMajorVersion >= 2) then
+                  if QuotesStatusVectorNames(Sender) then
+                    HandledError.ExceptionName := UnquotedObjectName(ServerName)
+                  else
+                    HandledError.ExceptionName := ServerName;
+                  // IBError capitalizes the line and ends it with a dot
+                  if AnsiSameText(FastCopy(Message, 1, Length(ServerName)), ServerName) then
                   begin
-                    p := PosCh('.', Message);
+                    Message := FastCopy(Message, Length(ServerName) + 1, MaxInt);
+                    if (Message <> '') and (Message[1] = '.') then
+                      Message := FastCopy(Message, 2, MaxInt);
+                  end;
+                  // the stack trace is the last status item, its frames are split by a bare LF
+                  if ErrorLexems.FAt <> '' then
+                  begin
+                    AtLexem := CRLF + ErrorLexems.FAt + ' ';
+                    LowerMessage := AnsiLowerCase(Message);
+                    p := Length(LowerMessage) - Length(AtLexem) + 1;
+                    while (p > 0) and
+                      not CompareMem(@LowerMessage[p], Pointer(AtLexem), Length(AtLexem) * SizeOf(Char)) do
+                      Dec(p);
                     if p > 0 then
-                    begin
-                      HandledError.ExceptionName := FastCopy(Message, 1, p - 1);
-                      Message := FastCopy(Message, p + 1, MaxInt);
-                      // the stack trace is the last status item, its frames are split by a bare LF
-                      if ErrorLexems.FAt <> '' then
-                      begin
-                        AtLexem := CRLF + ErrorLexems.FAt + ' ';
-                        LowerMessage := AnsiLowerCase(Message);
-                        p := Length(LowerMessage) - Length(AtLexem) + 1;
-                        while (p > 0) and
-                          not CompareMem(@LowerMessage[p], Pointer(AtLexem), Length(AtLexem) * SizeOf(Char)) do
-                          Dec(p);
-                        if p > 0 then
-                          Message := FastCopy(Message, 1, p - 1);
-                      end;
-                    end;
+                      Message := FastCopy(Message, 1, p - 1);
                   end;
                 end;
-              except
               end;
+            end;
           end;
         end;
       sqlcode_foreign_or_create_schema:
@@ -391,50 +464,6 @@ begin
         end
       end
     end;
-end;
-
-// A quoted name as Firebird 6 writes it ("PUBLIC"."IDX"): its last part unquoted; anything else as is
-function UnquotedObjectName(const Name: string): string;
-var
-  Len, Position, Start: Integer;
-  Part: string;
-begin
-  Len := Length(Name);
-  Position := 1;
-  while (Position <= Len) and (Name[Position] = '"') do
-  begin
-    Part := '';
-    repeat
-      Inc(Position);
-      Start := Position;
-      while (Position <= Len) and (Name[Position] <> '"') do
-        Inc(Position);
-      if Position > Len then
-        Exit(Name);
-      Part := Part + Copy(Name, Start, Position - Start);
-      Inc(Position);
-      // a doubled quote is a quote of the name
-      if (Position <= Len) and (Name[Position] = '"') then
-        Part := Part + '"'
-      else
-        Break;
-    until False;
-    if Position > Len then
-      Exit(Part);
-    if Name[Position] <> '.' then
-      Break;
-    Inc(Position);
-  end;
-  Result := Name;
-end;
-
-// Firebird 6 quotes the names of the status vector; unknown without a connected database
-function QuotesStatusVectorNames(Sender: TObject): Boolean;
-var
-  DB: TFIBDatabase;
-begin
-  DB := FindDatabaseForObject(Sender);
-  Result := (DB = nil) or not DB.Connected or (DB.ServerMajorVersion >= 6);
 end;
 
 // The constraint of a violation: the argument of its status vector code, exact even with spaces or quotes
