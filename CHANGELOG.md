@@ -398,6 +398,8 @@ The lists of old and new names, and what an application has to change, are in
   [Upgrading](Docs/guide/upgrading.md#characters-outside-the-system-code-page).
 - `TFIBDatabase.CreateDatabase` sent a character of `DBName` or `DBParams` outside the system
   code page as `?` (a wrong file name or password); it raises `feCantTransliterateParam` too.
+- `TFIBDatabase.CreateDatabase` did not double a `'` in `DBName`, so a path such as
+  `D:\O'Brien\x.fdb` broke the statement.
 - `TFIBDatabase.QueryValues` of a statement without parameters (also `EXECUTE PROCEDURE`) kept it
   in the query cache when it returned a row, while `QueryValue` freed it. Only a statement with
   parameters is cached now, as documented; `aCacheQuery` allows the caching.

@@ -2536,7 +2536,7 @@ begin
   LoadLibrary;
   tr_handle := nil;
   // The client reads the statement in the system code page: it has no utf8_filename
-  Statement := 'CREATE DATABASE ''' + EncodeParam('DBName', FDBName, FIBCodePageSystem) + ''' ' +
+  Statement := 'CREATE DATABASE ' + EncodeParam('DBName', QuotedStr(FDBName), FIBCodePageSystem) + ' ' +
     EncodeParam('DBParams', DBParams.Text, FIBCodePageSystem);
   Call(FClientLibrary.isc_dsql_execute_immediate(StatusVector, @FHandle,
     @tr_handle, 0, PAnsiChar(Statement), Word(SQLDialect), nil), True);
