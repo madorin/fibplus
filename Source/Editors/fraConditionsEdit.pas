@@ -78,7 +78,7 @@ type
 implementation
 
 uses
-  pFIBEditorsConsts, pFIBInterfaces, RTTIRoutines;
+  pFIBEditorsConsts, pFIBInterfaces, RTTIRoutines, pFIBProps;
 
 {$R *.dfm}
 
@@ -226,11 +226,6 @@ end;
   end;
 }
 type
-  THackCondition = class
-  private
-    FEnabled: boolean;
-  end;
-
   THackConditions = class(TStringList)
   private
     FFIBQuery: TComponent;
@@ -269,7 +264,7 @@ begin
       // FTexts.Add(Value.Condition[i].Value);
       FTexts.Add(Value.Values[li.Caption]);
       // FTexts.Add(Value.ValueFromIndex[i]);
-      if THackCondition(Value.Objects[i]).FEnabled then
+      if TCondition(Value.Objects[i]).Enabled then
         li.Checked := True;
     end;
     if Value.Count > 0 then

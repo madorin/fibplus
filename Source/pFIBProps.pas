@@ -1906,9 +1906,9 @@ begin
         curGen.Name := ts[I];
         curGen.FStepForCache := Ini.ReadInteger(ts[I], 'StepForCache', DefaultStep);
         S := Ini.ReadString(ts[I], 'NextValue', '-1');
-        curGen.FNextValue := StrToIntDef(S, -1);
+        curGen.FNextValue := StrToInt64Def(S, -1);
         S := Ini.ReadString(ts[I], 'Limit', '-1');
-        curGen.FLimit := StrToIntDef(S, -1);
+        curGen.FLimit := StrToInt64Def(S, -1);
       end;
     finally
       ts.Free;

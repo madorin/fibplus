@@ -277,7 +277,8 @@ var
   vFi: TpFIBFieldInfo;
 
 begin
-  ListTableInfo.Clear;
+  // Fresh info of this table only: the cache is shared by all the datasets
+  ListTableInfo.ClearForTable(TableName);
   vpFIBTableInfo := ListTableInfo.GetTableInfo(TFIBTransaction(Transaction).MainDatabase, TableName, False);
   vFi := vpFIBTableInfo.FieldInfo(FieldName);
   Result := (vFi = nil) or vFi.IsComputed or vFi.IsTriggered;

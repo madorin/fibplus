@@ -1318,7 +1318,7 @@ procedure TFIBBlobStream.SaveToFile(const FileName: string; FullInfo: Boolean = 
 var
   Stream: TStream;
 begin
-  if FullInfo and (Length(FKeyValues) = 0) or (Length(FTableName) = 0) then
+  if FullInfo and ((Length(FKeyValues) = 0) or (Length(FTableName) = 0)) then
     Exit;
   BlobCacheOperation.Acquire;
   try
@@ -1546,52 +1546,58 @@ begin
   CheckReadable;
   CheckHandles;
   Call(FDatabase.ClientLibrary.isc_open_blob2(StatusVector, DBHandle, TRHandle, @FBlobHandle, @FBlobID, 0, nil), True);
-  FIBMiscellaneous.GetBlobInfo(FDatabase.ClientLibrary, @FBlobHandle,
-    FBlobNumSegments, FBlobMaxSegmentSize, iBlobSize, FBlobType);
-  if iBlobSize > 0 then
-  begin
-    f := TFileStream.Create(FileName, fmCreate or fmShareDenyWrite);
-    GetMem(LocalBuffer, DefaultBlobSegmentSize);
+  try
+    FIBMiscellaneous.GetBlobInfo(FDatabase.ClientLibrary, @FBlobHandle,
+      FBlobNumSegments, FBlobMaxSegmentSize, iBlobSize, FBlobType);
+    if iBlobSize > 0 then
+    begin
+      f := TFileStream.Create(FileName, fmCreate or fmShareDenyWrite);
+      GetMem(LocalBuffer, DefaultBlobSegmentSize);
 
-    try
-      vBlobSize := 0;
-      while True do
-      begin
-        if vBlobSize = iBlobSize then
-          SegLen := 0
-        else if iBlobSize < DefaultBlobSegmentSize then
-          SegLen := iBlobSize // Avoid IB2007 bug
-        else
-          SegLen := DefaultBlobSegmentSize;
+      try
+        vBlobSize := 0;
+        while True do
+        begin
+          if vBlobSize = iBlobSize then
+            SegLen := 0
+          else if iBlobSize < DefaultBlobSegmentSize then
+            SegLen := iBlobSize // Avoid IB2007 bug
+          else
+            SegLen := DefaultBlobSegmentSize;
 
-        case FDatabase.ClientLibrary.isc_get_segment(StatusVector, @FBlobHandle, @BytesRead, SegLen, LocalBuffer) of
-          0, isc_segment:
-            begin
-              f.WriteBuffer(LocalBuffer^, BytesRead);
-              Inc(vBlobSize, BytesRead);
-              if Assigned(CallBack) then
-                CallBack(iBlobSize, vBlobSize, Stop);
-              if Stop then
+          case FDatabase.ClientLibrary.isc_get_segment(StatusVector, @FBlobHandle, @BytesRead, SegLen, LocalBuffer) of
+            0, isc_segment:
+              begin
+                f.WriteBuffer(LocalBuffer^, BytesRead);
+                Inc(vBlobSize, BytesRead);
+                if Assigned(CallBack) then
+                  CallBack(iBlobSize, vBlobSize, Stop);
+                if Stop then
+                  Exit;
+              end;
+            isc_segstr_eof:
+              begin
+                Inc(vBlobSize, BytesRead);
+                f.WriteBuffer(LocalBuffer^, BytesRead);
+                if Assigned(CallBack) then
+                  CallBack(iBlobSize, vBlobSize, Stop);
                 Exit;
-            end;
-          isc_segstr_eof:
-            begin
-              Inc(vBlobSize, BytesRead);
-              f.WriteBuffer(LocalBuffer^, BytesRead);
-              if Assigned(CallBack) then
-                CallBack(iBlobSize, vBlobSize, Stop);
-              Exit;
-            end
-        else
-          IBError(FDatabase.ClientLibrary, Self);
+              end
+          else
+            IBError(FDatabase.ClientLibrary, Self);
+          end;
+
         end;
 
+      finally
+        FreeMem(LocalBuffer);
+        f.Free;
       end;
-
-    finally
-      FreeMem(LocalBuffer);
-      f.Free;
     end;
+  finally
+    if FBlobHandle <> nil then
+      Call(FDatabase.ClientLibrary.isc_close_blob(StatusVector, @FBlobHandle), False);
+    FBlobHandle := nil;
   end;
 end;
 
@@ -1677,11 +1683,12 @@ end;
 procedure TFIBOutputDelimitedFile.CloseFile;
 begin
   if FFile <> nil then
-  begin
-    FlushBuf(True, 0);
-    FFile.Free;
-    FFile := nil
-  end;
+    try
+      FlushBuf(True, 0);
+    finally
+      FFile.Free;
+      FFile := nil
+    end;
 end;
 
 const
@@ -1783,7 +1790,30 @@ end;
 function TFIBInputDelimitedFile.GetColumn(var Col: AnsiString): Integer;
 var
   c: Char;
-  BytesRead: Integer;
+  BytesRead, Len: Integer;
+  Buf: string;
+  ColIsCharSet, RowIsCharSet: Boolean;
+
+  // one character or a line break: every character of it ends the item
+  function IsCharSet(const Delimiter: string): Boolean;
+  var
+    i: Integer;
+  begin
+    Result := True;
+    if Length(Delimiter) > 1 then
+      for i := 1 to Length(Delimiter) do
+        if (Delimiter[i] <> CR) and (Delimiter[i] <> LF) then
+        begin
+          Result := False;
+          Exit;
+        end;
+  end;
+
+  function EndsWithDelimiter(const Delimiter: string): Boolean;
+  begin
+    Result := (Len >= Length(Delimiter)) and
+      CompareMem(@Buf[Len - Length(Delimiter) + 1], PChar(Delimiter), Length(Delimiter) * SizeOf(Char));
+  end;
 
   procedure ReadInput;
   begin
@@ -1808,27 +1838,48 @@ var
   end;
 
 begin
-  Col := '';
   Result := 0;
+  Len := 0;
+  SetLength(Buf, 256);
+  ColIsCharSet := IsCharSet(FColDelimiter);
+  RowIsCharSet := IsCharSet(FRowDelimiter);
   ReadInput;
   while BytesRead <> 0 do
   begin
-    if Pos(c, FColDelimiter) > 0 then
+    if ColIsCharSet and (Pos(c, FColDelimiter) > 0) then
     begin
       CheckCRLF(FColDelimiter);
       Result := 1;
       Break;
     end
-    else if Pos(c, FRowDelimiter) > 0 then
+    else if RowIsCharSet and (Pos(c, FRowDelimiter) > 0) then
     begin
       CheckCRLF(FRowDelimiter);
       Result := 2;
       Break;
     end
     else
-      Col := Col + c;
+    begin
+      if Len = Length(Buf) then
+        SetLength(Buf, Len * 2);
+      Inc(Len);
+      Buf[Len] := c;
+      if not ColIsCharSet and EndsWithDelimiter(FColDelimiter) then
+      begin
+        Dec(Len, Length(FColDelimiter));
+        Result := 1;
+        Break;
+      end;
+      if not RowIsCharSet and EndsWithDelimiter(FRowDelimiter) then
+      begin
+        Dec(Len, Length(FRowDelimiter));
+        Result := 2;
+        Break;
+      end;
+    end;
     ReadInput;
   end;
+  Col := AnsiString(Copy(Buf, 1, Len));
 end;
 
 function TFIBInputDelimitedFile.ReadParameters: Boolean;
@@ -2158,6 +2209,13 @@ var
     end;
   end;
 
+  // reads a count or a length that must fit into the rest of the file
+  function ReadCount(var Value: Integer; ItemSize: Integer): Boolean;
+  begin
+    Result := (FFile.Read(Value, SizeOf(Value)) = SizeOf(Value)) and (Value >= 0) and
+      (Int64(Value) * ItemSize <= FFile.Size - FFile.Position);
+  end;
+
 begin
   CloseFile;
   FFile := TFileStream.Create(FileName, fmOpenRead);
@@ -2178,20 +2236,37 @@ begin
     else
     begin
       BytesRead := FFile.Read(ast[1], 1);
-      FVersion := StrToInt(ast[1]);
+      if (BytesRead <> 1) or not(ast[1] in ['0' .. '9']) then
+      begin
+        CloseFile;
+        FState := bsInError;
+        Exit;
+      end;
+      FVersion := Ord(ast[1]) - Ord('0');
       if FVersion > 1 then
       begin
         if Assigned(FMap) then
           FMap.Free;
 
-        BytesRead := FFile.Read(pc, SizeOf(pc));
+        // a column header takes at least a name length and four Shorts
+        if not ReadCount(pc, SizeOf(Integer) + 4 * SizeOf(Short)) then
+        begin
+          CloseFile;
+          FState := bsInError;
+          Exit;
+        end;
         SetLength(SkippedLen, pc);
         FMap := TList.Create;
         FMap.Capacity := pc;
 
         for i := 1 to pc do
         begin
-          BytesRead := FFile.Read(L, SizeOf(L));
+          if not ReadCount(L, 1) then
+          begin
+            CloseFile;
+            FState := bsInError;
+            Exit;
+          end;
           SetLength(s, L);
           if L > 0 then
             BytesRead := FFile.Read(s[1], L);
@@ -2224,7 +2299,12 @@ begin
       if FVersion > 2 then
       begin
         // Charset
-        FFile.Read(L, SizeOf(L));
+        if not ReadCount(L, 1) then
+        begin
+          CloseFile;
+          FState := bsInError;
+          Exit;
+        end;
         if L > 0 then
         begin
           SetLength(FCharSet, L);
@@ -2242,11 +2322,12 @@ end;
 procedure TFIBFileOutputStream.CloseFile;
 begin
   if FFile <> nil then
-  begin
-    FlushBuf(True, 0);
-    FFile.Free;
-    FFile := nil
-  end;
+    try
+      FlushBuf(True, 0);
+    finally
+      FFile.Free;
+      FFile := nil
+    end;
 end;
 
 constructor TFIBFileOutputStream.Create;
@@ -2257,9 +2338,12 @@ end;
 
 destructor TFIBFileOutputStream.Destroy;
 begin
-  CloseFile;
-  if FBuffer <> nil then
-    FreeMem(FBuffer);
+  try
+    CloseFile;
+  finally
+    if FBuffer <> nil then
+      FreeMem(FBuffer);
+  end;
   inherited Destroy;
 end;
 
@@ -2267,7 +2351,8 @@ procedure TFIBFileOutputStream.FlushBuf(Force: Boolean; Count: Integer);
 begin
   if Force or (FBuffPos + Count >= cBufSize) then
   begin
-    FFile.Write(FBuffer^, FBuffPos);
+    // a short write (disk full) must not give a silently truncated file
+    FFile.WriteBuffer(FBuffer^, FBuffPos);
     FBuffPos := 0
   end;
 end;
@@ -2278,7 +2363,8 @@ begin
   if Count > cBufSize then
   begin
     FlushBuf(True, 0);
-    Result := FFile.Write(ValBuffer, Count)
+    FFile.WriteBuffer(ValBuffer, Count);
+    Result := Count;
   end
   else
   begin

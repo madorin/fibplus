@@ -425,6 +425,8 @@ end;
 procedure TTestInfo.Clear;
 begin
   FTestVars.FullClear;
+  FLastObjName := '';
+  FPosLastObjX := -1;
   FPrintListActual := false;
 end;
 

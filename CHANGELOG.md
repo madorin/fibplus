@@ -81,6 +81,25 @@
   connect and raises the first error at the end. At design time, a transaction
   loaded before its database no longer shows a second error after the
   connection error.
+- A handler of a database or transaction event could not unregister itself or
+  free a registered component while the events were called (access violation). An
+  exception in `OnConnect` skipped the connect notifications of the datasets; it
+  is raised by `Open` after the connect is complete, like the other connect
+  handlers.
+- A lost connection (`TpFIBDatabase`, `laCloseConnect`/`laWaitRestore`) did not
+  release the client attachment, and a failed `Commit` or `Rollback` left the
+  state `tsDoCommit` instead of `tsActive`.
+- `ServerActiveTransactions` listed at most 72 transactions, read the ids as 4
+  bytes and leaked its list; the operation counts could read past the buffer.
+- The login prompt blocked the connects of other threads. A timer of a worker
+  thread that synchronizes its event deadlocked with the main thread creating
+  datasets or transactions, and the idle `Timeout` of a database used by other
+  threads never fired; it now fires within a quarter of the `Timeout` after it
+  elapses.
+- `Busy` was `False` while another call of the client library ran, and client
+  library names that differ only in case made two library objects (Windows).
+  `RaiseCancelOperations` no longer raises "Nothing to cancel" while another
+  database of the same client library runs a call.
 
 #### Queries and parameters
 
@@ -156,6 +175,51 @@
 - The primary key, table ID and dataset info queries of `pFIBDataInfo` ran in
   the default database of the transaction; they run in their own database, and
   `DBPrimaryKeyFields` has an optional `Database` parameter.
+- SQL text parsing: a `--` comment ending with LF hid `FROM`, `WHERE` and `ORDER
+  BY`, a `--` comment containing `/*` started a block comment, and a statement
+  starting with `-` or `/` hung.
+- A `--` comment ended by a bare LF or CR before `WHERE` or `ORDER BY` no longer
+  breaks the `FROM` clause (`RecordCount`, `AddToWhereClause`).
+- `AddToWhereClause`, the order and group clauses and the table list ignored
+  `ROWS`, `OFFSET`/`FETCH`, `WITH LOCK` and `RETURNING`. `SetGroupClause` dropped
+  `HAVING` and `ORDER BY`. `WITH ... SELECT` was not a select and `MERGE` was.
+- `MainPlanClause` and `SetMainPlan` lost or duplicated the closing bracket when
+  `PLAN` was the last text of the statement.
+- `SQLKind` returned `skDDL` for every statement starting with S other than `SET`
+  (`SAVEPOINT`, `SUSPEND`).
+- `EXECUTE BLOCK` parameters were not found after a name ending in `AS` (like
+  `GAS`), and a closing quote at the very end of the text raised "EOF in string".
+- `ExecProc` did nothing when a line break followed `EXECUTE` or a comment
+  preceded it, and a macro at the start of the text was not found.
+- Identifiers with `#` or `%` were not quoted in generated SQL.
+- The descending query of the limited cache broke `DESCENDING`, `ASCENDING`,
+  `NULLS` and expressions with commas in `ORDER BY`.
+- `FindField`, `FindParam` and `FieldByName` with a quoted name that does not
+  exist returned an invalid object instead of `nil`.
+- A raw `TIME`/`TIMESTAMP WITH TIME ZONE` parameter lost its time zone when the
+  statement had macros or a null comparison rewritten to `IS NULL`.
+- Assigning a `VARCHAR` value to a `BLOB` parameter wrote the two length bytes
+  and lost the last two characters.
+- A null parameter in a `WHERE` comparison prepared the statement again at every
+  execute. `= (:Param)` with a null value gave a syntax error, and `= -:Param`
+  was rewritten to `IS NULL`.
+- `BatchToQuery` inserted an empty row when `GoToFirstRecordOnExecute` is `False`
+  and left the cursor open after a stop or an error; `BatchInput` refused a file
+  whose charset differs only in letter case.
+- Setting `ParamCheck` at run time did not parse the parameters again.
+- Changing `Database` of a query with an open cursor left it marked open; a
+  failed DDL statement of `ExecuteImmediate` was not reported to the SQL monitor
+  and logger.
+- `AsBcd` of `NUMERIC(9,6)` and similar fields kept only four decimals and read
+  stale data for a null `NUMERIC(18,x)`; `AsDateTime` of a text value with a time
+  failed; `AsGuid` of a non-text value returned a stale value.
+- `Int64ToBCD` of the lowest `Int64` and the conversion of a BCD to a float in
+  dialect 1 and 2 were inexact (0.3 read as 0.30000000000000004); variant
+  comparison treated doubles within 1E-11 as equal and raised an overflow for a
+  `UInt64` against a negative value.
+- Array elements: a `CHAR` value with blanks beyond the column length was
+  refused, and a `UInt64` value lost precision. The query cache did not reuse a
+  query for SQL with LF-only line breaks.
 
 #### Datasets and fields
 
@@ -281,6 +345,50 @@
 - `Locate` on NUMERIC keys and `CompareBCD` compare exactly. `TFIBGuidField`
   returns Null for NULL and stores text in other datasets.
   `TpFIBClientBCDField` has the same BCD fixes.
+- `CachedUpdates` with `poCacheCalcFields`: `Undelete`, `CanEdit` of an inserted
+  record and `CachedUpdateStatus` failed on records whose calculated fields were
+  cached.
+- `CachedUpdates`: `RevertRecord` of an unmodified record and `Undelete` left
+  `UpdatesPending` and `CountUpdatesPending` wrong, so `CancelUpdates` could do
+  nothing; `Undelete` of a reverted insert did not mark the updates pending;
+  `RevertRecord` of an edited record left its calculated fields empty until the
+  cursor moved.
+- `CachedUpdates`: after deleting a modified record, `Undelete`, `RevertRecord`
+  and `CancelUpdates` showed the edited values while `ApplyUpdates` never wrote
+  them. The record now returns with its original values.
+- `CachedUpdates`: setting a field and then calling `Cancel` left
+  `CountUpdatesPending` raised, so a later `Delete` or `Undelete` set
+  `UpdatesPending` wrongly. The count now changes when the record is posted.
+- `LoadFromStream` of a `CachedUpdates` dataset with calculated fields and
+  `poCacheCalcFields` returned damaged records and `ApplyUpdates` wrote nothing;
+  after the load `UpdatesPending` and `CountUpdatesPending` show the cached
+  updates of the stream.
+- Limited cache: scrolling with a nullable sort field ignored `NULLS
+  FIRST`/`NULLS LAST`, misordered `TIMESTAMP` values before 1753 and failed for
+  `BOOLEAN` sort fields; an error while fetching the last records was hidden.
+- Limited cache: `GotoBookmark` outside the buffered records failed for `BIGINT`,
+  `NUMERIC`, `BOOLEAN` and `GUID` keys, and could go to a record whose key
+  differs only in the last byte (1.5 and -1.5).
+- A failed `Locate` on a filtered dataset moved the cursor, so the next `Next` or
+  `Prior` went to a wrong record.
+- `TDataSetsContainer`: a freed global container was still called, a container
+  whose `MasterContainer` is the global one got every dataset event twice, and
+  the container of a dataset overrode the global comparison even when it did not
+  compare.
+- `NUMERIC` and `DECIMAL` fields of up to 9 digits read as `Double` were off in
+  the last digit (0.7 read as 0.7000000000000001). `CollateNumber` of
+  `TFIBStringField` and `TFIBWideStringField` returned a wrong value.
+- `Sort` with a wrong field name left the controls disabled, and errors of
+  `OnCompareFieldValues` were hidden. An exception in `OnCalcFields` leaked a
+  record buffer.
+- `AsBoolean` of `TFIBIntegerField` and `TFIBSmallIntField` returned `False` for
+  negative values.
+- A filter with `NOT`, `AND` or `OR` on a `NULL` boolean operand raised an error;
+  the operand now counts as `False`. `LIKE` and `Locate` with wildcards never
+  matched masks such as `%_x`.
+- Loading a dataset from a stream leaked memory, a cloned sorted dataset lost the
+  sort order, and reading a record beyond the record map read outside the cache.
+- `TpFIBTableChangesReader` kept a freed transaction when it was freed first.
 
 #### Events
 
@@ -301,6 +409,9 @@
   waited for from its own handler, and the thread lists are guarded by a
   critical section. With `VCLSynchronize = False`, a failed event thread no
   longer reads the error text through `Synchronize`.
+- `TSIBfibEventAlerter` kept a dangling `Database` when the database was freed
+  first, and `AutoRegister` did not register a connected database assigned at run
+  time.
 
 #### Errors and messages
 
@@ -365,6 +476,9 @@
 - `CompareVariants` raised `EConvertError` for a number compared with text
   that is not a number; that text is compared as text, a date with a date text
   as a date, and an integer with a decimal text as a number.
+- `ErrorLexems` written in mixed case never matched the server messages, and the
+  statistics error message named the table `FIB$APP_STATISIC` instead of
+  `FIB$APP_STATISTICS`.
 
 #### Services
 
@@ -395,12 +509,24 @@
 - `GetNextChunk`, `GetNextLine` and `GetNextBuf` read the chunk length as a
   signed number and raised "Unexpected Output buffer value" for chunks of 32768
   bytes or more.
+- A failed service call left the service attached on the server, a configuration
+  setter on an inactive service gave "invalid service handle", and the parameter
+  buffer leaked when the client library could not be loaded.
 
 #### Schema cache
 
 - A schema cache file that could not be written completely (disk full, ...)
   was left truncated, and the next `Open` with `AutoLoadFromFile` failed
   reading it. The file is now deleted instead.
+- A dataset with `DataSet_ID` but no row in `FIB$DATASETS_INFO` lost its
+  `KeyFields`, `GeneratorName`, `UpdateTableName`, `Conditions` and
+  `Description`. The repository upgrade committed the transaction of the
+  application.
+- The field info of a selectable procedure was not loaded and mixed in the
+  parameters of packaged procedures with the same name. Tables or fields whose
+  names differ only in case shared the cached info, and validating such a cache
+  could overflow the stack; a damaged schema cache file raised an error at
+  connect.
 
 #### Schema extract
 
@@ -443,6 +569,20 @@
   sequences and identity columns, and `INACTIVE` of triggers. Grantee names are
   quoted, a non-ASCII exception message is no longer double-encoded, and
   database and DDL triggers come at the end of the script.
+- Grants of an object with 1000 or more grantees overran memory. `WITH ADMIN
+  OPTION` of role grants and `WITH GRANT OPTION` of `EXECUTE` grants were lost,
+  and a role or a table named like a procedure mixed their grants.
+- `DECIMAL` columns were written as `NUMERIC`, a narrower type for precisions 1
+  to 4; text `BLOB` columns lost their `CHARACTER SET`; named `CHECK` constraints
+  lost their name.
+- A package header with `TYPE OF COLUMN` parameters failed because it ran before
+  the tables. The script no longer contains `SYSDBA`/`masterkey` (it uses the
+  user of the connection, no password) nor an empty `SET NAMES`; quoted names
+  with `""` were not found by `GetObjectDDL`.
+- A load of the names only made one foreign key per column and wrote objects
+  dropped in the meantime as empty statements.
+- The export data script looped forever for a row of 64K or more, appended to an
+  existing file, used the locale time separator and wrote wrong `BLOB` values.
 
 #### Scripter
 
@@ -472,11 +612,20 @@
   returned to the calling file.
 - `TpFIBScripter` opened the `SET BLOBFILE` file with the sharing mode in the
   place of the rights argument, so it was not opened for shared reading.
+- `TpFIBScripter` ran the `{$ELSE}` part of a nested directive whose outer
+  directive was false; `DISCONNECT` without a database raised an access
+  violation; directive errors reported the line before the directive.
+- `DESCRIBE` failed on Firebird 3+ and matched no object for an unquoted name; it
+  runs `COMMENT ON`.
 
 #### SQL monitor
 
 - SQL monitor: non-ASCII text could arrive garbled, through the system code
   page or a chunk of a long event cut inside a character.
+- A failing SQL log file no longer makes `Open`, `StartTransaction`, `Commit`,
+  `Rollback` or `Close` raise; the unsaved rows are kept for the next save.
+  `TFIBSQLLogger` saves the pending log when freed.
+- A process with a SQL monitor still alive at exit no longer hangs.
 
 #### Helper units
 
@@ -490,6 +639,13 @@
 - `BCDToInt64WithScale` (`StdFuncs`) dropped the leading digit of 19 digit values, never
   reported an overflow, and left `Scale` unset for a zero precision `TBcd`. `BCDToExtended` gave
   a wrong value for an integer part beyond `Int64`, so `CompareBCD` compared garbage.
+- `TFIBBlobStream.BlobToFile` left the blob open and `SaveToFile` wrote nothing
+  for a stream without a table name. A full disk during a batch export left a
+  truncated file without an error; a corrupt raw batch file raised conversion or
+  memory errors.
+- The delimited import mishandled delimiters of several characters;
+  `TTestInfo.Clear` caused a range error on the next use; the generator cache
+  file lost values above 2147483647.
 
 #### IDE, editors and packages
 
@@ -547,6 +703,16 @@
 - The packages `FIBPlus_XE2` and `FIBPlus_XE4` included `FIBPlus.inc` in the
   package source and did not compile. The `RELEASE` define of the package
   projects keeps the inherited defines.
+- The condition editors showed disabled conditions as enabled and exported wrong
+  data; saving a dataset to the repository failed when an SQL text contained an
+  apostrophe; the key field list of `AutoUpdateOptions` listed fields of other
+  joined tables; the table name list closed the transaction of the user.
+  `IsCalculatedField` of the SQL editor cleared the table info cache of all
+  datasets.
+- The **Check SQLs** verb of `TpFIBQuery` did not check anything and always
+  reported no errors.
+- The registry key of the editors stayed open and later settings were written
+  under a wrong key; the database editor reported "Unknown Error" for UNC paths.
 
 ## [7.9.1] - 2026-10-09
 

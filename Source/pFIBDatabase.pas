@@ -552,6 +552,9 @@ begin
 end;
 
 procedure TpFIBDatabase.CloseLostConnect;
+var
+  LostHandle: TISC_DB_HANDLE;
+  Status: TStatusVector;
 begin
   // closed already or being closed
   if not Connected or (drsInCloseLostConnect in FDatabaseRunState) then
@@ -559,8 +562,13 @@ begin
   Include(FDatabaseRunState, drsInCloseLostConnect);
   try
     // Let's avoid of calls IB Api
+    LostHandle := FHandle;
     FHandle := nil;
     AbandonServerHandles;
+    // releases the client attachment, own status vector: no error handler
+    if not FHandleIsShared then
+      FClientLibrary.isc_detach_database(PISC_STATUS(@Status), @LostHandle);
+    FHandleIsShared := False;
   finally
     Exclude(FDatabaseRunState, drsInCloseLostConnect);
   end;

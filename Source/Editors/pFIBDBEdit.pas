@@ -247,7 +247,7 @@ begin
     LocalC.Checked := False;
     RemoteC.Checked := True;
     ProtocolC.ItemIndex := 0;
-    Temp := Copy(DBName, 3, Length(aDatabase.DBName));
+    Temp := Copy(DBName, 3, MaxInt);
     Idx1 := Pos('\', Temp);
     if Idx1 = 0 then
       raise Exception.Create('Unknown Error')

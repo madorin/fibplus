@@ -403,7 +403,11 @@ begin
         FTransaction.RemoveEndEvent(DoAfterEndTransaction, tetAfterEndTransaction);
       end;
 
+    if Assigned(FTransaction) then
+      FTransaction.RemoveFreeNotification(Self);
     FTransaction := Value;
+    if Assigned(FTransaction) then
+      FTransaction.FreeNotification(Self);
     if not(csDesigning in ComponentState) then
     begin
       if Assigned(FTransaction) then

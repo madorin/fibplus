@@ -142,6 +142,12 @@ var
 begin
   case VarType(Value) of
     varShortInt, varByte, varSmallint, varWord, varInteger, varLongWord, varInt64: Result := Int64ToFBDecimal(Value);
+{$IFDEF D2009+}
+    // all the digits, not through Double
+    varUInt64:
+      if not StrToFBDecimal(VarToStr(Value), Result) then
+        Result := DoubleToFBDecimal(Value);
+{$ENDIF}
     varCurrency:
       begin
         C := Value;
@@ -621,6 +627,7 @@ var
   i: Int64;
   TS: TTimeStamp;
   SQLType: Integer;
+  L: Integer;
 begin
   // elements can't be NULL, NULL makes the element zero (blank for CHAR)
   if VarIsNull(Value) or VarIsEmpty(Value) then
@@ -635,6 +642,14 @@ begin
     blr_text, blr_varying:
       begin
         S := EncodeString(VarToStr(Value), FElementCodePage);
+        // blanks beyond the length are dropped, as the server does
+        if Length(S) > FElementLength then
+        begin
+          L := Length(S);
+          while (L > FElementLength) and (S[L] = ' ') do
+            Dec(L);
+          SetLength(S, L);
+        end;
         if Length(S) > FElementLength then
           FIBErrorEx('Array %s.%s: the string "%s" is longer than %d bytes',
             [FTableName, FFieldName, VarToStr(Value), FElementLength]);

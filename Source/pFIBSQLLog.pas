@@ -141,6 +141,12 @@ end;
 
 destructor TFIBSQLLogger.Destroy;
 begin
+  // the rows not saved yet
+  if Assigned(FLogList) and (FLogList.Count > 0) and (FLogFileName <> '') then
+    try
+      SaveLog;
+    except
+    end;
   if Assigned(FDatabase) then
   begin
     SetDatabase(nil);
@@ -444,8 +450,12 @@ begin
     if WriteToLog then
     begin
       FLogList.Add(Rows);
+      // a log file error must not fail the logged operation, the rows stay for the next save
       if FForceSaveToFile then
-        SaveLog;
+        try
+          SaveLog;
+        except
+        end;
     end;
   end;
 end;

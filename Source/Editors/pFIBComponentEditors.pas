@@ -163,7 +163,7 @@ uses
   RegistryUtils, pFIBEditorsConsts, pFIBDBEdit, pFIBInterfaces, pFIBRepositoryOperations, EdFieldInfo, EdErrorInfo,
   pFIBConditionsEdit, EdDataSetInfo, pFIBTrEdit, pFIBDataSetOptions,
   pFIBAutoUpdEditor, RegFIBPlusEditors, RTTIRoutines, FIBSQLEditor,
-  EdParamToFields, FIBDataSQLEditor, uFIBScriptForm;
+  EdParamToFields, FIBDataSQLEditor, uFIBScriptForm, pFIBProps;
 
 { TFIBAliasEdit }
 
@@ -678,6 +678,8 @@ end;
 { TpFIBQueryEditor }
 
 procedure TpFIBQueryEditor.ExecuteVerb(Index: Integer);
+var
+  iQry: IFIBQuery;
 begin
   case Index of
     0:
@@ -689,8 +691,14 @@ begin
       end;
     1:
       begin
-        // TpFIBQuery(Component).CheckValidStatement;
-        ShowMessage(SNoErrors);
+        if ObjSupports(Component, IFIBQuery, iQry) then
+          try
+            iQry.CheckValidStatement;
+            ShowMessage(SNoErrors);
+          except
+            on E: Exception do
+              ShowMessage(E.Message);
+          end;
       end;
   end;
 
@@ -789,8 +797,8 @@ begin
         if FieldCount > 0 then
           for i := 0 to Pred(FieldCount) do
           begin
-            if (Fields[i] is TLargeIntField) or (Fields[i] is TIntegerField) or
-              ((Fields[i] is TBCDField) and (TBCDField(Fields[i]).Size = 0)) and
+            if ((Fields[i] is TLargeIntField) or (Fields[i] is TIntegerField) or
+              ((Fields[i] is TBCDField) and (TBCDField(Fields[i]).Size = 0))) and
               Stringer.EquelStrings(ids.GetRelationTableName(Fields[i]), updTableName, False) then
             begin
               Proc(Fields[i].FieldName);
@@ -1048,11 +1056,11 @@ end;
 const
   ExchangeDelimeter = '#$#$';
 
-type
-  THackCondition = class
-  private
-    FEnabled: boolean;
-  end;
+// SQL string literal with doubled quotes
+function QuoteSQLString(const Value: string): string;
+begin
+  Result := '''' + StringReplace(Value, '''', '''''', [rfReplaceAll]) + '''';
+end;
 
 function GetConditionsExchangeStr(Conditions: TStrings): string;
 var
@@ -1062,7 +1070,7 @@ begin
   with Conditions do
     for i := 0 to Pred(Count) do
       Result := Result + Names[i] + ExchangeDelimeter + Values[Names[i]] +
-        ExchangeDelimeter + IntToStr(Ord(THackCondition(Objects[i]).FEnabled)) + #13#10
+        ExchangeDelimeter + IntToStr(Ord(TCondition(Objects[i]).Enabled)) + #13#10
 
 end;
 
@@ -1079,25 +1087,22 @@ begin
     if Length(GetPropStringValue(DataSet, 'AutoUpdateOptions.KeyFields')) > 68 then
       WidenDataSetKeyField(idb);
     // Execute returns False instead of raising
-    if not idb.Execute('Update FIB$DATASETS_INFO SET '#13#10 + 'SELECT_SQL=''' +
-      TStrings(GetObjectProp(DataSet, 'SelectSQL')).Text + ''','#13#10 +
-      'INSERT_SQL=''' + TStrings(GetObjectProp(DataSet, 'InsertSQL')).Text +
-      ''','#13#10 + 'UPDATE_SQL=''' + TStrings(GetObjectProp(DataSet,
-      'UpdateSQL')).Text + ''','#13#10 + 'DELETE_SQL=''' +
-      TStrings(GetObjectProp(DataSet, 'DeleteSQL')).Text + ''','#13#10 +
-      'REFRESH_SQL=''' + TStrings(GetObjectProp(DataSet, 'RefreshSQL')).Text +
-      ''','#13#10 + 'KEY_FIELD=''' + GetPropStringValue(DataSet,
-      'AutoUpdateOptions.KeyFields') + ''','#13#10 + 'NAME_GENERATOR=''' +
-      GetPropStringValue(DataSet, 'AutoUpdateOptions.GeneratorName') +
-      ''','#13#10 + 'DESCRIPTION=''' + GetPropStringValue(DataSet,
-      'Description') + ''','#13#10 + 'UPDATE_TABLE_NAME=''' +
-      GetPropStringValue(DataSet, 'AutoUpdateOptions.UpdateTableName') +
-      ''','#13#10 + 'UPDATE_ONLY_MODIFIED_FIELDS=''' +
-      IntToStr(GetSubPropValue(DataSet,
-      'AutoUpdateOptions.UpdateOnlyModifiedFields')) + ''','#13#10 +
-      'CONDITIONS=''' + GetConditionsExchangeStr(TStrings(GetObjectProp(DataSet,
-      'Conditions'))) + ''''#13#10 +
-
+    if not idb.Execute('Update FIB$DATASETS_INFO SET '#13#10 +
+      'SELECT_SQL=' + QuoteSQLString(TStrings(GetObjectProp(DataSet, 'SelectSQL')).Text) + ','#13#10 +
+      'INSERT_SQL=' + QuoteSQLString(TStrings(GetObjectProp(DataSet, 'InsertSQL')).Text) + ','#13#10 +
+      'UPDATE_SQL=' + QuoteSQLString(TStrings(GetObjectProp(DataSet, 'UpdateSQL')).Text) + ','#13#10 +
+      'DELETE_SQL=' + QuoteSQLString(TStrings(GetObjectProp(DataSet, 'DeleteSQL')).Text) + ','#13#10 +
+      'REFRESH_SQL=' + QuoteSQLString(TStrings(GetObjectProp(DataSet, 'RefreshSQL')).Text) + ','#13#10 +
+      'KEY_FIELD=' + QuoteSQLString(GetPropStringValue(DataSet, 'AutoUpdateOptions.KeyFields')) + ','#13#10 +
+      'NAME_GENERATOR=' + QuoteSQLString(GetPropStringValue(DataSet, 'AutoUpdateOptions.GeneratorName')) +
+      ','#13#10 +
+      'DESCRIPTION=' + QuoteSQLString(GetPropStringValue(DataSet, 'Description')) + ','#13#10 +
+      'UPDATE_TABLE_NAME=' + QuoteSQLString(GetPropStringValue(DataSet, 'AutoUpdateOptions.UpdateTableName')) +
+      ','#13#10 +
+      'UPDATE_ONLY_MODIFIED_FIELDS=' + QuoteSQLString(IntToStr(GetSubPropValue(DataSet,
+      'AutoUpdateOptions.UpdateOnlyModifiedFields'))) + ','#13#10 +
+      'CONDITIONS=' + QuoteSQLString(GetConditionsExchangeStr(TStrings(GetObjectProp(DataSet,
+      'Conditions')))) + #13#10 +
       'WHERE DS_ID=' + IntToStr(DS_ID)) then
       raise Exception.Create(SCompEditUnableSaveInfoRecord);
   end
@@ -1285,20 +1290,17 @@ begin
   AssignStringsToProp(Qry, 'SQL', QRYTables);
   try
     try
-      try
-        ObjSupports(Qry, IFIBQuery, iQry);
-        iQry.ExecQuery;
+      ObjSupports(Qry, IFIBQuery, iQry);
+      iQry.ExecQuery;
 
-        while not iQry.iEof do
-        begin
-          Proc(Trim(VarToStr(iQry.FieldValue('RDB$RELATION_NAME', False))));
-          iQry.iNext;
-        end;
-        iQry.Close;
-      finally
-        SetPropValue(Trans, 'Active', 'False');
+      while not iQry.iEof do
+      begin
+        Proc(Trim(VarToStr(iQry.FieldValue('RDB$RELATION_NAME', False))));
+        iQry.iNext;
       end;
+      iQry.Close;
     except
+      // no value list when the database cannot be read
     end
   finally
     if not trActive then

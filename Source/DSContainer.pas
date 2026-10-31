@@ -146,6 +146,8 @@ end;
 
 destructor TDataSetsContainer.Destroy; // override;
 begin
+  if vGlobalContainer = Self then
+    vGlobalContainer := nil;
   inherited Destroy;
   vDataSetsList.Free;
 end;
@@ -293,10 +295,9 @@ end;
 
 function TDataSetsContainer.DataSetCompareFieldValues(DataSet: TDataSet; Field: TField; const S1, S2: variant; var Res: Integer): Boolean;
 begin
+  Result := False;
   if Assigned(FOnCompareFieldValues) then
-    Res := FOnCompareFieldValues(Field, S1, S2, Result)
-  else
-    Result := false;
+    Res := FOnCompareFieldValues(Field, S1, S2, Result);
 end;
 
 procedure TDataSetsContainer.SetIsGlobalContainer(const Value: Boolean);

@@ -76,6 +76,7 @@ type
     FMidasOutParamsPending: Boolean;
     procedure ClearMidasCommand;
     procedure SetContainer(Value: TDataSetsContainer);
+    function UseGlobalContainer: Boolean;
 {$IFDEF USE_DEPRECATE_METHODS2}
     procedure SetReceiveEvents(Value: TStrings);
 {$ENDIF}
@@ -897,7 +898,7 @@ end;
 
 procedure TpFIBDataSet.DoOnDeleteError(DataSet: TDataSet; E: DB.EDatabaseError; var Action: TDataAction);
 begin
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetError(DataSet, deOnDeleteError, E, Action);
   if FContainer <> nil then
     FContainer.DataSetError(DataSet, deOnDeleteError, E, Action);
@@ -905,16 +906,33 @@ begin
     vUserOnDeleteError(DataSet, E, Action);
 end;
 
+function TpFIBDataSet.UseGlobalContainer: Boolean;
+var
+  Container: TDataSetsContainer;
+begin
+  Result := GlobalContainer <> nil;
+  Container := FContainer;
+  while Result and (Container <> nil) do
+  begin
+    Result := Container <> GlobalContainer;
+    Container := Container.MasterContainer;
+  end;
+end;
+
 function TpFIBDataSet.CompareFieldValues(Field: TField; const S1, S2: variant): integer;
 var
   Compared: boolean;
+  ContainerResult: integer;
 begin
   Compared := False;
   if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
     Compared := GlobalContainer.DataSetCompareFieldValues(Self, Field, S1, S2, Result);
 
-  if FContainer <> nil then
-    Compared := FContainer.DataSetCompareFieldValues(Self, Field, S1, S2, Result);
+  if (FContainer <> nil) and FContainer.DataSetCompareFieldValues(Self, Field, S1, S2, ContainerResult) then
+  begin
+    Compared := True;
+    Result := ContainerResult;
+  end;
 
   if not Compared then
     Result := inherited CompareFieldValues(Field, S1, S2);
@@ -923,7 +941,7 @@ end;
 procedure TpFIBDataSet.DoOnPostError(DataSet: TDataSet; E: DB.EDatabaseError; var Action: TDataAction);
 begin
   inherited;
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetError(DataSet, deOnPostError, E, Action);
   if FContainer <> nil then
     FContainer.DataSetError(DataSet, deOnPostError, E, Action);
@@ -935,7 +953,7 @@ procedure TpFIBDataSet.DoBeforePost;
 begin
   if (State = dsInsert) and (FAutoUpdateOptions.WhenGetGenID = wgBeforePost) then
     IncGenerator;
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deBeforePost);
 
   if FContainer <> nil then
@@ -967,7 +985,7 @@ var
 begin
   // The record is posted: AfterPost may edit and post again
   Exclude(FRunState, drsInPost);
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deAfterPost);
 
   if FContainer <> nil then
@@ -997,7 +1015,7 @@ end;
 procedure TpFIBDataSet.DoBeforeCancel;
 begin
   inherited;
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deBeforeCancel);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deBeforeCancel);
@@ -1005,7 +1023,7 @@ end;
 
 procedure TpFIBDataSet.DoAfterCancel;
 begin
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deAfterCancel);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deAfterCancel);
@@ -1025,7 +1043,7 @@ begin
     if not CanDelete then
     Abort;
     end; }
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deBeforeDelete);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deBeforeDelete);
@@ -1042,7 +1060,7 @@ begin
     PrepareQuery(FIBDataSet.skInsert);
     if not CanInsert then
     Abort; }
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deBeforeInsert);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deBeforeInsert);
@@ -1053,7 +1071,7 @@ end;
 procedure TpFIBDataSet.DoAfterInsert;
 begin
 
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deAfterInsert);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deAfterInsert);
@@ -1062,7 +1080,7 @@ end;
 
 procedure TpFIBDataSet.DoAfterEdit;
 begin
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deAfterEdit);
 
   if FContainer <> nil then
@@ -1072,7 +1090,7 @@ end;
 
 procedure TpFIBDataSet.DoAfterDelete;
 begin
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deAfterDelete);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deAfterDelete);
@@ -1086,7 +1104,7 @@ end;
 
 procedure TpFIBDataSet.DoAfterScroll;
 begin
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deAfterScroll);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deAfterScroll);
@@ -1101,7 +1119,7 @@ begin
 
   if DisableCOCount > 0 then
     Exit;
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deBeforeClose);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deBeforeClose);
@@ -1110,7 +1128,7 @@ end;
 
 procedure TpFIBDataSet.DoBeforeRefresh;
 begin
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deBeforeRefresh);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deBeforeRefresh);
@@ -1119,7 +1137,7 @@ end;
 
 procedure TpFIBDataSet.DoAfterRefresh;
 begin
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deAfterRefresh);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deAfterRefresh);
@@ -1129,7 +1147,7 @@ end;
 procedure TpFIBDataSet.DoOnApplyDefaultValue(Field: TField; var Applied: boolean);
 begin
   Applied := False;
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DoOnApplyDefaultValue(Self, Field, Applied);
   if FContainer <> nil then
     FContainer.DoOnApplyDefaultValue(Self, Field, Applied);
@@ -1139,7 +1157,7 @@ end;
 
 procedure TpFIBDataSet.DoOnCalcFields;
 begin
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deOnCalcFields);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deOnCalcFields);
@@ -1148,7 +1166,7 @@ end;
 
 procedure TpFIBDataSet.DoBeforeScroll;
 begin
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deBeforeScroll);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deBeforeScroll);
@@ -1255,7 +1273,7 @@ begin
         end;
       end;
     end;
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deOnNewRecord);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deOnNewRecord);
@@ -1442,8 +1460,16 @@ begin
           ReadBuffer(FRecordCount, SizeOf(integer));
           ReadBuffer(FDeletedRecords, SizeOf(integer));
           if not Assigned(FRecordsCache) then
-            FRecordsCache := TRecordsCache.Create
-              (CacheModelOptions.BufferChunks, FRecordBufferSize, FBlockReadSize, FStringFieldCount);
+          begin
+            // the cached records hold the calculated fields as when the dataset is opened
+            vCalcFieldsSavedCache := poCacheCalcFields in Options;
+            if vCalcFieldsSavedCache then
+              FRecordsCache := TRecordsCache.Create(CacheModelOptions.BufferChunks,
+                FRecordBufferSize, FBlockReadSize + CalcFieldsSize, FStringFieldCount)
+            else
+              FRecordsCache := TRecordsCache.Create(CacheModelOptions.BufferChunks,
+                FRecordBufferSize, FBlockReadSize, FStringFieldCount);
+          end;
 
           FRecordsCache.LoadFromStream(Stream, False);
         except
@@ -1461,9 +1487,15 @@ begin
           finally
             Exclude(FRunState, drsInClone);
           end;
-        end
+        end;
+        // the stream holds the cached updates that ApplyUpdates writes
+        FCountUpdatesPending := 0;
+        if FCachedUpdates then
+          for i := 0 to FRecordCount - 1 do
+            if CachedStatus(i) in [cusModified, cusInserted, cusDeleted] then
+              Inc(FCountUpdatesPending);
+        FUpdatesPending := FCountUpdatesPending > 0;
       end;
-      // RefreshClientFields;
       First;
     finally
       Exclude(FRunState, drsInLoadFromStream);
@@ -1556,7 +1588,7 @@ begin
           end;
         end;
       end;
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deBeforeEdit);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deBeforeEdit);
@@ -1577,7 +1609,7 @@ begin
   FFilteredCacheInfo.NonVisibleRecords.Clear;
   if DisableCOCount > 0 then
     Exit;
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deBeforeOpen);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deBeforeOpen);
@@ -1589,7 +1621,7 @@ begin
   SetLength(FParamsForFields, 0);
   if DisableCOCount > 0 then
     Exit;
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deAfterClose);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deAfterClose);
@@ -1909,7 +1941,7 @@ begin
         ReadRecordCache(i, Buff, False);
         with PRecordData(Buff)^ do
         begin
-          if TCachedUpdateStatus(rdFlags) in [cusUnmodified, cusUnInserted, cusDeletedApplied] then
+          if TCachedUpdateStatus(rdFlags and 7) in [cusUnmodified, cusUnInserted, cusDeletedApplied] then
             Continue;
           cus := TCachedUpdateStatus(rdFlags and 7);
           FUpdatesPending := True;
@@ -2281,7 +2313,7 @@ begin
               TNumericField(Fields[i]).EditFormat := vFi.EditFormat;
         end;
 
-        if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+        if UseGlobalContainer then
           GlobalContainer.DoOnApplyFieldRepository(Self, Fields[i], vFi);
         if Assigned(FContainer) then
           FContainer.DoOnApplyFieldRepository(Self, Fields[i], vFi);
@@ -2325,7 +2357,7 @@ begin
   FUpdatesPending := False;
 
   //
-  if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+  if UseGlobalContainer then
     GlobalContainer.DataSetEvent(Self, deAfterOpen);
   if FContainer <> nil then
     FContainer.DataSetEvent(Self, deAfterOpen);
@@ -2801,7 +2833,7 @@ begin
     Open
   else
   begin
-    if (GlobalContainer <> nil) and (FContainer <> GlobalContainer) then
+    if UseGlobalContainer then
       GlobalContainer.UserEvent(Sender, Self, UDE, Info);
     if FContainer <> nil then
       FContainer.UserEvent(Sender, Self, UDE, Info);

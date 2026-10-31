@@ -95,6 +95,42 @@ begin
       Result := -1;
 end;
 
+// Value rounded to the precision of a Single key
+function CompareAsSingles(const Value: Extended; Key: Single): Integer;
+const
+  MaxSingleValue = 3.4028234663852886e+38;
+var
+  S: Single;
+begin
+  if Abs(Value) > MaxSingleValue then
+    Result := CompareNumbers(Value, Key)
+  else
+  begin
+    S := Value;
+    Result := CompareNumbers(S, Key);
+  end;
+end;
+
+// Key rounded to the 4 decimals of a Currency value
+function CompareAsCurrencies(const Value: Currency; const Key: Extended): Integer;
+var
+  C: Currency;
+begin
+  if Abs(Key) >= 922337203685477 then
+    Result := CompareNumbers(Value, Key)
+  else
+  begin
+    C := Key;
+    if Value = C then
+      Result := 0
+    else
+      if Value > C then
+        Result := 1
+      else
+        Result := -1;
+  end;
+end;
+
 function CompareTexts(const ValueText, Text: string): Integer;
 begin
   Result := AnsiCompareStr(ValueText, Text);
@@ -198,12 +234,18 @@ function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
 {$I VarFnc.inc}
   function ComparePSmallAndVariant(P: PSmallInt; const v: Variant): integer;
 {$I VarFnc.inc}
+{$DEFINE C_FLOAT}
     function ComparePSingleAndVariant(P: PSingle; const v: Variant): integer;
+{$DEFINE C_SINGLE}
 {$I VarFnc.inc}
+{$UNDEF C_SINGLE}
       function ComparePDoubleAndVariant(P: PDouble; const v: Variant): integer;
 {$I VarFnc.inc}
+{$UNDEF C_FLOAT}
         function ComparePCurrencyAndVariant(P: PCurrency; const v: Variant): integer;
+{$DEFINE C_CURRENCY}
 {$I VarFnc.inc}
+{$UNDEF C_CURRENCY}
           function ComparePDateAndVariant(P: PDateTime; const v: Variant): integer;
 {$DEFINE C_DATE}
 {$I VarFnc.inc}
@@ -222,6 +264,21 @@ function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
 {$I VarFnc.inc}
 {$WARNINGS ON}
 {$UNDEF BODY_NUMERIC_COMPARE_EQ}
+{$IFDEF D2009+}
+                      // The Variant compare of a UInt64 with a negative integer raises an overflow
+                      function CompareUInt64AndVariant(const v, v1: Variant): Integer;
+                      begin
+                        case TVarData(v1).VType of
+                          varShortInt, varSmallInt, varInteger, varInt64:
+                            if v1 < 0 then
+                            begin
+                              Result := 1;
+                              Exit;
+                            end;
+                        end;
+                        Result := CompareAsVariants(v, v1);
+                      end;
+{$ENDIF}
                       function CompareWideStringAndVariantEQ(P: Pointer; const v: Variant): boolean;
                       begin
                         case VarType(v) of
@@ -386,6 +443,10 @@ function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
                             result := CompareStringAndVariant
                               (GetVariantData(v), v1);
                           // {$ENDIF}
+{$IFDEF D2009+}
+                          varUInt64:
+                            result := CompareUInt64AndVariant(v, v1);
+{$ENDIF}
                         else
                           result := CompareAsVariants(v, v1);
                         end;
@@ -433,6 +494,10 @@ function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
                           varString:
                             result := CompareStringAndVariantEQ
                               (GetVariantData(v), v1);
+{$IFDEF D2009+}
+                          varUInt64:
+                            result := CompareUInt64AndVariant(v, v1) = 0;
+{$ENDIF}
                         else
                           result := v = v1;
                         end;

@@ -640,12 +640,41 @@ begin
   end;
 end;
 
-procedure Update1RepositaryTable(Tr: TFIBTransaction);
+// The repository upgrades run in an own transaction, never in a transaction of the application.
+// A statement that fails (the column or the object exists already) is skipped.
+function TryRepositoryDDL(qry: TFIBQuery; const SQLs: array of string): boolean;
+var
+  i: integer;
+begin
+  Result := True;
+  try
+    for i := Low(SQLs) to High(SQLs) do
+    begin
+      qry.SQL.Text := SQLs[i];
+      qry.ExecQuery;
+    end;
+  except
+    on EFIBError do
+      Result := False;
+  end;
+end;
+
+procedure CommitRepositoryUpgrade(Transaction: TFIBTransaction);
+begin
+  try
+    Transaction.Commit;
+  except
+    if Transaction.InTransaction then
+      Transaction.Rollback;
+    raise;
+  end;
+end;
+
+procedure UpgradeFieldsRepositoryTable(DB: TFIBDataBase);
 var
   qry: TFIBQuery;
-  DB: TFIBDataBase;
+  Transaction: TFIBTransaction;
 begin
-  DB := TransactionDatabase(Tr);
   // without rights to widen the table the other changes fail too, don't retry on every read
   if (DB = nil) or FailedUpgrades.Contains(DB, FieldsInfoNamesUpgrade) then
     Exit;
@@ -653,108 +682,75 @@ begin
     WidenRepositoryColumns(DB, FieldsInfoNamesUpgrade, 'FIB$FIELDS_INFO',
       ['TABLE_NAME', 'FIELD_NAME'], DB.Capabilities.MaxIdentifierLength);
   qry := TFIBQuery.Create(nil);
-  with qry, qry.SQL do
-    try
-      Database := DB;
-      Transaction := Tr;
-      ParamCheck := False;
-      if not Tr.InTransaction then
-        Tr.StartTransaction;
-      try
-        Text := 'CREATE GENERATOR FIB$FIELD_INFO_VERSION';
-        ExecQuery;
-      except
-      end;
-      try
-        Text := 'ALTER TABLE FIB$FIELDS_INFO ADD DISPLAY_WIDTH INTEGER DEFAULT 0';
-        ExecQuery;
-      except
-      end;
-      try
-        Text := 'ALTER TABLE FIB$FIELDS_INFO ADD FIB$VERSION INTEGER';
-        ExecQuery;
-      except
-      end;
+  Transaction := TFIBTransaction.Create(nil);
+  try
+    Transaction.DefaultDatabase := DB;
+    qry.Database := DB;
+    qry.Transaction := Transaction;
+    qry.ParamCheck := False;
+    Transaction.StartTransaction;
+    TryRepositoryDDL(qry, ['CREATE GENERATOR FIB$FIELD_INFO_VERSION']);
+    TryRepositoryDDL(qry, ['ALTER TABLE FIB$FIELDS_INFO ADD DISPLAY_WIDTH INTEGER DEFAULT 0']);
+    TryRepositoryDDL(qry, ['ALTER TABLE FIB$FIELDS_INFO ADD FIB$VERSION INTEGER']);
+    TryRepositoryDDL(qry, ['CREATE TRIGGER FIB$FIELDS_INFO_BI FOR FIB$FIELDS_INFO ' +
+      'ACTIVE BEFORE INSERT POSITION 0 as ' + sLineBreak + 'begin ' + sLineBreak +
+      'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end']);
+    TryRepositoryDDL(qry, ['CREATE TRIGGER FIB$FIELDS_INFO_BU FOR FIB$FIELDS_INFO ' +
+      'ACTIVE BEFORE UPDATE POSITION 0 as ' + sLineBreak + 'begin ' + sLineBreak +
+      'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end']);
+    CommitRepositoryUpgrade(Transaction);
+  finally
+    qry.Free;
+    Transaction.Free;
+  end;
+end;
 
-      try
-        Text := 'CREATE TRIGGER FIB$FIELDS_INFO_BI FOR FIB$FIELDS_INFO ' +
-          'ACTIVE BEFORE INSERT POSITION 0 as ' + sLineBreak + 'begin ' + #13#10 +
-          'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end';
-        ExecQuery;
-      except
-      end;
-      try
-        Text := 'CREATE TRIGGER FIB$FIELDS_INFO_BU FOR FIB$FIELDS_INFO ' +
-          'ACTIVE BEFORE UPDATE POSITION 0 as ' + sLineBreak + 'begin ' + sLineBreak +
-          'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end';
-        ExecQuery;
-      except
-      end;
-    finally
-      Tr.CommitRetaining;
-      Free
+procedure UpgradeDataSetsRepositoryTable(DB: TFIBDataBase);
+var
+  qry: TFIBQuery;
+  Transaction: TFIBTransaction;
+begin
+  if DB = nil then
+    Exit;
+  qry := TFIBQuery.Create(nil);
+  Transaction := TFIBTransaction.Create(nil);
+  try
+    Transaction.DefaultDatabase := DB;
+    qry.Database := DB;
+    qry.Transaction := Transaction;
+    qry.ParamCheck := False;
+    Transaction.StartTransaction;
+    if not ExistBooleanDomain(DB) then
+    begin
+      qry.SQL.Text := 'CREATE DOMAIN FIB$BOOLEAN AS SMALLINT DEFAULT 1 NOT NULL CHECK (VALUE IN (0,1))';
+      qry.ExecQuery;
     end;
+    TryRepositoryDDL(qry, ['ALTER TABLE FIB$DATASETS_INFO ADD UPDATE_TABLE_NAME  VARCHAR(68)']);
+    TryRepositoryDDL(qry, ['ALTER TABLE FIB$DATASETS_INFO ADD UPDATE_ONLY_MODIFIED_FIELDS  FIB$BOOLEAN NOT NULL']);
+    TryRepositoryDDL(qry, ['ALTER TABLE FIB$DATASETS_INFO ADD CONDITIONS  BLOB sub_type 1 segment size 80']);
+    TryRepositoryDDL(qry, ['CREATE GENERATOR FIB$FIELD_INFO_VERSION']);
+    TryRepositoryDDL(qry, ['ALTER TABLE FIB$DATASETS_INFO ADD fib$version  INTEGER',
+      'CREATE TRIGGER FIB$DATASETS_INFO_BI FOR FIB$DATASETS_INFO ' +
+      'ACTIVE BEFORE INSERT POSITION 0 as ' + sLineBreak + 'begin' + sLineBreak +
+      'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end',
+      'CREATE TRIGGER FIB$DATASETS_INFO_BU FOR FIB$DATASETS_INFO ' +
+      'ACTIVE BEFORE UPDATE POSITION 0 as ' + sLineBreak + 'begin' + sLineBreak +
+      'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end']);
+    CommitRepositoryUpgrade(Transaction);
+  finally
+    qry.Free;
+    Transaction.Free;
+  end;
+end;
+
+procedure Update1RepositaryTable(Tr: TFIBTransaction);
+begin
+  UpgradeFieldsRepositoryTable(TransactionDatabase(Tr));
 end;
 
 procedure Update2RepositaryTable(Tr: TFIBTransaction);
-var
-  qry: TFIBQuery;
 begin
-  qry := TFIBQuery.Create(nil);
-  with qry, qry.SQL do
-    try
-      Database := TransactionDatabase(Tr);
-      Transaction := Tr;
-      ParamCheck := False;
-      if not ExistBooleanDomain(Database) then
-      begin
-        Text := 'CREATE DOMAIN FIB$BOOLEAN AS SMALLINT DEFAULT 1 NOT NULL CHECK (VALUE IN (0,1))';
-        ExecQuery;
-      end;
-      try
-        Text := 'ALTER TABLE FIB$DATASETS_INFO ADD UPDATE_TABLE_NAME  VARCHAR(68)';
-        ExecQuery;
-      except
-      end;
-      try
-        Text := 'ALTER TABLE FIB$DATASETS_INFO ADD UPDATE_ONLY_MODIFIED_FIELDS  FIB$BOOLEAN NOT NULL';
-        ExecQuery;
-      except
-      end;
-      try
-        Text := 'ALTER TABLE FIB$DATASETS_INFO ADD CONDITIONS  BLOB sub_type 1 segment size 80';
-        ExecQuery;
-      except
-      end;
-
-      if not Tr.InTransaction then
-        Tr.StartTransaction;
-      try
-        Text := 'CREATE GENERATOR FIB$FIELD_INFO_VERSION';
-        ExecQuery;
-      except
-      end;
-
-      try
-        Text := 'ALTER TABLE FIB$DATASETS_INFO ADD fib$version  INTEGER';
-        ExecQuery;
-        Text := 'CREATE TRIGGER FIB$DATASETS_INFO_BI FOR FIB$DATASETS_INFO ' +
-          'ACTIVE BEFORE INSERT POSITION 0 as ' + sLineBreak + 'begin' + sLineBreak +
-          'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end';
-        ExecQuery;
-
-        Text := 'CREATE TRIGGER FIB$DATASETS_INFO_BU FOR FIB$DATASETS_INFO ' +
-          'ACTIVE BEFORE UPDATE POSITION 0 as ' + sLineBreak + 'begin' + sLineBreak +
-          'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end';
-        ExecQuery;
-
-      except
-      end;
-
-    finally
-      Tr.CommitRetaining;
-      qry.Free
-    end
+  UpgradeDataSetsRepositoryTable(TransactionDatabase(Tr));
 end;
 
 procedure DoCreateRepositaryTable(DB: TFIBDataBase; Kind: byte);
@@ -794,7 +790,6 @@ begin
             ExecQuery;
             Text := 'GRANT SELECT ON TABLE FIB$FIELDS_INFO TO PUBLIC';
             ExecQuery;
-            Update1RepositaryTable(Transaction);
           end;
         2:
           begin
@@ -810,7 +805,6 @@ begin
             ExecQuery;
             Text := 'GRANT SELECT ON TABLE FIB$DATASETS_INFO TO PUBLIC';
             ExecQuery;
-            Update2RepositaryTable(Transaction);
           end;
         3:
           begin
@@ -846,6 +840,11 @@ begin
   finally
     Transaction.Free;
     qry.Free;
+  end;
+  // the upgrades alter the tables created above, in their own transaction
+  case Kind of
+    1: UpgradeFieldsRepositoryTable(DB);
+    2: UpgradeDataSetsRepositoryTable(DB);
   end;
   LockRepList.Acquire;
   try
@@ -911,8 +910,12 @@ begin
         begin
           q.Params[0].asInteger := DataSet_ID;
           q.ExecQuery;
+          // no info stored for the dataset
           if q.RecordCount = 0 then
+          begin
+            Result := False;
             Exit;
+          end;
           with DS_Info, q do
           begin
             FSelectSQL.Text := FieldByName('SELECT_SQL').asString;
@@ -1357,9 +1360,16 @@ end;
 function TpFIBTableInfo.FieldInfo(const FieldName: string): TpFIBFieldInfo;
 var
   Index: integer;
+  Name: string;
 begin
   Result := nil;
-  Index := FFieldList.IndexOf(FastTrim(ReplaceStr(FieldName, '"', '')));
+  Name := FastTrim(ReplaceStr(FieldName, '"', ''));
+  // "Name" and NAME are different fields, a name in another case finds the field too
+  Index := FFieldList.Count - 1;
+  while (Index >= 0) and (FFieldList[Index] <> Name) do
+    Dec(Index);
+  if Index < 0 then
+    Index := FFieldList.IndexOf(Name);
   if Index > -1 then
     Result := TpFIBFieldInfo(FFieldList.Objects[Index]);
 end;
@@ -1590,6 +1600,7 @@ var
   p: integer;
   vQuoteExist: boolean;
   vUpdateRepository: boolean;
+  ProcSQL: string;
 begin
   if Length(TableName) = 0 then
     Exit;
@@ -1660,35 +1671,40 @@ begin
       'where  R.RDB$RELATION_NAME=:TN ' + sLineBreak +
       'order by R.RDB$FIELD_POSITION');
 
-    with q do
-      try
-        Options := [qoStartTransaction, qoTrimCharFields];
-        Params[0].asString := TableName;
-        ExecQuery;
-        // Same value as FormatNumberSQL, which IsActualInfo compares with
-        if Eof then
-          FFormatNumber := 0
-        else if Fields[10].IsNull then
-          FFormatNumber := Fields[8].asInteger
-        else
-          FFormatNumber := Fields[9].asInteger;
-        if q.Eof then
-        begin
-          Close;
-          FreeQueryForUse(q);
-          q := GetQueryForUse(aTransaction,
-            'Select P.RDB$PARAMETER_NAME,F.RDB$FIELD_NAME,0,0,0,' + sLineBreak +
-            'P.RDB$PARAMETER_TYPE,' + sLineBreak + 'F.RDB$CHARACTER_SET_ID, NULL' +
-            sLineBreak + 'from RDB$PROCEDURE_PARAMETERS P' + sLineBreak +
-            'JOIN RDB$FIELDS F ON (P.RDB$FIELD_SOURCE = F.RDB$FIELD_NAME)' +
-            'WHERE P.RDB$PROCEDURE_NAME=:PN' + sLineBreak +
-            'AND P.RDB$PARAMETER_TYPE=1');
-          Options := [qoStartTransaction, qoTrimCharFields];
-          Params[0].asString := TableName;
-          ExecQuery;
-        end;
-        ClearFieldList;
+    try
+      q.Options := [qoStartTransaction, qoTrimCharFields];
+      q.Params[0].asString := TableName;
+      q.ExecQuery;
+      // Same value as FormatNumberSQL, which IsActualInfo compares with
+      if q.Eof then
+        FFormatNumber := 0
+      else if q.Fields[10].IsNull then
+        FFormatNumber := q.Fields[8].asInteger
+      else
+        FFormatNumber := q.Fields[9].asInteger;
+      if q.Eof then
+      begin
+        // a selectable procedure: its output parameters, not those of a packaged one
+        ProcSQL := 'Select P.RDB$PARAMETER_NAME,F.RDB$FIELD_NAME,0,0,0,' + sLineBreak +
+          'P.RDB$PARAMETER_TYPE,' + sLineBreak + 'F.RDB$CHARACTER_SET_ID, NULL' +
+          sLineBreak + 'from RDB$PROCEDURE_PARAMETERS P' + sLineBreak +
+          'JOIN RDB$FIELDS F ON (P.RDB$FIELD_SOURCE = F.RDB$FIELD_NAME)' +
+          'WHERE P.RDB$PROCEDURE_NAME=:PN' + sLineBreak +
+          'AND P.RDB$PARAMETER_TYPE=1';
+        if (TransactionDatabase(aTransaction) <> nil) and TransactionDatabase(aTransaction).IsFirebirdConnect and
+          (TransactionDatabase(aTransaction).ODSMajorVersion >= 12) then
+          ProcSQL := ProcSQL + sLineBreak + 'AND P.RDB$PACKAGE_NAME IS NULL';
+        q.Close;
+        FreeQueryForUse(q);
+        q := nil;
+        q := GetQueryForUse(aTransaction, ProcSQL);
+        q.Options := [qoStartTransaction, qoTrimCharFields];
+        q.Params[0].asString := TableName;
+        q.ExecQuery;
+      end;
+      ClearFieldList;
 
+      with q do
         while not Eof do
         begin
           fi := TpFIBFieldInfo.Create;
@@ -1744,8 +1760,11 @@ begin
       finally
         if ExistAdInfo then
           d.Free;
-        q.Close;
-        FreeQueryForUse(q)
+        if q <> nil then
+        begin
+          q.Close;
+          FreeQueryForUse(q);
+        end;
       end
   end;
 end;
@@ -1755,6 +1774,8 @@ constructor TpFIBTableInfoCollect.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FListTabInfo := TStringList.Create;
+  // "Name" and NAME are different tables
+  FListTabInfo.CaseSensitive := True;
   FListTabInfo.Sorted := True;
   FListTabInfo.Duplicates := dupAccept;
   FDBNames := TStringList.Create;
@@ -1864,7 +1885,12 @@ begin
     begin
       ReadStrFromStream(Stream, tn);
       ti := TpFIBTableInfo.Create(Self);
-      ti.LoadFromStreamVersion(Stream, StreamVersion);
+      try
+        ti.LoadFromStreamVersion(Stream, StreamVersion);
+      except
+        ti.Free;
+        raise;
+      end;
       FListTabInfo.AddObject(tn, ti)
     end;
   end;
@@ -1915,7 +1941,18 @@ begin
     Exit;
   Stream := TFileStream.Create(FileName, fmOpenRead);
   try
-    LoadFromStream(Stream, DB);
+    try
+      LoadFromStream(Stream, DB);
+    except
+      on E: Exception do
+      begin
+        if E is EFIBError then
+          raise;
+        // a damaged cache file is ignored, the infos are read from the database
+        Clear;
+        Result := False;
+      end;
+    end;
   finally
     Stream.Free;
   end;
@@ -2073,27 +2110,30 @@ begin
       // ClearForDataBase(aDatabase);
       ClearForTable(ATableName);
     end;
+    if (Result <> nil) and Result.FNonValidated and FNeedValidate and
+      not Result.IsActualInfo(aDataBase) then
+    begin
+      // the outdated info is read again
+      FListTabInfo.Delete(FListTabInfo.IndexOfObject(Result));
+      Result.Free;
+      Result := nil;
+    end;
     if Result = nil then
     begin
       Result := TpFIBTableInfo.Create(Self);
-      Result.FWithFieldRepositaryInfo := WithRepositaryInfo;
-      Result.FillInfo(aDataBase, vTr, TmpTableName);
+      try
+        Result.FWithFieldRepositaryInfo := WithRepositaryInfo;
+        Result.FillInfo(aDataBase, vTr, TmpTableName);
+      except
+        Result.Free;
+        raise;
+      end;
       FListTabInfo.AddObject(TmpTableName, Result);
     end
-    else
+    else if WithRepositaryInfo and not Result.FWithFieldRepositaryInfo then
     begin
-      if Result.FNonValidated and FNeedValidate then
-        if not Result.IsActualInfo(aDataBase) then
-        begin
-          ClearForTable(TmpTableName);
-          Result := GetTableInfo(aDataBase, ATableName, WithRepositaryInfo);
-          Exit;
-        end;
-      if WithRepositaryInfo and not Result.FWithFieldRepositaryInfo then
-      begin
-        Result.GetRepositaryFieldInfos(TmpTableName, vTr);
-        Result.FWithFieldRepositaryInfo := WithRepositaryInfo;
-      end;
+      Result.GetRepositaryFieldInfos(TmpTableName, vTr);
+      Result.FWithFieldRepositaryInfo := WithRepositaryInfo;
     end;
   finally
     FLock.Release;
@@ -2321,9 +2361,19 @@ begin
   if Result = nil then
   begin
     Result := TpDataSetInfo.Create(DataSet);
-    ExchangeDataSetInfo(DataSet, Result);
-    FListDataSetInfo.AddObject
-      (IntToStr(TpFIBDataset(DataSet).DataSet_ID), Result);
+    try
+      // without a stored row there is no info: the settings of the dataset stay
+      if not ExchangeDataSetInfo(DataSet, Result) then
+      begin
+        Result.Free;
+        Result := nil;
+      end;
+    except
+      Result.Free;
+      raise;
+    end;
+    if Result <> nil then
+      FListDataSetInfo.AddObject(IntToStr(TpFIBDataset(DataSet).DataSet_ID), Result);
   end;
 end;
 

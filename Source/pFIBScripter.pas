@@ -907,60 +907,21 @@ end;
 
 function TpFIBScripter.DirectiveAllows(DirNum: Integer; InElse: Boolean): Boolean;
 var
-  Directives: TDirectivesMap; // of the script being executed
-  NeedCalc: PDirectivesMap;
-  i, j: Integer;
-  vInElse: boolean;
+  D: PDirectiveDesc;
 begin
-  Directives := FParser.FDirectives;
-  if (DirNum >= 0) and (DirNum < FParser.FDirectiveCount) then
+  if (DirNum < 0) or (DirNum >= FParser.FDirectiveCount) then
   begin
-    case Directives[DirNum].dState of
-      dsTrue: Result := not InElse;
-      dsFalse: Result := InElse;
-    else
-      // dsUnknown
-      begin
-        Result := True;
-        SetLength(NeedCalc, 1000);
-        i := 0;
-        j := DirNum;
-        while (j > -1) and (Directives[j].dState = dsUnknown) do
-        begin
-          NeedCalc[i] := @Directives[j];
-          j := Directives[j].OwnerDirectiveNum;
-          Inc(i)
-        end;
-        SetLength(NeedCalc, i);
-        Dec(i);
-        //
-        if j > -1 then
-        begin
-          Result := (Directives[j].dState = dsTrue) xor (NeedCalc[i].OwnerDirectiveElse);
-        end;
-
-        //
-
-        while (i >= 0) and Result do
-        begin
-          if i > 0 then
-            vInElse := NeedCalc[i - 1].OwnerDirectiveElse
-          else
-            vInElse := InElse;
-          NeedCalc[i].dState := CalcDirective(NeedCalc[i]^);
-          Result := (NeedCalc[i].dState = dsTrue) xor vInElse;
-          Dec(i)
-        end;
-        if not Result then
-          if InElse then
-            Directives[DirNum].dState := dsTrue
-          else
-            Directives[DirNum].dState := dsFalse;
-      end;
-    end;
-  end
-  else
-    Result := True
+    Result := True;
+    Exit;
+  end;
+  D := @FParser.FDirectives[DirNum];
+  // the condition is evaluated only when the owner directives allow its branch
+  Result := DirectiveAllows(D.OwnerDirectiveNum, D.OwnerDirectiveElse);
+  if not Result then
+    Exit;
+  if D.dState = dsUnknown then
+    D.dState := CalcDirective(D^);
+  Result := (D.dState = dsTrue) xor InElse;
 end;
 
 // False when there is no OnExecuteError handler and the error must propagate
@@ -1007,8 +968,26 @@ end;
 function TpFIBScripter.ExecuteStatement(StmtTxt: TStrings;
   Stmt: PStatementDesc; StmtNo: Integer; TmpSQL: TStrings = nil;
   LineInFile: Integer = -1): Boolean;
+
+  // An object name of DESCRIBE: quoted for COMMENT ON, or as stored in the system tables
+  function DescribeName(const TokenPos: TStmtCoord; ForComment: Boolean): string;
+  var
+    Quoted: Boolean;
+  begin
+    Quoted := FParser.Line(TokenPos.Y)[TokenPos.X] = '"';
+    Result := FParser.GetToken(TokenPos);
+    if Quoted then
+    begin
+      if ForComment then
+        Result := '"' + Result + '"';
+    end
+    else if not ForComment then
+      Result := AnsiUpperCase(Result);
+  end;
+
 var
-  vToken: TStmtCoord;
+  vToken, NameToken, OwnerToken: TStmtCoord;
+  UseComment: Boolean;
   tmpStr, tmpStr1: string;
   vIsInternalTmpSQL: Boolean;
   CanGroup: Boolean;
@@ -1135,7 +1114,9 @@ begin
                   raise;
             end
           end;
-        sDisconnect: FDatabase.Connected := False;
+        sDisconnect:
+          if Assigned(FDatabase) then
+            FDatabase.Connected := False;
         sConnect:
           begin
             CreateInternalDatabase;
@@ -1177,7 +1158,7 @@ begin
                 else if IsClause('OFF', tmpStr, 1) then
                   FUseExecBlockForDML := False
                 else
-                  RaiseParserDirectiveError(dExecBlock, Stmt.smdBegin.Y);
+                  RaiseParserDirectiveError(dExecBlock, Line);
               end
               else if IsClause(dDefine, TmpSQL[0], 1) then
               begin
@@ -1213,7 +1194,7 @@ begin
               end
               else
                 raise Exception.Create('Unknown directive :' + sLineBreak + 'Line ' +
-                  IntToStr(Stmt.smdBegin.Y) + sLineBreak + TmpSQL.Text);
+                  IntToStr(Line) + sLineBreak + TmpSQL.Text);
 
           end;
         sRollBack:
@@ -1301,77 +1282,116 @@ begin
               TmpSQL.Clear;
               case Stmt.objType of
                 otDomain:
-                  TmpSQL.Add
-                    ('UPDATE RDB$FIELDS SET RDB$DESCRIPTION = :DESCR WHERE (RDB$FIELD_NAME = :FIELD)');
+                  begin
+                    tmpStr1 := 'DOMAIN';
+                    TmpSQL.Add
+                      ('UPDATE RDB$FIELDS SET RDB$DESCRIPTION = :DESCR WHERE (RDB$FIELD_NAME = :FIELD)');
+                  end;
                 otView, otTable:
                   begin
+                    if Stmt.objType = otView then
+                      tmpStr1 := 'VIEW'
+                    else
+                      tmpStr1 := 'TABLE';
                     TmpSQL.Add
                       ('UPDATE RDB$RELATIONS SET RDB$DESCRIPTION = :DESCR ' + 'WHERE RDB$RELATION_NAME = :TABNAME');
                   end;
                 otTrigger:
-                  TmpSQL.Add
-                    ('UPDATE RDB$TRIGGERS SET RDB$DESCRIPTION = :DESCR WHERE (RDB$TRIGGER_NAME = :TR_NAME)');
+                  begin
+                    tmpStr1 := 'TRIGGER';
+                    TmpSQL.Add
+                      ('UPDATE RDB$TRIGGERS SET RDB$DESCRIPTION = :DESCR WHERE (RDB$TRIGGER_NAME = :TR_NAME)');
+                  end;
                 otField:
-                  TmpSQL.Add
-                    ('UPDATE RDB$RELATION_FIELDS SET RDB$DESCRIPTION = :DESCR ' +
-                      'WHERE (RDB$RELATION_NAME = :TABNAME) and (RDB$FIELD_NAME = :FIELD)');
+                  begin
+                    tmpStr1 := 'COLUMN';
+                    TmpSQL.Add
+                      ('UPDATE RDB$RELATION_FIELDS SET RDB$DESCRIPTION = :DESCR ' +
+                        'WHERE (RDB$RELATION_NAME = :TABNAME) and (RDB$FIELD_NAME = :FIELD)');
+                  end;
                 otParameter:
-                  TmpSQL.Add
-                    ('UPDATE RDB$PROCEDURE_PARAMETERS SET RDB$DESCRIPTION = :DESCR ' +
-                      'WHERE (RDB$PROCEDURE_NAME = :PROCNAME) and(RDB$PARAMETER_NAME = :FIELD)');
+                  begin
+                    tmpStr1 := 'PARAMETER';
+                    TmpSQL.Add
+                      ('UPDATE RDB$PROCEDURE_PARAMETERS SET RDB$DESCRIPTION = :DESCR ' +
+                        'WHERE (RDB$PROCEDURE_NAME = :PROCNAME) and(RDB$PARAMETER_NAME = :FIELD)');
+                  end;
                 otProcedure:
-                  TmpSQL.Add
-                    ('UPDATE RDB$PROCEDURES SET RDB$DESCRIPTION = :DESCR ' + 'WHERE (RDB$PROCEDURE_NAME = :PROCNAME)');
-
+                  begin
+                    tmpStr1 := 'PROCEDURE';
+                    TmpSQL.Add
+                      ('UPDATE RDB$PROCEDURES SET RDB$DESCRIPTION = :DESCR ' + 'WHERE (RDB$PROCEDURE_NAME = :PROCNAME)');
+                  end;
                 otException:
-                  TmpSQL.Add
-                    ('UPDATE RDB$EXCEPTIONS SET RDB$DESCRIPTION = :DESCR ' + 'WHERE (RDB$EXCEPTION_NAME = :EXC_NAME)');
-                otFunction:
-                  TmpSQL.Add
-                    ('update RDB$FUNCTIONS set RDB$DESCRIPTION = ?DESC where (RDB$FUNCTION_NAME = ?FUNC_NAME)');
-                otUDF:
-                  TmpSQL.Add
-                    ('update RDB$FUNCTIONS set RDB$DESCRIPTION = ?DESC where (RDB$FUNCTION_NAME = ?FUNC_NAME)');
-
+                  begin
+                    tmpStr1 := 'EXCEPTION';
+                    TmpSQL.Add
+                      ('UPDATE RDB$EXCEPTIONS SET RDB$DESCRIPTION = :DESCR ' + 'WHERE (RDB$EXCEPTION_NAME = :EXC_NAME)');
+                  end;
+                otFunction, otUDF:
+                  begin
+                    if Stmt.objType = otUDF then
+                      tmpStr1 := 'EXTERNAL FUNCTION'
+                    else
+                      tmpStr1 := 'FUNCTION';
+                    TmpSQL.Add
+                      ('update RDB$FUNCTIONS set RDB$DESCRIPTION = ?DESC where (RDB$FUNCTION_NAME = ?FUNC_NAME)');
+                  end;
                 otGenerator:
-                  TmpSQL.Add
-                    ('update RDB$GENERATORS SET RDB$DESCRIPTION = ?DESC where (RDB$GENERATOR_NAME = ?GEN_NAME)');
+                  begin
+                    tmpStr1 := 'GENERATOR';
+                    TmpSQL.Add
+                      ('update RDB$GENERATORS SET RDB$DESCRIPTION = ?DESC where (RDB$GENERATOR_NAME = ?GEN_NAME)');
+                  end;
                 otPackage:
-                  TmpSQL.Add('UPDATE RDB$PACKAGES SET RDB$DESCRIPTION = :DESCR ' +
-                    'WHERE (RDB$PACKAGE_NAME = :PACKAGENAME)');
-
+                  begin
+                    tmpStr1 := 'PACKAGE';
+                    TmpSQL.Add('UPDATE RDB$PACKAGES SET RDB$DESCRIPTION = :DESCR ' +
+                      'WHERE (RDB$PACKAGE_NAME = :PACKAGENAME)');
+                  end;
               else
                 tmpStr := FParser.GetToken(vToken);
                 raise Exception.Create('Unsupported DESCRIBE type ' + tmpStr)
                 // mark as invalid later
               end;
 
+              // DESCRIBE <type> <name> [<owner type> <owner name>] '<text>'
               vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-              // Object Name
-              tmpStr := FParser.GetToken(vToken); // Object Name
-
-              FQuery.SQL.Assign(TmpSQL);
-
+              NameToken := vToken;
+              OwnerToken := vToken;
               if Stmt.objType in [otField, otParameter] then
               begin
-                FQuery.Params[2].AsString := tmpStr; // Parameter name;
                 vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-                // Owner object type
                 vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-                // Owner object name
-                FQuery.Params[1].AsString := FParser.GetToken(vToken);
+                OwnerToken := vToken;
+              end;
+              vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
+              // system tables are read only in Firebird 3+, COMMENT ON exists since Firebird 2
+              UseComment := Assigned(FDatabase) and FDatabase.Connected and FDatabase.IsFirebirdConnect;
+              if UseComment then
+              begin
+                tmpStr := DescribeName(NameToken, True);
+                if Stmt.objType in [otField, otParameter] then
+                  tmpStr := DescribeName(OwnerToken, True) + '.' + tmpStr;
+                tmpStr1 := 'COMMENT ON ' + tmpStr1 + ' ' + tmpStr + ' IS ';
               end
               else
-                FQuery.Params[1].AsString := tmpStr; // Object Name
-              vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
+              begin
+                FQuery.SQL.Assign(TmpSQL);
+                if Stmt.objType in [otField, otParameter] then
+                  FQuery.Params[2].AsString := DescribeName(NameToken, False);
+                FQuery.Params[1].AsString := DescribeName(OwnerToken, False);
+              end;
 
               CopyFragment(vToken, Stmt.smdEnd, TmpSQL);
-              FQuery.Params[0].AsString := AnsiDequotedStr(TmpSQL.Text, '''');
-{$IFNDEF BEZBAZY}
+              tmpStr := AnsiDequotedStr(TmpSQL.Text, '''');
+              if UseComment then
+                FQuery.SQL.Text := tmpStr1 + QuotedStr(tmpStr)
+              else
+                FQuery.Params[0].AsString := tmpStr;
               if not GetTransaction.InTransaction then
                 GetTransaction.StartTransaction;
               FQuery.ExecQuery;
-{$ENDIF}
             end;
           end;
         sRunFromFile:

@@ -99,7 +99,7 @@ resourcestring
   reVarNotArray                         = 'Variant is not an array.';
   reVarArrayBounds                      = 'Variant array index out of bounds.';
   reVarArrayCreate                      = 'Unable to create variant array.';
-  SFIBStatNoSave                        = 'Unable to save statistics. Table "FIB$APP_STATISIC" does not exist.';
+  SFIBStatNoSave                        = 'Unable to save statistics. Table "FIB$APP_STATISTICS" does not exist.';
   SFIBStatNoSaveAppID                   = 'Unable to save statistics. ApplicationID is unknown.';
   SCompDatabaseNotConnected             = 'Database component is not set properly or not connected';
   SEInvalidCharsetData                  = 'Invalid data charset  %s. Need charset %s';

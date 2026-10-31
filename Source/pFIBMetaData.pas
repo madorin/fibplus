@@ -629,8 +629,10 @@ type
     FSpec: string;
     FBody: string;
     procedure LoadFromDataBase(QNames: TFIBQuery);
+    function UsesColumnTypes: Boolean;
     procedure SaveSpecDDL(Stream: TFastStringStream);
     procedure SaveBodyDDL(Stream: TFastStringStream);
+    procedure SaveHeaderAlterDDL(Stream: TFastStringStream);
   protected
     procedure GenerateObjectDDL(Stream: TFastStringStream); override;
   public
@@ -710,6 +712,7 @@ type
     FDefaultCharset: string;
     FConnectCharset: string;
     FClientLib: string;
+    FUserName: string;
 
     FProcParamDomainSupports: boolean;
     FProcParamRelationSupports: boolean;
@@ -942,7 +945,7 @@ end;
 function SavedMetaObjectName(const MetaObjectName: string): string;
 begin
   if (Length(MetaObjectName) > 0) and (MetaObjectName[1] = '"') then
-    Result := FastCopy(MetaObjectName, 2, Length(MetaObjectName) - 2)
+    Result := UnquoteIdentifier(MetaObjectName)
   else
     Result := MetaObjectName
 end;
@@ -1270,7 +1273,7 @@ const
     'P.RDB$OBJECT_TYPE, ' + 'T1.RDB$TYPE_NAME USERTYPE ' +
     'from RDB$USER_PRIVILEGES P ' +
     'JOIN RDB$TYPES T1 ON (P.RDB$USER_TYPE= T1.RDB$TYPE and T1.RDB$FIELD_NAME=''RDB$OBJECT_TYPE'' )' +
-    'WHERE RDB$RELATION_NAME=?RN ' + 'AND RDB$USER<>''SYSDBA'' ORDER BY 1';
+    'WHERE P.RDB$RELATION_NAME=?RN AND P.RDB$OBJECT_TYPE=?OT ' + 'AND P.RDB$USER<>''SYSDBA'' ORDER BY 1';
   { TCustomMetaObject }
 
 constructor TCustomMetaObject.Create(AOwner: TCustomMetaObject; aName: string = '');
@@ -1863,12 +1866,13 @@ begin
       blr_sql_time_tz, blr_ex_time_tz: FFieldType := fftTimeTZ;
       blr_timestamp_tz, blr_ex_timestamp_tz: FFieldType := fftTimestampTZ;
     end;
-  if (FFieldType in [fftChar, fftVarchar, fftCstring]) and not QField.Fields[4].IsNull then
+  FSubType := QField.Fields[5].AsInteger;
+  if ((FFieldType in [fftChar, fftVarchar, fftCstring]) or (FFieldType = fftBlob) and (FSubType = 1)) and
+    not QField.Fields[4].IsNull then
     GetCharsetInfo(QField.Fields[4].AsInteger, FCharSet, FBytesPerCharacter)
   else
     FBytesPerCharacter := 1;
 
-  FSubType := QField.Fields[5].AsInteger;
   if QField.FieldCount <= 13 then
     FIdentity := -1
   else if QField.Fields[13].IsNull then
@@ -1900,7 +1904,7 @@ begin
   case FFieldType of
     fftNumeric:
       begin
-        Stream.WriteString(Format('%s(%d,%d)', [FieldTypes[FFieldType], FPrecision, FScale]));
+        Stream.WriteString(GetShortFieldType);
         if FIsArray then
           Stream.WriteString(' ' + GetDimensionStr);
 
@@ -1916,7 +1920,11 @@ begin
           Stream.WriteString(' CHARACTER SET ' + FCharSet);
       end;
     fftBlob:
-      Stream.WriteString(Format('%s SUB_TYPE %d SEGMENT SIZE %d', [FieldTypes[FFieldType], FSubType, FSegmentLength]));
+      begin
+        Stream.WriteString(Format('%s SUB_TYPE %d SEGMENT SIZE %d', [FieldTypes[FFieldType], FSubType, FSegmentLength]));
+        if FCharSet <> '' then
+          Stream.WriteString(' CHARACTER SET ' + FCharSet);
+      end;
     fftDecFloat:
       begin
         Stream.WriteString(GetShortFieldType);
@@ -1935,7 +1943,12 @@ function TCustomMetaField.GetShortFieldType: string;
 begin
   case FFieldType of
     fftChar .. fftCstring: Result := Format('%s(%d)', [FieldTypes[FFieldType], FLength div FBytesPerCharacter]);
-    fftNumeric: Result := Format('%s(%d,%d)', [FieldTypes[FFieldType], FPrecision, FScale]);
+    fftNumeric:
+      // DECIMAL(1..4, s) is stored as INTEGER, NUMERIC(1..4, s) as SMALLINT
+      if FSubType = 2 then
+        Result := Format('DECIMAL(%d,%d)', [FPrecision, FScale])
+      else
+        Result := Format('%s(%d,%d)', [FieldTypes[FFieldType], FPrecision, FScale]);
     fftDecFloat:
       if FLength = 8 then
         Result := FieldTypes[FFieldType] + '(16)'
@@ -2035,6 +2048,7 @@ begin
       FSQLDialect := Transaction.DefaultDatabase.SQLDialect;
       FConnectCharset := Transaction.DefaultDatabase.ConnectParams.CharSet;
       FClientLib := Transaction.DefaultDatabase.LibraryName;
+      FUserName := Transaction.DefaultDatabase.ConnectParams.UserName;
 
       DetectServerFeatures;
       if FPartialIndicesSupports then
@@ -2175,6 +2189,7 @@ begin
                 QForeign, QCheck, QTrigger, FLoadTableChilds);
 
           QGrants.Params[0].AsString := QNames.Fields[0].AsString;
+          QGrants.Params[1].AsInteger := 0;
           QGrants.ExecQuery;
           if not QGrants.Eof then
             TMetaTableGrant.Create(CurObject).LoadFromDataBase(QGrants, QNames.Fields[0].AsString);
@@ -2203,10 +2218,10 @@ begin
                 with TMetaForeignKey.Create(Tables[I]) do
                 begin
                   Name := QForeign.Fields[0].AsString;
+                  ConStr := FName;
                   if not OnlyNames then
                   begin
                     FLoaded := True;
-                    ConStr := FName;
                     FForTable := FindTableIndex(Trim(QForeign.Fields[3].AsString));
                     SetLength(FFields, 1);
                     FFields[0] := Tables[I].FindFieldIndex
@@ -2237,7 +2252,7 @@ begin
                   end;
                 end;
               end
-              else
+              else if not OnlyNames then
                 with Tables[I].Foreign[Tables[I].ForeignCount - 1] do
                 begin
                   SetLength(FFields, Length(FFields) + 1);
@@ -2273,6 +2288,7 @@ begin
               LoadFromDataBase(QNames, QFields, QTrigger, QCharset, FLoadViewChilds);
 
             QGrants.Params[0].AsString := QNames.Fields[0].AsString;
+            QGrants.Params[1].AsInteger := 0;
             QGrants.ExecQuery;
             if not QGrants.Eof then
               TMetaViewGrant.Create(CurObject).LoadFromDataBase(QGrants, QNames.Fields[0].AsString);
@@ -2311,6 +2327,7 @@ begin
               LoadFromDataBase(QNames, QFields, QCharset, FProcParamDomainSupports, FProcParamRelationSupports);
 
             QGrants.Params[0].AsString := QNames.Fields[0].AsString;
+            QGrants.Params[1].AsInteger := 5;
             QGrants.ExecQuery;
             if not QGrants.Eof then
               TMetaProcGrant.Create(CurObject).LoadFromDataBase(QGrants, QNames.Fields[0].AsString);
@@ -2408,6 +2425,7 @@ begin
             TMetaRole(CurObject).LoadFromDataBase(QNames);
 
             QGrants.Params[0].AsString := QNames.Fields[0].AsString;
+            QGrants.Params[1].AsInteger := 13;
             QGrants.ExecQuery;
             if not QGrants.Eof then
               TMetaRoleGrant.Create(CurObject).LoadFromDataBase(QGrants, QNames.Fields[0].AsString);
@@ -2454,6 +2472,9 @@ var
       Parent := GetChildObject(ParentType, I);
       for J := 0 to Parent.GetChildsCount(ChildType) - 1 do
       begin
+        // A foreign key of a load of the names only
+        if not Parent.GetChildObject(ChildType, J).Loaded then
+          Continue;
         if not HeaderWritten then
         begin
           Stream.WriteString(sLineBreak + Format('/* %s */', [Comment]) + sLineBreak);
@@ -2472,7 +2493,7 @@ var
 
   procedure SaveMainObjects(Comment: string; ObjType: Integer; Separator: Char = DefTerminator);
   var
-    I: Integer;
+    I, Count: Integer;
     CurObj: TCustomMetaObject;
   begin
     if FItems[ObjType].Childs.Count > 0 then
@@ -2485,12 +2506,17 @@ var
         Stream.WriteString(sLineBreak);
       end;
 
+      Count := 0;
       for I := 0 to FItems[ObjType].Childs.Count - 1 do
       begin
         CurObj := GetChildObject(ObjType, I);
         if not CurObj.Loaded then
           CurObj := GetDBObject(FInternalTransaction.DefaultDatabase, TDBObjectType(ObjType), CurObj.FName);
-        if I = 0 then
+        // Dropped since the names were loaded
+        if (CurObj = nil) or not CurObj.Loaded then
+          Continue;
+        Inc(Count);
+        if Count = 1 then
           Stream.WriteString(sLineBreak)
         else
         begin
@@ -2579,22 +2605,30 @@ var
 
 var
   vProcTerminator: Char;
+  UserClause: string;
 begin
 
   Stream.WriteString('SET SQL DIALECT ' + IntToStr(FSQLDialect) + ';' + sLineBreak);
-  Stream.WriteString('SET NAMES ' + FConnectCharset + ';' + sLineBreak);
+  if FConnectCharset <> '' then
+    Stream.WriteString('SET NAMES ' + FConnectCharset + ';' + sLineBreak);
   if dtoUseSetClientLib in Options then
     Stream.WriteString('SET CLIENTLIB ''' + FClientLib + ''';' + sLineBreak + sLineBreak);
 
+  // The user of the connection, never a password
+  if FUserName <> '' then
+    UserClause := ' USER ' + QuotedStr(FUserName)
+  else
+    UserClause := '';
   if dtoUseCreateDB in Options then
   begin
-    Stream.WriteString('CREATE DATABASE ''' + FName + '''' + sLineBreak +
-      'USER ''SYSDBA'' PASSWORD ''masterkey''' + sLineBreak + 'PAGE_SIZE ' + IntToStr(FPageSize) + sLineBreak);
+    Stream.WriteString('CREATE DATABASE ''' + FName + '''' + UserClause + sLineBreak +
+      'PAGE_SIZE ' + IntToStr(FPageSize));
     if Length(FDefaultCharset) > 0 then
-      Stream.WriteString('DEFAULT CHARACTER SET ' + FDefaultCharset + DefTerminator + sLineBreak);
+      Stream.WriteString(sLineBreak + 'DEFAULT CHARACTER SET ' + FDefaultCharset);
+    Stream.WriteString(DefTerminator + sLineBreak);
   end
   else
-    Stream.WriteString('CONNECT ''' + FName + ''' USER ''SYSDBA'' PASSWORD ''masterkey'';' + sLineBreak);
+    Stream.WriteString('CONNECT ''' + FName + '''' + UserClause + ';' + sLineBreak);
 
   if dtoUseSetTerm in Options then
     vProcTerminator := ProcTerminator
@@ -2626,6 +2660,8 @@ begin
     Stream.WriteString(sLineBreak + '/* PROCEDURES */');
     for I := 0 to ProceduresCount - 1 do
     begin
+      if not Procedures[I].Loaded then
+        Continue;
       Stream.WriteString(sLineBreak + sLineBreak);
       Procedures[I].SaveToAlterDDL(Stream);
       Stream.WriteString(vProcTerminator + sLineBreak);
@@ -2637,7 +2673,14 @@ begin
     Stream.WriteString(sLineBreak + '/* PACKAGES */');
     for I := 0 to PackageCount - 1 do
     begin
+      if not Packages[I].Loaded then
+        Continue;
       Stream.WriteString(sLineBreak + sLineBreak);
+      if Packages[I].UsesColumnTypes then
+      begin
+        Packages[I].SaveHeaderAlterDDL(Stream);
+        Stream.WriteString(vProcTerminator + sLineBreak + sLineBreak);
+      end;
       Packages[I].SaveBodyDDL(Stream);
       Stream.WriteString(vProcTerminator + sLineBreak);
     end;
@@ -2648,6 +2691,8 @@ begin
     Stream.WriteString(sLineBreak + '/* FUNCTIONS */');
     for I := 0 to GetFunctionsCount - 1 do
     begin
+      if not GetFunctions(I).Loaded then
+        Continue;
       Stream.WriteString(sLineBreak + sLineBreak);
       GetFunctions(I).SaveAlterDDL(Stream);
       Stream.WriteString(vProcTerminator + sLineBreak);
@@ -3235,7 +3280,11 @@ end;
 
 procedure TMetaCheckConstraint.GenerateObjectDDL(Stream: TFastStringStream);
 begin
-  Stream.WriteString(Format('ALTER TABLE %s ADD %s', [TMetaTable(FOwner).FormatName, FConstraint]));
+  if Copy(FName, 1, 6) = 'INTEG_' then
+    Stream.WriteString(Format('ALTER TABLE %s ADD %s', [TMetaTable(FOwner).FormatName, FConstraint]))
+  else
+    Stream.WriteString(Format('ALTER TABLE %s ADD CONSTRAINT %s %s', [TMetaTable(FOwner).FormatName, FormatName,
+      FConstraint]));
 end;
 
 { TCustomMetaTrigger }
@@ -4252,11 +4301,15 @@ begin
     begin
       Stream.WriteString('GRANT ' + FormatIdentifier(3, FObjectName) + ' TO ');
       Stream.WriteString(sLineBreak + '  ' + FUserList[I]);
+      if FWithGrantOption[I] then
+        Stream.WriteString(' WITH ADMIN OPTION');
     end
     else if FPrivileges[I] = [goExecuteProc] then
     begin
       Stream.WriteString('GRANT EXECUTE ON PROCEDURE ' + FormatIdentifier(3, FObjectName) + ' TO');
       Stream.WriteString(sLineBreak + '  ' + FUserList[I]);
+      if FWithGrantOption[I] then
+        Stream.WriteString(' WITH GRANT OPTION');
     end
     else
     begin
@@ -4327,7 +4380,7 @@ begin
       L := 1000;
       SetSize(L);
     end;
-    if I > L then
+    if I >= L then
     begin
       Inc(L, 200);
       SetSize(L);
@@ -4794,9 +4847,24 @@ begin
   Stream.WriteString(FBody);
 end;
 
+function TMetaPackage.UsesColumnTypes: Boolean;
+begin
+  Result := Pos('TYPE OF COLUMN', UpperCase(FSpec)) > 0;
+end;
+
 procedure TMetaPackage.SaveSpecDDL(Stream: TFastStringStream);
 begin
   Stream.WriteString(Format('CREATE PACKAGE %s AS ' + sLineBreak, [FormatName]));
+  // The tables do not exist yet: SaveHeaderAlterDDL writes the header later
+  if UsesColumnTypes then
+    Stream.WriteString('BEGIN END')
+  else
+    Stream.WriteString(FSpec);
+end;
+
+procedure TMetaPackage.SaveHeaderAlterDDL(Stream: TFastStringStream);
+begin
+  Stream.WriteString(Format('ALTER PACKAGE %s AS ' + sLineBreak, [FormatName]));
   Stream.WriteString(FSpec);
 end;
 

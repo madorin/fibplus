@@ -67,6 +67,8 @@ type
     FSrvSQLScale: Smallint;
     FInWhereClause: boolean;
     FCanForceIsNull: boolean;
+    // the comparison is replaced by IS [NOT] NULL in the prepared text
+    FForcedIsNull: boolean;
     FInitialized: boolean;
     FBeginPosInText: integer;
     FEndPosInText: integer;
@@ -525,6 +527,7 @@ type
     procedure DoStatisticPrepare(const stText: string);
 
     function ParamsNotExist(const SQLText: string): boolean;
+    function NullComparisonStart(Param: TFIBXSQLVAR; out IsNotNull: boolean): integer;
     procedure PreprocessSQL(const sSQL: String; IsUserSQL: boolean);
     procedure DoBeforeExecute;
     procedure DoAfterExecute;
@@ -836,9 +839,19 @@ begin
     else if (SrcSQLType <> SQL_BLOB) then
     begin
       szBuff := nil;
-      FIBAlloc(szBuff, 0, Source.FXSQLVAR^.sqllen);
-      Move(Source.FXSQLVAR^.sqldata[0], szBuff[0], Source.FXSQLVAR^.sqllen);
-      iSize := Source.FXSQLVAR^.sqllen;
+      if SrcSQLType = SQL_VARYING then
+      begin
+        // the data after the length prefix
+        iSize := PWord(Source.FXSQLVAR^.sqldata)^;
+        FIBAlloc(szBuff, 0, iSize);
+        Move(Source.FXSQLVAR^.sqldata[2], szBuff[0], iSize);
+      end
+      else
+      begin
+        iSize := Source.FXSQLVAR^.sqllen;
+        FIBAlloc(szBuff, 0, iSize);
+        Move(Source.FXSQLVAR^.sqldata[0], szBuff[0], iSize);
+      end;
     end
     else if (DestSQLType <> SQL_BLOB) then
     begin
@@ -1019,7 +1032,7 @@ begin
     case FXSQLVAR^.SQLType and (not 1) of
       SQL_TEXT, SQL_VARYING:
         try
-          Result := DateTimeToTimeStamp(StrToDate(AsWideString));
+          Result := DateTimeToTimeStamp(StrToDateTime(AsWideString));
         except
           on E: EConvertError do
             FIBError(feInvalidDataConversion, [nil]);
@@ -1219,7 +1232,7 @@ begin
     case FXSQLVAR^.SQLType and (not 1) of
       SQL_TEXT, SQL_VARYING:
         try
-          Result := StrToDate(AsWideString);
+          Result := StrToDateTime(AsWideString);
         except
           on E: EConvertError do
             FIBError(feInvalidDataConversion, [nil]);
@@ -2935,16 +2948,24 @@ begin
     if not FBRawToBcd(FXSQLVAR^.SQLType and (not 1), FXSQLVAR^.sqlscale, FXSQLVAR^.sqldata, Result) then
       FIBError(feInvalidDataConversion, [nil])
   end
-  else if (FQuery.Database.SQLDialect < 3) or (FXSQLVAR^.SQLType and (not 1) <> SQL_INT64) then
-  begin
-    if not CurrToBCD(GetAsCurrency, Result) then
-      FIBError(feInvalidDataConversion, [nil])
-  end
+  else if IsNull then
+    Result := IntegerToBcd(0)
   else
-  begin
-    if not Int64ToBCD(PInt64(FXSQLVAR^.sqldata)^, -FXSQLVAR^.sqlscale, Result) then
-      FIBError(feInvalidDataConversion, [nil])
-  end;
+    case FXSQLVAR^.SQLType and (not 1) of
+      // all the digits of the scale, not the 4 of Currency
+      SQL_SHORT:
+        if not Int64ToBCD(PShort(FXSQLVAR^.sqldata)^, -FXSQLVAR^.sqlscale, Result) then
+          FIBError(feInvalidDataConversion, [nil]);
+      SQL_LONG:
+        if not Int64ToBCD(PLong(FXSQLVAR^.sqldata)^, -FXSQLVAR^.sqlscale, Result) then
+          FIBError(feInvalidDataConversion, [nil]);
+      SQL_INT64:
+        if not Int64ToBCD(PInt64(FXSQLVAR^.sqldata)^, -FXSQLVAR^.sqlscale, Result) then
+          FIBError(feInvalidDataConversion, [nil]);
+    else
+      if not CurrToBCD(GetAsCurrency, Result) then
+        FIBError(feInvalidDataConversion, [nil])
+    end;
 end;
 
 procedure TFIBXSQLVAR.SetAsBcd(Value: TBcd);
@@ -2977,13 +2998,23 @@ end;
 
 function TFIBXSQLVAR.GetAsGUID: TGUID;
 begin
+  Result := fibGUID_NULL;
   if not IsNull then
     case FXSQLVAR^.SQLType and (not 1) of
-      SQL_VARYING: Result := PGUID(FXSQLVAR^.sqldata + 2)^;
-      SQL_TEXT: Result := PGUID(FXSQLVAR^.sqldata)^;
-    end
-  else
-    Result := fibGUID_NULL
+      // 16 bytes of data
+      SQL_VARYING:
+        if PWord(FXSQLVAR^.sqldata)^ >= SizeOf(TGUID) then
+          Result := PGUID(FXSQLVAR^.sqldata + 2)^
+        else
+          FIBError(feInvalidDataConversion, [nil]);
+      SQL_TEXT:
+        if FXSQLVAR^.sqllen >= SizeOf(TGUID) then
+          Result := PGUID(FXSQLVAR^.sqldata)^
+        else
+          FIBError(feInvalidDataConversion, [nil]);
+    else
+      FIBError(feInvalidDataConversion, [nil]);
+    end;
 end;
 
 procedure TFIBXSQLVAR.SetAsGuid(aValue: TGUID);
@@ -3140,6 +3171,9 @@ begin
               AsInt64 := 0;
             Assign(UsrPar);
           end
+          else if UsrPar.IsTimeZoneType and (sSType <> SQL_BLOB) and (sSType <> SQL_ARRAY) then
+            // the raw value keeps its time zone, a variant keeps only the local time
+            Assign(UsrPar)
           else
           begin
             FParDataIsPrepared := UsrPar.FParDataIsPrepared;
@@ -3332,6 +3366,7 @@ var
     S: string;
     Quoted: boolean;
   begin
+    Result := nil;
     Quoted := (Length(Idx) > 0) and (Idx[1] = '"');
     if Quoted then
       S := FastCopy(Idx, 2, Length(Idx) - 2)
@@ -3638,7 +3673,7 @@ begin
     // Self.FUserSQLParams.Initialize;
     InputObject.ReadyStream;
     Result := InputObject.State = bsFileReady;
-    if Result and (InputObject.FVersion > 2) and (InputObject.FCharset <> Database.ConnectParams.Charset) then
+    if Result and (InputObject.FVersion > 2) and not SameText(string(InputObject.FCharset), Database.ConnectParams.Charset) then
       raise Exception.Create(Format(SErrorInProc, [CmpFullName(Self),
         'BatchInput']) + Format(SEInvalidCharsetData, [InputObject.FCharset, Database.ConnectParams.Charset]));
 
@@ -3801,6 +3836,8 @@ begin
     for i := 0 to Pred(FieldCount) do
       Map[i] := GetParam(Fields[i].Name);
     ExecQuery;
+    if not FGoToFirstRecordOnExecute then
+      Next;
     RecNum := 1;
     while not Eof do
     begin
@@ -3844,6 +3881,7 @@ begin
     end;
   finally
     Map.Free;
+    Close;
   end;
 end;
 
@@ -4025,7 +4063,7 @@ var
 begin
   State := sNormal;
   QuoteChar := '''';
-  for i := 2 to Length(SQLText) do
+  for i := 1 to Length(SQLText) do
   begin
     case State of
       sNormal:
@@ -4036,7 +4074,7 @@ begin
               Exit;
             end;
           '*':
-            if (SQLText[i - 1] = '/') then
+            if (i > 1) and (SQLText[i - 1] = '/') then
               State := sComment;
           '''', '"':
             begin
@@ -4044,7 +4082,7 @@ begin
               State := sQuote
             end;
           '-':
-            if (SQLText[i - 1] = '-') then
+            if (i > 1) and (SQLText[i - 1] = '-') then
               State := sFBComment;
         else
           if SQLText[i] = FMacroChar then
@@ -4119,15 +4157,13 @@ begin
 end;
 
 function TFIBQuery.ReadySQLText(ForChangeExecSQL: boolean = True): string;
-type
-  TCompareNull = (cNone, cIsNull, cIsNotNull);
 var
   i, j: integer;
   pv: string;
   vLenMacro: integer;
   vDelta: integer;
   pv1: string;
-  C: TCompareNull;
+  IsNotNull: boolean;
   CurParam: TFIBXSQLVAR;
 const
   StrIsNull    = ' IS NULL ';
@@ -4181,51 +4217,71 @@ begin
       if ForChangeExecSQL then
         vDiffParams := True;
     end
-    else if not(qoNoForceIsNull in Options) and
-      ((qrsInExecute in FQueryRunState) or not(qrsInPrepare in FQueryRunState))
-    // ^^^  Lock replacing for prepare. Replace must be call for execute query only
-    then
-      if CurParam.IsNull and CurParam.InWhereClause and CurParam.FCanForceIsNull then
-      begin
-        j := CurParam.FBeginPosInText - 1;
-        while CharInSet(FParser.SQLText[j], CharsAfterClause) do
-          Dec(j);
-        C := cNone;
-        case FParser.SQLText[j] of
-          '>':
-            if FParser.SQLText[j - 1] = '<' then
-            begin
-              C := cIsNotNull;
-              Dec(j);
-            end;
-
-          '=':
-            if CharInSet(FParser.SQLText[j - 1], ['!', '^', '~']) then
-            begin
-              C := cIsNotNull;
-              Dec(j);
-            end
-            else if not CharInSet(FParser.SQLText[j - 1], ['<', '>']) then
-              C := cIsNull
-        end;
-
-        if C <> cNone then
+    else
+    begin
+      if ForChangeExecSQL then
+        CurParam.FForcedIsNull := False;
+      if not(qoNoForceIsNull in Options) and
+        ((qrsInExecute in FQueryRunState) or not(qrsInPrepare in FQueryRunState))
+      // ^^^  Lock replacing for prepare. Replace must be call for execute query only
+      then
+        if CurParam.IsNull then
         begin
-          vLenMacro := CurParam.FEndPosInText - j + 1;
-
-          case C of
-            cIsNull: pv1 := StrIsNull;
-            cIsNotNull: pv1 := StrIsNotNull
-          end;
-          Result := Copy(Result, 1, j - vDelta - 1) + pv1 + Copy(Result, CurParam.FEndPosInText - vDelta + 1, MaxInt);
-          Inc(vDelta, vLenMacro - Length(pv1));
-          if ForChangeExecSQL then
+          j := NullComparisonStart(CurParam, IsNotNull);
+          if j > 0 then
           begin
-            CurParam.FOldValue := NULL;
-            vDiffParams := True
+            vLenMacro := CurParam.FEndPosInText - j + 1;
+            if IsNotNull then
+              pv1 := StrIsNotNull
+            else
+              pv1 := StrIsNull;
+            Result := Copy(Result, 1, j - vDelta - 1) + pv1 + Copy(Result, CurParam.FEndPosInText - vDelta + 1, MaxInt);
+            Inc(vDelta, vLenMacro - Length(pv1));
+            if ForChangeExecSQL then
+            begin
+              CurParam.FOldValue := NULL;
+              CurParam.FForcedIsNull := True;
+              vDiffParams := True
+            end;
           end;
         end;
+    end;
+  end;
+end;
+
+// Position of the comparison operator before a parameter that can be replaced by
+// IS [NOT] NULL, 0 when there is none
+function TFIBQuery.NullComparisonStart(Param: TFIBXSQLVAR; out IsNotNull: boolean): integer;
+var
+  j: integer;
+  S: string;
+begin
+  Result := 0;
+  IsNotNull := False;
+  if not (Param.InWhereClause and Param.FCanForceIsNull) then
+    Exit;
+  S := FParser.SQLText;
+  j := Param.FBeginPosInText - 1;
+  // only blanks between the operator and the parameter: not "= (:P)" or "= -:P"
+  while (j > 1) and CharInSet(S[j], [' ', #9, #10, #13]) do
+    Dec(j);
+  if j < 2 then
+    Exit;
+  case S[j] of
+    '>':
+      if S[j - 1] = '<' then
+      begin
+        IsNotNull := True;
+        Result := j - 1;
       end;
+    '=':
+      if CharInSet(S[j - 1], ['!', '^', '~']) then
+      begin
+        IsNotNull := True;
+        Result := j - 1;
+      end
+      else if not CharInSet(S[j - 1], ['<', '>']) then
+        Result := j;
   end;
 end;
 
@@ -4362,8 +4418,30 @@ begin
   end;
 
   FreeHandle;
-  Call(Database.ClientLibrary.isc_dsql_execute_immediate(StatusVector,
-    @Database.Handle, @Transaction.Handle, 0, PAnsiChar(Ansistring(FPreparedSQL)), Database.SQLDialect, xSQLDA), True);
+  FCallTime := FIBGetTickCount;
+  try
+    Call(Database.ClientLibrary.isc_dsql_execute_immediate(StatusVector,
+      @Database.Handle, @Transaction.Handle, 0, PAnsiChar(Ansistring(FPreparedSQL)), Database.SQLDialect, xSQLDA), True);
+  except
+    on E: Exception do
+    begin
+      // as ExecQuery
+      FCallTime := FIBGetTickCount - FCallTime;
+{$IFNDEF NO_MONITOR}
+      if MonitoringEnabled and (MonitorHook <> nil) then
+        with THackMonitorHook(MonitorHook) do
+        begin
+          SQLExecute(Self, '');
+          WriteSQLData(CmpFullName(Self) + ': [Execute] ' + ErrorTraceText(E), tfQExecute);
+        end;
+{$ENDIF}
+      if Assigned(Database.SQLLogger) and (lfQExecute in Database.SQLLogger.LogFlags) then
+        Database.SQLLogger.WriteData(CmpFullName(Self), 'TrID=' + IntToStr(Transaction.TransactionID) +
+          ' Error on execute query. Error message: "' + ErrorTraceText(E) + '"', FProcessedSQL, lfQExecute);
+      raise;
+    end;
+  end;
+  FCallTime := FIBGetTickCount - FCallTime;
   DoAfterExecute;
   CompleteStatement;
 end;
@@ -5596,15 +5674,11 @@ begin
             case cCurChar of
               'A', 'a':
                 begin
-                  if SQLKind = skExecuteBlock then
-                  begin
-                    if vInDeclarationSection and (iLenSQL - i >= 2) then
-                      vInDeclarationSection := not(CharInSet(sSQL[i + 1], ['S', 's']) and
-                        CharInSet(sSQL[i + 2], CharsAfterClause));
-                    if vInDeclarationSection and (iLenSQL - i >= 2) then
-                      vInDeclarationSection := not(CharInSet(sSQL[i + 1], ['S', 's']) and
-                        CharInSet(sSQL[i + 2], CharsAfterClause));
-                  end;
+                  // the word AS, not the end of a name like GAS
+                  if (SQLKind = skExecuteBlock) and vInDeclarationSection and (iLenSQL - i >= 2) and
+                    ((i = 1) or not CharInSet(sSQL[i - 1], ParamNameChars)) then
+                    vInDeclarationSection := not(CharInSet(sSQL[i + 1], ['S', 's']) and
+                      CharInSet(sSQL[i + 2], CharsAfterClause));
                 end;
 
               '''', '"':
@@ -5663,9 +5737,8 @@ begin
           end;
         QuoteState:
           begin
-            if (cNextChar = #0) then
-              FIBError(feSQLParseError, [CmpFullName(Self), SFIBErrorEOFInString])
-            else if (cCurChar = cQuoteChar) then
+            // a closing quote may be the last character
+            if (cCurChar = cQuoteChar) then
             begin
               if (cNextChar = cQuoteChar) then
               begin
@@ -5674,7 +5747,9 @@ begin
               end
               else
                 iCurState := DefaultState;
-            end;
+            end
+            else if (cNextChar = #0) then
+              FIBError(feSQLParseError, [CmpFullName(Self), SFIBErrorEOFInString]);
           end;
         ParamState, MacroState:
           begin
@@ -5869,7 +5944,11 @@ end;
 procedure TFIBQuery.SetDatabase(Value: TFIBDatabase);
 begin
   if (Value <> FBase.Database) and FPrepared then
+  begin
+    if FOpen then
+      Close;
     FreeHandle;
+  end;
   FBase.Database := Value;
 end;
 
@@ -6000,6 +6079,7 @@ var
   var
     j, pc: integer;
     p: TFIBXSQLVAR;
+    IsNotNull: boolean;
   begin
     Result := not FPrepared or FMacroChanged or FNeedForceIsNull;
     if Result then
@@ -6016,8 +6096,9 @@ var
       // Macro value changed. Must change SQL text.
       if Result then
         Exit;
-      Result := (p.FCanForceIsNull and (p.IsNull <> VarIsNull(p.FOldValue)));
-      // May be change IS NULL
+      // the text changes only when the IS NULL replacement appears or goes away
+      Result := not p.IsMacro and not (qoNoForceIsNull in Options) and
+        (p.IsNull and (NullComparisonStart(p, IsNotNull) > 0) <> p.FForcedIsNull);
       if Result then
         Exit;
     end;
@@ -6358,16 +6439,13 @@ end;
 
 procedure TFIBQuery.SetParamCheck(Value: boolean);
 begin
-  FDoParamCheck := Value;
+  if Value = FParamCheck then
+    Exit;
   FParamCheck := Value;
-  if not Value then
-  begin
-    FUserSQLParams.Count := 0;
-    FSQLParams.Count := 0;
-    FProcessedSQL := FSQL.Text;
-    FreeHandle;
-  end
-
+  if FOpen then
+    Close;
+  // parses the text again, or takes it as is
+  SQLChange(nil);
 end;
 
 procedure TFIBQuery.SQLChange(Sender: TObject);
@@ -6530,7 +6608,8 @@ end;
 
 function TFIBQuery.IsProc: boolean;
 begin
-  Result := FastUpperCase(FastCopy(TrimLeft(SQL.Text), 1, 8)) = ExecProcPrefix
+  // also with a line break after EXECUTE or a comment before it
+  Result := SQLKind in [skExecuteProc, skExecuteBlock];
 end;
 
 // Conditions;

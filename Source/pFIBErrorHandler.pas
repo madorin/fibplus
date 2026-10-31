@@ -362,10 +362,10 @@ begin
           if oeException in Options then
           begin
             // the lexem is followed by one separator
-            p := Pos(ErrorLexems.FException, AnsiLowerCase(Message));
+            p := Pos(AnsiLowerCase(ErrorLexems.FException), AnsiLowerCase(Message));
             if p > 0 then
               Message := FastCopy(Message, p + Length(ErrorLexems.FException) + 1, MaxInt);
-            p := Pos(ErrorLexems.FException, AnsiLowerCase(Message));
+            p := Pos(AnsiLowerCase(ErrorLexems.FException), AnsiLowerCase(Message));
             if p > 0 then
               Message := FastCopy(Message, p + Length(ErrorLexems.FException) + 1, MaxInt);
             // the number and the name come from the status vector, the message lines are only cut off
@@ -396,7 +396,7 @@ begin
                   // the stack trace is the last status item, its frames are split by a bare LF
                   if ErrorLexems.FAt <> '' then
                   begin
-                    AtLexem := CRLF + ErrorLexems.FAt + ' ';
+                    AtLexem := CRLF + AnsiLowerCase(ErrorLexems.FAt) + ' ';
                     LowerMessage := AnsiLowerCase(Message);
                     p := Length(LowerMessage) - Length(AtLexem) + 1;
                     while (p > 0) and
@@ -527,7 +527,7 @@ begin
     if Quoted then
       Continue;
     LowerToken := AnsiLowerCase(Token);
-    if (LowerToken = FErrorLexems.FConstraint) or (LowerToken = FErrorLexems.FIndex) then
+    if (LowerToken = AnsiLowerCase(FErrorLexems.FConstraint)) or (LowerToken = AnsiLowerCase(FErrorLexems.FIndex)) then
     begin
       if NextMessageToken(Msg, Position, Token, Quoted) then
       begin

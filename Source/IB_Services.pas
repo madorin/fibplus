@@ -117,6 +117,7 @@ type
     function Login: Boolean;
     procedure CheckActive;
     procedure CheckInactive;
+    procedure RaiseServiceError;
     property OutputBuffer: PAnsiChar read FOutputBuffer;
     property OutputBufferOption: TOutputBufferOption read FOutputBufferOption write FOutputBufferOption;
     property BufferSize: Integer read FBufferSize write SetBufferSize default DefaultBufferSize;
@@ -771,13 +772,14 @@ end;
 
 destructor TpFIBCustomService.Destroy;
 begin
-  if FIBLoaded and Assigned(FClientLibrary) then
-  begin
-    if FHandle <> nil then
+  if FIBLoaded and Assigned(FClientLibrary) and (FHandle <> nil) then
+    try
       Detach;
-    FreeMem(FSPB);
-    FSPB := nil;
-  end;
+    except
+      // Detach releases the handle also on an error, the rest is freed below
+    end;
+  FreeMem(FSPB);
+  FSPB := nil;
   FreeMem(FOutputBuffer);
   FParams.Free;
   FClientLibrary := nil;
@@ -799,6 +801,22 @@ begin
 {$IFNDEF NO_MONITOR}
   MonitorHook.ServiceDetach(Self);
 {$ENDIF}
+end;
+
+// Raises the error of the last call of the service API. The service is detached
+// first, a handle cleared without isc_service_detach keeps the attachment on the server.
+procedure TpFIBCustomService.RaiseServiceError;
+var
+  DetachStatus: array [0 .. 19] of ISC_STATUS;
+begin
+  try
+    IBError(FClientLibrary, Self);
+  except
+    if FHandle <> nil then
+      FClientLibrary.isc_service_detach(@DetachStatus[0], @FHandle);
+    FHandle := nil;
+    raise;
+  end;
 end;
 
 procedure TpFIBCustomService.LoadLibrary;
@@ -854,10 +872,7 @@ begin
     LoadLibrary;
     if Call(FClientLibrary.isc_service_query(StatusVector, @FHandle, nil, 0,
       nil, FQuerySPBLength, FQuerySPB, OutputLength, FOutputBuffer), False) > 0 then
-    begin
-      FHandle := nil;
-      IBError(FClientLibrary, Self);
-    end;
+      RaiseServiceError;
   finally
     FreeMem(FQuerySPB);
     FQuerySPB := nil;
@@ -1386,6 +1401,7 @@ end;
 
 procedure TpFIBControlService.InternalServiceStart;
 begin
+  CheckActive;
   FStartSPBLength := Length(FStartParams);
   if FStartSPBLength = 0 then
     FIBError(feStartParamsError, [nil]);
@@ -1394,10 +1410,7 @@ begin
   try
     LoadLibrary;
     if Call(FClientLibrary.isc_service_start(StatusVector, @FHandle, nil, FStartSPBLength, FStartSPB), False) > 0 then
-    begin
-      FHandle := nil;
-      IBError(FClientLibrary, Self);
-    end;
+      RaiseServiceError;
   finally
     FreeMem(FStartSPB);
     FStartSPB := nil;

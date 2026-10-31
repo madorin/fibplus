@@ -605,18 +605,28 @@ end;
 
 function Int64ToBCD(Value: Int64; Scale: Integer; var BCD: TBCD): Boolean;
 var
-  c: Currency;
+  Rest: Int64;
+  Digit, Index: Integer;
 begin
-  PInt64(@c)^ := Value;
-  Result := CurrToBCD(c, BCD);
-  with BCD do
+  // 32 digits, right-aligned; Rest keeps the sign, so Low(Int64) needs no negation
+  FillChar(BCD, SizeOf(BCD), 0);
+  BCD.Precision := 32;
+  Rest := Value;
+  Index := 31;
+  while Rest <> 0 do
   begin
-    if Value < 0 then
-      SignSpecialPlaces := 128
+    Digit := Abs(Rest mod 10);
+    if Odd(Index) then
+      BCD.Fraction[Index shr 1] := Digit
     else
-      SignSpecialPlaces := 0;
-    SignSpecialPlaces := Scale + SignSpecialPlaces;
+      BCD.Fraction[Index shr 1] := BCD.Fraction[Index shr 1] or (Digit shl 4);
+    Rest := Rest div 10;
+    Dec(Index);
   end;
+  BCD.SignSpecialPlaces := Byte(Scale);
+  if Value < 0 then
+    BCD.SignSpecialPlaces := BCD.SignSpecialPlaces or $80;
+  Result := True;
 end;
 
 function ExtendedToScaledInt64(Value: Extended; Scale: Integer; var Scaled: Int64): Boolean;
@@ -1203,13 +1213,13 @@ begin
       Value := -Value;
     Places := BCD.SignSpecialPlaces and $3F;
   end;
-  // E10 holds 18 decimals
+  // E10 holds 18 decimals; Value / 10^n rounds once, Value * 10^-n twice (3 * 0.1 <> 0.3)
   while Places > High(E10) do
   begin
-    Value := Value * E10[-High(E10)];
+    Value := Value / E10[High(E10)];
     Dec(Places, High(E10));
   end;
-  Value := Value * E10[-Places];
+  Value := Value / E10[Places];
 end;
 
 function CompareBCD(const BCD1, BCD2: TBCD): Integer;

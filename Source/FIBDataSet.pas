@@ -843,6 +843,7 @@ type
     function InternalRefreshRow(Qry: TFIBQuery; Buff: TRecordBuffer): Boolean;
     function RefreshAppliedRow(Buff: TRecordBuffer): Boolean;
     procedure InternalRevertRecord(RecordNumber: Integer; WithUnInserted: Boolean);
+    function CachedStatus(RecordNumber: Integer): TCachedUpdateStatus;
     function IsVisibleStat(Buffer: TRecordBuffer): Boolean;
     function IsVisible(Buffer: TRecordBuffer): Boolean; virtual;
     procedure SaveOldBuffer(Buffer: TRecordBuffer);
@@ -1726,8 +1727,6 @@ end;
 procedure TFIBStringField.Prepare;
 var
   F: TFIBXSQLVAR;
-  st: Short;
-  p: PSmallint;
 begin
   if DataSet is TFIBCustomDataSet then
     with TFIBCustomDataSet(DataSet) do
@@ -1738,10 +1737,8 @@ begin
           F := QSelect.FindField(Self.FieldName);
           if F <> nil then
             begin
-              st := F.SqlSubType;
-              p := @st;
-              Inc(p, 1);
-              FCollateNumber := PByte(p)^;
+              // the collation is in the high byte of the subtype
+              FCollateNumber := Hi(Word(F.SqlSubType));
               FCharacterSetName := F.CharacterSet;
             end
           else
@@ -2242,8 +2239,6 @@ end;
 procedure TFIBWideStringField.Prepare;
 var
   F: TFIBXSQLVAR;
-  st: Short;
-  p: PSmallint;
 begin
   if DataSet is TFIBCustomDataSet then
     with TFIBCustomDataSet(DataSet) do
@@ -2254,12 +2249,8 @@ begin
         if F <> nil then
           begin
             FSqlSubType := F.SqlSubType;
-            st := F.SqlSubType;
-            p := @st;
-            Inc(p, 1);
-            FCollateNumber := PByte(p)^;
-
-            // FCollateNumber:=PByte(TPtrAsInteger(@st)+1)^;
+            // the collation is in the high byte of the subtype
+            FCollateNumber := Hi(Word(F.SqlSubType));
             FCharacterSetName := F.CharacterSet;
             FDataSize := F.Size;
 
@@ -2535,7 +2526,7 @@ end;
 
 function TFIBIntegerField.GetAsBoolean: Boolean;
 begin
-  Result := AsInteger > 0
+  Result := AsInteger <> 0
 end;
 
 procedure TFIBIntegerField.SetAsBoolean(Value: Boolean);
@@ -2954,7 +2945,7 @@ end;
 
 function TFIBSmallIntField.GetAsBoolean: Boolean;
 begin
-  Result := AsInteger > 0
+  Result := AsInteger <> 0
 end;
 
 procedure TFIBSmallIntField.SetAsBoolean(Value: Boolean);
@@ -4242,13 +4233,16 @@ var
   vPartWhereDesc: string;
   sc: Integer;
   tf: TField;
-  FN, fn1: string;
+  FN: string;
   vLocateWhere: string;
   vSQL: string;
   EquelCondition: string;
   ParName: string;
-  ParName1: string;
-  useCoalesce: Boolean;
+  NullableKey: Boolean;
+  NullsFirstInOrder: Boolean;
+  NullsAfter, NullsBefore: string;
+  ParamIsNull, ParamIsNotNull: string;
+  OrderNullsFirst, OrderNullsLast: Variant;
 begin
   vPartWhere := '';
   vPartWhereDesc := '';
@@ -4260,6 +4254,9 @@ begin
   EquelCondition := '';
 
   vSQL := ReadySelectText;
+  // the two parses differ where the order has no NULLS clause
+  OrderNullsFirst := GetOrderInfo(vSQL, True);
+  OrderNullsLast := GetOrderInfo(vSQL, False);
   for i := sc downto 1 do
     with SortFieldInfo(i) do
       begin
@@ -4269,72 +4266,46 @@ begin
             FN := FieldNameForSQL(TableAliasForField(FieldName), GetRelationFieldName(tf));
             ParName := '?' + FormatIdentifier(3, 'NEW_' + FieldName);
 
-            useCoalesce := Database.IsFB21OrMore and vFieldDescrList[tf.FieldNo - 1]
-              ^.fdNullable;
-            // useCoalesce:=false;
-            if useCoalesce then
+            NullableKey := Database.IsFB21OrMore and vFieldDescrList[tf.FieldNo - 1]^.fdNullable;
+            if NullableKey then
               begin
-                case tf.DataType of
-                  ftString, ftWideString:
-                    begin
-                      // ParName1:='COALESCE('+ParName+','+' '''' )';
-
-                      ParName1 := 'COALESCE(' + ParName + ',' + '''''' + ',' + FN + ' )';
-                      // ^^^^^^^Third arg is for setting param length
-                      fn1 := 'COALESCE(' + FN + ','''' )';
-
-                    end;
-                  ftSmallint, ftLargeint, ftInteger, ftBoolean, ftFloat, ftCurrency, ftBCD, ftFMTBcd:
-                    begin
-                      ParName1 := 'COALESCE(' + ParName + ',' + IntToStr(Low(Int64)) + ')';
-                      fn1 := 'COALESCE(' + FN + ',' + IntToStr(Low(Int64)) + ')';
-                    end;
-                  ftTime:
-                    begin
-                      ParName1 := 'COALESCE(' + ParName + ',Cast(''00:00'' AS TIME))';
-                      fn1 := 'COALESCE(' + FN + ',Cast(''00:00'' AS TIME))';
-                    end;
-                  ftDate:
-                    begin
-                      ParName1 := 'COALESCE(' + ParName + ',Cast(''01.01.1753'' AS DATE))';
-                      fn1 := 'COALESCE(' + FN + ',Cast(''01.01.1753'' AS DATE))';
-                    end;
-                  ftDateTime:
-                    begin
-                      ParName1 := 'COALESCE(' + ParName + ',Cast(''01.01.1753'' AS TIMESTAMP))';
-                      fn1 := 'COALESCE(' + FN + ',Cast(''01.01.1753'' AS TIMESTAMP))';
-                    end;
-
-                  else // case
-                    begin
-                      ParName1 := ParName;
-                      fn1 := FN;
-                    end;
-                end;
-              end
-            else
-              ParName1 := ParName;
-            if i < sc then
-              begin
-                EquelCondition := ' and (' + FN + '=' + ParName + ')';
-
-                if useCoalesce then
+                // without a NULLS clause Firebird sorts NULL as the lowest value
+                NullsFirstInOrder := Asc;
+                if not VarIsNull(OrderNullsFirst) and (VarArrayHighBound(OrderNullsFirst, 1) = sc - 1) and
+                  (OrderNullsFirst[i - 1, 2] = OrderNullsLast[i - 1, 2]) then
+                  NullsFirstInOrder := OrderNullsFirst[i - 1, 2];
+                // NULLIF(FN, FN) gives the parameter the type of the field, "? is null" would not
+                ParamIsNull := '(' + ParName + ' is not distinct from nullif(' + FN + ', ' + FN + '))';
+                ParamIsNotNull := '(' + ParName + ' is distinct from nullif(' + FN + ', ' + FN + '))';
+                if NullsFirstInOrder then
                   begin
-                    vPartWhere := '((' + vPartWhere + EquelCondition + ') or (' + fn1 + sign[Asc] + ParName1 + '))';
-                    vPartWhereDesc := '((' + vPartWhereDesc + EquelCondition + ') or ('
-                      + fn1 + sign[not Asc] + ParName1 + '))';
+                    NullsAfter := ' or (' + ParamIsNull + ' and (' + FN + ' is not null))';
+                    NullsBefore := ' or ((' + FN + ' is null) and ' + ParamIsNotNull + ')';
                   end
                 else
                   begin
-                    vPartWhere := '((' + vPartWhere + EquelCondition + ') or (' + FN + sign[Asc] + ParName + '))';
-                    vPartWhereDesc := '((' + vPartWhereDesc + EquelCondition + ') or ('
-                      + FN + sign[not Asc] + ParName + '))';
+                    NullsAfter := ' or ((' + FN + ' is null) and ' + ParamIsNotNull + ')';
+                    NullsBefore := ' or (' + ParamIsNull + ' and (' + FN + ' is not null))';
                   end;
               end
             else
               begin
-                vPartWhere := '(' + FN + sign[Asc] + ParName1 + ')';
-                vPartWhereDesc := '(' + FN + sign[not Asc] + ParName1 + ')';
+                NullsAfter := '';
+                NullsBefore := '';
+              end;
+            if i < sc then
+              begin
+                // the query makes "=" with a NULL parameter an IS NULL test
+                EquelCondition := ' and (' + FN + '=' + ParName + ')';
+                vPartWhere := '((' + vPartWhere + EquelCondition + ') or (' + FN + sign[Asc] + ParName + ')' +
+                  NullsAfter + ')';
+                vPartWhereDesc := '((' + vPartWhereDesc + EquelCondition + ') or (' + FN + sign[not Asc] +
+                  ParName + ')' + NullsBefore + ')';
+              end
+            else
+              begin
+                vPartWhere := '((' + FN + sign[Asc] + ParName + ')' + NullsAfter + ')';
+                vPartWhereDesc := '((' + FN + sign[not Asc] + ParName + ')' + NullsBefore + ')';
               end;
           end;
       end;
@@ -4887,7 +4858,7 @@ var
 begin
   Buff := PRecordData(GetActiveBuf);
   Result := (not EmptyStrings(FQUpdate.SQL)) or
-    ((Buff <> nil) and (TCachedUpdateStatus(Buff^.rdFlags) = cusInserted) and FCachedUpdates);
+    ((Buff <> nil) and (TCachedUpdateStatus(Buff^.rdFlags and 7) = cusInserted) and FCachedUpdates);
 end;
 
 function TFIBCustomDataSet.CanInsert: Boolean;
@@ -5469,7 +5440,7 @@ function TFIBCustomDataSet.CachedUpdateStatus: TCachedUpdateStatus;
 begin
   if Active then
     if GetActiveBuf <> nil then
-      Result := TCachedUpdateStatus(PRecordData(GetActiveBuf)^.rdFlags)
+      Result := TCachedUpdateStatus(PRecordData(GetActiveBuf)^.rdFlags and 7)
     else
       Result := cusUnmodified
   else
@@ -5908,10 +5879,18 @@ begin
         begin
           TCachedUpdateStatus(PSavedRecordData(pRecBuff)^.rdFlags) := cusInserted;
           Dec(FDeletedRecords);
-          Inc(FCountUpdatesPending, 2);
+          Inc(FCountUpdatesPending);
         end;
     cusModified: FRecordsCache.RevertRecord(RecordNumber + 1);
   end;
+end;
+
+// The status of a record as stored in the cache, without the changes of the active buffer
+function TFIBCustomDataSet.CachedStatus(RecordNumber: Integer): TCachedUpdateStatus;
+begin
+  if FUniDirectional or (FCacheModelOptions.CacheModelKind = cmkLimitedBufferSize) then
+    RecordNumber := RecordNumber mod FCacheModelOptions.FBufferChunks;
+  Result := TCachedUpdateStatus(PSavedRecordData(FRecordsCache.pRecBuff(RecordNumber + 1))^.rdFlags and 7);
 end;
 
 (*
@@ -6127,21 +6106,27 @@ end;
 procedure TFIBCustomDataSet.RevertRecord;
 var
   Buff: TRecordBuffer;
+  OldStatus: TCachedUpdateStatus;
 begin
   CheckDatasetOpen(' revert record ');
   if FCachedUpdates then
     begin
       Buff := GetActiveBuf;
+      OldStatus := TCachedUpdateStatus(PRecordData(Buff)^.rdFlags and 7);
       InternalRevertRecord(PRecordData(Buff)^.rdRecordNumber, True);
       ReadRecordCache(PRecordData(Buff)^.rdRecordNumber, Buff, false);
       if IsVisible(Buff) then
-        DataEvent(deRecordChange, 0)
+        begin
+          GetCalcFields(Buff);
+          DataEvent(deRecordChange, 0);
+        end
       else
         begin
           SetCurrentRecord(ActiveRecord);
           Resync([]);
         end;
-      Dec(FCountUpdatesPending);
+      if OldStatus in [cusModified, cusInserted, cusDeleted] then
+        Dec(FCountUpdatesPending);
       FUpdatesPending := FCountUpdatesPending > 0
     end;
 end;
@@ -6365,12 +6350,12 @@ begin
                     SQL_DOUBLE, SQL_D_FLOAT: cur_param.AsDouble := PDouble(Data)^;
                     SQL_SHORT:
                       if fi^.fdDataScale < 0 then
-                        cur_param.AsDouble := PShort(Data)^ * E10[fi^.fdDataScale]
+                        cur_param.AsDouble := PShort(Data)^ / E10[-fi^.fdDataScale]
                       else
                         cur_param.AsLong := PShort(Data)^;
                     SQL_LONG:
                       if fi^.fdDataScale < 0 then
-                        cur_param.AsDouble := PLong(Data)^ * E10[fi^.fdDataScale]
+                        cur_param.AsDouble := PLong(Data)^ / E10[-fi^.fdDataScale]
                       else
                         cur_param.AsLong := PLong(Data)^;
                     SQL_INT64:
@@ -6749,17 +6734,22 @@ begin
   Buff := PRecordData(GetActiveBuf);
   with Buff^ do
     begin
-      if TCachedUpdateStatus(rdFlags) = cusUninserted then
-        begin
-          TCachedUpdateStatus(rdFlags) := cusInserted;
-          Inc(FCountUpdatesPending);
-        end
-      else if TCachedUpdateStatus(rdFlags) = cusDeleted then
-        begin
-          TCachedUpdateStatus(rdFlags) := cusUnmodified;
-          Dec(FCountUpdatesPending);
-        end;
+      case TCachedUpdateStatus(rdFlags and 7) of
+        cusUninserted:
+          begin
+            TCachedUpdateStatus(rdFlags) := cusInserted;
+            Inc(FCountUpdatesPending);
+          end;
+        cusDeleted:
+          begin
+            TCachedUpdateStatus(rdFlags) := cusUnmodified;
+            Dec(FCountUpdatesPending);
+          end;
+        else
+          Exit;
+      end;
       Dec(FDeletedRecords);
+      FUpdatesPending := FCountUpdatesPending > 0;
 
       WriteRecordCache(rdRecordNumber, TRecordBuffer(Buff));
     end;
@@ -8862,12 +8852,12 @@ begin
               SQL_FLOAT: Result := PSingle(p)^;
               SQL_LONG:
                 if fi^.fdDataScale <> 0 then
-                  Result := PLong(p)^ * E10[fi^.fdDataScale]
+                  Result := PLong(p)^ / E10[-fi^.fdDataScale]
                 else
                   Result := PLong(p)^;
               SQL_SHORT:
                 if fi^.fdDataScale <> 0 then
-                  Result := PShort(p)^ * E10[fi^.fdDataScale]
+                  Result := PShort(p)^ / E10[-fi^.fdDataScale]
                 else
                   Result := PShort(p)^;
               SQL_TIMESTAMP: Result := TimeStampToDateTime(MSecsToTimeStamp(PDateTime(p)^));
@@ -9299,12 +9289,19 @@ var
             OldDisableCalcFields := FDisableCalcFieldsCount;
             FDisableCalcFieldsCount := 0;
             try
-              SetTempState(dsCalcFields);
-              GetCalcFields(Buff);
-            finally
-              FDisableCalcFieldsCount := OldDisableCalcFields;
-              RestoreState(dsState);
-            end
+              try
+                SetTempState(dsCalcFields);
+                GetCalcFields(Buff);
+              finally
+                FDisableCalcFieldsCount := OldDisableCalcFields;
+                RestoreState(dsState);
+              end
+            except
+              // an exception of OnCalcFields
+              FreeRecordBuffer(Buff);
+              Allocated := false;
+              raise;
+            end;
           end;
       end
     else
@@ -9371,7 +9368,12 @@ begin
               begin
                 Buff := GetOldBuffer;
                 if Field.FieldKind in [fkCalculated, fkLookup] then
-                  GetCalcFields(Buff);
+                  try
+                    GetCalcFields(Buff);
+                  except
+                    FreeRecordBuffer(Buff);
+                    raise;
+                  end;
                 Allocated := True;
               end;
             else
@@ -9495,12 +9497,12 @@ begin
               SQL_FLOAT: PDouble(Buffer)^ := PSingle(Data)^;
               SQL_LONG:
                 if fi^.fdDataScale <> 0 then
-                  PDouble(Buffer)^ := PLong(Data)^ * E10[fi^.fdDataScale]
+                  PDouble(Buffer)^ := PLong(Data)^ / E10[-fi^.fdDataScale]
                 else
                   PLong(Buffer)^ := PLong(Data)^;
               SQL_SHORT:
                 if fi^.fdDataScale <> 0 then
-                  PDouble(Buffer)^ := PShort(Data)^ * E10[fi^.fdDataScale]
+                  PDouble(Buffer)^ := PShort(Data)^ / E10[-fi^.fdDataScale]
                 else
                   PShort(Buffer)^ := PShort(Data)^;
               SQL_TIMESTAMP: PDouble(Buffer)^ := PDouble(Data)^;
@@ -10183,8 +10185,12 @@ begin
                   begin
                     if not(drsInCacheRefresh in FRunState) then
                       begin
+                        // a deleted record keeps its original values, Undelete returns it unmodified
+                        if TCachedUpdateStatus(rdFlags and 7) = cusModified then
+                          ReadRecordCache(rdRecordNumber, Buff, True)
+                        else
+                          Inc(FCountUpdatesPending);
                         TCachedUpdateStatus(rdFlags) := cusDeleted;
-                        Inc(FCountUpdatesPending);
                       end;
                   end;
               end;
@@ -10253,7 +10259,7 @@ begin
     Move(BookMark^, s[1], BookmarkSize);
     Move(TempBookMark^, S1[1], BookmarkSize);
 {$ENDIF}
-    Result := CompareMem(TempBookMark, BookMark, BookmarkSize - 1);
+    Result := CompareMem(TempBookMark, BookMark, BookmarkSize);
   finally
     FreeMem(TempBuf);
     FreeMem(TempBookMark);
@@ -10417,6 +10423,7 @@ var
   tf: TField;
   AddrValue: Pointer;
   fi: PFIBFieldDescr;
+  KeyParam: TFIBXSQLVAR;
 
   procedure StdGotoBookMark;
   begin
@@ -10430,6 +10437,19 @@ var
   function InWorkArea: Boolean;
   begin
     Result := (Rno > -1) and (Rno >= vPartition^.BeginPartRecordNo) and (Rno <= (vPartition^.EndPartRecordNo));
+  end;
+
+  procedure SetScaledParam(Param: TFIBXSQLVAR; Value: Int64; Scale: Integer);
+  var
+    Bcd: TBcd;
+  begin
+    if Scale = 0 then
+      Param.AsInt64 := Value
+    else
+      begin
+        Int64ToBCD(Value, -Scale, Bcd);
+        Param.AsBcd := Bcd;
+      end;
   end;
 
 begin
@@ -10489,26 +10509,40 @@ begin
                             CacheToTimeZoneParam
                             (ParamByName(LocateParamPrefix + FKeyFieldsForBookMark[i]), fi, AddrValue)
                           else if Assigned(tf) then
-                            with ParamByName(LocateParamPrefix + FKeyFieldsForBookMark[i]) do
-                              case tf.DataType of
-                                ftSmallint: AsInteger := PSmallint(AddrValue)^;
-                                ftInteger: AsInteger := PInteger(AddrValue)^;
-                                ftFloat: AsDouble := PDouble(AddrValue)^;
-                                ftString:
-                                  AsString := DecodeString(PAnsiChar(AddrValue), Length(PAnsiChar(AddrValue)),
-                                    StringFieldCodePage(tf));
-                                ftWideString:
-                                  AsWideString := DecodeWideString(FIBByteString(PAnsiChar(AddrValue)),
-                                    StringFieldCodePage(tf));
-                                ftDate: asDateTime := IntDateToDateTime(PInteger(AddrValue)^);
-                                // the bookmark keeps the field buffer format (msecs)
-                                ftTime: AsTime := PInteger(AddrValue)^ / MSecsPerDay;
-                                ftDateTime:
-                                  asDateTime := TimeStampToDateTime
-                                    (MSecsToTimeStamp(PDouble(AddrValue)^));
-                                ftLargeint: AsInt64 := PInt64(AddrValue)^;
-                                ftFMTBcd: AsBcd := PBcd(AddrValue)^;
+                            begin
+                              KeyParam := ParamByName(LocateParamPrefix + FKeyFieldsForBookMark[i]);
+                              fi := vFieldDescrList[tf.FieldNo - 1];
+                              // numbers are kept in the server format of the column
+                              case fi^.fdDataType of
+                                SQL_SHORT: SetScaledParam(KeyParam, PSmallint(AddrValue)^, fi^.fdDataScale);
+                                SQL_LONG: SetScaledParam(KeyParam, PInteger(AddrValue)^, fi^.fdDataScale);
+                                SQL_INT64:
+                                  if tf.DataType = ftFloat then
+                                    KeyParam.AsDouble := PDouble(AddrValue)^
+                                  else
+                                    SetScaledParam(KeyParam, PInt64(AddrValue)^, fi^.fdDataScale);
+                                SQL_FLOAT: KeyParam.AsDouble := PSingle(AddrValue)^;
+                                SQL_DOUBLE: KeyParam.AsDouble := PDouble(AddrValue)^;
+                                SQL_BOOLEAN, IB_SQL_BOOLEAN: KeyParam.AsBoolean := PBoolean(AddrValue)^;
+                              else
+                                case tf.DataType of
+                                  ftGuid: KeyParam.AsGuid := PGuid(AddrValue)^;
+                                  ftString:
+                                    KeyParam.AsString := DecodeString(PAnsiChar(AddrValue),
+                                      Length(PAnsiChar(AddrValue)), StringFieldCodePage(tf));
+                                  ftWideString:
+                                    KeyParam.AsWideString := DecodeWideString(FIBByteString(PAnsiChar(AddrValue)),
+                                      StringFieldCodePage(tf));
+                                  ftDate: KeyParam.AsDateTime := IntDateToDateTime(PInteger(AddrValue)^);
+                                  // the bookmark keeps the field buffer format (msecs)
+                                  ftTime: KeyParam.AsTime := PInteger(AddrValue)^ / MSecsPerDay;
+                                  ftDateTime:
+                                    KeyParam.AsDateTime := TimeStampToDateTime
+                                      (MSecsToTimeStamp(PDouble(AddrValue)^));
+                                  ftFMTBcd: KeyParam.AsBcd := PBcd(AddrValue)^;
+                                end;
                               end;
+                            end;
                         end;
                     end; // for
 
@@ -10893,13 +10927,13 @@ begin
                   1 >= FCacheModelOptions.FBufferChunks) then
                   Break;
               end;
-          except
+          finally
+            // the fetched records stay usable after a fetch error
+            FCurrentRecord := vPartition^.EndPartRecordNo + 1;
+            FRecordCount := vPartition^.EndPartRecordNo - vPartition^.BeginPartRecordNo + 1;
+            vPartition^.IncludeBof := false;
+            vPartition^.IncludeEof := True;
           end;
-          FCurrentRecord := vPartition^.EndPartRecordNo + 1;
-          FRecordCount := vPartition^.EndPartRecordNo - vPartition^.BeginPartRecordNo + 1;
-          vPartition^.IncludeBof := false;
-          vPartition^.IncludeEof := True;
-
         finally
           RestoreScreenCursor(iCurScreenState);
         end;
@@ -11340,6 +11374,9 @@ begin
       end
     else
       begin
+        if CachedUpdates and not(drsInCacheRefresh in FRunState) and
+          (bInserting or (CachedStatus(PRecordData(Buff)^.rdRecordNumber) in [cusUnmodified, cusUninserted])) then
+          Inc(FCountUpdatesPending);
         if bInserting then
           begin
             FRecordsCache.Insert(FCurrentRecord);
@@ -12060,8 +12097,6 @@ begin
                           TCachedUpdateStatus(rdFlags) := cusInserted
                         else
                           TCachedUpdateStatus(rdFlags) := cusModified;
-
-                        Inc(FCountUpdatesPending);
                       end;
                     SetModified(True);
                   end;
@@ -12355,16 +12390,12 @@ procedure FastSort(DataSet: TFIBCustomDataSet; aFields: array of TField; Orderin
   var
     SortOrder: Integer;
   begin
-    try
-      x := DataSet.RecordFieldValue(F, Num + 1);
-      if aOrdering then
-        SortOrder := 1
-      else
-        SortOrder := -1;
-      Result := DataSet.CompareFieldValues(F, x, y) * SortOrder;
-    except
-      Result := 0;
-    end
+    x := DataSet.RecordFieldValue(F, Num + 1);
+    if aOrdering then
+      SortOrder := 1
+    else
+      SortOrder := -1;
+    Result := DataSet.CompareFieldValues(F, x, y) * SortOrder;
   end;
 
   function Compare(Num, FCount: Integer; y: array of Variant; var x1: array of Variant): Integer;
@@ -12374,20 +12405,17 @@ procedure FastSort(DataSet: TFIBCustomDataSet; aFields: array of TField; Orderin
   begin
     Result := 0;
     for FCur := 0 to FCount do
-      try
-        x1[FCur] := DataSet.RecordFieldValue(aFields[FCur], Num + 1);
-        if Ordering[FCur] then
-          SortOrder := 1
-        else
-          SortOrder := -1;
+    begin
+      x1[FCur] := DataSet.RecordFieldValue(aFields[FCur], Num + 1);
+      if Ordering[FCur] then
+        SortOrder := 1
+      else
+        SortOrder := -1;
 
-        Result := DataSet.CompareFieldValues(aFields[FCur], x1[FCur], y[FCur]) * SortOrder;
-        if Result <> 0 then
-          Exit;
-      except
-        Result := 0;
-        Exit
-      end
+      Result := DataSet.CompareFieldValues(aFields[FCur], x1[FCur], y[FCur]) * SortOrder;
+      if Result <> 0 then
+        Exit;
+    end;
   end;
 
   procedure QuickSort1(L, R: Integer; F: TField; aOrdering: Boolean);
@@ -12545,50 +12573,49 @@ begin
   DataSet.CheckDatasetOpen(' do local sorting ');
   TFIBCustomDataSet(DataSet).ChangeScreenCursor(iCurScreenState);
   Inc(DataSet.vSimpleBookMark);
-  B := DataSet.BookMark;
   DataSet.DisableControls;
   DataSet.DisableScrollEvents;
-  DataSet.FetchAll;
-  with DataSet do
-    begin
-      FFilteredCacheInfo.NonVisibleRecords.Clear;
-      FFilteredCacheInfo.AllRecords := -1;
-
-      vFieldCount := High(aFields) - Low(aFields) + 1;
-      SetLength(vSortedFields, vFieldCount);
-
-      FSortFields := VarArrayCreate([0, vFieldCount - 1, 0, 2], varVariant);
-      for i := Low(aFields) to High(aFields) do
-        begin
-          tf := GetField(i);
-          FSortFields[i, 1] := Ordering[i];
-          FSortFields[i, 2] := false; // NULLS FIRST OR LAST
-          FSortFields[i, 0] := tf.FieldName;
-          vSortedFields[i] := tf;
-        end;
-      FIsClientSorting := True;
-    end;
-
-  if DataSet.FRecordCount < 2 then
-    begin
-      DataSet.EnableScrollEvents;
-      DataSet.EnableControls;
-      TFIBCustomDataSet(DataSet).RestoreScreenCursor(iCurScreenState);
-      Exit;
-    end;
-  vOptions := DataSet.UpdateRecordTypes;
-  DataSet.UpdateRecordTypes := [cusUnmodified, cusModified, cusInserted, cusUninserted, cusDeleted];
-
   try
+    B := DataSet.BookMark;
     try
-      FastSort(DataSet, vSortedFields, Ordering);
+      DataSet.FetchAll;
+      with DataSet do
+        begin
+          FFilteredCacheInfo.NonVisibleRecords.Clear;
+          FFilteredCacheInfo.AllRecords := -1;
+
+          vFieldCount := High(aFields) - Low(aFields) + 1;
+          SetLength(vSortedFields, vFieldCount);
+
+          FSortFields := VarArrayCreate([0, vFieldCount - 1, 0, 2], varVariant);
+          for i := Low(aFields) to High(aFields) do
+            begin
+              tf := GetField(i);
+              FSortFields[i, 1] := Ordering[i];
+              FSortFields[i, 2] := false; // NULLS FIRST OR LAST
+              FSortFields[i, 0] := tf.FieldName;
+              vSortedFields[i] := tf;
+            end;
+          FIsClientSorting := True;
+        end;
+
+      if DataSet.FRecordCount >= 2 then
+        begin
+          vOptions := DataSet.UpdateRecordTypes;
+          DataSet.UpdateRecordTypes := [cusUnmodified, cusModified, cusInserted, cusUninserted, cusDeleted];
+          try
+            FastSort(DataSet, vSortedFields, Ordering);
+          finally
+            DataSet.UpdateRecordTypes := vOptions;
+            DataSet.BookMark := B;
+          end;
+        end;
     except
       DataSet.FSortFields := Null;
+      DataSet.FIsClientSorting := False;
       raise
     end;
   finally
-    DataSet.UpdateRecordTypes := vOptions;
-    DataSet.BookMark := B;
     Dec(DataSet.vSimpleBookMark);
     TFIBCustomDataSet(DataSet).RestoreScreenCursor(iCurScreenState);
     DataSet.EnableScrollEvents;

@@ -1199,8 +1199,14 @@ finalization
 
 {$IFNDEF NO_MONITOR}
 try
+  // a monitor still alive: the reader waits for a trace, the writer wakes it
+  if Assigned(FFIBReaderThread) then
+  begin
+    FFIBReaderThread.Terminate;
+    QueueToWriter(TWakeReadersObject.Create);
+    FreeAndNil(FFIBReaderThread);
+  end;
   bDone := true;
-  FreeAndNil(FFIBReaderThread);
   StopWriterThread(true);
   if Assigned(_MonitorHook) then
     _MonitorHook.Free;

@@ -1864,73 +1864,45 @@ begin
   Result := WildCompare(FirstString, SecondString, False);
 end;
 
+// MaskChars[0] matches any run of chars, MaskChars[1] any one char; case-sensitive
 function DoMaskCompare(const AString, Mask: string; MaskChars: array of Char): Boolean;
-
-  function WildCompare1(const FLine, Mask: string): Boolean;
-  var
-    K: Integer;
-    l1, l2: Integer;
-    p1: Integer;
-
-    function Different(const FLine, Mask: string; l1, l2: Integer): Boolean;
+var
+  S, M, StarS, StarM, LS, LM: Integer;
+begin
+  LS := Length(AString);
+  LM := Length(Mask);
+  S := 1;
+  M := 1;
+  StarS := 0;
+  StarM := 0;
+  while S <= LS do
+    if (M <= LM) and (Mask[M] = MaskChars[0]) then
     begin
-      if (l1 > 0) and (l2 > 0) then
-      begin
-        Result := not CharInSet(Mask[1], [MaskChars[0], MaskChars[1]]) and (FLine[1] <> Mask[1])
-      end
-      else
-      begin
-        Result := ((l1 = 0) and (Mask <> MaskChars[0])) or (l2 = 0)
-      end;
-    end;
-
-    function Identical(const FLine, Mask: string): Boolean;
+      // remember the run, try it empty first
+      StarM := M;
+      StarS := S;
+      Inc(M);
+    end
+    else if (M <= LM) and ((Mask[M] = MaskChars[1]) or (Mask[M] = AString[S])) then
     begin
-      Result := (Mask = MaskChars[0]) or (FLine = Mask)
-    end;
-
-  begin
-    if Identical(FLine, Mask) then
+      Inc(S);
+      Inc(M);
+    end
+    else if StarM > 0 then
     begin
-      Result := True;
+      // the last run takes one more char
+      M := StarM + 1;
+      Inc(StarS);
+      S := StarS;
+    end
+    else
+    begin
+      Result := False;
       Exit;
     end;
-    Result := False;
-
-    l1 := Length(FLine);
-    l2 := Length(Mask);
-    if Different(FLine, Mask, l1, l2) then
-      Exit;
-
-    if not CharInSet(Mask[1], [MaskChars[0], MaskChars[1]]) then
-    begin
-      p1 := FirstPos([MaskChars[0], MaskChars[1]], Mask);
-      if p1 = 0 then
-      begin
-        Result := FLine = Mask
-      end
-      else if (FastCopy(FLine, 1, p1 - 1) <> FastCopy(Mask, 1, p1 - 1)) then
-        Result := False
-      else
-        Result := WildCompare1(Copy(FLine, p1, l1), Copy(Mask, p1, l2));
-      Exit;
-    end;
-
-    if (Mask[1] = MaskChars[0]) then
-      for K := 1 to l1 do
-        if (FLine[K] = Mask[2]) then
-        begin
-          Result := WildCompare1(Copy(FLine, K, l1 - K + 1), Copy(Mask, 2, l2 - 1));
-          if Result then
-            Exit
-        end;
-
-    if (Mask[1] <> MaskChars[0]) and ((FLine[1] = Mask[1]) or (Mask[1] = MaskChars[1])) then
-      Result := WildCompare1(Copy(FLine, 2, l1 - 1), FastCopy(Mask, 2, l2 - 1));
-  end;
-
-begin // MaskCompare
-  Result := WildCompare1(AString, DoResultLine(Mask));
+  while (M <= LM) and (Mask[M] = MaskChars[0]) do
+    Inc(M);
+  Result := M > LM;
 end;
 
 function SQLMaskCompare(const AString, Mask: string): Boolean;
@@ -2214,7 +2186,8 @@ var
   KeyWords: TStringList;
 
 const
-  NonQuotedChars = ['_', '$', '%', '#'];
+  // the chars of a regular identifier besides A..Z and 0..9
+  NonQuotedChars = ['_', '$'];
 
 function InternalNeedQuote(const Name: string; Easy: Boolean): Boolean; {$IFDEF D2007+} inline; {$ENDIF}
 var
@@ -2257,6 +2230,12 @@ begin
         Dec(ch1, 32);
       if (Ch2 >= 'a') and (Ch2 <= 'z') then
         Dec(Ch2, 32);
+    end;
+    // '_' or '$': no keyword, and outside KeyWordsIndexes
+    if (Ch2 < 'A') or (Ch2 > 'Z') or (ch1 < 'A') or (ch1 > 'Z') then
+    begin
+      Result := False;
+      Exit;
     end;
     Result := FindInDiapazon(KeyWords, Name, KeyWordsIndexes[ch1, Ch2, 0], KeyWordsIndexes[ch1, Ch2, 1], False, i)
   end;

@@ -84,6 +84,7 @@ var
 begin
   with RegObj do
     try
+      CloseKey;
       RootKey := aRootKey;
       for i := Low(OtherKeys) to High(OtherKeys) do
         OpenKey(OtherKeys[i], true);
@@ -118,6 +119,7 @@ begin
   with RegObj do
     try
       Result := false;
+      CloseKey;
       RootKey := aRootKey;
       for i := Low(OtherKeys) to High(OtherKeys) do
         if not OpenKey(OtherKeys[i], false) then
@@ -163,6 +165,7 @@ begin
   with RegObj do
     try
       Result := false;
+      CloseKey;
       RootKey := aRootKey;
       for i := Low(ForPath) to High(ForPath) do
         if not OpenKey(ForPath[i], false) then
@@ -255,7 +258,8 @@ begin
         end;
         Result := true;
       finally
-        Ini.Free
+        Ini.Free;
+        CloseKey;
       end;
     end;
 end;

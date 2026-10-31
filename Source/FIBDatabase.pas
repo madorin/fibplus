@@ -250,6 +250,8 @@ type
     FIsNoneConnect: Boolean;
     FDatabaseRunState: TDatabaseRunState;
     FLastActiveTime: Cardinal;
+    FIdleTimeout: Cardinal;
+    FKeepAliveTime: Cardinal;
     FStreammedConnectFail: Boolean;
     procedure DBParamsChange(Sender: TObject);
     procedure DBParamsChanging(Sender: TObject);
@@ -946,7 +948,7 @@ uses
   System.Types, // for inline funcs
 {$ENDIF}
   FIBMiscellaneous, pFIBDataInfo, FIBQuery, StrUtil, pFIBCacheQueries,
-  FIBConsts, FIBTypes, FIBCharSets;
+  FIBConsts, FIBTypes, FIBCharSets, IB_ErrorCodes;
 
 {$IFNDEF NO_MONITOR}
 type
@@ -956,6 +958,19 @@ type
 var
   vConnectCS: TCriticalSection;
   LastConnectionSerial: Integer = 0;
+
+type
+  TMethodArray = array of TMethod;
+
+// a copy for the calls: a handler can unregister itself or free a registered component
+function CopyEventList(List: TCallBackList): TMethodArray;
+var
+  i: Integer;
+begin
+  SetLength(Result, List.Count);
+  for i := 0 to High(Result) do
+    Result[i] := List.CallBackAddr[i]^;
+end;
 
 function NextConnectionSerial: Integer;
 begin
@@ -1393,6 +1408,7 @@ begin
   FReadIdxCount.Free;
   FReadSeqCount.Free;
   FUpdateCount.Free;
+  FActiveTransactions.Free;
   FConnectParams.Free;
   FCapabilities.Free;
   FSession.Free;
@@ -1494,13 +1510,9 @@ function TFIBDatabase.Call(ErrCode: ISC_STATUS; RaiseError: Boolean): ISC_STATUS
 begin
   Set8087CW(Default8087CW);
   Result := ErrCode;
-  // FCanTimeout := False;
-  if Assigned(FTimer) and FTimer.Enabled then
-    begin
-      FTimer.Enabled := False;
-      FTimer.Enabled := True;
-      FLastActiveTime := FIBGetTickCount;
-    end;
+  // the idle timer checks this time: restarting it from another thread would leak it
+  if Assigned(FTimer) then
+    FLastActiveTime := FIBGetTickCount;
   if RaiseError and (ErrCode > 0) then
     IBError(Self, Self);
 end;
@@ -1608,6 +1620,7 @@ end;
 procedure TFIBDatabase.DoBeforeDisconnect;
 var
   i: Integer;
+  Handlers: TMethodArray;
 begin
   try
     if Assigned(FBeforeDisconnect) then
@@ -1620,11 +1633,10 @@ begin
         raise Exception.Create(Format(SFIBErrorBeforeDisconnect, [CmpFullName(Self), E.Message]))
   end;
 
-  with FBeforeDisconnectEvents do
-    for i := 0 to Pred(Count) do
-      begin
-        FBeforeDisconnectEvents.Event[i](Self)
-      end;
+  Handlers := CopyEventList(FBeforeDisconnectEvents);
+  for i := 0 to High(Handlers) do
+    if FBeforeDisconnectEvents.IndexOfMethod(Handlers[i]) >= 0 then
+      TNotifyEvent(Handlers[i])(Self);
 end;
 
 procedure TFIBDatabase.DoAfterDisconnect;
@@ -1671,6 +1683,7 @@ procedure TFIBDatabase.DoOnConnect;
 var
   i: Integer;
   vMajorVersion: Integer;
+  Handlers: TMethodArray;
 begin
   vMajorVersion := ServerMajorVersion;
   if not FIsFireBirdConnect then
@@ -1703,21 +1716,28 @@ begin
       (Length(FBlobSwapSupport.SwapDirectory) > 0) then
       ValidateBlobCacheDirectory(Self);
 
+  // Open raises the first error once the connect is complete
   if Assigned(FOnConnect) then
-    FOnConnect(Self);
-  with FAfterConnectEvents do
-    for i := 0 to Pred(Count) do
-      begin
-        if not Connected then
-          Break;
-        // Open raises the first error once the connect is complete
-        try
-          FAfterConnectEvents.Event[i](Self);
-        except
-          if FAfterConnectError = nil then
-            FAfterConnectError := AcquireExceptionObject;
-        end;
+    try
+      FOnConnect(Self);
+    except
+      if FAfterConnectError = nil then
+        FAfterConnectError := AcquireExceptionObject;
+    end;
+  Handlers := CopyEventList(FAfterConnectEvents);
+  for i := 0 to High(Handlers) do
+    begin
+      if not Connected then
+        Break;
+      if FAfterConnectEvents.IndexOfMethod(Handlers[i]) < 0 then
+        Continue;
+      try
+        TNotifyEvent(Handlers[i])(Self);
+      except
+        if FAfterConnectError = nil then
+          FAfterConnectError := AcquireExceptionObject;
       end;
+    end;
 end;
 
 function TFIBDatabase.AddTransaction(TR: TFIBTransaction): Integer;
@@ -1886,7 +1906,7 @@ end;
 function TFIBDatabase.GetTimeout: Cardinal;
 begin
   if Assigned(FTimer) then
-    Result := FTimer.Interval
+    Result := FIdleTimeout
   else
     Result := 0;
 end;
@@ -2256,24 +2276,23 @@ begin
   FServerMajorVersion := -1;
   FServerMinorVersion := -1;
   FServerBuild := -1;
+  CheckInactive;
+  FAttachmentID := 0;
+  CheckDatabaseName;
+  LoadLibrary;
+  for i := 0 to FFIBBases.Count - 1 do
+    begin
+      if FFIBBases[i] <> nil then
+        FIBBases[i].FOnDatabaseConnecting;
+    end;
+  (*
+    * Use the canned login prompt if requested, outside the lock: it
+    * waits for the user.
+  *)
+  if FUseLoginPrompt and not Login then
+    FIBError(feOperationCancelled, [nil]);
   vConnectCS.Acquire;
-  // EnterCriticalSection(vConnectCS);
   try
-    CheckInactive;
-    FAttachmentID := 0;
-    CheckDatabaseName;
-    LoadLibrary;
-    (*
-      * Use the canned login prompt if requested.
-    *)
-    for i := 0 to FFIBBases.Count - 1 do
-      begin
-        if FFIBBases[i] <> nil then
-          FIBBases[i].FOnDatabaseConnecting;
-      end;
-
-    if FUseLoginPrompt and not Login then
-      FIBError(feOperationCancelled, [nil]);
     (*
       * Generate a new DPB if necessary
     *)
@@ -2316,7 +2335,6 @@ begin
     end;
   finally
     vConnectCS.Release
-    // LeaveCriticalSection(vConnectCS);
   end;
 
   if isc_res > 0 then
@@ -2616,7 +2634,14 @@ begin
   else if (Value > 0) then
     begin
       CreateTimeoutTimer;
-      FTimer.Interval := Value;
+      FIdleTimeout := Value;
+      // four checks per timeout: the connection closes at most a quarter late
+      if Value >= 4 then
+        FTimer.Interval := Value div 4
+      else
+        FTimer.Interval := Value;
+      FLastActiveTime := FIBGetTickCount;
+      FKeepAliveTime := FLastActiveTime - Value;
       if not(csDesigning in ComponentState) then
         FTimer.Enabled := True;
     end;
@@ -2679,15 +2704,23 @@ end;
 procedure TFIBDatabase.TimeoutConnection(Sender: TObject);
 var
   ai: TActionOnIdle;
+  Ticks: Cardinal;
 begin
   if Connected then
     begin
+      Ticks := FIBGetTickCount;
+      // a kept connection waits a whole timeout for the next question
+      if (Ticks - FLastActiveTime < FIdleTimeout) or (Ticks - FKeepAliveTime < FIdleTimeout) then
+        Exit;
       if Assigned(FOnIdleConnect) then
         begin
           ai := aiCloseConnect;
-          FOnIdleConnect(Self, FIBGetTickCount - FLastActiveTime, ai);
+          FOnIdleConnect(Self, Ticks - FLastActiveTime, ai);
           if ai = aiKeepLiveConnect then
-            Exit;
+            begin
+              FKeepAliveTime := Ticks;
+              Exit;
+            end;
         end;
       ForceClose;
       if Assigned(FOnTimeout) then
@@ -2920,8 +2953,11 @@ end;
 procedure TFIBDatabase.RaiseCancelOperations;
 begin
   CheckActive;
+  // Busy is for the whole client library: nothing to cancel when another database runs the call
   if Busy then
-    Call(FClientLibrary.fb_cancel_operation(StatusVector, @FHandle, fb_cancel_raise), True);
+    if (Call(FClientLibrary.fb_cancel_operation(StatusVector, @FHandle, fb_cancel_raise), False) > 0) and
+      (StatusVectorArray[1] <> isc_nothing_to_cancel) then
+      IBError(Self, Self);
 end;
 
 function TFIBDatabase.UnicodeCharSets: TIBCharSets;
@@ -3043,7 +3079,7 @@ end;
 function TFIBDatabase.GetActiveTransactions: TStringList;
 // isc_info_active_transactions
 var
-  local_buffer: array [0 .. FIBBigLocalBufferLength - 1] of AnsiChar;
+  local_buffer: array [0 .. FIBHugeLocalBufferLength - 1] of AnsiChar;
   DBInfoCommand: AnsiChar;
   i: Integer;
   L: Integer;
@@ -3056,15 +3092,18 @@ begin
 
   DBInfoCommand := AnsiChar(frb_info_active_transactions);
   Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1,
-    @DBInfoCommand, FIBLocalBufferLength, local_buffer), True);
+    @DBInfoCommand, FIBHugeLocalBufferLength, local_buffer), True);
   i := 0;
 
-  while local_buffer[i] = AnsiChar(frb_info_active_transactions) do
+  // one item per transaction, the length is 8 for a 64 bit number
+  while (i + 3 <= High(local_buffer)) and (local_buffer[i] = AnsiChar(frb_info_active_transactions)) do
     begin
+      L := FClientLibrary.isc_vax_integer(@local_buffer[i + 1], 2);
       Inc(i, 3);
-      L := FClientLibrary.isc_vax_integer(@local_buffer[i], 4);
-      Result.Add(IntToStr(L));
-      Inc(i, 4);
+      if i + L > Length(local_buffer) then
+        Break;
+      Result.Add(IntToStr(FClientLibrary.isc_portable_integer(@local_buffer[i], L)));
+      Inc(i, L);
     end;
 end;
 
@@ -3365,7 +3404,10 @@ begin
   // Each pair consists of:
   // 1. 2 bytes specifying the table ID.
   // 2. 4 bytes listing the number of operations (e.g., inserts) done on that table.
-  qtd_tables := trunc(FClientLibrary.isc_vax_integer(@local_buffer[1], 2) / 6);
+  // isc_info_truncated instead of the item: no counts
+  if local_buffer[0] <> _DBInfoCommand then
+    Exit;
+  qtd_tables := FClientLibrary.isc_vax_integer(@local_buffer[1], 2) div 6;
   for i := 0 to qtd_tables - 1 do
     begin
       id_table := FClientLibrary.isc_vax_integer(@local_buffer[3 + (i * 6)], 2);
@@ -3395,7 +3437,9 @@ begin
       // Each pair consists of:
       // 1. 2 bytes specifying the table ID.
       // 2. 4 bytes listing the number of operations (e.g., inserts) done on that table.
-      qtd_tables := trunc(FClientLibrary.isc_vax_integer(@local_buffer[1], 2) / 6);
+      if local_buffer[0] <> _DBInfoCommand then
+        Continue;
+      qtd_tables := FClientLibrary.isc_vax_integer(@local_buffer[1], 2) div 6;
       for i := 0 to qtd_tables - 1 do
         begin
           Inc(Result, FClientLibrary.isc_vax_integer(@local_buffer [5 + (i * 6)], 4));
@@ -4208,14 +4252,24 @@ var
   Status: ISC_STATUS;
   S: string;
 
+  procedure CallEndEvents(List: TCallBackList);
+  var
+    i: Integer;
+    Handlers: TMethodArray;
+  begin
+    Handlers := CopyEventList(List);
+    for i := 0 to High(Handlers) do
+      if List.IndexOfMethod(Handlers[i]) >= 0 then
+        TEndTrEvent(Handlers[i])(Self, Action, Force);
+  end;
+
   procedure DoBefore;
   var
     i: Integer;
   begin
     for i := FFIBBases.Count - 1 downto 0 do
       FIBBases[i].FOnTransactionEnding;
-    for i := 0 to FBeforeEndTransactionEvents.Count - 1 do
-      TEndTrEvent(FBeforeEndTransactionEvents.CallBackAddr[i]^)(Self, Action, Force);
+    CallEndEvents(FBeforeEndTransactionEvents);
   end;
 
   procedure DoAfter;
@@ -4224,8 +4278,7 @@ var
   begin
     for i := FFIBBases.Count - 1 downto 0 do
       FIBBases[i].FOnTransactionEnded;
-    for i := 0 to FAfterEndTransactionEvents.Count - 1 do
-      TEndTrEvent(FAfterEndTransactionEvents.CallBackAddr[i]^)(Self, Action, Force);
+    CallEndEvents(FAfterEndTransactionEvents);
 
     FHasUncommitedUpdates := False
   end;
@@ -4245,49 +4298,59 @@ begin
         IntToStr(TransactionID) + ') ', 'TransactionParams:'#13#10 + TRParams.Text, lfTransact);
     end;
 
-  case Action of
-    TARollback, TACommit:
-      begin
-        if (HandleIsShared) and (Action <> FTimeoutAction) and (not Force) then
-          FIBError(feCantEndSharedTransaction, [nil]);
-        if Action = TARollback then
-          FState := tsDoRollback
-        else
-          FState := tsDoCommit;
-        DoBefore;
-        if HandleIsShared then
-          begin
-            FHandle := nil;
-            FHandleIsShared := False;
-            Status := 0;
-          end
-        else if (Action = TARollback) then
-          Status := Call(IIbClientLibrary(MainDatabase).isc_rollback_transaction(StatusVector, @FHandle), False)
-        else
-          Status := Call(IIbClientLibrary(MainDatabase).isc_commit_transaction(StatusVector, @FHandle), False);
-        if ((Force) and (Status > 0)) then
-          Status := Call(IIbClientLibrary(MainDatabase).isc_rollback_transaction(StatusVector, @FHandle), False);
-        if Force then
-          FHandle := nil
-        else if (Status > 0) then
-          IBError(MainDatabase, Self);
-        DoAfter;
+  try
+    case Action of
+      TARollback, TACommit:
+        begin
+          if (HandleIsShared) and (Action <> FTimeoutAction) and (not Force) then
+            FIBError(feCantEndSharedTransaction, [nil]);
+          if Action = TARollback then
+            FState := tsDoRollback
+          else
+            FState := tsDoCommit;
+          DoBefore;
+          if HandleIsShared then
+            begin
+              FHandle := nil;
+              FHandleIsShared := False;
+              Status := 0;
+            end
+          else if (Action = TARollback) then
+            Status := Call(IIbClientLibrary(MainDatabase).isc_rollback_transaction(StatusVector, @FHandle), False)
+          else
+            Status := Call(IIbClientLibrary(MainDatabase).isc_commit_transaction(StatusVector, @FHandle), False);
+          if ((Force) and (Status > 0)) then
+            Status := Call(IIbClientLibrary(MainDatabase).isc_rollback_transaction(StatusVector, @FHandle), False);
+          if Force then
+            FHandle := nil
+          else if (Status > 0) then
+            IBError(MainDatabase, Self);
+          DoAfter;
 
-      end;
-    TACommitRetaining:
-      begin
-        FState := tsDoCommitRetaining;
-        DoBefore;
-        Call(IIbClientLibrary(MainDatabase).isc_commit_retaining(StatusVector, @FHandle), True);
-        DoAfter;
-      end;
-    TARollbackRetaining:
-      begin
-        FState := tsDoRollbackRetaining;
-        DoBefore;
-        Call(IIbClientLibrary(MainDatabase).isc_rollback_retaining(StatusVector, @FHandle), True);
-        DoAfter;
-      end;
+        end;
+      TACommitRetaining:
+        begin
+          FState := tsDoCommitRetaining;
+          DoBefore;
+          Call(IIbClientLibrary(MainDatabase).isc_commit_retaining(StatusVector, @FHandle), True);
+          DoAfter;
+        end;
+      TARollbackRetaining:
+        begin
+          FState := tsDoRollbackRetaining;
+          DoBefore;
+          Call(IIbClientLibrary(MainDatabase).isc_rollback_retaining(StatusVector, @FHandle), True);
+          DoAfter;
+        end;
+    end;
+  except
+    // a failed end leaves the transaction in its real state
+    if InTransaction then
+      FState := tsActive
+    else
+      FState := tsClosed;
+    FTransactionID := 0;
+    raise;
   end;
 {$IFNDEF NO_MONITOR}
   if MonitoringEnabled then

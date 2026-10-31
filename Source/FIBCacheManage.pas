@@ -161,8 +161,10 @@ destructor TRecordsCache.Destroy;
 var
   i: Integer;
 begin
-  for i := 0 to BlockCount - 1 do
-    FreeMem(FBlocks.List^[i]);
+  // nil when the constructor failed
+  if FBlocks <> nil then
+    for i := 0 to BlockCount - 1 do
+      FreeMem(FBlocks.List^[i]);
   for i := 0 to ChangesBlockCount - 1 do
     FreeMem(FChangeLog.List^[i]);
 
@@ -171,8 +173,8 @@ begin
   ReallocMem(FStringFieldSize, 0);
   FreeMem(FOldBuffer);
 
-  FStringData.Free;
-  FLogStringData.Free;
+  FreeAndNil(FStringData);
+  FreeAndNil(FLogStringData);
 
   FBlocks.Free;
   if FChangeLog <> nil then
@@ -264,8 +266,8 @@ begin
   ReallocMem(FStringFieldOffsets, FStrFieldCount * SizeOf(Integer));
   ReallocMem(FStringFieldSize, FStrFieldCount * SizeOf(Integer));
 
-  FStringData.Free;
-  FLogStringData.Free;
+  FreeAndNil(FStringData);
+  FreeAndNil(FLogStringData);
   if FStrFieldCount > 0 then
     begin
       for i := 1 to FStrFieldCount do
@@ -308,7 +310,22 @@ begin
   FRecInBlock := SourceCache.FRecInBlock;
   FRecordCount := SourceCache.FRecordCount;
   ReallocMem(FOldBuffer, FInOutRecordSize);
+  if FInOutRecordSize > 0 then
+    Move(SourceCache.FOldBuffer^, FOldBuffer^, FInOutRecordSize);
+  FOldBufRecordNumber := SourceCache.FOldBufRecordNumber;
+  FSaveChangeLog := SourceCache.FSaveChangeLog;
 
+  // the order of a sorted cache and the inserted records
+  if Assigned(SourceCache.FMapRecords) then
+    begin
+      if FMapRecords = nil then
+        FMapRecords := TFIBList.Create;
+      FMapRecords.Count := SourceCache.FMapRecords.Count;
+      for i := 0 to FMapRecords.Count - 1 do
+        FMapRecords.List^[i] := SourceCache.FMapRecords.List^[i];
+    end
+  else
+    FreeAndNil(FMapRecords);
 end;
 
 procedure TRecordsCache.SetBlockCount(NewCount: Integer);
@@ -402,7 +419,8 @@ var
 begin
   IRecordNo := InternalRecordNo(RecordNo);
   BlockIndex := RecordBlock(IRecordNo, False, True);
-  if BlockIndex >= BlockCount then
+  // -1 beyond the map
+  if (IRecordNo < 1) or (BlockIndex >= BlockCount) then
     raise EMemManagerError.Create('Can''t read Buffer.Incorrect RecordNo');
   PosInBlock := RecordPosition(IRecordNo, True);
   Result := TDataBuffer(FBlocks.List^[BlockIndex]) + PosInBlock;
@@ -420,6 +438,8 @@ var
   ps: PFIBByteString;
 begin
   IRecordNo := InternalRecordNo(RecordNo);
+  if IRecordNo < 1 then
+    raise EMemManagerError.Create('Can''t read Buffer.Incorrect RecordNo');
   if Old then
     begin
       p := GetChangePosition(IRecordNo, False);
@@ -598,7 +618,7 @@ begin
     RecordNo := InternalRecordNo(RecordNo);
 
   BlockIndex := (RecordNo - 1) div FRecInBlock;
-  if BlockIndex < FBlocks.Count then
+  if (RecordNo >= 1) and (BlockIndex < FBlocks.Count) then
     begin
       PosInBlock := (RecordNo - 1 - BlockIndex * FRecInBlock) * FRecordSize;
       RecordData := FBlocks.List^[BlockIndex];
@@ -1043,19 +1063,34 @@ begin
   FMapRecords := nil;
   FStringData.Free;
   FStringData := nil;
-  FStringFieldOffsets := nil;
+  ReallocMem(FStringFieldOffsets, 0);
+  ReallocMem(FStringFieldSize, 0);
+  FStrFieldCount := 0;
+  ClearLog;
+  FreeAndNil(FLogStringData);
 
   with Stream do
     begin
       if SeekBegin then
         Seek(0, soFromBeginning);
       ReadBuffer(i, SizeOf(Integer));
-      FBlocks.Count := i;
+      if i < 0 then
+        raise EMemManagerError.Create('Can''t load cache: incorrect block count');
       ReadBuffer(FBlockSize, SizeOf(Integer));
       ReadBuffer(FInOutRecordSize, SizeOf(Integer));
       ReadBuffer(FStrFieldCount, SizeOf(Integer));
       ReadBuffer(FSaveChangeLog, SizeOf(Boolean));
       ReadBuffer(FRecordCount, SizeOf(Integer));
+      // the records of the blocks have the size given to the constructor
+      if (FBlockSize < FRecordSize) or (FInOutRecordSize < 0) or (FRecordCount < 0) then
+        raise EMemManagerError.Create('Can''t load cache: incompatible sizes');
+      FRecInBlock := FBlockSize div FRecordSize;
+      ReallocMem(FOldBuffer, FInOutRecordSize);
+      ClearOldBuffer;
+      FOldBufRecordNumber := -1;
+      FBlocks.Count := i;
+      for i := 0 to BlockCount - 1 do
+        FBlocks.List^[i] := nil;
       for i := 0 to BlockCount - 1 do
         begin
           GetMem(p, FBlockSize);
@@ -1077,8 +1112,11 @@ begin
             for j := 0 to FRecordCount - 1 do
               begin
                 ReadBuffer(L, SizeOf(Integer));
+                if L < 0 then
+                  raise EMemManagerError.Create('Can''t load cache: incorrect string length');
                 SetString(s, nil, L);
-                Stream.Read(s[1], L);
+                if L > 0 then
+                  ReadBuffer(s[1], L);
                 if FStringData.CountY <= j then
                   FStringData.Add;
                 FStringData.Value[i, j] := s;
@@ -1087,6 +1125,8 @@ begin
     end;
 
   Stream.ReadBuffer(L, SizeOf(Integer));
+  if L < 0 then
+    raise EMemManagerError.Create('Can''t load cache: incorrect record map');
   if L > 0 then
     begin
       FMapRecords := TFIBList.Create;

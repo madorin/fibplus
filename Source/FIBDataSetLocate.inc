@@ -150,6 +150,7 @@ var
   DateAdjusted: array of Boolean;
   // 1 or -1: the BCD key is above or below the range of the field
   KeyOverflow: array of Integer;
+  SavedCurrentRecord: Integer;
 
 // To compare a string field as Unicode; 0: as bytes
 function LocateCodePage(Field: TField): Word;
@@ -604,9 +605,9 @@ var
                    SQL_FLOAT:
                      dv:=PSingle(P)^;
                    SQL_LONG :
-                     dv:=PLong(P)^*E10[fi^.fdDataScale];
+                     dv:=PLong(P)^/E10[-fi^.fdDataScale];
                    SQL_SHORT:
-                     dv:=PShort(P)^*E10[fi^.fdDataScale]
+                     dv:=PShort(P)^/E10[-fi^.fdDataScale]
                   else
                    dv:=PDouble(P)^
                   end;
@@ -991,6 +992,8 @@ begin
   rc1:=-1;
   if State in [dsEdit,dsInsert] then
    Post;
+  // the visibility check of a filtered dataset moves FCurrentRecord
+  SavedCurrentRecord := FCurrentRecord;
   NowInFetched:=True;
   vIgnoreRecChecked  :=False;
   fl := TFIBList.Create;
@@ -1229,7 +1232,9 @@ begin
         SetRealRecno(RecI+1,ResyncToCenter);
        DataEvent(deDataSetChange,0);        
        CursorPosChanged;
-    end;
+    end
+    else
+      FCurrentRecord := SavedCurrentRecord;
   end;
 end;
 {$ENDIF}

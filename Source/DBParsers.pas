@@ -137,6 +137,17 @@ var
           end;
   end;
 
+  function IsNullValue(const V: Variant): Boolean;
+  begin
+    Result := VarIsNull(V) or VarIsEmpty(V);
+  end;
+
+  // a NULL boolean operand counts as False: NOT stays two-valued, as in TClientDataSet
+  function AsBoolean(const V: Variant): Boolean;
+  begin
+    Result := not IsNullValue(V) and WordBool(V);
+  end;
+
   function ParseNode(pfdStart, pfd: PAnsiChar): Variant;
   var
     i, Count, AD: Integer;
@@ -212,7 +223,8 @@ var
                 ftWideString:
                   begin
                     SetLength(us, PWord(pArg1)^ div 2);
-                    Move(pArg1[2], us[1], PWord(pArg1)^);
+                    if us <> '' then
+                      Move(pArg1[2], us[1], PWord(pArg1)^);
                     Result := us
                   end;
 {$ENDIF}
@@ -259,7 +271,7 @@ var
                 if iOperator = coNOTBLANK then
                   Result := not Result;
               end;
-            coNOT: Result := not WordBool(ParseNode(pfdStart, pArg1));
+            coNOT: Result := not AsBoolean(ParseNode(pfdStart, pArg1));
             coMINUS: Result := -ParseNode(pfdStart, pArg1);
             coUPPER: Result := AnsiUpperCase(VarToStr(ParseNode(pfdStart, pArg1)));
             coLOWER: Result := AnsiLowerCase(VarToStr(ParseNode(pfdStart, pArg1)));
@@ -279,8 +291,8 @@ var
             coGE: Result := ParseNode(pfdStart, pArg1) >= ParseNode(pfdStart, pArg2);
             coLT: Result := ParseNode(pfdStart, pArg1) < ParseNode(pfdStart, pArg2);
             coLE: Result := ParseNode(pfdStart, pArg1) <= ParseNode(pfdStart, pArg2);
-            coOR: Result := WordBool(ParseNode(pfdStart, pArg1)) or WordBool(ParseNode(pfdStart, pArg2));
-            coAND: Result := WordBool(ParseNode(pfdStart, pArg1)) and WordBool(ParseNode(pfdStart, pArg2));
+            coOR: Result := AsBoolean(ParseNode(pfdStart, pArg1)) or AsBoolean(ParseNode(pfdStart, pArg2));
+            coAND: Result := AsBoolean(ParseNode(pfdStart, pArg1)) and AsBoolean(ParseNode(pfdStart, pArg2));
             coADD: Result := ParseNode(pfdStart, pArg1) + ParseNode(pfdStart, pArg2);
             coSUB: Result := ParseNode(pfdStart, pArg1) - ParseNode(pfdStart, pArg2);
             coMUL: Result := ParseNode(pfdStart, pArg1) * ParseNode(pfdStart, pArg2);
@@ -488,12 +500,14 @@ var
 
 var
   pfdStart, pfd: PAnsiChar;
+  V: Variant;
 begin
   pfdStart := Addr(FilterData[0]);
   pfd := pfdStart;
   iLiteralStart := PWord(@pfd[8])^;
   Inc(pfd, 10);
-  Result := ParseNode(pfdStart, pfd);
+  V := ParseNode(pfdStart, pfd);
+  Result := AsBoolean(V);
 end;
 {$WARNINGS ON}
 

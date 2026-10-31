@@ -103,14 +103,21 @@ begin
       FDatabase.RemoveEvent( BeforeDisconnect, detBeforeDisconnect );
       FClientLibrary:=nil;
     end;
+    if Assigned(FDatabase) then
+      FDatabase.RemoveFreeNotification(Self);
 
     FDatabase := Value;
+    // Notification clears the property when the database is freed first
+    if Assigned(FDatabase) then
+      FDatabase.FreeNotification(Self);
     if Assigned(FDatabase) and not (csDesigning in ComponentState) then
       try
         FDatabase.AddEvent(AfterConnect,detOnConnect);
         FDatabase.AddEvent(BeforeDisconnect,detBeforeDisconnect);
       finally
-        if WasRegistered then  RegisterEvents;
+        // a database connected already does not call AfterConnect
+        if WasRegistered or (FAutoRegister and not (csLoading in ComponentState) and CanRegisterEvents) then
+          RegisterEvents;
       end;
   end;
 end;

@@ -76,6 +76,12 @@ type
 var
   CacheList: TCacheList;
 
+// The text as SQL.Text of the query gives it: CRLF line breaks
+function CacheKey(const SQLText: string): string;
+begin
+  Result := FastTrim(AdjustLineBreaks(SQLText));
+end;
+
   { TCacheQueries }
 
 procedure TCacheQueries.Clear;
@@ -163,7 +169,7 @@ begin
     Exit;
   FListUsed.Delete(i);
 
-  Key := FastTrim(aFIBQuery.SQL.Text);
+  Key := CacheKey(aFIBQuery.SQL.Text);
   // Two queries with the same SQL were in use at the same time, the list
   // keeps one query per SQL text
   if FListUnused.Find(Key, i) then
@@ -176,7 +182,7 @@ function TCacheQueries.UseQuery(aTransaction: TFIBTransaction; const SQLText: st
 var
   i: integer;
 begin
-  if FListUnused.Find(FastTrim(SQLText), i) then
+  if FListUnused.Find(CacheKey(SQLText), i) then
   begin
     Result := TFIBQuery(FListUnused.Objects[i]);
     if Result.Transaction <> aTransaction then
@@ -361,7 +367,7 @@ begin
   CacheList.FLock.Acquire;
   try
     Cache := CacheList.FindCacheForDB(DB);
-    if (Cache <> nil) and Cache.FListUnused.Find(FastTrim(SQLText), i) then
+    if (Cache <> nil) and Cache.FListUnused.Find(CacheKey(SQLText), i) then
       TFIBQuery(Cache.FListUnused.Objects[i]).FreeHandle;
   finally
     CacheList.FLock.Release;
