@@ -12,10 +12,10 @@ type
   TpFIBAcceptCacheSchema = FIBDatabase.TFIBAcceptCacheSchemaEvent deprecated 'Use TFIBAcceptCacheSchemaEvent';
   TpFIBDBEventType = FIBDatabase.TFIBDatabaseEventType deprecated 'Use TFIBDatabaseEventType';
   TpFIBTrEventType = FIBDatabase.TFIBTransactionEventType deprecated 'Use TFIBTransactionEventType';
-  TOnLostConnectActions = FIBDatabase.TOnLostConnectActions;
+  TOnLostConnectActions = FIBDatabase.TFIBLostConnectAction;
   TFIBLostConnectEvent = FIBDatabase.TFIBLostConnectEvent;
   TFIBRestoreConnectEvent = FIBDatabase.TFIBRestoreConnectEvent;
-  TOnSQLExecute = FIBDatabase.TOnSQLExecute;
+  TOnSQLExecute = FIBDatabase.TFIBSQLExecuteEvent;
 
 const
   laTerminateApp = FIBDatabase.laTerminateApp;

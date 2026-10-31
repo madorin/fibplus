@@ -1,4 +1,4 @@
-object frmDstSQLedit: TfrmDstSQLedit
+object frmDstSQLedit: TFIBDataSetSQLEditForm
   Left = 200
   Top = 299
   Width = 742
@@ -47,7 +47,7 @@ object frmDstSQLedit: TfrmDstSQLedit
       NumGlyphs = 2
     end
   end
-  inline fSQLsEdit: TfDSSQLEdit
+  inline fSQLsEdit: TFIBDataSetSQLFrame
     Left = 0
     Top = 0
     Width = 734
@@ -60,7 +60,7 @@ object frmDstSQLedit: TfrmDstSQLedit
       Height = 398
       ActivePage = fSQLsEdit.shSelect
       inherited shSelect: TTabSheet
-        inherited SelectSQLEdit: TfSQLEdit
+        inherited SelectSQLEdit: TFIBSQLEditFrame
           Width = 726
           Height = 370
           inherited Splitter2: TSplitter
@@ -111,7 +111,7 @@ object frmDstSQLedit: TfrmDstSQLedit
         inherited grSQLKind: TRadioGroup
           Width = 726
         end
-        inherited ModifySQLEdit: TfSQLEdit
+        inherited ModifySQLEdit: TFIBSQLEditFrame
           Width = 726
           Height = 334
           inherited Splitter2: TSplitter

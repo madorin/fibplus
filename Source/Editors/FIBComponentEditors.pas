@@ -20,7 +20,7 @@ type
     procedure GetValues(Proc: TGetStrProc); override;
   end;
 
-  TFileNameProperty = class(TStringProperty)
+  TFIBFileNameProperty = class(TStringProperty)
   public
     procedure Edit; override;
     function GetAttributes: TPropertyAttributes; override;
@@ -62,14 +62,14 @@ type
     procedure Edit; override;
   end;
 
-  TEdParamToFields = class(TClassProperty)
+  TFIBParamsToFieldsProperty = class(TClassProperty)
   public
     function GetAttributes: TPropertyAttributes; override;
     function GetValue: string; override;
     procedure Edit; override;
   end;
 
-  TKeyFieldNameEdit = class(TStringProperty)
+  TFIBKeyFieldsProperty = class(TStringProperty)
     function GetAttributes: TPropertyAttributes; override;
     procedure GetValues(Proc: TGetStrProc); override;
   end;
@@ -80,18 +80,18 @@ type
     procedure GetValues(Proc: TGetStrProc); override;
   end;
 
-  TGeneratorNameEdit = class(TStringProperty)
+  TFIBGeneratorNameProperty = class(TStringProperty)
   public
     function GetAttributes: TPropertyAttributes; override;
     procedure GetValues(Proc: TGetStrProc); override;
   end;
 
-  TTableNameEdit = class(TStringProperty)
+  TFIBUpdateTableNameProperty = class(TStringProperty)
     function GetAttributes: TPropertyAttributes; override;
     procedure GetValues(Proc: TGetStrProc); override;
   end;
 
-  TTableNameEditDR = class(TStringProperty)
+  TFIBDeltaReceiverTableNameProperty = class(TStringProperty)
     function GetAttributes: TPropertyAttributes; override;
     procedure GetValues(Proc: TGetStrProc); override;
   end;
@@ -101,7 +101,7 @@ type
     procedure GetValues(Proc: TGetStrProc); override;
   end;
 
-  TFIBTRParamsEditor = class(TClassProperty)
+  TFIBTransactionParamsEditor = class(TClassProperty)
   public
     function GetAttributes: TPropertyAttributes; override;
     function GetValue: string; override;
@@ -114,7 +114,7 @@ type
     function GetVerbCount: Integer; override;
   end;
 
-  TDataSet_ID_Edit = class(TIntegerProperty)
+  TFIBDataSetIDProperty = class(TIntegerProperty)
   public
     function GetAttributes: TPropertyAttributes; override;
     procedure Edit; override;
@@ -134,11 +134,10 @@ type
     procedure Edit; override;
   end;
 
-  TFIBGenSQlEd = class(TComponentEditor)
+  TFIBDataSetEditor = class(TComponentEditor)
     DefaultEditor: IComponentEditor;
   public
     constructor Create(AComponent: TComponent; ADesigner: IDesigner); override;
-    destructor Destroy; override;
     procedure ExecuteVerb(Index: Integer); override;
     function GetVerb(Index: Integer): string; override;
     function GetVerbCount: Integer; override;
@@ -196,9 +195,9 @@ begin
 {$ENDIF}
 end;
 
-{ TFileNameProperty }
+{ TFIBFileNameProperty }
 
-procedure TFileNameProperty.Edit;
+procedure TFIBFileNameProperty.Edit;
 var
   FileOpen: TOpenDialog;
   pName: string;
@@ -212,10 +211,7 @@ begin
     with FileOpen do
     begin
       if Trim(pValue) <> '' then
-        // if DirectoryExists(ExtractFilePath(pValue)) then
-        FileOpen.InitialDir := ExtractFilePath(pValue)
-      else
-        FileOpen.InitialDir := 'c:\';
+        FileOpen.InitialDir := ExtractFilePath(pValue);
       if pName = 'DBName' then
         Filter := 'IB base files|*.gdb|IB7 base files|*.ib|Firebird base files|*.fdb|All files|*.*'
       else if pName = 'CacheFileName' then
@@ -233,7 +229,7 @@ begin
   end;
 end;
 
-function TFileNameProperty.GetAttributes: TPropertyAttributes;
+function TFIBFileNameProperty.GetAttributes: TPropertyAttributes;
 begin
   Result := [paDialog, paRevertable];
 end;
@@ -244,7 +240,6 @@ procedure TFIBDatabaseEditor.ExecuteVerb(Index: Integer);
 var
   DB: IFIBConnect;
   Script: TStrings;
-  // Connected:Boolean;
 begin
   if ObjSupports(Component, IFIBConnect, DB) then
     case Index of
@@ -263,10 +258,10 @@ begin
           begin
             if MessageDlg(SCompEditInfoFieldsNotExist, mtConfirmation, [mbOK, mbCancel], 0) <> mrOk then
               Exit;
-            AdjustFRepositaryTable(DB)
+            AdjustFieldsRepositoryTable(DB)
           end
           else
-            AdjustFRepositaryTable(DB);
+            AdjustFieldsRepositoryTable(DB);
           ShowFieldInfo(Component)
         end;
       2:
@@ -307,16 +302,12 @@ begin
         begin
           Script := TStringList.Create;
           try
-            // Connected:=GetPropValue(Component,'Connected',False);
-
             Script.Add('/***************************************');
             Script.Add('        FIBPlus repository tables ');
             Script.Add('***************************************/');
             Script.Add('');
 
-            // if not  Connected or (db.QueryValueAsStr(qryExistDomain,0,['FIB$BOOLEAN'])='0') then
             Script.Add(qryCreateBooleanDomain + ';');
-            // if not  Connected or (db.QueryValueAsStr(qryGeneratorExist,0,['FIB$FIELD_INFO_VERSION'])='0') then
             Script.Add(qryCreateFieldInfoVersionGen + ';');
             Script.Add('');
             Script.Add('/*Fields repository table*/');
@@ -526,21 +517,15 @@ begin
   end;
 end;
 
-{ TGeneratorNameEdit }
+{ TFIBGeneratorNameProperty }
 
-function TGeneratorNameEdit.GetAttributes: TPropertyAttributes;
+function TFIBGeneratorNameProperty.GetAttributes: TPropertyAttributes;
 begin
   Result := inherited GetAttributes;
   Result := Result + [paValueList]
 end;
 
-type
-  THackAutoUpdateOptions = class(TPersistent)
-  private
-    FOwner: TComponent;
-  end;
-
-procedure TGeneratorNameEdit.GetValues(Proc: TGetStrProc);
+procedure TFIBGeneratorNameProperty.GetValues(Proc: TGetStrProc);
 var
   DB: TObject;
   Dset: TComponent;
@@ -551,83 +536,52 @@ var
 begin
   if PropCount > 1 then
     Exit;
-  if not(THackAutoUpdateOptions(GetComponent(0)).FOwner is expDatasetClass) then
+  if not(TFIBAutoUpdateOptions(GetComponent(0)).Owner is expDatasetClass) then
     Exit;
-  Dset := THackAutoUpdateOptions(GetComponent(0)).FOwner;
+  Dset := TFIBAutoUpdateOptions(GetComponent(0)).Owner;
   DB := GetObjectProp(Dset, 'Database');
   if not Assigned(DB) then
     Exit;
   Qry := nil;
   Trans := nil;
   try
-
-    Trans := expTransactionClass.Create(nil);
-    SetObjectProp(Trans, 'DefaultDatabase', DB);
-
-    Qry := expQueryClass.Create(nil);
-    SetPropValue(Qry, 'ParamCheck', 'False');
-    SetObjectProp(Qry, 'Database', DB);
-    SetObjectProp(Qry, 'Transaction', Trans);
-    AssignStringsToProp(Qry, 'SQL',
-      'select RDB$GENERATOR_NAME  from RDB$GENERATORS ' +
-      'where (RDB$SYSTEM_FLAG is NULL) or (RDB$SYSTEM_FLAG = 0)' +
-      ' order by RDB$GENERATOR_NAME'
-
-      );
-    SetPropValue(Trans, 'Active', 'True');
-
     try
-      ObjSupports(Qry, IFIBQuery, iQry);
-      iQry.ExecQuery;
+      Trans := expTransactionClass.Create(nil);
+      SetObjectProp(Trans, 'DefaultDatabase', DB);
 
-      while not iQry.iEof do
-      begin
-        Proc(Trim(VarToStr(iQry.FieldValue(0, False))));
-        iQry.iNext;
+      Qry := expQueryClass.Create(nil);
+      SetPropValue(Qry, 'ParamCheck', 'False');
+      SetObjectProp(Qry, 'Database', DB);
+      SetObjectProp(Qry, 'Transaction', Trans);
+      AssignStringsToProp(Qry, 'SQL',
+        'select RDB$GENERATOR_NAME  from RDB$GENERATORS ' +
+        'where (RDB$SYSTEM_FLAG is NULL) or (RDB$SYSTEM_FLAG = 0)' +
+        ' order by RDB$GENERATOR_NAME'
+
+        );
+      SetPropValue(Trans, 'Active', 'True');
+
+      try
+        ObjSupports(Qry, IFIBQuery, iQry);
+        iQry.ExecQuery;
+
+        while not iQry.iEof do
+        begin
+          Proc(Trim(VarToStr(iQry.FieldValue(0, False))));
+          iQry.iNext;
+        end;
+        iQry.Close;
+      finally
+        SetPropValue(Trans, 'Active', 'False');
       end;
-      iQry.Close;
-    finally
-      SetPropValue(Trans, 'Active', 'False');
+    except
+      // no value list when the database cannot be read
     end;
   finally
     iQry := nil;
     Qry.free;
     Trans.free;
   end;
-
-  (* {  if not (TAutoUpdateOptions(GetComponent(0)).Owner is TFIBDataSet) then Exit;
-    Dset:= (TAutoUpdateOptions(GetComponent(0)).Owner as TFIBDataSet);}
-    if not Assigned(Dset.Database) then Exit;
-    Qry := nil; Trans := nil;
-    try
-    Trans := TFIBTransaction.Create(nil);
-    Qry := TFIBQuery.Create(nil);
-    Qry.ParamCheck:=false;
-    Qry.Database := Dset.Database;
-    Trans.DefaultDatabase := Dset.Database;
-    Qry.Transaction := Trans;
-    Qry.SQL.Text := 'select RDB$GENERATOR_NAME '+
-    'from RDB$GENERATORS '+
-    'where (RDB$SYSTEM_FLAG is NULL) or (RDB$SYSTEM_FLAG = 0)'+
-    'order by RDB$GENERATOR_NAME';
-    try
-    Trans.StartTransaction;
-    Qry.ExecQuery;
-    lSQLDA := Qry.Current;
-    while not Qry.Eof do
-    begin
-    Proc(Trim(lSQLDA.ByName['RDB$GENERATOR_NAME'].AsString));
-    lSQLDA := Qry.Next;
-    end;
-    Qry.Close;
-    finally
-    Trans.Commit;
-    end;
-
-    finally
-    Qry.Free;
-    Trans.Free;
-    end *)
 end;
 
 { TFIBTrKindEdit }
@@ -641,7 +595,7 @@ end;
 procedure TFIBTrKindEdit.GetValues(Proc: TGetStrProc);
 var
   i: Integer;
-  Keys, v: Variant;
+  Keys, KindNames: Variant;
 begin
   if PropCount > 1 then
     Exit;
@@ -651,26 +605,26 @@ begin
     Exit;
   for i := VarArrayLowBound(Keys, 1) to VarArrayHighBound(Keys, 1) do
   begin
-    v := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBTrKinds, Keys[i]], ['Name']);
-    if VarType(v) <> varBoolean then
-      Proc(v[0, 0])
+    KindNames := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBTrKinds, Keys[i]], ['Name']);
+    if VarType(KindNames) <> varBoolean then
+      Proc(KindNames[0, 0])
   end;
 end;
 
-{ TFIBTRParamsEditor }
+{ TFIBTransactionParamsEditor }
 
-procedure TFIBTRParamsEditor.Edit;
+procedure TFIBTransactionParamsEditor.Edit;
 begin
   if EditFIBTrParams(TComponent(GetComponent(0))) then
     Modified
 end;
 
-function TFIBTRParamsEditor.GetAttributes: TPropertyAttributes;
+function TFIBTransactionParamsEditor.GetAttributes: TPropertyAttributes;
 begin
   Result := inherited GetAttributes + [paDialog] - [paSubProperties];
 end;
 
-function TFIBTRParamsEditor.GetValue: string;
+function TFIBTransactionParamsEditor.GetValue: string;
 begin
   Result := '(TTRParams)'
 end;
@@ -678,6 +632,8 @@ end;
 { TFIBQueryEditor }
 
 procedure TFIBQueryEditor.ExecuteVerb(Index: Integer);
+var
+  iQry: IFIBQuery;
 begin
   case Index of
     0:
@@ -688,10 +644,14 @@ begin
         FindPropInCode(Component, 'SQL')
       end;
     1:
-      begin
-        // TFIBQuery(Component).CheckValidStatement;
-        ShowMessage(SNoErrors);
-      end;
+      if ObjSupports(Component, IFIBQuery, iQry) then
+        try
+          iQry.CheckValidStatement;
+          ShowMessage(SNoErrors);
+        except
+          on E: Exception do
+            ShowMessage(E.Message);
+        end;
   end;
 
 end;
@@ -709,24 +669,24 @@ begin
   Result := 2;
 end;
 
-{ TEdParamToFields }
+{ TFIBParamsToFieldsProperty }
 
-procedure TEdParamToFields.Edit;
+procedure TFIBParamsToFieldsProperty.Edit;
 var
   P: TObject;
 begin
   P := GetObjectProp(GetComponent(0), 'ParamsToFieldsLinks');
-  if Assigned(P) and (THackAutoUpdateOptions(GetComponent(0)).FOwner is TDataSet) then
-    if ShowEdParamToFields(TDataSet(THackAutoUpdateOptions(GetComponent(0)).FOwner), TStrings(P)) then
+  if Assigned(P) and (TFIBAutoUpdateOptions(GetComponent(0)).Owner is TDataSet) then
+    if ShowEdParamToFields(TDataSet(TFIBAutoUpdateOptions(GetComponent(0)).Owner), TStrings(P)) then
       Designer.Modified
 end;
 
-function TEdParamToFields.GetAttributes: TPropertyAttributes;
+function TFIBParamsToFieldsProperty.GetAttributes: TPropertyAttributes;
 begin
   Result := inherited GetAttributes + [paDialog] - [paSubProperties];
 end;
 
-function TEdParamToFields.GetValue: string;
+function TFIBParamsToFieldsProperty.GetValue: string;
 var
   P: TObject;
 begin
@@ -735,26 +695,19 @@ begin
     Result := '(TPARAMS_FIELDS_LINKS)'
   else
     Result := '(TParams_Fields_Links)';
-
-  { if (GetComponent(0) is TAutoUpdateOptions)
-    and (TAutoUpdateOptions(GetComponent(0)).ParamsToFieldsLinks.Count>0) then
-    Result:='(TPARAMS_FIELDS_LINKS)'
-    else
-    Result:='(TParams_Fields_Links)' }
 end;
 
-{ TKeyFieldNameEdit }
+{ TFIBKeyFieldsProperty }
 
-function TKeyFieldNameEdit.GetAttributes: TPropertyAttributes;
+function TFIBKeyFieldsProperty.GetAttributes: TPropertyAttributes;
 begin
   Result := inherited GetAttributes;
   Result := Result + [paValueList]
 end;
 
-procedure TKeyFieldNameEdit.GetValues(Proc: TGetStrProc);
+procedure TFIBKeyFieldsProperty.GetValues(Proc: TGetStrProc);
 var
   i: Integer;
-  Tables: TStrings;
   ds: TDataSet;
   ids: IFIBDataSet;
   Obj: TObject;
@@ -764,73 +717,67 @@ var
 begin
   if PropCount > 1 then
     Exit;
-  ds := (THackAutoUpdateOptions(GetComponent(0)).FOwner as TDataSet);
+  if not(TFIBAutoUpdateOptions(GetComponent(0)).Owner is TDataSet) then
+    Exit;
+  ds := TDataSet(TFIBAutoUpdateOptions(GetComponent(0)).Owner);
   if not ObjSupports(ds, IFIBDataSet, ids) then
     Exit;
-  Obj := GetObjectProp(THackAutoUpdateOptions(GetComponent(0)).FOwner, 'Database');
+  Obj := GetObjectProp(ds, 'Database');
   if not Assigned(Obj) then
-    // if not Assigned(TAutoUpdateOptions(GetComponent(0)).FOwner).Database) then
     Exit;
 
-  Tables := TStringList.Create;
   with ds do
     try
-      try
-        updTableName := GetPropValue(GetComponent(0), 'UpdateTableName');
-        if Trim(updTableName) = '' then
-        begin
-          ShowMessage('Error: UpdateTableName is empty');
-          Exit;
-        end;
-        Supports(FIBClassesExporter, IFIBClassesExporter, clExp);
+      updTableName := GetPropValue(GetComponent(0), 'UpdateTableName');
+      if Trim(updTableName) = '' then
+      begin
+        ShowMessage('Error: UpdateTableName is empty');
+        Exit;
+      end;
+      Supports(FIBClassesExporter, IFIBClassesExporter, clExp);
 
-        Stringer := clExp.iGetStringer;
-        FieldDefs.Update;
-        if FieldCount > 0 then
-          for i := 0 to Pred(FieldCount) do
-          begin
-            if (Fields[i] is TLargeIntField) or (Fields[i] is TIntegerField) or
-              ((Fields[i] is TBCDField) and (TBCDField(Fields[i]).Size = 0)) and
-              Stringer.EquelStrings(ids.GetRelationTableName(Fields[i]), updTableName, False) then
-            begin
-              Proc(Fields[i].FieldName);
-            end;
-          end
-        else
+      Stringer := clExp.iGetStringer;
+      FieldDefs.Update;
+      if FieldCount > 0 then
+        for i := 0 to Pred(FieldCount) do
         begin
-          { if not QSelect.Prepared then
-            QSelect.Prepare; }
-          ids.Prepare;
-          for i := 0 to Pred(FieldDefs.Count) do
+          if ((Fields[i] is TLargeIntField) or (Fields[i] is TIntegerField) or
+            ((Fields[i] is TBCDField) and (TBCDField(Fields[i]).Size = 0))) and
+            Stringer.EqualStrings(ids.GetRelationTableName(Fields[i]), updTableName, False) then
           begin
-            if (FieldDefs[i].DataType in [ftSmallint, ftInteger]) and
-              Stringer.EquelStrings(ids.GetRelationTableName(FieldDefs[i]), updTableName, False) then
-            begin
-              Proc(FieldDefs[i].Name);
-            end
-            else if ((FieldDefs[i].DataType = ftBCD) and (FieldDefs[i].Size = 0)
-              ) and Stringer.EquelStrings(ids.GetRelationTableName(FieldDefs[i]), updTableName, False) then
-            begin
-              Proc(FieldDefs[i].Name);
-            end;
+            Proc(Fields[i].FieldName);
+          end;
+        end
+      else
+      begin
+        ids.Prepare;
+        for i := 0 to Pred(FieldDefs.Count) do
+        begin
+          if (FieldDefs[i].DataType in [ftSmallint, ftInteger]) and
+            Stringer.EqualStrings(ids.GetRelationTableName(FieldDefs[i]), updTableName, False) then
+          begin
+            Proc(FieldDefs[i].Name);
+          end
+          else if ((FieldDefs[i].DataType = ftBCD) and (FieldDefs[i].Size = 0)
+            ) and Stringer.EqualStrings(ids.GetRelationTableName(FieldDefs[i]), updTableName, False) then
+          begin
+            Proc(FieldDefs[i].Name);
           end;
         end;
-      except
       end;
-    finally
-      Tables.free
-    end
+    except
+    end;
 end;
 
-{ TTableNameEdit }
+{ TFIBUpdateTableNameProperty }
 
-function TTableNameEdit.GetAttributes: TPropertyAttributes;
+function TFIBUpdateTableNameProperty.GetAttributes: TPropertyAttributes;
 begin
   Result := inherited GetAttributes;
   Result := Result + [paValueList]
 end;
 
-procedure TTableNameEdit.GetValues(Proc: TGetStrProc);
+procedure TFIBUpdateTableNameProperty.GetValues(Proc: TGetStrProc);
 var
   i: Integer;
   Tables: TStrings;
@@ -839,7 +786,7 @@ var
 begin
   if PropCount > 1 then
     Exit;
-  if not(THackAutoUpdateOptions(GetComponent(0)).FOwner is TDataSet) then
+  if not(TFIBAutoUpdateOptions(GetComponent(0)).Owner is TDataSet) then
     Exit;
   Tables := TStringList.Create;
   try
@@ -847,7 +794,7 @@ begin
     Stringer := clExp.iGetStringer;
 
     Stringer.AllTables
-      (TStrings(GetObjectProp(THackAutoUpdateOptions(GetComponent(0)).FOwner, 'SelectSQL')).Text, Tables);
+      (TStrings(GetObjectProp(TFIBAutoUpdateOptions(GetComponent(0)).Owner, 'SelectSQL')).Text, Tables);
     for i := 0 to Pred(Tables.Count) do
       Proc(Stringer.ExtractWord(1, Tables[i], [' ']));
   finally
@@ -862,7 +809,7 @@ const
   SQLNames: array [0 .. 4] of string = ('SelectSQL', 'InsertSQL', 'UpdateSQL', 'DeleteSQL', 'RefreshSQL');
 
 var
-  k: byte;
+  k: Byte;
   ExitToCodeEditor: Integer;
 begin
   for k := 0 to 4 do
@@ -890,7 +837,7 @@ end;
 type
   PClass = ^TClass;
 
-constructor TFIBGenSQlEd.Create(AComponent: TComponent; ADesigner: IDesigner);
+constructor TFIBDataSetEditor.Create(AComponent: TComponent; ADesigner: IDesigner);
 var
   CompClass: TClass;
 begin
@@ -904,19 +851,12 @@ begin
   end;
 end;
 
-destructor TFIBGenSQlEd.Destroy;
-begin
-  // DefaultEditor._Release;
-  // DefaultEditor.;
-  inherited Destroy
-end;
-
-function TFIBGenSQlEd.GetVerbCount: Integer;
+function TFIBDataSetEditor.GetVerbCount: Integer;
 begin
   Result := DefaultEditor.GetVerbCount + 4
 end;
 
-function TFIBGenSQlEd.GetVerb(Index: Integer): string;
+function TFIBDataSetEditor.GetVerb(Index: Integer): string;
 begin
   if Index < DefaultEditor.GetVerbCount then
     Result := DefaultEditor.GetVerb(Index)
@@ -929,12 +869,12 @@ begin
     end;
 end;
 
-procedure TFIBGenSQlEd.ExecuteVerb(Index: Integer);
+procedure TFIBDataSetEditor.ExecuteVerb(Index: Integer);
 
 var
   SText: string;
   k: Integer;
-  Reopen: boolean;
+  Reopen: Boolean;
   ErrStr: string;
   ids: IFIBDataSet;
   iQry: IFIBQuery;
@@ -948,9 +888,6 @@ begin
         try
           Reopen := Active;
           Close;
-          { QSelect.FreeHandle;
-            if Database<>nil then
-            ListTableInfo.ClearForDataBase(Database); }
           ids.Prepare;
           if Reopen then
             Open;
@@ -968,9 +905,6 @@ begin
         2:
           begin
             // try to connect
-            (* if (not Assigned(TFIBDataSet(Component).DataBase)) or
-              (not TFIBDataSet(Component).DataBase.Connected) then
-            *)
             curObj := GetObjectProp(Component, 'Database');
             if not Assigned(curObj) or not GetPropValue(curObj, 'Connected') then
             begin
@@ -1048,11 +982,11 @@ end;
 const
   ExchangeDelimeter = '#$#$';
 
-type
-  THackCondition = class
-  private
-    FEnabled: boolean;
-  end;
+// SQL string literal with doubled quotes
+function QuoteSQLString(const Value: string): string;
+begin
+  Result := '''' + StringReplace(Value, '''', '''''', [rfReplaceAll]) + '''';
+end;
 
 function GetConditionsExchangeStr(Conditions: TStrings): string;
 var
@@ -1062,7 +996,7 @@ begin
   with Conditions do
     for i := 0 to Pred(Count) do
       Result := Result + Names[i] + ExchangeDelimeter + Values[Names[i]] +
-        ExchangeDelimeter + IntToStr(Ord(THackCondition(Objects[i]).FEnabled)) + #13#10
+        ExchangeDelimeter + IntToStr(Ord(TFIBCondition(Objects[i]).Enabled)) + #13#10
 
 end;
 
@@ -1078,32 +1012,28 @@ begin
         ('INSERT INTO FIB$DATASETS_INFO (DS_ID,UPDATE_ONLY_MODIFIED_FIELDS) VALUES(' + IntToStr(DS_ID) + ',1)');
     if Length(GetPropStringValue(DataSet, 'AutoUpdateOptions.KeyFields')) > 68 then
       WidenDataSetKeyField(idb);
-    idb.Execute('Update FIB$DATASETS_INFO SET '#13#10 + 'SELECT_SQL=''' +
-      TStrings(GetObjectProp(DataSet, 'SelectSQL')).Text + ''','#13#10 +
-      'INSERT_SQL=''' + TStrings(GetObjectProp(DataSet, 'InsertSQL')).Text +
-      ''','#13#10 + 'UPDATE_SQL=''' + TStrings(GetObjectProp(DataSet,
-      'UpdateSQL')).Text + ''','#13#10 + 'DELETE_SQL=''' +
-      TStrings(GetObjectProp(DataSet, 'DeleteSQL')).Text + ''','#13#10 +
-      'REFRESH_SQL=''' + TStrings(GetObjectProp(DataSet, 'RefreshSQL')).Text +
-      ''','#13#10 + 'KEY_FIELD=''' + GetPropStringValue(DataSet,
-      'AutoUpdateOptions.KeyFields') + ''','#13#10 + 'NAME_GENERATOR=''' +
-      GetPropStringValue(DataSet, 'AutoUpdateOptions.GeneratorName') +
-      ''','#13#10 + 'DESCRIPTION=''' + GetPropStringValue(DataSet,
-      'Description') + ''','#13#10 + 'UPDATE_TABLE_NAME=''' +
-      GetPropStringValue(DataSet, 'AutoUpdateOptions.UpdateTableName') +
-      ''','#13#10 + 'UPDATE_ONLY_MODIFIED_FIELDS=''' +
-      IntToStr(GetSubPropValue(DataSet,
-      'AutoUpdateOptions.UpdateOnlyModifiedFields')) + ''','#13#10 +
-      'CONDITIONS=''' + GetConditionsExchangeStr(TStrings(GetObjectProp(DataSet,
-      'Conditions'))) + ''''#13#10 +
-
+    idb.Execute('Update FIB$DATASETS_INFO SET '#13#10 +
+      'SELECT_SQL=' + QuoteSQLString(TStrings(GetObjectProp(DataSet, 'SelectSQL')).Text) + ','#13#10 +
+      'INSERT_SQL=' + QuoteSQLString(TStrings(GetObjectProp(DataSet, 'InsertSQL')).Text) + ','#13#10 +
+      'UPDATE_SQL=' + QuoteSQLString(TStrings(GetObjectProp(DataSet, 'UpdateSQL')).Text) + ','#13#10 +
+      'DELETE_SQL=' + QuoteSQLString(TStrings(GetObjectProp(DataSet, 'DeleteSQL')).Text) + ','#13#10 +
+      'REFRESH_SQL=' + QuoteSQLString(TStrings(GetObjectProp(DataSet, 'RefreshSQL')).Text) + ','#13#10 +
+      'KEY_FIELD=' + QuoteSQLString(GetPropStringValue(DataSet, 'AutoUpdateOptions.KeyFields')) + ','#13#10 +
+      'NAME_GENERATOR=' + QuoteSQLString(GetPropStringValue(DataSet, 'AutoUpdateOptions.GeneratorName')) +
+      ','#13#10 +
+      'DESCRIPTION=' + QuoteSQLString(GetPropStringValue(DataSet, 'Description')) + ','#13#10 +
+      'UPDATE_TABLE_NAME=' + QuoteSQLString(GetPropStringValue(DataSet, 'AutoUpdateOptions.UpdateTableName')) +
+      ','#13#10 +
+      'UPDATE_ONLY_MODIFIED_FIELDS=' + QuoteSQLString(IntToStr(GetSubPropValue(DataSet,
+      'AutoUpdateOptions.UpdateOnlyModifiedFields'))) + ','#13#10 +
+      'CONDITIONS=' + QuoteSQLString(GetConditionsExchangeStr(TStrings(GetObjectProp(DataSet,
+      'Conditions')))) + #13#10 +
       'WHERE DS_ID=' + IntToStr(DS_ID));
   end
 end;
 
-procedure TFIBGenSQlEd.SaveDataSetInfo;
+procedure TFIBDataSetEditor.SaveDataSetInfo;
 var
-  vDescription: string;
   DS_ID: Integer;
   DB: TObject;
   idb: IFIBConnect;
@@ -1126,18 +1056,14 @@ begin
             Exit;
           CreateDataSetRepositoryTable(idb);
         end;
-        vDescription := GetPropValue(Component, 'Description');
-        { if not InputQuery(SCompEditSaveDataSetProperty, SCompEditDataSetDesc, vDescription) then
-          Exit;
-          //    SetPropValue(Component,'Description',vDescription); }
         SaveFIBDataSetInfo(DB, Component, DS_ID);
       end
     end;
 end;
 
-{ TDataSet_ID_Edit }
+{ TFIBDataSetIDProperty }
 
-procedure TDataSet_ID_Edit.Edit;
+procedure TFIBDataSetIDProperty.Edit;
 var
   OldID: Integer;
   DB: TObject;
@@ -1151,7 +1077,6 @@ begin
   begin
     if idb.QueryValueAsStr(qryExistTable, 0, ['FIB$DATASETS_INFO']) = '0' then
     begin
-      // if not (urDataSetInfo in DataBase.UseRepositories) then
       if not GetValueInSet(DB, 'UseRepositories', 'urDataSetInfo') then
         raise Exception.Create(SCompEditDataSetInfoForbid);
       if MessageDlg(SCompEditInfoTableNotExist, mtConfirmation, [mbOK, mbCancel], 0) <> mrOk then
@@ -1165,7 +1090,7 @@ begin
   end
 end;
 
-function TDataSet_ID_Edit.GetAttributes: TPropertyAttributes;
+function TFIBDataSetIDProperty.GetAttributes: TPropertyAttributes;
 begin
   Result := inherited GetAttributes + [paDialog];
 end;
@@ -1189,13 +1114,6 @@ end;
 
 { TFIBSQLsProperty }
 
-type
-  THackSQls = class(TPersistent)
-  private
-    FOwner: TComponent;
-
-  end;
-
 procedure TFIBSQLsProperty.Edit;
 var
   pName: string;
@@ -1212,8 +1130,8 @@ begin
     KindSQL := 3
   else
     KindSQL := 4;
-  if not FindPropInCode(THackSQls(GetComponent(0)).FOwner, pName) then
-    ShowDataSetSQLEditor(THackSQls(GetComponent(0)).FOwner, KindSQL, Designer);
+  if not FindPropInCode(TFIBSQLs(GetComponent(0)).Owner, pName) then
+    ShowDataSetSQLEditor(TFIBSQLs(GetComponent(0)).Owner, KindSQL, Designer);
 end;
 
 function TFIBSQLsProperty.GetAttributes: TPropertyAttributes;
@@ -1230,7 +1148,6 @@ end;
 
 procedure TFIBSQLPropEdit.Edit;
 begin
-  // if GetComponent(0) is TFIBQuery then
   begin
     if not FindPropInCode(TComponent(GetComponent(0)), 'SQL') then
       if ShowSQLEdit(TComponent(GetComponent(0))) then
@@ -1244,9 +1161,9 @@ begin
   Result := inherited GetAttributes + [paDialog] - [paSubProperties];
 end;
 
-{ TTableNameEditDR }
+{ TFIBDeltaReceiverTableNameProperty }
 
-function TTableNameEditDR.GetAttributes: TPropertyAttributes;
+function TFIBDeltaReceiverTableNameProperty.GetAttributes: TPropertyAttributes;
 begin
   Result := inherited GetAttributes;
   Result := Result + [paValueList]
@@ -1259,50 +1176,50 @@ const
     '(REL.RDB$SECURITY_CLASS STARTING WITH ''SQL$'') ' +
     'ORDER BY REL.RDB$RELATION_NAME';
 
-procedure TTableNameEditDR.GetValues(Proc: TGetStrProc);
+procedure TFIBDeltaReceiverTableNameProperty.GetValues(Proc: TGetStrProc);
 var
   edComponent: TPersistent;
   DB: TObject;
   Qry: TComponent;
   Trans: TObject;
   iQry: IFIBQuery;
-  trActive: boolean;
+  trActive: Boolean;
 begin
   edComponent := GetComponent(0);
   Trans := GetObjectProp(edComponent, 'Transaction');
   if not Assigned(Trans) then
     Exit;
-  trActive := GetPropValue(Trans, 'Active');
-  if not trActive then
-    SetPropValue(Trans, 'Active', True);
   DB := GetObjectProp(Trans, 'DefaultDatabase');
-  Qry := expQueryClass.Create(nil);
-  SetPropValue(Qry, 'ParamCheck', 'False');
-  SetObjectProp(Qry, 'Database', DB);
-  SetObjectProp(Qry, 'Transaction', Trans);
-  AssignStringsToProp(Qry, 'SQL', QRYTables);
+  if not Assigned(DB) then
+    Exit;
+  trActive := GetPropValue(Trans, 'Active');
+  Qry := nil;
   try
     try
-      try
-        ObjSupports(Qry, IFIBQuery, iQry);
-        iQry.ExecQuery;
+      if not trActive then
+        SetPropValue(Trans, 'Active', True);
+      Qry := expQueryClass.Create(nil);
+      SetPropValue(Qry, 'ParamCheck', 'False');
+      SetObjectProp(Qry, 'Database', DB);
+      SetObjectProp(Qry, 'Transaction', Trans);
+      AssignStringsToProp(Qry, 'SQL', QRYTables);
+      ObjSupports(Qry, IFIBQuery, iQry);
+      iQry.ExecQuery;
 
-        while not iQry.iEof do
-        begin
-          Proc(Trim(VarToStr(iQry.FieldValue('RDB$RELATION_NAME', False))));
-          iQry.iNext;
-        end;
-        iQry.Close;
-      finally
-        SetPropValue(Trans, 'Active', 'False');
+      while not iQry.iEof do
+      begin
+        Proc(Trim(VarToStr(iQry.FieldValue('RDB$RELATION_NAME', False))));
+        iQry.iNext;
       end;
+      iQry.Close;
     except
+      // no value list when the database cannot be read
     end
   finally
-    if not trActive then
-      SetPropValue(Trans, 'Active', False);
     iQry := nil;
     Qry.free;
+    if not trActive then
+      SetPropValue(Trans, 'Active', False);
   end;
 
 end;
@@ -1314,27 +1231,10 @@ var
   TableName: string;
   DelTableName, TriggerName: string;
   DB: TObject;
-  // Qry:TComponent;
   Trans: TObject;
-  iQry: IFIBQuery;
-  // trActive:boolean;
-  // ErrMessage:string;
   Script: TStrings;
   Stringer: IFIBStringer;
   clExp: IFIBClassesExporter;
-  {
-    procedure ExecStatement(const SQL:string);
-    begin
-    AssignStringsToProp(Qry,'SQL',SQL);
-    try
-    iQry.ExecQuery;
-    except
-    on E:Exception do
-    ErrMessage:=ErrMessage+#13#10+E.Message
-    end;
-    end;
-  }
-
 begin
   Trans := GetObjectProp(Component, 'Transaction');
   if not Assigned(Trans) then
@@ -1344,17 +1244,6 @@ begin
   end;
 
   DB := GetObjectProp(Trans, 'DefaultDatabase');
-  { trActive:=GetPropValue(Trans,'Active');
-    if not trActive then
-    SetPropValue(Trans,'Active',True);
-    DB:=GetObjectProp(Trans,'DefaultDatabase');
-    Qry:= expQueryClass.Create(nil);
-    SetPropValue(Qry,'ParamCheck','False');
-    SetObjectProp(Qry,'Database',DB);
-    SetObjectProp(Qry,'Transaction',Trans);
-    ObjSupports(Qry,  IFIBQuery,iQry);
-
-    ErrMessage:=''; }
   Script := TStringList.Create;
   try
     case Index of
@@ -1370,7 +1259,6 @@ begin
           Script.Add('CREATE DOMAIN FIB$TIMESTAMP AS TIMESTAMP;');
           Script.Add('CREATE GENERATOR FIB$GEN_COMMIT_NO;');
           Script.Add('CREATE GENERATOR FIB$GEN_TRANSACTION_ID;');
-          //
           Script.Add('');
           Script.Add('CREATE TABLE FIB$TRANSACTIONS(');
           Script.Add(' TRANSACTION_ID FIB$BIGINT,');
@@ -1445,10 +1333,13 @@ begin
         begin
           TableName := GetPropStringValue(Component, 'TableName');
           if Length(TableName) = 0 then
+          begin
             ShowMessage(SCompEditDeltaReceiverErr1);
+            Exit;
+          end;
 
           Script.Add('/***************************************');
-          Script.Add('Common metadata for TableChangesReader supports');
+          Script.Add('Metadata of ' + TableName + ' for TableChangesReader supports');
           if Assigned(DB) then
             Script.Add('Database: ' + GetPropStringValue(DB, 'DBName'));
           Script.Add('***************************************/');
@@ -1496,10 +1387,6 @@ begin
     end;
   finally
     Script.free;
-    // if not trActive then
-    // SetPropValue(Trans,'Active',False);
-    iQry := nil;
-    // Qry.Free;
   end
 end;
 

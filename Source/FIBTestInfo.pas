@@ -24,26 +24,26 @@ uses
 
 type
 
-  TTestVarValues = class;
-  TTestInfo = class;
+  TFIBStatisticsValue = class;
+  TFIBStatistics = class;
 
-  TTestInfo = class(TObject, ISQLStatMaker)
+  TFIBStatistics = class(TObject, IFIBSQLStatisticsMaker)
   private
-    FTestVars: TObjStringList;
+    FTestVars: TFIBObjectStringList;
     FLogFileName: string;
     FSortVariable: string;
-    FAscSort: boolean;
+    FAscSort: Boolean;
     FPrintList: TList;
-    FPrintListActual: boolean;
+    FPrintListActual: Boolean;
     FLastObjName: string;
     FPosLastObjX: Integer;
-    FActiveStatistics: boolean;
-    procedure SetActiveStatistics(const Value: boolean);
-    function GetActiveStatistics: boolean;
-    function FindVariable(const ObjName, VarName: string; var InitRes: boolean): TPosition;
-    function GetVariable(const ObjName, VarName: string; var InitRes: boolean): TTestVarValues;
-    function GetVariableByInd(Index: TPosition): TTestVarValues;
-    function GetVariableByObjInd(Index: Integer; const VarName: string): TTestVarValues;
+    FActiveStatistics: Boolean;
+    procedure SetActiveStatistics(const Value: Boolean);
+    function GetActiveStatistics: Boolean;
+    function FindVariable(const ObjName, VarName: string; var InitRes: Boolean): TFIBPosition;
+    function GetVariable(const ObjName, VarName: string; var InitRes: Boolean): TFIBStatisticsValue;
+    function GetVariableByInd(Index: TFIBPosition): TFIBStatisticsValue;
+    function GetVariableByObjInd(Index: Integer; const VarName: string): TFIBStatisticsValue;
   protected
     function QueryInterface(const IID: TGUID; out Obj): HResult; virtual; stdcall;
     function _AddRef: Integer; stdcall;
@@ -56,127 +56,97 @@ type
     function GetVarInt(const ObjName, VarName: string): Integer;
     function GetVarStr(const ObjName, VarName: string): string;
     function IncCounter(const ObjName, VarName: string): Integer;
-    procedure SetNull(const ObjName, VarName: string);
     procedure SetStringValue(const ObjName, VarName, Value: string);
     procedure SetIntValue(const ObjName, VarName: string; Value: Integer);
     function AddIntValue(const ObjName, VarName: string; Value: Integer): Integer;
 
-    procedure AddToStrings(const ObjName, VarName, Value: string);
-    procedure ClearStrings(const ObjName, VarName: string);
     function GetVarStrings(const ObjName, VarName: string): TStrings;
 
     function ObjCount: Integer;
     function ObjName(Index: Integer): String;
     procedure Clear;
-    procedure SortStatisticsForPrint(const VarName: String; Ascending: boolean);
+    procedure SortStatisticsForPrint(const VarName: String; Ascending: Boolean);
     procedure LogVarValues(const ObjName: String; const FileName: String);
     procedure SaveStatisticsToFile(const FileName: String);
     procedure SetLogFileName(const LogName: string);
     function GetLogFileName: string;
-    procedure SetLogParamsInc(const VarName: string; IncToLog: boolean);
+    procedure SetLogParamsInc(const VarName: string; IncToLog: Boolean);
     property LogFileName: string read FLogFileName write FLogFileName;
-    property Variable[Index: TPosition]: TTestVarValues read GetVariableByInd;
-    property ActiveStatistics: boolean read GetActiveStatistics write SetActiveStatistics;
+    property Variable[Index: TFIBPosition]: TFIBStatisticsValue read GetVariableByInd;
+    property ActiveStatistics: Boolean read GetActiveStatistics write SetActiveStatistics;
 
   end;
 
-  TTestVarValues = class(TCallObject)
+  TFIBStatisticsValue = class(TFIBCreatableObject)
   private
     FValue: Integer;
     FBufValue: Cardinal;
     FStringVal: string;
-    FLogStrValue: boolean;
-    FDoLog: boolean;
+    FLogStrValue: Boolean;
+    FDoLog: Boolean;
     FStrings: TStrings;
   public
     constructor Create; override;
     destructor Destroy; override;
   end;
 
-  TTestProc = procedure;
-  TTestProcObj = procedure of object;
-  TTestFuncStr = function: string;
-
-  // Time Test routine functions
-procedure TestExecProc(Proc: TTestProc; Count: Integer);
-procedure TestExecProcObj(Proc: TTestProcObj; Count: Integer);
-function TestExecFuncStr(Func: TTestFuncStr; Count: Integer): string;
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TTestInfo = TFIBStatistics deprecated 'Use TFIBStatistics';
+  TTestVarValues = TFIBStatisticsValue deprecated 'Use TFIBStatisticsValue';
 
 implementation
 
-procedure TestExecProc(Proc: TTestProc; Count: Integer);
-var
-  i: Integer;
-begin
-  for i := 1 to Count do
-    Proc
-end;
+{ TFIBStatisticsValue }
 
-procedure TestExecProcObj(Proc: TTestProcObj; Count: Integer);
-var
-  i: Integer;
-begin
-  for i := 1 to Count do
-    Proc
-end;
-
-function TestExecFuncStr(Func: TTestFuncStr; Count: Integer): string;
-var
-  i: Integer;
-begin
-  for i := 1 to Count do
-    Result := Func
-end;
-
-{ TTestVarValues }
-
-constructor TTestVarValues.Create;
+constructor TFIBStatisticsValue.Create;
 begin
   inherited Create;
   FDoLog := true;
   FStrings := TStringList.Create;
 end;
 
-destructor TTestVarValues.Destroy; // override;
+destructor TFIBStatisticsValue.Destroy; // override;
 begin
   FStrings.Free;
   inherited Destroy;
 end;
 
-{ TTestInfo }
-constructor TTestInfo.Create;
+{ TFIBStatistics }
+constructor TFIBStatistics.Create;
 begin
   inherited Create;
-  FTestVars := TObjStringList.Create(Self, true);
+  FTestVars := TFIBObjectStringList.Create(Self, true);
   FPrintList := TList.Create;
+  FPosLastObjX := -1;
 end;
 
-destructor TTestInfo.Destroy; // override;
+destructor TFIBStatistics.Destroy; // override;
 begin
   FTestVars.Free;
   FPrintList.Free;
   inherited Destroy;
 end;
 
-function TTestInfo.GetVariableByObjInd(Index: Integer; const VarName: string): TTestVarValues;
+function TFIBStatistics.GetVariableByObjInd(Index: Integer; const VarName: string): TFIBStatisticsValue;
 var
   Index2: Integer;
-  InitRes: boolean;
+  InitRes: Boolean;
 begin
-  with TObjStringList(FTestVars.Objects[Index]) do
+  with TFIBObjectStringList(FTestVars.Objects[Index]) do
   begin
-    Index2 := FindObject(VarName, TTestVarValues, InitRes);
-    Result := TTestVarValues(Objects[Index2])
+    Index2 := FindObject(VarName, TFIBStatisticsValue, InitRes);
+    Result := TFIBStatisticsValue(Objects[Index2])
   end;
 end;
 
-function TTestInfo.FindVariable(const ObjName, VarName: string; var InitRes: boolean): TPosition;
+function TFIBStatistics.FindVariable(const ObjName, VarName: string; var InitRes: Boolean): TFIBPosition;
 begin
   with FTestVars do
     if Find(ObjName, Result.x) then
-      with TObjStringList(Objects[Result.x]) do
+      with TFIBObjectStringList(Objects[Result.x]) do
       begin
-        Result.y := FindObject(VarName, TTestVarValues, InitRes);
+        Result.y := FindObject(VarName, TFIBStatisticsValue, InitRes);
         if InitRes then
         begin
           FPrintListActual := false;
@@ -186,55 +156,55 @@ begin
     else
     begin
       InitRes := true;
-      Result.x := AddObject(ObjName, TObjStringList.Create(nil, false));
-      Result.y := TObjStringList(Objects[Result.x]).AddObject(VarName, TTestVarValues.Create);
+      Result.x := AddObject(ObjName, TFIBObjectStringList.Create(nil, false));
+      Result.y := TFIBObjectStringList(Objects[Result.x]).AddObject(VarName, TFIBStatisticsValue.Create);
       Variable[Result].FValue := 0;
       FPrintListActual := false;
     end
 end;
 
-function TTestInfo._AddRef: Integer;
+function TFIBStatistics._AddRef: Integer;
 begin
   Result := -1
 end;
 
-function TTestInfo._Release: Integer;
+function TFIBStatistics._Release: Integer;
 begin
   Result := -1
 end;
 
-function TTestInfo.QueryInterface(const IID: TGUID; out Obj): HResult;
+function TFIBStatistics.QueryInterface(const IID: TGUID; out Obj): HResult;
 begin
   Result := E_NOINTERFACE
 end;
 
-function TTestInfo.GetVariableByInd(Index: TPosition): TTestVarValues;
+function TFIBStatistics.GetVariableByInd(Index: TFIBPosition): TFIBStatisticsValue;
 begin
   with FTestVars do
-    Result := TTestVarValues(TObjStringList(Objects[Index.x]).Objects[Index.y])
+    Result := TFIBStatisticsValue(TFIBObjectStringList(Objects[Index.x]).Objects[Index.y])
 end;
 
-function TTestInfo.GetVariable(const ObjName, VarName: string; var InitRes: boolean): TTestVarValues;
+function TFIBStatistics.GetVariable(const ObjName, VarName: string; var InitRes: Boolean): TFIBStatisticsValue;
 var
-  vi: TPosition;
+  FoundPos: TFIBPosition;
 begin
-  if ObjName = FLastObjName then
+  if (FPosLastObjX >= 0) and (ObjName = FLastObjName) then
   begin
     Result := GetVariableByObjInd(FPosLastObjX, VarName);
     InitRes := false;
   end
   else
   begin
-    vi := FindVariable(ObjName, VarName, InitRes);
-    Result := Variable[vi];
+    FoundPos := FindVariable(ObjName, VarName, InitRes);
+    Result := Variable[FoundPos];
     FLastObjName := ObjName;
-    FPosLastObjX := vi.x;
+    FPosLastObjX := FoundPos.x;
   end;
 end;
 
-function TTestInfo.IncCounter(const ObjName, VarName: string): Integer;
+function TFIBStatistics.IncCounter(const ObjName, VarName: string): Integer;
 var
-  b: boolean;
+  b: Boolean;
 begin
   with GetVariable(ObjName, VarName, b) do
   begin
@@ -247,9 +217,9 @@ begin
   end
 end;
 
-procedure TTestInfo.SetLogParamsInc(const VarName: string; IncToLog: boolean);
+procedure TFIBStatistics.SetLogParamsInc(const VarName: string; IncToLog: Boolean);
 var
-  b: boolean;
+  b: Boolean;
   i: Integer;
 begin
   for i := 0 to Pred(FTestVars.Count) do
@@ -259,23 +229,10 @@ begin
     end
 end;
 
-procedure TTestInfo.SetNull(const ObjName, VarName: string);
-var
-  b: boolean;
-  tv: TTestVarValues;
-begin
-  tv := GetVariable(ObjName, VarName, b);
-  with tv do
-  begin
-    FValue := 0;
-    FBufValue := 0;
-    FStringVal := '';
-  end
-end;
 
-function TTestInfo.AddIntValue(const ObjName, VarName: string; Value: Integer): Integer;
+function TFIBStatistics.AddIntValue(const ObjName, VarName: string; Value: Integer): Integer;
 var
-  b: boolean;
+  b: Boolean;
 begin
   with GetVariable(ObjName, VarName, b) do
   begin
@@ -288,9 +245,9 @@ begin
   end
 end;
 
-procedure TTestInfo.SetIntValue(const ObjName, VarName: string; Value: Integer);
+procedure TFIBStatistics.SetIntValue(const ObjName, VarName: string; Value: Integer);
 var
-  b: boolean;
+  b: Boolean;
 begin
   with GetVariable(ObjName, VarName, b) do
   begin
@@ -298,10 +255,10 @@ begin
   end
 end;
 
-procedure TTestInfo.SetStringValue(const ObjName, VarName, Value: string);
+procedure TFIBStatistics.SetStringValue(const ObjName, VarName, Value: string);
 var
-  b: boolean;
-  tv: TTestVarValues;
+  b: Boolean;
+  tv: TFIBStatisticsValue;
 begin
   tv := GetVariable(ObjName, VarName, b);
   with tv do
@@ -311,10 +268,10 @@ begin
   end
 end;
 
-function TTestInfo.FixStartTime(const ObjName, VarName: string): Cardinal;
+function TFIBStatistics.FixStartTime(const ObjName, VarName: string): Cardinal;
 var
-  b: boolean;
-  tv: TTestVarValues;
+  b: Boolean;
+  tv: TFIBStatisticsValue;
 begin
 
   tv := GetVariable(ObjName, VarName, b);
@@ -326,10 +283,10 @@ begin
   end
 end;
 
-function TTestInfo.FixEndTime(const ObjName, VarName: string): Integer;
+function TFIBStatistics.FixEndTime(const ObjName, VarName: string): Integer;
 var
-  b: boolean;
-  tv: TTestVarValues;
+  b: Boolean;
+  tv: TFIBStatisticsValue;
 begin
   tv := GetVariable(ObjName, VarName, b);
   with tv do
@@ -341,9 +298,9 @@ begin
   end;
 end;
 
-function TTestInfo.GetVarStr(const ObjName, VarName: string): string;
+function TFIBStatistics.GetVarStr(const ObjName, VarName: string): string;
 var
-  b: boolean;
+  b: Boolean;
 begin
 
   with GetVariable(ObjName, VarName, b) do
@@ -352,9 +309,9 @@ begin
   end;
 end;
 
-function TTestInfo.GetVarInt(const ObjName, VarName: string): Integer;
+function TFIBStatistics.GetVarInt(const ObjName, VarName: string): Integer;
 var
-  b: boolean;
+  b: Boolean;
 begin
   with GetVariable(ObjName, VarName, b) do
   begin
@@ -362,7 +319,7 @@ begin
   end;
 end;
 
-procedure TTestInfo.SaveStatisticsToFile(const FileName: string);
+procedure TFIBStatistics.SaveStatisticsToFile(const FileName: string);
 var
   i: Integer;
   VarIndex: Pointer;
@@ -375,7 +332,7 @@ begin
       LogVarValues(FTestVars[i], FileName)
 end;
 
-procedure TTestInfo.LogVarValues(const ObjName: string; const FileName: string);
+procedure TFIBStatistics.LogVarValues(const ObjName: string; const FileName: string);
 var
   F: TextFile;
   S: string;
@@ -390,7 +347,7 @@ begin
     System.Append(F)
   else
     ReWrite(F);
-  with TObjStringList(FTestVars.Objects[x]) do
+  with TFIBObjectStringList(FTestVars.Objects[x]) do
     try
       S := ObjName + ' : ';
       Writeln(F, S);
@@ -410,55 +367,37 @@ begin
     end;
 end;
 
-function TTestInfo.GetLogFileName: string;
+function TFIBStatistics.GetLogFileName: string;
 begin
   Result := FLogFileName;
 end;
 
-procedure TTestInfo.SetLogFileName(const LogName: string);
+procedure TFIBStatistics.SetLogFileName(const LogName: string);
 begin
   FLogFileName := LogName;
 end;
 
-procedure TTestInfo.Clear;
+procedure TFIBStatistics.Clear;
 begin
   FTestVars.FullClear;
+  FLastObjName := '';
+  FPosLastObjX := -1;
   FPrintListActual := false;
 end;
 
-function TTestInfo.ObjCount: Integer;
+function TFIBStatistics.ObjCount: Integer;
 begin
   Result := FTestVars.Count
 end;
 
-function TTestInfo.ObjName(Index: Integer): String;
+function TFIBStatistics.ObjName(Index: Integer): String;
 begin
   Result := FTestVars[Index]
 end;
 
-procedure TTestInfo.AddToStrings(const ObjName, VarName, Value: string);
+function TFIBStatistics.GetVarStrings(const ObjName, VarName: string): TStrings;
 var
-  b: boolean;
-begin
-  with GetVariable(ObjName, VarName, b) do
-  begin
-    FStrings.Add(Value);
-  end
-end;
-
-procedure TTestInfo.ClearStrings(const ObjName, VarName: string);
-var
-  b: boolean;
-begin
-  with GetVariable(ObjName, VarName, b) do
-  begin
-    FStrings.Clear;
-  end
-end;
-
-function TTestInfo.GetVarStrings(const ObjName, VarName: string): TStrings;
-var
-  b: boolean;
+  b: Boolean;
 begin
   with GetVariable(ObjName, VarName, b) do
   begin
@@ -466,11 +405,11 @@ begin
   end
 end;
 
-threadvar SortTestInfo: TTestInfo;
+threadvar SortTestInfo: TFIBStatistics;
 
 function CompareItems(Item1, Item2: Pointer): Integer;
 var
-  v, v1: TTestVarValues;
+  v, v1: TFIBStatisticsValue;
 begin
   if SortTestInfo = nil then
     Result := 0
@@ -499,7 +438,7 @@ begin
     end
 end;
 
-procedure TTestInfo.SortStatisticsForPrint(const VarName: string; Ascending: boolean);
+procedure TFIBStatistics.SortStatisticsForPrint(const VarName: string; Ascending: Boolean);
 var
   i: Integer;
 begin
@@ -518,12 +457,12 @@ begin
   FPrintListActual := true;
 end;
 
-function TTestInfo.GetActiveStatistics: boolean;
+function TFIBStatistics.GetActiveStatistics: Boolean;
 begin
   Result := FActiveStatistics
 end;
 
-procedure TTestInfo.SetActiveStatistics(const Value: boolean);
+procedure TFIBStatistics.SetActiveStatistics(const Value: Boolean);
 begin
   FActiveStatistics := Value
 end;

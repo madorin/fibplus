@@ -13,10 +13,10 @@ type
 
   TOrderStringList = class(TStringList)
   protected
-    function GetAscending(Index: Integer): boolean;
-    procedure SetAscending(Index: Integer; Value: boolean);
+    function GetAscending(Index: Integer): Boolean;
+    procedure SetAscending(Index: Integer; Value: Boolean);
   public
-    property Ascending[Index: Integer]: boolean read GetAscending write SetAscending;
+    property Ascending[Index: Integer]: Boolean read GetAscending write SetAscending;
   end;
 
   TForm1 = class(TForm)
@@ -36,7 +36,7 @@ type
     procedure DBGrid1TitleClick(Column: TColumn);
     procedure FormCreate(Sender: TObject);
     procedure Button1Click(Sender: TObject);
-    procedure FormCloseQuery(Sender: TObject; var CanClose: boolean);
+    procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure RadioButton1Click(Sender: TObject);
   private
@@ -56,20 +56,20 @@ implementation
 {$I FIBExamples.inc}
 { TOrderStringList }
 
-function TOrderStringList.GetAscending(Index: Integer): boolean;
+function TOrderStringList.GetAscending(Index: Integer): Boolean;
 begin
-  Result := boolean(Integer(Objects[Index]));
+  Result := Boolean(Integer(Objects[Index]));
 end;
 
-procedure TOrderStringList.SetAscending(Index: Integer; Value: boolean);
+procedure TOrderStringList.SetAscending(Index: Integer; Value: Boolean);
 begin
-  Objects[Index] := pointer(Integer(Value));
+  Objects[Index] := Pointer(Integer(Value));
 end;
 
 { TMainForm }
 procedure TForm1.DBGrid1TitleClick(Column: TColumn);
 const
-  OrderStr: array [boolean] of string = ('(DESC)', '(ASC)');
+  OrderStr: array [Boolean] of string = ('(DESC)', '(ASC)');
 var
   aField: string;
   aFieldIndex: Integer;
@@ -110,7 +110,7 @@ end;
 
 procedure TForm1.ReSort;
 var
-  Orders: array of boolean;
+  Orders: array of Boolean;
   Index: Integer;
 begin
   if SortFields.Count = 0 then
@@ -143,7 +143,7 @@ begin
   end;
 end;
 
-procedure TForm1.FormCloseQuery(Sender: TObject; var CanClose: boolean);
+procedure TForm1.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
   CanClose := MessageDlg('This will end your ' + QuotedStr(Caption) +
     ' session. Proceed?', mtConfirmation, [mbOk, mbCancel], 0) = mrOk;

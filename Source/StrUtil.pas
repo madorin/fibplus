@@ -32,95 +32,65 @@ uses
 
 type
 
-  TPosition = record
-    X: Longint;
-    Y: Longint;
+  TFIBPosition = record
+    X: LongInt;
+    Y: LongInt;
   end;
 
-  TCharSet = set of AnsiChar;
+  TFIBAnsiCharSet = set of AnsiChar;
 
-function Position(AX, AY: Integer): TPosition;
+function Position(AX, AY: Integer): TFIBPosition;
 // from RX
 function MakeStr(C: Char; N: Integer): string;
-function StrAsFloat(S: string): double;
 
 function ToClientDateFmt(D: string; caseFmt: Byte): string;
-function ExtractWord(Num: Integer; const Str: string; const WordDelims: TCharSet): string;
-// function ExtractLastWord(const Str: String;const  WordDelims:TCharSet):String;
-function WordCount(const S: string; const WordDelims: TCharSet): Integer;
+function ExtractWord(Num: Integer; const Str: string; const WordDelims: TFIBAnsiCharSet): string;
+function WordCount(const S: string; const WordDelims: TFIBAnsiCharSet): Integer;
 // from SOHOLIB
 
-function AnsiUpperCaseA(const S: AnsiString): AnsiString;
-function CompareStrWA(const S1: string; const S2: AnsiString): Integer;
-// function AnsiCompareTextWA(const S1,S2: Pointer): Integer;
 function AnsiCompareTextAA(const S1, S2: AnsiString): Integer;
 
-function WildStringCompare(FirstString, SecondString: string): Boolean;
-function MaskCompare(const AString, Mask: String): Boolean;
 function SQLMaskCompare(const AString, Mask: String): Boolean; overload;
-function SQLMaskCompareAW(const AString: AnsiString; const Mask: string): Boolean;
 function SQLMaskCompareAA(const AString, Mask: AnsiString): Boolean;
-function SQLMaskCompare(const AString, Mask: Widestring): Boolean; overload;
-// function WldIndexOf(ts:TStrings;const Value:AnsiString;CaseSensitive:Boolean):Integer;
+function SQLMaskCompare(const AString, Mask: WideString): Boolean; overload;
 
 // from Me
 
-function TrimCLRF(const S: String): String;
+function TrimCRLF(const S: String): String;
 
-{ procedure CopyChars(const Src:Ansistring; var  Dest:Ansistring;
-  StartInSrc,StartInDest,Count:Integer
-  ); }
 function ReplaceStr(const S, Srch, Replace: string): string;
 
 function ReplaceStrInSubstr(const Source: string; const Srch, Replace: string; BeginPos, EndPos: Integer): string;
 function ReplaceCIStr(const S, Srch, Replace: string; Ansi: Boolean = True): string;
-function ReplaceStrCIInSubstr(const Source: string; const Srch, Replace: string; BeginPos, EndPos: Integer): string;
 
 function FastUpperCase(const S: string): string; inline;
 procedure DoUpperCase(var S: string; FirstPos: Integer = 1; LastPos: Integer = 0);
 procedure DoAnsiUpperCase(var S: AnsiString); overload;
-procedure DoAnsiUpperCase(var S: string); overload;
 
-procedure DoWideUpperCase(var S: Widestring);
-procedure DoUtf8Decode(const S: PAnsiChar; StrLen: Integer; var ws: Widestring); overload;
-procedure DoUtf8Decode(const S: AnsiString; var ws: Widestring); overload;
-procedure DoUtf8Decode(const S: variant; var ws: Widestring); overload;
-function EquelStrings(const S, S1: string; CaseSensitive: Boolean): Boolean;
+procedure DoWideUpperCase(var S: WideString);
+function EqualStrings(const S, S1: string; CaseSensitive: Boolean): Boolean;
 
 function iifStr(Condition: Boolean; const Str1, Str2: string): string;
-function iifVariant(Condition: Boolean; const Var1, Var2: variant): variant;
-function StrOnMask(const StrIn, MaskIn, MaskOut: string): string;
-function StrIsInteger(const Str: string): Boolean;
 
 function FormatIdentifierValue(Dialect: Integer; const Value: string): string; inline;
 function FormatIdentifier(Dialect: Integer; const Value: string): string; inline;
-function NormalizeName(Dialect: Integer; const Name: string): string; inline;
 function UnquoteIdentifier(const Value: string): string;
 function NormalizeIdentifier(Dialect: Integer; const Value: string): string;
 function EasyFormatIdentifier(Dialect: Integer; const Value: string; DoEasy: Boolean): string; inline;
-function EquelNames(CI: Boolean; const Value, Value1: string): Boolean; inline;
+function EqualNames(CI: Boolean; const Value, Value1: string): Boolean; inline;
 function NeedQuote(const Name: string): Boolean;
 function EasyNeedQuote(const Name: string): Boolean;
 
 function PosCh(aCh: Char; const S: string): Integer;
 function PosCh1(aCh: Char; const S: string; StartPos: Integer): Integer; overload;
-function PosCh1(aCh: AnsiChar; const S: AnsiString; StartPos: Integer): Integer; overload;
 function PosCI(const Substr, Str: string): Integer; inline;
-function PosExt(const Substr, Str: string; BegSub, EndSub: TCharSet): Integer; inline;
-function PosExtCI(const Substr, Str: string; BegSub, EndSub: TCharSet; AnsiUpper: Boolean = True): Integer;
+function PosExt(const Substr, Str: string; BegSub, EndSub: TFIBAnsiCharSet): Integer; inline;
+function PosExtCI(const Substr, Str: string; BegSub, EndSub: TFIBAnsiCharSet; AnsiUpper: Boolean = True): Integer;
 
 function PosInSubstr(const Substr, Str: string; BeginPos, EndPos: Integer): Integer;
 
 function PosInRight(const Substr, Str: string; BeginPos: Integer): Integer;
 
-function PosInSubstrCI(const SearchStr, Str: string; BeginPos, EndPos: Integer): Integer;
-
-function PosInSubstrExt(const SearchStr: string; Str: string; BeginPos, EndPos: Integer; BegSub, EndSub: TCharSet): Integer;
-
-function PosInSubstrCIExt(const SearchStr, Str: string; BeginPos, EndPos: Integer; BegSub, EndSub: TCharSet): Integer;
-
-function FirstPos(Search: array of Char; const InString: string): Integer; overload;
-function FirstPos(Search: array of AnsiChar; const InString: AnsiString): Integer; overload;
 function LastChar(const Str: string): Char;
 
 function QuotedStr(const S: string): string;
@@ -129,22 +99,14 @@ function CutQuote(const S: String): string;
 function StringInArray(const S: string; const a: array of string): Boolean;
 function IsBlank(const Str: string): Boolean;
 function IsBeginPartStr(const PartStr, TargetStr: AnsiString): Boolean; overload;
-function IsBeginPartStrWA(const PartStr: string; const TargetStr: AnsiString): Boolean;
-function IsBeginPartStrVarA(const PartStr: variant; const TargetStr: AnsiString): Boolean;
-function IsBeginPartStr(const PartStr, TargetStr: Widestring): Boolean; overload;
+function IsBeginPartStr(const PartStr, TargetStr: WideString): Boolean; overload;
 // Ansistring procedures
 procedure DoLowerCase(var Str: string); overload;
-procedure DoLowerCase(var Str: AnsiString); overload;
 procedure DoTrim(var Str: string);
 
-// procedure DoTrimTo(const Source:Ansistring ;var Dest:Ansistring);
-function VarTrimRight(const Str: variant): variant;
-procedure DoTrimRight(var Str: string); overload;
-procedure DoTrimRight(var Str: Widestring); overload;
-procedure DoTrimRight(var Str: AnsiString); overload;
+function VarTrimRight(const Str: Variant): Variant;
+procedure DoTrimRight(var Str: WideString); overload;
 procedure DoCopy(const Source: string; var Dest: string; Index, Count: Integer); overload;
-procedure DoCopy(const Source: AnsiString; var Dest: AnsiString; Index, Count: Integer); overload;
-// function  StrTrimmedLen(Str:PChar):Integer;
 
 function FastTrim(const S: string): string;
 function FastCopy(const S: string; Index: Integer; Count: Integer): string; overload; inline;
@@ -155,7 +117,7 @@ procedure SLDifference(ASL, BSL: TStringList; ResultSL: TStrings);
 function EmptyStrings(SL: TStrings): Boolean;
 procedure DeleteEmptyStr(Src: TStrings);
 function NonAnsiSortCompareStrings(SL: TStringList; Index1, Index2: Integer): Integer;
-function FindInDiapazon(SL: TStringList; const S: String;
+function FindInRange(SL: TStringList; const S: String;
   const StartIndex, EndIndex: Integer; AnsiCompare: Boolean;
   var Index: Integer): Boolean;
 function NonAnsiIndexOf(SL: TStringList; const S: string): Integer; // Non Ansi
@@ -163,7 +125,6 @@ function NonAnsiIndexOf(SL: TStringList; const S: string): Integer; // Non Ansi
 procedure GetNameAndValue(const S: string; var Name, Value: string);
 
 function StrToDateFmt(const ADate, Fmt: string): TDateTime;
-function DateToSQLStr(const ADate: TDateTime): string;
 function ValueFromStr(const Str: string): string;
 
 function Q_StrLen(P: PAnsiChar): Cardinal;
@@ -176,7 +137,6 @@ function GUIDAsString(const AGUID: TGUID): AnsiString; // fast GUIDToString
 procedure GUIDAsStringToPChar(const AGUID: PGUID; Dest: PAnsiChar);
 function StringAsGUID(const AStr: AnsiString): TGUID;
 function CompareStrAndGuid(GUID: PGUID; const Str: AnsiString): Integer;
-function CompareStrAndGuidP(GUID: PGUID; const Str: PAnsiString): Integer;
 function IsEqualGUIDs(const guid1, guid2: TGUID): Boolean;
 
 // Value of a hexadecimal digit, -1 for any other character
@@ -188,7 +148,11 @@ function TryHexToInt64(const S: string; out Value: Int64): Boolean;
 
 function IsNumericStr(const Str: string): Boolean;
 function IsEmptyStr(const Str: string): Boolean;
-function CompareStrTrimmed(const Str1, Str2: PChar; Len: Integer): Integer;
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TPosition = TFIBPosition deprecated 'Use TFIBPosition';
+  TCharSet = TFIBAnsiCharSet deprecated 'Use TFIBAnsiCharSet';
 
 implementation
 
@@ -251,60 +215,15 @@ begin
   Result := True;
 end;
 
-function CompareStrTrimmed(const Str1, Str2: PChar; Len: Integer): Integer;
-var
-  i: Integer;
-begin
-  // Str2 must be trimmed
-  while Str2[Len - 1] < #33 do
-    Dec(Len);
-  i := 0;
-  while i < Len do
-  begin
-    if Str1[i] > Str2[i] then
-    begin
-      Result := 1;
-      Exit;
-    end
-    else if Str1[i] < Str2[i] then
-    begin
-      Result := -1;
-      Exit;
-    end
-    else
-      Inc(i)
-  end;
-  Result := 0;
-end;
-
 // GUID text: ASCII
 function CompareStrAndGuid(GUID: PGUID; const Str: AnsiString): Integer;
 begin
   Result := CompareStr(string(Str), string(GUIDAsString(GUID^)))
 end;
 
-function CompareStrAndGuidP(GUID: PGUID; const Str: PAnsiString): Integer;
-begin
-  Result := CompareStr(string(Str^), string(GUIDAsString(GUID^)))
-end;
-
-function CompareStrWA(const S1: string; const S2: AnsiString): Integer;
-begin
-  // Result :=CompareStr(S1,S2)
-  if S1 <> string(S2) then
-    Result := 1
-  else
-    Result := 0
-end;
-
 function AnsiCompareTextAA(const S1, S2: AnsiString): Integer;
 begin
   Result := AnsiCompareText(string(S1), string(S2))
-end;
-
-function AnsiUpperCaseA(const S: AnsiString): AnsiString;
-begin
-  Result := AnsiString(AnsiUpperCase(string(S)))
 end;
 
 function IsEqualGUIDs(const guid1, guid2: TGUID): Boolean;
@@ -542,14 +461,6 @@ begin
   Result := StrToDateTime(ADate, FS);
 end;
 
-function DateToSQLStr(const ADate: TDateTime): string;
-var
-  Year, Month, Day: Word;
-begin
-  DecodeDate(ADate, Year, Month, Day);
-  Result := IntToStr(Day) + '.' + IntToStr(Month) + '.' + IntToStr(Year)
-end;
-
 function ValueFromStr(const Str: string): string;
 var
   P: Integer;
@@ -561,7 +472,7 @@ begin
     Result := Copy(Str, P + 1, MaxInt)
 end;
 
-function IsBeginPartStr(const PartStr, TargetStr: Widestring): Boolean;
+function IsBeginPartStr(const PartStr, TargetStr: WideString): Boolean;
 var
   i, L: Integer;
 begin
@@ -580,34 +491,6 @@ begin
       end;
     Result := True;
   end;
-end;
-
-function IsBeginPartStrWA(const PartStr: string; const TargetStr: AnsiString): Boolean;
-var
-  i, L: Integer;
-  wTargStr: Widestring;
-begin
-  L := Length(PartStr);
-  if L = 0 then
-    Result := True
-  else if L > Length(TargetStr) then
-    Result := False
-  else
-  begin
-    wTargStr := WideString(TargetStr);
-    for i := 1 to L do
-      if PartStr[i] <> wTargStr[i] then
-      begin
-        Result := False;
-        Exit;
-      end;
-    Result := True;
-  end;
-end;
-
-function IsBeginPartStrVarA(const PartStr: variant; const TargetStr: AnsiString): Boolean;
-begin
-  Result := IsBeginPartStrWA(PartStr, TargetStr)
 end;
 
 function IsBeginPartStr(const PartStr, TargetStr: AnsiString): Boolean;
@@ -639,15 +522,6 @@ begin
   while (L > 0) and (Str[L] <= ' ') do
     Dec(L);
   Result := L = 0;
-end;
-
-procedure DoLowerCase(var Str: AnsiString);
-var
-  i: Integer;
-begin
-  for i := Length(Str) downto 1 do
-    if (Str[i] >= 'A') and (Str[i] <= 'Z') then
-      Inc(Str[i], 32)
 end;
 
 procedure DoLowerCase(var Str: string);
@@ -685,10 +559,10 @@ begin
     Delete(Str, 1, Left - 1);
 end;
 
-function VarTrimRight(const Str: variant): variant;
+function VarTrimRight(const Str: Variant): Variant;
 var
   i: Integer;
-  ws: Widestring;
+  ws: WideString;
   S: string;
 begin
   case VarType(Str) of
@@ -721,7 +595,7 @@ begin
   end;
 end;
 
-procedure DoTrimRight(var Str: string);
+procedure DoTrimRight(var Str: WideString);
 var
   i: Integer;
 begin
@@ -730,64 +604,6 @@ begin
     Dec(i);
   if i < Length(Str) then
     SetLength(Str, i)
-end;
-
-procedure DoTrimRight(var Str: Widestring);
-var
-  i: Integer;
-begin
-  i := Length(Str);
-  while (i > 0) and (Str[i] = ' ') do
-    Dec(i);
-  if i < Length(Str) then
-    SetLength(Str, i)
-end;
-
-procedure DoTrimRight(var Str: AnsiString);
-var
-  i: Integer;
-  P, p1: PAnsiChar;
-begin
-  { I := Length(Str);
-    while (I > 0) and (Str[I] <= ' ') do Dec(I);
-    if I< Length(Str) then  SetLength(Str,I) }
-
-  i := Length(Str);
-  if i > 0 then
-  begin
-    P := PAnsiChar(Pointer(Str));
-    p1 := P;
-    Inc(p1, i - 1);
-    if p1^ = ' ' then
-    begin
-      repeat
-        Dec(p1);
-        if p1^ <> ' ' then
-        begin
-          SetLength(Str, p1 - P + 1);
-          Exit
-        end;
-      until (p1 = P);
-      Str := '';
-    end
-  end
-end;
-
-procedure DoCopy(const Source: AnsiString; var Dest: AnsiString; Index, Count: Integer);
-var
-  L: Integer;
-begin
-  L := Length(Source) - Index + 1;
-  if L > Count then
-    L := Count;
-  if L <= 0 then
-    Dest := ''
-  else
-  begin
-    if Length(Dest) <> L then
-      SetLength(Dest, L);
-    Move(Source[Index], Dest[1], L * SizeOf(AnsiChar));
-  end;
 end;
 
 procedure DoCopy(const Source: string; var Dest: string; Index, Count: Integer);
@@ -850,7 +666,7 @@ begin
   Result := False;
   for i := Low(a) to High(a) do
   begin
-    Result := EquelNames(False, S, a[i]);
+    Result := EqualNames(False, S, a[i]);
     if Result then
       Exit;
   end;
@@ -864,7 +680,7 @@ begin
     Result := Value;
 end;
 
-function EquelNames(CI: Boolean; const Value, Value1: string): Boolean;
+function EqualNames(CI: Boolean; const Value, Value1: string): Boolean;
 begin
   if Length(Value) <> Length(Value1) then
     Result := False
@@ -911,16 +727,6 @@ begin
     Result := Value
 end;
 
-function NormalizeName(Dialect: Integer; const Name: string): string;
-begin
-  if Dialect < 3 then
-    Result := UpperCase(Name)
-  else if (Length(Name) > 0) and (Name[1] = '"') then
-    Result := Name
-  else
-    Result := UpperCase(Name)
-end;
-
 // An identifier as the server stores it: '"My ""T"""' -> 'My "T"', 'abc' -> 'ABC'
 function UnquoteIdentifier(const Value: string): string;
 begin
@@ -936,61 +742,9 @@ begin
   Result := FormatIdentifier(Dialect, UnquoteIdentifier(Value));
 end;
 
-{$IFDEF CPUX86}
-function Q_StrScan(const S: AnsiString; Ch: AnsiChar; StartPos: Integer): Integer;
-asm
-
-
-  TEST    EAX,EAX
-  JE      @@qt
-  PUSH    EDI
-  MOV     EDI,EAX
-  LEA     EAX,[ECX-1]
-  MOV     ECX,[EDI-4]
-  SUB     ECX,EAX
-  JLE     @@m1
-  PUSH    EDI
-  ADD     EDI,EAX
-  MOV     EAX,EDX
-  POP     EDX
-  REPNE   SCASB
-  JNE     @@m1
-  MOV     EAX,EDI
-  SUB     EAX,EDX
-  POP     EDI
-  RET
-@@m1:   POP     EDI
-  XOR     EAX,EAX
-@@qt:
-end;
-{$ELSE}
-function Q_StrScan(const S: AnsiString; Ch: AnsiChar; StartPos: Integer): Integer;
-var
-  i, L: Integer;
-begin
-  L := Length(S);
-  for i := StartPos to L do
-    if S[i] = Ch then
-    begin
-      Result := i;
-      Exit;
-    end;
-  Result := 0;
-
-end;
-
-{$ENDIF}
-
 function PosCh(aCh: Char; const S: string): Integer;
 begin
-  // Result:=Q_StrScan(s,aCh,1)
   Result := Pos(aCh, S)
-end;
-
-function PosCh1(aCh: AnsiChar; const S: AnsiString; StartPos: Integer): Integer;
-begin
-  Result := Q_StrScan(S, aCh, StartPos)
-
 end;
 
 function PosCh1(aCh: Char; const S: string; StartPos: Integer): Integer;
@@ -1011,7 +765,7 @@ begin
   Result := Pos(FastUpperCase(Substr), FastUpperCase(Str));
 end;
 
-function PosExt(const Substr, Str: string; BegSub, EndSub: TCharSet): Integer;
+function PosExt(const Substr, Str: string; BegSub, EndSub: TFIBAnsiCharSet): Integer;
 var
   P, L, l1: Integer;
 begin
@@ -1021,7 +775,7 @@ begin
   l1 := Length(Substr);
   while P > 0 do
   begin
-    if ((P = 1) or CharInSet(Str[P - 1], BegSub)) and (CharInSet(Str[P + l1], EndSub) or (P + l1 > L)) then
+    if ((P = 1) or CharInSet(Str[P - 1], BegSub)) and ((P + l1 > L) or CharInSet(Str[P + l1], EndSub)) then
     begin
       Result := P;
       Exit;
@@ -1030,7 +784,7 @@ begin
   end;
 end;
 
-function PosExtCI(const Substr, Str: string; BegSub, EndSub: TCharSet; AnsiUpper: Boolean = True): Integer;
+function PosExtCI(const Substr, Str: string; BegSub, EndSub: TFIBAnsiCharSet; AnsiUpper: Boolean = True): Integer;
 begin
   if AnsiUpper then
     Result := PosExt(AnsiUpperCase(Substr), AnsiUpperCase(Str), BegSub, EndSub)
@@ -1093,35 +847,6 @@ begin
   until False;
 end;
 
-function PosInSubstrExt(const SearchStr: string; Str: string; BeginPos, EndPos: Integer; BegSub, EndSub: TCharSet): Integer;
-var
-  P, L, l1: Integer;
-begin
-  Result := 0;
-  P := PosInSubstr(SearchStr, Str, BeginPos, EndPos);
-  L := Length(Str);
-  l1 := Length(SearchStr);
-  while P > 0 do
-  begin
-    if ((P = 1) or CharInSet(Str[P - 1], BegSub)) and (CharInSet(Str[P + l1], EndSub) or (P + l1 = L)) then
-    begin
-      Result := P;
-      Exit;
-    end;
-    P := PosInSubstr(SearchStr, Str, P + l1, EndPos)
-  end;
-end;
-
-function PosInSubstrCIExt(const SearchStr, Str: string; BeginPos, EndPos: Integer; BegSub, EndSub: TCharSet): Integer;
-begin
-  Result := PosInSubstrExt(AnsiUpperCase(SearchStr), AnsiUpperCase(Str), BeginPos, EndPos, BegSub, EndSub)
-end;
-
-function PosInSubstrCI(const SearchStr, Str: string; BeginPos, EndPos: Integer): Integer;
-begin
-  Result := PosInSubstr(AnsiUpperCase(SearchStr), AnsiUpperCase(Str), BeginPos, EndPos)
-end;
-
 function MakeStr(C: Char; N: Integer): string;
 var
   i: Integer;
@@ -1131,27 +856,9 @@ begin
   else
   begin
     SetLength(Result, N);
-    // FillChar(Result[1], Length(Result)*SizeOf(Char), C);
     for i := 1 to N do
       Result[i] := C
   end;
-end;
-
-function StrAsFloat(S: string): double;
-var
-  i: Integer;
-  AlterChar: Char;
-begin
-  if {$IFDEF C24}FormatSettings.{$ENDIF}DecimalSeparator = '.' then
-    AlterChar := ','
-  else
-    AlterChar := '.';
-  for i := 1 to Length(S) do
-  begin
-    if S[i] = AlterChar then
-      S[i] := {$IFDEF C24}FormatSettings.{$ENDIF}DecimalSeparator
-  end;
-  Result := StrToFloat(S)
 end;
 
 function StrDDMMMYYYY(const D: string; var D1: string): Boolean;
@@ -1193,7 +900,7 @@ end;
 function ToClientDateFmt(D: string; caseFmt: Byte): string;
 var
   FS: TFormatSettings;
-  vD: TDateTime;
+  ParsedDate: TDateTime;
 begin
   Result := '';
   if IsBlank(D) then
@@ -1229,20 +936,20 @@ begin
   FS.TimeSeparator := ':';
   FS.ShortTimeFormat := 'h:m:s';
   case caseFmt of
-    0: vD := StrToDateTime(D, FS);
-    1: vD := StrToDate(D, FS);
-    2: vD := StrToTime(D, FS);
+    0: ParsedDate := StrToDateTime(D, FS);
+    1: ParsedDate := StrToDate(D, FS);
+    2: ParsedDate := StrToTime(D, FS);
   else
-    vD := StrToDateTime(D, FS);
+    ParsedDate := StrToDateTime(D, FS);
   end;
   case caseFmt of
-    0: Result := DateTimeToStr(vD, FS);
-    1: Result := DateToStr(vD, FS);
-    2: Result := TimeToStr(vD, FS);
+    0: Result := DateTimeToStr(ParsedDate, FS);
+    1: Result := DateToStr(ParsedDate, FS);
+    2: Result := TimeToStr(ParsedDate, FS);
   end;
 end;
 
-function TrimCLRF(const S: string): string;
+function TrimCRLF(const S: string): string;
 var
   P, p1: Integer;
 begin
@@ -1361,14 +1068,6 @@ begin
   Result := InternalReplaceStr(S, S, Srch, Replace)
 end;
 
-function ReplaceStrCIInSubstr(const Source: string; const Srch, Replace: string; BeginPos, EndPos: Integer): string;
-var
-  S: string;
-begin
-  S := ReplaceCIStr(Copy(Source, BeginPos, EndPos - BeginPos + 1), Srch, Replace);
-  Result := Copy(Source, 1, BeginPos - 1) + S + Copy(Source, EndPos + 1, MaxInt);
-end;
-
 function ReplaceStrInSubstr(const Source: string; const Srch, Replace: string; BeginPos, EndPos: Integer): string;
 var
   S: string;
@@ -1403,12 +1102,7 @@ begin
 {$ENDIF}
 end;
 
-procedure DoAnsiUpperCase(var S: string); overload;
-begin
-  S := AnsiUpperCase(S)
-end;
-
-procedure DoWideUpperCase(var S: Widestring);
+procedure DoWideUpperCase(var S: WideString);
 {$IFDEF WINDOWS}
 var
   Len: Integer;
@@ -1423,40 +1117,6 @@ begin
 {$ENDIF}
 end;
 
-procedure DoUtf8Decode(const S: PAnsiChar; StrLen: Integer; var ws: Widestring);
-var
-  L: Integer;
-begin
-  if S = '' then
-    Exit;
-  SetLength(ws, StrLen);
-
-  L := Integer(Utf8ToUnicode(PWideChar(ws), Cardinal(Length(ws) + 1), S, Cardinal(StrLen)));
-  if L > 0 then
-    SetLength(ws, L - 1)
-  else
-    ws := '';
-end;
-
-procedure DoUtf8Decode(const S: AnsiString; var ws: Widestring);
-begin
-  ws := UTF8ToString(S)
-end;
-
-// S holds the UTF-8 bytes
-procedure DoUtf8Decode(const S: variant; var ws: Widestring);
-begin
-  ws := UTF8ToString(RawByteString(S))
-end;
-
-{
-  procedure DoUtf8Decode(const s:variant; var ws:WideString);
-  begin
-  ws:=UTF8ToString(S)
-  //UTF8Decode(s)
-
-  end;
-}
 function FastUpperCase(const S: string): string;
 var
   L: Integer;
@@ -1480,7 +1140,7 @@ begin
   end;
 end;
 
-function EquelStrings(const S, S1: string; CaseSensitive: Boolean): Boolean;
+function EqualStrings(const S, S1: string; CaseSensitive: Boolean): Boolean;
 var
   I: Integer;
   Char1, Char2: Char;
@@ -1507,7 +1167,7 @@ begin
   Result := True;
 end;
 
-function ExtractWord(Num: Integer; const Str: string; const WordDelims: TCharSet): string;
+function ExtractWord(Num: Integer; const Str: string; const WordDelims: TFIBAnsiCharSet): string;
 var
   SLen, i: Integer;
   wc: Integer;
@@ -1529,7 +1189,7 @@ begin
   end;
   if (wc = 0) and (Num = 1) then
     Result := Str
-  else if wc <> 0 then
+  else if (Num > 0) and (wc = Num) then
   begin
     wc := i; // word start
     while (i < SLen) do
@@ -1549,25 +1209,7 @@ begin
   end;
 end;
 
-{
-  function ExtractLastWord(const Str:  String;const  WordDelims:TCharSet):String;
-  var
-  SLen, I: Cardinal;
-  begin
-  Result := '';
-  SLen := Length(Str);
-  while CharInSet(Str[SLen] , WordDelims) and (SLen>0) do
-  Dec(SLen);
-  for i:= SLen downto 1 do
-  begin
-  if not CharInSet(Str[I] ,WordDelims) then
-  Result := Str[I]+Result
-  else
-  Exit
-  end;
-  end;
-}
-function WordCount(const S: string; const WordDelims: TCharSet): Integer;
+function WordCount(const S: string; const WordDelims: TFIBAnsiCharSet): Integer;
 var
   SLen, i: Integer;
 begin
@@ -1593,240 +1235,42 @@ begin
     Result := Str2
 end;
 
-function iifVariant(Condition: Boolean; const Var1, Var2: variant): variant;
-begin
-  if Condition then
-    Result := Var1
-  else
-    Result := Var2
-end;
-
-function FirstPos(Search: array of Char; const InString: string): Integer;
-var
-  i: NativeInt;
-  p1: Integer;
-begin
-  Result := 0;
-  for i := Low(Search) to High(Search) do
-  begin
-    p1 := PosCh(Search[i], InString);
-    if (p1 <> 0) then
-      if (p1 < Result) or (Result = 0) then
-        Result := p1
-  end;
-end;
-
-function FirstPos(Search: array of AnsiChar; const InString: AnsiString): Integer;
-var
-  i: NativeInt;
-  p1: Integer;
-begin
-  Result := 0;
-  for i := Low(Search) to High(Search) do
-  begin
-    // p1:=Q_StrScan(InString,Search[i],1);
-    p1 := PosCh1(Search[i], InString, 1);
-    if (p1 <> 0) then
-      if (p1 < Result) or (Result = 0) then
-        Result := p1
-  end;
-end;
-
-function DoResultLine(const aLine: string): string;
-var
-  i, j: Integer;
-  L: Integer;
-begin
-  if aLine = '' then
-  begin
-    Result := '';
-    Exit;
-  end;
-  L := Length(aLine);
-  if L = 1 then
-  begin
-    Result := aLine;
-    Exit;
-  end;
-
-  i := 1;
-  j := 0;
-  SetLength(Result, L);
-  while i <= L do
-  begin
-    if ((i < L) or (aLine[i] <> '*')) or ((j > 0) and (Result[j] <> '*')) then
-    begin
-      Inc(j);
-      Result[j] := aLine[i];
-    end;
-
-    case aLine[i] of
-      '*':
-        repeat
-          Inc(i);
-        until not CharInSet(aLine[i], ['*', '?']) or (i = L);
-      else
-        Inc(i);
-    end;
-
-  end;
-  SetLength(Result, j);
-end;
-
-function WildStringCompare(FirstString, SecondString: string): Boolean;
-  function WildCompare(const FLine, SLine: string; OnlyOne: Boolean): Boolean;
-  var
-    K: Integer;
-    l1, l2: Integer;
-    p1, p2: Integer;
-
-    function Different(const FLine, SLine: string; l1, l2: Integer): Boolean;
-    begin
-      if (l1 > 0) and (l2 > 0) then
-      begin
-        Result := (SLine[1] <> '*') and (SLine[1] <> '?') and
-          (FLine[1] <> SLine[1]) and (FLine[1] <> '*') and (FLine[1] <> '?');
-
-      end
-      else
-      begin
-        Result := ((l1 = 0) and (SLine <> '*')) or ((l2 = 0) and (FLine <> '*'));
-      end;
-    end;
-
-    function Identical(const FLine, SLine: string): Boolean;
-    begin
-      Result := (SLine = '*') or (FLine = '*') or (FLine = SLine)
-    end;
-
-  begin
-    if Identical(FLine, SLine) then
-    begin
-      Result := True;
-      Exit;
-    end;
-    Result := False;
-
-    l1 := Length(FLine);
-    l2 := Length(SLine);
-    if Different(FLine, SLine, l1, l2) then
-      Exit;
-
-    if not CharInSet(SLine[1], ['*', '?']) and not CharInSet(FLine[1], ['*', '?']) then
-    begin
-      p1 := FirstPos(['?', '*'], FLine);
-      if p1 = 0 then
-        p1 := l1 + 1;
-      p2 := FirstPos(['?', '*'], SLine);
-      if p2 = 0 then
-        p2 := l2 + 1;
-      if p2 < p1 then
-        p1 := p2;
-      if (FastCopy(FLine, 1, p1 - 1) <> FastCopy(SLine, 1, p1 - 1)) then
-        Result := False
-      else
-        Result := WildCompare(FastCopy(FLine, p1, l1), FastCopy(SLine, p1, l2), OnlyOne);
-      Exit;
-    end;
-
-    if (FLine[1] = '*') then
-    begin
-      for K := 1 to l2 do
-        if CharInSet(SLine[K], ['*', FLine[2], '?']) then
-        begin
-          Result := WildCompare(FastCopy(FLine, 2, l1 - 1), FastCopy(SLine, K, l2 - K + 1), OnlyOne);
-          if Result then
-            Exit
-        end;
-    end;
-
-    if (SLine[1] = '*') then
-      for K := 1 to l1 do
-        if CharInSet(FLine[K], ['*', SLine[2], '?']) then
-        begin
-          Result := WildCompare(FastCopy(FLine, K, l1 - K + 1), FastCopy(SLine, 2, l2 - 1), OnlyOne);
-          if Result then
-            Exit
-        end;
-
-    if (SLine[1] <> '*') and ((FLine[1] <> '*')) and
-      ((FLine[1] = SLine[1]) or ((SLine[1] = '?') or ((FLine[1] = '?')))) then
-      Result := WildCompare(FastCopy(FLine, 2, l1 - 1), FastCopy(SLine, 2, l2 - 1), OnlyOne);
-  end;
-
-begin
-  FirstString := DoResultLine(FirstString);
-  SecondString := DoResultLine(SecondString);
-  Result := WildCompare(FirstString, SecondString, False);
-end;
-
+// MaskChars[0] matches any run of chars, MaskChars[1] any one char; case-sensitive
 function DoMaskCompare(const AString, Mask: string; MaskChars: array of Char): Boolean;
-
-  function WildCompare1(const FLine, Mask: string): Boolean;
-  var
-    K: Integer;
-    l1, l2: Integer;
-    p1: Integer;
-
-    function Different(const FLine, Mask: string; l1, l2: Integer): Boolean;
+var
+  S, M, StarS, StarM, LS, LM: Integer;
+begin
+  LS := Length(AString);
+  LM := Length(Mask);
+  S := 1;
+  M := 1;
+  StarS := 0;
+  StarM := 0;
+  while S <= LS do
+    if (M <= LM) and (Mask[M] = MaskChars[0]) then
     begin
-      if (l1 > 0) and (l2 > 0) then
-      begin
-        Result := not CharInSet(Mask[1], [MaskChars[0], MaskChars[1]]) and (FLine[1] <> Mask[1])
-      end
-      else
-      begin
-        Result := ((l1 = 0) and (Mask <> MaskChars[0])) or (l2 = 0)
-      end;
-    end;
-
-    function Identical(const FLine, Mask: string): Boolean;
+      // remember the run, try it empty first
+      StarM := M;
+      StarS := S;
+      Inc(M);
+    end
+    else if (M <= LM) and ((Mask[M] = MaskChars[1]) or (Mask[M] = AString[S])) then
     begin
-      Result := (Mask = MaskChars[0]) or (FLine = Mask)
-    end;
-
-  begin
-    if Identical(FLine, Mask) then
+      Inc(S);
+      Inc(M);
+    end
+    else if StarM > 0 then
     begin
-      Result := True;
-      Exit;
-    end;
-    Result := False;
-
-    l1 := Length(FLine);
-    l2 := Length(Mask);
-    if Different(FLine, Mask, l1, l2) then
-      Exit;
-
-    if not CharInSet(Mask[1], [MaskChars[0], MaskChars[1]]) then
-    begin
-      p1 := FirstPos([MaskChars[0], MaskChars[1]], Mask);
-      if p1 = 0 then
-      begin
-        Result := FLine = Mask
-      end
-      else if (FastCopy(FLine, 1, p1 - 1) <> FastCopy(Mask, 1, p1 - 1)) then
-        Result := False
-      else
-        Result := WildCompare1(Copy(FLine, p1, l1), Copy(Mask, p1, l2));
-      Exit;
-    end;
-
-    if (Mask[1] = MaskChars[0]) then
-      for K := 1 to l1 do
-        if (FLine[K] = Mask[2]) then
-        begin
-          Result := WildCompare1(Copy(FLine, K, l1 - K + 1), Copy(Mask, 2, l2 - 1));
-          if Result then
-            Exit
-        end;
-
-    if (Mask[1] <> MaskChars[0]) and ((FLine[1] = Mask[1]) or (Mask[1] = MaskChars[1])) then
-      Result := WildCompare1(Copy(FLine, 2, l1 - 1), FastCopy(Mask, 2, l2 - 1));
-  end;
-
-begin // MaskCompare
-  Result := WildCompare1(AString, DoResultLine(Mask));
+      // the last run takes one more char
+      M := StarM + 1;
+      Inc(StarS);
+      S := StarS;
+    end
+    else
+      Exit(False);
+  while (M <= LM) and (Mask[M] = MaskChars[0]) do
+    Inc(M);
+  Result := M > LM;
 end;
 
 function SQLMaskCompare(const AString, Mask: string): Boolean;
@@ -1834,54 +1278,14 @@ begin
   Result := DoMaskCompare(AString, Mask, ['%', '_']);
 end;
 
-function SQLMaskCompareAW(const AString: AnsiString; const Mask: string): Boolean;
-begin
-  Result := DoMaskCompare(string(AString), Mask, ['%', '_']);
-end;
-
 function SQLMaskCompareAA(const AString, Mask: AnsiString): Boolean;
 begin
   Result := DoMaskCompare(string(AString), string(Mask), ['%', '_']);
 end;
 
-function SQLMaskCompare(const AString, Mask: Widestring): Boolean;
+function SQLMaskCompare(const AString, Mask: WideString): Boolean;
 begin
   Result := DoMaskCompare(AString, Mask, ['%', '_']);
-end;
-
-function MaskCompare(const AString, Mask: string): Boolean;
-begin
-  Result := DoMaskCompare(AString, Mask, ['*', '?']);
-end;
-
-function StrOnMask(const StrIn, MaskIn, MaskOut: string): string;
-var
-  K, j, Len: Integer;
-begin
-  Len := Length(StrIn);
-  Result := '';
-  for j := 1 to Len do
-  begin
-    K := PosCh(StrIn[j], MaskIn);
-    if K = 0 then
-      Result := Result + StrIn[j]
-    else if Length(MaskOut) > K then
-      Result := Result + MaskOut[K]
-  end;
-end;
-
-function StrIsInteger(const Str: string): Boolean;
-var
-  L, i: Integer;
-begin
-  L := Length(Str);
-  Result := False;
-  for i := 1 to L do
-  begin
-    Result := CharInSet(Str[i], ['0', '1' .. '9']);
-    if Result then
-      Exit;
-  end;
 end;
 
 function LastChar(const Str: string): Char;
@@ -1897,13 +1301,26 @@ end;
 
 function QuotedStr(const S: string): string;
 var
-  i: Integer;
+  i, j, Quotes: Integer;
 begin
-  Result := S;
-  for i := Length(Result) downto 1 do
-    if Result[i] = '''' then
-      Insert('''', Result, i);
-  Result := '''' + Result + '''';
+  Quotes := 0;
+  for i := 1 to Length(S) do
+    if S[i] = '''' then
+      Inc(Quotes);
+  SetLength(Result, Length(S) + Quotes + 2);
+  Result[1] := '''';
+  j := 2;
+  for i := 1 to Length(S) do
+  begin
+    Result[j] := S[i];
+    Inc(j);
+    if S[i] = '''' then
+    begin
+      Result[j] := '''';
+      Inc(j);
+    end;
+  end;
+  Result[j] := '''';
 end;
 
 function CutQuote(const S: string): string;
@@ -1980,25 +1397,17 @@ begin
     Result := CompareText(SL[Index1], SL[Index2]);
 end;
 
-type
-  THackStringList = class(TStrings)
-  private
-    FList: {$IFDEF C23}TStringItemList{$ELSE}PStringItemList{$ENDIF};
-    FCount: Integer;
-  end;
-
 function NonAnsiIndexOf(SL: TStringList; const S: string): Integer; // Non Ansi
 var
-  C: Integer;
+  i: Integer;
 begin
-  C := THackStringList(SL).FCount - 1;
-  for Result := 0 to C do
-    if THackStringList(SL).FList[Result].FString = S then
-      Exit;
+  for i := 0 to SL.Count - 1 do
+    if SL[i] = S then
+      Exit(i);
   Result := -1;
 end;
 
-function FindInDiapazon(SL: TStringList; const S: string;
+function FindInRange(SL: TStringList; const S: string;
   const StartIndex, EndIndex: Integer; AnsiCompare: Boolean;
   var Index: Integer): Boolean;
 var
@@ -2097,7 +1506,8 @@ var
   KeyWords: TStringList;
 
 const
-  NonQuotedChars = ['_', '$', '%', '#'];
+  // the chars of a regular identifier besides A..Z and 0..9
+  NonQuotedChars = ['_', '$'];
 
 function InternalNeedQuote(const Name: string; Easy: Boolean): Boolean; inline;
 var
@@ -2141,7 +1551,10 @@ begin
       if (Ch2 >= 'a') and (Ch2 <= 'z') then
         Dec(Ch2, 32);
     end;
-    Result := FindInDiapazon(KeyWords, Name, KeyWordsIndexes[ch1, Ch2, 0], KeyWordsIndexes[ch1, Ch2, 1], False, i)
+    // '_' or '$': no keyword, and outside KeyWordsIndexes
+    if (Ch2 < 'A') or (Ch2 > 'Z') or (ch1 < 'A') or (ch1 > 'Z') then
+      Exit(False);
+    Result := FindInRange(KeyWords, Name, KeyWordsIndexes[ch1, Ch2, 0], KeyWordsIndexes[ch1, Ch2, 1], False, i)
   end;
 end;
 
@@ -2254,11 +1667,11 @@ const
     'SMALLINT', 'TIME', 'TIMESTAMP', 'VARBINARY', 'VARCHAR');
 
 var
-  vI: Integer;
+  KeyIndex: Integer;
   OldChar: Char;
   OldChar1: Char;
 
-function Position(AX, AY: Integer): TPosition;
+function Position(AX, AY: Integer): TFIBPosition;
 begin
   Result.X := AX;
   Result.Y := AY;
@@ -2267,23 +1680,23 @@ end;
 initialization
 
 KeyWords := TStringList.Create;
-for vI := 0 to InternalFunctionCount - 1 do
-  KeyWords.ADD(InternalFunctions[vI]);
-for vI := 0 to DefKeywordsCount - 1 do
-  KeyWords.ADD(DefKeywords[vI]);
-for vI := 0 to DefTypesCount - 1 do
-  KeyWords.ADD(DefTypes[vI]);
+for KeyIndex := 0 to InternalFunctionCount - 1 do
+  KeyWords.ADD(InternalFunctions[KeyIndex]);
+for KeyIndex := 0 to DefKeywordsCount - 1 do
+  KeyWords.ADD(DefKeywords[KeyIndex]);
+for KeyIndex := 0 to DefTypesCount - 1 do
+  KeyWords.ADD(DefTypes[KeyIndex]);
 KeyWords.CustomSort(NonAnsiSortCompareStrings);
 OldChar := 'A';
 OldChar1 := 'A';
 KeyWordsIndexes['A', 'A', 0] := 0;
-for vI := 0 to KeyWords.Count - 1 do
-  if (OldChar <> KeyWords[vI][1]) or (OldChar1 <> KeyWords[vI][2]) then
+for KeyIndex := 0 to KeyWords.Count - 1 do
+  if (OldChar <> KeyWords[KeyIndex][1]) or (OldChar1 <> KeyWords[KeyIndex][2]) then
   begin
-    KeyWordsIndexes[OldChar, OldChar1, 1] := vI - 1;
-    KeyWordsIndexes[KeyWords[vI][1], KeyWords[vI][2], 0] := vI;
-    OldChar := KeyWords[vI][1];
-    OldChar1 := KeyWords[vI][2];
+    KeyWordsIndexes[OldChar, OldChar1, 1] := KeyIndex - 1;
+    KeyWordsIndexes[KeyWords[KeyIndex][1], KeyWords[KeyIndex][2], 0] := KeyIndex;
+    OldChar := KeyWords[KeyIndex][1];
+    OldChar1 := KeyWords[KeyIndex][2];
   end;
 KeyWordsIndexes[OldChar, OldChar1, 1] := KeyWords.Count - 1;
 

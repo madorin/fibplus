@@ -32,7 +32,7 @@ uses
 type
   TFrame = TFIBEditorCustomFrame;
 
-  TfraEdConditions = class(TFrame)
+  TFIBConditionsFrame = class(TFrame)
     Panel1: TPanel;
     Panel2: TPanel;
     Button1: TButton;
@@ -59,7 +59,7 @@ type
     procedure FormCreate(Sender: TObject);
     procedure btnEditClick(Sender: TObject);
   private
-    FIsStringsOnly: boolean;
+    FIsStringsOnly: Boolean;
     FTexts: TStrings;
     FConditions: TStrings;
     procedure DeleteListSelected;
@@ -74,11 +74,11 @@ type
 implementation
 
 uses
-  FIBEditorsConsts, FIBInterfaces, RTTIRoutines;
+  FIBEditorsConsts, FIBInterfaces, RTTIRoutines, FIBProps;
 
 {$R *.dfm}
 
-procedure TfraEdConditions.Memo1Exit(Sender: TObject);
+procedure TFIBConditionsFrame.Memo1Exit(Sender: TObject);
 begin
   if ListView1.Selected <> nil then
   begin
@@ -86,7 +86,7 @@ begin
   end;
 end;
 
-procedure TfraEdConditions.ListView1Resize(Sender: TObject);
+procedure TFIBConditionsFrame.ListView1Resize(Sender: TObject);
 begin
   // -1 and -2 would mean auto size
   if ListView1.Width > ScaleToPPI(Self, 20) then
@@ -95,12 +95,12 @@ begin
     ListView1.Columns[0].Width := 0;
 end;
 
-procedure TfraEdConditions.Button3Click(Sender: TObject);
+procedure TFIBConditionsFrame.Button3Click(Sender: TObject);
 begin
   DeleteListSelected;
 end;
 
-procedure TfraEdConditions.ListView1KeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+procedure TFIBConditionsFrame.ListView1KeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   case Key of
     VK_DELETE:
@@ -114,9 +114,9 @@ begin
   end;
 end;
 
-procedure TfraEdConditions.DeleteListSelected;
+procedure TFIBConditionsFrame.DeleteListSelected;
 var
-  i: integer;
+  i: Integer;
 begin
   if ListView1.Selected <> nil then
   begin
@@ -135,7 +135,7 @@ begin
   end;
 end;
 
-procedure TfraEdConditions.InsertToList;
+procedure TFIBConditionsFrame.InsertToList;
 begin
   FTexts.Add('');
   ListView1.Selected := ListView1.Items.Add;
@@ -143,18 +143,18 @@ begin
   Memo1.SetFocus;
 end;
 
-procedure TfraEdConditions.Button4Click(Sender: TObject);
+procedure TFIBConditionsFrame.Button4Click(Sender: TObject);
 begin
   InsertToList;
 end;
 
-procedure TfraEdConditions.Button5Click(Sender: TObject);
+procedure TFIBConditionsFrame.Button5Click(Sender: TObject);
 begin
   ListView1.Items.Clear;
   Memo1.Lines.Clear;
 end;
 
-procedure TfraEdConditions.ListView1Click(Sender: TObject);
+procedure TFIBConditionsFrame.ListView1Click(Sender: TObject);
 begin
   if ListView1.Selected <> nil then
   begin
@@ -162,7 +162,7 @@ begin
   end;
 end;
 
-procedure TfraEdConditions.ListView1Change(Sender: TObject; Item: TListItem; Change: TItemChange);
+procedure TFIBConditionsFrame.ListView1Change(Sender: TObject; Item: TListItem; Change: TItemChange);
 begin
   if ListView1.Selected <> nil then
   begin
@@ -170,19 +170,19 @@ begin
   end;
 end;
 
-constructor TfraEdConditions.Create(AOwner: TComponent);
+constructor TFIBConditionsFrame.Create(AOwner: TComponent);
 begin
   FTexts := TStringList.Create;
   inherited Create(AOwner);
 end;
 
-destructor TfraEdConditions.Destroy;
+destructor TFIBConditionsFrame.Destroy;
 begin
   FTexts.Free;
   inherited;
 end;
 
-procedure TfraEdConditions.FormCreate(Sender: TObject);
+procedure TFIBConditionsFrame.FormCreate(Sender: TObject);
 begin
   Caption := FPConditionsCaption;
   GroupBox2.Caption := FPConditionsText;
@@ -196,7 +196,7 @@ begin
   Button2.Caption := SCancelButton;
 end;
 
-procedure TfraEdConditions.btnEditClick(Sender: TObject);
+procedure TFIBConditionsFrame.btnEditClick(Sender: TObject);
 begin
   if Assigned(ListView1.Selected) then
     ListView1.Selected.EditCaption;
@@ -213,27 +213,16 @@ end;
   Result:=Copy(Str,p+1,MaxInt)
   end;
 }
-type
-  THackCondition = class
-  private
-    FEnabled: boolean;
-  end;
-
-  THackConditions = class(TStringList)
-  private
-    FFIBQuery: TComponent;
-  end;
-
 const
   ExchangeDelimeter = '#$#$';
 
-procedure TfraEdConditions.PrepareFrame(Value: TStrings);
+procedure TFIBConditionsFrame.PrepareFrame(Value: TStrings);
 var
-  i: integer;
+  i: Integer;
   li: TListItem;
   CondName, CondBody: string;
   s: string;
-  p: integer;
+  p: Integer;
 begin
   FIsStringsOnly := Value.ClassType = TStringList;
   FConditions := Value;
@@ -254,16 +243,12 @@ begin
     begin
       li := ListView1.Items.Add;
       li.Caption := Value.Names[i];
-      // FTexts.Add(Value.Condition[i].Value);
       FTexts.Add(Value.Values[li.Caption]);
-      // FTexts.Add(Value.ValueFromIndex[i]);
-      if THackCondition(Value.Objects[i]).FEnabled then
+      if TFIBCondition(Value.Objects[i]).Enabled then
         li.Checked := True;
     end;
     if Value.Count > 0 then
     begin
-      // Memo1.Lines.Text:=Value[0].Value;
-      // Memo1.Lines.Text:=Value.ValueFromIndex[0];
       Memo1.Lines.Text := Value.Values[Value.Names[0]];
       ListView1.Selected := ListView1.Items[0];
     end
@@ -285,14 +270,12 @@ begin
       FTexts.Add(CondBody);
       s := Copy(s, p + Length(ExchangeDelimeter), MaxInt);
       li.Checked := Trim(s) = '1'
-      // AddCondition(CondName,CondBody,FastTrim(s)='1')
-
     end;
 end;
 
-procedure TfraEdConditions.ApplyChanges;
+procedure TFIBConditionsFrame.ApplyChanges;
 var
-  i: integer;
+  i: Integer;
   iQry: IFIBQuery;
 begin
   if Assigned(FConditions) then
@@ -300,10 +283,9 @@ begin
     FConditions.Clear;
     if not FIsStringsOnly then
     begin
-      ObjSupports(THackConditions(FConditions).FFIBQuery, IFIBQuery, iQry);
+      ObjSupports(TFIBConditions(FConditions).Owner, IFIBQuery, iQry);
       for i := 0 to Pred(ListView1.Items.Count) do
       begin
-        // FConditions.AddCondition(ListView1.Items[i].Caption,FTexts[i],ListView1.Items[i].Checked)
         iQry.AddCondition(ListView1.Items[i].Caption, FTexts[i], ListView1.Items[i].Checked)
       end
     end

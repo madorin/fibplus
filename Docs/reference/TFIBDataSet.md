@@ -53,7 +53,7 @@ Available in the Object Inspector. Besides the properties below, `TFIBDataSet` p
 |------|------|---------|-------------|
 | `AutoCommit` | `Boolean` | `False` | Commit `UpdateTransaction` after each change is sent to the server. Uses `CommitRetaining` when `UpdateTransaction` is the same as `Transaction`, or when its `TimeoutAction` is `TACommitRetaining`. |
 | `Database` | `TFIBDatabase` | | Connection the dataset runs on. The dataset must be closed to change it. |
-| `RefreshTransactionKind` | `TTransactionKind` | `tkReadTransaction` | Transaction that runs `RefreshSQL`: `tkReadTransaction` uses `Transaction`, `tkUpdateTransaction` uses `UpdateTransaction`. |
+| `RefreshTransactionKind` | `TFIBTransactionKind` | `tkReadTransaction` | Transaction that runs `RefreshSQL`: `tkReadTransaction` uses `Transaction`, `tkUpdateTransaction` uses `UpdateTransaction`. |
 | `Transaction` | `TFIBTransaction` | | Transaction for `SelectSQL` and, by default, `RefreshSQL`. The dataset must be closed to change it. Without a separate `UpdateTransaction`, the insert, update, delete, and refresh statements use it too. |
 | `UpdateTransaction` | `TFIBTransaction` | | Transaction for `InsertSQL`, `UpdateSQL`, and `DeleteSQL`. |
 
@@ -61,12 +61,12 @@ Available in the Object Inspector. Besides the properties below, `TFIBDataSet` p
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `Conditions` | `TConditions` | | Named `WHERE` conditions of `SelectSQL` that can be switched on and off; see [TFIBQuery](TFIBQuery.md#published-properties). |
+| `Conditions` | `TFIBConditions` | | Named `WHERE` conditions of `SelectSQL` that can be switched on and off; see [TFIBQuery](TFIBQuery.md#published-properties). |
 | `DeleteSQL` | `TStrings` | | Statement that deletes a row. |
 | `InsertSQL` | `TStrings` | | Statement that inserts a new row. |
 | `RefreshSQL` | `TStrings` | | Query that reads one row again after `Refresh` or a change. |
 | `SelectSQL` | `TStrings` | | Query that returns the rows. `:Name` parameters are available through `Params`. |
-| `SQLs` | `TSQLs` | | Groups the five statements into one sub-object. Not stored in the DFM. |
+| `SQLs` | `TFIBSQLs` | | Groups the five statements into one sub-object. Not stored in the DFM. |
 | `UpdateSQL` | `TStrings` | | Statement that updates a row. |
 
 `Insert`, `Edit`, and `Delete` are allowed under the rules in [Editing permissions](#editing-permissions). The dataset can generate the statements, see [AutoUpdateOptions](#autoupdateoptions). Changing the text of `SelectSQL` at run time raises an error while the dataset is open; at design time it closes the dataset.
@@ -75,14 +75,14 @@ Available in the Object Inspector. Besides the properties below, `TFIBDataSet` p
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `AllowedUpdateKinds` | `TUpdateKinds` | `[ukModify, ukInsert, ukDelete]` | Kinds of change the dataset allows. At run time, when preparing the insert, update, or delete statement fails with a permission error and the global variable `FIBHideGrantError` (unit `FIBDatabase`, default `False`) is `True`, that kind is removed. Nothing is removed at design time, and a failed `RefreshSQL` removes nothing. |
-| `AutoUpdateOptions` | `TAutoUpdateOptions` | | Settings for generated SQL, generators, and key fields. See [AutoUpdateOptions](#autoupdateoptions). |
+| `AllowedUpdateKinds` | `TFIBUpdateKinds` | `[ukModify, ukInsert, ukDelete]` | Kinds of change the dataset allows. At run time, when preparing the insert, update, or delete statement fails with a permission error and the global variable `FIBHideGrantError` (unit `FIBDatabase`, default `False`) is `True`, that kind is removed. Nothing is removed at design time, and a failed `RefreshSQL` removes nothing. |
+| `AutoUpdateOptions` | `TFIBAutoUpdateOptions` | | Settings for generated SQL, generators, and key fields. See [AutoUpdateOptions](#autoupdateoptions). |
 | `CachedUpdates` | `Boolean` | `False` | Keep changes in the cache until they are applied. Turning it on needs a closed dataset and is refused with `cmkLimitedBufferSize`. Turning it off on an open dataset is allowed and calls `CancelUpdates`. |
-| `CacheModelOptions` | `TCacheModelOptions` | | Record cache settings, see [Cache model](#cache-model). |
-| `CSMonitorSupport` | `TCSMonitorSupport` | | Adds monitoring text to the statements. Only when compiled with `CSMonitor`. |
+| `CacheModelOptions` | `TFIBCacheModelOptions` | | Record cache settings, see [Cache model](#cache-model). |
+| `CSMonitorSupport` | `TFIBCSMonitorSupport` | | Adds monitoring text to the statements. Only when compiled with `CSMonitor`. |
 | `DataSource` | `TDataSource` | | Master dataset source. Parameters of `SelectSQL` named like master fields are filled from it. A circular reference raises an error. |
-| `DetailConditions` | `TDetailConditions` | `[]` | How a detail dataset follows its master, see [Master-detail](#master-detail). Saved in the DFM as individual boolean entries. |
-| `FieldOriginRule` | `TFieldOriginRule` | `forTableAndFieldName` | How `Field.Origin` is filled when the dataset opens. `forNoRule` leaves it empty. |
+| `DetailConditions` | `TFIBDetailConditions` | `[]` | How a detail dataset follows its master, see [Master-detail](#master-detail). Saved in the DFM as individual boolean entries. |
+| `FieldOriginRule` | `TFIBFieldOriginRule` | `forTableAndFieldName` | How `Field.Origin` is filled when the dataset opens. `forNoRule` leaves it empty. |
 | `Options` | `TFIBDataSetOptions` | `[poTrimCharFields, poStartTransaction, poAutoFormatFields, poRefreshAfterPost]` | Behavior flags, see [Options](#options). The default is `DefaultOptions` for a component dropped at design time and `StatDefDataSetOptions` at run time (unit `FIBProps`). Saved in the DFM as individual boolean entries. |
 | `PrepareOptions` | `TFIBPrepareOptions` | `[pfImportDefaultValues, psGetOrderInfo, psUseBooleanField, psSetEmptyStrToNull]` | What the dataset reads from the metadata when it prepares, such as required fields and `BOOLEAN` and GUID mapping. The initial value is `DefaultPrepareOptions` for a component dropped at design time and `StatDefPrepareOptions` otherwise. See [Prepare options](#prepare-options). Saved in the DFM as individual boolean entries. |
 | `SQLScreenCursor` | `TCursor` | `crDefault` | Screen cursor shown during long operations: prepare, open, fetch, `FetchAll`, `Clone`, and the refresh in `cmkLimitedBufferSize`. From Delphi XE2 the change goes through `Database.DoChangeScreenCursor` and does nothing when that is not assigned. Not available when compiled with `NO_GUI`. |
@@ -97,12 +97,12 @@ Available in the Object Inspector. Besides the properties below, `TFIBDataSet` p
 | `About` | `string` | | Shows the library version. Not stored; assigning has no effect. |
 | `Container` | `TDataSetsContainer` | | Container (unit `DSContainer`) that receives the dataset events. See [Events](#events). |
 | `DataSet_ID` | `Integer` | `0` | Number of the row in the repository table `FIB$DATASETS_INFO` that holds the SQL texts and update settings of this dataset. Can be changed only while the dataset is closed. A non-zero value turns `psApplyRepositary` on. See [DataSet_ID and the repository](#dataset_id-and-the-repository). |
-| `DefaultFormats` | `TFormatFields` | see [Default formats](#default-formats) | Display and edit formats applied to fields when `poAutoFormatFields` is set. |
+| `DefaultFormats` | `TFIBFormatFields` | see [Default formats](#default-formats) | Display and edit formats applied to fields when `poAutoFormatFields` is set. |
 | `Description` | `string` | | Free text. Stored in the `DESCRIPTION` column of the repository row, and replaced from it when the row is loaded. |
 
 ### Default formats
 
-`TFormatFields` has five string properties. The values below are the defaults for a dataset created at run time or loaded from a form; the design-time defaults of a new component and the run-time defaults selected by `FF_UseRuntimeDefaults` come from typed constants in `FIBProps` that have the same values.
+`TFIBFormatFields` has five string properties. The values below are the defaults for a dataset created at run time or loaded from a form; the design-time defaults of a new component and the run-time defaults selected by `FF_UseRuntimeDefaults` come from typed constants in `FIBProps` that have the same values.
 
 | Name | Default | Applied to |
 |------|---------|------------|
@@ -195,14 +195,14 @@ Other writable typed constants in `FIBProps` that affect `TFIBDataSet`:
 
 | Constant | Default | Used for |
 |----------|---------|----------|
-| `DefPrefixGenName`, `DefSufixGenName` | `GEN_`, `_ID` | Generator name built when `UpdateTableName` is set, see [AutoUpdateOptions](#autoupdateoptions). |
+| `DefPrefixGenName`, `DefSuffixGenName` | `GEN_`, `_ID` | Generator name built when `UpdateTableName` is set, see [AutoUpdateOptions](#autoupdateoptions). |
 | `FF_UseRuntimeDefaults` | `False` | When `True`, `DefaultFormats` start with `RDefDateFormat`, `RDefTimeFormat`, `RDefDisplayFormatNum`, and `RDefEditFormatNum` instead of the other defaults. |
 | `RDefDateFormat`, `RDefTimeFormat`, `RDefDisplayFormatNum`, `RDefEditFormatNum` | `dd.mm.yyyy`, `hh:nn`, `#,##0.`, `0.` | See above. |
 | `dDefDateFormat`, `dDefTimeFormat`, `dDefDateTimeFormat`, `dDefDisplayFormatNum`, `dDefEditFormatNum` | `dd.mm.yyyy`, `hh:nn`, `dd.mm.yyyy hh:nn`, `#,##0.`, `0.` | `DefaultFormats` of a component dropped at design time. |
 
 ### AutoUpdateOptions
 
-`AutoUpdateOptions` is a `TAutoUpdateOptions` object (unit `FIBProps`). It controls generated statements, key generators, and the link between parameters and fields. All members in the first table are published.
+`AutoUpdateOptions` is a `TFIBAutoUpdateOptions` object (unit `FIBProps`). It controls generated statements, key generators, and the link between parameters and fields. All members in the first table are published.
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
@@ -217,11 +217,11 @@ Other writable typed constants in `FIBProps` that affect `TFIBDataSet`:
 | `UpdateOnlyModifiedFields` | `Boolean` | `False` | Generate `INSERT` and `UPDATE` for each post from the changed fields only: unchanged fields in `UPDATE`, null fields in `INSERT`. An `INSERT` with no field set is `INSERT INTO <table> DEFAULT VALUES`; an unchanged `UPDATE` is `No Action`. In effect only while `AutoReWriteSqls` and `CanChangeSQLs` are also `True` (`UpdateOnlyModifiedFieldsInEffect`); the property keeps the assigned value, in any order. |
 | `UpdateTableName` | `string` | | Table, with an optional alias, that generated statements change. |
 | `UseExecuteBlock` | `Boolean` | `False` | `ApplyUpdates` collects the cached changes in `EXECUTE BLOCK` batches and sends them with `ExecSQLImmediate`. The statements are generated from `UpdateTableName` and `KeyFields` with the values as literals; `InsertSQL`, `UpdateSQL`, `DeleteSQL`, and update objects are not used. A batch holds up to 255 statements and less than 64 KB of text. Intended for `CachedUpdates` (comment in the code). See [Applying cached updates](#applying-cached-updates). |
-| `UseReturningFields` | `TSetReturningFields` | `[]` | Add a `RETURNING` clause to generated `INSERT` and `UPDATE`: `rfAll` returns every written column (in an `INSERT` made with `UpdateOnlyModifiedFields`, also the null columns left to the server defaults), `rfKeyFields` the key columns, `rfBlobFields` the written BLOB columns. After the statement runs, the row is read back when its statement type is select, execute procedure, or select for update. Applies to statements made by `GenerateSQLs` and, with `UpdateOnlyModifiedFields`, to those made for each post. |
+| `UseReturningFields` | `TFIBReturningFields` | `[]` | Add a `RETURNING` clause to generated `INSERT` and `UPDATE`: `rfAll` returns every written column (in an `INSERT` made with `UpdateOnlyModifiedFields`, also the null columns left to the server defaults), `rfKeyFields` the key columns, `rfBlobFields` the written BLOB columns. After the statement runs, the row is read back when its statement type is select, execute procedure, or select for update. Applies to statements made by `GenerateSQLs` and, with `UpdateOnlyModifiedFields`, to those made for each post. |
 | `UseRowsClause` | `Boolean` | `False` | Add `ROWS 1` on a new line to generated `UPDATE` statements, before the `RETURNING` clause. Firebird accepts no `ROWS` in `INSERT`; the generated `DELETE` has none either. |
-| `WhenGetGenID` | `TWhenGetGenID` | `wgNever` | When to take the key from the generator: `wgNever`, `wgOnNewRecord` (when the row is created), `wgBeforePost` (before the insert is posted; the `Required` flag of the key field is cleared when the row is created). The key field must be numeric and empty; see `IncGenerator`. |
+| `WhenGetGenID` | `TFIBWhenGetGenID` | `wgNever` | When to take the key from the generator: `wgNever`, `wgOnNewRecord` (when the row is created), `wgBeforePost` (before the insert is posted; the `Required` flag of the key field is cleared when the row is created). The key field must be numeric and empty; see `IncGenerator`. |
 
-Run-time members of `TAutoUpdateOptions`:
+Run-time members of `TFIBAutoUpdateOptions`:
 
 | Name | Type | Description |
 |------|------|-------------|
@@ -250,13 +250,13 @@ With `AutoReWriteSqls` and without `UpdateOnlyModifiedFields`, `GenerateSQLs` ru
 The row is read through the database component: `UseRepositories` of the database must contain `urDataSetInfo`, and the table must exist; otherwise the load raises an exception. When the table has no row for `DataSet_ID`, no error is raised and the code goes on with empty stored values. The settings are cached per database name and `DataSet_ID`. Field settings come from `FIB$FIELDS_INFO` when `urFieldsInfo` is in `UseRepositories`: `DisplayLabel`, `DisplayWidth`, `Visible`, and the display and edit formats are applied to the fields (see `OnApplyFieldRepository`). The column `TRIGGERED` of that table is what `pfSetRequiredFields` reads.
 ## Cache model
 
-`CacheModelOptions` is a `TCacheModelOptions` object. Changing `CacheModelKind` needs an inactive dataset.
+`CacheModelOptions` is a `TFIBCacheModelOptions` object. Changing `CacheModelKind` needs an inactive dataset.
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | `BlobCacheLimit` | `Integer` | `0` | Number of BLOB streams kept open in memory at once. When more are opened, the least recently used unmodified one is released. `0` means no limit. |
 | `BufferChunks` | `Integer` | `32` | Records per cache block. A block is at least 1024 bytes, so it can hold more records than this value. A value of `0` or less restores the default. With `cmkLimitedBufferSize` the minimum is `100`. Can be changed only while the dataset is closed. |
-| `CacheModelKind` | `TCacheModelKind` | `cmkStandard` | `cmkStandard` keeps every fetched row in the cache. `cmkLimitedBufferSize` keeps only a part and reads other parts from the server with additional queries. |
+| `CacheModelKind` | `TFIBCacheModelKind` | `cmkStandard` | `cmkStandard` keeps every fetched row in the cache. `cmkLimitedBufferSize` keeps only a part and reads other parts from the server with additional queries. |
 | `PlanForDescSQLs` | `string` | | `PLAN` text added to the internal descending queries of `cmkLimitedBufferSize`. |
 
 `cmkLimitedBufferSize` requires an `ORDER BY` clause in `SelectSQL`, no `CachedUpdates`, no parameter named `NEW_...`, and either `AutoCommit` or the same transaction for `Transaction` and `UpdateTransaction`. Otherwise setting it raises an error. `Locate`, `Lookup`, and the `Locate...` family work differently in this mode, see [Locating](#locating).
@@ -271,7 +271,7 @@ A detail dataset has `DataSource` set to the master.
 
 A parameter is matched to the master field with the same name, or with the name after a `MAS_` prefix.
 
-| `TDetailCondition` | Effect |
+| `TFIBDetailCondition` | Effect |
 |--------------------|--------|
 | `dcForceMasterRefresh` | Refresh the master row after a row of the detail is deleted (not with `CachedUpdates`) or refreshed (not in edit or insert state). |
 | `dcForceOpen` | Open the detail when the master changes, even if it is closed. |
@@ -296,7 +296,7 @@ An update object that has an empty `SQL` or the text `No Action` is skipped. For
 |------|-------------|
 | `AddUpdateObject(Value)` | Add an update object to the list of its `KindUpdate`, at its `OrderInList` position. Returns the position, or `-1` for `nil`. |
 | `ExecUpdateObjects(KindUpdate, Buff, aExecuteOrder)` | Run the active update objects of one kind and order for a record buffer. For internal use. |
-| `ExistActiveUO(KindUpdate)` | `True` when at least one update object of that kind is active. |
+| `ExistActiveUpdateObjects(KindUpdate)` | `True` when at least one update object of that kind is active. |
 | `RemoveUpdateObject(Value)` | Remove an update object from the list. |
 
 ## Applying cached updates
@@ -332,7 +332,7 @@ Cached status after the statements ran, without `UseExecuteBlock`:
 - An inserted or modified row becomes unmodified.
 - A deleted row becomes `cusDeletedApplied`, except when `poRefreshAfterDelete` is set and `RefreshSQL` still returns the row (it keeps `cusDeleted`), and when `DeleteSQL` is `No Action` (the row keeps `cusDeleted` and the delete update objects do not run).
 
-`ApplyUpdToBase` leaves the statuses as they were. Under the conditions of the savepoint above, it runs all its rows under one savepoint: when a row fails, everything it applied is rolled back, so the database matches the statuses. A `Post` or `Delete` with `CachedUpdates` and `AutoCommit` calls `ApplyUpdToBase`, commits once, and then marks the rows applied.
+`ApplyUpdatesToDatabase` leaves the statuses as they were. Under the conditions of the savepoint above, it runs all its rows under one savepoint: when a row fails, everything it applied is rolled back, so the database matches the statuses. A `Post` or `Delete` with `CachedUpdates` and `AutoCommit` calls `ApplyUpdatesToDatabase`, commits once, and then marks the rows applied.
 
 | Action | Returned by `OnUpdateRecord` | Chosen in `OnUpdateError` |
 |--------|------------------------------|---------------------------|
@@ -355,54 +355,54 @@ With `UseExecuteBlock`, the code behaves as follows:
 
 | Name | Description |
 |------|-------------|
-| `ApplyUpdates` | Send the cached changes as described above. Same as `ApplyUpdToBase(False)`. |
-| `ApplyUpdToBase(DontChangeCacheFlags)` | The same loop. With `DontChangeCacheFlags` `True` (the default) the rows keep their cached status. Call `CommitUpdToCach` after the transaction commits. |
-| `CommitUpdToCach` | Clear the cached update status: inserted and modified rows become unmodified, deleted rows become `cusDeletedApplied`. `UpdatesPending` becomes `False`. |
+| `ApplyUpdates` | Send the cached changes as described above. Same as `ApplyUpdatesToDatabase(False)`. |
+| `ApplyUpdatesToDatabase(DontChangeCacheFlags)` | The same loop. With `DontChangeCacheFlags` `True` (the default) the rows keep their cached status. Call `CommitUpdatesToCache` after the transaction commits. |
+| `CommitUpdatesToCache` | Clear the cached update status: inserted and modified rows become unmodified, deleted rows become `cusDeletedApplied`. `UpdatesPending` becomes `False`. |
 
-With `AutoCommit` and `CachedUpdates`, each `Post` and `Delete` runs `ApplyUpdToBase`, commits the update transaction, and runs `CommitUpdToCach`. The last call is made also when `OnUpdateError` chose `uaSkip`, so skipped rows are then marked applied and `UpdatesPending` is `False`.
+With `AutoCommit` and `CachedUpdates`, each `Post` and `Delete` runs `ApplyUpdatesToDatabase`, commits the update transaction, and runs `CommitUpdatesToCache`. The last call is made also when `OnUpdateError` chose `uaSkip`, so skipped rows are then marked applied and `UpdatesPending` is `False`.
 
 ## Types
 
 | Type | Values |
 |------|--------|
-| `TAutoUpdateOptions` | Class, see [AutoUpdateOptions](#autoupdateoptions) |
-| `TCachedUpdateStatus` | `cusUnmodified`, `cusModified`, `cusInserted`, `cusDeleted`, `cusUninserted`, `cusDeletedApplied` |
-| `TCacheModelKind` | `cmkStandard`, `cmkLimitedBufferSize` |
-| `TCachRefreshKind` | `frkEdit`, `frkInsert` |
-| `TCompareFieldValues` | `function(Field: TField; const S1, S2: Variant): Integer of object` |
-| `TDetailCondition`, `TDetailConditions` | See [Master-detail](#master-detail); set of `TDetailCondition` |
-| `TEndTrEvent` | `procedure(EndingTR: TFIBTransaction; Action: TTransactionAction; Force: Boolean) of object` (unit `FIBDatabase`) |
+| `TFIBAutoUpdateOptions` | Class, see [AutoUpdateOptions](#autoupdateoptions) |
+| `TFIBCachedUpdateStatus` | `cusUnmodified`, `cusModified`, `cusInserted`, `cusDeleted`, `cusUninserted`, `cusDeletedApplied` |
+| `TFIBCacheModelKind` | `cmkStandard`, `cmkLimitedBufferSize` |
+| `TFIBCacheRefreshKind` | `frkEdit`, `frkInsert` |
+| `TFIBCompareFieldValuesFunc` | `function(Field: TField; const S1, S2: Variant): Integer of object` |
+| `TFIBDetailCondition`, `TFIBDetailConditions` | See [Master-detail](#master-detail); set of `TFIBDetailCondition` |
+| `TFIBEndTransactionEvent` | `procedure(EndingTR: TFIBTransaction; Action: TFIBTransactionAction; Force: Boolean) of object` (unit `FIBDatabase`) |
 | `TFIBAfterUpdateRecordEvent` | `procedure(DataSet: TDataSet; UpdateKind: TUpdateKind; var Resume: Boolean) of object` |
-| `TFIBOrderExecUO` | `oeBeforeDefault`, `oeAfterDefault` (unit `FIBDataSet`) |
+| `TFIBUpdateObjectExecuteOrder` | `oeBeforeDefault`, `oeAfterDefault` (unit `FIBDataSet`) |
 | `TFIBUpdateAction` | `uaFail`, `uaAbort`, `uaSkip`, `uaRetry`, `uaApply`, `uaApplied` |
 | `TFIBUpdateErrorEvent` | `procedure(DataSet: TDataSet; E: EFIBError; UpdateKind: TUpdateKind; var UpdateAction: TFIBUpdateAction) of object` |
 | `TFIBUpdateRecordEvent` | `procedure(DataSet: TDataSet; UpdateKind: TUpdateKind; var UpdateAction: TFIBUpdateAction) of object` |
-| `TFIBUpdateRecordTypes` | Set of `TCachedUpdateStatus` |
-| `TFieldOriginRule` | `forNoRule`, `forTableAndFieldName`, `forClientFieldName`, `forTableAliasAndFieldName` |
-| `TFormatFields` | Class, see [Default formats](#default-formats) |
-| `TIncludeFieldsToSQL` | `ifsAllFields`, `ifsNoBlob`, `ifsOnlyBlob` |
-| `TLockErrorEvent` | `procedure(DataSet: TDataSet; LockError: TLockStatus; var ErrorMessage: string; var Action: TDataAction) of object` |
-| `TLockStatus` | `lsSuccess`, `lsDeadLock`, `lsNotExist`, `lsMultiply`, `lsUnknownError` |
-| `TOnApplyDefaultValue` | `procedure(DataSet: TDataSet; Field: TField; var Applied: Boolean) of object` (unit `DSContainer`) |
-| `TOnApplyFieldRepository` | `procedure(DataSet: TDataSet; Field: TField; FieldInfo: TFIBFieldInfo) of object` (unit `DSContainer`) |
-| `TOnBlobFieldProcessing` | `procedure(Field: TBlobField; BlobSize: Integer; Progress: Integer; var Stop: Boolean) of object` (unit `FIBProps`) |
-| `TOnFetchRecord` | `procedure(FromQuery: TFIBQuery; RecordNumber: Integer; var StopFetching: Boolean) of object` |
-| `TOnFillClientBlob` | `procedure(DataSet: TFIBCustomDataSet; Field: TFIBBlobField; Stream: TFIBBlobStream) of object` |
-| `TOnGetSQLTextProc` | `procedure(DataSet: TFIBDataSet; var SQLText: string) of object` |
+| `TFIBUpdateRecordTypes` | Set of `TFIBCachedUpdateStatus` |
+| `TFIBFieldOriginRule` | `forNoRule`, `forTableAndFieldName`, `forClientFieldName`, `forTableAliasAndFieldName` |
+| `TFIBFormatFields` | Class, see [Default formats](#default-formats) |
+| `TFIBIncludeFieldsToSQL` | `ifsAllFields`, `ifsNoBlob`, `ifsOnlyBlob` |
+| `TFIBLockErrorEvent` | `procedure(DataSet: TDataSet; LockError: TFIBLockStatus; var ErrorMessage: string; var Action: TDataAction) of object` |
+| `TFIBLockStatus` | `lsSuccess`, `lsDeadLock`, `lsNotExist`, `lsMultiply`, `lsUnknownError` |
+| `TFIBApplyDefaultValueEvent` | `procedure(DataSet: TDataSet; Field: TField; var Applied: Boolean) of object` (unit `DSContainer`) |
+| `TFIBApplyFieldRepositoryEvent` | `procedure(DataSet: TDataSet; Field: TField; FieldInfo: TFIBFieldInfo) of object` (unit `DSContainer`) |
+| `TFIBBlobFieldProcessingEvent` | `procedure(Field: TBlobField; BlobSize: Integer; Progress: Integer; var Stop: Boolean) of object` (unit `FIBProps`) |
+| `TFIBFetchRecordEvent` | `procedure(FromQuery: TFIBQuery; RecordNumber: Integer; var StopFetching: Boolean) of object` |
+| `TFIBFillClientBlobEvent` | `procedure(DataSet: TFIBCustomDataSet; Field: TFIBBlobField; Stream: TFIBBlobStream) of object` |
+| `TFIBGetSQLTextEvent` | `procedure(DataSet: TFIBDataSet; var SQLText: string) of object` |
 | `TFIBDataSetOption`, `TFIBDataSetOptions` | See [Dataset options](#dataset-options); set of `TFIBDataSetOption` |
 | `TFIBPrepareOption`, `TFIBPrepareOptions` | See [Prepare options](#prepare-options); set of `TFIBPrepareOption` |
 | `TFIBSQLKind` | `skModify`, `skInsert`, `skDelete`, `skRefresh`, `skMerge` |
-| `TReturningFields`, `TSetReturningFields` | `rfAll`, `rfKeyFields`, `rfBlobFields`; set of `TReturningFields` |
-| `TSortFieldInfo` | Record: `FieldName`, `InDataSetIndex`, `InOrderIndex`, `Asc`, `NullsFirst` |
-| `TTransactionKind` | `tkReadTransaction`, `tkUpdateTransaction` |
-| `TUpdateKinds` | Set of `TUpdateKind` (`ukModify`, `ukInsert`, `ukDelete`) |
-| `TWhenGetGenID` | `wgNever`, `wgOnNewRecord`, `wgBeforePost` |
+| `TFIBReturningField`, `TFIBReturningFields` | `rfAll`, `rfKeyFields`, `rfBlobFields`; set of `TFIBReturningField` |
+| `TFIBSortFieldInfo` | Record: `FieldName`, `InDataSetIndex`, `InOrderIndex`, `Asc`, `NullsFirst` |
+| `TFIBTransactionKind` | `tkReadTransaction`, `tkUpdateTransaction` |
+| `TFIBUpdateKinds` | Set of `TUpdateKind` (`ukModify`, `ukInsert`, `ukDelete`) |
+| `TFIBWhenGetGenID` | `wgNever`, `wgOnNewRecord`, `wgBeforePost` |
 
-`TLockStatus` values: `lsSuccess` for one row locked, `lsNotExist` for no row, `lsMultiply` for more than one row, `lsDeadLock` for a deadlock or lock conflict, and `lsUnknownError` for any other error.
+`TFIBLockStatus` values: `lsSuccess` for one row locked, `lsNotExist` for no row, `lsMultiply` for more than one row, `lsDeadLock` for a deadlock or lock conflict, and `lsUnknownError` for any other error.
 
 ### Locate options
 
-`TExtLocateOptions` is a set of:
+`TFIBExtLocateOptions` is a set of:
 
 | Value | Effect |
 |-------|--------|
@@ -507,7 +507,7 @@ These properties read and rewrite parts of `SelectSQL` through `QSelect`; see [T
 |------|-------------|
 | `BlobModified(Field)` | `True` when the BLOB value of the current row was changed. |
 | `CacheDelete` | Remove the current row from the cache and mark it `cusDeletedApplied`, without sending any statement to the server. |
-| `CachedUpdateStatus` | `TCachedUpdateStatus` of the current row. |
+| `CachedUpdateStatus` | `TFIBCachedUpdateStatus` of the current row. |
 | `CancelUpdates` | Cancel the edit in progress and revert all cached changes. |
 | `MoveRecord(OldRecno, NewRecno, NeedResync)` | Move a row inside the cache; fetches all rows when `NewRecno` is beyond the fetched part. |
 | `RecordModified(Value)` | Set the `Modified` flag of the dataset, not of a row. |
@@ -523,7 +523,7 @@ All `Locate` methods post a pending edit first, honor `Filter`, and return `Fals
 
 | Name | Description |
 |------|-------------|
-| `ExtLocate(KeyFields, KeyValues, Options)` | Like `Locate` with `TExtLocateOptions`, see [Locate options](#locate-options). |
+| `ExtLocate(KeyFields, KeyValues, Options)` | Like `Locate` with `TFIBExtLocateOptions`, see [Locate options](#locate-options). |
 | `ExtLocateNext(KeyFields, KeyValues, Options)` / `ExtLocatePrior(KeyFields, KeyValues, Options)` | `ExtLocate` from the next or previous row. Return `False` at the end or beginning. |
 | `Locate(KeyFields, KeyValues, Options)` | Inherited signature with `TLocateOptions`. Searches the cache from the first row, fetching more rows as needed, and centers the found row. |
 | `LocateNext(KeyFields, KeyValues, Options)` / `LocatePrior(KeyFields, KeyValues, Options)` | `Locate` from the next or previous row. Return `False` at the end or beginning. |
@@ -544,7 +544,7 @@ With `cmkLimitedBufferSize`:
 | `DoSortEx(Fields, Ordering)` | The same with an `array of Integer` of field indexes, or a `TStrings` of field names. |
 | `IsSortedField(Field, FieldSortOrder)` | `True` and fills `FieldSortOrder` when `Field` is a sort field. |
 | `SortedFields` | Sort field names as a `;` list. |
-| `SortFieldInfo(OrderIndex)` | `TSortFieldInfo` of a sort field by its 1-based position. For an invalid index, `FieldName` is `'Unknown'` and `InOrderIndex` is `-1`. |
+| `SortFieldInfo(OrderIndex)` | `TFIBSortFieldInfo` of a sort field by its 1-based position. For an invalid index, `FieldName` is `'Unknown'` and `InOrderIndex` is `-1`. |
 | `SortFieldsCount` | Number of sort fields. |
 | `SortInfoIsValid` | `True` when sort fields are set and every one exists in the dataset. |
 
@@ -605,7 +605,7 @@ Available when array support is compiled in.
 |------|-------------|
 | `FindParam(ParamName)` | Parameter of `SelectSQL` by name, or `nil`. Starts the transaction first. |
 | `OpenWP(ParamValues)` / `OpenWP(ParamNames, ParamValues)` | Set the parameters, then `Open`. The first form sets parameters by position; it sets nothing when the array is empty. The second takes the names as a string. |
-| `OpenWPS(ParamSources)` | Take parameter values from `ISQLObject` sources, then `Open`. |
+| `OpenWPS(ParamSources)` | Take parameter values from `IFIBParamSource` sources, then `Open`. |
 | `ParamByName(ParamName)` | Parameter of `SelectSQL` by name. Raises when missing. |
 | `ParamNameCount(aParamName)` | Number of parameters with this name. |
 | `ParseParamToFieldsLinks(Dest)` | Add `FieldName=ParamName` lines to `Dest`: for each parameter, the field name found before the operator that precedes the parameter in a `WHERE` clause of `SelectSQL`. With a table alias, the name of the matching dataset field is used. |
@@ -632,7 +632,7 @@ Available when array support is compiled in.
 
 | Name | Description |
 |------|-------------|
-| `LockRecord(RaiseErr)` | Lock the current row in the update transaction and return a `TLockStatus`. The statement is the text from `OnLockSQLText` if set. Otherwise it is `SELECT 0 FROM <table> WHERE <key> FOR UPDATE WITH LOCK` with `poUseSelectForLock`, and an `UPDATE` that sets a field of the table to its own value without it. When no field of the table is in the dataset, `UpdateSQL` itself is run. The key comes from `AutoUpdateOptions.KeyFieldList` when `UpdateSQL` is empty, or when `AutoReWriteSqls` and `UpdateOnlyModifiedFields` are both set; otherwise from the `WHERE` clause of `UpdateSQL`. It raises when the key source is `KeyFieldList` and `AutoReWriteSqls` is off or the list is empty. With `RaiseErr` and a failure, `OnLockError` can change the message or choose the action (`daFail` raises, `daAbort` aborts, `daRetry` tries again). |
+| `LockRecord(RaiseErr)` | Lock the current row in the update transaction and return a `TFIBLockStatus`. The statement is the text from `OnLockSQLText` if set. Otherwise it is `SELECT 0 FROM <table> WHERE <key> FOR UPDATE WITH LOCK` with `poUseSelectForLock`, and an `UPDATE` that sets a field of the table to its own value without it. When no field of the table is in the dataset, `UpdateSQL` itself is run. The key comes from `AutoUpdateOptions.KeyFieldList` when `UpdateSQL` is empty, or when `AutoReWriteSqls` and `UpdateOnlyModifiedFields` are both set; otherwise from the `WHERE` clause of `UpdateSQL`. It raises when the key source is `KeyFieldList` and `AutoReWriteSqls` is off or the list is empty. With `RaiseErr` and a failure, `OnLockError` can change the message or choose the action (`daFail` raises, `daAbort` aborts, `daRetry` tries again). |
 
 ### Editing permissions
 
@@ -674,9 +674,9 @@ These methods change the cache only. They send no statement and do not mark a ro
 | `SaveToFile(FileName, AddInfo)` | `SaveToStream` into a new file. |
 | `SaveToStream(Stream, SeekBegin, AddInfo)` | Fetch all rows, then write the signature `FIB$DATASET`, the field definitions, the cache, and `AddInfo`. With `SeekBegin`, go to the start of the stream first. Writes stream version 8, with the field, relation and alias names in UTF-8; older versions of FIBPlus can't read it. |
 
-### `ISQLObject` members
+### `IFIBParamSource` members
 
-`TFIBCustomDataSet` implements `ISQLObject`, so a dataset can be a parameter source for `TFIBQuery.ExecWPS`. All members work on `SelectSQL` and on the current row.
+`TFIBCustomDataSet` implements `IFIBParamSource`, so a dataset can be a parameter source for `TFIBQuery.ExecWPS`. All members work on `SelectSQL` and on the current row.
 
 | Name | Description |
 |------|-------------|
@@ -713,7 +713,7 @@ Events of `TDataSet` (`BeforeOpen`, `AfterPost`, `OnNewRecord`, and so on) are p
 |------|-------------|
 | `AfterFetchRecord` | After a row is stored in the cache. Setting `StopFetching` ends the fetch, keeps the row, and ends with a silent `EAbort`. `FromQuery` can also be `QRefresh`. With `UniDirectional` or `cmkLimitedBufferSize`, `RecordNumber` is already reduced modulo `BufferChunks`. |
 | `BeforeFetchRecord` | Called by `QSelect` before it requests the next row from the server; `RecordNumber` is the number of rows already fetched. Setting `StopFetching` ends the fetch: no more rows are read, `QSelect.Eof` and `AllFetched` are set, and the cached rows are the whole result until the dataset is reopened. |
-| `OnCompareFieldValues` | Compares two values for sorting. See `TCompareFieldValues`. |
+| `OnCompareFieldValues` | Compares two values for sorting. See `TFIBCompareFieldValuesFunc`. |
 | `OnDisableControls` / `OnEnableControls` | `DisableControls` and `EnableControls` changed the state of the controls. |
 | `OnEndScroll` | The dataset has not scrolled for `WaitEndMasterInterval` milliseconds. The timer restarts on each `AfterScroll`, which is skipped while scroll events are disabled, but a timer started earlier can still fire after `DisableScrollEvents`. |
 | `OnFieldChange` | A field value changed. |
@@ -740,7 +740,7 @@ The events `BeforeOpen`, `AfterOpen`, `BeforeClose`, `AfterClose`, `BeforeInsert
 | Name | Description |
 |------|-------------|
 | `AddedFilterRecord(DataSet, Accept)` | Virtual and empty. Called last when a row passes `Filter` and `OnFilterRecord`, only when `Filtered` is `True`; set `Accept` to `False` to hide the row. |
-| `ClearModifFlags(Kind, NeedRefreshFields)` | Set the cached status of all rows. `Kind` `0` is `CommitUpdToCach`; `1` makes every row that is not unmodified or `cusDeletedApplied` unmodified (used by `poProtectedEdit`). |
+| `ClearModifiedFlags(Kind, NeedRefreshFields)` | Set the cached status of all rows. `Kind` `0` is `CommitUpdatesToCache`; `1` makes every row that is not unmodified or `cusDeletedApplied` unmodified (used by `poProtectedEdit`). |
 | `InternalDeleteRecord(Qry, Buff)` | Override. Runs the delete update objects and `DeleteSQL`, then applies `poRefreshAfterDelete` and `AutoCommit`. Returns at once when `DeleteSQL` is `No Action`. |
 | `InternalPostRecord(Qry, Buff)` | Override. Runs the update objects and the insert or update statement, applies `poRefreshAfterPost`, and commits with `AutoCommit` when `CachedUpdates` is off. |
 | `DoOnApplyDefaultValue(Field, Applied)` | Dynamic. Raises the containers' events and `OnApplyDefaultValue`. |
@@ -773,8 +773,8 @@ These three events are raised only by `ApplyUpdates`, once for each pending row.
 
 | Name | Description |
 |------|-------------|
-| `vBufferCacheSize` | Default `BufferChunks`, `32`. |
-| `vMinBufferChunksForLimCache` | Minimum `BufferChunks` for `cmkLimitedBufferSize`, `100`. |
+| `BufferCacheSize` | Default `BufferChunks`, `32`. |
+| `MinBufferChunksForLimitedCache` | Minimum `BufferChunks` for `cmkLimitedBufferSize`, `100`. |
 
 `FIBNoStatementTimeout` is documented in [TFIBQuery](TFIBQuery.md#constants).
 

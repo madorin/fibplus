@@ -36,41 +36,40 @@ type
     FTableName: string;
     FPrimaryKeyFields: string;
     FFieldList: TStringList;
-    FFormatNumber: integer;
-    FFIVersion: integer; // FIB$FIELDS_INFO
-    FWithFieldRepositaryInfo: boolean;
-    FStreamVersion: integer;
-    FNonValidated: boolean;
-    FTableID: integer;
-    procedure GetInfoFields(const TableName: string; aTransaction: TFIBTransaction);
-    procedure GetRepositaryFieldInfos(const TableName: string; aTransaction: TFIBTransaction);
+    FFormatNumber: Integer;
+    FFIVersion: Integer; // FIB$FIELDS_INFO
+    FWithFieldRepositoryInfo: Boolean;
+    FStreamVersion: Integer;
+    FNonValidated: Boolean;
+    FTableID: Integer;
+    procedure GetInfoFields(DB: TFIBDataBase; const TableName: string; aTransaction: TFIBTransaction);
+    procedure GetRepositoryFieldInfos(DB: TFIBDataBase; const TableName: string; aTransaction: TFIBTransaction);
     procedure ClearFieldList;
     procedure GetAdditionalInfo(FromQuery: TFIBCustomDataSet; const aFieldName: string; ToFieldInfo: TFIBFieldInfo);
     procedure FillInfo(DB: TFIBDataBase; Tr: TFIBTransaction; const ATableName: string);
-    function IsActualInfo(DB: TFIBDataBase): boolean;
+    function IsActualInfo(DB: TFIBDataBase): Boolean;
     function GetPrimaryKeyFields(DB: TFIBDataBase): string;
-    function GetTableId(DB: TFIBDataBase): integer;
-    procedure LoadFromStreamVersion(Stream: TStream; aStreamVersion: integer);
+    function GetTableId(DB: TFIBDataBase): Integer;
+    procedure LoadFromStreamVersion(Stream: TStream; aStreamVersion: Integer);
   public
     constructor Create(AOwner: TFIBTableInfoCache);
     destructor Destroy; override;
     procedure SaveToStream(Stream: TStream);
-    procedure LoadFromStream(Stream: TStream; FromBegin: boolean);
+    procedure LoadFromStream(Stream: TStream; FromBegin: Boolean);
 
     function FieldInfo(const FieldName: string): TFIBFieldInfo;
     property TableName: string read FTableName;
     property PrimaryKeyFields[DB: TFIBDataBase]: string read GetPrimaryKeyFields;
     property FieldList: TStringList read FFieldList;
-    property TableID[DB: TFIBDataBase]: integer read GetTableId;
+    property TableID[DB: TFIBDataBase]: Integer read GetTableId;
   end;
 
   TFIBTableInfoCache = class(TComponent)
   private
-    FDBNames: TStringList;
     FListTabInfo: TStringList;
     FLock: TCriticalSection;
-    FNeedValidate: boolean;
-    FLastTransactionId: integer;
+    FNeedValidate: Boolean;
+    FLastTransactionId: Integer;
     procedure PrepareInternalTransaction(aDataBase: TFIBDataBase);
   protected
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
@@ -82,25 +81,24 @@ type
     procedure LoadFromStream(Stream: TStream; DB: TFIBDataBase = nil);
 
     procedure SaveToFile(const FileName: string);
-    function LoadFromFile(const FileName: string; DB: TFIBDataBase = nil): boolean;
+    function LoadFromFile(const FileName: string; DB: TFIBDataBase = nil): Boolean;
     procedure ValidateSchema(aDataBase: TFIBDataBase; Proc: TFIBAcceptCacheSchemaEvent);
 
     function FindTableInfo(const ADBName, ATableName: string): TFIBTableInfo;
-    function GetTableInfo(aDataBase: TFIBDataBase; const ATableName: string; WithRepositaryInfo: boolean): TFIBTableInfo;
-    function GetFieldInfo(aDataBase: TFIBDataBase; const ATableName, aFieldName: string; RepositoryInfo: boolean): TFIBFieldInfo;
+    function GetTableInfo(aDataBase: TFIBDataBase; const ATableName: string; WithRepositoryInfo: Boolean): TFIBTableInfo;
+    function GetFieldInfo(aDataBase: TFIBDataBase; const ATableName, aFieldName: string; RepositoryInfo: Boolean): TFIBFieldInfo;
 
     procedure Clear;
     procedure ClearForDataBase(aDataBase: TFIBDataBase);
     procedure ClearForTable(const TableName: string);
-    procedure CommitInternalTransaction;
-    property NeedValidate: boolean read FNeedValidate write FNeedValidate;
+    property NeedValidate: Boolean read FNeedValidate write FNeedValidate;
   end;
 
   TFIBDataSetInfo = class
   private
     FDBName: string;
     FStreamVersion: Integer;
-    FVersion: integer;
+    FVersion: Integer;
     FSelectSQL: TStrings;
     FInsertSQL: TStrings;
     FUpdateSQL: TStrings;
@@ -110,9 +108,9 @@ type
     FGeneratorName: string;
     FDescription: string;
     FUpdateTableName: string;
-    FUpdateOnlyModifiedFields: boolean;
+    FUpdateOnlyModifiedFields: Boolean;
     FConditions: string;
-    FNonValidated: boolean;
+    FNonValidated: Boolean;
 
   public
     constructor Create(DataSet: TFIBCustomDataSet); overload;
@@ -128,25 +126,25 @@ type
   private
     FListDataSetInfo: TStringList;
     FLock: TCriticalSection;
-    FNeedValidate: boolean;
-    function ActualVersionDSInfo(DataSet: TFIBCustomDataSet): integer;
+    FNeedValidate: Boolean;
+    function ActualVersionDSInfo(DataSet: TFIBCustomDataSet): Integer;
   public
     constructor Create;
     destructor Destroy; override;
-    function FindDataSetInfo(DataSet: TFIBCustomDataSet; var Index: integer): TFIBDataSetInfo; overload;
-    function FindDataSetInfo(const DBName: string; DS_ID: integer; var Index: integer): TFIBDataSetInfo; overload;
+    function FindDataSetInfo(DataSet: TFIBCustomDataSet; var Index: Integer): TFIBDataSetInfo; overload;
+    function FindDataSetInfo(const DBName: string; DS_ID: Integer; var Index: Integer): TFIBDataSetInfo; overload;
     function GetDataSetInfo(DataSet: TFIBCustomDataSet): TFIBDataSetInfo;
-    function LoadDataSetInfo(DataSet: TFIBCustomDataSet): boolean;
+    function LoadDataSetInfo(DataSet: TFIBCustomDataSet): Boolean;
     procedure Clear;
     procedure ClearDSInfo(DataSet: TFIBCustomDataSet); overload;
-    procedure ClearDSInfo(DS_ID: integer); overload;
+    procedure ClearDSInfo(DS_ID: Integer); overload;
 
     procedure SaveToStream(Stream: TStream);
     procedure LoadFromStream(Stream: TStream);
 
     procedure SaveToFile(const FileName: string);
-    function LoadFromFile(const FileName: string): boolean;
-    property NeedValidate: boolean read FNeedValidate write FNeedValidate;
+    function LoadFromFile(const FileName: string): Boolean;
+    property NeedValidate: Boolean read FNeedValidate write FNeedValidate;
   end;
 
   // Thread-safe, process-wide cache of stored procedure input parameters
@@ -154,25 +152,25 @@ type
   private
     FItems: TStringList; // Objects are TFIBStoredProcMetadata
     FLock: TCriticalSection;
-    function AcquireMetadata(DB: TFIBDataBase; const StoredProcName: string; ForceReQuery: boolean): TObject;
+    function AcquireMetadata(DB: TFIBDataBase; const StoredProcName: string; ForceReQuery: Boolean): TObject;
   public
     constructor Create;
     destructor Destroy; override;
     procedure Clear;
-    function GetExecProcTxt(DB: TFIBDataBase; const StoredProcName: string; ForceReQuery: boolean): string;
-    function GetParamDefValue(DB: TFIBDataBase; const StoredProcName: string; ParamNo: integer): string;
+    function GetExecProcTxt(DB: TFIBDataBase; const StoredProcName: string; ForceReQuery: Boolean): string;
+    function GetParamDefValue(DB: TFIBDataBase; const StoredProcName: string; ParamNo: Integer): string;
     procedure ClearSPInfo(DB: TFIBDataBase);
   end;
 
   TFIBErrorMessage = class
   private
     FErrorMsg: string;
-    FVersion: integer;
+    FVersion: Integer;
   public
-    constructor Create(const aErrorMsg: string; aVersion: integer);
+    constructor Create(const aErrorMsg: string; aVersion: Integer);
   public
     property ErrorMsg: string read FErrorMsg;
-    property Version: integer read FVersion;
+    property Version: Integer read FVersion;
   end;
 
   // Thread-safe, process-wide cache of FIB$ERROR_MESSAGES, validated per database
@@ -199,29 +197,31 @@ type
   end;
 
 var
-  ListTableInfo: TFIBTableInfoCache;
-  ListDataSetInfo: TFIBDataSetInfoCache;
-  ListSPInfo: TFIBStoredProcMetadataCache;
-  ListErrorMessages: TFIBErrorMessageCache;
+  TableInfoCache: TFIBTableInfoCache;
+  DataSetInfoCache: TFIBDataSetInfoCache;
+  StoredProcInfoCache: TFIBStoredProcMetadataCache;
+  ErrorMessageCache: TFIBErrorMessageCache;
   // Manage Developer Info tables
 
-procedure CreateFRepositaryTable(DB: TFIBDataBase);
-procedure CreateDRepositaryTable(DB: TFIBDataBase);
-procedure CreateERepositaryTable(DB: TFIBDataBase);
+procedure CreateFieldsRepositoryTable(DB: TFIBDataBase);
+procedure CreateDataSetsRepositoryTable(DB: TFIBDataBase);
+procedure CreateErrorsRepositoryTable(DB: TFIBDataBase);
 
-function ExistFRepositaryTable(DB: TFIBDataBase): boolean;
-function ExistDRepositaryTable(DB: TFIBDataBase): boolean;
-function ExistERepositaryTable(DB: TFIBDataBase): boolean;
-function ExistBooleanDomain(DB: TFIBDataBase): boolean;
+function ExistFieldsRepositoryTable(DB: TFIBDataBase): Boolean;
+function ExistDataSetsRepositoryTable(DB: TFIBDataBase): Boolean;
+function ExistErrorsRepositoryTable(DB: TFIBDataBase): Boolean;
+function ExistBooleanDomain(DB: TFIBDataBase): Boolean;
 
-function SaveFIBDataSetInfo(DataSet: TFIBCustomDataSet; const Name: string): boolean;
+function SaveFIBDataSetInfo(DataSet: TFIBCustomDataSet; const Name: string): Boolean;
 
 // Routine function
 
-function GetFieldInfos(Field: TField; RepositaryInfo: boolean): TFIBFieldInfo;
-function GetOtherFieldInfo(Field: TField; const InfoName: string): string;
-procedure Update1RepositaryTable(Tr: TFIBTransaction);
-procedure Update2RepositaryTable(Tr: TFIBTransaction);
+function GetFieldInfos(Field: TField; RepositoryInfo: Boolean): TFIBFieldInfo;
+// The upgrades of the repository tables run in an own transaction of the database
+procedure UpgradeFieldsRepositoryTable(DB: TFIBDataBase); overload;
+procedure UpgradeFieldsRepositoryTable(Tr: TFIBTransaction); overload;
+procedure UpgradeDataSetsRepositoryTable(DB: TFIBDataBase); overload;
+procedure UpgradeDataSetsRepositoryTable(Tr: TFIBTransaction); overload;
 
 function DBPrimaryKeyFields(const TableName: string; aTransaction: TFIBTransaction;
   Database: TFIBDataBase = nil): string;
@@ -287,14 +287,14 @@ var
   // One character per repository table: '1' exists, '0' doesn't, '2' unknown; under LockRepList
 procedure SetRepositoryState(DB: TFIBDataBase; const State: string);
 var
-  Index: integer;
+  Index: Integer;
 begin
   Index := DatabaseRepositories.IndexOfObject(DB);
   if Index < 0 then
   begin
     DatabaseRepositories.AddObject(State, DB);
     // TFIBTableInfoCache.Notification removes the entry with the component
-    DB.FreeNotification(ListTableInfo);
+    DB.FreeNotification(TableInfoCache);
   end
   else
     DatabaseRepositories[Index] := State;
@@ -311,15 +311,15 @@ const
     'where R.RDB$SYSTEM_FLAG = 0' + sLineBreak +
     'and  R.rdb$view_blr is null   order by 1';
 
-function ExistRepositaryTable(DB: TFIBDataBase; Kind: byte): boolean;
+function ExistRepositoryTable(DB: TFIBDataBase; Kind: Byte): Boolean;
 var
   aTransaction: TFIBTransaction;
   qry: TFIBQuery;
-  Index: integer;
+  Index: Integer;
   s: string;
-  cr: TExtBoolean;
+  cr: TFIBExtendedBoolean;
 
-  function RepositaryIsRegistered: TExtBoolean;
+  function RepositoryIsRegistered: TFIBExtendedBoolean;
   begin
     Index := DatabaseRepositories.IndexOfObject(DB);
     if Index > -1 then
@@ -345,7 +345,7 @@ begin
       cr := eUnknown;
     end
     else
-      cr := RepositaryIsRegistered;
+      cr := RepositoryIsRegistered;
     Result := cr = eTrue;
     if cr <> eUnknown then
       Exit;
@@ -384,7 +384,7 @@ begin
 
         SetRepositoryState(DB, s);
 
-        Result := RepositaryIsRegistered = eTrue;
+        Result := RepositoryIsRegistered = eTrue;
       finally
         aTransaction.Free;
         Free;
@@ -394,17 +394,17 @@ begin
   end;
 end;
 
-function ExistDRepositaryTable(DB: TFIBDataBase): boolean;
+function ExistDataSetsRepositoryTable(DB: TFIBDataBase): Boolean;
 begin
-  Result := ExistRepositaryTable(DB, 2)
+  Result := ExistRepositoryTable(DB, 2)
 end;
 
-function ExistERepositaryTable(DB: TFIBDataBase): boolean;
+function ExistErrorsRepositoryTable(DB: TFIBDataBase): Boolean;
 begin
-  Result := ExistRepositaryTable(DB, 3)
+  Result := ExistRepositoryTable(DB, 3)
 end;
 
-function ExistBooleanDomain(DB: TFIBDataBase): boolean;
+function ExistBooleanDomain(DB: TFIBDataBase): Boolean;
 var
   Transaction: TFIBTransaction;
   qry: TFIBQuery;
@@ -429,9 +429,9 @@ begin
   end;
 end;
 
-function ExistFRepositaryTable(DB: TFIBDataBase): boolean;
+function ExistFieldsRepositoryTable(DB: TFIBDataBase): Boolean;
 begin
-  Result := ExistRepositaryTable(DB, 1)
+  Result := ExistRepositoryTable(DB, 1)
 end;
 
 function TransactionDatabase(Transaction: TFIBTransaction): TFIBDataBase;
@@ -455,7 +455,7 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-    function Contains(DB: TFIBDataBase; const Upgrade: string): boolean;
+    function Contains(DB: TFIBDataBase; const Upgrade: string): Boolean;
     procedure Add(DB: TFIBDataBase; const Upgrade: string);
   end;
 
@@ -476,7 +476,7 @@ end;
 
 procedure TFailedUpgrades.Notification(AComponent: TComponent; Operation: TOperation);
 var
-  i: integer;
+  i: Integer;
 begin
   if Operation = opRemove then
   begin
@@ -492,9 +492,9 @@ begin
   inherited Notification(AComponent, Operation);
 end;
 
-function TFailedUpgrades.Contains(DB: TFIBDataBase; const Upgrade: string): boolean;
+function TFailedUpgrades.Contains(DB: TFIBDataBase; const Upgrade: string): Boolean;
 var
-  i: integer;
+  i: Integer;
 begin
   Result := False;
   LockRepList.Acquire;
@@ -527,14 +527,14 @@ end;
 // Firebird can't change the type of a key column: the primary key is dropped and recreated
 procedure WidenRepositoryColumns(DB: TFIBDataBase;
   const Upgrade, TableName: string; const ColumnNames: array of string;
-  NewLength: integer);
+  NewLength: Integer);
 var
   Transaction: TFIBTransaction;
   qry: TFIBQuery;
   Narrow, KeyColumns: TStringList;
   KeyName, KeyList: string;
-  DropKey: boolean;
-  ColumnLength, i: integer;
+  DropKey: Boolean;
+  ColumnLength, i: Integer;
   ColumnName: string;
 
   procedure ExecDDL(const SQL: string);
@@ -626,126 +626,120 @@ begin
   end;
 end;
 
-procedure Update1RepositaryTable(Tr: TFIBTransaction);
+// The repository upgrades run in an own transaction, never in a transaction of the application.
+// A statement that fails (the column or the object exists already) is skipped.
+function TryRepositoryDDL(qry: TFIBQuery; const SQLs: array of string): Boolean;
+var
+  i: Integer;
+begin
+  Result := True;
+  try
+    for i := Low(SQLs) to High(SQLs) do
+    begin
+      qry.SQL.Text := SQLs[i];
+      qry.ExecQuery;
+    end;
+  except
+    on EFIBError do
+      Result := False;
+  end;
+end;
+
+procedure CommitRepositoryUpgrade(Transaction: TFIBTransaction);
+begin
+  try
+    Transaction.Commit;
+  except
+    if Transaction.InTransaction then
+      Transaction.Rollback;
+    raise;
+  end;
+end;
+
+procedure UpgradeFieldsRepositoryTable(DB: TFIBDataBase);
 var
   qry: TFIBQuery;
-  DB: TFIBDataBase;
+  Transaction: TFIBTransaction;
 begin
-  DB := TransactionDatabase(Tr);
   // without rights to widen the table the other changes fail too, don't retry on every read
   if (DB = nil) or FailedUpgrades.Contains(DB, FieldsInfoNamesUpgrade) then
     Exit;
   if DB.Capabilities.MaxIdentifierLength > 31 then
     WidenRepositoryColumns(DB, FieldsInfoNamesUpgrade, 'FIB$FIELDS_INFO',
       ['TABLE_NAME', 'FIELD_NAME'], DB.Capabilities.MaxIdentifierLength);
+  Transaction := CreateInternalTransaction(DB, False);
   qry := TFIBQuery.Create(nil);
-  with qry, qry.SQL do
-    try
-      Database := DB;
-      Transaction := Tr;
-      ParamCheck := False;
-      if not Tr.InTransaction then
-        Tr.StartTransaction;
-      try
-        Text := 'CREATE GENERATOR FIB$FIELD_INFO_VERSION';
-        ExecQuery;
-      except
-      end;
-      try
-        Text := 'ALTER TABLE FIB$FIELDS_INFO ADD DISPLAY_WIDTH INTEGER DEFAULT 0';
-        ExecQuery;
-      except
-      end;
-      try
-        Text := 'ALTER TABLE FIB$FIELDS_INFO ADD FIB$VERSION INTEGER';
-        ExecQuery;
-      except
-      end;
-
-      try
-        Text := 'CREATE TRIGGER FIB$FIELDS_INFO_BI FOR FIB$FIELDS_INFO ' +
-          'ACTIVE BEFORE INSERT POSITION 0 as ' + sLineBreak + 'begin ' + #13#10 +
-          'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end';
-        ExecQuery;
-      except
-      end;
-      try
-        Text := 'CREATE TRIGGER FIB$FIELDS_INFO_BU FOR FIB$FIELDS_INFO ' +
-          'ACTIVE BEFORE UPDATE POSITION 0 as ' + sLineBreak + 'begin ' + sLineBreak +
-          'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end';
-        ExecQuery;
-      except
-      end;
-    finally
-      Tr.CommitRetaining;
-      Free
-    end;
+  try
+    qry.Database := DB;
+    qry.Transaction := Transaction;
+    qry.ParamCheck := False;
+    Transaction.StartTransaction;
+    TryRepositoryDDL(qry, ['CREATE GENERATOR FIB$FIELD_INFO_VERSION']);
+    TryRepositoryDDL(qry, ['ALTER TABLE FIB$FIELDS_INFO ADD DISPLAY_WIDTH INTEGER DEFAULT 0']);
+    TryRepositoryDDL(qry, ['ALTER TABLE FIB$FIELDS_INFO ADD FIB$VERSION INTEGER']);
+    TryRepositoryDDL(qry, ['CREATE TRIGGER FIB$FIELDS_INFO_BI FOR FIB$FIELDS_INFO ' +
+      'ACTIVE BEFORE INSERT POSITION 0 as ' + sLineBreak + 'begin ' + sLineBreak +
+      'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end']);
+    TryRepositoryDDL(qry, ['CREATE TRIGGER FIB$FIELDS_INFO_BU FOR FIB$FIELDS_INFO ' +
+      'ACTIVE BEFORE UPDATE POSITION 0 as ' + sLineBreak + 'begin ' + sLineBreak +
+      'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end']);
+    CommitRepositoryUpgrade(Transaction);
+  finally
+    qry.Free;
+    Transaction.Free;
+  end;
 end;
 
-procedure Update2RepositaryTable(Tr: TFIBTransaction);
+procedure UpgradeDataSetsRepositoryTable(DB: TFIBDataBase);
 var
   qry: TFIBQuery;
+  Transaction: TFIBTransaction;
 begin
+  if DB = nil then
+    Exit;
+  Transaction := CreateInternalTransaction(DB, False);
   qry := TFIBQuery.Create(nil);
-  with qry, qry.SQL do
-    try
-      Database := TransactionDatabase(Tr);
-      Transaction := Tr;
-      ParamCheck := False;
-      if not ExistBooleanDomain(Database) then
-      begin
-        Text := 'CREATE DOMAIN FIB$BOOLEAN AS SMALLINT DEFAULT 1 NOT NULL CHECK (VALUE IN (0,1))';
-        ExecQuery;
-      end;
-      try
-        Text := 'ALTER TABLE FIB$DATASETS_INFO ADD UPDATE_TABLE_NAME  VARCHAR(68)';
-        ExecQuery;
-      except
-      end;
-      try
-        Text := 'ALTER TABLE FIB$DATASETS_INFO ADD UPDATE_ONLY_MODIFIED_FIELDS  FIB$BOOLEAN NOT NULL';
-        ExecQuery;
-      except
-      end;
-      try
-        Text := 'ALTER TABLE FIB$DATASETS_INFO ADD CONDITIONS  BLOB sub_type 1 segment size 80';
-        ExecQuery;
-      except
-      end;
-
-      if not Tr.InTransaction then
-        Tr.StartTransaction;
-      try
-        Text := 'CREATE GENERATOR FIB$FIELD_INFO_VERSION';
-        ExecQuery;
-      except
-      end;
-
-      try
-        Text := 'ALTER TABLE FIB$DATASETS_INFO ADD fib$version  INTEGER';
-        ExecQuery;
-        Text := 'CREATE TRIGGER FIB$DATASETS_INFO_BI FOR FIB$DATASETS_INFO ' +
-          'ACTIVE BEFORE INSERT POSITION 0 as ' + sLineBreak + 'begin' + sLineBreak +
-          'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end';
-        ExecQuery;
-
-        Text := 'CREATE TRIGGER FIB$DATASETS_INFO_BU FOR FIB$DATASETS_INFO ' +
-          'ACTIVE BEFORE UPDATE POSITION 0 as ' + sLineBreak + 'begin' + sLineBreak +
-          'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end';
-        ExecQuery;
-
-      except
-      end;
-
-    finally
-      Tr.CommitRetaining;
-      qry.Free
-    end
+  try
+    qry.Database := DB;
+    qry.Transaction := Transaction;
+    qry.ParamCheck := False;
+    Transaction.StartTransaction;
+    if not ExistBooleanDomain(DB) then
+    begin
+      qry.SQL.Text := 'CREATE DOMAIN FIB$BOOLEAN AS SMALLINT DEFAULT 1 NOT NULL CHECK (VALUE IN (0,1))';
+      qry.ExecQuery;
+    end;
+    TryRepositoryDDL(qry, ['ALTER TABLE FIB$DATASETS_INFO ADD UPDATE_TABLE_NAME  VARCHAR(68)']);
+    TryRepositoryDDL(qry, ['ALTER TABLE FIB$DATASETS_INFO ADD UPDATE_ONLY_MODIFIED_FIELDS  FIB$BOOLEAN NOT NULL']);
+    TryRepositoryDDL(qry, ['ALTER TABLE FIB$DATASETS_INFO ADD CONDITIONS  BLOB sub_type 1 segment size 80']);
+    TryRepositoryDDL(qry, ['CREATE GENERATOR FIB$FIELD_INFO_VERSION']);
+    TryRepositoryDDL(qry, ['ALTER TABLE FIB$DATASETS_INFO ADD fib$version  INTEGER',
+      'CREATE TRIGGER FIB$DATASETS_INFO_BI FOR FIB$DATASETS_INFO ' +
+      'ACTIVE BEFORE INSERT POSITION 0 as ' + sLineBreak + 'begin' + sLineBreak +
+      'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end',
+      'CREATE TRIGGER FIB$DATASETS_INFO_BU FOR FIB$DATASETS_INFO ' +
+      'ACTIVE BEFORE UPDATE POSITION 0 as ' + sLineBreak + 'begin' + sLineBreak +
+      'new.fib$version=gen_id(fib$field_info_version,1);' + sLineBreak + 'end']);
+    CommitRepositoryUpgrade(Transaction);
+  finally
+    qry.Free;
+    Transaction.Free;
+  end;
 end;
 
-procedure DoCreateRepositaryTable(DB: TFIBDataBase; Kind: byte);
+procedure UpgradeFieldsRepositoryTable(Tr: TFIBTransaction);
+begin
+  UpgradeFieldsRepositoryTable(TransactionDatabase(Tr));
+end;
+
+procedure UpgradeDataSetsRepositoryTable(Tr: TFIBTransaction);
+begin
+  UpgradeDataSetsRepositoryTable(TransactionDatabase(Tr));
+end;
+
+procedure DoCreateRepositoryTable(DB: TFIBDataBase; Kind: Byte);
 var
-  Index: integer;
+  Index: Integer;
   State: string;
   Transaction: TFIBTransaction;
   qry: TFIBQuery;
@@ -779,7 +773,6 @@ begin
             ExecQuery;
             Text := 'GRANT SELECT ON TABLE FIB$FIELDS_INFO TO PUBLIC';
             ExecQuery;
-            Update1RepositaryTable(Transaction);
           end;
         2:
           begin
@@ -795,7 +788,6 @@ begin
             ExecQuery;
             Text := 'GRANT SELECT ON TABLE FIB$DATASETS_INFO TO PUBLIC';
             ExecQuery;
-            Update2RepositaryTable(Transaction);
           end;
         3:
           begin
@@ -832,6 +824,11 @@ begin
     Transaction.Free;
     qry.Free;
   end;
+  // the upgrades alter the tables created above, in their own transaction
+  case Kind of
+    1: UpgradeFieldsRepositoryTable(DB);
+    2: UpgradeDataSetsRepositoryTable(DB);
+  end;
   LockRepList.Acquire;
   try
     Index := DatabaseRepositories.IndexOfObject(DB);
@@ -846,26 +843,26 @@ begin
   end;
 end;
 
-procedure CreateDRepositaryTable(DB: TFIBDataBase);
+procedure CreateDataSetsRepositoryTable(DB: TFIBDataBase);
 begin
-  DoCreateRepositaryTable(DB, 2)
+  DoCreateRepositoryTable(DB, 2)
 end;
 
-procedure CreateFRepositaryTable(DB: TFIBDataBase);
+procedure CreateFieldsRepositoryTable(DB: TFIBDataBase);
 begin
-  DoCreateRepositaryTable(DB, 1)
+  DoCreateRepositoryTable(DB, 1)
 end;
 
-procedure CreateERepositaryTable(DB: TFIBDataBase);
+procedure CreateErrorsRepositoryTable(DB: TFIBDataBase);
 begin
-  DoCreateRepositaryTable(DB, 3)
+  DoCreateRepositoryTable(DB, 3)
 end;
 
-function ExchangeDataSetInfo(DataSet: TFIBCustomDataSet; DS_Info: TFIBDataSetInfo; aDescription: string = ''): boolean;
+function ExchangeDataSetInfo(DataSet: TFIBCustomDataSet; DS_Info: TFIBDataSetInfo; aDescription: string = ''): Boolean;
 var
-  vTransaction: TFIBTransaction;
+  InfoTransaction: TFIBTransaction;
   DI: TFIBDataSet;
-  vDescription: string;
+  DataSetDescription: string;
   tf1: TFIBXSQLVAR;
   q: TFIBQuery;
 
@@ -880,23 +877,29 @@ begin
         raise Exception.Create(SDataBaseNotAssigned);
       if not(urDataSetInfo in DataSet.Database.UseRepositories) then
         raise Exception.Create(SCompEditDataSetInfoForbid);
-      if not ExistDRepositaryTable(DataSet.Database) then
+      if not ExistDataSetsRepositoryTable(DataSet.Database) then
         raise Exception.Create(SCompEditDataSetInfoNotExists);
 
       // before the cached query below: its prepared statement would block the DDL
       if (DS_Info = nil) and (Length(AutoUpdateOptions.KeyFields) > 68) then
         WidenRepositoryColumns(DataSet.Database, DataSetsInfoKeyFieldUpgrade, 'FIB$DATASETS_INFO', ['KEY_FIELD'], 1024);
-      DI := TFIBDataSet.Create(nil);
-      vTransaction := CreateInternalTransaction(DataSet.Database, False);
-      q := GetQueryForUse(vTransaction, 'SELECT * FROM FIB$DATASETS_INFO WHERE DS_ID=:DS_ID');
+      DI := nil;
+      q := nil;
+      InfoTransaction := CreateInternalTransaction(DataSet.Database, False);
       try
-        vTransaction.StartTransaction;
+        DI := TFIBDataSet.Create(nil);
+        q := GetQueryForUse(InfoTransaction, 'SELECT * FROM FIB$DATASETS_INFO WHERE DS_ID=:DS_ID');
+        InfoTransaction.StartTransaction;
         if DS_Info <> nil then
         begin
           q.Params[0].asInteger := DataSet_ID;
           q.ExecQuery;
+          // no info stored for the dataset
           if q.RecordCount = 0 then
+          begin
+            Result := False;
             Exit;
+          end;
           with DS_Info, q do
           begin
             FSelectSQL.Text := FieldByName('SELECT_SQL').asString;
@@ -928,8 +931,8 @@ begin
         begin
           // For design only
           DI.Database := DataSet.Database;
-          DI.Transaction := vTransaction;
-          DI.UpdateTransaction := vTransaction;
+          DI.Transaction := InfoTransaction;
+          DI.UpdateTransaction := InfoTransaction;
           DI.SelectSQL.Text := 'SELECT * FROM FIB$DATASETS_INFO WHERE DS_ID=' + IntToStr(DataSet_ID);
 
           DI.InsertSQL.Text := 'INSERT INTO FIB$DATASETS_INFO (DS_ID,UPDATE_ONLY_MODIFIED_FIELDS) VALUES('
@@ -944,9 +947,9 @@ begin
           try
             DI.QUpdate.Prepare;
           except
-            Update2RepositaryTable(vTransaction);
-            vTransaction.Commit;
-            vTransaction.StartTransaction
+            UpgradeDataSetsRepositoryTable(DataSet.Database);
+            InfoTransaction.Commit;
+            InfoTransaction.StartTransaction
           end;
           DI.Open;
           if DI.RecordCount = 0 then
@@ -958,14 +961,10 @@ begin
               raise Exception.Create(SCompEditUnableInsertInfoRecord);
           end;
           if Length(aDescription) = 0 then
-            vDescription := DI.FieldByName('DESCRIPTION').asString
+            DataSetDescription := DI.FieldByName('DESCRIPTION').asString
           else
-            vDescription := aDescription;
+            DataSetDescription := aDescription;
 
-          { Result:=False;
-
-            if not InputQuery(SCompEditSaveDataSetProperty, SCompEditDataSetDesc, vDescription
-            ) then Exit; }
           DI.Edit;
           DI.FieldByName('SELECT_SQL').asString := SelectSQL.Text;
           DI.FieldByName('INSERT_SQL').asString := InsertSQL.Text;
@@ -974,23 +973,24 @@ begin
           DI.FieldByName('REFRESH_SQL').asString := RefreshSQL.Text;
           DI.FieldByName('KEY_FIELD').asString := AutoUpdateOptions.KeyFields;
           DI.FieldByName('NAME_GENERATOR').asString := AutoUpdateOptions.GeneratorName;
-          DI.FieldByName('DESCRIPTION').asString := vDescription;
+          DI.FieldByName('DESCRIPTION').asString := DataSetDescription;
           DI.FieldByName('UPDATE_TABLE_NAME').asString := AutoUpdateOptions.UpdateTableName;
           DI.FieldByName('UPDATE_ONLY_MODIFIED_FIELDS').asInteger := Ord(AutoUpdateOptions.UpdateOnlyModifiedFields);
           DI.FieldByName('CONDITIONS').asString := Conditions.ExchangeString;
           DI.Post;
         end;
-        vTransaction.Commit;
+        InfoTransaction.Commit;
         Result := True;
       finally
-        FreeQueryForUse(q);
-        vTransaction.Free;
+        if q <> nil then
+          FreeQueryForUse(q);
+        InfoTransaction.Free;
         DI.Free;
       end;
     end;
 end;
 
-function SaveFIBDataSetInfo(DataSet: TFIBCustomDataSet; const Name: string): boolean;
+function SaveFIBDataSetInfo(DataSet: TFIBCustomDataSet; const Name: string): Boolean;
 begin
   Result := ExchangeDataSetInfo(DataSet, nil, Name);
 end;
@@ -1084,26 +1084,25 @@ end;
 procedure TFIBTableInfo.FillInfo(DB: TFIBDataBase; Tr: TFIBTransaction; const ATableName: string);
 
 var
-  vDatabase: TFIBDataBase;
-  vForceTransaction: boolean;
-  vTr: TFIBTransaction;
+  InfoDatabase: TFIBDataBase;
+  ForceTransaction: Boolean;
+  WorkTransaction: TFIBTransaction;
 begin
-  inherited Create;
   FTableName := ATableName;
   FPrimaryKeyFields := SDefer;
-  vDatabase := DB;
-  FDBName := vDatabase.DBName;
-  vTr := vDatabase.FirstActiveTransaction;
-  vForceTransaction := vTr = nil;
-  if vForceTransaction then
+  InfoDatabase := DB;
+  FDBName := InfoDatabase.DBName;
+  WorkTransaction := InfoDatabase.FirstActiveTransaction;
+  ForceTransaction := WorkTransaction = nil;
+  if ForceTransaction then
   begin
     if Length(FTableName) > 0 then
-      GetInfoFields(FTableName, Tr);
+      GetInfoFields(DB, FTableName, Tr);
   end
   else
   begin
     if Length(FTableName) > 0 then
-      GetInfoFields(FTableName, vTr);
+      GetInfoFields(DB, FTableName, WorkTransaction);
   end;
 
 end;
@@ -1117,18 +1116,18 @@ end;
 
 procedure TFIBTableInfo.SaveToStream(Stream: TStream);
 var
-  i, L: integer;
+  i, L: Integer;
 begin
   with Stream do
   begin
     WriteUTF8StrToStream(FDBName, Stream);
     WriteUTF8StrToStream(FTableName, Stream);
-    WriteBuffer(FWithFieldRepositaryInfo, SizeOf(boolean));
-    WriteBuffer(FFormatNumber, SizeOf(integer)); // metadate counter
-    WriteBuffer(FFIVersion, SizeOf(integer)); // counter for FIB$FIELD_INFO
+    WriteBuffer(FWithFieldRepositoryInfo, SizeOf(Boolean));
+    WriteBuffer(FFormatNumber, SizeOf(Integer)); // metadate counter
+    WriteBuffer(FFIVersion, SizeOf(Integer)); // counter for FIB$FIELD_INFO
     WriteUTF8StrToStream(FPrimaryKeyFields, Stream);
     L := FFieldList.Count;
-    WriteBuffer(L, SizeOf(integer));
+    WriteBuffer(L, SizeOf(Integer));
     for i := 0 to Pred(FFieldList.Count) do
     begin
       WriteUTF8StrToStream(FFieldList[i], Stream);
@@ -1137,13 +1136,13 @@ begin
   end;
 end;
 
-procedure TFIBTableInfo.LoadFromStreamVersion(Stream: TStream; aStreamVersion: integer);
+procedure TFIBTableInfo.LoadFromStreamVersion(Stream: TStream; aStreamVersion: Integer);
 begin
   FStreamVersion := aStreamVersion;
   LoadFromStream(Stream, False)
 end;
 
-procedure TFIBTableInfo.LoadFromStream(Stream: TStream; FromBegin: boolean);
+procedure TFIBTableInfo.LoadFromStream(Stream: TStream; FromBegin: Boolean);
 var
   i, fc: Integer;
   UTF8: Boolean;
@@ -1165,13 +1164,13 @@ begin
     UTF8 := FStreamVersion >= 7;
     FDBName := ReadUTF8StrFromStream(Stream, UTF8);
     FTableName := ReadUTF8StrFromStream(Stream, UTF8);
-    ReadBuffer(FWithFieldRepositaryInfo, SizeOf(boolean));
+    ReadBuffer(FWithFieldRepositoryInfo, SizeOf(Boolean));
 
-    ReadBuffer(FFormatNumber, SizeOf(integer));
-    ReadBuffer(FFIVersion, SizeOf(integer)); // Counter for FIB$FIELD_INFO
+    ReadBuffer(FFormatNumber, SizeOf(Integer));
+    ReadBuffer(FFIVersion, SizeOf(Integer)); // Counter for FIB$FIELD_INFO
 
     FPrimaryKeyFields := ReadUTF8StrFromStream(Stream, UTF8);
-    ReadBuffer(fc, SizeOf(integer));
+    ReadBuffer(fc, SizeOf(Integer));
 
     ClearFieldList;
     for i := 0 to Pred(fc) do
@@ -1187,41 +1186,59 @@ end;
 
 function TFIBTableInfo.GetPrimaryKeyFields(DB: TFIBDataBase): string;
 var
-  vTransaction: TFIBTransaction;
+  InfoTransaction: TFIBTransaction;
 begin
-  vTransaction := TFriendDatabase(DB).GetInternalTransaction;
-  if FPrimaryKeyFields = SDefer then
-  begin
-    FPrimaryKeyFields := DBPrimaryKeyFields(FTableName, vTransaction, DB);
+  InfoTransaction := TFriendDatabase(DB).GetInternalTransaction;
+  // read on first use, the info is shared by the threads
+  if FOwner <> nil then
+    FOwner.FLock.Acquire;
+  try
+    if FPrimaryKeyFields = SDefer then
+      FPrimaryKeyFields := DBPrimaryKeyFields(FTableName, InfoTransaction, DB);
+    Result := FPrimaryKeyFields;
+  finally
+    if FOwner <> nil then
+      FOwner.FLock.Release;
   end;
-  Result := FPrimaryKeyFields;
 end;
 
-function TFIBTableInfo.GetTableId(DB: TFIBDataBase): integer;
+function TFIBTableInfo.GetTableId(DB: TFIBDataBase): Integer;
 var
-  vTransaction: TFIBTransaction;
+  InfoTransaction: TFIBTransaction;
 begin
-  vTransaction := TFriendDatabase(DB).GetInternalTransaction;
-  if FTableID = -1 then // deffer
-  begin
-    FTableID := DoGetTableId(FTableName, DB, vTransaction);
+  InfoTransaction := TFriendDatabase(DB).GetInternalTransaction;
+  if FOwner <> nil then
+    FOwner.FLock.Acquire;
+  try
+    if FTableID = -1 then // defer
+      FTableID := DoGetTableId(FTableName, DB, InfoTransaction);
+    Result := FTableID;
+  finally
+    if FOwner <> nil then
+      FOwner.FLock.Release;
   end;
-  Result := FTableID;
 end;
 
 function TFIBTableInfo.FieldInfo(const FieldName: string): TFIBFieldInfo;
 var
-  Index: integer;
+  Index: Integer;
+  Name: string;
 begin
   Result := nil;
-  Index := FFieldList.IndexOf(FastTrim(ReplaceStr(FieldName, '"', '')));
+  Name := FastTrim(ReplaceStr(FieldName, '"', ''));
+  // "Name" and NAME are different fields, a name in another case finds the field too
+  Index := FFieldList.Count - 1;
+  while (Index >= 0) and (FFieldList[Index] <> Name) do
+    Dec(Index);
+  if Index < 0 then
+    Index := FFieldList.IndexOf(Name);
   if Index > -1 then
     Result := TFIBFieldInfo(FFieldList.Objects[Index]);
 end;
 
 procedure TFIBTableInfo.ClearFieldList;
 var
-  i: integer;
+  i: Integer;
 begin
   for i := Pred(FFieldList.Count) downto 0 do
     FFieldList.Objects[i].Free;
@@ -1230,7 +1247,7 @@ end;
 
 procedure TFIBTableInfo.GetAdditionalInfo(FromQuery: TFIBCustomDataSet; const aFieldName: string; ToFieldInfo: TFIBFieldInfo);
 var
-  i: integer;
+  i: Integer;
 begin
   try
     with FromQuery, TFriendFieldInfo(ToFieldInfo) do //
@@ -1296,15 +1313,15 @@ const
   FI_VersionSQL  = 'Select Max(fib$version) From FIB$FIELDS_INFO Where table_name=?TN';
   FI_VersionsSQL = 'Select table_name,Max(fib$version) From FIB$FIELDS_INFO group by table_name order by 1';
 
-function TFIBTableInfo.IsActualInfo(DB: TFIBDataBase): boolean;
+function TFIBTableInfo.IsActualInfo(DB: TFIBDataBase): Boolean;
 var
   q: TFIBQuery;
-  vTransaction: TFIBTransaction;
-  vForceTransaction: boolean;
-  vUpdateRepository: boolean;
+  InfoTransaction: TFIBTransaction;
+  ForceTransaction: Boolean;
+  UpdateRepository: Boolean;
 begin
-  vUpdateRepository := False;
-  vTransaction := TFriendDatabase(DB).GetInternalTransaction;
+  UpdateRepository := False;
+  InfoTransaction := TFriendDatabase(DB).GetInternalTransaction;
   if DB.DBName <> FDBName then
   begin
     Result := False;
@@ -1312,13 +1329,13 @@ begin
   end
   else
     Result := True;
-  vForceTransaction := DB.ActiveTransactionCount = 0;
-  if not vForceTransaction then
-    vTransaction := DB.FirstActiveTransaction;
+  ForceTransaction := DB.ActiveTransactionCount = 0;
+  if not ForceTransaction then
+    InfoTransaction := DB.FirstActiveTransaction;
 
   if (FTableName <> 'ALIAS') then
   begin
-    q := GetQueryForUse(DB, vTransaction, FormatNumberSQL);
+    q := GetQueryForUse(DB, InfoTransaction, FormatNumberSQL);
     with q do
       try
         Options := [qoStartTransaction];
@@ -1330,9 +1347,9 @@ begin
         FreeQueryForUse(q);
       end;
   end;
-  if Result and FWithFieldRepositaryInfo and ExistFRepositaryTable(DB) then
+  if Result and FWithFieldRepositoryInfo and ExistFieldsRepositoryTable(DB) then
   begin
-    q := GetQueryForUse(DB, vTransaction, FI_VersionSQL);
+    q := GetQueryForUse(DB, InfoTransaction, FI_VersionSQL);
     with q do
       try
         Options := [qoStartTransaction];
@@ -1340,39 +1357,40 @@ begin
         try
           ExecQuery;
         except
-          vUpdateRepository := True;
+          UpdateRepository := True;
         end;
-        if not vUpdateRepository then
+        if not UpdateRepository then
           Result := FFIVersion = q.Fields[0].asInteger;
       finally
         Close;
         FreeQueryForUse(q);
       end;
     // after the query is released, its prepared statement would block the DDL
-    if vUpdateRepository then
+    if UpdateRepository then
     begin
-      Update1RepositaryTable(vTransaction);
+      UpgradeFieldsRepositoryTable(DB);
       Exit;
     end;
   end;
   FNonValidated := not Result;
 end;
 
-procedure TFIBTableInfo.GetRepositaryFieldInfos(const TableName: string; aTransaction: TFIBTransaction);
+procedure TFIBTableInfo.GetRepositoryFieldInfos(DB: TFIBDataBase; const TableName: string;
+  aTransaction: TFIBTransaction);
 var
   q: TFIBQuery;
   fi: TFIBFieldInfo;
-  ExistAdInfo: boolean;
+  ExistAdInfo: Boolean;
   d: TFIBDataSet;
-  i: integer;
-  vUpdateRepository: boolean;
+  i: Integer;
+  UpdateRepository: Boolean;
 begin
   d := nil;
-  vUpdateRepository := False;
-  ExistAdInfo := ExistFRepositaryTable(aTransaction.DefaultDatabase);
+  UpdateRepository := False;
+  ExistAdInfo := ExistFieldsRepositoryTable(DB);
   if ExistAdInfo then
     try
-      q := GetQueryForUse(aTransaction, FI_VersionSQL);
+      q := GetQueryForUse(DB, aTransaction, FI_VersionSQL);
       with q do
         try
           // GetVersion
@@ -1382,23 +1400,23 @@ begin
             q.ExecQuery;
             FFIVersion := q.Fields[0].asInteger;
           except
-            vUpdateRepository := True;
+            UpdateRepository := True;
             FFIVersion := 0;
           end;
         finally
           Close;
           FreeQueryForUse(q);
         end;
-      if vUpdateRepository then
-        Update1RepositaryTable(aTransaction);
+      if UpdateRepository then
+        UpgradeFieldsRepositoryTable(DB);
 
       d := TFIBDataSet.Create(nil);
       d.PrepareOptions := [];
-      d.Database := aTransaction.DefaultDatabase;
+      d.Database := DB;
       d.Transaction := aTransaction;
-      d.SelectSQL.Text := 'Select * from FIB$FIELDS_INFO where TABLE_NAME=''' +
-        TableName + ''' ORDER BY TABLE_NAME,FIELD_NAME';
+      d.SelectSQL.Text := 'Select * from FIB$FIELDS_INFO where TABLE_NAME=:TN ORDER BY TABLE_NAME,FIELD_NAME';
       d.PrepareOptions := [];
+      d.ParamByName('TN').asString := TableName;
       d.Open;
     except
       d.Free;
@@ -1436,24 +1454,26 @@ begin
     end;
 end;
 
-procedure TFIBTableInfo.GetInfoFields(const TableName: string; aTransaction: TFIBTransaction);
+procedure TFIBTableInfo.GetInfoFields(DB: TFIBDataBase; const TableName: string;
+  aTransaction: TFIBTransaction);
 var
   q: TFIBQuery;
   fi: TFIBFieldInfo;
-  ExistAdInfo: boolean;
+  ExistAdInfo: Boolean;
   d: TFIBDataSet;
-  p: integer;
-  vQuoteExist: boolean;
-  vUpdateRepository: boolean;
+  p: Integer;
+  QuoteExist: Boolean;
+  UpdateRepository: Boolean;
+  ProcSQL: string;
 begin
   if Length(TableName) = 0 then
     Exit;
   d := nil;
-  vUpdateRepository := False;
-  ExistAdInfo := FWithFieldRepositaryInfo and ExistFRepositaryTable(aTransaction.DefaultDatabase);
+  UpdateRepository := False;
+  ExistAdInfo := FWithFieldRepositoryInfo and ExistFieldsRepositoryTable(DB);
   if ExistAdInfo then
     try
-      q := GetQueryForUse(aTransaction, FI_VersionSQL);
+      q := GetQueryForUse(DB, aTransaction, FI_VersionSQL);
       with q do
         try
           Options := [qoStartTransaction];
@@ -1462,22 +1482,23 @@ begin
             q.ExecQuery;
             FFIVersion := q.Fields[0].asInteger;
           except
-            vUpdateRepository := True;
+            UpdateRepository := True;
             FFIVersion := 0;
           end;
         finally
           Close;
           FreeQueryForUse(q);
         end;
-      if vUpdateRepository then
-        Update1RepositaryTable(aTransaction);
+      if UpdateRepository then
+        UpgradeFieldsRepositoryTable(DB);
 
       d := TFIBDataSet.Create(nil);
       d.PrepareOptions := [];
-      d.Database := aTransaction.DefaultDatabase;
+      d.Database := DB;
       d.Transaction := aTransaction;
-      d.SelectSQL.Text := 'Select * from FIB$FIELDS_INFO where TABLE_NAME=''' + TableName + ''' ORDER BY FIELD_NAME';
+      d.SelectSQL.Text := 'Select * from FIB$FIELDS_INFO where TABLE_NAME=:TN ORDER BY FIELD_NAME';
       d.PrepareOptions := [];
+      d.ParamByName('TN').asString := TableName;
       d.Open;
     except
       d.Free;
@@ -1503,7 +1524,7 @@ begin
   end
   else
   begin
-    q := GetQueryForUse(aTransaction,
+    q := GetQueryForUse(DB, aTransaction,
       'Select R.RDB$FIELD_NAME,R.RDB$FIELD_SOURCE,F.RDB$COMPUTED_BLR, ' + sLineBreak +
       'R.RDB$DEFAULT_SOURCE DS,F.RDB$DEFAULT_SOURCE DS1, ' + sLineBreak +
       'F.RDB$FIELD_TYPE, ' + sLineBreak + 'F.RDB$CHARACTER_SET_ID, F.RDB$DIMENSIONS, '
@@ -1515,35 +1536,39 @@ begin
       'where  R.RDB$RELATION_NAME=:TN ' + sLineBreak +
       'order by R.RDB$FIELD_POSITION');
 
-    with q do
-      try
-        Options := [qoStartTransaction, qoTrimCharFields];
-        Params[0].asString := TableName;
-        ExecQuery;
-        // Same value as FormatNumberSQL, which IsActualInfo compares with
-        if Eof then
-          FFormatNumber := 0
-        else if Fields[10].IsNull then
-          FFormatNumber := Fields[8].asInteger
-        else
-          FFormatNumber := Fields[9].asInteger;
-        if q.Eof then
-        begin
-          Close;
-          FreeQueryForUse(q);
-          q := GetQueryForUse(aTransaction,
-            'Select P.RDB$PARAMETER_NAME,F.RDB$FIELD_NAME,0,0,0,' + sLineBreak +
-            'P.RDB$PARAMETER_TYPE,' + sLineBreak + 'F.RDB$CHARACTER_SET_ID, NULL' +
-            sLineBreak + 'from RDB$PROCEDURE_PARAMETERS P' + sLineBreak +
-            'JOIN RDB$FIELDS F ON (P.RDB$FIELD_SOURCE = F.RDB$FIELD_NAME)' +
-            'WHERE P.RDB$PROCEDURE_NAME=:PN' + sLineBreak +
-            'AND P.RDB$PARAMETER_TYPE=1');
-          Options := [qoStartTransaction, qoTrimCharFields];
-          Params[0].asString := TableName;
-          ExecQuery;
-        end;
-        ClearFieldList;
+    try
+      q.Options := [qoStartTransaction, qoTrimCharFields];
+      q.Params[0].asString := TableName;
+      q.ExecQuery;
+      // Same value as FormatNumberSQL, which IsActualInfo compares with
+      if q.Eof then
+        FFormatNumber := 0
+      else if q.Fields[10].IsNull then
+        FFormatNumber := q.Fields[8].asInteger
+      else
+        FFormatNumber := q.Fields[9].asInteger;
+      if q.Eof then
+      begin
+        // a selectable procedure: its output parameters, not those of a packaged one
+        ProcSQL := 'Select P.RDB$PARAMETER_NAME,F.RDB$FIELD_NAME,0,0,0,' + sLineBreak +
+          'P.RDB$PARAMETER_TYPE,' + sLineBreak + 'F.RDB$CHARACTER_SET_ID, NULL' +
+          sLineBreak + 'from RDB$PROCEDURE_PARAMETERS P' + sLineBreak +
+          'JOIN RDB$FIELDS F ON (P.RDB$FIELD_SOURCE = F.RDB$FIELD_NAME)' +
+          'WHERE P.RDB$PROCEDURE_NAME=:PN' + sLineBreak +
+          'AND P.RDB$PARAMETER_TYPE=1';
+        if DB.IsFirebirdConnect and (DB.ODSMajorVersion >= 12) then
+          ProcSQL := ProcSQL + sLineBreak + 'AND P.RDB$PACKAGE_NAME IS NULL';
+        q.Close;
+        FreeQueryForUse(q);
+        q := nil;
+        q := GetQueryForUse(DB, aTransaction, ProcSQL);
+        q.Options := [qoStartTransaction, qoTrimCharFields];
+        q.Params[0].asString := TableName;
+        q.ExecQuery;
+      end;
+      ClearFieldList;
 
+      with q do
         while not Eof do
         begin
           fi := TFIBFieldInfo.Create;
@@ -1564,19 +1589,19 @@ begin
             begin
               FDefaultValue := FastTrim(FastCopy(FDefaultValue, 8, MaxInt));
               // Cut "DEFAULT"
-              vQuoteExist := False;
+              QuoteExist := False;
               p := 1;
               while p <= Length(FDefaultValue) do
               begin
                 if CharInSet(FDefaultValue[p], ['''', '"']) then
                 begin
-                  vQuoteExist := True;
+                  QuoteExist := True;
                   Break
                 end
                 else
                   Inc(p);
               end;
-              if vQuoteExist then
+              if QuoteExist then
               begin
                 FDefaultValue := CutQuote(FastTrim(FastCopy(FDefaultValue, p, MaxInt)));
               end;
@@ -1596,12 +1621,15 @@ begin
           FFieldList.AddObject(FastTrim(Fields[0].asString), fi);
           Next
         end;
-      finally
-        if ExistAdInfo then
-          d.Free;
+    finally
+      if ExistAdInfo then
+        d.Free;
+      if q <> nil then
+      begin
         q.Close;
-        FreeQueryForUse(q)
-      end
+        FreeQueryForUse(q);
+      end;
+    end
   end;
 end;
 
@@ -1610,12 +1638,10 @@ constructor TFIBTableInfoCache.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FListTabInfo := TStringList.Create;
+  // "Name" and NAME are different tables
+  FListTabInfo.CaseSensitive := True;
   FListTabInfo.Sorted := True;
   FListTabInfo.Duplicates := dupAccept;
-  FDBNames := TStringList.Create;
-  FDBNames.Sorted := True;
-  FDBNames.Duplicates := dupAccept;
-  // FLock:=TMultiReadExclusiveWriteSynchronizer.Create;
   FLock := TCriticalSection.Create;
 end;
 
@@ -1626,9 +1652,6 @@ begin
     Clear;
     FListTabInfo.Free;
     FListTabInfo := nil;
-    FDBNames.Free;
-    FDBNames := nil;
-    // FInternalTransaction.Free;
     inherited Destroy;
   finally
     FLock.Release;
@@ -1639,7 +1662,7 @@ end;
 // Table infos are per database name, shared and validated on use: only the state goes
 procedure TFIBTableInfoCache.Notification(AComponent: TComponent; Operation: TOperation);
 var
-  Index: integer;
+  Index: Integer;
 begin
   if (Operation = opRemove) and (AComponent is TFIBDataBase) then
   begin
@@ -1661,67 +1684,82 @@ const
 
 procedure TFIBTableInfoCache.SaveToStream(Stream: TStream);
 var
-  i, tc: integer;
-  StreamVersion: integer;
+  i, tc: Integer;
+  StreamVersion: Integer;
 begin
-  with Stream do
-  begin
-    Seek(0, soFromBeginning);
-    WriteStrToStream(Signature, Stream);
-    StreamVersion := CurStreamVersion;
-    WriteBuffer(StreamVersion, SizeOf(integer));
-    WriteBuffer(FLastTransactionId, SizeOf(integer));
-    tc := FListTabInfo.Count;
-    WriteBuffer(tc, SizeOf(integer));
-    for i := 0 to Pred(tc) do
+  FLock.Acquire;
+  try
+    with Stream do
     begin
-      WriteUTF8StrToStream(FListTabInfo[i], Stream);
-      TFIBTableInfo(FListTabInfo.Objects[i]).SaveToStream(Stream);
+      Seek(0, soFromBeginning);
+      WriteStrToStream(Signature, Stream);
+      StreamVersion := CurStreamVersion;
+      WriteBuffer(StreamVersion, SizeOf(Integer));
+      WriteBuffer(FLastTransactionId, SizeOf(Integer));
+      tc := FListTabInfo.Count;
+      WriteBuffer(tc, SizeOf(Integer));
+      for i := 0 to Pred(tc) do
+      begin
+        WriteUTF8StrToStream(FListTabInfo[i], Stream);
+        TFIBTableInfo(FListTabInfo.Objects[i]).SaveToStream(Stream);
+      end;
     end;
+  finally
+    FLock.Release;
   end;
 end;
 
 procedure TFIBTableInfoCache.LoadFromStream(Stream: TStream; DB: TFIBDataBase = nil);
 var
-  i, tc: integer;
-  StreamVersion: integer;
-  tn: Ansistring;
+  i, tc: Integer;
+  StreamVersion: Integer;
+  tn: AnsiString;
   TableName: string;
   ti: TFIBTableInfo;
 begin
-  Clear;
-  with Stream do
-  begin
-    Seek(0, soFromBeginning);
-    SetLength(tn, Length(Signature));
-    ReadBuffer(tn[1], Length(Signature)); // Signature
-    if tn <> Signature then
+  FLock.Acquire;
+  try
+    Clear;
+    with Stream do
     begin
       Seek(0, soFromBeginning);
-      ReadStrFromStream(Stream, tn);
-    end;
-    if tn <> Signature then
-      Exit;
-    ReadBuffer(StreamVersion, SizeOf(integer));
-    if (StreamVersion < MinStreamVersion) or (StreamVersion > CurStreamVersion) then
-      Exit;
+      SetLength(tn, Length(Signature));
+      ReadBuffer(tn[1], Length(Signature)); // Signature
+      if tn <> Signature then
+      begin
+        Seek(0, soFromBeginning);
+        ReadStrFromStream(Stream, tn);
+      end;
+      if tn <> Signature then
+        Exit;
+      ReadBuffer(StreamVersion, SizeOf(Integer));
+      if (StreamVersion < MinStreamVersion) or (StreamVersion > CurStreamVersion) then
+        Exit;
 
-    ReadBuffer(tc, SizeOf(integer));
-    if (DB <> nil) then
-      PrepareInternalTransaction(DB);
-    if tc > FLastTransactionId then
-    begin
-      Exit; // Database is after backup
-    end;
+      ReadBuffer(tc, SizeOf(Integer));
+      if (DB <> nil) then
+        PrepareInternalTransaction(DB);
+      if tc > FLastTransactionId then
+      begin
+        Exit; // Database is after backup
+      end;
 
-    ReadBuffer(tc, SizeOf(integer));
-    for i := 0 to Pred(tc) do
-    begin
-      TableName := ReadUTF8StrFromStream(Stream, StreamVersion >= 7);
-      ti := TFIBTableInfo.Create(Self);
-      ti.LoadFromStreamVersion(Stream, StreamVersion);
-      FListTabInfo.AddObject(TableName, ti)
+      ReadBuffer(tc, SizeOf(Integer));
+      for i := 0 to Pred(tc) do
+      begin
+        TableName := ReadUTF8StrFromStream(Stream, StreamVersion >= 7);
+        ti := TFIBTableInfo.Create(Self);
+        try
+          ti.LoadFromStreamVersion(Stream, StreamVersion);
+        except
+          ti.Free;
+          raise;
+        end;
+        FListTabInfo.AddObject(TableName, ti)
+      end;
     end;
+  finally
+    FLock.Release;
   end;
 end;
 
@@ -1730,7 +1768,7 @@ begin
   SaveCacheFile(FileName, FListTabInfo.Count > 0, SaveToStream);
 end;
 
-function TFIBTableInfoCache.LoadFromFile(const FileName: string; DB: TFIBDataBase = nil): boolean;
+function TFIBTableInfoCache.LoadFromFile(const FileName: string; DB: TFIBDataBase = nil): Boolean;
 var
   Stream: TFileStream;
 begin
@@ -1740,7 +1778,18 @@ begin
     Exit;
   Stream := TFileStream.Create(FileName, fmOpenRead);
   try
-    LoadFromStream(Stream, DB);
+    try
+      LoadFromStream(Stream, DB);
+    except
+      on E: Exception do
+      begin
+        if E is EFIBError then
+          raise;
+        // a damaged cache file is ignored, the infos are read from the database
+        Clear;
+        Result := False;
+      end;
+    end;
   finally
     Stream.Free;
   end;
@@ -1750,57 +1799,59 @@ procedure TFIBTableInfoCache.ValidateSchema(aDataBase: TFIBDataBase; Proc: TFIBA
 const
   MaxCountSeparate = 10;
 var
-  i: integer;
-  DelCache, rt: boolean;
+  i: Integer;
+  DelCache, rt: Boolean;
   FiDs, TfDs: TFIBDataSet;
-  vTr: TFIBTransaction;
-  DBCount: integer;
-  BulkCheck: boolean;
+  WorkTransaction: TFIBTransaction;
+  DBCount: Integer;
+  BulkCheck: Boolean;
   // FiDs - Versions from FIB$FIELDS_INFO
   // TfDs - metadata counters
 begin
   PrepareInternalTransaction(aDataBase);
-  vTr := TFriendDatabase(aDataBase).GetInternalTransaction;
+  WorkTransaction := TFriendDatabase(aDataBase).GetInternalTransaction;
   TfDs := nil;
   FiDs := nil;
-  with FListTabInfo do
-  begin
-    // The cache is shared by all databases, only the entries of aDataBase are validated
-    DBCount := 0;
-    for i := 0 to Count - 1 do
-      if TFIBTableInfo(Objects[i]).FDBName = aDataBase.DBName then
-        Inc(DBCount);
-    BulkCheck := (DBCount > MaxCountSeparate) and not Assigned(Proc);
-    if not BulkCheck then
-      rt := False
-    else
+  // the infos are freed under the lock, as in the other methods of the cache
+  FLock.Acquire;
+  try
+    with FListTabInfo do
     begin
-      TfDs := TFIBDataSet.Create(nil);
-      with TfDs do
+      // The cache is shared by all databases, only the entries of aDataBase are validated
+      DBCount := 0;
+      for i := 0 to Count - 1 do
+        if TFIBTableInfo(Objects[i]).FDBName = aDataBase.DBName then
+          Inc(DBCount);
+      BulkCheck := (DBCount > MaxCountSeparate) and not Assigned(Proc);
+      if not BulkCheck then
+        rt := False
+      else
       begin
-        Database := aDataBase;
-        Options := [poStartTransaction, poTrimCharFields];
-        Transaction := vTr;
-        SelectSQL.Add(FormatNumbersSQL);
-        PrepareOptions := [];
-        Open;
-      end;
-      rt := TfDs.ExtLocate('RDB$RELATION_NAME', 'FIB$FIELDS_INFO', [eloInSortedDS]);
-      if rt then
-      begin
-        FiDs := TFIBDataSet.Create(nil);
-        with FiDs do
+        TfDs := TFIBDataSet.Create(nil);
+        with TfDs do
         begin
           Database := aDataBase;
           Options := [poStartTransaction, poTrimCharFields];
-          Transaction := vTr;
-          SelectSQL.Add(FI_VersionsSQL);
+          Transaction := WorkTransaction;
+          SelectSQL.Add(FormatNumbersSQL);
           PrepareOptions := [];
           Open;
         end;
+        rt := TfDs.ExtLocate('RDB$RELATION_NAME', 'FIB$FIELDS_INFO', [eloInSortedDS]);
+        if rt then
+        begin
+          FiDs := TFIBDataSet.Create(nil);
+          with FiDs do
+          begin
+            Database := aDataBase;
+            Options := [poStartTransaction, poTrimCharFields];
+            Transaction := WorkTransaction;
+            SelectSQL.Add(FI_VersionsSQL);
+            PrepareOptions := [];
+            Open;
+          end;
+        end;
       end;
-    end;
-    try
       for i := Count - 1 downto 0 do
       begin
         if TFIBTableInfo(Objects[i]).FDBName <> aDataBase.DBName then
@@ -1831,27 +1882,20 @@ begin
         else
           TFIBTableInfo(Objects[i]).FNonValidated := False;
       end;
-    finally
-      { if vTr.InTransaction then
-        vTr.Commit; }
-      TfDs.Free;
-      if rt then
-        FiDs.Free;
     end;
+  finally
+    TfDs.Free;
+    FiDs.Free;
+    FLock.Release;
   end;
 end;
 
 function TFIBTableInfoCache.FindTableInfo(const ADBName, ATableName: string): TFIBTableInfo;
 var
-  Index: integer;
-  i: integer;
+  Index: Integer;
+  i: Integer;
 begin
   Result := nil;
-  with FDBNames do
-    if not Find(ADBName, Index) then
-    begin
-      Index := Add(ADBName);
-    end;
   with FListTabInfo do
     if Find(ATableName, Index) then
       if ADBName = TFIBTableInfo(Objects[Index]).FDBName then
@@ -1869,22 +1913,21 @@ end;
 
 procedure TFIBTableInfoCache.PrepareInternalTransaction (aDataBase: TFIBDataBase);
 var
-  vTr: TFIBTransaction;
+  WorkTransaction: TFIBTransaction;
 begin
-  vTr := TFriendDatabase(aDataBase).GetInternalTransaction;
-  if not vTr.Active then
-    vTr.StartTransaction;
-  FLastTransactionId := vTr.TransactionID;
+  WorkTransaction := TFriendDatabase(aDataBase).GetInternalTransaction;
+  if not WorkTransaction.Active then
+    WorkTransaction.StartTransaction;
+  FLastTransactionId := WorkTransaction.TransactionID;
   // ^^^^ For this only
-  // Commit on TimeOut;
 end;
 
-function TFIBTableInfoCache.GetTableInfo(aDataBase: TFIBDataBase; const ATableName: string; WithRepositaryInfo: boolean): TFIBTableInfo;
+function TFIBTableInfoCache.GetTableInfo(aDataBase: TFIBDataBase; const ATableName: string; WithRepositoryInfo: Boolean): TFIBTableInfo;
 var
   TmpTableName: string;
-  vTr: TFIBTransaction;
+  WorkTransaction: TFIBTransaction;
 begin
-  vTr := TFriendDatabase(aDataBase).GetInternalTransaction;
+  WorkTransaction := TFriendDatabase(aDataBase).GetInternalTransaction;
   TmpTableName := FastTrim(ReplaceStr(ATableName, '"', ''));
   FLock.Acquire;
   try
@@ -1893,30 +1936,32 @@ begin
     else
     begin
       Result := nil;
-      // ClearForDataBase(aDatabase);
       ClearForTable(ATableName);
+    end;
+    if (Result <> nil) and Result.FNonValidated and FNeedValidate and
+      not Result.IsActualInfo(aDataBase) then
+    begin
+      // the outdated info is read again
+      FListTabInfo.Delete(FListTabInfo.IndexOfObject(Result));
+      Result.Free;
+      Result := nil;
     end;
     if Result = nil then
     begin
       Result := TFIBTableInfo.Create(Self);
-      Result.FWithFieldRepositaryInfo := WithRepositaryInfo;
-      Result.FillInfo(aDataBase, vTr, TmpTableName);
+      try
+        Result.FWithFieldRepositoryInfo := WithRepositoryInfo;
+        Result.FillInfo(aDataBase, WorkTransaction, TmpTableName);
+      except
+        Result.Free;
+        raise;
+      end;
       FListTabInfo.AddObject(TmpTableName, Result);
     end
-    else
+    else if WithRepositoryInfo and not Result.FWithFieldRepositoryInfo then
     begin
-      if Result.FNonValidated and FNeedValidate then
-        if not Result.IsActualInfo(aDataBase) then
-        begin
-          ClearForTable(TmpTableName);
-          Result := GetTableInfo(aDataBase, ATableName, WithRepositaryInfo);
-          Exit;
-        end;
-      if WithRepositaryInfo and not Result.FWithFieldRepositaryInfo then
-      begin
-        Result.GetRepositaryFieldInfos(TmpTableName, vTr);
-        Result.FWithFieldRepositaryInfo := WithRepositaryInfo;
-      end;
+      Result.GetRepositoryFieldInfos(aDataBase, TmpTableName, WorkTransaction);
+      Result.FWithFieldRepositoryInfo := WithRepositoryInfo;
     end;
   finally
     FLock.Release;
@@ -1924,7 +1969,7 @@ begin
 end;
 
 function TFIBTableInfoCache.GetFieldInfo(aDataBase: TFIBDataBase;
-  const ATableName, aFieldName: string; RepositoryInfo: boolean)
+  const ATableName, aFieldName: string; RepositoryInfo: Boolean)
   : TFIBFieldInfo;
 var
   ti: TFIBTableInfo;
@@ -1938,7 +1983,7 @@ end;
 
 procedure TFIBTableInfoCache.Clear;
 var
-  i: integer;
+  i: Integer;
 begin
   FLock.Acquire;
   try
@@ -1952,7 +1997,7 @@ end;
 
 procedure TFIBTableInfoCache.ClearForDataBase(aDataBase: TFIBDataBase);
 var
-  i: integer;
+  i: Integer;
 begin
   FLock.Acquire;
   try
@@ -1973,7 +2018,7 @@ end;
 
 procedure TFIBTableInfoCache.ClearForTable(const TableName: string);
 var
-  Index: integer;
+  Index: Integer;
   TmpTableName: string;
 begin
   TmpTableName := FastTrim(ReplaceStr(TableName, '"', ''));
@@ -2043,7 +2088,7 @@ end;
 
 procedure TFIBDataSetInfoCache.Clear;
 var
-  i: integer;
+  i: Integer;
 begin
   FLock.Acquire;
   try
@@ -2058,7 +2103,7 @@ begin
   end;
 end;
 
-function TFIBDataSetInfoCache.ActualVersionDSInfo(DataSet: TFIBCustomDataSet): integer;
+function TFIBDataSetInfoCache.ActualVersionDSInfo(DataSet: TFIBCustomDataSet): Integer;
 var
   q: TFIBQuery;
 begin
@@ -2077,7 +2122,7 @@ begin
   end;
 end;
 
-function TFIBDataSetInfoCache.FindDataSetInfo(DataSet: TFIBCustomDataSet; var Index: integer): TFIBDataSetInfo;
+function TFIBDataSetInfoCache.FindDataSetInfo(DataSet: TFIBCustomDataSet; var Index: Integer): TFIBDataSetInfo;
 begin
   Result := nil;
   if (DataSet = nil) or (DataSet.Database = nil) or (DataSet.DataSet_ID = 0) then
@@ -2085,10 +2130,10 @@ begin
   Result := FindDataSetInfo(DataSet.Database.DBName, DataSet.DataSet_ID, Index)
 end;
 
-function TFIBDataSetInfoCache.FindDataSetInfo(const DBName: string; DS_ID: integer; var Index: integer): TFIBDataSetInfo;
+function TFIBDataSetInfoCache.FindDataSetInfo(const DBName: string; DS_ID: Integer; var Index: Integer): TFIBDataSetInfo;
 var
   ID_Str: string;
-  i: integer;
+  i: Integer;
 begin
   ID_Str := IntToStr(DS_ID);
   Result := nil;
@@ -2112,7 +2157,7 @@ end;
 
 function TFIBDataSetInfoCache.GetDataSetInfo(DataSet: TFIBCustomDataSet): TFIBDataSetInfo;
 var
-  Index: integer;
+  Index: Integer;
 begin
   Result := nil;
 
@@ -2135,13 +2180,20 @@ begin
   if Result = nil then
   begin
     Result := TFIBDataSetInfo.Create(DataSet);
-    ExchangeDataSetInfo(DataSet, Result);
-    FListDataSetInfo.AddObject
-      (IntToStr(DataSet.DataSet_ID), Result);
+    try
+      // without a stored row there is no info: the settings of the dataset stay
+      if not ExchangeDataSetInfo(DataSet, Result) then
+        FreeAndNil(Result);
+    except
+      Result.Free;
+      raise;
+    end;
+    if Result <> nil then
+      FListDataSetInfo.AddObject(IntToStr(DataSet.DataSet_ID), Result);
   end;
 end;
 
-function TFIBDataSetInfoCache.LoadDataSetInfo(DataSet: TFIBCustomDataSet): boolean;
+function TFIBDataSetInfoCache.LoadDataSetInfo(DataSet: TFIBCustomDataSet): Boolean;
 var
   DSI: TFIBDataSetInfo;
 begin
@@ -2189,7 +2241,7 @@ end;
 procedure TFIBDataSetInfoCache.ClearDSInfo(DataSet: TFIBCustomDataSet);
 var
   ID_Str: string;
-  Index: integer;
+  Index: Integer;
 begin
   if DataSet = nil then
     Exit;
@@ -2200,20 +2252,24 @@ begin
     ID_Str := IntToStr(DataSet.DataSet_ID);
     with FListDataSetInfo do
       if Find(ID_Str, Index) then
-        if DataSet.Database.DBName = TFIBDataSetInfo(Objects[Index]).FDBName then
-        begin
-          Objects[Index].Free;
-          Delete(Index);
-        end;
+        // the same DS_ID of other databases follows in the sorted list
+        while (Index < Count) and (Strings[Index] = ID_Str) do
+          if (DataSet.Database <> nil) and (DataSet.Database.DBName = TFIBDataSetInfo(Objects[Index]).FDBName) then
+          begin
+            Objects[Index].Free;
+            Delete(Index);
+          end
+          else
+            Inc(Index);
   finally
     FLock.Release;
   end;
 end;
 
-procedure TFIBDataSetInfoCache.ClearDSInfo(DS_ID: integer);
+procedure TFIBDataSetInfoCache.ClearDSInfo(DS_ID: Integer);
 var
   ID_Str: string;
-  Index: integer;
+  Index: Integer;
 begin
   FLock.Acquire;
   try
@@ -2244,10 +2300,10 @@ type
   // with a common prefix stay adjacent
   TOrdinalStringList = class(TStringList)
   protected
-    function CompareStrings(const S1, S2: string): integer; override;
+    function CompareStrings(const S1, S2: string): Integer; override;
   end;
 
-function TOrdinalStringList.CompareStrings(const S1, S2: string): integer;
+function TOrdinalStringList.CompareStrings(const S1, S2: string): Integer;
 begin
   Result := CompareStr(S1, S2);
 end;
@@ -2261,7 +2317,7 @@ const
   // ODS 11 (Firebird 2.0) has parameter defaults, ODS 12 (Firebird 3.0) packages
 function InputParamsSQL(DB: TFIBDataBase): string;
 var
-  ODS: integer;
+  ODS: Integer;
 begin
   if DB.IsFirebirdConnect then
     ODS := DB.ODSMajorVersion
@@ -2291,7 +2347,7 @@ var
   Query: TFIBQuery;
   Transaction: TFIBTransaction;
   ParamsText: string;
-  Count: integer;
+  Count: Integer;
 begin
   if not DB.Connected then
     FIBError(feDatabaseClosed, [CmpFullName(DB)]);
@@ -2374,7 +2430,7 @@ end;
 
 procedure TFIBStoredProcMetadataCache.Clear;
 var
-  i: integer;
+  i: Integer;
 begin
   FLock.Acquire;
   try
@@ -2389,7 +2445,7 @@ end;
 procedure TFIBStoredProcMetadataCache.ClearSPInfo(DB: TFIBDataBase);
 var
   Prefix: string;
-  i: integer;
+  i: Integer;
 begin
   Prefix := CacheKey(DB, '');
   FLock.Acquire;
@@ -2407,10 +2463,10 @@ begin
 end;
 
 // Returns with FLock acquired, the caller must release it
-function TFIBStoredProcMetadataCache.AcquireMetadata(DB: TFIBDataBase; const StoredProcName: string; ForceReQuery: boolean): TObject;
+function TFIBStoredProcMetadataCache.AcquireMetadata(DB: TFIBDataBase; const StoredProcName: string; ForceReQuery: Boolean): TObject;
 var
   Name, Key: string;
-  i: integer;
+  i: Integer;
   Metadata: TFIBStoredProcMetadata;
 begin
   Name := StripQuote(StoredProcName);
@@ -2445,7 +2501,7 @@ begin
   Result := Metadata;
 end;
 
-function TFIBStoredProcMetadataCache.GetExecProcTxt(DB: TFIBDataBase; const StoredProcName: string; ForceReQuery: boolean): string;
+function TFIBStoredProcMetadataCache.GetExecProcTxt(DB: TFIBDataBase; const StoredProcName: string; ForceReQuery: Boolean): string;
 var
   Metadata: TFIBStoredProcMetadata;
 begin
@@ -2459,7 +2515,7 @@ begin
   end;
 end;
 
-function TFIBStoredProcMetadataCache.GetParamDefValue(DB: TFIBDataBase; const StoredProcName: string; ParamNo: integer): string;
+function TFIBStoredProcMetadataCache.GetParamDefValue(DB: TFIBDataBase; const StoredProcName: string; ParamNo: Integer): string;
 var
   Metadata: TFIBStoredProcMetadata;
 begin
@@ -2476,7 +2532,7 @@ end;
 
 // Routine function
 
-function GetFieldInfos(Field: TField; RepositaryInfo: boolean): TFIBFieldInfo;
+function GetFieldInfos(Field: TField; RepositoryInfo: Boolean): TFIBFieldInfo;
 var
   d: TFIBCustomDataSet;
   RelTable, RelField: string;
@@ -2489,7 +2545,7 @@ begin
   begin
     RelTable := GetRelationTableName(Field);
     RelField := GetRelationFieldName(Field);
-    Result := ListTableInfo.GetFieldInfo(Database, RelTable, RelField, RepositaryInfo);
+    Result := TableInfoCache.GetFieldInfo(Database, RelTable, RelField, RepositoryInfo);
   end;
   if Result <> nil then
     Exit;
@@ -2497,23 +2553,12 @@ begin
   RelTable := 'ALIAS';
   RelField := Field.FieldName;
   with d do
-    Result := ListTableInfo.GetFieldInfo(Database, RelTable, RelField, RepositaryInfo);
-end;
-
-function GetOtherFieldInfo(Field: TField; const InfoName: string): string;
-var
-  vFI: TFIBFieldInfo;
-begin
-  Result := '';
-  vFI := GetFieldInfos(Field, True);
-  if vFI = nil then
-    Exit;
-  Result := vFI.OtherInfo.Values[InfoName]
+    Result := TableInfoCache.GetFieldInfo(Database, RelTable, RelField, RepositoryInfo);
 end;
 
 { TFIBErrorMessage }
 
-constructor TFIBErrorMessage.Create(const aErrorMsg: string; aVersion: integer);
+constructor TFIBErrorMessage.Create(const aErrorMsg: string; aVersion: Integer);
 begin
   FErrorMsg := aErrorMsg;
   FVersion := aVersion;
@@ -2671,7 +2716,7 @@ var
   q: TFIBQuery;
 begin
   Result := '';
-  if not (urErrorMessagesInfo in DB.UseRepositories) or not ExistERepositaryTable(DB) then
+  if not (urErrorMessagesInfo in DB.UseRepositories) or not ExistErrorsRepositoryTable(DB) then
     Exit;
   if not IsValidated(DB.DBName) then
   begin
@@ -2711,7 +2756,12 @@ begin
     Exit;
   Stream := TFileStream.Create(FileName, fmOpenRead);
   try
-    LoadFromStream(Stream);
+    try
+      LoadFromStream(Stream);
+    except
+      // a damaged cache file is ignored, the messages are read from the database
+      Clear;
+    end;
   finally
     Stream.Free;
   end;
@@ -2804,7 +2854,7 @@ var
   UTF8: Boolean;
 begin
   FDBName := ReadUTF8StrFromStream(Stream, FStreamVersion >= 2);
-  Stream.ReadBuffer(FVersion, SizeOf(integer));
+  Stream.ReadBuffer(FVersion, SizeOf(Integer));
   UTF8 := FStreamVersion >= 3;
   FSelectSQL.Text := ReadUTF8StrFromStream(Stream, UTF8);
   FInsertSQL.Text := ReadUTF8StrFromStream(Stream, UTF8);
@@ -2816,14 +2866,14 @@ begin
   FDescription := ReadUTF8StrFromStream(Stream, UTF8);
   FUpdateTableName := ReadUTF8StrFromStream(Stream, UTF8);
   FConditions := ReadUTF8StrFromStream(Stream, UTF8);
-  Stream.ReadBuffer(FUpdateOnlyModifiedFields, SizeOf(boolean));
+  Stream.ReadBuffer(FUpdateOnlyModifiedFields, SizeOf(Boolean));
   FNonValidated := True;
 end;
 
 procedure TFIBDataSetInfo.SaveToStream(Stream: TStream);
 begin
   WriteUTF8StrToStream(FDBName, Stream);
-  Stream.WriteBuffer(FVersion, SizeOf(integer));
+  Stream.WriteBuffer(FVersion, SizeOf(Integer));
   WriteUTF8StrToStream(FSelectSQL.Text, Stream);
   WriteUTF8StrToStream(FInsertSQL.Text, Stream);
   WriteUTF8StrToStream(FUpdateSQL.Text, Stream);
@@ -2834,14 +2884,14 @@ begin
   WriteUTF8StrToStream(FDescription, Stream);
   WriteUTF8StrToStream(FUpdateTableName, Stream);
   WriteUTF8StrToStream(FConditions, Stream);
-  Stream.WriteBuffer(FUpdateOnlyModifiedFields, SizeOf(boolean));
+  Stream.WriteBuffer(FUpdateOnlyModifiedFields, SizeOf(Boolean));
 end;
 
 procedure TFIBDataSetInfoCache.LoadFromStream(Stream: TStream);
 var
-  i, c: integer;
-  StreamVersion: integer;
-  tn: Ansistring;
+  i, c: Integer;
+  StreamVersion: Integer;
+  tn: AnsiString;
   DI: TFIBDataSetInfo;
 begin
   Clear;
@@ -2857,16 +2907,21 @@ begin
     end;
     if tn <> DSSignature then
       Exit;
-    ReadBuffer(StreamVersion, SizeOf(integer));
+    ReadBuffer(StreamVersion, SizeOf(Integer));
     if (StreamVersion < 1) or (StreamVersion > DSCurStreamVersion) then
       Exit;
-    ReadBuffer(c, SizeOf(integer));
+    ReadBuffer(c, SizeOf(Integer));
     for i := 0 to Pred(c) do
     begin
       ReadStrFromStream(Stream, tn);
       DI := TFIBDataSetInfo.Create;
-      DI.FStreamVersion := StreamVersion;
-      DI.LoadFromStream(Stream);
+      try
+        DI.FStreamVersion := StreamVersion;
+        DI.LoadFromStream(Stream);
+      except
+        DI.Free;
+        raise;
+      end;
       FListDataSetInfo.AddObject(string(tn), DI)
     end;
   end;
@@ -2874,7 +2929,7 @@ end;
 
 procedure TFIBDataSetInfoCache.SaveToStream(Stream: TStream);
 var
-  i, c: integer;
+  i, c: Integer;
 begin
   FLock.Acquire;
   with Stream do
@@ -2882,13 +2937,13 @@ begin
       Seek(0, soFromBeginning);
       WriteStrToStream(DSSignature, Stream);
       c := DSCurStreamVersion;
-      WriteBuffer(c, SizeOf(integer));
+      WriteBuffer(c, SizeOf(Integer));
       c := FListDataSetInfo.Count;
-      WriteBuffer(c, SizeOf(integer));
+      WriteBuffer(c, SizeOf(Integer));
       for i := 0 to Pred(c) do
       begin
         // the key is the DataSet_ID
-        WriteStrToStream(Ansistring(FListDataSetInfo[i]), Stream);
+        WriteStrToStream(AnsiString(FListDataSetInfo[i]), Stream);
         TFIBDataSetInfo(FListDataSetInfo.Objects[i]).SaveToStream(Stream);
       end;
     finally
@@ -2896,7 +2951,7 @@ begin
     end;
 end;
 
-function TFIBDataSetInfoCache.LoadFromFile(const FileName: string): boolean;
+function TFIBDataSetInfoCache.LoadFromFile(const FileName: string): Boolean;
 var
   Stream: TFileStream;
 begin
@@ -2908,7 +2963,13 @@ begin
       Exit;
     Stream := TFileStream.Create(FileName, fmOpenRead);
     try
-      LoadFromStream(Stream);
+      try
+        LoadFromStream(Stream);
+      except
+        // a damaged cache file is ignored, the infos are read from the database
+        Clear;
+        Result := False;
+      end;
     finally
       Stream.Free;
     end;
@@ -2922,31 +2983,25 @@ begin
   SaveCacheFile(FileName, FListDataSetInfo.Count > 0, SaveToStream);
 end;
 
-procedure TFIBTableInfoCache.CommitInternalTransaction;
-begin
-  { if FInternalTransaction.Active then
-    FInternalTransaction.Commit; }
-end;
-
 initialization
 
 LockRepList := TCriticalSection.Create;
-ListTableInfo := TFIBTableInfoCache.Create(nil);
-ListDataSetInfo := TFIBDataSetInfoCache.Create;
+TableInfoCache := TFIBTableInfoCache.Create(nil);
+DataSetInfoCache := TFIBDataSetInfoCache.Create;
 DatabaseRepositories := TStringList.Create;
 FailedUpgrades := TFailedUpgrades.Create(nil);
-ListSPInfo := TFIBStoredProcMetadataCache.Create;
-ListErrorMessages := TFIBErrorMessageCache.Create;
+StoredProcInfoCache := TFIBStoredProcMetadataCache.Create;
+ErrorMessageCache := TFIBErrorMessageCache.Create;
 
 finalization
 
-ListErrorMessages.Free;
+ErrorMessageCache.Free;
 // before the lists they update on the notification of a database
-ListTableInfo.Free;
+TableInfoCache.Free;
 FailedUpgrades.Free;
 DatabaseRepositories.Free;
-ListDataSetInfo.Free;
-ListSPInfo.Free;
+DataSetInfoCache.Free;
+StoredProcInfoCache.Free;
 LockRepList.Free;
 
 end.

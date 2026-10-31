@@ -48,24 +48,24 @@ const
 
 type
   // Stream Events
-  TCallBackBlobReadWrite = procedure(BlobSize: integer; BytesProcessing: integer; var Stop: boolean) of object;
+  TFIBBlobProgressEvent = procedure(BlobSize: Integer; BytesProcessing: Integer; var Stop: Boolean) of object;
 
   TFIBQuery = class;
   TFIBXSQLDA = class;
   TFIBXSQLVAR = class;
 
-  TTypeSetToParam = (tspNull, tspIsNullable, tspScale, tspValue, tspSqlVar);
+  TFIBParamValuePart = (tspNull, tspIsNullable, tspScale, tspValue, tspSqlVar);
 
   // TFIBXSQLVAR
   TFIBXSQLVAR = class(TObject)
   private
-    function GetAsBoolean: boolean;
-    procedure SetAsBoolean(const Value: boolean);
+    function GetAsBoolean: Boolean;
+    procedure SetAsBoolean(const Value: Boolean);
     function FormatValue: string;
     function ValueText: string;
   protected
-    FIndex: integer;
-    FModified: boolean;
+    FIndex: Integer;
+    FModified: Boolean;
     FName: string;
     FSqlName: string;
     FRelationName: string;
@@ -77,23 +77,25 @@ type
     FXSQLVAR: PXSQLVAR; // Point to the PXSQLVAR in the owner object
     FParent: TFIBXSQLDA;
     // Added variables
-    FIsMacro: boolean;
-    FQuoted: boolean;
+    FIsMacro: Boolean;
+    FQuoted: Boolean;
     FOldValue: Variant; // Value Param from last ExecQuery
     FDefMacroValue: string;
-    FSrvSQLType: integer;
-    FSrvSQLSubType: integer;
-    FSrvSQLLen: Integer;
-    FSrvSQLScale: Integer;
-    FInWhereClause: boolean;
-    FCanForceIsNull: boolean;
-    FInitialized: boolean;
-    FBeginPosInText: integer;
-    FEndPosInText: integer;
-    FIsDefferedSetting: boolean;
+    FServerSQLType: Integer;
+    FServerSQLSubType: Integer;
+    FServerSQLLen: Integer;
+    FServerSQLScale: Integer;
+    FInWhereClause: Boolean;
+    FCanForceIsNull: Boolean;
+    // the comparison is replaced by IS [NOT] NULL in the prepared text
+    FForcedIsNull: Boolean;
+    FInitialized: Boolean;
+    FBeginPosInText: Integer;
+    FEndPosInText: Integer;
+    FIsDeferredSetting: Boolean;
     FStreamValue: TMemoryStream;
     FWideTempValue: WideString;
-    FParDataIsPrepared: boolean;
+    FParDataIsPrepared: Boolean;
 {$IFDEF SUPPORT_ARRAY_FIELD}
     FArrayInfo: TFIBArray;
     // value of an array parameter, written before the execution (TFIBQuery.PutArrayParams)
@@ -101,14 +103,14 @@ type
 {$ENDIF}
     function GetAsInt64: Int64;
     function GetRelationAlias: string;
-    function IsDefferedLongString: boolean;
+    function IsDeferredLongString: Boolean;
     // Firebird 4 data types
-    function IsDecimalType: boolean;
-    function IsTimeZoneType: boolean;
-    function GetDecimalValue: TFBDecimal;
-    procedure GetTimeZoneValue(out LocalValue: TTimeStamp; out ZoneID: Word; out OffsetMinutes: integer);
+    function IsDecimalType: Boolean;
+    function IsTimeZoneType: Boolean;
+    function GetDecimalValue: TFIBDecimal;
+    procedure GetTimeZoneValue(out LocalValue: TTimeStamp; out ZoneID: Word; out OffsetMinutes: Integer);
     function GetAsTimeZoneID: Word;
-    function GetAsTimeZoneOffset: integer;
+    function GetAsTimeZoneOffset: Integer;
     function GetAsTimeZoneName: string;
     function GetAsUTCDateTime: TDateTime;
 
@@ -123,33 +125,33 @@ type
     function GetAsQuad: TISC_QUAD;
     function GetAsShort: Short;
     function GetAsString: string;
-    function GetAsAnsiString: Ansistring;
+    function GetAsAnsiString: AnsiString;
     function TextCodePage: Word;
     function BlobCodePage: Word;
     function GetAsVariant: Variant;
     function GetAsExtended: Extended;
     function GetAsXSQLVAR: PXSQLVAR;
-    function GetIsNull: boolean;
-    function GetIsNullable: boolean;
-    function GetSize: integer;
-    function GetSQLType: integer;
-    function GetServerSQLType: integer;
+    function GetIsNull: Boolean;
+    function GetIsNullable: Boolean;
+    function GetSize: Integer;
+    function GetSQLType: Integer;
+    function GetServerSQLType: Integer;
     function GetSQLSubtype: Short;
-    function GetServerSQLSubType: integer;
-    function GetServerSQLSize: integer;
-    function GetServerSQLScale: integer;
+    function GetServerSQLSubType: Integer;
+    function GetServerSQLSize: Integer;
+    function GetServerSQLScale: Integer;
     function ServerParam: TFIBXSQLVAR;
     // Array Support
 {$IFDEF SUPPORT_ARRAY_FIELD}
     procedure CheckArrayType;
-    function GetDimensionCount: integer;
-    function GetDimension(Index: integer): TISC_ARRAY_BOUND;
-    function GetSliceSize: integer;
+    function GetDimensionCount: Integer;
+    function GetDimension(Index: Integer): TISC_ARRAY_BOUND;
+    function GetSliceSize: Integer;
     function GetElementType: TFieldType;
-    function GetArraySize: integer;
+    function GetArraySize: Integer;
 {$ENDIF}
     //
-    procedure SetValue(aSQLType, aSize: integer; ValueType: TTypeSetToParam; const aValue; ws: PWideString = nil);
+    procedure SetValue(aSQLType, aSize: Integer; ValueType: TFIBParamValuePart; const aValue; ws: PWideString = nil);
 
     procedure SetAsCurrency(aValue: Currency);
     procedure SetAsInt64(aValue: Int64);
@@ -168,58 +170,56 @@ type
     procedure SetQuadValue(const aValue: TISC_QUAD);
     procedure SetAsShort(aValue: Short);
     function TrySetIntegerAsBoolean(IsTrue: Boolean): Boolean;
-    procedure InternalSetAsString(aValue: Pointer; IsWide: boolean; AdjustDeffered: boolean = False);
+    procedure InternalSetAsString(aValue: Pointer; IsWide: Boolean; AdjustDeferred: Boolean = False);
     procedure SetAsString(const aValue: string);
     procedure SetAsWideString(const aValue: WideString);
-    procedure SetAsAnsiString(const aValue: Ansistring);
-    procedure SetAsStrData(Len: integer; const aValue);
+    procedure SetAsAnsiString(const aValue: AnsiString);
+    procedure SetAsStrData(Len: Integer; const aValue);
     function GetAsWideString: WideString;
 
     procedure SetAsVariant(Value: Variant);
 
     procedure SetAsXSQLVAR(aValue: PXSQLVAR);
-    procedure SetIsNull(aValue: boolean);
-    procedure SetIsNullable(aValue: boolean);
-    function GetScale: integer;
+    procedure SetIsNull(aValue: Boolean);
+    procedure SetIsNullable(aValue: Boolean);
+    function GetScale: Integer;
 
-    procedure SetScale(Value: integer);
+    procedure SetScale(Value: Integer);
     function GetAsBcd: TBcd;
     procedure SetAsBcd(Value: TBcd);
 
     function GetAsGUID: TGUID;
     procedure SetAsGuid(aValue: TGUID);
-    procedure SetSQLLen(A: Smallint);
+    procedure SetSQLLen(A: SmallInt);
   public
     constructor Create(AParent: TFIBXSQLDA);
     destructor Destroy; override;
     procedure Assign(Source: TFIBXSQLVAR);
 
-    // procedure SetSQLLen(A:SmallInt);
-
-    function IsNumericType(SQLType: integer): boolean;
-    function IsRealType(SQLType: integer): boolean;
-    function IsDateTimeType(SQLType: integer): boolean;
+    function IsNumericType(SQLType: Integer): Boolean;
+    function IsRealType(SQLType: Integer): Boolean;
+    function IsDateTimeType(SQLType: Integer): Boolean;
 
     procedure LoadFromFile(const FileName: string); overload;
-    procedure LoadFromFile(const FileName: string; cb: TCallBackBlobReadWrite); overload;
+    procedure LoadFromFile(const FileName: string; cb: TFIBBlobProgressEvent); overload;
     procedure LoadFromStream(Stream: TStream);
-    procedure SaveToFile(const FileName: string; cb: TCallBackBlobReadWrite = nil);
+    procedure SaveToFile(const FileName: string; cb: TFIBBlobProgressEvent = nil);
     procedure SaveToFileStream(const FileName: string);
     procedure SaveToStream(Stream: TStream);
 
     procedure Clear;
-    function IsParam: boolean;
-    function IsBlob: boolean;
+    function IsParam: Boolean;
+    function IsBlob: Boolean;
     function CharacterSet: string;
     // Array Support
 {$IFDEF SUPPORT_ARRAY_FIELD}
-    function IsArray: boolean;
-    function GetArrayElement(Indexes: array of integer): Variant;
+    function IsArray: Boolean;
+    function GetArrayElement(Indexes: array of Integer): Variant;
     function GetArrayValues: Variant;
     procedure SetArrayValue(Value: Variant);
-    function IsArrayParamValue(const Value: Variant; ServerType: integer): boolean;
+    function IsArrayParamValue(const Value: Variant; ServerType: Integer): Boolean;
 {$ENDIF}
-    function IsDefMacroValue: boolean;
+    function IsDefMacroValue: Boolean;
     procedure SetDefMacroValue;
     //
 
@@ -235,18 +235,18 @@ type
     property AsDouble: Double read GetAsDouble write SetAsDouble;
     property AsFloat: Double read GetAsFloat write SetAsFloat;
     property AsSingle: Float read GetAsSingle write SetAsSingle;
-    property AsInteger: integer read GetAsLong write SetAsLong;
+    property AsInteger: Integer read GetAsLong write SetAsLong;
     property AsLong: Long read GetAsLong write SetAsLong;
     property AsPointer: Pointer read GetAsPointer;
     property AsQuad: TISC_QUAD read GetAsQuad write SetAsQuad;
     property AsShort: Short read GetAsShort write SetAsShort;
     property AsString: string read GetAsString write SetAsString;
     property AsWideString: WideString read GetAsWideString write SetAsWideString;
-    property AsAnsiString: Ansistring read GetAsAnsiString write SetAsAnsiString;
+    property AsAnsiString: AnsiString read GetAsAnsiString write SetAsAnsiString;
 
     property AsVariant: Variant read GetAsVariant write SetAsVariant;
     property AsXSQLVAR: PXSQLVAR read GetAsXSQLVAR write SetAsXSQLVAR;
-    property AsBoolean: boolean read GetAsBoolean write SetAsBoolean;
+    property AsBoolean: Boolean read GetAsBoolean write SetAsBoolean;
     // TIME/TIMESTAMP WITH TIME ZONE.
     // AsDateTime returns the local time in the value's own time zone.
     procedure SetAsDateTimeTZ(const aValue: TDateTime; aZoneID: Word); overload;
@@ -254,19 +254,19 @@ type
     // Raw Firebird 4 values
     procedure SetAsTimeTZ(const aValue: TISC_TIME_TZ);
     procedure SetAsTimeStampTZ(const aValue: TISC_TIMESTAMP_TZ);
-    procedure SetAsInt128(const aValue: TFB_I128; aScale: integer = 0);
+    procedure SetAsInt128(const aValue: TFB_I128; aScale: Integer = 0);
     procedure SetAsDec16(const aValue: TFB_DEC16);
     procedure SetAsDec34(const aValue: TFB_DEC34);
     property AsTimeZoneID: Word read GetAsTimeZoneID;
-    property AsTimeZoneOffset: integer read GetAsTimeZoneOffset;
+    property AsTimeZoneOffset: Integer read GetAsTimeZoneOffset;
     property AsTimeZoneName: string read GetAsTimeZoneName;
     property AsUTCDateTime: TDateTime read GetAsUTCDateTime;
     property Data: PXSQLVAR read FXSQLVAR write FXSQLVAR;
-    property IsNull: boolean read GetIsNull write SetIsNull;
-    property IsNullable: boolean read GetIsNullable write SetIsNullable;
-    property Scale: integer read GetScale write SetScale;
-    property Index: integer read FIndex;
-    property Modified: boolean read FModified write FModified;
+    property IsNull: Boolean read GetIsNull write SetIsNull;
+    property IsNullable: Boolean read GetIsNullable write SetIsNullable;
+    property Scale: Integer read GetScale write SetScale;
+    property Index: Integer read FIndex;
+    property Modified: Boolean read FModified write FModified;
     property Name: string read FName;
     // Parameters get SqlName and RelationName only from ReadParamNames
     property SqlName: string read FSqlName;
@@ -274,31 +274,31 @@ type
     property OwnerName: string read FOwnerName;
     property AliasName: string read FAliasName;
     property RelationAlias: string read GetRelationAlias;
-    property Size: integer read GetSize;
-    property ServerSize: integer read GetServerSQLSize;
-    property SQLType: integer read GetSQLType;
-    property ServerSQLType: integer read GetServerSQLType;
+    property Size: Integer read GetSize;
+    property ServerSize: Integer read GetServerSQLSize;
+    property SQLType: Integer read GetSQLType;
+    property ServerSQLType: Integer read GetServerSQLType;
     property SQLSubtype: Short read GetSQLSubtype;
-    property ServerSQLSubType: integer read GetServerSQLSubType;
+    property ServerSQLSubType: Integer read GetServerSQLSubType;
     property Value: Variant read GetAsVariant write SetAsVariant;
     property OldValue: Variant read FOldValue;
     property VariantFalse: Variant read FVariantFalse write FVariantFalse;
     property VariantTrue: Variant read FVariantTrue write FVariantTrue;
     // Added properties
-    property IsMacro: boolean read FIsMacro write FIsMacro;
-    property Quoted: boolean read FQuoted write FQuoted;
+    property IsMacro: Boolean read FIsMacro write FIsMacro;
+    property Quoted: Boolean read FQuoted write FQuoted;
     property DefMacroValue: string read FDefMacroValue write FDefMacroValue;
-    property InWhereClause: boolean read FInWhereClause;
-    property BeginPosInText: integer read FBeginPosInText;
-    property EndPosInText: integer read FEndPosInText;
+    property InWhereClause: Boolean read FInWhereClause;
+    property BeginPosInText: Integer read FBeginPosInText;
+    property EndPosInText: Integer read FEndPosInText;
 
     // Array Support
 {$IFDEF SUPPORT_ARRAY_FIELD}
     property ArrayInfo: TFIBArray read FArrayInfo;
-    property DimensionCount: integer read GetDimensionCount;
-    property Dimension[Index: integer]: TISC_ARRAY_BOUND read GetDimension;
+    property DimensionCount: Integer read GetDimensionCount;
+    property Dimension[Index: Integer]: TISC_ARRAY_BOUND read GetDimension;
     property ElementType: TFieldType read GetElementType;
-    property ArraySize: integer read GetArraySize;
+    property ArraySize: Integer read GetArraySize;
 {$ENDIF}
   end;
 
@@ -308,30 +308,30 @@ type
   // TFIBXSQLVAR
   TFIBXSQLDA = class(TObject)
   private
-    FEquelNames: TStringList;
+    FEqualNames: TStringList;
     FCachedNames: TStringList;
-    FCount: integer;
-    FHasDefferedSettings: boolean;
-    procedure AdjustDefferedSettings;
+    FCount: Integer;
+    FHasDeferredSettings: Boolean;
+    procedure AdjustDeferredSettings;
   protected
     FNames: TStringList;
     FQuery: TFIBQuery;
-    FSize: integer;
+    FSize: Integer;
     FXSQLDA: PXSQLDA;
     FXSQLVARs: PFIBXSQLVARArray; // array of FIBXQLVARs
-    FIsParams: boolean;
-    function GetModified: boolean;
+    FIsParams: Boolean;
+    function GetModified: Boolean;
     function GetNames: string;
-    function GetRecordSize: integer;
+    function GetRecordSize: Integer;
     function GetXSQLDA: PXSQLDA;
-    function GetXSQLVAR(Idx: integer): TFIBXSQLVAR;
+    function GetXSQLVAR(Idx: Integer): TFIBXSQLVAR;
     function GetXSQLVARByName(const Idx: string): TFIBXSQLVAR;
     procedure Initialize;
-    procedure SetCount(Value: integer);
-    procedure AddName(const FieldName: string; Idx: integer; aQuoted: boolean);
+    procedure SetCount(Value: Integer);
+    procedure AddName(const FieldName: string; Idx: Integer; aQuoted: Boolean);
     procedure SetUnModifiedToVars;
   public
-    constructor Create(aIsParams: boolean);
+    constructor Create(aIsParams: Boolean);
     destructor Destroy; override;
     procedure ClearValues;
     function FindParam(const aParamName: string): TFIBXSQLVAR;
@@ -340,37 +340,37 @@ type
     property Query: TFIBQuery read FQuery;
     property AsXSQLDA: PXSQLDA read GetXSQLDA;
     property ByName[const Idx: string]: TFIBXSQLVAR read GetXSQLVARByName;
-    property Count: integer read FCount write SetCount;
-    property Modified: boolean read GetModified;
+    property Count: Integer read FCount write SetCount;
+    property Modified: Boolean read GetModified;
     property Names: string read GetNames;
-    property RecordSize: integer read GetRecordSize;
-    property Vars[Idx: integer]: TFIBXSQLVAR read GetXSQLVAR; default;
+    property RecordSize: Integer read GetRecordSize;
+    property Vars[Idx: Integer]: TFIBXSQLVAR read GetXSQLVAR; default;
   end;
 
   // TFIBBatch - basis for batch input and batch output objects.
-  TBatchState = (bsNotPrepared, bsFileReady, bsInProcess, bsInError);
+  TFIBBatchState = (bsNotPrepared, bsFileReady, bsInProcess, bsInError);
 
   TFIBBatch = class(TObject)
   protected
     FFilename: string;
     FColumns: TFIBXSQLDA;
     FParams: TFIBXSQLDA;
-    FState: TBatchState;
-    FVersion: integer;
+    FState: TFIBBatchState;
+    FVersion: Integer;
     // name of the connection charset, ASCII bytes in the raw file
-    FCharset: Ansistring;
+    FCharset: AnsiString;
   public
     procedure ReadyStream; virtual; abstract;
     property Columns: TFIBXSQLDA read FColumns;
     property FileName: string read FFilename write FFilename;
     property Params: TFIBXSQLDA read FParams;
-    property State: TBatchState read FState;
+    property State: TFIBBatchState read FState;
   end;
 
   // TFIBBatchInputStream - see FIBMiscellaneous for good examples.
   TFIBBatchInputStream = class(TFIBBatch)
   public
-    function ReadParameters: boolean; virtual; abstract;
+    function ReadParameters: Boolean; virtual; abstract;
   end;
 
   TFIBBatchInputStreamClass = class of TFIBBatchInputStream;
@@ -379,52 +379,52 @@ type
   TFIBBatchOutputStream = class(TFIBBatch)
   protected
   public
-    function WriteColumns: boolean; virtual; abstract;
+    function WriteColumns: Boolean; virtual; abstract;
   end;
 
   TFIBBatchOutputStreamClass = class of TFIBBatchOutputStream;
 
   // TFIBQuery
 
-  TOnSQLFetch = procedure(RecordNumber: integer; var StopFetching: boolean) of object;
+  TFIBSQLFetchEvent = procedure(RecordNumber: Integer; var StopFetching: Boolean) of object;
 
-  TBatchOperation = (boInput, boOutput, boOutputToQuery);
-  TBatchAction = (baContinue, baStop, baSkip);
-  TBatchErrorAction = (beFail, beAbort, beRetry, beIgnore);
+  TFIBBatchOperation = (boInput, boOutput, boOutputToQuery);
+  TFIBBatchAction = (baContinue, baStop, baSkip);
+  TFIBBatchErrorAction = (beFail, beAbort, beRetry, beIgnore);
 
-  TOnBatching = procedure(BatchOperation: TBatchOperation; RecNumber: integer; var BatchAction: TBatchAction) of object;
-  TOnBatchError = procedure(E: EFIBError; var BatchErrorAction: TBatchErrorAction) of object;
+  TFIBBatchingEvent = procedure(BatchOperation: TFIBBatchOperation; RecNumber: Integer; var BatchAction: TFIBBatchAction) of object;
+  TFIBBatchErrorEvent = procedure(E: EFIBError; var BatchErrorAction: TFIBBatchErrorAction) of object;
 
-  TAllRowsAffected = record
-    Updates: integer;
-    Deletes: integer;
-    Selects: integer;
-    Inserts: integer;
+  TFIBRowsAffected = record
+    Updates: Integer;
+    Deletes: Integer;
+    Selects: Integer;
+    Inserts: Integer;
   end;
 
-  TQueryRunStateValues = (qrsInPrepare, qrsInExecute, qrsInClose);
-  TQueryRunState = set of TQueryRunStateValues;
+  TFIBQueryRunStateValue = (qrsInPrepare, qrsInExecute, qrsInClose);
+  TFIBQueryRunState = set of TFIBQueryRunStateValue;
 
   TFIBQueryErrorEvent = procedure(Sender: TFIBQuery; E: EFIBError; var Action: TDataAction) of object;
 
-  TFIBQuery = class(TComponent, ISQLObject, IFIBQuery)
+  TFIBQuery = class(TComponent, IFIBParamSource, IFIBQuery)
   private
     FDescription: string;
     FOnExecuteError: TFIBQueryErrorEvent;
-    FOnBatching: TOnBatching;
-    FDoParamCheck: boolean;
-    FParser: TSQLParser;
+    FOnBatching: TFIBBatchingEvent;
+    FDoParamCheck: Boolean;
+    FParser: TFIBSQLParser;
     FTransactionEnding: TNotifyEvent;
     FTransactionEnded: TNotifyEvent;
     FBeforeExecute: TNotifyEvent;
     FAfterExecute: TNotifyEvent;
     FAfterFirstFetch: TNotifyEvent;
 {$IFDEF CSMonitor}
-    FCSMonitorSupport: TCSMonitorSupport;
-    procedure SetMonitorSupport(Value: TCSMonitorSupport);
+    FCSMonitorSupport: TFIBCSMonitorSupport;
+    procedure SetMonitorSupport(Value: TFIBCSMonitorSupport);
     function GetCSMonText: string;
 {$ENDIF}
-    function GetSQLKind: TSQLKind;
+    function GetSQLKind: TFIBSQLStatementKind;
   protected
     FBase: TFIBBase;
     FBOF, // At BOF?
@@ -432,62 +432,62 @@ type
     FGoToFirstRecordOnExecute,
     // Automatically position record on first record after executing
     FOpen, // Is a cursor open?
-    FPrepared: boolean; // Has the query been prepared?
-    FRecordCount: integer; // How many records have been read so far?
+    FPrepared: Boolean; // Has the query been prepared?
+    FRecordCount: Integer; // How many records have been read so far?
     FHandle: TISC_STMT_HANDLE; // Once prepared, this accesses the SQL Query
 
     FOnSQLChanging: TNotifyEvent; // Call this when the SQL is changing.
     FSQL: TStrings; // SQL Query (by user)
-    FParamCheck: boolean; // Check for parameters? (just like TQuery)
+    FParamCheck: Boolean; // Check for parameters? (just like TQuery)
     FProcessedSQL: string; // SQL Query (pre-processed for param labels)
-    FPreparedSQL: Ansistring;
+    FPreparedSQL: AnsiString;
     FSQLParams, // Any parameters to the query.
     FSQLRecord: TFIBXSQLDA; // The current record
     FSQLType: TFIBSQLTypes;
     // Select, update, delete, insert, create, alter, etc...
 
     FUserSQLParams: TFIBXSQLDA;
-    FProcExecuted: boolean;
-    FOnSQLFetch: TOnSQLFetch;
+    FProcExecuted: Boolean;
+    FOnSQLFetch: TFIBSQLFetchEvent;
     FMacroChar: Char;
-    vUserParamsCreated: boolean;
-    FCountLockSQL: integer;
+    FUserParamsCreated: Boolean;
+    FCountLockSQL: Integer;
     FModifyTable: string;
     FOptions: TFIBQueryOptions;
-    vDiffParams: boolean;
+    FDiffParams: Boolean;
     FOnlySrvParams: TStringList;
     FCallTime: Cardinal;
-    FHaveMacros: boolean;
-    FNeedForceIsNull: boolean;
-    FMacroChanged: boolean;
-    FSQLTextChangeCount: integer;
-    FHaveStreamParams: boolean;
-    FQueryRunState: TQueryRunState;
-    FCodePageApplied: boolean;
-    FAutoCloseOnTransactionEnd: boolean;
-    vFetched: boolean;
+    FHaveMacros: Boolean;
+    FNeedForceIsNull: Boolean;
+    FMacroChanged: Boolean;
+    FSQLTextChangeCount: Integer;
+    FHaveStreamParams: Boolean;
+    FQueryRunState: TFIBQueryRunState;
+    FCodePageApplied: Boolean;
+    FAutoCloseOnTransactionEnd: Boolean;
+    FFetched: Boolean;
     FStatementTimeout: Cardinal;
 {$DEFINE FIB_INTERFACE}
 {$I FIBQueryPT.inc}
 {$UNDEF FIB_INTERFACE}
     procedure SaveStreamedParams(toParams: TFIBXSQLDA);
     procedure ClearStreamedParams;
-    procedure SetParamCheck(Value: boolean);
+    procedure SetParamCheck(Value: Boolean);
     procedure SetStatementTimeout(Value: Cardinal);
-    function TimeoutApplies: boolean;
+    function TimeoutApplies: Boolean;
     procedure ApplyStatementTimeout(Value: Cardinal);
     function GetModifyTable: string;
     procedure DatabaseDisconnecting(Sender: TObject);
     procedure DatabaseConnectionLost(Sender: TObject);
     function GetDatabase: TFIBDatabase;
     function GetDBHandle: PISC_DB_HANDLE;
-    function GetEOF: boolean;
-    function GetFields(const Idx: integer): TFIBXSQLVAR;
-    function GetFieldIndex(const FieldName: string): integer;
+    function GetEOF: Boolean;
+    function GetFields(const Idx: Integer): TFIBXSQLVAR;
+    function GetFieldIndex(const FieldName: string): Integer;
     function GetPlan: string;
-    function GetRecordCount: integer;
-    function GetRowsAffected: integer;
-    function GetAllRowsAffected: TAllRowsAffected;
+    function GetRecordCount: Integer;
+    function GetRowsAffected: Integer;
+    function GetAllRowsAffected: TFIBRowsAffected;
 
     function GetSQLParams: TFIBXSQLDA;
     function GetTransaction: TFIBTransaction;
@@ -503,10 +503,10 @@ type
     procedure DoTransactionEnding(Sender: TObject);
     procedure DoTransactionEnded(Sender: TObject);
     // Added procedures
-    procedure SaveRestoreValues(SQLDA: TFIBXSQLDA; IsSave: boolean);
+    procedure SaveRestoreValues(SQLDA: TFIBXSQLDA; IsSave: Boolean);
 
-    function GetWhereClause(Index: integer): string;
-    procedure SetWhereClause(Index: integer; const WhereClauseTxt: string);
+    function GetWhereClause(Index: Integer): string;
+    procedure SetWhereClause(Index: Integer; const WhereClauseTxt: string);
     function GetOrderString: string;
     procedure SetOrderString(const OrderTxt: string);
 
@@ -521,38 +521,38 @@ type
     procedure EndStatisticExec(const stText: string);
     procedure DoStatisticPrepare(const stText: string);
 
-    function ParamsNotExist(const SQLText: string): boolean;
-    procedure PreprocessSQL(const sSQL: String; IsUserSQL: boolean);
+    function ParamsNotExist(const SQLText: string): Boolean;
+    function NullComparisonStart(Param: TFIBXSQLVAR; out IsNotNull: Boolean): Integer;
+    procedure PreprocessSQL(const sSQL: String; IsUserSQL: Boolean);
     procedure DoBeforeExecute;
     procedure DoAfterExecute;
     procedure DoAfterFirstFetch;
-    procedure CloseCursor(Complete: boolean);
+    procedure CloseCursor(Complete: Boolean);
     procedure CompleteStatement;
-    function CloseOnEof: boolean;
+    function CloseOnEof: Boolean;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-    procedure Loaded; override;
     property Handle: TISC_STMT_HANDLE read FHandle;
-    property QueryRunState: TQueryRunState read FQueryRunState;
+    property QueryRunState: TFIBQueryRunState read FQueryRunState;
   private
-    FRelationAliasesRead: boolean;
-    FParamNamesRead: boolean;
+    FRelationAliasesRead: Boolean;
+    FParamNamesRead: Boolean;
     procedure ReadRelationAliases;
-    function FullNamesNeeded(NamesCut: boolean): boolean;
-    procedure ReadDescribeInfo(SQLDA: TFIBXSQLDA; ReadNames: boolean);
+    function FullNamesNeeded(NamesCut: Boolean): Boolean;
+    procedure ReadDescribeInfo(SQLDA: TFIBXSQLDA; ReadNames: Boolean);
     procedure ReadParamNames;
-    function DecodeName(const Name: Ansistring): string;
+    function DecodeName(const Name: AnsiString): string;
     procedure ConvertSQLTextToCodePage;
   public
-    function TableAliasForField(FieldIndex: integer): string; overload;
+    function TableAliasForField(FieldIndex: Integer): string; overload;
     function TableAliasForFieldByName(const aFieldName: string): string;
     function TableAliasForField(const aFieldName: string): string; overload;
   private
-    FOnBatchError: TOnBatchError;
+    FOnBatchError: TFIBBatchErrorEvent;
     FCursorName: string;
   public
-    function BatchInput(InputObject: TFIBBatchInputStream): boolean;
+    function BatchInput(InputObject: TFIBBatchInputStream): Boolean;
     function BatchOutput(OutputObject: TFIBBatchOutputStream): Boolean;
 
     procedure BatchInputRawFile(const FileName: string);
@@ -560,10 +560,10 @@ type
 
     procedure BatchToQuery(ToQuery: TFIBQuery; Mappings: TStrings);
   public
-    function Call(ErrCode: ISC_STATUS; RaiseError: boolean): ISC_STATUS;
-    procedure CheckClosed(const OpName: Ansistring);
+    function Call(ErrCode: ISC_STATUS; RaiseError: Boolean): ISC_STATUS;
+    procedure CheckClosed(const OpName: AnsiString);
     // raise error if query is not closed.
-    procedure CheckOpen(const OpName: Ansistring);
+    procedure CheckOpen(const OpName: AnsiString);
     // raise error if query is not open.
     procedure CheckValidStatement; // raise error if statement is invalid.
     procedure Close; // close the query.
@@ -576,11 +576,6 @@ type
     function BlobAsString(const BlobFieldName: string): string;
     function FieldIsNull(Field: TFIBXSQLVAR): Boolean;
     procedure ExecuteImmediate;
-    // procedure CancelQuery;  // Only For IB
-{$IFDEF SUPPORT_IB2007}
-    procedure ExecuteAsBatch; overload;
-    procedure ExecuteAsBatch(const SQLs: array of Ansistring); overload;
-{$ENDIF}
     procedure FreeHandle;
     function Next: TFIBXSQLDA;
     procedure Prepare; // Prepare the query.
@@ -601,68 +596,67 @@ type
     procedure ExecWP(const ParamValues: array of Variant); overload;
     procedure ExecWP(const ParamNames: string; ParamValues: array of Variant); overload;
     // Exec Query with ParamValues
-    procedure ExecWPS(const ParamSources: array of ISQLObject); overload;
-    procedure ExecWPS(ParamSource: ISQLObject; AllRecords: boolean = True); overload;
+    procedure ExecWPS(const ParamSources: array of IFIBParamSource); overload;
+    procedure ExecWPS(ParamSource: IFIBParamSource; AllRecords: Boolean = True); overload;
 
     procedure BeginModifySQLText;
     procedure EndModifySQLText;
-    function CountModifySQLText: integer;
-    function GetMainWhereIndex: integer;
+    function CountModifySQLText: Integer;
+    function GetMainWhereIndex: Integer;
     function GetMainWhereClause: string;
     procedure SetMainWhereClause(const Value: string);
-    function IsProc: boolean; virtual;
+    function IsProc: Boolean; virtual;
     function ParamByName(const ParamName: string): TFIBXSQLVAR;
     function FindParam(const aParamName: string): TFIBXSQLVAR;
     procedure ApplyMacro;
     procedure RestoreMacroDefaultValues;
-    function FieldCount: integer;
-    function SQLDescribeInfo(InfoRequest: array of AnsiChar): PXSQLDA; deprecated;
-    property Bof: boolean read FBOF;
+    function FieldCount: Integer;
+    property Bof: Boolean read FBOF;
     property DBHandle: PISC_DB_HANDLE read GetDBHandle;
-    property Eof: boolean read GetEOF;
+    property Eof: Boolean read GetEOF;
     property FldByName[const FieldName: string]: TFIBXSQLVAR read FieldByName; default;
-    property Fields[const Idx: integer]: TFIBXSQLVAR read GetFields;
-    property FieldIndex[const FieldName: string]: integer read GetFieldIndex;
-    property Open: boolean read FOpen;
+    property Fields[const Idx: Integer]: TFIBXSQLVAR read GetFields;
+    property FieldIndex[const FieldName: string]: Integer read GetFieldIndex;
+    property Open: Boolean read FOpen;
     property Params: TFIBXSQLDA read GetSQLParams;
     property Plan: string read GetPlan;
-    property Prepared: boolean read FPrepared;
-    property RecordCount: integer read GetRecordCount;
-    property RowsAffected: integer read GetRowsAffected;
-    property AllRowsAffected: TAllRowsAffected read GetAllRowsAffected;
+    property Prepared: Boolean read FPrepared;
+    property RecordCount: Integer read GetRecordCount;
+    property RowsAffected: Integer read GetRowsAffected;
+    property AllRowsAffected: TFIBRowsAffected read GetAllRowsAffected;
     property SQLType: TFIBSQLTypes read FSQLType;
     property TRHandle: PISC_TR_HANDLE read GetTRHandle;
-    property ProcExecuted: boolean read FProcExecuted write FProcExecuted;
-    property OnSQLFetch: TOnSQLFetch read FOnSQLFetch write FOnSQLFetch;
+    property ProcExecuted: Boolean read FProcExecuted write FProcExecuted;
+    property OnSQLFetch: TFIBSQLFetchEvent read FOnSQLFetch write FOnSQLFetch;
     // for internal use
     property OnlySrvParams: TStringList read FOnlySrvParams;
   protected
-    FConditions: TConditions;
-    procedure AddCondition(const Name, Condition: string; Enabled: boolean);
-    procedure SetConditions(Value: TConditions);
+    FConditions: TFIBConditions;
+    procedure AddCondition(const Name, Condition: string; Enabled: Boolean);
+    procedure SetConditions(Value: TFIBConditions);
   published
-    property Conditions: TConditions read FConditions write SetConditions;
+    property Conditions: TFIBConditions read FConditions write SetConditions;
   public
-    { ISQLObject }
-    function ParamCount: integer;
-    function ParamName(ParamIndex: integer): string;
-    function FieldName(FieldIndex: integer): string;
-    function FieldsCount: integer;
-    function FieldExist(const FieldName: string; var FieldIndex: integer): boolean;
-    function ParamExist(const ParamName: string; var ParamIndex: integer): boolean;
-    function FieldValue(const FieldName: string; Old: boolean): Variant; overload;
-    function FieldValue(const FieldIndex: integer; Old: boolean): Variant; overload;
+    { IFIBParamSource }
+    function ParamCount: Integer;
+    function ParamName(ParamIndex: Integer): string;
+    function FieldName(FieldIndex: Integer): string;
+    function FieldsCount: Integer;
+    function FieldExist(const FieldName: string; var FieldIndex: Integer): Boolean;
+    function ParamExist(const ParamName: string; var ParamIndex: Integer): Boolean;
+    function FieldValue(const FieldName: string; Old: Boolean): Variant; overload;
+    function FieldValue(const FieldIndex: Integer; Old: Boolean): Variant; overload;
     function ParamValue(const ParamName: string): Variant; overload;
-    function ParamValue(const ParamIndex: integer): Variant; overload;
+    function ParamValue(const ParamIndex: Integer): Variant; overload;
     function DefMacroValue(const MacroName: string): string;
-    procedure SetParamValue(const ParamIndex: integer; aValue: Variant);
-    function IEof: boolean;
+    procedure SetParamValue(const ParamIndex: Integer; aValue: Variant);
+    function IEof: Boolean;
     procedure INext;
 
-    { End ISQLObject }
+    { End IFIBParamSource }
 
-    function ReadySQLText(ForChangeExecSQL: boolean = True): string;
-    property SQLTextChangeCount: integer read FSQLTextChangeCount;
+    function ReadySQLText(ForChangeExecSQL: Boolean = True): string;
+    property SQLTextChangeCount: Integer read FSQLTextChangeCount;
   private
     function GetAbout: string;
     procedure SetAbout(const Value: string);
@@ -672,10 +666,10 @@ type
   public
 
     procedure AssignProperties(Source: TFIBQuery);
-    function WhereClausesCount: integer;
-    property WhereClause[Index: integer]: string read GetWhereClause write SetWhereClause;
+    function WhereClausesCount: Integer;
+    property WhereClause[Index: Integer]: string read GetWhereClause write SetWhereClause;
     property MainWhereClause: string read GetMainWhereClause write SetMainWhereClause;
-    property IndexMainWhere: integer read GetMainWhereIndex;
+    property IndexMainWhere: Integer read GetMainWhereIndex;
     property CursorName: string read FCursorName write FCursorName;
     property OrderClause: string read GetOrderString write SetOrderString;
     property GroupByClause: string read GetGroupByString write SetGroupByString;
@@ -683,15 +677,15 @@ type
     property PlanClause: string read GetPlanClause write SetPlanClause;
     property ModifyTable: string read GetModifyTable;
     property CallTime: Cardinal read FCallTime;
-    property MacroChanged: boolean read FMacroChanged;
-    property SQLKind: TSQLKind read GetSQLKind;
+    property MacroChanged: Boolean read FMacroChanged;
+    property SQLKind: TFIBSQLStatementKind read GetSQLKind;
 
   published
     property Transaction: TFIBTransaction read GetTransaction write SetTransaction;
     property Database: TFIBDatabase read GetDatabase write SetDatabase;
 
-    property GoToFirstRecordOnExecute: boolean read FGoToFirstRecordOnExecute write FGoToFirstRecordOnExecute default True;
-    property ParamCheck: boolean read FParamCheck write SetParamCheck default True;
+    property GoToFirstRecordOnExecute: Boolean read FGoToFirstRecordOnExecute write FGoToFirstRecordOnExecute default True;
+    property ParamCheck: Boolean read FParamCheck write SetParamCheck default True;
     // ms; 0: the attachment value applies (Session.StatementTimeout). For a SELECT the timer runs until EOF
     // FIBNoStatementTimeout: no timeout for this statement, even with a Session value
     property StatementTimeout: Cardinal read FStatementTimeout write SetStatementTimeout default 0;
@@ -699,13 +693,13 @@ type
 
     property OnSQLChanging: TNotifyEvent read FOnSQLChanging write FOnSQLChanging;
     property Options: TFIBQueryOptions read FOptions write FOptions stored False;
-    property OnBatching: TOnBatching read FOnBatching write FOnBatching;
-    property OnBatchError: TOnBatchError read FOnBatchError write FOnBatchError;
+    property OnBatching: TFIBBatchingEvent read FOnBatching write FOnBatching;
+    property OnBatchError: TFIBBatchErrorEvent read FOnBatchError write FOnBatchError;
     property TransactionEnding: TNotifyEvent read FTransactionEnding write FTransactionEnding;
     property TransactionEnded: TNotifyEvent read FTransactionEnded write FTransactionEnded;
     property AfterFirstFetch: TNotifyEvent read FAfterFirstFetch write FAfterFirstFetch;
 {$IFDEF CSMonitor}
-    property CSMonitorSupport: TCSMonitorSupport read FCSMonitorSupport write SetMonitorSupport;
+    property CSMonitorSupport: TFIBCSMonitorSupport read FCSMonitorSupport write SetMonitorSupport;
 {$ENDIF}
     property BeforeExecute: TNotifyEvent read FBeforeExecute write FBeforeExecute;
     property AfterExecute: TNotifyEvent read FAfterExecute write FAfterExecute;
@@ -733,8 +727,24 @@ const
   fibGUID_NULL: TGUID = '{00000000-0000-0000-0000-000000000000}';
 
 var
-  DisableEncodingSQLText: boolean;
-  TraceString: string;
+  DisableEncodingSQLText: Boolean;
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+{$IFDEF SUPPORT_ARRAY_FIELD}
+  TCallBackBlobReadWrite = TFIBBlobProgressEvent deprecated 'Use TFIBBlobProgressEvent';
+  TTypeSetToParam = TFIBParamValuePart deprecated 'Use TFIBParamValuePart';
+  TBatchState = TFIBBatchState deprecated 'Use TFIBBatchState';
+  TOnSQLFetch = TFIBSQLFetchEvent deprecated 'Use TFIBSQLFetchEvent';
+  TBatchOperation = TFIBBatchOperation deprecated 'Use TFIBBatchOperation';
+  TBatchAction = TFIBBatchAction deprecated 'Use TFIBBatchAction';
+  TBatchErrorAction = TFIBBatchErrorAction deprecated 'Use TFIBBatchErrorAction';
+  TOnBatching = TFIBBatchingEvent deprecated 'Use TFIBBatchingEvent';
+  TOnBatchError = TFIBBatchErrorEvent deprecated 'Use TFIBBatchErrorEvent';
+  TAllRowsAffected = TFIBRowsAffected deprecated 'Use TFIBRowsAffected';
+  TQueryRunStateValues = TFIBQueryRunStateValue deprecated 'Use TFIBQueryRunStateValue';
+  TQueryRunState = TFIBQueryRunState deprecated 'Use TFIBQueryRunState';
+{$ENDIF}
 
 implementation
 
@@ -754,14 +764,14 @@ const
   cPlanMaxLength = 16384;
 
   // Clients before Firebird 4 return names over 31 bytes empty, later ones cut them
-function ClientTruncatesNames(const ClientLibrary: IIbClientLibrary): boolean;
+function ClientTruncatesNames(const ClientLibrary: IFIBClientLibrary): Boolean;
 begin
   Result := (ClientLibrary.Version.Product = fpFirebird) and (ClientLibrary.Version.Major >= 4);
 end;
 
-function XSQLVARName(const Name: array of AnsiChar; NameLength: Short): Ansistring;
+function XSQLVARName(const Name: array of AnsiChar; NameLength: Short): AnsiString;
 var
-  L: integer;
+  L: Integer;
 begin
   L := NameLength;
   if L > Length(Name) then
@@ -772,7 +782,7 @@ begin
 end;
 
 // A name filling the XSQLVAR array may have been cut by the client
-function XSQLVARNameCut(NameLength: Short): boolean;
+function XSQLVARNameCut(NameLength: Short): Boolean;
 begin
   Result := NameLength >= LENGTH_METANAMES - 1;
 end;
@@ -799,11 +809,11 @@ procedure TFIBXSQLVAR.Assign(Source: TFIBXSQLVAR);
 var
   szBuff: PAnsiChar;
   s_bhandle, d_bhandle: TISC_BLOB_HANDLE;
-  bSourceBlob, bDestBlob: boolean;
+  bSourceBlob, bDestBlob: Boolean;
   iSegs, iMaxSeg, iSize: Long;
   iBlobType: Short;
   SP: TFIBXSQLVAR;
-  DestSQLType, SrcSQLType: integer;
+  DestSQLType, SrcSQLType: Integer;
 begin
   if IsMacro then
   begin
@@ -841,9 +851,19 @@ begin
     else if (SrcSQLType <> SQL_BLOB) then
     begin
       szBuff := nil;
-      FIBAlloc(szBuff, 0, Source.FXSQLVAR^.sqllen);
-      Move(Source.FXSQLVAR^.sqldata[0], szBuff[0], Source.FXSQLVAR^.sqllen);
-      iSize := Source.FXSQLVAR^.sqllen;
+      if SrcSQLType = SQL_VARYING then
+      begin
+        // the data after the length prefix
+        iSize := PWord(Source.FXSQLVAR^.sqldata)^;
+        FIBAlloc(szBuff, 0, iSize);
+        Move(Source.FXSQLVAR^.sqldata[2], szBuff[0], iSize);
+      end
+      else
+      begin
+        iSize := Source.FXSQLVAR^.sqllen;
+        FIBAlloc(szBuff, 0, iSize);
+        Move(Source.FXSQLVAR^.sqldata[0], szBuff[0], iSize);
+      end;
     end
     else if (DestSQLType <> SQL_BLOB) then
     begin
@@ -873,7 +893,7 @@ begin
           ReadBlob(ClientLibrary, @s_bhandle, szBuff, iSize);
           if (not bDestBlob) // avoid
             or (FXSQLVAR^.SQLSubtype <> Source.FXSQLVAR^.SQLSubtype) then
-            IBFilterBuffer(Database, szBuff, iSize, Source.FXSQLVAR^.SQLSubtype, False); // ivan_ra
+            IBFilterBuffer(Database, szBuff, iSize, Source.FXSQLVAR^.SQLSubtype, False);
 
         finally
           Source.FQuery.Call(ClientLibrary.isc_close_blob(StatusVector, @s_bhandle), True);
@@ -888,7 +908,7 @@ begin
       try
         if (not bSourceBlob) // avoid conversation
           or (FXSQLVAR^.SQLSubtype <> Source.FXSQLVAR^.SQLSubtype) then
-          IBFilterBuffer(FQuery.Database, szBuff, iSize, Source.FXSQLVAR^.SQLSubtype, True); // ivan_ra
+          IBFilterBuffer(FQuery.Database, szBuff, iSize, Source.FXSQLVAR^.SQLSubtype, True);
         WriteBlob(FQuery.Database.ClientLibrary, @d_bhandle, szBuff, iSize);
         IsNull := False;
       finally
@@ -910,7 +930,7 @@ begin
   end;
 end;
 
-procedure TFIBXSQLVAR.SetSQLLen(A: Smallint);
+procedure TFIBXSQLVAR.SetSQLLen(A: SmallInt);
 begin
   FXSQLVAR^.sqllen := A
 end;
@@ -949,7 +969,7 @@ begin
     end;
 end;
 
-function TFIBXSQLVAR.IsDecimalType: boolean;
+function TFIBXSQLVAR.IsDecimalType: Boolean;
 begin
   case FXSQLVAR^.SQLType and (not 1) of
     SQL_INT128, SQL_DEC16, SQL_DEC34: Result := True;
@@ -958,7 +978,7 @@ begin
   end;
 end;
 
-function TFIBXSQLVAR.IsTimeZoneType: boolean;
+function TFIBXSQLVAR.IsTimeZoneType: Boolean;
 begin
   case FXSQLVAR^.SQLType and (not 1) of
     SQL_TIME_TZ, SQL_TIME_TZ_EX, SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX: Result := True;
@@ -967,7 +987,7 @@ begin
   end;
 end;
 
-function TFIBXSQLVAR.GetDecimalValue: TFBDecimal;
+function TFIBXSQLVAR.GetDecimalValue: TFIBDecimal;
 begin
   if not IsDecimalType then
     FIBError(feInvalidDataConversion, [nil]);
@@ -999,7 +1019,7 @@ const
 function TFIBXSQLVAR.GetAsTimeStamp: TTimeStamp;
 var
   ZoneID: Word;
-  Offset: integer;
+  Offset: Integer;
 begin
   if IsNull then
   begin
@@ -1010,7 +1030,7 @@ begin
     case FXSQLVAR^.SQLType and (not 1) of
       SQL_TEXT, SQL_VARYING:
         try
-          Result := DateTimeToTimeStamp(StrToDate(AsWideString));
+          Result := DateTimeToTimeStamp(StrToDateTime(AsWideString));
         except
           on E: EConvertError do
             FIBError(feInvalidDataConversion, [nil]);
@@ -1044,45 +1064,45 @@ end;
   * Returns the local time of the value in its own time zone.
   * For TIME WITH TIME ZONE LocalValue.Date is 0.
 *)
-procedure TFIBXSQLVAR.GetTimeZoneValue(out LocalValue: TTimeStamp; out ZoneID: Word; out OffsetMinutes: integer);
+procedure TFIBXSQLVAR.GetTimeZoneValue(out LocalValue: TTimeStamp; out ZoneID: Word; out OffsetMinutes: Integer);
 var
-  vSQLType: integer;
-  vTime: TISC_TIME_TZ_EX;
-  vTimeStamp: TISC_TIMESTAMP_TZ_EX;
+  SQLTypeCode: Integer;
+  TimeValue: TISC_TIME_TZ_EX;
+  TimeStampValue: TISC_TIMESTAMP_TZ_EX;
 begin
-  vSQLType := FXSQLVAR^.SQLType and (not 1);
+  SQLTypeCode := FXSQLVAR^.SQLType and (not 1);
   // The extended forms only append ext_offset to the basic ones
-  case vSQLType of
+  case SQLTypeCode of
     SQL_TIME_TZ, SQL_TIME_TZ_EX:
       begin
-        if vSQLType = SQL_TIME_TZ_EX then
-          vTime := PISC_TIME_TZ_EX(FXSQLVAR^.sqldata)^
+        if SQLTypeCode = SQL_TIME_TZ_EX then
+          TimeValue := PISC_TIME_TZ_EX(FXSQLVAR^.sqldata)^
         else
         begin
-          vTime.utc_time := PISC_TIME_TZ(FXSQLVAR^.sqldata)^.utc_time;
-          vTime.time_zone := PISC_TIME_TZ(FXSQLVAR^.sqldata)^.time_zone;
-          vTime.ext_offset := Short(FBKnownZoneOffset(vTime.time_zone));
+          TimeValue.utc_time := PISC_TIME_TZ(FXSQLVAR^.sqldata)^.utc_time;
+          TimeValue.time_zone := PISC_TIME_TZ(FXSQLVAR^.sqldata)^.time_zone;
+          TimeValue.ext_offset := Short(FBKnownZoneOffset(TimeValue.time_zone));
         end;
-        ZoneID := vTime.time_zone;
-        OffsetMinutes := vTime.ext_offset;
+        ZoneID := TimeValue.time_zone;
+        OffsetMinutes := TimeValue.ext_offset;
         LocalValue.Date := 0;
-        LocalValue.Time := FBTimeTZToMSecs(vTime);
+        LocalValue.Time := FBTimeTZToMSecs(TimeValue);
       end;
     SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX:
       begin
-        if vSQLType = SQL_TIMESTAMP_TZ_EX then
-          vTimeStamp := PISC_TIMESTAMP_TZ_EX(FXSQLVAR^.sqldata)^
+        if SQLTypeCode = SQL_TIMESTAMP_TZ_EX then
+          TimeStampValue := PISC_TIMESTAMP_TZ_EX(FXSQLVAR^.sqldata)^
         else
         begin
-          vTimeStamp.utc_timestamp := PISC_TIMESTAMP_TZ(FXSQLVAR^.sqldata)
+          TimeStampValue.utc_timestamp := PISC_TIMESTAMP_TZ(FXSQLVAR^.sqldata)
             ^.utc_timestamp;
-          vTimeStamp.time_zone := PISC_TIMESTAMP_TZ(FXSQLVAR^.sqldata)
+          TimeStampValue.time_zone := PISC_TIMESTAMP_TZ(FXSQLVAR^.sqldata)
             ^.time_zone;
-          vTimeStamp.ext_offset := Short(FBKnownZoneOffset(vTimeStamp.time_zone));
+          TimeStampValue.ext_offset := Short(FBKnownZoneOffset(TimeStampValue.time_zone));
         end;
-        ZoneID := vTimeStamp.time_zone;
-        OffsetMinutes := vTimeStamp.ext_offset;
-        LocalValue := MSecsToTimeStamp(FBTimeStampTZToMSecs(vTimeStamp));
+        ZoneID := TimeStampValue.time_zone;
+        OffsetMinutes := TimeStampValue.ext_offset;
+        LocalValue := MSecsToTimeStamp(FBTimeStampTZToMSecs(TimeStampValue));
       end;
   else
     FIBError(feInvalidDataConversion, [nil]);
@@ -1092,7 +1112,7 @@ end;
 function TFIBXSQLVAR.GetAsTimeZoneID: Word;
 var
   ts: TTimeStamp;
-  Offset: integer;
+  Offset: Integer;
 begin
   if IsNull or not IsTimeZoneType then
     Result := FBGmtZoneID
@@ -1100,7 +1120,7 @@ begin
     GetTimeZoneValue(ts, Result, Offset);
 end;
 
-function TFIBXSQLVAR.GetAsTimeZoneOffset: integer;
+function TFIBXSQLVAR.GetAsTimeZoneOffset: Integer;
 var
   ts: TTimeStamp;
   ZoneID: Word;
@@ -1141,7 +1161,7 @@ end;
 
 procedure TFIBXSQLVAR.SetAsDateTimeTZ(const aValue: TDateTime; const aTimeZone: string);
 var
-  sSQLType: integer;
+  sSQLType: Integer;
   S: string;
 begin
   sSQLType := ServerSQLType;
@@ -1163,7 +1183,7 @@ begin
   SetValue(SQL_TIMESTAMP_TZ, SizeOf(TISC_TIMESTAMP_TZ), tspValue, aValue);
 end;
 
-procedure TFIBXSQLVAR.SetAsInt128(const aValue: TFB_I128; aScale: integer = 0);
+procedure TFIBXSQLVAR.SetAsInt128(const aValue: TFB_I128; aScale: Integer = 0);
 begin
   SetValue(SQL_INT128, SizeOf(TFB_I128), tspValue, aValue);
   if aScale <> 0 then
@@ -1182,7 +1202,7 @@ end;
 
 procedure TFIBXSQLVAR.SetAsDateTimeTZ(const aValue: TDateTime; aZoneID: Word);
 var
-  sSQLType: integer;
+  sSQLType: Integer;
   ZoneName: string;
 begin
   if aZoneID = FBSessionZoneID then
@@ -1209,7 +1229,7 @@ begin
     case FXSQLVAR^.SQLType and (not 1) of
       SQL_TEXT, SQL_VARYING:
         try
-          Result := StrToDate(AsWideString);
+          Result := StrToDateTime(AsWideString);
         except
           on E: EConvertError do
             FIBError(feInvalidDataConversion, [nil]);
@@ -1224,10 +1244,6 @@ begin
         end;
       SQL_TIMESTAMP:
         begin
-          { Result:=
-            PISC_QUAD(FXSQLVAR^.sqldata)^.gds_quad_high-IBDateDelta+
-            PISC_QUAD(FXSQLVAR^.sqldata)^.gds_quad_low/MSecsPerDay10; }
-
           Result := HookTimeStampToDateTime(AsTimeStamp);
         end;
       SQL_TIME_TZ, SQL_TIME_TZ_EX: Result := AsTimeStamp.Time / MSecsPerDay;
@@ -1377,10 +1393,10 @@ begin
     Result := FIBCodePageSystem;
 end;
 
-function TFIBXSQLVAR.GetAsAnsiString: Ansistring;
+function TFIBXSQLVAR.GetAsAnsiString: AnsiString;
 var
-  sz: TDataBuffer;
-  str_len: integer;
+  sz: TFIBDataBuffer;
+  str_len: Integer;
   bs: TFIBBlobStream;
   byteStr: FIBByteString;
 begin
@@ -1388,7 +1404,6 @@ begin
   // Check null, if so return a default string
   if not IsNull then
     case FXSQLVAR^.SQLType and (not 1) of
-      // 0: Result:='';
       SQL_ARRAY: Result := '(ARRAY)';
       SQL_BLOB:
         // an unassigned blob parameter has no valid blob ID: ''
@@ -1456,7 +1471,7 @@ begin
         end;
     else
       // the system code page of an AnsiString
-      Result := Ansistring(FormatValue);
+      Result := AnsiString(FormatValue);
     end;
 end;
 
@@ -1539,7 +1554,7 @@ end;
 
 function TFIBXSQLVAR.GetAsVariant: Variant;
 var
-  vBcd: TBcd;
+  Bcd: TBcd;
 begin
   if IsMacro then
     Result := AsWideString
@@ -1562,7 +1577,6 @@ begin
         Result := '(Array)';
 {$ENDIF}
       SQL_BLOB:
-        // Result := '(BLOB)';
         Result := AsString;
       SQL_TEXT, SQL_VARYING:
         // a variant keeps no code page
@@ -1587,8 +1601,8 @@ begin
       SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT: Result := AsDouble;
       SQL_INT128, SQL_DEC16, SQL_DEC34:
         // NaN, Infinity and values out of TBcd range are returned as Double
-        if FBRawToBcd(FXSQLVAR^.SQLType and (not 1), FXSQLVAR^.sqlscale, FXSQLVAR^.sqldata, vBcd) then
-          VarFMTBcdCreate(Result, vBcd)
+        if FBRawToBcd(FXSQLVAR^.SQLType and (not 1), FXSQLVAR^.sqlscale, FXSQLVAR^.sqldata, Bcd) then
+          VarFMTBcdCreate(Result, Bcd)
         else
           Result := FBRawToDouble(FXSQLVAR^.SQLType and (not 1), FXSQLVAR^.sqlscale, FXSQLVAR^.sqldata);
       SQL_TIME_TZ, SQL_TIME_TZ_EX, SQL_TIMESTAMP_TZ, SQL_TIMESTAMP_TZ_EX: Result := AsDateTime;
@@ -1604,7 +1618,7 @@ begin
   Result := FXSQLVAR;
 end;
 
-function TFIBXSQLVAR.GetIsNull: boolean;
+function TFIBXSQLVAR.GetIsNull: Boolean;
 begin
   Result := (FStreamValue = nil) and not IsMacro;
   if Result then
@@ -1612,10 +1626,9 @@ begin
       (IsNullable and (FXSQLVAR^.sqlind^ = -1) or (FXSQLVAR^.SQLType in [0, 1]));
 end;
 
-function TFIBXSQLVAR.GetIsNullable: boolean;
+function TFIBXSQLVAR.GetIsNullable: Boolean;
 begin
   Result := not IsMacro and (FXSQLVAR^.SQLType and 1 = 1);
-  // Result := (FXSQLVAR^.sqltype and 1 = 1);
   if Result and not Assigned(FXSQLVAR^.sqlind) then
     FIBAlloc(FXSQLVAR^.sqlind, 0, SizeOf(Short));
 end;
@@ -1632,7 +1645,7 @@ begin
   end;
 end;
 
-procedure TFIBXSQLVAR.LoadFromFile(const FileName: string; cb: TCallBackBlobReadWrite);
+procedure TFIBXSQLVAR.LoadFromFile(const FileName: string; cb: TFIBBlobProgressEvent);
 var
   q: TISC_QUAD;
 begin
@@ -1667,7 +1680,7 @@ begin
   end;
 end;
 
-procedure TFIBXSQLVAR.SaveToFile(const FileName: string; cb: TCallBackBlobReadWrite = nil);
+procedure TFIBXSQLVAR.SaveToFile(const FileName: string; cb: TFIBBlobProgressEvent = nil);
 begin
   if not ExistBlobFilter(FQuery.Database, FXSQLVAR^.SQLSubtype) then
     BlobToFile(AsQuad, FileName, FQuery.Database, FQuery.Transaction, cb)
@@ -1681,7 +1694,7 @@ var
 begin
   bs := TFIBBlobStream.Create;
   try
-    bs.blobSubType := ModelVar.AsXSQLVAR^.SQLSubtype; // ivan_ra
+    bs.blobSubType := ModelVar.AsXSQLVAR^.SQLSubtype;
     bs.Mode := bmRead;
     with ModelVar.FQuery do
     begin
@@ -1703,7 +1716,7 @@ begin
   BlobToStream(Self, AsQuad, Stream);
 end;
 
-function TFIBXSQLVAR.GetSize: integer;
+function TFIBXSQLVAR.GetSize: Integer;
 begin
   Result := FXSQLVAR^.sqllen;
 end;
@@ -1715,7 +1728,7 @@ end;
 // Array Support
 
 {$IFDEF SUPPORT_ARRAY_FIELD}
-function TFIBXSQLVAR.IsArray: boolean;
+function TFIBXSQLVAR.IsArray: Boolean;
 begin
   Result := (FXSQLVAR^.SQLType and (not 1) = SQL_ARRAY)
 end;
@@ -1729,7 +1742,7 @@ begin
       FIBError(feNotIsArrayField, [RelationName + '.' + SqlName]);
 end;
 
-function TFIBXSQLVAR.GetDimensionCount: integer;
+function TFIBXSQLVAR.GetDimensionCount: Integer;
 begin
   CheckArrayType;
   Result := FArrayInfo.DimensionCount
@@ -1741,13 +1754,13 @@ begin
   Result := FArrayInfo.ArrayType
 end;
 
-function TFIBXSQLVAR.GetDimension(Index: integer): TISC_ARRAY_BOUND;
+function TFIBXSQLVAR.GetDimension(Index: Integer): TISC_ARRAY_BOUND;
 begin
   CheckArrayType;
   Result := FArrayInfo.Dimension[Index]
 end;
 
-function TFIBXSQLVAR.GetSliceSize: integer;
+function TFIBXSQLVAR.GetSliceSize: Integer;
 begin
   CheckArrayType;
   Result := FArrayInfo.ArraySize
@@ -1770,7 +1783,7 @@ begin
 end;
 
 // Byte arrays set to a parameter of an unknown type are BLOB data (VariantToStream)
-function TFIBXSQLVAR.IsArrayParamValue(const Value: Variant; ServerType: integer): boolean;
+function TFIBXSQLVAR.IsArrayParamValue(const Value: Variant; ServerType: Integer): Boolean;
 begin
   Result := IsArray or (ServerType = SQL_ARRAY) or (FParent.FIsParams and (ServerType = 0) and
     (VarType(Value) and varTypeMask <> varByte));
@@ -1786,7 +1799,7 @@ begin
     Result := FArrayInfo.GetArrayValues(FXSQLVAR^.sqldata, FQuery.DBHandle, FQuery.TRHandle);
 end;
 
-function TFIBXSQLVAR.GetArrayElement(Indexes: array of integer): Variant;
+function TFIBXSQLVAR.GetArrayElement(Indexes: array of Integer): Variant;
 begin
   CheckArrayType;
   if IsNull then
@@ -1795,7 +1808,7 @@ begin
     Result := FArrayInfo.GetElement(FXSQLVAR^.sqldata, Indexes, FQuery.DBHandle, FQuery.TRHandle);
 end;
 
-function TFIBXSQLVAR.GetArraySize: integer;
+function TFIBXSQLVAR.GetArraySize: Integer;
 begin
   CheckArrayType;
   Result := FArrayInfo.ArraySize
@@ -1808,12 +1821,12 @@ begin
   AsWideString := FDefMacroValue
 end;
 
-function TFIBXSQLVAR.IsDefMacroValue: boolean;
+function TFIBXSQLVAR.IsDefMacroValue: Boolean;
 begin
   Result := IsMacro and (FDefMacroValue = AsWideString)
 end;
 
-function TFIBXSQLVAR.GetSQLType: integer;
+function TFIBXSQLVAR.GetSQLType: Integer;
 begin
   Result := FXSQLVAR^.SQLType and (not 1);
 end;
@@ -1823,7 +1836,7 @@ begin
   Result := FXSQLVAR^.SQLSubtype;
 end;
 
-function TFIBXSQLVAR.IsRealType(SQLType: integer): boolean;
+function TFIBXSQLVAR.IsRealType(SQLType: Integer): Boolean;
 begin
   Result := (((SQLType = SQL_INT64) or (SQLType = SQL_LONG) or
     (SQLType = SQL_SHORT) or (SQLType = SQL_INT128)) and (Scale <> 0)) or
@@ -1831,7 +1844,7 @@ begin
     or (SQLType = SQL_DEC16) or (SQLType = SQL_DEC34)
 end;
 
-function TFIBXSQLVAR.IsNumericType(SQLType: integer): boolean;
+function TFIBXSQLVAR.IsNumericType(SQLType: Integer): Boolean;
 begin
   Result := (SQLType = SQL_INT64) or (SQLType = SQL_LONG) or
     (SQLType = SQL_SHORT) or (SQLType = SQL_DOUBLE) or (SQLType = SQL_FLOAT) or
@@ -1840,12 +1853,12 @@ end;
 
 // A string over 32767 bytes set before Prepare: already a blob, but encoded
 // only when the server parameter is known
-function TFIBXSQLVAR.IsDefferedLongString: boolean;
+function TFIBXSQLVAR.IsDeferredLongString: Boolean;
 begin
-  Result := FIsDefferedSetting and (FStreamValue <> nil) and (Length(FWideTempValue) > 0);
+  Result := FIsDeferredSetting and (FStreamValue <> nil) and (Length(FWideTempValue) > 0);
 end;
 
-function TFIBXSQLVAR.IsDateTimeType(SQLType: integer): boolean;
+function TFIBXSQLVAR.IsDateTimeType(SQLType: Integer): Boolean;
 begin
   Result := (SQLType = SQL_TIMESTAMP) or (SQLType = SQL_TYPE_DATE) or
     (SQLType = SQL_TYPE_TIME) or (SQLType = SQL_TIMESTAMP_TZ) or
@@ -1859,7 +1872,7 @@ var
   i, Occurrence: Integer;
 begin
   ServerParams := FQuery.FSQLParams;
-  if not FQuery.vDiffParams then
+  if not FQuery.FDiffParams then
   begin
     if (FIndex < ServerParams.Count) and (ServerParams[FIndex].FName = FName) then
       Result := ServerParams[FIndex]
@@ -1884,9 +1897,9 @@ begin
   Result := ServerParams.FindParam(FName);
 end;
 
-function TFIBXSQLVAR.GetServerSQLType: integer;
+function TFIBXSQLVAR.GetServerSQLType: Integer;
 var
-  SrvSqlVar: TFIBXSQLVAR;
+  ServerSQLVar: TFIBXSQLVAR;
 begin
   if not FQuery.Prepared then
     Result := 0 // Unknown
@@ -1894,30 +1907,30 @@ begin
     with FParent do
       if not FIsParams or (FParent.FQuery.FSQLParams = FParent) then
         if FInitialized then
-          Result := FSrvSQLType
+          Result := FServerSQLType
         else
           Result := GetSQLType
       else
       begin
-        if FSrvSQLType <> 0 then
-          Result := FSrvSQLType
+        if FServerSQLType <> 0 then
+          Result := FServerSQLType
         else
         begin
-          SrvSqlVar := ServerParam;
-          if SrvSqlVar = nil then
+          ServerSQLVar := ServerParam;
+          if ServerSQLVar = nil then
             Result := GetSQLType
-          else if SrvSqlVar.FSrvSQLType = 0 then
-            Result := SrvSqlVar.SQLType
+          else if ServerSQLVar.FServerSQLType = 0 then
+            Result := ServerSQLVar.SQLType
           else
-            Result := SrvSqlVar.FSrvSQLType;
-          FSrvSQLType := Result
+            Result := ServerSQLVar.FServerSQLType;
+          FServerSQLType := Result
         end;
       end;
 end;
 
-function TFIBXSQLVAR.GetServerSQLScale: integer;
+function TFIBXSQLVAR.GetServerSQLScale: Integer;
 var
-  SrvSqlVar: TFIBXSQLVAR;
+  ServerSQLVar: TFIBXSQLVAR;
 begin
   with FParent do
     // as described for a server parameter (see GetServerSQLSubType)
@@ -1925,28 +1938,28 @@ begin
       if FInitialized and not FIsParams then
         Result := GetScale
       else
-        Result := FSrvSQLScale
+        Result := FServerSQLScale
     else
     begin
-      if FSrvSQLScale <> 0 then
-        Result := FSrvSQLScale
+      if FServerSQLScale <> 0 then
+        Result := FServerSQLScale
       else
       begin
-        SrvSqlVar := ServerParam;
-        if SrvSqlVar = nil then
+        ServerSQLVar := ServerParam;
+        if ServerSQLVar = nil then
           Result := GetScale
-        else if SrvSqlVar.FSrvSQLScale = 0 then
-          Result := SrvSqlVar.Scale
+        else if ServerSQLVar.FServerSQLScale = 0 then
+          Result := ServerSQLVar.Scale
         else
-          Result := SrvSqlVar.FSrvSQLScale;
-        FSrvSQLScale := Result;
+          Result := ServerSQLVar.FServerSQLScale;
+        FServerSQLScale := Result;
       end;
     end;
 end;
 
-function TFIBXSQLVAR.GetServerSQLSize: integer;
+function TFIBXSQLVAR.GetServerSQLSize: Integer;
 var
-  SrvSqlVar: TFIBXSQLVAR;
+  ServerSQLVar: TFIBXSQLVAR;
 begin
   if not FQuery.Prepared then
     Result := 0 // Unknown
@@ -1956,28 +1969,28 @@ begin
         if FInitialized then
           Result := GetSize
         else
-          Result := FSrvSQLLen
+          Result := FServerSQLLen
       else
       begin
-        if FSrvSQLLen <> 0 then
-          Result := FSrvSQLLen
+        if FServerSQLLen <> 0 then
+          Result := FServerSQLLen
         else
         begin
-          SrvSqlVar := ServerParam;
-          if SrvSqlVar = nil then
+          ServerSQLVar := ServerParam;
+          if ServerSQLVar = nil then
             Result := GetSize
-          else if SrvSqlVar.FSrvSQLLen = 0 then
-            Result := SrvSqlVar.Size
+          else if ServerSQLVar.FServerSQLLen = 0 then
+            Result := ServerSQLVar.Size
           else
-            Result := SrvSqlVar.FSrvSQLLen;
-          FSrvSQLLen := Result;
+            Result := ServerSQLVar.FServerSQLLen;
+          FServerSQLLen := Result;
         end;
       end;
 end;
 
-function TFIBXSQLVAR.GetServerSQLSubType: integer;
+function TFIBXSQLVAR.GetServerSQLSubType: Integer;
 var
-  SrvSqlVar: TFIBXSQLVAR;
+  ServerSQLVar: TFIBXSQLVAR;
 begin
   if not FQuery.Prepared then
     Result := 0 // Unknown
@@ -1988,27 +2001,27 @@ begin
         if FInitialized and not FIsParams then
           Result := GetSQLSubtype
         else
-          Result := FSrvSQLSubType
+          Result := FServerSQLSubType
       else
       begin
-        if FSrvSQLSubType <> 0 then
-          Result := FSrvSQLSubType
+        if FServerSQLSubType <> 0 then
+          Result := FServerSQLSubType
         else
         begin
-          SrvSqlVar := ServerParam;
-          if SrvSqlVar = nil then
+          ServerSQLVar := ServerParam;
+          if ServerSQLVar = nil then
             Result := GetSQLSubtype
           // not initialized yet: as described (see GetServerSQLType)
-          else if SrvSqlVar.FSrvSQLType = 0 then
-            Result := SrvSqlVar.SQLSubtype
+          else if ServerSQLVar.FServerSQLType = 0 then
+            Result := ServerSQLVar.SQLSubtype
           else
-            Result := SrvSqlVar.FSrvSQLSubType;
-          FSrvSQLSubType := Result;
+            Result := ServerSQLVar.FServerSQLSubType;
+          FServerSQLSubType := Result;
         end;
       end;
 end;
 
-procedure InternalSetNull(xvar: TFIBXSQLVAR; const aValue: boolean);
+procedure InternalSetNull(xvar: TFIBXSQLVAR; const aValue: Boolean);
 begin
   with xvar, xvar.FXSQLVAR^ do
   begin
@@ -2024,8 +2037,6 @@ begin
       if (not IsNullable) then
         IsNullable := True;
       sqlind^ := -1;
-      { if xvar.IsParam then
-        sqllen  :=0; }
     end
     else if IsNullable then
       sqlind^ := 0;
@@ -2033,7 +2044,7 @@ begin
   end;
 end;
 
-procedure InternalSetNullable(xvar: TFIBXSQLVAR; const aValue: boolean);
+procedure InternalSetNullable(xvar: TFIBXSQLVAR; const aValue: Boolean);
 begin
   if (aValue <> xvar.IsNullable) then
     with xvar.FXSQLVAR^ do
@@ -2049,7 +2060,7 @@ begin
       end;
 end;
 
-procedure InternalSetValue(xvar: TFIBXSQLVAR; aSQLType, aSize: integer; const aValue);
+procedure InternalSetValue(xvar: TFIBXSQLVAR; aSQLType, aSize: Integer; const aValue);
 begin
   with xvar, xvar.FXSQLVAR^ do
   begin
@@ -2076,8 +2087,8 @@ end;
 procedure InternalSetAsXSQLVAR(xvar: TFIBXSQLVAR; aValue: PXSQLVAR);
 var
   local_sqlind: PShort;
-  local_sqldata: TDataBuffer;
-  local_sqllen: integer;
+  local_sqldata: TFIBDataBuffer;
+  local_sqllen: Integer;
 begin
   with xvar, xvar.FXSQLVAR^ do
   begin
@@ -2120,40 +2131,39 @@ begin
   end;
 end;
 
-procedure TFIBXSQLVAR.SetValue(aSQLType, aSize: integer; ValueType: TTypeSetToParam; const aValue; ws: PWideString = nil);
+procedure TFIBXSQLVAR.SetValue(aSQLType, aSize: Integer; ValueType: TFIBParamValuePart; const aValue; ws: PWideString = nil);
 var
-  i: integer;
+  i: Integer;
   xvar: TFIBXSQLVAR;
-  OldIsNull: boolean;
+  OldIsNull: Boolean;
 begin
 {$IFDEF SUPPORT_ARRAY_FIELD}
   // any other value replaces a pending array value
   if ((ValueType = tspValue) and (aSQLType <> SQL_ARRAY)) or
-    (ValueType = tspSqlVar) or ((ValueType = tspNull) and boolean(aValue)) then
+    (ValueType = tspSqlVar) or ((ValueType = tspNull) and Boolean(aValue)) then
     VarClear(FArrayValue);
 {$ENDIF}
   // a non-string value replaces the kept string, not the BLOB ID written from it
   if (ws = nil) and ((ValueType = tspValue) and (aSQLType <> SQL_BLOB) and (aSQLType <> SQL_ARRAY) or
-    (ValueType = tspSqlVar) or (ValueType = tspNull) and boolean(aValue)) then
+    (ValueType = tspSqlVar) or (ValueType = tspNull) and Boolean(aValue)) then
     FWideTempValue := '';
   OldIsNull := IsNull;
-  i := NonAnsiIndexOf(FParent.FEquelNames, FName);
-  // if (FParent.FEquelNames.Count=0) or not FParent.FEquelNames.Find(FName,i) then
+  i := NonAnsiIndexOf(FParent.FEqualNames, FName);
   if i < 0 then
     case ValueType of
-      tspNull: InternalSetNull(Self, boolean(aValue));
-      tspIsNullable: InternalSetNullable(Self, boolean(aValue));
+      tspNull: InternalSetNull(Self, Boolean(aValue));
+      tspIsNullable: InternalSetNullable(Self, Boolean(aValue));
       tspScale: FXSQLVAR^.sqlscale := Short(Integer(aValue));
       tspValue: InternalSetValue(Self, aSQLType, aSize, aValue);
       tspSqlVar: InternalSetAsXSQLVAR(Self, PXSQLVAR(aValue));
     end
   else
-    while (i < FParent.FEquelNames.Count) and (FParent.FEquelNames[i] = FName) do
+    while (i < FParent.FEqualNames.Count) and (FParent.FEqualNames[i] = FName) do
     begin
-      xvar := FParent[integer(FParent.FEquelNames.Objects[i])];
+      xvar := FParent[Integer(FParent.FEqualNames.Objects[i])];
       case ValueType of
-        tspNull: InternalSetNull(xvar, boolean(aValue));
-        tspIsNullable: InternalSetNullable(xvar, boolean(aValue));
+        tspNull: InternalSetNull(xvar, Boolean(aValue));
+        tspIsNullable: InternalSetNullable(xvar, Boolean(aValue));
         tspScale: xvar.FXSQLVAR^.sqlscale := Short(Integer(aValue));
         tspValue:
           begin
@@ -2221,21 +2231,21 @@ end;
 
 procedure TFIBXSQLVAR.SetAsTime(aValue: TDateTime);
 var
-  sSQLType: integer;
-  vTime: ISC_TIME;
+  sSQLType: Integer;
+  TimeValue: ISC_TIME;
 begin
   sSQLType := ServerSQLType;
   if sSQLType = 0 then
   begin
-    // the server type is not known yet, AdjustDefferedSettings completes it
-    FIsDefferedSetting := True;
-    FParent.FHasDefferedSettings := True;
+    // the server type is not known yet, AdjustDeferredSettings completes it
+    FIsDeferredSetting := True;
+    FParent.FHasDeferredSettings := True;
   end;
   if (sSQLType = SQL_TIME_TZ) or (sSQLType = SQL_TIME_TZ_EX) then
   begin
     // TIME in the session time zone, a TIMESTAMP would be resolved at 1899-12-30
-    vTime := ISC_TIME(DateTimeToTimeStamp(aValue).Time * 10);
-    SetValue(SQL_TYPE_TIME, SizeOf(ISC_TIME), tspValue, vTime);
+    TimeValue := ISC_TIME(DateTimeToTimeStamp(aValue).Time * 10);
+    SetValue(SQL_TYPE_TIME, SizeOf(ISC_TIME), tspValue, TimeValue);
   end
   else
     AsTimeStamp := DateTimeToTimeStamp(aValue);
@@ -2253,19 +2263,19 @@ end;
 
 procedure TFIBXSQLVAR.SetAsDouble(aValue: Double);
 var
-  sSQLType: integer;
-  vDec: TFB_DEC34;
+  sSQLType: Integer;
+  Dec34: TFB_DEC34;
 begin
   sSQLType := ServerSQLType;
   if sSQLType = 0 then
   begin
-    // the server type is not known yet, AdjustDefferedSettings completes it
-    FIsDefferedSetting := True;
-    FParent.FHasDefferedSettings := True;
+    // the server type is not known yet, AdjustDeferredSettings completes it
+    FIsDeferredSetting := True;
+    FParent.FHasDeferredSettings := True;
   end;
   // DECFLOAT gets the shortest decimal representation (0.1 and not 0.1000000000000000055...)
-  if ((sSQLType = SQL_DEC16) or (sSQLType = SQL_DEC34)) and FBDecimalToDec34(DoubleToFBDecimal(aValue), vDec) then
-    SetValue(SQL_DEC34, SizeOf(TFB_DEC34), tspValue, vDec)
+  if ((sSQLType = SQL_DEC16) or (sSQLType = SQL_DEC34)) and FBDecimalToDec34(DoubleToFBDecimal(aValue), Dec34) then
+    SetValue(SQL_DEC34, SizeOf(TFB_DEC34), tspValue, Dec34)
   else
     SetValue(SQL_DOUBLE, SizeOf(Double), tspValue, aValue)
 end;
@@ -2282,15 +2292,15 @@ end;
 
 procedure TFIBXSQLVAR.SetAsExtended(aValue: Extended);
 var
-  vScale: integer;
+  NewScale: Integer;
 begin
   if (FQuery.Database.SQLDialect < 3) then
     SetAsDouble(aValue)
   else
   begin
-    vScale := ExtPrecision(aValue) - 18;
-    AsInt64 := Round(aValue * E10[-vScale]);
-    SetScale(vScale);
+    NewScale := ExtPrecision(aValue) - 18;
+    AsInt64 := Round(aValue * E10[-NewScale]);
+    SetScale(NewScale);
   end;
 end;
 
@@ -2311,9 +2321,9 @@ begin
     SetValue(SQL_BOOLEAN, SizeOf(Boolean), tspValue, IsTrue)
   else if ServerType = 0 then
   begin
-    // The server type is not known yet, AdjustDefferedSettings completes it
-    FIsDefferedSetting := True;
-    FParent.FHasDefferedSettings := True;
+    // The server type is not known yet, AdjustDeferredSettings completes it
+    FIsDeferredSetting := True;
+    FParent.FHasDeferredSettings := True;
   end;
 end;
 
@@ -2330,13 +2340,13 @@ end;
 
 procedure TFIBXSQLVAR.SetQuadValue(const aValue: TISC_QUAD);
 var
-  vSQLType: integer;
+  SQLTypeCode: Integer;
 begin
   if SQLType and (not 1) <> SQL_ARRAY then
-    vSQLType := SQL_BLOB
+    SQLTypeCode := SQL_BLOB
   else
-    vSQLType := SQL_ARRAY;
-  SetValue(vSQLType, SizeOf(TISC_QUAD), tspValue, aValue)
+    SQLTypeCode := SQL_ARRAY;
+  SetValue(SQLTypeCode, SizeOf(TISC_QUAD), tspValue, aValue)
 end;
 
 procedure TFIBXSQLVAR.SetAsShort(aValue: Short);
@@ -2345,17 +2355,17 @@ begin
     SetValue(SQL_SHORT, SizeOf(Short), tspValue, aValue);
 end;
 
-procedure TFIBXSQLVAR.InternalSetAsString(aValue: Pointer; IsWide: boolean; AdjustDeffered: boolean = False);
+procedure TFIBXSQLVAR.InternalSetAsString(aValue: Pointer; IsWide: Boolean; AdjustDeferred: Boolean = False);
 // Value may be Ansistring or widestring
 var
   CodePage: Word;
   // encoded again from FWideTempValue once the server type is known
   Provisional: Boolean;
   sSubType, sSQLScale: Short;
-  sSQLType, vSQLType, vSize: integer;
-  vValue: Ansistring;
-  vText: string;
-  B: boolean;
+  sSQLType, SQLTypeCode, DataSize: Integer;
+  RawValue: AnsiString;
+  DecimalText: string;
+  B: Boolean;
 
   function ServerBlobCodePage(SubType, CharSetID: Short): Word;
   begin
@@ -2380,18 +2390,18 @@ begin
   sSQLScale := Short(GetServerSQLScale);
   CodePage := FIBCodePageSystem;
   Provisional := False;
-  if AdjustDeffered then
+  if AdjustDeferred then
   begin
     case sSQLType of
       SQL_TEXT, SQL_VARYING:
         begin
           CodePage := FQuery.Database.Capabilities.TextCodePage(Byte(sSubType));
-          FIsDefferedSetting := False;
+          FIsDeferredSetting := False;
         end;
       SQL_BLOB:
         begin
           CodePage := ServerBlobCodePage(sSubType, sSQLScale);
-          FIsDefferedSetting := False;
+          FIsDeferredSetting := False;
         end;
     end;
   end
@@ -2407,9 +2417,9 @@ begin
     case sSQLType of
       0:
         begin
-          FIsDefferedSetting := True;
+          FIsDeferredSetting := True;
           Provisional := True;
-          FParent.FHasDefferedSettings := True;
+          FParent.FHasDeferredSettings := True;
           case FXSQLVAR^.SQLType of
             SQL_TEXT, SQL_VARYING:
               if not FParDataIsPrepared then
@@ -2422,61 +2432,61 @@ begin
         begin
           if not FParDataIsPrepared then
             CodePage := FQuery.Database.Capabilities.TextCodePage(Byte(sSubType));
-          FIsDefferedSetting := False;
+          FIsDeferredSetting := False;
         end;
       SQL_BLOB:
         begin
           CodePage := ServerBlobCodePage(sSubType, sSQLScale);
-          FIsDefferedSetting := False;
+          FIsDeferredSetting := False;
         end;
     end; // case
 
   end
   else
-    FIsDefferedSetting := False;
+    FIsDeferredSetting := False;
 
   if IsWide then
   begin
     if CodePage = FIBCodePageUTF8 then
-      vValue := UTF8Encode(PWideString(aValue)^)
+      RawValue := UTF8Encode(PWideString(aValue)^)
     else
     begin
       FWideTempValue := PWideString(aValue)^;
       // not sent: macros go into the SQL text, provisional bytes are encoded again
       if IsMacro or Provisional then
-        vValue := Ansistring(PWideString(aValue)^)
+        RawValue := AnsiString(PWideString(aValue)^)
       else
-        vValue := EncodeString(PWideString(aValue)^, CodePage);
+        RawValue := EncodeString(PWideString(aValue)^, CodePage);
     end;
   end
   else if CodePage = FIBCodePageUTF8 then
   begin
     if Length(FWideTempValue) = 0 then
-      vValue := UTF8Encode(PAnsiString(aValue)^)
+      RawValue := UTF8Encode(PAnsiString(aValue)^)
     else
     begin
-      vValue := UTF8Encode(FWideTempValue);
+      RawValue := UTF8Encode(FWideTempValue);
       FWideTempValue := '';
     end;
   end
   else if (CodePage <> FIBCodePageSystem) and not Provisional then
   begin
     // already in the code page (not deferred values: tagged by the described type)
-    if not AdjustDeffered and (StringCodePage(PAnsiString(aValue)^) = CodePage) then
-      vValue := PAnsiString(aValue)^
+    if not AdjustDeferred and (StringCodePage(PAnsiString(aValue)^) = CodePage) then
+      RawValue := PAnsiString(aValue)^
     else if Length(FWideTempValue) = 0 then
-      vValue := EncodeString(string(PAnsiString(aValue)^), CodePage)
+      RawValue := EncodeString(string(PAnsiString(aValue)^), CodePage)
     else
-      vValue := EncodeString(FWideTempValue, CodePage);
+      RawValue := EncodeString(FWideTempValue, CodePage);
   end
   else
-    vValue := PAnsiString(aValue)^;
+    RawValue := PAnsiString(aValue)^;
   if CodePage = FIBCodePageUTF8 then
     FXSQLVAR^.SQLSubtype := Short(FQuery.Database.UTF8CharSetID)
   else if (CodePage <> FIBCodePageSystem) and ((sSQLType = SQL_TEXT) or (sSQLType = SQL_VARYING)) then
     FXSQLVAR^.SQLSubtype := sSubType;
   // too long for a VARCHAR: sent as a text blob in the charset of the column
-  if (Length(vValue) > 32767) and (sSQLType <> SQL_BLOB) then
+  if (Length(RawValue) > 32767) and (sSQLType <> SQL_BLOB) then
   begin
     if (sSQLType = SQL_TEXT) or (sSQLType = SQL_VARYING) then
     begin
@@ -2491,8 +2501,8 @@ begin
       FStreamValue := TMemoryStream.Create
     else
       FStreamValue.Clear;
-    if Length(vValue) > 0 then
-      FStreamValue.Write(vValue[1], Length(vValue));
+    if Length(RawValue) > 0 then
+      FStreamValue.Write(RawValue[1], Length(RawValue));
     FQuery.FHaveStreamParams := True;
     FXSQLVAR^.SQLType := Short(sSQLType);
     FXSQLVAR^.SQLSubtype := sSubType;
@@ -2501,36 +2511,36 @@ begin
   end
   else if IsDBKey then
   begin
-    vSQLType := FXSQLVAR^.SQLType;
-    vSize := FXSQLVAR^.sqllen
+    SQLTypeCode := FXSQLVAR^.SQLType;
+    DataSize := FXSQLVAR^.sqllen
   end
   else
   begin
-    vSQLType := SQL_TEXT;
-    vSize := Length(vValue);
+    SQLTypeCode := SQL_TEXT;
+    DataSize := Length(RawValue);
   end;
   FreeAndNil(FStreamValue); // a previous long value
 
 {$IFDEF C24}with FormatSettings do {$ENDIF}
-    if vSize > 0 then
+    if DataSize > 0 then
     begin
       if not IsMacro and IsNumericType(sSQLType) then
       begin
         // Avoid  bug in  CAST; a number is in the system code page
-        vText := ReplaceStr(string(vValue), ',', SQLDecimalSeparator);
+        DecimalText := ReplaceStr(string(RawValue), ',', SQLDecimalSeparator);
         if not CharInSet(DecimalSeparator, [SQLDecimalSeparator, ',']) then
-          vText := ReplaceStr(vText, DecimalSeparator, SQLDecimalSeparator);
-        vValue := Ansistring(vText);
+          DecimalText := ReplaceStr(DecimalText, DecimalSeparator, SQLDecimalSeparator);
+        RawValue := AnsiString(DecimalText);
       end;
-      SetValue(vSQLType, vSize, tspValue, vValue[1], @FWideTempValue)
+      SetValue(SQLTypeCode, DataSize, tspValue, RawValue[1], @FWideTempValue)
     end
     else if IsNumericType(sSQLType) or (IsDateTimeType(sSQLType)) then
     begin
       B := True;
-      SetValue(vSQLType, vSize, tspNull, B)
+      SetValue(SQLTypeCode, DataSize, tspNull, B)
     end
     else
-      SetValue(vSQLType, vSize, tspValue, '')
+      SetValue(SQLTypeCode, DataSize, tspValue, '')
 end;
 
 procedure TFIBXSQLVAR.SetAsString(const aValue: string);
@@ -2538,13 +2548,13 @@ begin
   SetAsWideString(aValue)
 end;
 
-procedure TFIBXSQLVAR.SetAsAnsiString(const aValue: Ansistring);
+procedure TFIBXSQLVAR.SetAsAnsiString(const aValue: AnsiString);
 begin
   FWideTempValue := '';
   InternalSetAsString(@aValue, False);
 end;
 
-procedure TFIBXSQLVAR.SetAsStrData(Len: integer; const aValue);
+procedure TFIBXSQLVAR.SetAsStrData(Len: Integer; const aValue);
 begin
   FWideTempValue := '';
   SetValue(SQL_TEXT, Len, tspValue, aValue);
@@ -2622,41 +2632,40 @@ end;
 
 procedure TFIBXSQLVAR.SetAsVariant(Value: Variant);
 var
-  vt: integer;
-  sSQLType: integer;
+  VariantType: Integer;
+  sSQLType: Integer;
   v: TVarData;
   ws: WideString;
   BlobValue: TMemoryStream;
 begin
-  vt := VarType(Value);
+  VariantType := VarType(Value);
   sSQLType := ServerSQLType;
-  // if not FParent.FQuery.Prepared then
   if sSQLType = 0 then
   begin
-    FParent.FHasDefferedSettings := True;
-    FIsDefferedSetting := True;
+    FParent.FHasDeferredSettings := True;
+    FIsDeferredSetting := True;
   end;
 
   if (sSQLType = SQL_TIMESTAMP) or (sSQLType = SQL_TYPE_DATE) then
-    if vt in [varDouble, varCurrency, varInteger, varSingle, varSmallint, varWord, varShortInt, varLongWord, varInt64
+    if VariantType in [varDouble, varCurrency, varInteger, varSingle, varSmallint, varWord, varShortInt, varLongWord, varInt64
 
       ] then
     begin
-      vt := varDate;
+      VariantType := varDate;
       Value := TDateTime(Value);
     end;
 
   if IsMacro then
   begin
     Value := VarToStr(Value);
-    vt := VarType(Value);
+    VariantType := VarType(Value);
   end;
   if VarIsNull(Value) then
     IsNull := True
   else if VarIsFMTBcd(Value) then
     AsBcd := VarToBcd(Value)
   else
-    case vt of
+    case VariantType of
       varEmpty, varNull: IsNull := True;
       varSmallint, varInteger, varByte, varWord, varShortInt: AsLong := Value;
       varLongWord, varInt64: AsInt64 := Value;
@@ -2680,7 +2689,7 @@ begin
         end;
       varOleStr, varUString:
         AsWideString := Value;
-      varString: AsAnsiString := Ansistring(Value);
+      varString: AsAnsiString := AnsiString(Value);
       varArray:
 {$IFDEF SUPPORT_ARRAY_FIELD}
         if IsArrayParamValue(Value, sSQLType) then
@@ -2700,7 +2709,7 @@ begin
 
             ;
       varVariant: AsVariant := Variant(PVarData(TVarData(Value).VPointer)^);
-      varByRef, varDispatch, varError, varUnknown: FIBError(feNotPermitted, [nil]);
+      varDispatch, varError, varUnknown: FIBError(feNotPermitted, [nil]);
     else
       if VarIsArray(Value) then
       begin
@@ -2721,10 +2730,10 @@ begin
           end
 
       end
-      else if vt and varByRef <> 0 then
+      else if VariantType and varByRef <> 0 then
       begin
         v := TVarData(Value);
-        case vt and not varByRef of
+        case VariantType and not varByRef of
           varSmallint: AsLong := PSmallInt(v.VPointer)^;
           varInteger: AsLong := PInteger(v.VPointer)^;
           varSingle: AsDouble := PSingle(v.VPointer)^;
@@ -2765,7 +2774,7 @@ begin
   SetValue(0, 0, tspSqlVar, aValue)
 end;
 
-procedure TFIBXSQLVAR.SetIsNull(aValue: boolean);
+procedure TFIBXSQLVAR.SetIsNull(aValue: Boolean);
 begin
   if aValue then
   begin
@@ -2779,22 +2788,22 @@ begin
   SetValue(0, 0, tspNull, aValue)
 end;
 
-procedure TFIBXSQLVAR.SetIsNullable(aValue: boolean);
+procedure TFIBXSQLVAR.SetIsNullable(aValue: Boolean);
 begin
   SetValue(0, 0, tspIsNullable, aValue)
 end;
 
-function TFIBXSQLVAR.GetScale: integer;
+function TFIBXSQLVAR.GetScale: Integer;
 begin
   Result := FXSQLVAR^.sqlscale
 end;
 
-procedure TFIBXSQLVAR.SetScale(Value: integer);
+procedure TFIBXSQLVAR.SetScale(Value: Integer);
 begin
   SetValue(0, 0, tspScale, Value)
 end;
 
-function TFIBXSQLVAR.IsBlob: boolean;
+function TFIBXSQLVAR.IsBlob: Boolean;
 begin
   case SQLType of
     SQL_BLOB, SQL_ARRAY: Result := True;
@@ -2803,7 +2812,7 @@ begin
   end;
 end;
 
-function TFIBXSQLVAR.IsParam: boolean;
+function TFIBXSQLVAR.IsParam: Boolean;
 begin
   Result := Assigned(FParent) and FParent.FIsParams
 end;
@@ -2843,24 +2852,32 @@ begin
     if not FBRawToBcd(FXSQLVAR^.SQLType and (not 1), FXSQLVAR^.sqlscale, FXSQLVAR^.sqldata, Result) then
       FIBError(feInvalidDataConversion, [nil])
   end
-  else if (FQuery.Database.SQLDialect < 3) or (FXSQLVAR^.SQLType and (not 1) <> SQL_INT64) then
-  begin
-    if not CurrToBCD(GetAsCurrency, Result) then
-      FIBError(feInvalidDataConversion, [nil])
-  end
+  else if IsNull then
+    Result := IntegerToBcd(0)
   else
-  begin
-    if not Int64ToBCD(PInt64(FXSQLVAR^.sqldata)^, -FXSQLVAR^.sqlscale, Result) then
-      FIBError(feInvalidDataConversion, [nil])
-  end;
+    case FXSQLVAR^.SQLType and (not 1) of
+      // all the digits of the scale, not the 4 of Currency
+      SQL_SHORT:
+        if not Int64ToBCD(PShort(FXSQLVAR^.sqldata)^, -FXSQLVAR^.sqlscale, Result) then
+          FIBError(feInvalidDataConversion, [nil]);
+      SQL_LONG:
+        if not Int64ToBCD(PLong(FXSQLVAR^.sqldata)^, -FXSQLVAR^.sqlscale, Result) then
+          FIBError(feInvalidDataConversion, [nil]);
+      SQL_INT64:
+        if not Int64ToBCD(PInt64(FXSQLVAR^.sqldata)^, -FXSQLVAR^.sqlscale, Result) then
+          FIBError(feInvalidDataConversion, [nil]);
+    else
+      if not CurrToBCD(GetAsCurrency, Result) then
+        FIBError(feInvalidDataConversion, [nil])
+    end;
 end;
 
 procedure TFIBXSQLVAR.SetAsBcd(Value: TBcd);
 var
   E: Extended;
   C: Int64;
-  vScale: integer;
-  vInt128: TFB_I128;
+  NewScale: Integer;
+  Int128: TFB_I128;
 begin
   if (FQuery.Database.SQLDialect < 3) then
   begin
@@ -2869,28 +2886,38 @@ begin
   end
   else
   begin
-    if BcdToInt64Scaled(Value, C, vScale) then
+    if BcdToInt64Scaled(Value, C, NewScale) then
       SetValue(SQL_INT64, SizeOf(Int64), tspValue, C)
     else
     begin
       // Does not fit BIGINT, send as INT128 (Firebird 4+)
-      if not FBBcdToRaw(Value, SQL_INT128, vScale, @vInt128) then
+      if not FBBcdToRaw(Value, SQL_INT128, NewScale, @Int128) then
         FIBError(feInvalidDataConversion, [nil]);
-      SetValue(SQL_INT128, SizeOf(TFB_I128), tspValue, vInt128);
+      SetValue(SQL_INT128, SizeOf(TFB_I128), tspValue, Int128);
     end;
-    Scale := vScale;
+    Scale := NewScale;
   end;
 end;
 
 function TFIBXSQLVAR.GetAsGUID: TGUID;
 begin
+  Result := fibGUID_NULL;
   if not IsNull then
     case FXSQLVAR^.SQLType and (not 1) of
-      SQL_VARYING: Result := PGUID(FXSQLVAR^.sqldata + 2)^;
-      SQL_TEXT: Result := PGUID(FXSQLVAR^.sqldata)^;
-    end
-  else
-    Result := fibGUID_NULL
+      // 16 bytes of data
+      SQL_VARYING:
+        if PWord(FXSQLVAR^.sqldata)^ >= SizeOf(TGUID) then
+          Result := PGUID(FXSQLVAR^.sqldata + 2)^
+        else
+          FIBError(feInvalidDataConversion, [nil]);
+      SQL_TEXT:
+        if FXSQLVAR^.sqllen >= SizeOf(TGUID) then
+          Result := PGUID(FXSQLVAR^.sqldata)^
+        else
+          FIBError(feInvalidDataConversion, [nil]);
+    else
+      FIBError(feInvalidDataConversion, [nil]);
+    end;
 end;
 
 procedure TFIBXSQLVAR.SetAsGuid(aValue: TGUID);
@@ -2898,7 +2925,7 @@ begin
   SetValue(SQL_TEXT, SizeOf(aValue), tspValue, aValue);
 end;
 
-function TFIBXSQLVAR.GetAsBoolean: boolean;
+function TFIBXSQLVAR.GetAsBoolean: Boolean;
 begin
   Result := False;
   if not IsNull then
@@ -2915,23 +2942,23 @@ begin
     end;
 end;
 
-procedure TFIBXSQLVAR.SetAsBoolean(const Value: boolean);
+procedure TFIBXSQLVAR.SetAsBoolean(const Value: Boolean);
 begin
-  case FSrvSQLType of
+  case FServerSQLType of
     0:
       begin
-        FIsDefferedSetting := True;
-        FParent.FHasDefferedSettings := True;
+        FIsDeferredSetting := True;
+        FParent.FHasDeferredSettings := True;
         SetAsShort(Ord(Value));
       end;
-    SQL_BOOLEAN: SetValue(SQL_BOOLEAN, SizeOf(boolean), tspValue, Value);
+    SQL_BOOLEAN: SetValue(SQL_BOOLEAN, SizeOf(Boolean), tspValue, Value);
   else
     SetAsShort(Ord(Value));
   end;
 end;
 
 // TFIBXSQLDA
-constructor TFIBXSQLDA.Create(aIsParams: boolean);
+constructor TFIBXSQLDA.Create(aIsParams: Boolean);
 begin
   FNames := TStringList.Create;
   with FNames do
@@ -2940,28 +2967,23 @@ begin
     Duplicates := dupAccept;
   end;
 
-  FEquelNames := TStringList.Create;
-  with FEquelNames do
+  FEqualNames := TStringList.Create;
+  with FEqualNames do
   begin
     Sorted := True;
     Duplicates := dupAccept;
   end;
 
   FCachedNames := TStringList.Create;
-  { with FCachedNames do
-    begin
-    Sorted     := True;
-    Duplicates := dupIgnore;
-    end; }
   FIsParams := aIsParams;
 end;
 
 destructor TFIBXSQLDA.Destroy;
 var
-  i: integer;
+  i: Integer;
 begin
   FNames.Free;
-  FEquelNames.Free;
+  FEqualNames.Free;
   FCachedNames.Free;
   if FXSQLDA <> nil then
   begin
@@ -2993,9 +3015,9 @@ end;
 
 procedure TFIBXSQLDA.AssignValues(SourceSQLDA: TFIBXSQLDA);
 var
-  i: integer;
-  pc: integer;
-  uSType, sSType: integer; // parameterType
+  i: Integer;
+  pc: Integer;
+  uSType, sSType: Integer; // parameterType
   UsrPar, Srvpar: TFIBXSQLVAR;
   ByOccurrence: Boolean;
   BlobID: TISC_QUAD;
@@ -3024,7 +3046,7 @@ begin
         uSType := UsrPar.FXSQLVAR^.SQLType and (not 1);
 
         if ((uSType = SQL_BLOB) or (uSType = SQL_ARRAY)) and
-          ((sSType = SQL_BLOB) or (sSType = SQL_ARRAY)) and not UsrPar.IsDefferedLongString then
+          ((sSType = SQL_BLOB) or (sSType = SQL_ARRAY)) and not UsrPar.IsDeferredLongString then
         begin
           FreeAndNil(FStreamValue);
           if ByOccurrence and (sSType = SQL_BLOB) then
@@ -3047,10 +3069,13 @@ begin
               AsInt64 := 0;
             Assign(UsrPar);
           end
+          else if UsrPar.IsTimeZoneType and (sSType <> SQL_BLOB) and (sSType <> SQL_ARRAY) then
+            // the raw value keeps its time zone, a variant keeps only the local time
+            Assign(UsrPar)
           else
           begin
             FParDataIsPrepared := UsrPar.FParDataIsPrepared;
-            if not UsrPar.FIsDefferedSetting or (Length(UsrPar.FWideTempValue) = 0) then
+            if not UsrPar.FIsDeferredSetting or (Length(UsrPar.FWideTempValue) = 0) then
               AsVariant := UsrPar.AsVariant
             else
             begin
@@ -3069,8 +3094,7 @@ end;
 
 procedure TFIBXSQLDA.ClearValues;
 var
-  j: integer;
-  // b:boolean;
+  j: Integer;
 begin
   for j := 0 to Pred(Count) do
     with FXSQLVARs^[j] do
@@ -3078,34 +3102,28 @@ begin
       if IsMacro then
         Value := FXSQLVARs^[j].DefMacroValue
       else
-      begin
-        // b:=IsNullable;
         IsNull := True;
-        // IsNullable:=b;
-      end;
     end;
 end;
 
-procedure TFIBXSQLDA.AddName(const FieldName: string; Idx: integer; aQuoted: boolean);
+procedure TFIBXSQLDA.AddName(const FieldName: string; Idx: Integer; aQuoted: Boolean);
 var
   FN: string;
-  i: integer;
+  i: Integer;
 begin
   if not aQuoted then
     FN := FastUpperCase(FieldName)
   else
     FN := FieldName;
   if FIsParams then
-    with FEquelNames do
+    with FEqualNames do
     begin
-      // if Find(fn,i) then
-      i := NonAnsiIndexOf(FEquelNames, FN);
+      i := NonAnsiIndexOf(FEqualNames, FN);
       if i > -1 then
         AddObject(FN, TObject(Idx))
       else
       begin
-        // if FNames.Find(fn,i) then
-        i := NonAnsiIndexOf(FNames, FN);
+        i :=NonAnsiIndexOf(FNames, FN);
         if i > -1 then
         begin
           AddObject(FN, TObject(Idx));
@@ -3125,22 +3143,20 @@ begin
   end;
 end;
 
-procedure TFIBXSQLDA.AdjustDefferedSettings;
+procedure TFIBXSQLDA.AdjustDeferredSettings;
 var
-  i: integer;
-  S: Ansistring;
-  sSQLType: integer;
-  uSQLType: integer;
-  B: boolean;
-  // sSQLLen:integer;
+  i: Integer;
+  S: AnsiString;
+  sSQLType: Integer;
+  uSQLType: Integer;
+  B: Boolean;
 begin
   // For values which sets before preparing
   for i := 0 to FCount - 1 do
-    if FXSQLVARs^[i].FIsDefferedSetting then
+    if FXSQLVARs^[i].FIsDeferredSetting then
     begin
       sSQLType := FXSQLVARs^[i].ServerSQLType;
       uSQLType := FXSQLVARs^[i].SQLType;
-      // sSQLLen:=FXSQLVARs^[i].ServerSize;
 
       case sSQLType of
         SQL_BOOLEAN:
@@ -3148,7 +3164,7 @@ begin
           if (uSQLType <> SQL_TEXT) and (uSQLType <> SQL_VARYING) then
           begin
             B := FXSQLVARs^[i].AsBoolean;
-            FXSQLVARs^[i].SetValue(SQL_BOOLEAN, SizeOf(boolean), tspValue, B);
+            FXSQLVARs^[i].SetValue(SQL_BOOLEAN, SizeOf(Boolean), tspValue, B);
           end;
         SQL_DEC16, SQL_DEC34:
           if (uSQLType = SQL_DOUBLE) and not FXSQLVARs^[i].IsNull then
@@ -3161,7 +3177,6 @@ begin
         case uSQLType of
           SQL_TEXT, SQL_VARYING:
             begin
-              // UNICODE;
               if not FXSQLVARs^[i].IsNull then
               begin
                 S := FXSQLVARs^[i].GetAsAnsiString;
@@ -3180,14 +3195,14 @@ begin
               FXSQLVARs^[i].InternalSetAsString(@FXSQLVARs^[i].FWideTempValue, True, True);
         end;
       end;
-      FXSQLVARs^[i].FIsDefferedSetting := False;
+      FXSQLVARs^[i].FIsDeferredSetting := False;
     end;
-  FHasDefferedSettings := False
+  FHasDeferredSettings := False
 end;
 
-function TFIBXSQLDA.GetModified: boolean;
+function TFIBXSQLDA.GetModified: Boolean;
 var
-  i: integer;
+  i: Integer;
 begin
   Result := False;
   for i := 0 to FCount - 1 do
@@ -3200,7 +3215,7 @@ end;
 
 procedure TFIBXSQLDA.SetUnModifiedToVars;
 var
-  i: integer;
+  i: Integer;
 begin
   for i := 0 to FCount - 1 do
     FXSQLVARs^[i].Modified := False;
@@ -3211,7 +3226,7 @@ begin
   Result := FNames.Text;
 end;
 
-function TFIBXSQLDA.GetRecordSize: integer;
+function TFIBXSQLDA.GetRecordSize: Integer;
 begin
   Result := SizeOf(TFIBXSQLDA) + XSQLDA_LENGTH(FSize);
 end;
@@ -3221,7 +3236,7 @@ begin
   Result := FXSQLDA;
 end;
 
-function TFIBXSQLDA.GetXSQLVAR(Idx: integer): TFIBXSQLVAR;
+function TFIBXSQLDA.GetXSQLVAR(Idx: Integer): TFIBXSQLVAR;
 begin
   if (Idx < 0) or (Idx >= FCount) then
     FIBError(feXSQLDAIndexOutOfRange, [nil]);
@@ -3230,13 +3245,14 @@ end;
 
 function TFIBXSQLDA.GetXSQLVARByName(const Idx: string): TFIBXSQLVAR;
 var
-  i: integer;
+  i: Integer;
 
   procedure InternalGetXSQLVARByName;
   var
     S: string;
-    Quoted: boolean;
+    Quoted: Boolean;
   begin
+    Result := nil;
     Quoted := (Length(Idx) > 0) and (Idx[1] = '"');
     if Quoted then
       S := FastCopy(Idx, 2, Length(Idx) - 2)
@@ -3244,13 +3260,13 @@ var
       S := Idx;
     i := NonAnsiIndexOf(FNames, S);
     if i > -1 then
-      Result := GetXSQLVAR(integer(FNames.Objects[i]))
+      Result := GetXSQLVAR(Integer(FNames.Objects[i]))
     else if not Quoted then
     begin
       S := FastUpperCase(Idx);
       i := NonAnsiIndexOf(FNames, S);
       if i > -1 then
-        Result := GetXSQLVAR(integer(FNames.Objects[i]))
+        Result := GetXSQLVAR(Integer(FNames.Objects[i]))
       else
         Result := nil;
     end;
@@ -3258,7 +3274,6 @@ var
 
 begin
   i := NonAnsiIndexOf(FCachedNames, Idx);
-  // if FCachedNames.Find(Idx,i) then
   if i > -1 then
   begin
     Result := TFIBXSQLVAR(FCachedNames.Objects[i]);
@@ -3280,9 +3295,9 @@ end;
 
 procedure TFIBXSQLDA.Initialize;
 var
-  i, j, C: integer;
-  NamesWereEmpty: boolean;
-  NamesCut: boolean;
+  i, j, C: Integer;
+  NamesWereEmpty: Boolean;
+  NamesCut: Boolean;
   st, st1: string;
 begin
   if FXSQLDA = nil then
@@ -3293,10 +3308,10 @@ begin
   begin
     with FXSQLVARs^[i].Data^ do
     begin
-      FXSQLVARs^[i].FSrvSQLType := SQLType and (not 1);
-      FXSQLVARs^[i].FSrvSQLLen := sqllen;
-      FXSQLVARs^[i].FSrvSQLScale := sqlscale;
-      FXSQLVARs^[i].FSrvSQLSubType := SQLSubtype;
+      FXSQLVARs^[i].FServerSQLType := SQLType and (not 1);
+      FXSQLVARs^[i].FServerSQLLen := sqllen;
+      FXSQLVARs^[i].FServerSQLScale := sqlscale;
+      FXSQLVARs^[i].FServerSQLSubType := SQLSubtype;
       FXSQLVARs^[i].FInitialized := True;
       if not FIsParams then
       begin
@@ -3399,12 +3414,12 @@ begin
   end;
 end;
 
-procedure TFIBXSQLDA.SetCount(Value: integer);
+procedure TFIBXSQLDA.SetCount(Value: Integer);
 var
-  i, OldSize: integer;
+  i, OldSize: Integer;
 begin
   FNames.Clear;
-  FEquelNames.Clear;
+  FEqualNames.Clear;
   FCachedNames.Clear;
   FCount := Value;
   if FSize > 0 then
@@ -3443,7 +3458,7 @@ begin
   FAutoCloseOnTransactionEnd := True;
 
 {$IFDEF CSMonitor}
-  FCSMonitorSupport := TCSMonitorSupport.Create(Self);
+  FCSMonitorSupport := TFIBCSMonitorSupport.Create(Self);
 {$ENDIF}
   FBase := TFIBBase.Create(Self);
   with FBase do
@@ -3462,8 +3477,8 @@ begin
   FUserSQLParams := TFIBXSQLDA.Create(True);
   FUserSQLParams.FQuery := Self;
   FMacroChar := '@';
-  FConditions := TConditions.Create(Self);
-  FParser := TSQLParser.Create;
+  FConditions := TFIBConditions.Create(Self);
+  FParser := TFIBSQLParser.Create;
   TStringList(FSQL).OnChange := SQLChange;
 
   if (csDesigning in ComponentState) and not CmpInLoadedState(Self) then
@@ -3518,20 +3533,15 @@ begin
   end;
 end;
 
-procedure TFIBQuery.Loaded;
-begin
-  inherited;
-end;
-
 {$DEFINE FIB_IMPLEMENT}
 {$I FIBQueryPT.inc}
 {$UNDEF FIB_IMPLEMENT}
 
-function TFIBQuery.BatchInput(InputObject: TFIBBatchInputStream): boolean;
+function TFIBQuery.BatchInput(InputObject: TFIBBatchInputStream): Boolean;
 var
-  RecNum: integer;
-  BatchAction: TBatchAction;
-  ErrorAction: TBatchErrorAction;
+  RecNum: Integer;
+  BatchAction: TFIBBatchAction;
+  ErrorAction: TFIBBatchErrorAction;
 
 begin
   if not Prepared then
@@ -3541,11 +3551,10 @@ begin
     Exit;
   InputObject.FParams := Self.FUserSQLParams;
   try
-    // Self.FUserSQLParams.Initialize;
     InputObject.ReadyStream;
     Result := InputObject.State = bsFileReady;
     if Result and (InputObject.FVersion > 2) and
-      (string(InputObject.FCharset) <> Database.ConnectParams.Charset) then
+      not SameText(string(InputObject.FCharset), Database.ConnectParams.Charset) then
       FIBError(feBatchCharsetMismatch, [CmpFullName(Self) + '.BatchInput', string(InputObject.FCharset),
         Database.ConnectParams.Charset]);
 
@@ -3594,8 +3603,8 @@ end;
 
 function TFIBQuery.BatchOutput(OutputObject: TFIBBatchOutputStream): Boolean;
 var
-  RecNum: integer;
-  BatchAction: TBatchAction;
+  RecNum: Integer;
+  BatchAction: TFIBBatchAction;
 begin
   CheckClosed('batch output');
   if not Prepared then
@@ -3664,13 +3673,13 @@ end;
 procedure TFIBQuery.BatchToQuery(ToQuery: TFIBQuery; Mappings: TStrings);
 var
   Map: TList;
-  i, RecNum: integer;
-  BatchAction: TBatchAction;
-  ErrorAction: TBatchErrorAction;
+  i, RecNum: Integer;
+  BatchAction: TFIBBatchAction;
+  ErrorAction: TFIBBatchErrorAction;
 
   function GetParam(const FieldName: string): TFIBXSQLVAR;
   var
-    j, p: integer;
+    j, p: Integer;
     S: string;
   begin
     S := '';
@@ -3705,6 +3714,8 @@ begin
     for i := 0 to Pred(FieldCount) do
       Map[i] := GetParam(Fields[i].Name);
     ExecQuery;
+    if not FGoToFirstRecordOnExecute then
+      Next;
     RecNum := 1;
     while not Eof do
     begin
@@ -3748,16 +3759,17 @@ begin
     end;
   finally
     Map.Free;
+    Close;
   end;
 end;
 
-procedure TFIBQuery.CheckClosed(const OpName: Ansistring);
+procedure TFIBQuery.CheckClosed(const OpName: AnsiString);
 begin
   if FOpen then
     FIBError(feDatasetOpen, [OpName, CmpFullName(Self)]);
 end;
 
-procedure TFIBQuery.CheckOpen(const OpName: Ansistring);
+procedure TFIBQuery.CheckOpen(const OpName: AnsiString);
 begin
   if not FOpen then
     FIBError(feDatasetClosed, [OpName, CmpFullName(Self)]);
@@ -3765,8 +3777,8 @@ end;
 
 procedure TFIBQuery.CheckValidStatement;
 var
-  ForceConnect: boolean;
-  ForceTransaction: boolean;
+  ForceConnect: Boolean;
+  ForceTransaction: Boolean;
 begin
   if not Assigned(Database) then
     FIBError(feDatabaseNotAssigned, [CmpFullName(Self)]);
@@ -3798,10 +3810,10 @@ begin
   CloseCursor(True);
 end;
 
-procedure TFIBQuery.CloseCursor(Complete: boolean);
+procedure TFIBQuery.CloseCursor(Complete: Boolean);
 var
   isc_res: ISC_STATUS;
-  WasOpen: boolean;
+  WasOpen: Boolean;
 begin
   WasOpen := FOpen;
   try
@@ -3843,12 +3855,12 @@ begin
     FreeHandle;
 end;
 
-function TFIBQuery.CloseOnEof: boolean;
+function TFIBQuery.CloseOnEof: Boolean;
 begin
   Result := Options * [qoAutoCommit, qoFreeHandleAfterExecute] <> [];
 end;
 
-function TFIBQuery.Call(ErrCode: ISC_STATUS; RaiseError: boolean): ISC_STATUS;
+function TFIBQuery.Call(ErrCode: ISC_STATUS; RaiseError: Boolean): ISC_STATUS;
 begin
   Reset8087CW;
   Result := 0;
@@ -3895,19 +3907,19 @@ begin
     SQLChange(nil);
 end;
 
-function TFIBQuery.CountModifySQLText: integer;
+function TFIBQuery.CountModifySQLText: Integer;
 begin
   Result := FCountLockSQL;
 end;
 
-function TFIBQuery.GetMainWhereIndex: integer;
+function TFIBQuery.GetMainWhereIndex: Integer;
 begin
   Result := MainWhereIndex(SQL.Text);
 end;
 
 function TFIBQuery.GetMainWhereClause: string;
 var
-  ind: integer;
+  ind: Integer;
 begin
   ind := GetMainWhereIndex;
   if ind = -1 then
@@ -3921,15 +3933,15 @@ begin
   SQL.Text := FParser.SetMainWhereClause(Value);
 end;
 
-function TFIBQuery.ParamsNotExist(const SQLText: string): boolean;
+function TFIBQuery.ParamsNotExist(const SQLText: string): Boolean;
 var
-  i: integer;
-  State: TParserState;
+  i: Integer;
+  State: TFIBSQLScanState;
   QuoteChar: Char;
 begin
   State := sNormal;
   QuoteChar := '''';
-  for i := 2 to Length(SQLText) do
+  for i := 1 to Length(SQLText) do
   begin
     case State of
       sNormal:
@@ -3940,7 +3952,7 @@ begin
               Exit;
             end;
           '*':
-            if (SQLText[i - 1] = '/') then
+            if (i > 1) and (SQLText[i - 1] = '/') then
               State := sComment;
           '''', '"':
             begin
@@ -3948,7 +3960,7 @@ begin
               State := sQuote
             end;
           '-':
-            if (SQLText[i - 1] = '-') then
+            if (i > 1) and (SQLText[i - 1] = '-') then
               State := sFBComment;
         else
           if SQLText[i] = FMacroChar then
@@ -3972,9 +3984,9 @@ begin
   Result := True;
 end;
 
-procedure TFIBQuery.SaveRestoreValues(SQLDA: TFIBXSQLDA; IsSave: boolean);
+procedure TFIBQuery.SaveRestoreValues(SQLDA: TFIBXSQLDA; IsSave: Boolean);
 var
-  j, pc: integer;
+  j, pc: Integer;
 begin
   pc := Pred(SQLDA.Count);
   if IsSave then
@@ -4021,16 +4033,14 @@ begin
   end;
 end;
 
-function TFIBQuery.ReadySQLText(ForChangeExecSQL: boolean = True): string;
-type
-  TCompareNull = (cNone, cIsNull, cIsNotNull);
+function TFIBQuery.ReadySQLText(ForChangeExecSQL: Boolean = True): string;
 var
-  i, j: integer;
+  i, j: Integer;
   pv: string;
-  vLenMacro: integer;
-  vDelta: integer;
+  LenMacro: Integer;
+  Delta: Integer;
   pv1: string;
-  C: TCompareNull;
+  IsNotNull: Boolean;
   CurParam: TFIBXSQLVAR;
 const
   StrIsNull    = ' IS NULL ';
@@ -4038,18 +4048,18 @@ const
 
 begin
   if ForChangeExecSQL then
-    vDiffParams := False;
+    FDiffParams := False;
   Result := FParser.SQLText;
   if not FHaveMacros and (qoNoForceIsNull in Options) then
     Exit;
 
-  vDelta := 0;
+  Delta := 0;
   for i := 0 to Pred(Params.Count) do
   begin
     CurParam := Params.FXSQLVARs^[i];
     if CurParam.IsMacro then
     begin
-      vLenMacro := CurParam.FEndPosInText - CurParam.FBeginPosInText + 1;
+      LenMacro := CurParam.FEndPosInText - CurParam.FBeginPosInText + 1;
       pv := CurParam.AsWideString;
       if CurParam.Quoted then
       begin
@@ -4059,76 +4069,81 @@ begin
           pv1 := pv
         else
           pv1 := '''' + pv + ''''
-
-          (* if pv='' then
-            pv1:=''''+''''
-            else
-            if pv[1]='''' then
-            pv1:=pv
-            else
-            begin
-            pv1:=pv+'''';
-            if pv1[1]='#' then // ??????
-            pv1[1]:=''''
-            else
-            pv1:=''''+pv1
-
-            end; *)
       end
       else
         pv1 := pv;
-      Result := Copy(Result, 1, CurParam.FBeginPosInText - vDelta - 1) + pv1 +
-        Copy(Result, CurParam.FEndPosInText - vDelta + 1, MaxInt);
-      Inc(vDelta, vLenMacro - Length(pv1));
+      Result := Copy(Result, 1, CurParam.FBeginPosInText - Delta - 1) + pv1 +
+        Copy(Result, CurParam.FEndPosInText - Delta + 1, MaxInt);
+      Inc(Delta, LenMacro - Length(pv1));
       CurParam.FOldValue := pv;
       if ForChangeExecSQL then
-        vDiffParams := True;
+        FDiffParams := True;
     end
-    else if not(qoNoForceIsNull in Options) and
-      ((qrsInExecute in FQueryRunState) or not(qrsInPrepare in FQueryRunState))
-    // ^^^  Lock replacing for prepare. Replace must be call for execute query only
-    then
-      if CurParam.IsNull and CurParam.InWhereClause and CurParam.FCanForceIsNull then
-      begin
-        j := CurParam.FBeginPosInText - 1;
-        while CharInSet(FParser.SQLText[j], CharsAfterClause) do
-          Dec(j);
-        C := cNone;
-        case FParser.SQLText[j] of
-          '>':
-            if FParser.SQLText[j - 1] = '<' then
-            begin
-              C := cIsNotNull;
-              Dec(j);
-            end;
-
-          '=':
-            if CharInSet(FParser.SQLText[j - 1], ['!', '^', '~']) then
-            begin
-              C := cIsNotNull;
-              Dec(j);
-            end
-            else if not CharInSet(FParser.SQLText[j - 1], ['<', '>']) then
-              C := cIsNull
-        end;
-
-        if C <> cNone then
+    else
+    begin
+      if ForChangeExecSQL then
+        CurParam.FForcedIsNull := False;
+      if not(qoNoForceIsNull in Options) and
+        ((qrsInExecute in FQueryRunState) or not(qrsInPrepare in FQueryRunState))
+      // ^^^  Lock replacing for prepare. Replace must be call for execute query only
+      then
+        if CurParam.IsNull then
         begin
-          vLenMacro := CurParam.FEndPosInText - j + 1;
-
-          case C of
-            cIsNull: pv1 := StrIsNull;
-            cIsNotNull: pv1 := StrIsNotNull
-          end;
-          Result := Copy(Result, 1, j - vDelta - 1) + pv1 + Copy(Result, CurParam.FEndPosInText - vDelta + 1, MaxInt);
-          Inc(vDelta, vLenMacro - Length(pv1));
-          if ForChangeExecSQL then
+          j := NullComparisonStart(CurParam, IsNotNull);
+          if j > 0 then
           begin
-            CurParam.FOldValue := NULL;
-            vDiffParams := True
+            LenMacro := CurParam.FEndPosInText - j + 1;
+            if IsNotNull then
+              pv1 := StrIsNotNull
+            else
+              pv1 := StrIsNull;
+            Result := Copy(Result, 1, j - Delta - 1) + pv1 + Copy(Result, CurParam.FEndPosInText - Delta + 1, MaxInt);
+            Inc(Delta, LenMacro - Length(pv1));
+            if ForChangeExecSQL then
+            begin
+              CurParam.FOldValue := NULL;
+              CurParam.FForcedIsNull := True;
+              FDiffParams := True
+            end;
           end;
         end;
+    end;
+  end;
+end;
+
+// Position of the comparison operator before a parameter that can be replaced by
+// IS [NOT] NULL, 0 when there is none
+function TFIBQuery.NullComparisonStart(Param: TFIBXSQLVAR; out IsNotNull: Boolean): Integer;
+var
+  j: Integer;
+  S: string;
+begin
+  Result := 0;
+  IsNotNull := False;
+  if not (Param.InWhereClause and Param.FCanForceIsNull) then
+    Exit;
+  S := FParser.SQLText;
+  j := Param.FBeginPosInText - 1;
+  // only blanks between the operator and the parameter: not "= (:P)" or "= -:P"
+  while (j > 1) and CharInSet(S[j], [' ', #9, #10, #13]) do
+    Dec(j);
+  if j < 2 then
+    Exit;
+  case S[j] of
+    '>':
+      if S[j - 1] = '<' then
+      begin
+        IsNotNull := True;
+        Result := j - 1;
       end;
+    '=':
+      if CharInSet(S[j - 1], ['!', '^', '~']) then
+      begin
+        IsNotNull := True;
+        Result := j - 1;
+      end
+      else if not CharInSet(S[j - 1], ['<', '>']) then
+        Result := j;
   end;
 end;
 
@@ -4155,7 +4170,7 @@ end;
 
 procedure TFIBQuery.EndStatisticExec(const stText: string);
 var
-  lt, S, j: integer;
+  lt, S, j: Integer;
   ts: TStrings;
 begin
   if Assigned(Database.SQLStatisticsMaker) and Database.SQLStatisticsMaker.ActiveStatistics then
@@ -4224,7 +4239,7 @@ procedure TFIBQuery.ConvertSQLTextToCodePage;
 begin
   if not FCodePageApplied then
     if DisableEncodingSQLText then
-      FPreparedSQL := Ansistring(FProcessedSQL)
+      FPreparedSQL := AnsiString(FProcessedSQL)
     else if SQLKind = skDDL then
       FPreparedSQL := EncodeString(FProcessedSQL, Database.Capabilities.MetadataCodePage)
     else
@@ -4235,7 +4250,7 @@ end;
 procedure TFIBQuery.ExecuteImmediate;
 var
   xSQLDA: PXSQLDA;
-  pc: integer;
+  pc: Integer;
 begin
   BuildDeferredSQL;
   DoBeforeExecute;
@@ -4252,7 +4267,7 @@ begin
     ConvertSQLTextToCodePage;
   SaveStreamedParams(Params);
   pc := Params.Count;
-  if (vDiffParams and FDoParamCheck and (pc > 0)) then
+  if (FDiffParams and FDoParamCheck and (pc > 0)) then
   begin
     FSQLParams.AssignValues(FUserSQLParams);
     xSQLDA := FSQLParams.FXSQLDA;
@@ -4260,208 +4275,53 @@ begin
   else
   begin
     xSQLDA := FUserSQLParams.FXSQLDA;
-    if FUserSQLParams.FHasDefferedSettings then
-      FUserSQLParams.AdjustDefferedSettings;
+    if FUserSQLParams.FHasDeferredSettings then
+      FUserSQLParams.AdjustDeferredSettings;
   end;
 
   FreeHandle;
-  Call(Database.ClientLibrary.isc_dsql_execute_immediate(StatusVector,
-    @Database.Handle, @Transaction.Handle, 0, PAnsiChar(Ansistring(FPreparedSQL)), Word(Database.SQLDialect), xSQLDA), True);
+  FCallTime := FIBGetTickCount;
+  try
+    Call(Database.ClientLibrary.isc_dsql_execute_immediate(StatusVector,
+      @Database.Handle, @Transaction.Handle, 0, PAnsiChar(AnsiString(FPreparedSQL)), Word(Database.SQLDialect), xSQLDA), True);
+  except
+    on E: Exception do
+    begin
+      // as ExecQuery
+      FCallTime := FIBGetTickCount - FCallTime;
+{$IFNDEF NO_MONITOR}
+      if MonitoringEnabled and (MonitorHook <> nil) then
+        with THackMonitorHook(MonitorHook) do
+        begin
+          SQLExecute(Self, '');
+          WriteSQLData(CmpFullName(Self) + ': [Execute] ' + ErrorTraceText(E), tfQExecute);
+        end;
+{$ENDIF}
+      if Assigned(Database.SQLLogger) and (lfQExecute in Database.SQLLogger.LogFlags) then
+        Database.SQLLogger.WriteData(CmpFullName(Self), 'TrID=' + IntToStr(Transaction.TransactionID) +
+          ' Error on execute query. Error message: "' + ErrorTraceText(E) + '"', FProcessedSQL, lfQExecute);
+      raise;
+    end;
+  end;
+  FCallTime := FIBGetTickCount - FCallTime;
+  if Assigned(Database.SQLLogger) and (lfQExecute in Database.SQLLogger.LogFlags) then
+    Database.SQLLogger.WriteData(CmpFullName(Self), 'TrID=' + IntToStr(Transaction.TransactionID) +
+      ' Execute query:', FProcessedSQL, lfQExecute);
   DoAfterExecute;
   CompleteStatement;
 end;
 
-{$IFDEF SUPPORT_IB2007}
-procedure TFIBQuery.ExecuteAsBatch(const SQLs: array of Ansistring);
-var
-  vBatchBuffer, vb: PPAnsiChar;
-  vBatchCount: integer;
-  i: integer;
-  pCurCommand: PAnsiChar;
-  Results: PULong;
-begin
-  if Database.IsIB2007Connect and (Length(SQLs) > 0) then
-  begin
-    vBatchCount := Length(SQLs);
-    vBatchBuffer := nil;
-    for i := 0 to Pred(vBatchCount) do
-    begin
-      FIBAlloc(vBatchBuffer, vBatchCount * SizeOf(PAnsiChar), (vBatchCount + 1) * SizeOf(PAnsiChar));
-      GetMem(pCurCommand, Length(SQLs[i]) + 1);
-      Move(SQLs[i][1], pCurCommand^, Length(SQLs[i]));
-      pCurCommand[Length(SQLs[i])] := #0;
-      vb := vBatchBuffer;
-      Inc(vb, i);
-      vb^ := pCurCommand;
-    end;
-    Results := nil;
-    try
-      if vBatchCount > 0 then
-      begin
-        if qoStartTransaction in Options then
-          if (Transaction <> nil) and not Transaction.InTransaction then
-            Transaction.StartTransaction;
-
-        GetMem(Results, vBatchCount * SizeOf(ULong));
-        Call(Database.ClientLibrary.isc_dsql_batch_execute_immed(StatusVector,
-          @Database.Handle, @Transaction.Handle, Database.SQLDialect, vBatchCount, vBatchBuffer, Results), True);
-      end
-    finally
-      vb := vBatchBuffer;
-      for i := 0 to vBatchCount - 1 do
-      begin
-        FreeMem(vb^);
-        Inc(vb);
-      end;
-      FreeMem(vBatchBuffer);
-      FreeMem(Results);
-    end;
-  end;
-end;
-
-procedure TFIBQuery.ExecuteAsBatch;
-var
-  vBatchBuffer, vb: PPAnsiChar;
-  vBatchCount: integer;
-  // curCommand   : Ansistring;
-  curPos, LastPos: integer;
-  SQLText: Ansistring;
-  pCurCommand: PAnsiChar;
-  Results: PULong;
-  i: integer;
-  ExistSQL: boolean;
-  function GetCurCommand: boolean;
-  var
-    State: integer; // 0 - norma,1- comment ,2 single quote,3 double quote
-  begin
-    Result := False;
-    State := 0;
-    LastPos := curPos;
-    ExistSQL := False;
-    while LastPos <= Length(SQLText) do
-    begin
-      case State of
-        0:
-          case SQLText[LastPos] of
-            '''':
-              begin
-                State := 2;
-                Inc(LastPos);
-              end;
-            '"':
-              begin
-                State := 3;
-                Inc(LastPos);
-              end;
-
-            '/':
-              begin
-                if (LastPos < Length(SQLText)) and (SQLText[LastPos + 1] = '*') then
-                begin
-                  State := 1;
-                  Inc(LastPos);
-                end;
-              end;
-            ';':
-              begin
-                Inc(LastPos);
-                Result := True;
-                Exit;
-              end;
-          else
-            if SQLText[LastPos] >= 'A' then
-              ExistSQL := True;
-          end;
-        1: // State=1
-          case SQLText[LastPos] of
-            '*':
-              begin
-                if (LastPos < Length(SQLText)) and (SQLText[LastPos + 1] = '/') then
-                begin
-                  State := 0;
-                  Inc(LastPos);
-                end
-              end;
-          end;
-        2:
-          case SQLText[LastPos] of
-            '''': State := 0;
-          end;
-        3:
-          case SQLText[LastPos] of
-            '"': State := 0;
-          end;
-
-      end;
-      Inc(LastPos);
-    end;
-  end;
-
-begin
-  if Database.IsIB2007Connect then
-  begin
-    if not(qoStartTransaction in Options) then
-      FBase.CheckTransaction
-    else
-      Database.CheckActive;
-
-    vBatchCount := 0;
-    vBatchBuffer := nil;
-    curPos := 1;
-    SQLText := SQL.Text;
-
-    while GetCurCommand do
-    begin
-      if ExistSQL then
-      begin
-        FIBAlloc(vBatchBuffer, vBatchCount * SizeOf(PAnsiChar), (vBatchCount + 1) * SizeOf(PAnsiChar));
-        GetMem(pCurCommand, LastPos - curPos + 1);
-        Move(SQLText[curPos], pCurCommand^, LastPos - curPos);
-        pCurCommand[LastPos - curPos] := #0;
-        vb := vBatchBuffer;
-        Inc(vb, vBatchCount);
-        vb^ := pCurCommand;
-        Inc(vBatchCount);
-      end;
-      curPos := LastPos
-    end; // while
-    Results := nil;
-    try
-      if vBatchCount > 0 then
-      begin
-        if qoStartTransaction in Options then
-          if (Transaction <> nil) and not Transaction.InTransaction then
-            Transaction.StartTransaction;
-
-        GetMem(Results, vBatchCount * SizeOf(ULong));
-        Call(Database.ClientLibrary.isc_dsql_batch_execute_immed(StatusVector,
-          @Database.Handle, @Transaction.Handle, Database.SQLDialect, vBatchCount, vBatchBuffer, Results), True);
-      end
-    finally
-      vb := vBatchBuffer;
-      for i := 0 to vBatchCount - 1 do
-      begin
-        FreeMem(vb^);
-        Inc(vb);
-      end;
-      FreeMem(vBatchBuffer);
-      FreeMem(Results);
-    end;
-  end
-end;
-{$ENDIF}
-
 procedure TFIBQuery.InternalExecQuery;
 var
   fetch_res: ISC_STATUS;
-  pc: integer;
+  pc: Integer;
   SV: PISC_STATUS;
   xSQLDA: PXSQLDA;
-  vParams: TFIBXSQLDA;
+  ParamList: TFIBXSQLDA;
 
   procedure DoLog(E: Exception = nil);
   var
-    j: integer;
+    j: Integer;
     st: string;
     Mess: String;
   begin
@@ -4469,17 +4329,16 @@ var
       Mess := 'Execute query:'
     else
       Mess := 'Error on execute query. Error message: "' + ErrorTraceText(E) + '"';
-    // if Assigned(Database.SQLLogger)  and (lfQExecute in Database.SQLLogger.LogFlags) then
     begin
       st := '';
-      for j := 0 to vParams.Count - 1 do
-        with vParams[j] do
+      for j := 0 to ParamList.Count - 1 do
+        with ParamList[j] do
         begin
           if (FXSQLVAR^.SQLType and (not 1) <> SQL_ARRAY) and (FXSQLVAR^.SQLType and (not 1) <> SQL_BLOB) then
             st := st + sLineBreak + 'Params[' + IntToStr(j) + ']=''' + AsString + ''''
           else
-            st := st + sLineBreak + 'Params[' + IntToStr(j) + ']=(' + IntToStr(vParams[j].AsQuad.gds_quad_high) + ',' +
-              IntToStr(vParams[j].AsQuad.gds_quad_low) + ')'
+            st := st + sLineBreak + 'Params[' + IntToStr(j) + ']=(' + IntToStr(ParamList[j].AsQuad.gds_quad_high) + ',' +
+              IntToStr(ParamList[j].AsQuad.gds_quad_low) + ')'
         end;
 
       Database.SQLLogger.WriteData(CmpFullName(Self), 'TrID=' + IntToStr(Transaction.TransactionID) + ' ' + Mess,
@@ -4500,7 +4359,7 @@ var
 
 begin
   Include(FQueryRunState, qrsInExecute);
-  vFetched := False;
+  FFetched := False;
   try
     // Before DoBeforeExecute, as closing may commit
     if FOpen then
@@ -4522,18 +4381,18 @@ begin
 {$IFDEF SUPPORT_ARRAY_FIELD}
     PutArrayParams;
 {$ENDIF}
-    if (vDiffParams and FDoParamCheck and (pc > 0)) then
+    if (FDiffParams and FDoParamCheck and (pc > 0)) then
     begin
       FSQLParams.AssignValues(FUserSQLParams);
       xSQLDA := FSQLParams.FXSQLDA;
-      vParams := FSQLParams
+      ParamList := FSQLParams
     end
     else
     begin
       xSQLDA := FUserSQLParams.FXSQLDA;
-      vParams := FUserSQLParams;
-      if FUserSQLParams.FHasDefferedSettings then
-        FUserSQLParams.AdjustDefferedSettings;
+      ParamList := FUserSQLParams;
+      if FUserSQLParams.FHasDeferredSettings then
+        FUserSQLParams.AdjustDeferredSettings;
     end;
 
     FCallTime := FIBGetTickCount;
@@ -4613,11 +4472,6 @@ begin
         if MonitoringEnabled then
           if MonitorHook <> nil then
             DoMonitoring(E);
-        { with THackMonitorHook(MonitorHook) do    //Added Source
-          begin
-          SQLExecute( Self );
-          WriteSQLData(CmpFullName(Self) + ': [Execute] ' + E.Message,tfQExecute);
-          end; }
 {$ENDIF}
         if Assigned(Database.SQLLogger) and (lfQExecute in Database.SQLLogger.LogFlags) then
           DoLog(E);
@@ -4629,17 +4483,17 @@ begin
   end
 end;
 
-procedure TFIBQuery.ExecWPS(const ParamSources: array of ISQLObject);
+procedure TFIBQuery.ExecWPS(const ParamSources: array of IFIBParamSource);
 begin
   AssignSQLObjectParams(Self, ParamSources);
   ExecQuery;
 end;
 
-procedure TFIBQuery.ExecWPS(ParamSource: ISQLObject; AllRecords: boolean = True);
+procedure TFIBQuery.ExecWPS(ParamSource: IFIBParamSource; AllRecords: Boolean = True);
 var
   RecNum: Integer;
-  BatchAction: TBatchAction;
-  ErrorAction: TBatchErrorAction;
+  BatchAction: TFIBBatchAction;
+  ErrorAction: TFIBBatchErrorAction;
 begin
   if not AllRecords then
   begin
@@ -4685,7 +4539,7 @@ begin
   end;
 end;
 
-function TFIBQuery.GetEOF: boolean;
+function TFIBQuery.GetEOF: Boolean;
 begin
   Result := FEof or not FOpen;
 end;
@@ -4816,24 +4670,24 @@ end;
 
 function TFIBQuery.FieldByOrigin(const TableName, FieldName: string): TFIBXSQLVAR;
 var
-  i: integer;
-  vTableName: string;
-  vFieldName: string;
+  i: Integer;
+  SearchTableName: string;
+  SearchFieldName: string;
 begin
   if Assigned(Database) and ((Database.SQLDialect < 3) or Database.UpperOldNames) then
   begin
-    vTableName := FastUpperCase(TableName);
-    vFieldName := FastUpperCase(FieldName);
+    SearchTableName := FastUpperCase(TableName);
+    SearchFieldName := FastUpperCase(FieldName);
   end
   else
   begin
-    vTableName := TableName;
-    vFieldName := FieldName;
+    SearchTableName := TableName;
+    SearchFieldName := FieldName;
   end;
   with FSQLRecord do
     for i := 0 to Pred(FCount) do
     begin
-      if (FXSQLVARs[i].RelationName = vTableName) and (FXSQLVARs[i].SqlName = vFieldName) then
+      if (FXSQLVARs[i].RelationName = SearchTableName) and (FXSQLVARs[i].SqlName = SearchFieldName) then
       begin
         Result := FXSQLVARs[i];
         Exit;
@@ -4845,7 +4699,6 @@ end;
 function TFIBQuery.SQLFieldName(const aFieldName: string): string;
 var
   tf: TFIBXSQLVAR;
-  vSQL: string;
   rn: string;
 begin
   if not Prepared then
@@ -4855,7 +4708,6 @@ begin
     Result := ''
   else
   begin
-    vSQL := ReadySQLText(False);
     rn := tf.RelationName;
     if Length(rn) > 0 then
       Result := FormatIdentifier(3, TableAliasForFieldByName(aFieldName)) + '.' + FormatIdentifier(3, tf.SqlName)
@@ -4864,14 +4716,14 @@ begin
   end;
 end;
 
-function TFIBQuery.GetFields(const Idx: integer): TFIBXSQLVAR;
+function TFIBQuery.GetFields(const Idx: Integer): TFIBXSQLVAR;
 begin
   if (Idx < 0) or (Idx >= FSQLRecord.Count) then
     FIBError(feFieldNotFound, ['Field No: ' + IntToStr(Idx)]);
   Result := FSQLRecord[Idx];
 end;
 
-function TFIBQuery.GetFieldIndex(const FieldName: string): integer;
+function TFIBQuery.GetFieldIndex(const FieldName: string): Integer;
 var
   xsv: TFIBXSQLVAR;
 begin
@@ -4885,14 +4737,13 @@ end;
 function TFIBQuery.Next: TFIBXSQLDA;
 var
   fetch_res: ISC_STATUS;
-  StopFetching: boolean;
+  StopFetching: Boolean;
 
   procedure DoLog;
   var
-    i: integer;
+    i: Integer;
     st: String;
   begin
-    // if Assigned(FBase.Database.SQLLogger) and (lfQFetch in FBase.Database.SQLLogger.LogFlags) then
     begin
       for i := 0 to Pred(Current.Count) do
       begin
@@ -4929,7 +4780,6 @@ begin
   begin
     // Go to the next record...
     Reset8087CW;
-    // vLib:=FBase.Database.ClientLibrary;
     fetch_res := Call(FBase.Database.ClientLibrary.isc_dsql_fetch(StatusVector,
       @FHandle, Word(FBase.Database.SQLDialect), FSQLRecord.FXSQLDA), False);
 
@@ -4961,9 +4811,9 @@ begin
     if Assigned(FBase.Database.SQLLogger) and (lfQFetch in FBase.Database.SQLLogger.LogFlags) then
       DoLog;
   end;
-  if not vFetched then
+  if not FFetched then
   begin
-    vFetched := True;
+    FFetched := True;
     DoAfterFirstFetch;
   end;
   // ExecQuery closes it after AfterExecute
@@ -5000,7 +4850,7 @@ begin
   Result := FBase.DBHandle;
 end;
 
-function Get_Numeric_Info(ClientLibrary: IIbClientLibrary; var buffer: PAnsiChar): integer;
+function GetNumericInfo(ClientLibrary: IFIBClientLibrary; var buffer: PAnsiChar): Integer;
 var
   L: Short;
 begin
@@ -5015,48 +4865,22 @@ begin
   end;
 end;
 
-// The XSQLVAR items of the statement info: short values
-function Get_Short_Info(ClientLibrary: IIbClientLibrary; var buffer: PAnsiChar): Short;
-begin
-  Result := Short(Get_Numeric_Info(ClientLibrary, buffer));
-end;
-
-function Get_String_Info(ClientLibrary: IIbClientLibrary;
-  var SourceBuffer: PAnsiChar; DestBuffer: PAnsiChar; Dest_len: integer)
-  : integer; overload;
+function GetStringInfo(ClientLibrary: IFIBClientLibrary; var SourceBuffer: PAnsiChar): AnsiString;
 var
-  L: integer;
-begin
-  if not Assigned(ClientLibrary) then
-    Result := -1
-  else
-  begin
-    FillChar(DestBuffer[0], Dest_len, 0);
-    L := ClientLibrary.isc_vax_integer(SourceBuffer, 2);
-    Result := L;
-    if Result >= Dest_len then
-      Result := Dest_len - 1;
-    Move(SourceBuffer[2], DestBuffer[0], Result);
-    Inc(SourceBuffer, L + 2);
-  end
-end;
-
-function Get_String_Info(ClientLibrary: IIbClientLibrary; var SourceBuffer: PAnsiChar): Ansistring; overload;
-var
-  L: integer;
+  L: Integer;
 begin
   L := ClientLibrary.isc_vax_integer(SourceBuffer, 2);
   SetString(Result, SourceBuffer + 2, L);
   Inc(SourceBuffer, L + 2);
 end;
 
-function TFIBQuery.DecodeName(const Name: Ansistring): string;
+function TFIBQuery.DecodeName(const Name: AnsiString): string;
 begin
   Result := DecodeString(Name, Database.Capabilities.MetadataCodePage);
 end;
 
 // The XSQLVAR names may be cut or, with clients before Firebird 4, empty
-function TFIBQuery.FullNamesNeeded(NamesCut: boolean): boolean;
+function TFIBQuery.FullNamesNeeded(NamesCut: Boolean): Boolean;
 begin
   Result := (Database.Capabilities.MaxIdentifierLength > LENGTH_METANAMES - 1)
     and (NamesCut or not ClientTruncatesNames(Database.ClientLibrary));
@@ -5064,8 +4888,8 @@ end;
 
 procedure TFIBQuery.ReadRelationAliases;
 var
-  i: integer;
-  vSQL: string;
+  i: Integer;
+  ReadySQL: string;
   rn: string;
 begin
   if not Prepared then
@@ -5078,30 +4902,30 @@ begin
   end;
   // old servers or an unreadable info answer
   FRelationAliasesRead := True;
-  vSQL := ReadySQLText(False);
+  ReadySQL := ReadySQLText(False);
   for i := 0 to Pred(FSQLRecord.Count) do
   begin
     rn := FSQLRecord.FXSQLVARs^[i].RelationName;
     if Length(rn) > 0 then
-      rn := UnquoteIdentifier(AliasForTable(vSQL, FormatIdentifier(3, rn)));
+      rn := UnquoteIdentifier(AliasForTable(ReadySQL, FormatIdentifier(3, rn)));
     FSQLRecord.FXSQLVARs^[i].FRelationAlias := rn;
   end;
 end;
 
 // Relation aliases and, with ReadNames, full names; a failed call keeps the XSQLVAR names
-procedure TFIBQuery.ReadDescribeInfo(SQLDA: TFIBXSQLDA; ReadNames: boolean);
+procedure TFIBQuery.ReadDescribeInfo(SQLDA: TFIBXSQLDA; ReadNames: Boolean);
 var
-  IsSelect: boolean;
+  IsSelect: Boolean;
   Status: ISC_STATUS;
   DescribeItem: Byte;
   Request: array [0 .. 12] of AnsiChar;
   RequestLength: Short;
   buffer: array [0 .. 32766] of AnsiChar;
   p: PAnsiChar;
-  Lib: IIbClientLibrary;
+  Lib: IFIBClientLibrary;
   Item: Byte;
-  Index, StartIndex: integer;
-  Truncated: boolean;
+  Index, StartIndex: Integer;
+  Truncated: Boolean;
   S: string;
 
   procedure AddItem(Value: Byte);
@@ -5158,7 +4982,7 @@ begin
     if (buffer[0] <> AnsiChar(DescribeItem)) or (buffer[1] <> AnsiChar(isc_info_sql_describe_vars)) then
       Exit;
     p := @buffer[2];
-    Get_Numeric_Info(Lib, p);
+    GetNumericInfo(Lib, p);
     Index := -1;
     Truncated := False;
     while not Truncated and (p^ <> AnsiChar(isc_info_end)) do
@@ -5168,10 +4992,10 @@ begin
       case Item of
         isc_info_sql_describe_end: ;
         isc_info_truncated: Truncated := True;
-        isc_info_sql_sqlda_seq: Index := Get_Numeric_Info(Lib, p) - 1;
+        isc_info_sql_sqlda_seq: Index := GetNumericInfo(Lib, p) - 1;
         isc_info_sql_field, isc_info_sql_relation, isc_info_sql_owner, isc_info_sql_alias, frb_info_sql_relation_alias:
           begin
-            S := DecodeName(Get_String_Info(Lib, p));
+            S := DecodeName(GetStringInfo(Lib, p));
             if (Index >= 0) and (Index < SQLDA.Count) then
               with SQLDA.FXSQLVARs^[Index] do
                 case Item of
@@ -5201,7 +5025,7 @@ begin
     FRelationAliasesRead := True;
 end;
 
-function TFIBQuery.TableAliasForField(FieldIndex: integer): string;
+function TFIBQuery.TableAliasForField(FieldIndex: Integer): string;
 begin
   if not Prepared then
     Prepare;
@@ -5227,86 +5051,12 @@ begin
   Result := TableAliasForFieldByName(aFieldName)
 end;
 
-function TFIBQuery.SQLDescribeInfo(InfoRequest: array of AnsiChar): PXSQLDA;
-var
-  Result_buffer: array [0 .. 32766] of AnsiChar;
-  PResult: PAnsiChar;
-  N: Short;
-  Item: PAnsiChar;
-  Index: Short;
-  SqlVar: PXSQLVAR;
-  Lib: IIbClientLibrary;
-begin
-  if (not Prepared) then
-    Result := nil
-  else
-  begin
-    Lib := Database.ClientLibrary;
-    // a request of a few items
-    Call(Lib.isc_dsql_sql_info(StatusVector, @FHandle, Short(SizeOf(InfoRequest)), @InfoRequest[0],
-      // SizeOf(Result_buffer)
-      32766, Result_buffer), True);
-    if not(Result_buffer[0] in [AnsiChar(isc_info_sql_select), AnsiChar(isc_info_sql_bind)]) or
-      (Result_buffer[1] <> AnsiChar(isc_info_sql_describe_vars)) then
-    begin
-      Result := nil;
-      Exit;
-    end;
-    PResult := @Result_buffer[2];
-    N := Get_Short_Info(Lib, PResult);
-    Result := AllocMem(XSQLDA_LENGTH(N));
-    Result^.Version := SQLDA_VERSION1;
-    Result^.sqld := N;
-    while PResult[0] <> AnsiChar(isc_info_end) do
-    begin
-      Item := PResult;
-      SqlVar := nil;
-      if Item[0] = AnsiChar(isc_info_sql_describe_end) then
-        Inc(PResult, 1)
-      else
-        while Item[0] <> AnsiChar(isc_info_sql_describe_end) do
-        begin
-          Inc(PResult, 1);
-          case Byte(Item[0]) of
-            isc_info_sql_sqlda_seq:
-              begin
-                index := Get_Short_Info(Lib, PResult);
-                SqlVar := @Result^.SqlVar[index - 1];
-                Inc(Result^.sqln)
-              end;
-            isc_info_sql_type: SqlVar.SQLType := Get_Short_Info(Lib, PResult);
-            isc_info_sql_sub_type: SqlVar.SQLSubtype := Get_Short_Info(Lib, PResult);
-            isc_info_sql_scale: SqlVar.sqlscale := Get_Short_Info(Lib, PResult);
-            isc_info_sql_length: SqlVar.sqllen := Get_Short_Info(Lib, PResult);
-            isc_info_sql_field:
-              SqlVar.sqlname_length := Short(Get_String_Info(Lib, PResult, @SqlVar.SqlName[0], SizeOf(SqlVar.SqlName)));
-            isc_info_sql_relation:
-              SqlVar.relname_length := Short(Get_String_Info(Lib, PResult, @SqlVar.RelName[0], SizeOf(SqlVar.RelName)));
-            isc_info_sql_owner:
-              SqlVar.ownname_length := Short(Get_String_Info(Lib, PResult, @SqlVar.ownname[0], SizeOf(SqlVar.ownname)));
-            isc_info_sql_alias:
-              SqlVar.aliasname_length := Short(Get_String_Info(Lib, PResult, @SqlVar.AliasName[0], SizeOf(SqlVar.AliasName)));
-            { frb_info_sql_relation_alias:
-              get_string_info(Lib,PResult,@SQLVar.ownname[0],SizeOf(SQLVar.aliasname)); }
-            isc_info_truncated:
-              begin
-
-              end;
-          end;
-          Item := PResult;
-        end;
-    end;
-  end;
-end;
-
-{$R-}
-
 function TFIBQuery.GetPlan: string;
 var
   Result_buffer: array [0 .. cPlanMaxLength] of AnsiChar;
-  Result_length: integer;
+  Result_length: Integer;
   info_request: AnsiChar;
-  Position: integer;
+  Position: Integer;
 begin
   if (not Prepared) or (not(FSQLType in [SQLSelect, SQLSelectForUpdate,
     SQLExecProcedure, SQLUpdate, SQLDelete, SQLInsert])) then
@@ -5337,12 +5087,12 @@ begin
   end;
 end;
 
-function TFIBQuery.GetRecordCount: integer;
+function TFIBQuery.GetRecordCount: Integer;
 begin
   Result := FRecordCount;
 end;
 
-function TFIBQuery.GetAllRowsAffected: TAllRowsAffected;
+function TFIBQuery.GetAllRowsAffected: TFIBRowsAffected;
 var
   InfoBuffer: PAnsiChar;
   AllocAddr: PAnsiChar;
@@ -5350,7 +5100,7 @@ var
   info_request: AnsiChar;
   InfoLen: Short;
 
-  function ReadRequest: integer;
+  function ReadRequest: Integer;
   begin
     with Database.ClientLibrary do
     begin
@@ -5407,9 +5157,9 @@ begin
   end;
 end;
 
-function TFIBQuery.GetRowsAffected: integer;
+function TFIBQuery.GetRowsAffected: Integer;
 var
-  ar: TAllRowsAffected;
+  ar: TFIBRowsAffected;
 begin
   ar := GetAllRowsAffected;
   case SQLType of
@@ -5429,7 +5179,7 @@ end;
 function TFIBQuery.GetSQLParams: TFIBXSQLDA;
 begin
   BuildDeferredSQL;
-  if (FUserSQLParams.FXSQLDA = nil) and not vUserParamsCreated then
+  if (FUserSQLParams.FXSQLDA = nil) and not FUserParamsCreated then
     SQLChange(nil);
   Result := FUserSQLParams;
 end;
@@ -5453,36 +5203,35 @@ const
   ParamNameChars = ['A' .. 'Z', 'a' .. 'z', '0' .. '9', '_', '$', '%',
     '#', '.'];
 
-procedure TFIBQuery.PreprocessSQL(const sSQL: String; IsUserSQL: boolean);
+procedure TFIBQuery.PreprocessSQL(const sSQL: String; IsUserSQL: Boolean);
 const
   DefParCount = 10;
 var
   cCurChar, cNextChar, cQuoteChar: Char;
   sParamName: string;
   sMacroName: string;
-  i, iLenSQL, iCurState, iSQLPos: integer;
+  i, iLenSQL, iCurState, iSQLPos: Integer;
   iCurParamState: Byte;
   slNames: TStrings;
-  BracketOpenedInWhere: integer;
+  BracketOpenedInWhere: Integer;
 
-  vParams: TFIBXSQLDA;
+  ParamList: TFIBXSQLDA;
   NewParams: TFIBXSQLDA;
   tempVar, tempVar1: TXSQLVAR;
   ParVar, NParVar: TFIBXSQLVAR;
 
-  PCount, ind: integer;
+  PCount, ind: Integer;
 
   CurMDef: string;
-  OldStyleMacro: boolean;
-  // EndMacro :boolean;
-  InWhereClause: boolean;
-  CanForceIsNull: boolean;
-  OldMacroChanged: boolean;
+  OldStyleMacro: Boolean;
+  InWhereClause: Boolean;
+  CanForceIsNull: Boolean;
+  OldMacroChanged: Boolean;
 
-  vBeginParamPos: integer;
-  vBeginParamsPos: array of integer;
-  vEndParamsPos: array of integer;
-  vInDeclarationSection: boolean;
+  BeginParamPos: Integer;
+  BeginParamsPos: array of Integer;
+  EndParamsPos: array of Integer;
+  InDeclarationSection: Boolean;
 
   procedure AddToProcessedSQL(cChar: Char);
   begin
@@ -5495,7 +5244,7 @@ var
     end;
   end;
 
-  function ParamCanForceIsNull(EndPos: integer): boolean;
+  function ParamCanForceIsNull(EndPos: Integer): Boolean;
   begin
     if not InWhereClause then
       Result := False
@@ -5529,12 +5278,11 @@ const
   ParamDefaultState = 0;
   ParamQuoteState   = 1;
 
-  procedure RegParamName(AddQuote: boolean);
+  procedure RegParamName(AddQuote: Boolean);
   var
     B: Byte;
   begin
     iCurParamState := ParamDefaultState;
-    // iCurState := DefaultState;
     if (cNextChar = '-') and (i + 2 < iLenSQL) and (sSQL[i + 2] = '-') then
       iCurState := FBCommentState
     else if (cNextChar = '/') and (i + 2 < iLenSQL) and (sSQL[i + 2] = '*') then
@@ -5551,18 +5299,14 @@ const
       B := SetBit(B, 2, True);
 
     slNames.AddObject(sParamName, TObject(B));
-    SetLength(vBeginParamsPos, PCount);
-    SetLength(vEndParamsPos, PCount);
-    vBeginParamsPos[PCount - 1] := vBeginParamPos;
+    SetLength(BeginParamsPos, PCount);
+    SetLength(EndParamsPos, PCount);
+    BeginParamsPos[PCount - 1] := BeginParamPos;
     if AddQuote then
-      vEndParamsPos[PCount - 1] := i + 1
+      EndParamsPos[PCount - 1] := i + 1
     else
-      vEndParamsPos[PCount - 1] := i;
+      EndParamsPos[PCount - 1] := i;
     sParamName := '';
-    { if iCurState in [CommentState,FBCommentState] then
-      begin
-      Inc(i)
-      end; }
   end;
 
 begin
@@ -5587,7 +5331,7 @@ begin
     iCurState := DefaultState;
     iCurParamState := ParamDefaultState;
     OldStyleMacro := False;
-    vInDeclarationSection := True;
+    InDeclarationSection := True;
     (*
       * Now, traverse through the SQL string, character by character,
       * picking out the parameters and formatting correctly for InterBase.
@@ -5630,15 +5374,11 @@ begin
             case cCurChar of
               'A', 'a':
                 begin
-                  if SQLKind = skExecuteBlock then
-                  begin
-                    if vInDeclarationSection and (iLenSQL - i >= 2) then
-                      vInDeclarationSection := not(CharInSet(sSQL[i + 1], ['S', 's']) and
-                        CharInSet(sSQL[i + 2], CharsAfterClause));
-                    if vInDeclarationSection and (iLenSQL - i >= 2) then
-                      vInDeclarationSection := not(CharInSet(sSQL[i + 1], ['S', 's']) and
-                        CharInSet(sSQL[i + 2], CharsAfterClause));
-                  end;
+                  // the word AS, not the end of a name like GAS
+                  if (SQLKind = skExecuteBlock) and InDeclarationSection and (iLenSQL - i >= 2) and
+                    ((i = 1) or not CharInSet(sSQL[i - 1], ParamNameChars)) then
+                    InDeclarationSection := not(CharInSet(sSQL[i + 1], ['S', 's']) and
+                      CharInSet(sSQL[i + 2], CharsAfterClause));
                 end;
 
               '''', '"':
@@ -5647,11 +5387,11 @@ begin
                   iCurState := QuoteState;
                 end;
               '?', ':':
-                if FParser.CanParamsCheck and vInDeclarationSection then
+                if FParser.CanParamsCheck and InDeclarationSection then
                 begin
                   iCurState := ParamState;
                   AddToProcessedSQL('?');
-                  vBeginParamPos := i;
+                  BeginParamPos := i;
                 end;
               '/':
                 if (cNextChar = '*') then
@@ -5676,7 +5416,7 @@ begin
                 OldStyleMacro := cNextChar <> FMacroChar;
                 if OldStyleMacro then
                   sParamName := FMacroChar;
-                vBeginParamPos := i;
+                BeginParamPos := i;
               end;
             end;
           end;
@@ -5697,9 +5437,8 @@ begin
           end;
         QuoteState:
           begin
-            if (cNextChar = #0) then
-              FIBError(feSQLParseError, [CmpFullName(Self), SFIBErrorEOFInString])
-            else if (cCurChar = cQuoteChar) then
+            // a closing quote may be the last character
+            if (cCurChar = cQuoteChar) then
             begin
               if (cNextChar = cQuoteChar) then
               begin
@@ -5708,7 +5447,9 @@ begin
               end
               else
                 iCurState := DefaultState;
-            end;
+            end
+            else if (cNextChar = #0) then
+              FIBError(feSQLParseError, [CmpFullName(Self), SFIBErrorEOFInString]);
           end;
         ParamState, MacroState:
           begin
@@ -5797,10 +5538,10 @@ begin
     NewParams.FXSQLDA := nil;
 
     if IsUserSQL then
-      vParams := FUserSQLParams
+      ParamList := FUserSQLParams
     else
-      vParams := FSQLParams;
-    NewParams.FHasDefferedSettings := vParams.FHasDefferedSettings;
+      ParamList := FSQLParams;
+    NewParams.FHasDeferredSettings := ParamList.FHasDeferredSettings;
     NewParams.Count := slNames.Count;
     for i := 0 to slNames.Count - 1 do
     begin
@@ -5816,8 +5557,8 @@ begin
         NParVar.FInitialized := False;
         NParVar.FInWhereClause := GetBit(Byte(slNames.Objects[i]), 0);
         NParVar.FCanForceIsNull := GetBit(Byte(slNames.Objects[i]), 1);
-        NParVar.FBeginPosInText := vBeginParamsPos[i];
-        NParVar.FEndPosInText := vEndParamsPos[i];
+        NParVar.FBeginPosInText := BeginParamsPos[i];
+        NParVar.FEndPosInText := EndParamsPos[i];
       end
       else // macroses
         if not IsUserSQL then
@@ -5839,27 +5580,26 @@ begin
             NParVar.FWideTempValue := CurMDef
           else
             InternalSetValue(NParVar, SQL_TEXT, 0, '');
-          NParVar.FBeginPosInText := vBeginParamsPos[i];
-          NParVar.FEndPosInText := vEndParamsPos[i];
+          NParVar.FBeginPosInText := BeginParamsPos[i];
+          NParVar.FEndPosInText := EndParamsPos[i];
         end;
 
-      vParams.FCachedNames.Clear;
-      if (vParams.Count > 0) and (NewParams.Count > i) then
+      ParamList.FCachedNames.Clear;
+      if (ParamList.Count > 0) and (NewParams.Count > i) then
       begin
         OldMacroChanged := MacroChanged;
         try
           FMacroChanged := False;
-          ParVar := vParams.ByName[NewParams.FXSQLVARs^[i].Name];
+          ParVar := ParamList.ByName[NewParams.FXSQLVARs^[i].Name];
         finally
           FMacroChanged := OldMacroChanged
         end;
-        if Assigned(ParVar) and (ParVar.FParent <> vParams) then
+        if Assigned(ParVar) and (ParVar.FParent <> ParamList) then
           ParVar := nil
       end
       else
         ParVar := nil;
       if (ParVar <> nil) and (ParVar.FXSQLVAR^.SQLType and (not 1) <> 520) then
-      // if (ParVar<>nil) then
       begin
         // Restore Old ParamValues
         NParVar := NewParams.FXSQLVARs^[i];
@@ -5870,31 +5610,31 @@ begin
         ParVar.FEndPosInText := NParVar.FEndPosInText;
         tempVar := NParVar.FXSQLVAR^;
         tempVar1 := ParVar.FXSQLVAR^;
-        NParVar.FParent := vParams;
+        NParVar.FParent := ParamList;
         NParVar.FXSQLVAR^.SQLType := ParVar.FXSQLVAR^.SQLType;
-        vParams.FXSQLVARs^[ParVar.FIndex] := NParVar;
-        vParams.FXSQLDA^.SqlVar[ParVar.FIndex] := tempVar;
+        ParamList.FXSQLVARs^[ParVar.FIndex] := NParVar;
+        ParamList.FXSQLDA^.SqlVar[ParVar.FIndex] := tempVar;
 
         NewParams.FXSQLVARs^[i] := ParVar;
         NewParams.FXSQLDA^.SqlVar[i] := tempVar1;
         ParVar.FXSQLVAR := @NewParams.FXSQLDA^.SqlVar[i];
-        vParams[ParVar.FIndex].FXSQLVAR := @vParams.FXSQLDA^.SqlVar
+        ParamList[ParVar.FIndex].FXSQLVAR := @ParamList.FXSQLDA^.SqlVar
           [ParVar.FIndex];
-        ind := vParams.FNames.IndexOfObject(TObject(ParVar.FIndex));
+        ind := ParamList.FNames.IndexOfObject(TObject(ParVar.FIndex));
         if ind > -1 then
-          vParams.FNames.Delete(ind);
+          ParamList.FNames.Delete(ind);
         ParVar.FParent := NewParams;
         ParVar.FIndex := i;
-        ParVar.FSrvSQLType := 0;
-        ParVar.FSrvSQLSubType := 0;
-        ParVar.FSrvSQLLen := 0;
+        ParVar.FServerSQLType := 0;
+        ParVar.FServerSQLSubType := 0;
+        ParVar.FServerSQLLen := 0;
       end;
     end;
     if IsUserSQL then
       FUserSQLParams := NewParams
     else
       FSQLParams := NewParams;
-    vParams.Free;
+    ParamList.Free;
   finally
     slNames.Free;
   end;
@@ -5903,7 +5643,11 @@ end;
 procedure TFIBQuery.SetDatabase(Value: TFIBDatabase);
 begin
   if (Value <> FBase.Database) and FPrepared then
+  begin
+    if FOpen then
+      Close;
     FreeHandle;
+  end;
   FBase.Database := Value;
 end;
 
@@ -5922,8 +5666,8 @@ end;
 
 procedure TFIBQuery.ReadParamNames;
 var
-  i: integer;
-  NamesCut: boolean;
+  i: Integer;
+  NamesCut: Boolean;
 begin
   NamesCut := False;
   for i := 0 to FSQLParams.Count - 1 do
@@ -5941,10 +5685,10 @@ end;
 // Writes the array values of the parameters as new arrays
 procedure TFIBQuery.PutArrayParams;
 var
-  i: integer;
+  i: Integer;
   Par, Srvpar: TFIBXSQLVAR;
   ColumnRelation, ColumnName: string;
-  buffer: TDataBuffer;
+  buffer: TFIBDataBuffer;
   ID: TISC_QUAD;
 begin
   for i := 0 to FUserSQLParams.Count - 1 do
@@ -5952,7 +5696,7 @@ begin
     Par := FUserSQLParams[i];
     if VarIsEmpty(Par.FArrayValue) then
       Continue;
-    if vDiffParams then
+    if FDiffParams then
       Srvpar := FSQLParams.FindParam(Par.Name)
     else
       Srvpar := FSQLParams[i];
@@ -5982,7 +5726,7 @@ end;
 
 procedure TFIBQuery.PrepareArrayFields;
 var
-  i: integer;
+  i: Integer;
   v: TFIBXSQLVAR;
   da: TFIBXSQLDA;
 begin
@@ -5998,20 +5742,20 @@ end;
 
 procedure TFIBQuery.PrepareUserParamsTypes;
 var
-  i: integer;
-  vSQLType: integer;
+  i: Integer;
+  SQLTypeCode: Integer;
   SQLPar: TFIBXSQLVAR;
 begin
   FOnlySrvParams.Clear;
-  if not vDiffParams then
+  if not FDiffParams then
     Exit;
   for i := 0 to Pred(FUserSQLParams.Count) do
   begin
     SQLPar := FSQLParams.FindParam(FUserSQLParams[i].Name);
     if SQLPar = nil then
       Continue;
-    vSQLType := SQLPar.FXSQLVAR^.SQLType and (not 1);
-    if (vSQLType = SQL_TIMESTAMP) or (vSQLType = SQL_TYPE_DATE) then
+    SQLTypeCode := SQLPar.FXSQLVAR^.SQLType and (not 1);
+    if (SQLTypeCode = SQL_TIMESTAMP) or (SQLTypeCode = SQL_TYPE_DATE) then
       with FUserSQLParams[i] do
         case SQLType of
           SQL_DOUBLE, SQL_FLOAT, SQL_D_FLOAT, SQL_INT64: AsDateTime := AsFloat
@@ -6025,15 +5769,16 @@ var
   stmt_len: Short;
   res_buffer: array [0 .. 7] of AnsiChar;
   type_item: AnsiChar;
-  i: integer;
+  i: Integer;
   SV: PISC_STATUS;
   ParamsSQLDA: PXSQLDA;
-  BlobValue: Ansistring;
+  BlobValue: AnsiString;
   tmpVar: TFIBXSQLVAR;
-  function NeedTransformUserSQL: boolean;
+  function NeedTransformUserSQL: Boolean;
   var
-    j, pc: integer;
+    j, pc: Integer;
     p: TFIBXSQLVAR;
+    IsNotNull: Boolean;
   begin
     Result := not FPrepared or FMacroChanged or FNeedForceIsNull;
     if Result then
@@ -6050,8 +5795,8 @@ var
       // Macro value changed. Must change SQL text.
       if Result then
         Exit;
-      Result := (p.FCanForceIsNull and (p.IsNull <> VarIsNull(p.FOldValue)));
-      // May be change IS NULL
+      // the text changes only when the IS NULL replacement appears or goes away
+      Result := not p.IsMacro and (p.IsNull and (NullComparisonStart(p, IsNotNull) > 0) <> p.FForcedIsNull);
       if Result then
         Exit;
     end;
@@ -6074,14 +5819,13 @@ begin
     BuildDeferredSQL;
     if (FDoParamCheck) and (Params.Count > 0) then
     begin
-      if not vUserParamsCreated then
+      if not FUserParamsCreated then
         SQLChange(nil);
       if NeedTransformUserSQL then
       begin
         PreprocessSQL(ReadySQLText, False);
         ConvertSQLTextToCodePage;
         FMacroChanged := False;
-        // FNeedForceIsNull:=False;
         FNeedForceIsNull := not(qoNoForceIsNull in Options) and not(qrsInExecute in FQueryRunState);
         FreeHandle;
       end;
@@ -6125,7 +5869,7 @@ begin
         begin
           if FCursorName = '' then
             FCursorName := RandomString(10);
-          Call(isc_dsql_set_cursor_name(StatusVector, @FHandle, PAnsiChar(Ansistring(FCursorName)), 0), True);
+          Call(isc_dsql_set_cursor_name(StatusVector, @FHandle, PAnsiChar(AnsiString(FCursorName)), 0), True);
         end;
 
         // Done getting the type
@@ -6138,13 +5882,13 @@ begin
           SQLInsert, SQLUpdate, SQLDelete, SQLSelect, SQLSelectForUpdate, SQLExecProcedure:
             begin
               // We already know how many inputs there are, so...
-              if vDiffParams then
+              if FDiffParams then
                 ParamsSQLDA := FSQLParams.FXSQLDA
               else
                 ParamsSQLDA := FUserSQLParams.FXSQLDA;
               if (ParamsSQLDA <> nil) then
               begin
-                if vDiffParams and FHaveMacros then // !!!
+                if FDiffParams and FHaveMacros then // !!!
                   SaveRestoreValues(FSQLParams, True);
                 if Call(isc_dsql_describe_bind(SV, @FHandle, Word(Database.SQLDialect), FSQLParams.FXSQLDA), False) > 0 then
                   IBError(Database.ClientLibrary, Self)
@@ -6167,7 +5911,7 @@ begin
                         else if (tmpVar.SQLType = SQL_ARRAY) and (SQLType = SQL_BLOB) then
                           // array ID set by AsQuad before the server type was known
                           FXSQLVAR^.SQLType := SQL_ARRAY or (FXSQLVAR^.SQLType and 1)
-                        else if tmpVar.IsBlob and (not IsBlob or IsDefferedLongString) then
+                        else if tmpVar.IsBlob and (not IsBlob or IsDeferredLongString) then
                         begin
                           FPrepared := True;
                           // read before the type changes; a kept string is encoded once, below
@@ -6180,10 +5924,10 @@ begin
                           FXSQLVAR^.SQLSubtype := tmpVar.FXSQLVAR^.SQLSubtype;
                           // the charset of a text BLOB, of the column of this occurrence
                           FXSQLVAR^.sqlscale := tmpVar.FXSQLVAR^.sqlscale;
-                          FSrvSQLType := tmpVar.SQLType;
-                          tmpVar.FSrvSQLType := tmpVar.SQLType;
-                          FSrvSQLSubType := tmpVar.SQLSubtype;
-                          FSrvSQLScale := tmpVar.FXSQLVAR^.sqlscale;
+                          FServerSQLType := tmpVar.SQLType;
+                          tmpVar.FServerSQLType := tmpVar.SQLType;
+                          FServerSQLSubType := tmpVar.SQLSubtype;
+                          FServerSQLScale := tmpVar.FXSQLVAR^.sqlscale;
                           // the string is kept to read it back, the stream is freed after the execute
                           if Length(FWideTempValue) > 0 then
                             InternalSetAsString(@FWideTempValue, True, True)
@@ -6195,7 +5939,7 @@ begin
               end;
 
               FSQLParams.Initialize;
-              if vDiffParams and FHaveMacros then // !!!
+              if FDiffParams and FHaveMacros then // !!!
               begin
                 FPrepared := True;
                 SaveRestoreValues(FSQLParams, False);
@@ -6344,7 +6088,7 @@ end;
 
 procedure TFIBQuery.ClearStreamedParams;
 var
-  i: integer;
+  i: Integer;
 begin
   if not FHaveStreamParams then
     Exit;
@@ -6367,7 +6111,7 @@ begin
 end;
 
 // the server only times DML
-function TFIBQuery.TimeoutApplies: boolean;
+function TFIBQuery.TimeoutApplies: Boolean;
 begin
   Result := FSQLType in [SQLSelect, SQLSelectForUpdate, SQLInsert, SQLUpdate, SQLDelete, SQLExecProcedure];
 end;
@@ -6390,18 +6134,15 @@ begin
   FStatementTimeout := Value;
 end;
 
-procedure TFIBQuery.SetParamCheck(Value: boolean);
+procedure TFIBQuery.SetParamCheck(Value: Boolean);
 begin
-  FDoParamCheck := Value;
+  if Value = FParamCheck then
+    Exit;
   FParamCheck := Value;
-  if not Value then
-  begin
-    FUserSQLParams.Count := 0;
-    FSQLParams.Count := 0;
-    FProcessedSQL := FSQL.Text;
-    FreeHandle;
-  end
-
+  if FOpen then
+    Close;
+  // parses the text again, or takes it as is
+  SQLChange(nil);
 end;
 
 procedure TFIBQuery.SQLChange(Sender: TObject);
@@ -6431,7 +6172,7 @@ begin
   // set by ConvertSQLTextToCodePage
   FPreparedSQL := '';
   FreeHandle;
-  vUserParamsCreated := True;
+  FUserParamsCreated := True;
   FCodePageApplied := False;
 end;
 
@@ -6470,8 +6211,8 @@ end;
 /// / Routine work
 procedure TFIBQuery.SetParamValues(const ParamValues: array of Variant);
 var
-  i: integer;
-  pc: integer;
+  i: Integer;
+  pc: Integer;
 begin
   // Exec Query with ParamValues
   pc := Params.Count - 1;
@@ -6483,14 +6224,14 @@ end;
 
 procedure TFIBQuery.SetParamValues(const ParamNames: string; ParamValues: array of Variant);
 var
-  i: integer;
-  pc: integer;
+  i: Integer;
+  pc: Integer;
   curPar: TFIBXSQLVAR;
 
 begin
   pc := WordCount(ParamNames, [';']) - 1;
   if pc <> High(ParamValues) then
-    raise Exception.Create(Format(SFIBParamsCountNotEquelValuesCount,
+    raise Exception.Create(Format(SFIBParamsCountNotEqualValuesCount,
       ['procedure ' + CmpFullName(Self) + '.SetParamValues']));
   for i := 0 to pc do
   begin
@@ -6517,7 +6258,7 @@ begin
   ExecQuery
 end;
 
-function TFIBQuery.FieldCount: integer;
+function TFIBQuery.FieldCount: Integer;
 begin
   if FSQLRecord <> nil then
     Result := FSQLRecord.Count
@@ -6552,7 +6293,7 @@ end;
 
 procedure TFIBQuery.RestoreMacroDefaultValues;
 var
-  i: integer;
+  i: Integer;
 begin
   for i := 0 to Pred(Params.Count) do
     if Params[i].IsMacro then
@@ -6561,49 +6302,50 @@ begin
     end;
 end;
 
-function TFIBQuery.IsProc: boolean;
+function TFIBQuery.IsProc: Boolean;
 begin
-  Result := FastUpperCase(FastCopy(TrimLeft(SQL.Text), 1, 8)) = ExecProcPrefix
+  // also with a line break after EXECUTE or a comment before it
+  Result := SQLKind in [skExecuteProc, skExecuteBlock];
 end;
 
 // Conditions;
-procedure TFIBQuery.SetConditions(Value: TConditions);
+procedure TFIBQuery.SetConditions(Value: TFIBConditions);
 begin
   FConditions.Assign(Value)
 end;
 
-procedure TFIBQuery.AddCondition(const Name, Condition: string; Enabled: boolean);
+procedure TFIBQuery.AddCondition(const Name, Condition: string; Enabled: Boolean);
 begin
   FConditions.AddCondition(Name, Condition, Enabled)
 end;
 
-function TFIBQuery.ParamCount: integer;
+function TFIBQuery.ParamCount: Integer;
 begin
   Result := Params.Count
 end;
 
-function TFIBQuery.ParamName(ParamIndex: integer): string;
+function TFIBQuery.ParamName(ParamIndex: Integer): string;
 begin
   Result := Params[ParamIndex].Name;
 end;
 
-function TFIBQuery.FieldName(FieldIndex: integer): string;
+function TFIBQuery.FieldName(FieldIndex: Integer): string;
 begin
   Result := FSQLRecord[FieldIndex].Name;
 end;
 
-function TFIBQuery.FieldsCount: integer;
+function TFIBQuery.FieldsCount: Integer;
 begin
   Result := FieldCount
 end;
 
-function TFIBQuery.FieldExist(const FieldName: string; var FieldIndex: integer): boolean;
+function TFIBQuery.FieldExist(const FieldName: string; var FieldIndex: Integer): Boolean;
 begin
   FieldIndex := GetFieldIndex(FieldName);
   Result := FieldIndex > -1
 end;
 
-function TFIBQuery.ParamExist(const ParamName: string; var ParamIndex: integer): boolean;
+function TFIBQuery.ParamExist(const ParamName: string; var ParamIndex: Integer): Boolean;
 var
   Par: TFIBXSQLVAR;
 begin
@@ -6613,12 +6355,12 @@ begin
     ParamIndex := Par.FIndex
 end;
 
-function TFIBQuery.FieldValue(const FieldName: string; Old: boolean): Variant;
+function TFIBQuery.FieldValue(const FieldName: string; Old: Boolean): Variant;
 begin
   Result := FieldByName(FieldName).Value;
 end;
 
-function TFIBQuery.FieldValue(const FieldIndex: integer; Old: boolean): Variant;
+function TFIBQuery.FieldValue(const FieldIndex: Integer; Old: Boolean): Variant;
 begin
   Result := GetFields(FieldIndex).Value;
 end;
@@ -6628,12 +6370,12 @@ begin
   Result := ParamByName(ParamName).Value;
 end;
 
-function TFIBQuery.ParamValue(const ParamIndex: integer): Variant;
+function TFIBQuery.ParamValue(const ParamIndex: Integer): Variant;
 begin
   Result := Params[ParamIndex].Value;
 end;
 
-function TFIBQuery.WhereClausesCount: integer;
+function TFIBQuery.WhereClausesCount: Integer;
 begin
   Result := WhereCount(SQL.Text)
 end;
@@ -6648,14 +6390,14 @@ begin
   Result := FParser.MainPlanClause;
 end;
 
-function TFIBQuery.GetWhereClause(Index: integer): string;
+function TFIBQuery.GetWhereClause(Index: Integer): string;
 var
-  StartPos, EndPos: integer;
+  StartPos, EndPos: Integer;
 begin
   Result := FParser.WhereClause(Index, StartPos, EndPos);
 end;
 
-procedure TFIBQuery.SetWhereClause(Index: integer; const WhereClauseTxt: string);
+procedure TFIBQuery.SetWhereClause(Index: Integer; const WhereClauseTxt: string);
 begin
   SQL.Text := FParser.SetWhereClause(Index, WhereClauseTxt);
 end;
@@ -6672,7 +6414,7 @@ end;
 
 procedure TFIBQuery.SetGroupByString(const GroupByTxt: string);
 var
-  CondApplied: boolean;
+  CondApplied: Boolean;
 begin
   CondApplied := Conditions.Applied;
   Conditions.CancelApply;
@@ -6688,7 +6430,7 @@ end;
 
 procedure TFIBQuery.SetFieldsClause(const NewFields: string);
 var
-  CondApplied: boolean;
+  CondApplied: Boolean;
 begin
   CondApplied := Conditions.Applied;
   Conditions.CancelApply;
@@ -6699,7 +6441,7 @@ end;
 
 procedure TFIBQuery.SetOrderString(const OrderTxt: string);
 var
-  CondApplied: boolean;
+  CondApplied: Boolean;
 begin
   CondApplied := Conditions.Applied;
   Conditions.CancelApply;
@@ -6708,12 +6450,12 @@ begin
     Conditions.Apply;
 end;
 
-procedure TFIBQuery.SetParamValue(const ParamIndex: integer; aValue: Variant);
+procedure TFIBQuery.SetParamValue(const ParamIndex: Integer; aValue: Variant);
 begin
   Params[ParamIndex].Value := aValue;
 end;
 
-function TFIBQuery.IEof: boolean;
+function TFIBQuery.IEof: Boolean;
 begin
   Result := Eof
 end;
@@ -6724,7 +6466,7 @@ begin
 end;
 
 //
-function TFIBQuery.GetSQLKind: TSQLKind;
+function TFIBQuery.GetSQLKind: TFIBSQLStatementKind;
 begin
   Result := FParser.SQLKind
 end;
@@ -6735,14 +6477,14 @@ begin
 end;
 
 {$IFDEF CSMonitor}
-procedure TFIBQuery.SetMonitorSupport(Value: TCSMonitorSupport);
+procedure TFIBQuery.SetMonitorSupport(Value: TFIBCSMonitorSupport);
 begin
   FCSMonitorSupport.Assign(Value)
 end;
 
 function TFIBQuery.GetCSMonText: string;
 var
-  bWasComment, bEnabled, bIncludeDSDesc: boolean;
+  bWasComment, bEnabled, bIncludeDSDesc: Boolean;
   // db
   DB_pl: TFIBDatabase;
   sDB_pl_name: string;
@@ -6779,7 +6521,7 @@ begin
   begin
     sDB_pl_name := DB_pl.Name;
     if IsEmptyStr(sDB_pl_name) then
-      sDB_pl_name := 'DB_0x' + IntToHex(integer(DB_pl), 8);
+      sDB_pl_name := 'DB_0x' + IntToHex(Integer(DB_pl), 8);
     if Assigned(DB_pl.Owner) then
       sDB_pl_name := DB_pl.Owner.Name + '.' + sDB_pl_name;
   end;
@@ -6794,7 +6536,7 @@ begin
   begin
     sTr_pl_name := Tr_pl.Name;
     if IsEmptyStr(sTr_pl_name) then
-      sTr_pl_name := 'Trans_0x' + IntToHex(integer(Tr_pl), 8);
+      sTr_pl_name := 'Trans_0x' + IntToHex(Integer(Tr_pl), 8);
     if Assigned(Tr_pl.Owner) then
       sTr_pl_name := Tr_pl.Owner.Name + '.' + sTr_pl_name;
   end;
@@ -6807,7 +6549,7 @@ begin
   end;
   sDs_pl_name := Name;
   if IsEmptyStr(sDs_pl_name) then
-    sDs_pl_name := 'Query_0x' + IntToHex(integer(Self), 8);
+    sDs_pl_name := 'Query_0x' + IntToHex(Integer(Self), 8);
   if Assigned(Owner) then
     if Owner is TFIBCustomDataSet then
     begin

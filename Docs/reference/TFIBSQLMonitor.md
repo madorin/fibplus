@@ -55,9 +55,9 @@ Each monitor receives the message in the thread that created it and calls `OnSQL
 | `tfService` | Attach, detach, query, and start of a service component from [TFIBServices](TFIBServices.md). Only when the library is compiled with service support (`INC_SERVICE_SUPPORT`). |
 | `tfMisc` | Text sent with `MonitorHook.SendMisc`. |
 
-`TSQLEvent` is the type of `OnSQL`: `procedure(EventText: String; EventTime: TDateTime) of object`.
+`TFIBSQLEvent` is the type of `OnSQL`: `procedure(EventText: String; EventTime: TDateTime) of object`.
 
-`TSavePointOperation` (`soSet`, `soRollBack`, `soRelease`) is the parameter of `TFIBSQLMonitorHook.TRSavepoint`, which the transaction calls; application code does not use it.
+`TFIBSavePointOperation` (`soSet`, `soRollBack`, `soRelease`) is the parameter of `TFIBSQLMonitorHook.TRSavepoint`, which the transaction calls; application code does not use it.
 
 ## Run-time properties
 

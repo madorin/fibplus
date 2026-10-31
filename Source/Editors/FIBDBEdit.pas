@@ -28,7 +28,7 @@ uses
   SysUtils, FIBInterfaces, TypInfo, uFIBEditorForm;
 
 type
-  TDBEditForm = class(TFIBEditorCustomForm)
+  TFIBDatabaseEditForm = class(TFIBEditorCustomForm)
     GroupBox1: TGroupBox;
     LocalC: TRadioButton;
     RemoteC: TRadioButton;
@@ -89,13 +89,13 @@ type
     procedure DecomposeDatabaseName(const DBName: string);
   public
     { Public declarations }
-    function Execute: boolean;
+    function Execute: Boolean;
   end;
 
 var
-  DBEditForm: TDBEditForm;
+  DBEditForm: TFIBDatabaseEditForm;
 
-function EditFIBDatabase(Database: TComponent): boolean;
+function EditFIBDatabase(Database: TComponent): Boolean;
 
 implementation
 
@@ -105,10 +105,10 @@ uses
   Variants,
   RegUtils, FIBProps, RTTIRoutines, FIBEditorsConsts;
 
-function EditFIBDatabase(Database: TComponent): boolean;
+function EditFIBDatabase(Database: TComponent): Boolean;
 begin
+  DBEditForm := TFIBDatabaseEditForm.Create(Application);
   try
-    DBEditForm := TDBEditForm.Create(Application);
     if ObjSupports(Database, IFIBConnect, DBEditForm.aDatabase) then
     begin
       DBEditForm.FDBCmp := Database;
@@ -118,11 +118,11 @@ begin
     else
       Result := False;
   finally
-    DBEditForm.Free;
+    FreeAndNil(DBEditForm);
   end;
 end;
 
-procedure TDBEditForm.EnableEdits;
+procedure TFIBDatabaseEditForm.EnableEdits;
 begin
   ServerE.Enabled := not LocalC.Checked;
   ProtocolC.Enabled := not LocalC.Checked;
@@ -132,19 +132,19 @@ begin
     ProtocolC.ItemIndex := -1;
 end;
 
-procedure TDBEditForm.RemoteCClick(Sender: TObject);
+procedure TFIBDatabaseEditForm.RemoteCClick(Sender: TObject);
 begin
   LocalC.Checked := not RemoteC.Checked;
   EnableEdits;
 end;
 
-procedure TDBEditForm.LocalCClick(Sender: TObject);
+procedure TFIBDatabaseEditForm.LocalCClick(Sender: TObject);
 begin
   RemoteC.Checked := not LocalC.Checked;
   EnableEdits;
 end;
 
-procedure TDBEditForm.FormCreate(Sender: TObject);
+procedure TFIBDatabaseEditForm.FormCreate(Sender: TObject);
 begin
   CharSetC.Text := 'None';
   DialectC.ItemIndex := 0;
@@ -156,7 +156,6 @@ begin
   Label9.Caption := SDBEditAlias;
   LocalC.Caption := SDBEditLocal;
   RemoteC.Caption := SDBEditRemote;
-  // BrowseB.Caption := SDBEditBrowse;
   GroupBox2.Caption := SDBEditConnectParams;
   Label3.Caption := SDBEditUserName;
   Label4.Caption := SDBEditPassword;
@@ -171,14 +170,14 @@ begin
   CancelB.Caption := SCancelButton;
 end;
 
-procedure TDBEditForm.BrowseBClick(Sender: TObject);
+procedure TFIBDatabaseEditForm.BrowseBClick(Sender: TObject);
 begin
   if not OpenD.Execute then
     Exit;
   DBNameE.Text := OpenD.FileName;
 end;
 
-function TDBEditForm.GetParamValue(Name: string): string;
+function TFIBDatabaseEditForm.GetParamValue(Name: string): string;
 var
   Index: Integer;
 begin
@@ -193,10 +192,10 @@ begin
   end;
 end;
 
-procedure TDBEditForm.AddParam(Name, Value: string);
+procedure TFIBDatabaseEditForm.AddParam(Name, Value: string);
 var
   Index: Integer;
-  Found: boolean;
+  Found: Boolean;
 begin
   Found := False;
   if Trim(Value) <> '' then
@@ -217,7 +216,7 @@ begin
     DeleteParamByName(Name);
 end;
 
-procedure TDBEditForm.DeleteParamByName(Name: string);
+procedure TFIBDatabaseEditForm.DeleteParamByName(Name: string);
 var
   Index: Integer;
 begin
@@ -231,7 +230,7 @@ begin
   end;
 end;
 
-procedure TDBEditForm.DecomposeDatabaseName(const DBName: string);
+procedure TFIBDatabaseEditForm.DecomposeDatabaseName(const DBName: string);
 var
   Idx1, Idx2: Integer;
   Temp: string;
@@ -241,7 +240,7 @@ begin
     LocalC.Checked := False;
     RemoteC.Checked := True;
     ProtocolC.ItemIndex := 0;
-    Temp := Copy(DBName, 3, Length(aDatabase.DBName));
+    Temp := Copy(DBName, 3, MaxInt);
     Idx1 := Pos('\', Temp);
     if Idx1 = 0 then
       raise Exception.Create('Unknown Error')
@@ -283,7 +282,7 @@ begin
   end;
 end;
 
-function TDBEditForm.Execute: boolean;
+function TFIBDatabaseEditForm.Execute: Boolean;
 var
   CharSet: string;
 
@@ -330,29 +329,29 @@ begin
   SetPropValue(FDBCmp, 'UseLoginPrompt', UseLoginC.Checked);
   SetPropValue(FDBCmp, 'LibraryName', edLibrary.Text);
   SetPropValue(FDBCmp, 'SaveAliasParamsAfterConnect', chSaveAlias.Checked);
-  // IFIBObject(aDatabase).iCallMethod('SetDBParamsText',[ParamsM.Lines.Text]);
   AssignStringsToProp(FDBCmp, 'DBParams', ParamsM.Lines.Text);
   if (Length(cmbAliases.Text) > 0) and chSaveAlias.Checked then
-    // IFIBObject(aDatabase).iCallMethod('WriteParamsToAlias',[]);
     aDatabase.SaveAlias
 end;
 
-procedure TDBEditForm.UserEChange(Sender: TObject);
+procedure TFIBDatabaseEditForm.UserEChange(Sender: TObject);
 begin
   AddParam('user_name', UserE.Text);
 end;
 
-procedure TDBEditForm.PasswordEChange(Sender: TObject);
+procedure TFIBDatabaseEditForm.PasswordEChange(Sender: TObject);
 begin
   AddParam('password', PasswordE.Text);
 end;
 
-procedure TDBEditForm.RoleEChange(Sender: TObject);
+procedure TFIBDatabaseEditForm.RoleEChange(Sender: TObject);
 begin
+  // an alias may hold the short name sql_role
+  DeleteParamByName('sql_role');
   AddParam('sql_role_name', RoleE.Text);
 end;
 
-procedure TDBEditForm.CharSetCChange(Sender: TObject);
+procedure TFIBDatabaseEditForm.CharSetCChange(Sender: TObject);
 begin
   if (AnsiLowerCase(Trim(CharSetC.Text)) <> 'none') then
     AddParam('lc_ctype', CharSetC.Text)
@@ -360,8 +359,7 @@ begin
     DeleteParamByName('lc_ctype');
 end;
 
-procedure TDBEditForm.TestBClick(Sender: TObject);
-// var TempDB : TFIBDatabase;
+procedure TFIBDatabaseEditForm.TestBClick(Sender: TObject);
 var
   TempDB: TComponent;
   s: string;
@@ -389,7 +387,6 @@ begin
     SetPropValue(TempDB, 'SQLDialect', DialectC.ItemIndex + 1);
 
     AssignStringsToProp(TempDB, 'DBParams', ParamsM.Lines.Text);
-    // IFIBObject(iDB).iCallMethod('SetDBParamsText',[ParamsM.Lines.Text]);
     SetPropValue(TempDB, 'Connected', 'True');
     ShowMessage(SDBEditSuccessConnection);
 
@@ -399,7 +396,7 @@ begin
   end;
 end;
 
-procedure TDBEditForm.RefreshCmbAlias;
+procedure TFIBDatabaseEditForm.RefreshCmbAlias;
 {$IFNDEF NO_REGISTRY}
 var
   i: Integer;
@@ -419,7 +416,7 @@ begin
 {$ENDIF}
 end;
 
-procedure TDBEditForm.ReadParamsFromAlias;
+procedure TFIBDatabaseEditForm.ReadParamsFromAlias;
 var
   Values: Variant;
   i: Integer;
@@ -459,12 +456,12 @@ begin
   end;
 end;
 
-procedure TDBEditForm.cmbAliasesChange(Sender: TObject);
+procedure TFIBDatabaseEditForm.cmbAliasesChange(Sender: TObject);
 begin
   ReadParamsFromAlias
 end;
 
-procedure TDBEditForm.btnLibBrowseClick(Sender: TObject);
+procedure TFIBDatabaseEditForm.btnLibBrowseClick(Sender: TObject);
 begin
   if not browseLib.Execute then
     Exit;

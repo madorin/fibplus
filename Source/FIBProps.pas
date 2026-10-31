@@ -25,9 +25,9 @@ uses
 
 type
 
-  TOnBlobFieldProcessing = procedure(Field: TBlobField; BlobSize: Integer; Progress: Integer; var Stop: Boolean) of object;
+  TFIBBlobFieldProcessingEvent = procedure(Field: TBlobField; BlobSize: Integer; Progress: Integer; var Stop: Boolean) of object;
 
-  TKindOnOperation = (koBefore, koAfter, koAfterFirstFetch, koOther);
+  TFIBOperationMoment = (koBefore, koAfter, koAfterFirstFetch, koOther);
 
   TFIBSQLTypes = (
     SQLUnknown,
@@ -80,12 +80,12 @@ type
   TFIBQueryOption = (qoStartTransaction, qoAutoCommit, qoTrimCharFields, qoNoForceIsNull, qoFreeHandleAfterExecute);
   TFIBQueryOptions = set of TFIBQueryOption;
 
-  TDetailCondition = (dcForceOpen, dcIgnoreMasterClose, dcForceMasterRefresh, dcWaitEndMasterScroll);
+  TFIBDetailCondition = (dcForceOpen, dcIgnoreMasterClose, dcForceMasterRefresh, dcWaitEndMasterScroll);
 
-  TDetailConditions = set of TDetailCondition;
-  TFieldOriginRule = (forNoRule, forTableAndFieldName, forClientFieldName, forTableAliasAndFieldName);
+  TFIBDetailConditions = set of TFIBDetailCondition;
+  TFIBFieldOriginRule = (forNoRule, forTableAndFieldName, forClientFieldName, forTableAliasAndFieldName);
 
-  TSQLs = class(TPersistent)
+  TFIBSQLs = class(TPersistent)
   private
     FOwner: TComponent;
     function GetSelectSQL: TStrings;
@@ -109,7 +109,7 @@ type
     property RefreshSQL: TStrings read GetRefreshSQL write SetRefreshSQL;
   end;
 
-  TFormatFields = class(TPersistent)
+  TFIBFormatFields = class(TPersistent)
   private
     FOwner: TComponent;
     FDisplayFormatDateTime: string;
@@ -117,11 +117,11 @@ type
     FDisplayFormatTime: string;
     FDisplayFormatNumeric: string;
     FEditFormatNumeric: string;
-    function StoreDfDt: boolean;
-    function StoreDfN: boolean;
-    function StoreEfN: boolean;
-    function StoreDfD: boolean;
-    function StoreDfT: boolean;
+    function StoreDfDt: Boolean;
+    function StoreDfN: Boolean;
+    function StoreEfN: Boolean;
+    function StoreDfD: Boolean;
+    function StoreDfT: Boolean;
   protected
     procedure AssignTo(Dest: TPersistent); override;
   public
@@ -134,47 +134,47 @@ type
     property DisplayFormatTime: string read FDisplayFormatTime write FDisplayFormatTime stored StoreDfT;
   end;
 
-  TWhenGetGenID = (wgNever, wgOnNewRecord, wgBeforePost);
-  TReturningFields = (rfAll, rfKeyFields, rfBlobFields);
-  TSetReturningFields = set of TReturningFields;
+  TFIBWhenGetGenID = (wgNever, wgOnNewRecord, wgBeforePost);
+  TFIBReturningField = (rfAll, rfKeyFields, rfBlobFields);
+  TFIBReturningFields = set of TFIBReturningField;
 
-  TAutoUpdateOptions = class(TPersistent)
+  TFIBAutoUpdateOptions = class(TPersistent)
   private
     FOwner: TComponent;
     FUpdateTableName: string;
     FKeyFieldList: TStrings;
     FKeyFields: string;
-    FAutoReWriteSqls: boolean;
-    FCanChangeSQLs: boolean;
+    FAutoReWriteSqls: Boolean;
+    FCanChangeSQLs: Boolean;
     FGeneratorName: string;
-    FGeneratorStep: integer;
-    FSelectGenID: boolean;
-    FGenBeforePost: boolean;
-    FUpdateOnlyModifiedFields: boolean;
-    FWhenGetGenID: TWhenGetGenID;
+    FGeneratorStep: Integer;
+    FSelectGenID: Boolean;
+    FGenBeforePost: Boolean;
+    FUpdateOnlyModifiedFields: Boolean;
+    FWhenGetGenID: TFIBWhenGetGenID;
     FParamFieldLinks: TStrings;
-    FAutoParamsToFields: boolean;
-    FSeparateBlobUpdate: boolean;
-    FUseExecuteBlock: boolean; // For CachedUpdates only
+    FAutoParamsToFields: Boolean;
+    FSeparateBlobUpdate: Boolean;
+    FUseExecuteBlock: Boolean; // For CachedUpdates only
     FWhereCondition: string; // Cache where
     FModifiedTable: string;
     FAliasModifiedTable: string;
-    FModifiedTableHaveAlias: boolean;
+    FModifiedTableHaveAlias: Boolean;
     FReadySelectSQL: string;
-    FReturningFields: TSetReturningFields;
-    FUseRowsClause: boolean;
-    FModified: boolean;
+    FReturningFields: TFIBReturningFields;
+    FUseRowsClause: Boolean;
+    FModified: Boolean;
     procedure SetUpdateTableName(const Value: string);
-    procedure SetSelectGenID(Value: boolean);
-    function GetSelectGenID: boolean;
-    function GetGenBeforePost: boolean;
-    procedure SetGenBeforePost(Value: boolean);
+    procedure SetSelectGenID(Value: Boolean);
+    function GetSelectGenID: Boolean;
+    function GetGenBeforePost: Boolean;
+    procedure SetGenBeforePost(Value: Boolean);
     procedure SetParamFieldLinks(const Value: TStrings);
     procedure SetKeyFields(const Value: string);
     function GetAliasModifiedTable: string;
     function GetModifiedTable: string;
     procedure PrepareUpdateTableStrings;
-    procedure SetReturningFields(const Value: TSetReturningFields);
+    procedure SetReturningFields(const Value: TFIBReturningFields);
   protected
     // for compatibility only
     procedure ReadSelectGenID(Reader: TReader);
@@ -186,37 +186,37 @@ type
     destructor Destroy; override;
     function UpdateOnlyModifiedFieldsInEffect: Boolean;
     property Owner: TComponent read FOwner;
-    property SelectGenID: boolean read GetSelectGenID write SetSelectGenID;
-    property GenBeforePost: boolean read GetGenBeforePost write SetGenBeforePost;
+    property SelectGenID: Boolean read GetSelectGenID write SetSelectGenID;
+    property GenBeforePost: Boolean read GetGenBeforePost write SetGenBeforePost;
     property KeyFieldList: TStrings read FKeyFieldList;
     // Cache Analize results
     property WhereCondition: string read FWhereCondition write FWhereCondition;
     property ModifiedTableName: string read GetModifiedTable;
     property AliasModifiedTable: string read GetAliasModifiedTable;
-    property ModifiedTableHaveAlias: boolean read FModifiedTableHaveAlias;
+    property ModifiedTableHaveAlias: Boolean read FModifiedTableHaveAlias;
     property ReadySelectSQL: string read FReadySelectSQL write FReadySelectSQL;
-    property Modified: boolean read FModified write FModified;
+    property Modified: Boolean read FModified write FModified;
   published
     property UpdateTableName: string read FUpdateTableName write SetUpdateTableName;
     property KeyFields: string read FKeyFields write SetKeyFields;
-    property AutoReWriteSqls: boolean read FAutoReWriteSqls write FAutoReWriteSqls default False;
-    property CanChangeSQLs: boolean read FCanChangeSQLs write FCanChangeSQLs default False;
+    property AutoReWriteSqls: Boolean read FAutoReWriteSqls write FAutoReWriteSqls default False;
+    property CanChangeSQLs: Boolean read FCanChangeSQLs write FCanChangeSQLs default False;
     property GeneratorName: string read FGeneratorName write FGeneratorName;
     property UpdateOnlyModifiedFields: Boolean read FUpdateOnlyModifiedFields write FUpdateOnlyModifiedFields
       default False;
-    property WhenGetGenID: TWhenGetGenID read FWhenGetGenID write FWhenGetGenID default wgNever;
-    property GeneratorStep: integer read FGeneratorStep write FGeneratorStep default 1;
+    property WhenGetGenID: TFIBWhenGetGenID read FWhenGetGenID write FWhenGetGenID default wgNever;
+    property GeneratorStep: Integer read FGeneratorStep write FGeneratorStep default 1;
     property ParamsToFieldsLinks: TStrings read FParamFieldLinks write SetParamFieldLinks;
-    property AutoParamsToFields: boolean read FAutoParamsToFields write FAutoParamsToFields default False;
-    property SeparateBlobUpdate: boolean read FSeparateBlobUpdate write FSeparateBlobUpdate default False;
-    property UseExecuteBlock: boolean read FUseExecuteBlock write FUseExecuteBlock default False;
+    property AutoParamsToFields: Boolean read FAutoParamsToFields write FAutoParamsToFields default False;
+    property SeparateBlobUpdate: Boolean read FSeparateBlobUpdate write FSeparateBlobUpdate default False;
+    property UseExecuteBlock: Boolean read FUseExecuteBlock write FUseExecuteBlock default False;
     // ^^^ For CachedUpdates only
-    property UseReturningFields: TSetReturningFields read FReturningFields write SetReturningFields default [];
-    property UseRowsClause: boolean read FUseRowsClause write FUseRowsClause default False;
+    property UseReturningFields: TFIBReturningFields read FReturningFields write SetReturningFields default [];
+    property UseRowsClause: Boolean read FUseRowsClause write FUseRowsClause default False;
   end;
 
 {$IFDEF SUPPORT_IB2007}
-  TIBConnectParams = class(TPersistent)
+  TFIBInterBaseConnectParams = class(TPersistent)
   private
     FOwner: TComponent;
     function GetInstanceName: string;
@@ -228,64 +228,64 @@ type
   end;
 {$ENDIF}
 
-  TUseGeneratorCache = (No, forAll, forGeneratorList);
+  TFIBUseGeneratorCache = (No, forAll, forGeneratorList);
 
-  TGeneratorParams = class(TNamedItem)
+  TFIBGeneratorParams = class(TNamedItem)
   private
-    FStepForCache: integer;
+    FStepForCache: Integer;
     FNextValue: Int64;
     FLimit: Int64;
-    function StoreStep: boolean;
+    function StoreStep: Boolean;
   public
     constructor Create(Collection: TCollection); override;
     procedure SaveToFile;
     function NextValue: Int64;
   published
-    property StepForCache: integer read FStepForCache write FStepForCache stored StoreStep;
+    property StepForCache: Integer read FStepForCache write FStepForCache stored StoreStep;
   end;
 
-  TGeneratorsCache = class(TPersistent)
+  TFIBGeneratorsCache = class(TPersistent)
   private
     FOwner: TComponent;
     FCacheFileName: string;
-    FUseGeneratorCache: TUseGeneratorCache;
+    FUseGeneratorCache: TFIBUseGeneratorCache;
     FGenerators: TOwnedCollection;
-    FDefaultStep: integer;
-    FLoaded: boolean;
+    FDefaultStep: Integer;
+    FLoaded: Boolean;
     procedure SetGenerators(const Value: TOwnedCollection);
-    function DoSaveGenList: boolean;
+    function DoSaveGenList: Boolean;
   protected
     function GetOwner: TPersistent; override;
   public
     constructor Create(Owner: TComponent);
     destructor Destroy; override;
     // Internal use methods
-    function IndexOf(const AName: string): integer;
-    function Find(const GenName: string): TGeneratorParams;
-    function CanWork(const GenName: string): boolean;
-    function GetStep(const GenName: string): integer;
+    function IndexOf(const AName: string): Integer;
+    function Find(const GenName: string): TFIBGeneratorParams;
+    function CanWork(const GenName: string): Boolean;
+    function GetStep(const GenName: string): Integer;
     function GetNextValue(const GenName: string): Int64;
     procedure InternalSetGenParams(const GenName: string; Limit: Int64);
     procedure SaveToFile;
     procedure LoadFromFile;
-    property Loaded: boolean read FLoaded;
+    property Loaded: Boolean read FLoaded;
   public
     procedure AddGenerator(const GenName: string; Limit: Int64);
     procedure RemoveGenerator(const GenName: string);
   published
     property CacheFileName: string read FCacheFileName write FCacheFileName;
-    property UseGeneratorCache: TUseGeneratorCache read FUseGeneratorCache write FUseGeneratorCache default No;
+    property UseGeneratorCache: TFIBUseGeneratorCache read FUseGeneratorCache write FUseGeneratorCache default No;
     property GeneratorList: TOwnedCollection read FGenerators write SetGenerators stored DoSaveGenList;
-    property DefaultStep: integer read FDefaultStep write FDefaultStep default 50;
+    property DefaultStep: Integer read FDefaultStep write FDefaultStep default 50;
   end;
 
-  TConnectParams = class(TPersistent)
+  TFIBConnectParams = class(TPersistent)
   private
     FOwner: TComponent;
-    FIsFirebird: boolean;
+    FIsFirebird: Boolean;
 {$IFDEF SUPPORT_IB2007}
-    FIBParams: TIBConnectParams;
-    procedure SetIBParams(const Value: TIBConnectParams);
+    FIBParams: TFIBInterBaseConnectParams;
+    procedure SetIBParams(const Value: TFIBInterBaseConnectParams);
 {$ENDIF}
     function GetUserNameA: string;
     procedure SetUserName(const Value: string);
@@ -295,8 +295,8 @@ type
     procedure SetPassword(const Value: string);
     function GetCharSet: string;
     procedure SetCharSet(const Value: string);
-    function GetWireCompression: boolean;
-    procedure SetWireCompression(const Value: boolean);
+    function GetWireCompression: Boolean;
+    procedure SetWireCompression(const Value: Boolean);
     function GetParallelWorkers: Integer;
     procedure SetParallelWorkers(const Value: Integer);
 
@@ -308,51 +308,51 @@ type
     property RoleName: string read GetRoleName write SetRoleName stored False;
     property Password: string read GetPassword write SetPassword stored False;
     property CharSet: string read GetCharSet write SetCharSet stored False;
-    property IsFirebird: boolean read FIsFirebird write FIsFirebird default True;
-    property WireCompression: boolean read GetWireCompression write SetWireCompression stored False;
+    property IsFirebird: Boolean read FIsFirebird write FIsFirebird default True;
+    property WireCompression: Boolean read GetWireCompression write SetWireCompression stored False;
     property ParallelWorkers: Integer read GetParallelWorkers write SetParallelWorkers stored False;
 {$IFDEF SUPPORT_IB2007}
-    property IB2007: TIBConnectParams read FIBParams write SetIBParams;
+    property IB2007: TFIBInterBaseConnectParams read FIBParams write SetIBParams;
 {$ENDIF}
   end;
 {$IFDEF CSMonitor}
-  TCSMonitorEnabled = (csmeDisabled, csmeEnabled, csmeDatabaseDriven, csmeTransactionDriven);
+  TFIBCSMonitorEnabled = (csmeDisabled, csmeEnabled, csmeDatabaseDriven, csmeTransactionDriven);
 
   EFIBCSMonitorError = class(Exception);
 
-  TCSMonitorSupport = class(TPersistent)
+  TFIBCSMonitorSupport = class(TPersistent)
   private
     FOwner: TComponent;
-    FEnabled: TCSMonitorEnabled;
-    FIncludeDatasetDescription: boolean;
-    procedure SetEnabled(const Value: TCSMonitorEnabled);
-    procedure SetIncludeDatasetDescription(const Value: boolean);
-    function DoStoreEnabled: boolean;
+    FEnabled: TFIBCSMonitorEnabled;
+    FIncludeDatasetDescription: Boolean;
+    procedure SetEnabled(const Value: TFIBCSMonitorEnabled);
+    procedure SetIncludeDatasetDescription(const Value: Boolean);
+    function DoStoreEnabled: Boolean;
   public
     constructor Create(aOwner: TComponent);
   published
-    property Enabled: TCSMonitorEnabled read FEnabled write SetEnabled stored DoStoreEnabled;
-    property IncludeDatasetDescription: boolean read FIncludeDatasetDescription write SetIncludeDatasetDescription default True;
+    property Enabled: TFIBCSMonitorEnabled read FEnabled write SetEnabled stored DoStoreEnabled;
+    property IncludeDatasetDescription: Boolean read FIncludeDatasetDescription write SetIncludeDatasetDescription default True;
   end;
 {$ENDIF}
 
-  TCacheSchemaOptions = class(TPersistent)
+  TFIBCacheSchemaOptions = class(TPersistent)
   private
     FLocalCacheFile: string;
-    FAutoSaveToFile: boolean;
-    FAutoLoadFromFile: boolean;
-    FValidateAfterLoad: boolean;
+    FAutoSaveToFile: Boolean;
+    FAutoLoadFromFile: Boolean;
+    FValidateAfterLoad: Boolean;
   public
     constructor Create;
     procedure Assign(Source: TPersistent); override;
   published
     property LocalCacheFile: string read FLocalCacheFile write FLocalCacheFile;
-    property AutoSaveToFile: boolean read FAutoSaveToFile write FAutoSaveToFile default False;
-    property AutoLoadFromFile: boolean read FAutoLoadFromFile write FAutoLoadFromFile default False;
-    property ValidateAfterLoad: boolean read FValidateAfterLoad write FValidateAfterLoad default True;
+    property AutoSaveToFile: Boolean read FAutoSaveToFile write FAutoSaveToFile default False;
+    property AutoLoadFromFile: Boolean read FAutoLoadFromFile write FAutoLoadFromFile default False;
+    property ValidateAfterLoad: Boolean read FValidateAfterLoad write FValidateAfterLoad default True;
   end;
 
-  TDBParams = class(TStringList)
+  TFIBDBParams = class(TStringList)
   private
     FOwner: TComponent;
     procedure ReadData(Reader: TReader);
@@ -363,44 +363,44 @@ type
     constructor Create(aOwner: TComponent);
   end;
 
-  TTransactionAction1 = (TARollback1, TARollbackRetaining1, TACommit1, TACommitRetaining1);
+  TFIBDefaultTimeoutAction = (dtaRollback, dtaRollbackRetaining, dtaCommit, dtaCommitRetaining);
   // tpbReadConsistency needs Firebird 4+, older servers raise EFIBClientError at StartTransaction
-  TTPBMode = (tpbDefault, tpbReadCommitted, tpbRepeatableRead, tpbReadConsistency);
+  TFIBTPBMode = (tpbDefault, tpbReadCommitted, tpbRepeatableRead, tpbReadConsistency);
 
-  TBlobSwapSupport = class(TPersistent)
+  TFIBBlobSwapSupport = class(TPersistent)
   private
-    FActive: boolean;
-    FAutoValidateSwap: boolean;
+    FActive: Boolean;
+    FAutoValidateSwap: Boolean;
     FSwapDirectory: string;
-    FMinBlobSizeToSwap: integer;
+    FMinBlobSizeToSwap: Integer;
     FTables: TStrings;
     function GetSwapDirectory: string;
-    function StoreSwapDir: boolean;
+    function StoreSwapDir: Boolean;
     procedure SetTables(aTables: TStrings);
-    function StoreTables: boolean;
+    function StoreTables: Boolean;
   public
     constructor Create;
     destructor Destroy; override;
     procedure Assign(Source: TPersistent); override;
     property SwapDirectory: string read GetSwapDirectory;
   published
-    property Active: boolean read FActive write FActive default False;
-    property AutoValidateSwap: boolean read FAutoValidateSwap write FAutoValidateSwap default False;
+    property Active: Boolean read FActive write FActive default False;
+    property AutoValidateSwap: Boolean read FAutoValidateSwap write FAutoValidateSwap default False;
     property SwapDir: string read FSwapDirectory write FSwapDirectory stored StoreSwapDir;
-    property MinBlobSizeToSwap: integer read FMinBlobSizeToSwap write FMinBlobSizeToSwap default 0;
+    property MinBlobSizeToSwap: Integer read FMinBlobSizeToSwap write FMinBlobSizeToSwap default 0;
     property Tables: TStrings read FTables write SetTables stored StoreTables;
   end;
 
-  TConditions = class;
+  TFIBConditions = class;
 
-  TCondition = class
+  TFIBCondition = class
   private
-    FOwner: TConditions;
-    FEnabled: boolean;
-    FInDestroy: boolean;
+    FOwner: TFIBConditions;
+    FEnabled: Boolean;
+    FInDestroy: Boolean;
 
-    FEnabledFromStream: boolean;
-    FValueFromStream: boolean;
+    FEnabledFromStream: Boolean;
+    FValueFromStream: Boolean;
 
     function GetName: string;
     function GetValue: string;
@@ -408,29 +408,29 @@ type
     procedure SetValueFromStream(const Value: string);
 
     procedure SetName(const Name: string);
-    procedure SetEnabled(const Value: boolean);
-    procedure SetEnabledFromStream(const Value: boolean);
+    procedure SetEnabled(const Value: Boolean);
+    procedure SetEnabledFromStream(const Value: Boolean);
   public
-    constructor Create(aOwner: TConditions);
+    constructor Create(aOwner: TFIBConditions);
     destructor Destroy; override;
-    property Enabled: boolean read FEnabled write SetEnabled;
+    property Enabled: Boolean read FEnabled write SetEnabled;
     property Name: string read GetName write SetName;
     property Value: string read GetValue write SetValue;
   end;
 
-  TConditionsStateFlag = (csInApply, csInCancel, csInRestorePrimarySQL);
-  TConditionsState = set of TConditionsStateFlag;
+  TFIBConditionsStateFlag = (csInApply, csInCancel, csInRestorePrimarySQL);
+  TFIBConditionsState = set of TFIBConditionsStateFlag;
 
-  TConditions = class(TStringList)
+  TFIBConditions = class(TStringList)
   private
     FFIBQuery: TComponent;
-    FApplied: boolean;
+    FApplied: Boolean;
     FPrimarySQL: string;
-    FState: TConditionsState;
+    FState: TFIBConditionsState;
     function GetEnabledText: string;
-    function GetCondition(Index: integer): TCondition;
+    function GetCondition(Index: Integer): TFIBCondition;
   protected
-    procedure Put(Index: integer; const S: string); override;
+    procedure Put(Index: Integer; const S: string); override;
     procedure DefineProperties(Filer: TFiler); override;
     procedure ReadEnabled(Reader: TReader);
     procedure ReadStrings(Reader: TReader);
@@ -445,60 +445,61 @@ type
   public
     constructor Create(aOwner: TComponent);
     destructor Destroy; override;
-    function Add(const S: string): integer; override;
-    function AddObject(const S: string; AObject: TObject): integer; override;
+    function Add(const S: string): Integer; override;
+    function AddObject(const S: string; AObject: TObject): Integer; override;
     procedure Clear; override;
-    procedure Delete(Index: integer); override;
-    function AddCondition(const Name, Condition: string; Enabled: boolean): TCondition;
-    function FindCondition(const Name: string): TCondition;
-    function ByName(const Name: string): TCondition;
+    procedure Delete(Index: Integer); override;
+    function AddCondition(const Name, Condition: string; Enabled: Boolean): TFIBCondition;
+    function FindCondition(const Name: string): TFIBCondition;
+    function ByName(const Name: string): TFIBCondition;
     procedure Remove(const Name: string);
     procedure Apply;
     procedure CancelApply;
     procedure RestorePrimarySQL;
+    property Owner: TComponent read FFIBQuery;
     property EnabledText: string read GetEnabledText;
-    property Applied: boolean read FApplied;
-    property Condition[Index: integer]: TCondition read GetCondition; default;
+    property Applied: Boolean read FApplied;
+    property Condition[Index: Integer]: TFIBCondition read GetCondition; default;
     property PrimarySQL: string read FPrimarySQL write FPrimarySQL;
-    property State: TConditionsState read FState;
+    property State: TFIBConditionsState read FState;
   end;
 
-  TMemoSubtypes = class
+  TFIBMemoSubtypes = class
   private
-    FActive: boolean;
+    FActive: Boolean;
     FSubTypes: array of SmallInt;
     FSubTypesStr: string;
     procedure SetSubTypes(const SubTypesStr: string);
   public
-    function IsMemoSubtype(aSubtype: SmallInt): boolean;
-    property Active: boolean read FActive;
+    function IsMemoSubtype(aSubtype: SmallInt): Boolean;
+    property Active: Boolean read FActive;
   published
     property Subtypes: string read FSubTypesStr write SetSubTypes;
   end;
 
-  TExtBoolean = (eFalse, eTrue, eUnknown);
+  TFIBExtendedBoolean = (eFalse, eTrue, eUnknown);
 
   TFIBFieldInfo = class
   protected
-    FIsComputed: boolean;
+    FIsComputed: Boolean;
     FDefaultValue: string;
-    FCanIncToWhereClause: boolean;
+    FCanIncToWhereClause: Boolean;
     FDomainName: string;
-    FDefaultValueEmptyString: boolean;
+    FDefaultValueEmptyString: Boolean;
     // Info from FIB$FIELDS_INFO
-    FWithAdditionalInfo: boolean;
+    FWithAdditionalInfo: Boolean;
     FDisplayLabel: string;
-    FVisible: boolean;
+    FVisible: Boolean;
     FEditFormat: string;
     FDisplayFormat: string;
-    FIsTriggered: boolean;
+    FIsTriggered: Boolean;
     FOtherInfo: TStrings;
-    FDisplayWidth: integer;
-    FCanBeBoolean: TExtBoolean;
-    FCanBeGUID: TExtBoolean;
-    FCharSet: integer;
-    function GetCanBeBoolean: boolean;
-    function GetCanBeGUID: boolean;
+    FDisplayWidth: Integer;
+    FCanBeBoolean: TFIBExtendedBoolean;
+    FCanBeGUID: TFIBExtendedBoolean;
+    FCharSet: Integer;
+    function GetCanBeBoolean: Boolean;
+    function GetCanBeGUID: Boolean;
     function GetCharSet: string;
   public
     constructor Create;
@@ -506,23 +507,23 @@ type
     procedure SaveToStream(Stream: TStream);
     // UTF8: text in UTF-8, as SaveToStream writes it; False for the cache stream version 6
     procedure LoadFromStream(Stream: TStream; FromBegin: Boolean; UTF8: Boolean = True);
-    property IsComputed: boolean read FIsComputed;
+    property IsComputed: Boolean read FIsComputed;
     property DefaultValue: string read FDefaultValue;
     property DomainName: string read FDomainName;
-    property CanIncToWhereClause: boolean read FCanIncToWhereClause;
+    property CanIncToWhereClause: Boolean read FCanIncToWhereClause;
     // Info from FIB$FIELDS_INFO
-    property WithAdditionalInfo: boolean read FWithAdditionalInfo;
+    property WithAdditionalInfo: Boolean read FWithAdditionalInfo;
     property DisplayLabel: string read FDisplayLabel;
-    property Visible: boolean read FVisible;
+    property Visible: Boolean read FVisible;
     property EditFormat: string read FEditFormat;
     property DisplayFormat: string read FDisplayFormat;
-    property IsTriggered: boolean read FIsTriggered;
+    property IsTriggered: Boolean read FIsTriggered;
     property OtherInfo: TStrings read FOtherInfo;
-    property DisplayWidth: integer read FDisplayWidth;
-    property DefaultValueEmptyString: boolean read FDefaultValueEmptyString;
-    property CanBeBoolean: boolean read GetCanBeBoolean;
-    property CanBeGuid: boolean read GetCanBeGUID;
-    property CharSetID: integer read FCharSet;
+    property DisplayWidth: Integer read FDisplayWidth;
+    property DefaultValueEmptyString: Boolean read FDefaultValueEmptyString;
+    property CanBeBoolean: Boolean read GetCanBeBoolean;
+    property CanBeGuid: Boolean read GetCanBeGUID;
+    property CharSetID: Integer read FCharSet;
     property CharSet: string read GetCharSet;
   end;
 
@@ -536,9 +537,8 @@ const
   StatDefDataSetOptions = [poTrimCharFields, poStartTransaction,
     poAutoFormatFields, poRefreshAfterPost];
   DefaultOptions: TFIBDataSetOptions = StatDefDataSetOptions;
-  // [poTrimCharFields,poStartTransaction,poAutoFormatFields,  poRefreshAfterPost];
 
-  DefaultDetailConditions: TDetailConditions = [];
+  DefaultDetailConditions: TFIBDetailConditions = [];
 
   // DataBase Defaults
   DefStoreConnected: Boolean = True;
@@ -549,9 +549,9 @@ const
   DefSQLDialect: Integer = 3;
 
   // Transaction Defaults
-  DefTimeOutAction: TTransactionAction1 = TARollback1;
+  DefTimeOutAction: TFIBDefaultTimeoutAction = dtaRollback;
   DefTimeOut: Integer = 0;
-  DefTPBMode: TTPBMode = tpbReadCommitted;
+  DefTPBMode: TFIBTPBMode = tpbReadCommitted;
 
   // FIBQuery Defaults
   DefParamCheck: Boolean = True;
@@ -563,7 +563,7 @@ const
   RegPreferences = 'Preferences';
   RegRepository  = 'Repository';
   DefPrefixGenName: string = 'GEN_';
-  DefSufixGenName: string = '_ID';
+  DefSuffixGenName: string = '_ID';
   DefEmptyStrToNull: Boolean = True;
   // FormatFields Defaults
   FF_UseRuntimeDefaults: Boolean = False;
@@ -578,19 +578,60 @@ const
   dDefDisplayFormatNum: string = '#,##0.';
   dDefEditFormatNum: string = '0.';
 
-procedure WriteStrToStream(const s: Ansistring; Stream: TStream);
-procedure ReadStrFromStream(const Stream: TStream; var ResStr: Ansistring);
+procedure WriteStrToStream(const s: AnsiString; Stream: TStream);
+procedure ReadStrFromStream(const Stream: TStream; var ResStr: AnsiString);
 procedure WriteUTF8StrToStream(const S: string; Stream: TStream);
 // UTF8 False: the text was written in the system code page (WriteStrToStream)
 function ReadUTF8StrFromStream(const Stream: TStream; UTF8: Boolean = True): string;
 
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TOnBlobFieldProcessing = TFIBBlobFieldProcessingEvent deprecated 'Use TFIBBlobFieldProcessingEvent';
+  TKindOnOperation = TFIBOperationMoment deprecated 'Use TFIBOperationMoment';
+  TDetailCondition = TFIBDetailCondition deprecated 'Use TFIBDetailCondition';
+  TDetailConditions = TFIBDetailConditions deprecated 'Use TFIBDetailConditions';
+  TFieldOriginRule = TFIBFieldOriginRule deprecated 'Use TFIBFieldOriginRule';
+  TSQLs = TFIBSQLs deprecated 'Use TFIBSQLs';
+  TFormatFields = TFIBFormatFields deprecated 'Use TFIBFormatFields';
+  TWhenGetGenID = TFIBWhenGetGenID deprecated 'Use TFIBWhenGetGenID';
+  TReturningFields = TFIBReturningField deprecated 'Use TFIBReturningField';
+  TSetReturningFields = TFIBReturningFields deprecated 'Use TFIBReturningFields';
+  TAutoUpdateOptions = TFIBAutoUpdateOptions deprecated 'Use TFIBAutoUpdateOptions';
+{$IFDEF SUPPORT_IB2007}
+  TIBConnectParams = TFIBInterBaseConnectParams deprecated 'Use TFIBInterBaseConnectParams';
+{$ENDIF}
+  TUseGeneratorCache = TFIBUseGeneratorCache deprecated 'Use TFIBUseGeneratorCache';
+  TGeneratorParams = TFIBGeneratorParams deprecated 'Use TFIBGeneratorParams';
+  TGeneratorsCache = TFIBGeneratorsCache deprecated 'Use TFIBGeneratorsCache';
+  TConnectParams = TFIBConnectParams deprecated 'Use TFIBConnectParams';
+{$IFDEF CSMonitor}
+  TCSMonitorEnabled = TFIBCSMonitorEnabled deprecated 'Use TFIBCSMonitorEnabled';
+  TCSMonitorSupport = TFIBCSMonitorSupport deprecated 'Use TFIBCSMonitorSupport';
+{$ENDIF}
+  TCacheSchemaOptions = TFIBCacheSchemaOptions deprecated 'Use TFIBCacheSchemaOptions';
+  TDBParams = TFIBDBParams deprecated 'Use TFIBDBParams';
+  TTransactionAction1 = TFIBDefaultTimeoutAction deprecated 'Use TFIBDefaultTimeoutAction';
+  TTPBMode = TFIBTPBMode deprecated 'Use TFIBTPBMode';
+  TBlobSwapSupport = TFIBBlobSwapSupport deprecated 'Use TFIBBlobSwapSupport';
+  TConditions = TFIBConditions deprecated 'Use TFIBConditions';
+  TCondition = TFIBCondition deprecated 'Use TFIBCondition';
+  TConditionsStateFlag = TFIBConditionsStateFlag deprecated 'Use TFIBConditionsStateFlag';
+  TConditionsState = TFIBConditionsState deprecated 'Use TFIBConditionsState';
+  TMemoSubtypes = TFIBMemoSubtypes deprecated 'Use TFIBMemoSubtypes';
+  TExtBoolean = TFIBExtendedBoolean deprecated 'Use TFIBExtendedBoolean';
+
+const
+  TARollback1 = dtaRollback deprecated 'Use dtaRollback';
+  TARollbackRetaining1 = dtaRollbackRetaining deprecated 'Use dtaRollbackRetaining';
+  TACommit1 = dtaCommit deprecated 'Use dtaCommit';
+  TACommitRetaining1 = dtaCommitRetaining deprecated 'Use dtaCommitRetaining';
 
 implementation
 
 uses
   FIBDatabase, FIBDataSet, FIBQuery, FIB, ibase, StrUtil, StdFuncs, SqlTxtRtns, FIBCharSets, FIBConsts;
 
-constructor TAutoUpdateOptions.Create;
+constructor TFIBAutoUpdateOptions.Create;
 begin
   inherited Create;
   FOwner := Owner;
@@ -600,17 +641,17 @@ begin
   FKeyFieldList := TStringList.Create;
 end;
 
-destructor TAutoUpdateOptions.Destroy;
+destructor TFIBAutoUpdateOptions.Destroy;
 begin
   FParamFieldLinks.Free;
   FKeyFieldList.Free;
   inherited Destroy;
 end;
 
-procedure TAutoUpdateOptions.AssignTo(Dest: TPersistent);
+procedure TFIBAutoUpdateOptions.AssignTo(Dest: TPersistent);
 begin
-  if Dest is TAutoUpdateOptions then
-    with TAutoUpdateOptions(Dest) do
+  if Dest is TFIBAutoUpdateOptions then
+    with TFIBAutoUpdateOptions(Dest) do
     begin
       FUpdateTableName := Self.FUpdateTableName;
       FModifiedTable := '';
@@ -637,7 +678,7 @@ begin
     inherited AssignTo(Dest)
 end;
 
-procedure TAutoUpdateOptions.DefineProperties(Filer: TFiler);
+procedure TFIBAutoUpdateOptions.DefineProperties(Filer: TFiler);
 begin
   if Filer is TReader then
   begin
@@ -647,7 +688,7 @@ begin
   end;
 end;
 
-procedure TAutoUpdateOptions.ReadSelectGenID(Reader: TReader);
+procedure TFIBAutoUpdateOptions.ReadSelectGenID(Reader: TReader);
 begin
   FSelectGenID := Reader.ReadBoolean;
   if FSelectGenID then
@@ -656,7 +697,7 @@ begin
     FWhenGetGenID := wgNever;
 end;
 
-procedure TAutoUpdateOptions.ReadGenBeforePost(Reader: TReader);
+procedure TFIBAutoUpdateOptions.ReadGenBeforePost(Reader: TReader);
 begin
   FGenBeforePost := Reader.ReadBoolean;
   if not FSelectGenID then
@@ -667,7 +708,7 @@ begin
     FWhenGetGenID := wgOnNewRecord
 end;
 
-procedure TAutoUpdateOptions.SetUpdateTableName(const Value: string);
+procedure TFIBAutoUpdateOptions.SetUpdateTableName(const Value: string);
 var
   MT: string;
 begin
@@ -683,21 +724,21 @@ begin
     if (Length(MT) > 0) and (MT[1] = '"') then
     begin
       MT := FastCopy(MT, 2, Length(MT) - 2);
-      FGeneratorName := '"' + DefPrefixGenName + MT + DefSufixGenName + '"'
+      FGeneratorName := '"' + DefPrefixGenName + MT + DefSuffixGenName + '"'
     end
     else
-      FGeneratorName := DefPrefixGenName + MT + DefSufixGenName;
+      FGeneratorName := DefPrefixGenName + MT + DefSuffixGenName;
   end;
   FModified := True;
 end;
 
 // for compatibility only
-function TAutoUpdateOptions.GetSelectGenID: boolean;
+function TFIBAutoUpdateOptions.GetSelectGenID: Boolean;
 begin
   result := FWhenGetGenID <> wgNever
 end;
 
-procedure TAutoUpdateOptions.SetSelectGenID(Value: boolean);
+procedure TFIBAutoUpdateOptions.SetSelectGenID(Value: Boolean);
 begin
   if not Value then
     FWhenGetGenID := wgNever
@@ -705,12 +746,12 @@ begin
     FWhenGetGenID := wgBeforePost;
 end;
 
-function TAutoUpdateOptions.GetGenBeforePost: boolean;
+function TFIBAutoUpdateOptions.GetGenBeforePost: Boolean;
 begin
   result := FWhenGetGenID in [wgBeforePost, wgNever]
 end;
 
-procedure TAutoUpdateOptions.SetGenBeforePost(Value: boolean);
+procedure TFIBAutoUpdateOptions.SetGenBeforePost(Value: Boolean);
 begin
   if FWhenGetGenID <> wgNever then
     if Value then
@@ -719,13 +760,13 @@ begin
       FWhenGetGenID := wgOnNewRecord;
 end;
 
-procedure TAutoUpdateOptions.SetParamFieldLinks(const Value: TStrings);
+procedure TFIBAutoUpdateOptions.SetParamFieldLinks(const Value: TStrings);
 begin
   FParamFieldLinks.Assign(Value);
   DeleteEmptyStr(FParamFieldLinks)
 end;
 
-procedure TAutoUpdateOptions.SetReturningFields(const Value: TSetReturningFields);
+procedure TFIBAutoUpdateOptions.SetReturningFields(const Value: TFIBReturningFields);
 begin
   FReturningFields := Value;
   FModified := True;
@@ -735,8 +776,8 @@ const
   DefDateFormat = 'dd.mm.yyyy';
   DefTimeFormat = 'hh:nn';
 
-  // TFormatFields
-constructor TFormatFields.Create(aOwner: TComponent);
+  // TFIBFormatFields
+constructor TFIBFormatFields.Create(aOwner: TComponent);
 begin
   FOwner := aOwner;
   if FF_UseRuntimeDefaults then
@@ -749,7 +790,6 @@ begin
   end
   else if Assigned(FOwner) and (csDesigning in FOwner.ComponentState) and not CmpInLoadedState(FOwner) then
   begin
-    // FDisplayFormatDateTime:= dDefDateFormat + ' '+dDefTimeFormat;
     FDisplayFormatDateTime := dDefDateTimeFormat;
     FDisplayFormatNumeric := dDefDisplayFormatNum;
     FEditFormatNumeric := dDefEditFormatNum;
@@ -766,7 +806,7 @@ begin
   end;
 end;
 
-function TFormatFields.StoreDfT: boolean;
+function TFIBFormatFields.StoreDfT: Boolean;
 begin
   if FF_UseRuntimeDefaults then
     result := FDisplayFormatTime <> RDefTimeFormat
@@ -774,7 +814,7 @@ begin
     result := FDisplayFormatTime <> DefTimeFormat
 end;
 
-function TFormatFields.StoreDfD: boolean;
+function TFIBFormatFields.StoreDfD: Boolean;
 begin
   if FF_UseRuntimeDefaults then
     result := FDisplayFormatDate <> RDefDateFormat
@@ -782,7 +822,7 @@ begin
     result := FDisplayFormatDate <> DefDateFormat;
 end;
 
-function TFormatFields.StoreDfDt: boolean;
+function TFIBFormatFields.StoreDfDt: Boolean;
 begin
   if FF_UseRuntimeDefaults then
     result := FDisplayFormatDateTime <> RDefDateFormat + ' ' + RDefTimeFormat
@@ -790,7 +830,7 @@ begin
     result := FDisplayFormatDateTime <> DefDateFormat + ' ' + DefTimeFormat;
 end;
 
-function TFormatFields.StoreDfN: boolean;
+function TFIBFormatFields.StoreDfN: Boolean;
 begin
   if FF_UseRuntimeDefaults then
     result := FDisplayFormatNumeric <> RDefDisplayFormatNum
@@ -798,7 +838,7 @@ begin
     result := FDisplayFormatNumeric <> '#,##0.';
 end;
 
-function TFormatFields.StoreEfN: boolean;
+function TFIBFormatFields.StoreEfN: Boolean;
 begin
   if FF_UseRuntimeDefaults then
     result := FEditFormatNumeric <> RDefEditFormatNum
@@ -806,10 +846,10 @@ begin
     result := FEditFormatNumeric <> '0.';
 end;
 
-procedure TFormatFields.AssignTo(Dest: TPersistent);
+procedure TFIBFormatFields.AssignTo(Dest: TPersistent);
 begin
-  if Dest is TFormatFields then
-    with TFormatFields(Dest) do
+  if Dest is TFIBFormatFields then
+    with TFIBFormatFields(Dest) do
     begin
       FDisplayFormatDateTime := Self.FDisplayFormatDateTime;
       FDisplayFormatDate := Self.FDisplayFormatDate;
@@ -821,19 +861,19 @@ begin
     inherited AssignTo(Dest)
 end;
 
-/// TConnectParams
+/// TFIBConnectParams
 
-constructor TConnectParams.Create(Owner: TComponent);
+constructor TFIBConnectParams.Create(Owner: TComponent);
 begin
   inherited Create;
   FOwner := Owner;
   FIsFirebird := True;
 {$IFDEF SUPPORT_IB2007}
-  FIBParams := TIBConnectParams.Create(Owner);
+  FIBParams := TFIBInterBaseConnectParams.Create(Owner);
 {$ENDIF}
 end;
 
-destructor TConnectParams.Destroy;
+destructor TFIBConnectParams.Destroy;
 begin
 {$IFDEF SUPPORT_IB2007}
   FIBParams.Free;
@@ -841,7 +881,7 @@ begin
   inherited Destroy
 end;
 
-function TConnectParams.GetUserNameA: string;
+function TFIBConnectParams.GetUserNameA: string;
 begin
   result := '';
   if Assigned(FOwner) and (FOwner is TFIBDataBase) then
@@ -851,14 +891,14 @@ begin
     end;
 end;
 
-procedure TConnectParams.SetUserName(const Value: string);
+procedure TFIBConnectParams.SetUserName(const Value: string);
 begin
   if Assigned(FOwner) and (FOwner is TFIBDataBase) then
     with TFIBDataBase(FOwner) do
       DBParamByDPB[isc_dpb_user_name] := Value
 end;
 
-function TConnectParams.GetRoleName: string;
+function TFIBConnectParams.GetRoleName: string;
 begin
   result := '';
   if Assigned(FOwner) and (FOwner is TFIBDataBase) then
@@ -868,14 +908,14 @@ begin
     end;
 end;
 
-procedure TConnectParams.SetRoleName(const Value: string);
+procedure TFIBConnectParams.SetRoleName(const Value: string);
 begin
   if Assigned(FOwner) and (FOwner is TFIBDataBase) then
     with TFIBDataBase(FOwner) do
       DBParamByDPB[isc_dpb_sql_role_name] := Value
 end;
 
-function TConnectParams.GetPassword: string;
+function TFIBConnectParams.GetPassword: string;
 begin
   result := '';
   if Assigned(FOwner) and (FOwner is TFIBDataBase) then
@@ -885,14 +925,14 @@ begin
     end;
 end;
 
-procedure TConnectParams.SetPassword(const Value: string);
+procedure TFIBConnectParams.SetPassword(const Value: string);
 begin
   if Assigned(FOwner) and (FOwner is TFIBDataBase) then
     with TFIBDataBase(FOwner) do
       DBParamByDPB[isc_dpb_password] := Value
 end;
 
-function TConnectParams.GetCharSet: string;
+function TFIBConnectParams.GetCharSet: string;
 begin
   result := '';
   if Assigned(FOwner) and (FOwner is TFIBDataBase) then
@@ -902,7 +942,7 @@ begin
     end;
 end;
 
-procedure TConnectParams.SetCharSet(const Value: string);
+procedure TFIBConnectParams.SetCharSet(const Value: string);
 begin
   if Assigned(FOwner) and (FOwner is TFIBDataBase) then
     with TFIBDataBase(FOwner) do
@@ -910,33 +950,33 @@ begin
 end;
 
 // Same rules as the boolean values of firebird.conf
-function IsConfigTrue(const Value: string): boolean;
+function IsConfigTrue(const Value: string): Boolean;
 begin
   result := SameText(Value, 'true') or SameText(Value, 'yes') or SameText(Value, 'y') or (StrToIntDef(Value, 0) <> 0);
 end;
 
-function TConnectParams.GetWireCompression: boolean;
+function TFIBConnectParams.GetWireCompression: Boolean;
 begin
   result := Assigned(FOwner) and (FOwner is TFIBDataBase) and
     IsConfigTrue(TFIBDataBase(FOwner).ConfigParam['WireCompression']);
 end;
 
-procedure TConnectParams.SetWireCompression(const Value: boolean);
+procedure TFIBConnectParams.SetWireCompression(const Value: Boolean);
 const
-  ConfigValues: array [boolean] of string = ('', 'true');
+  ConfigValues: array [Boolean] of string = ('', 'true');
 begin
   if Assigned(FOwner) and (FOwner is TFIBDataBase) then
     TFIBDataBase(FOwner).ConfigParam['WireCompression'] := ConfigValues[Value];
 end;
 
-function TConnectParams.GetParallelWorkers: Integer;
+function TFIBConnectParams.GetParallelWorkers: Integer;
 begin
   Result := 0;
   if Assigned(FOwner) and (FOwner is TFIBDataBase) then
     Result := StrToIntDef(TFIBDataBase(FOwner).DBParamByDPB[isc_dpb_parallel_workers], 0);
 end;
 
-procedure TConnectParams.SetParallelWorkers(const Value: Integer);
+procedure TFIBConnectParams.SetParallelWorkers(const Value: Integer);
 begin
   if Assigned(FOwner) and (FOwner is TFIBDataBase) then
     if Value > 0 then
@@ -946,19 +986,19 @@ begin
 end;
 
 {$IFDEF SUPPORT_IB2007}
-procedure TConnectParams.SetIBParams(const Value: TIBConnectParams);
+procedure TFIBConnectParams.SetIBParams(const Value: TFIBInterBaseConnectParams);
 begin
   FIBParams.Assign(Value);
 end;
 
-{ TIBConnectParams }
-constructor TIBConnectParams.Create(Owner: TComponent);
+{ TFIBInterBaseConnectParams }
+constructor TFIBInterBaseConnectParams.Create(Owner: TComponent);
 begin
   inherited Create;
   FOwner := Owner
 end;
 
-function TIBConnectParams.GetInstanceName: string;
+function TFIBInterBaseConnectParams.GetInstanceName: string;
 begin
   result := '';
   if Assigned(FOwner) and (FOwner is TFIBDataBase) then
@@ -968,102 +1008,102 @@ begin
     end;
 end;
 
-procedure TIBConnectParams.SetInstanceName(const Value: string);
+procedure TFIBInterBaseConnectParams.SetInstanceName(const Value: string);
 begin
   if Assigned(FOwner) and (FOwner is TFIBDataBase) then
     with TFIBDataBase(FOwner) do
       DBParamByDPB[isc_dpb_instance_name] := Value
 end;
 {$ENDIF}
-{ TSQLs }
+{ TFIBSQLs }
 
-constructor TSQLs.Create(Owner: TComponent);
+constructor TFIBSQLs.Create(Owner: TComponent);
 begin
   inherited Create;
   FOwner := Owner;
 end;
 
-function TSQLs.GetDeleteSQL: TStrings;
+function TFIBSQLs.GetDeleteSQL: TStrings;
 begin
   result := TFIBDataSet(FOwner).DeleteSQL
 end;
 
-function TSQLs.GetInsertSQL: TStrings;
+function TFIBSQLs.GetInsertSQL: TStrings;
 begin
   result := TFIBDataSet(FOwner).InsertSQL
 end;
 
-function TSQLs.GetRefreshSQL: TStrings;
+function TFIBSQLs.GetRefreshSQL: TStrings;
 begin
   result := TFIBDataSet(FOwner).RefreshSQL
 end;
 
-function TSQLs.GetSelectSQL: TStrings;
+function TFIBSQLs.GetSelectSQL: TStrings;
 begin
   result := TFIBDataSet(FOwner).SelectSQL
 end;
 
-function TSQLs.GetUpdateSQL: TStrings;
+function TFIBSQLs.GetUpdateSQL: TStrings;
 begin
   result := TFIBDataSet(FOwner).UpdateSQL
 end;
 
-procedure TSQLs.SetDeleteSQL(Value: TStrings);
+procedure TFIBSQLs.SetDeleteSQL(Value: TStrings);
 begin
   TFIBDataSet(FOwner).DeleteSQL := Value
 end;
 
-procedure TSQLs.SetInsertSQL(Value: TStrings);
+procedure TFIBSQLs.SetInsertSQL(Value: TStrings);
 begin
   TFIBDataSet(FOwner).InsertSQL := Value
 end;
 
-procedure TSQLs.SetRefreshSQL(Value: TStrings);
+procedure TFIBSQLs.SetRefreshSQL(Value: TStrings);
 begin
   TFIBDataSet(FOwner).RefreshSQL := Value
 end;
 
-procedure TSQLs.SetSelectSQL(Value: TStrings);
+procedure TFIBSQLs.SetSelectSQL(Value: TStrings);
 begin
   TFIBDataSet(FOwner).SelectSQL := Value
 end;
 
-procedure TSQLs.SetUpdateSQL(Value: TStrings);
+procedure TFIBSQLs.SetUpdateSQL(Value: TStrings);
 begin
   TFIBDataSet(FOwner).UpdateSQL := Value
 end;
 
-{ TCacheSchemaOptions }
+{ TFIBCacheSchemaOptions }
 
-constructor TCacheSchemaOptions.Create;
+constructor TFIBCacheSchemaOptions.Create;
 begin
   inherited Create;
   FValidateAfterLoad := True;
 end;
 
-procedure TCacheSchemaOptions.Assign(Source: TPersistent);
+procedure TFIBCacheSchemaOptions.Assign(Source: TPersistent);
 begin
-  if Source is TCacheSchemaOptions then
+  if Source is TFIBCacheSchemaOptions then
   begin
-    FLocalCacheFile := TCacheSchemaOptions(Source).LocalCacheFile;
-    FAutoSaveToFile := TCacheSchemaOptions(Source).AutoSaveToFile;
-    FAutoLoadFromFile := TCacheSchemaOptions(Source).AutoLoadFromFile;
-    FValidateAfterLoad := TCacheSchemaOptions(Source).ValidateAfterLoad;
+    FLocalCacheFile := TFIBCacheSchemaOptions(Source).LocalCacheFile;
+    FAutoSaveToFile := TFIBCacheSchemaOptions(Source).AutoSaveToFile;
+    FAutoLoadFromFile := TFIBCacheSchemaOptions(Source).AutoLoadFromFile;
+    FValidateAfterLoad := TFIBCacheSchemaOptions(Source).ValidateAfterLoad;
   end
   else
     inherited Assign(Source);
 end;
 
-{ TDBParams }
+{ TFIBDBParams }
 
-constructor TDBParams.Create(aOwner: TComponent);
+constructor TFIBDBParams.Create(aOwner: TComponent);
 begin
   inherited Create;
   FOwner := aOwner;
 end;
 
-procedure TDBParams.DefineProperties(Filer: TFiler);
-  function DoWrite: boolean;
+procedure TFIBDBParams.DefineProperties(Filer: TFiler);
+  function DoWrite: Boolean;
   begin
     if Filer.Ancestor <> nil then
     begin
@@ -1079,7 +1119,7 @@ begin
   Filer.DefineProperty('Strings', ReadData, WriteData, DoWrite);
 end;
 
-procedure TDBParams.ReadData(Reader: TReader);
+procedure TFIBDBParams.ReadData(Reader: TReader);
 begin
   Reader.ReadListBegin;
   BeginUpdate;
@@ -1093,9 +1133,9 @@ begin
   Reader.ReadListEnd;
 end;
 
-procedure TDBParams.WriteData(Writer: TWriter);
+procedure TFIBDBParams.WriteData(Writer: TWriter);
 var
-  I: integer;
+  I: Integer;
   OldPassword: string;
 begin
   if (FOwner is TFIBDataBase) and (ddoNotSavePassword in TFIBDataBase(FOwner).DesignDBOptions) then
@@ -1116,17 +1156,17 @@ begin
   end;
 end;
 
-{ TConditions }
+{ TFIBConditions }
 
-constructor TConditions.Create(aOwner: TComponent);
+constructor TFIBConditions.Create(aOwner: TComponent);
 begin
   inherited Create;
   FFIBQuery := aOwner;
 end;
 
-destructor TConditions.Destroy;
+destructor TFIBConditions.Destroy;
 var
-  I: integer;
+  I: Integer;
 begin
   for I := Count - 1 downto 0 do
   begin
@@ -1135,33 +1175,33 @@ begin
   inherited Destroy;
 end;
 
-procedure TConditions.Put(Index: integer; const S: string);
+procedure TFIBConditions.Put(Index: Integer; const S: string);
 begin
   if Index = Count then
-    AddObject(S, TCondition.Create(Self))
+    AddObject(S, TFIBCondition.Create(Self))
   else
     inherited Put(Index, S)
 end;
 
-function TConditions.Add(const S: string): integer;
+function TFIBConditions.Add(const S: string): Integer;
 begin
   result := inherited Add(S);
-  Objects[result] := TCondition.Create(Self);
+  Objects[result] := TFIBCondition.Create(Self);
 end;
 
-function TConditions.AddCondition(const Name, Condition: string; Enabled: boolean): TCondition;
+function TFIBConditions.AddCondition(const Name, Condition: string; Enabled: Boolean): TFIBCondition;
 var
-  I: integer;
+  I: Integer;
 begin
   I := IndexOfName(Name);
   if I = -1 then
   begin
     I := Add(Name + '=' + Condition);
-    result := TCondition(Objects[I]);
+    result := TFIBCondition(Objects[I]);
   end
   else
   begin
-    result := TCondition(Objects[I]);
+    result := TFIBCondition(Objects[I]);
     result.Value := Condition;
   end;
 
@@ -1170,27 +1210,27 @@ begin
     FApplied := False
 end;
 
-function TConditions.FindCondition(const Name: string): TCondition;
+function TFIBConditions.FindCondition(const Name: string): TFIBCondition;
 var
-  I: integer;
+  I: Integer;
 begin
   I := IndexOfName(Name);
   if I < 0 then
     result := nil
   else
-    result := TCondition(Objects[I]);
+    result := TFIBCondition(Objects[I]);
 end;
 
-function TConditions.ByName(const Name: string): TCondition;
+function TFIBConditions.ByName(const Name: string): TFIBCondition;
 begin
   result := FindCondition(Name);
   if result = nil then
     raise Exception.Create('Can''t find Condition ' + Name);
 end;
 
-procedure TConditions.Remove(const Name: string);
+procedure TFIBConditions.Remove(const Name: string);
 var
-  Ind: integer;
+  Ind: Integer;
 begin
   Ind := IndexOfName(Name);
   if Ind <> -1 then
@@ -1200,16 +1240,16 @@ begin
   end;
 end;
 
-function TConditions.GetEnabledText: string;
+function TFIBConditions.GetEnabledText: string;
 var
-  I, c: integer;
+  I, c: Integer;
 begin
   result := '';
   c := Pred(Count);
   if c < 0 then
     exit;
   for I := 0 to c do
-    if TCondition(Objects[I]).Enabled and not IsBlank(Strings[I]) then
+    if TFIBCondition(Objects[I]).Enabled and not IsBlank(Strings[I]) then
     begin
       result := result + '(' + ValueFromStr(Strings[I]) + ')' + sLineBreak;
       result := result + sLineBreak + ' and ';
@@ -1218,7 +1258,7 @@ begin
     SetLength(result, Length(result) - 7);
 end;
 
-procedure TConditions.Apply;
+procedure TFIBConditions.Apply;
 var
   Wh, Wh1: string;
 begin
@@ -1249,7 +1289,7 @@ begin
   end;
 end;
 
-procedure TConditions.CancelApply;
+procedure TFIBConditions.CancelApply;
 begin
   if (FApplied) and (FState = []) then
     try
@@ -1260,7 +1300,7 @@ begin
     end;
 end;
 
-procedure TConditions.RestorePrimarySQL;
+procedure TFIBConditions.RestorePrimarySQL;
 begin
   Include(FState, csInRestorePrimarySQL);
   try
@@ -1273,25 +1313,25 @@ begin
   end
 end;
 
-function TConditions.GetCondition(Index: integer): TCondition;
+function TFIBConditions.GetCondition(Index: Integer): TFIBCondition;
 begin
   if (Index < 0) or (Index >= Count) then
     result := nil
   else
-    result := TCondition(Objects[Index]);
+    result := TFIBCondition(Objects[Index]);
 end;
 
-function TConditions.AddObject(const S: string; AObject: TObject): integer;
+function TFIBConditions.AddObject(const S: string; AObject: TObject): Integer;
 begin
-  if (AObject is TCondition) or (AObject = nil) then
+  if (AObject is TFIBCondition) or (AObject = nil) then
     result := inherited AddObject(S, AObject)
   else
     result := -1
 end;
 
-procedure TConditions.Clear;
+procedure TFIBConditions.Clear;
 var
-  I: integer;
+  I: Integer;
 begin
   for I := Count - 1 downto 0 do
   begin
@@ -1300,7 +1340,7 @@ begin
   inherited;
 end;
 
-procedure TConditions.Delete(Index: integer);
+procedure TFIBConditions.Delete(Index: Integer);
 begin
   if not Condition[Index].FInDestroy then
     Condition[Index].Free
@@ -1308,26 +1348,26 @@ begin
     inherited;
 end;
 
-procedure TConditions.DefineProperties(Filer: TFiler);
+procedure TFIBConditions.DefineProperties(Filer: TFiler);
 
-  function DoWriteConditions: boolean;
+  function DoWriteConditions: Boolean;
   var
-    I: integer;
+    I: Integer;
   begin
     result := False;
     if (Filer is TReader) then
       exit;
     if (Filer.Ancestor <> nil) then
     begin
-      if not(Filer.Ancestor is TConditions) then
+      if not(Filer.Ancestor is TFIBConditions) then
         result := False
       else if not Equals(TStrings(Filer.Ancestor)) then
         result := True
       else
       begin
         for I := 0 to Pred(Count) do
-          if (TConditions(Filer.Ancestor).Condition[I].Enabled <> Condition[I]
-            .Enabled) or (TConditions(Filer.Ancestor).Condition[I].Name <> Condition[I].Name) then
+          if (TFIBConditions(Filer.Ancestor).Condition[I].Enabled <> Condition[I]
+            .Enabled) or (TFIBConditions(Filer.Ancestor).Condition[I].Name <> Condition[I].Name) then
           begin
             result := True;
             exit;
@@ -1341,10 +1381,8 @@ procedure TConditions.DefineProperties(Filer: TFiler);
   end;
 
 var
-  HasData: boolean;
+  HasData: Boolean;
 begin
-  { Filer.DefineProperty('Strings', ReadData, WriteData, DoWriteConditions);
-    Filer.DefineProperty('Enabled',  ReadEnabled, WriteEnabled,   DoWriteConditions); }
   Filer.DefineProperty('Strings', ReadStrings, nil, False);
   Filer.DefineProperty('Enabled', ReadEnabled, nil, False);
   if Assigned(FFIBQuery) and (csAncestor in FFIBQuery.ComponentState) and
@@ -1355,10 +1393,10 @@ begin
   Filer.DefineProperty('Data', ReadData, WriteData, HasData);
 end;
 
-procedure TConditions.ReadEnabled(Reader: TReader);
+procedure TFIBConditions.ReadEnabled(Reader: TReader);
 var
   S: string;
-  I, j: integer;
+  I, j: Integer;
 begin
   S := Reader.ReadString;
   I := 2;
@@ -1378,9 +1416,9 @@ end;
 const
   ExchangeDelimeter = '#$#$';
 
-procedure TConditions.WriteToExchangeStrings(Dest: TStrings);
+procedure TFIBConditions.WriteToExchangeStrings(Dest: TStrings);
 var
-  I: integer;
+  I: Integer;
 begin
   for I := 0 to Pred(Count) do
   begin
@@ -1389,7 +1427,7 @@ begin
   end;
 end;
 
-function TConditions.ExchangeString: string;
+function TFIBConditions.ExchangeString: string;
 var
   ts: TStrings;
 begin
@@ -1402,10 +1440,10 @@ begin
   end;
 end;
 
-procedure TConditions.ReadFromExchangeStrings(Source: TStrings);
+procedure TFIBConditions.ReadFromExchangeStrings(Source: TStrings);
 var
-  I: integer;
-  p: integer;
+  I: Integer;
+  p: Integer;
   CondName, CondBody: string;
   S: string;
 begin
@@ -1423,7 +1461,7 @@ begin
   end;
 end;
 
-procedure TConditions.ReadFromExchangeString(const Source: string);
+procedure TFIBConditions.ReadFromExchangeString(const Source: string);
 var
   ts: TStrings;
 begin
@@ -1436,7 +1474,7 @@ begin
   end;
 end;
 
-procedure TConditions.ReadStrings(Reader: TReader);
+procedure TFIBConditions.ReadStrings(Reader: TReader);
 begin
   Reader.ReadListBegin;
   BeginUpdate;
@@ -1452,13 +1490,13 @@ begin
   Reader.ReadListEnd;
 end;
 
-procedure TConditions.ReadData(Reader: TReader);
+procedure TFIBConditions.ReadData(Reader: TReader);
 var
   N, V: string;
-  En: boolean;
-  Index: integer;
-  Deleted: boolean;
-  c: TCondition;
+  En: Boolean;
+  Index: Integer;
+  Deleted: Boolean;
+  c: TFIBCondition;
 begin
   Reader.ReadListBegin;
   BeginUpdate;
@@ -1496,10 +1534,8 @@ begin
             begin
               if Condition[Index].FEnabledFromStream then
                 Condition[Index].SetEnabledFromStream(En);
-              // Condition[Index].Enabled:=En;
               if (V <> '0') and Condition[Index].FValueFromStream then
                 Condition[Index].SetValueFromStream(V);
-              // Condition[Index].Value:=V
             end;
           end;
         end;
@@ -1511,10 +1547,10 @@ begin
   Reader.ReadListEnd;
 end;
 
-procedure TConditions.WriteData(Writer: TWriter);
+procedure TFIBConditions.WriteData(Writer: TWriter);
 var
-  I, j: integer;
-  Index: integer;
+  I, j: Integer;
+  Index: Integer;
   N, V: string;
 
 begin
@@ -1533,7 +1569,7 @@ begin
     end
     else
     begin
-      Index := TConditions(Writer.Ancestor).IndexOfName(N);
+      Index := TFIBConditions(Writer.Ancestor).IndexOfName(N);
       if Index < 0 then
       begin
         Writer.WriteString(N);
@@ -1546,9 +1582,9 @@ begin
       else
       begin
         V := ValueFromStr(Get(I));
-        if V = ValueFromStr(TConditions(Writer.Ancestor).Strings[Index]) then
+        if V = ValueFromStr(TFIBConditions(Writer.Ancestor).Strings[Index]) then
           V := '0';
-        if (V <> '0') or (Condition[I].Enabled <> TConditions(Writer.Ancestor).Condition[Index].Enabled) then
+        if (V <> '0') or (Condition[I].Enabled <> TFIBConditions(Writer.Ancestor).Condition[Index].Enabled) then
         begin
           Writer.WriteString(N);
           Writer.WriteString(V);
@@ -1560,29 +1596,29 @@ begin
   if (Writer.Ancestor <> nil) then
   begin
     j := 0;
-    for I := 0 to TConditions(Writer.Ancestor).Count - 1 do
-      if FindCondition(TConditions(Writer.Ancestor).Condition[I].Name) = nil then
+    for I := 0 to TFIBConditions(Writer.Ancestor).Count - 1 do
+      if FindCondition(TFIBConditions(Writer.Ancestor).Condition[I].Name) = nil then
       begin
         Inc(j);
         if j = 1 then
           Writer.WriteString('#@DELETED');
-        Writer.WriteString(TConditions(Writer.Ancestor).Condition[I].Name);
+        Writer.WriteString(TFIBConditions(Writer.Ancestor).Condition[I].Name);
       end;
   end;
   Writer.WriteListEnd;
 end;
 
-{ TCondition }
+{ TFIBCondition }
 
-constructor TCondition.Create(aOwner: TConditions);
+constructor TFIBCondition.Create(aOwner: TFIBConditions);
 begin
   inherited Create;
   FOwner := aOwner;
 end;
 
-destructor TCondition.Destroy;
+destructor TFIBCondition.Destroy;
 var
-  I: integer;
+  I: Integer;
 begin
   if FInDestroy then
     exit;
@@ -1593,23 +1629,29 @@ begin
   inherited Destroy;
 end;
 
-function TCondition.GetName: string;
+function TFIBCondition.GetName: string;
 var
-  I: integer;
+  I: Integer;
 begin
   I := FOwner.IndexOfObject(Self);
-  result := FOwner.Names[I];
+  if I < 0 then
+    result := ''
+  else
+    result := FOwner.Names[I];
 end;
 
-function TCondition.GetValue: string;
+function TFIBCondition.GetValue: string;
 var
-  I: integer;
+  I: Integer;
 begin
   I := FOwner.IndexOfObject(Self);
-  result := ValueFromStr(FOwner.Strings[I]);
+  if I < 0 then
+    result := ''
+  else
+    result := ValueFromStr(FOwner.Strings[I]);
 end;
 
-procedure TCondition.SetEnabled(const Value: boolean);
+procedure TFIBCondition.SetEnabled(const Value: Boolean);
 begin
   if FEnabled <> Value then
   begin
@@ -1619,47 +1661,48 @@ begin
   end;
 end;
 
-procedure TCondition.SetEnabledFromStream(const Value: boolean);
+procedure TFIBCondition.SetEnabledFromStream(const Value: Boolean);
 begin
   SetEnabled(Value);
   FEnabledFromStream := True;
 end;
 
-procedure TCondition.SetName(const Name: string);
+procedure TFIBCondition.SetName(const Name: string);
 var
-  I: integer;
+  I: Integer;
 begin
   I := FOwner.IndexOfObject(Self);
-  FOwner.Strings[I] := Name + '=' + ValueFromStr(FOwner.Strings[I]);
+  if I >= 0 then
+    FOwner.Strings[I] := Name + '=' + ValueFromStr(FOwner.Strings[I]);
 end;
 
-procedure TCondition.SetValue(const Value: string);
+procedure TFIBCondition.SetValue(const Value: string);
 var
-  I: integer;
+  I: Integer;
 begin
   I := FOwner.IndexOfObject(Self);
-  if FOwner.Strings[I] <> FOwner.Names[I] + '=' + Value then
+  if (I >= 0) and (FOwner.Strings[I] <> FOwner.Names[I] + '=' + Value) then
   begin
     FOwner.Strings[I] := FOwner.Names[I] + '=' + Value;
     FValueFromStream := False
   end;
 end;
 
-procedure TCondition.SetValueFromStream(const Value: string);
+procedure TFIBCondition.SetValueFromStream(const Value: string);
 begin
   SetValue(Value);
   FValueFromStream := True
 end;
 
-function TAutoUpdateOptions.UpdateOnlyModifiedFieldsInEffect: Boolean;
+function TFIBAutoUpdateOptions.UpdateOnlyModifiedFieldsInEffect: Boolean;
 begin
   // The property is kept as assigned, in any order; it works only with these two
   Result := FUpdateOnlyModifiedFields and FAutoReWriteSqls and FCanChangeSQLs;
 end;
 
-procedure TAutoUpdateOptions.SetKeyFields(const Value: string);
+procedure TFIBAutoUpdateOptions.SetKeyFields(const Value: string);
 var
-  Pos: integer;
+  Pos: Integer;
 begin
   FWhereCondition := '';
   FKeyFieldList.Clear;
@@ -1672,36 +1715,36 @@ begin
   FModified := True;
 end;
 
-{ TBlobSwapSupport }
+{ TFIBBlobSwapSupport }
 
-constructor TBlobSwapSupport.Create;
+constructor TFIBBlobSwapSupport.Create;
 begin
   inherited Create;
   FSwapDirectory := AppPathTemplate;
   FTables := TStringList.Create;
 end;
 
-destructor TBlobSwapSupport.Destroy;
+destructor TFIBBlobSwapSupport.Destroy;
 begin
   FTables.Free;
   inherited Destroy;
 end;
 
-procedure TBlobSwapSupport.Assign(Source: TPersistent);
+procedure TFIBBlobSwapSupport.Assign(Source: TPersistent);
 begin
-  if Source is TBlobSwapSupport then
+  if Source is TFIBBlobSwapSupport then
   begin
-    FActive := TBlobSwapSupport(Source).FActive;
-    FAutoValidateSwap := TBlobSwapSupport(Source).FAutoValidateSwap;
-    FSwapDirectory := TBlobSwapSupport(Source).FSwapDirectory;
-    FMinBlobSizeToSwap := TBlobSwapSupport(Source).FMinBlobSizeToSwap;
-    FTables.Assign(TBlobSwapSupport(Source).FTables);
+    FActive := TFIBBlobSwapSupport(Source).FActive;
+    FAutoValidateSwap := TFIBBlobSwapSupport(Source).FAutoValidateSwap;
+    FSwapDirectory := TFIBBlobSwapSupport(Source).FSwapDirectory;
+    FMinBlobSizeToSwap := TFIBBlobSwapSupport(Source).FMinBlobSizeToSwap;
+    FTables.Assign(TFIBBlobSwapSupport(Source).FTables);
   end
   else
     inherited Assign(Source);
 end;
 
-function TBlobSwapSupport.GetSwapDirectory: string;
+function TFIBBlobSwapSupport.GetSwapDirectory: string;
 begin
   if not Active then
   begin
@@ -1717,34 +1760,34 @@ begin
     result := result + '\';
 end;
 
-function TBlobSwapSupport.StoreSwapDir: boolean;
+function TFIBBlobSwapSupport.StoreSwapDir: Boolean;
 begin
   result := FSwapDirectory <> AppPathTemplate
 end;
 
-procedure TBlobSwapSupport.SetTables(aTables: TStrings);
+procedure TFIBBlobSwapSupport.SetTables(aTables: TStrings);
 begin
   FTables.Assign(aTables)
 end;
 
-function TBlobSwapSupport.StoreTables: boolean;
+function TFIBBlobSwapSupport.StoreTables: Boolean;
 begin
   result := Trim(FTables.Text) <> ''
 end;
 
-function TAutoUpdateOptions.GetAliasModifiedTable: string;
+function TFIBAutoUpdateOptions.GetAliasModifiedTable: string;
 begin
   PrepareUpdateTableStrings;
   result := FAliasModifiedTable
 end;
 
-function TAutoUpdateOptions.GetModifiedTable: string;
+function TFIBAutoUpdateOptions.GetModifiedTable: string;
 begin
   PrepareUpdateTableStrings;
   result := FModifiedTable
 end;
 
-procedure TAutoUpdateOptions.PrepareUpdateTableStrings;
+procedure TFIBAutoUpdateOptions.PrepareUpdateTableStrings;
 var
   Dialect: Integer;
   TableInSQL, TableAlias: string;
@@ -1787,9 +1830,9 @@ begin
 end;
 
 {$IFDEF CSMonitor}
-{ TCSMonitorSupport }
+{ TFIBCSMonitorSupport }
 
-constructor TCSMonitorSupport.Create(aOwner: TComponent);
+constructor TFIBCSMonitorSupport.Create(aOwner: TComponent);
 begin
   inherited Create;
   FOwner := aOwner;
@@ -1803,7 +1846,7 @@ begin
 
 end;
 
-function TCSMonitorSupport.DoStoreEnabled: boolean;
+function TFIBCSMonitorSupport.DoStoreEnabled: Boolean;
 begin
   if (FOwner is TFIBQuery) or (FOwner is TFIBDataSet) then
     result := FEnabled <> csmeTransactionDriven
@@ -1815,7 +1858,7 @@ begin
     result := False
 end;
 
-procedure TCSMonitorSupport.SetEnabled(const Value: TCSMonitorEnabled);
+procedure TFIBCSMonitorSupport.SetEnabled(const Value: TFIBCSMonitorEnabled);
 begin
   if (FOwner is TFIBTransaction) and not(Value in [csmeDisabled, csmeEnabled, csmeDatabaseDriven]) then
     raise EFIBCSMonitorError.Create('This object cannot use this value');
@@ -1826,7 +1869,7 @@ begin
     (FOwner as TFIBDataSet).SetCSMonitorSupportToQ;
 end;
 
-procedure TCSMonitorSupport.SetIncludeDatasetDescription(const Value: boolean);
+procedure TFIBCSMonitorSupport.SetIncludeDatasetDescription(const Value: Boolean);
 begin
   FIncludeDatasetDescription := Value;
   if (FOwner is TFIBDataSet) then
@@ -1835,18 +1878,18 @@ end;
 
 {$ENDIF}
 
-{ TGeneratorParams }
+{ TFIBGeneratorParams }
 type
   THackOwnedCollection = class(TOwnedCollection);
 
-constructor TGeneratorParams.Create(Collection: TCollection);
+constructor TFIBGeneratorParams.Create(Collection: TCollection);
 begin
-  FStepForCache := TGeneratorsCache(THackOwnedCollection(Collection).GetOwner).DefaultStep;
+  FStepForCache := TFIBGeneratorsCache(THackOwnedCollection(Collection).GetOwner).DefaultStep;
   FNextValue := -1;
   inherited;
 end;
 
-function TGeneratorParams.NextValue: Int64;
+function TFIBGeneratorParams.NextValue: Int64;
 begin
   result := FNextValue;
   if FNextValue > -1 then
@@ -1858,12 +1901,12 @@ begin
   end;
 end;
 
-procedure TGeneratorParams.SaveToFile;
+procedure TFIBGeneratorParams.SaveToFile;
 var
   Ini: TIniFile;
   CacheFileName: string;
 begin
-  CacheFileName := TGeneratorsCache(THackOwnedCollection(Collection).GetOwner).FCacheFileName;
+  CacheFileName := TFIBGeneratorsCache(THackOwnedCollection(Collection).GetOwner).FCacheFileName;
   if Length(CacheFileName) > 0 then
   begin
     Ini := TIniFile.Create(CacheFileName);
@@ -1880,14 +1923,14 @@ begin
   end
 end;
 
-function TGeneratorParams.StoreStep: boolean;
+function TFIBGeneratorParams.StoreStep: Boolean;
 begin
-  result := FStepForCache <> TGeneratorsCache(THackOwnedCollection(Collection).GetOwner).DefaultStep;
+  result := FStepForCache <> TFIBGeneratorsCache(THackOwnedCollection(Collection).GetOwner).DefaultStep;
 end;
 
-{ TGeneratorsCache }
+{ TFIBGeneratorsCache }
 
-function TGeneratorsCache.CanWork(const GenName: string): boolean;
+function TFIBGeneratorsCache.CanWork(const GenName: string): Boolean;
 begin
   if Length(FCacheFileName) = 0 then
     result := False
@@ -1900,34 +1943,34 @@ begin
     end
 end;
 
-constructor TGeneratorsCache.Create(Owner: TComponent);
+constructor TFIBGeneratorsCache.Create(Owner: TComponent);
 begin
   inherited Create;
   FOwner := Owner;
-  FGenerators := TOwnedCollection.Create(Self, TGeneratorParams);
+  FGenerators := TOwnedCollection.Create(Self, TFIBGeneratorParams);
   FDefaultStep := 50
 end;
 
-destructor TGeneratorsCache.Destroy;
+destructor TFIBGeneratorsCache.Destroy;
 begin
   FGenerators.Free;
   inherited;
 end;
 
-function TGeneratorsCache.Find(const GenName: string): TGeneratorParams;
+function TFIBGeneratorsCache.Find(const GenName: string): TFIBGeneratorParams;
 var
-  I: integer;
+  I: Integer;
 begin
   I := IndexOf(GenName);
   if I < 0 then
     result := nil
   else
-    result := TGeneratorParams(FGenerators.Items[I]);
+    result := TFIBGeneratorParams(FGenerators.Items[I]);
 end;
 
-function TGeneratorsCache.GetNextValue(const GenName: string): Int64;
+function TFIBGeneratorsCache.GetNextValue(const GenName: string): Int64;
 var
-  GenParams: TGeneratorParams;
+  GenParams: TFIBGeneratorParams;
 begin
   if not Loaded then
     LoadFromFile;
@@ -1938,12 +1981,12 @@ begin
     result := -1;
 end;
 
-function TGeneratorsCache.GetOwner: TPersistent;
+function TFIBGeneratorsCache.GetOwner: TPersistent;
 begin
   result := FOwner;
 end;
 
-function TGeneratorsCache.IndexOf(const AName: string): integer;
+function TFIBGeneratorsCache.IndexOf(const AName: string): Integer;
 begin
   for result := 0 to FGenerators.Count - 1 do
     if AnsiCompareText(TNamedItem(FGenerators.Items[result]).Name, AName) = 0 then
@@ -1951,12 +1994,12 @@ begin
   result := -1;
 end;
 
-procedure TGeneratorsCache.LoadFromFile;
+procedure TFIBGeneratorsCache.LoadFromFile;
 var
   Ini: TIniFile;
-  I: integer;
+  I: Integer;
   ts: TStrings;
-  curGen: TGeneratorParams;
+  curGen: TFIBGeneratorParams;
   S: string;
 begin
   if Length(FCacheFileName) > 0 then
@@ -1969,13 +2012,13 @@ begin
       begin
         curGen := Find(ts[I]);
         if curGen = nil then
-          curGen := TGeneratorParams(FGenerators.Add);
+          curGen := TFIBGeneratorParams(FGenerators.Add);
         curGen.Name := ts[I];
         curGen.FStepForCache := Ini.ReadInteger(ts[I], 'StepForCache', DefaultStep);
         S := Ini.ReadString(ts[I], 'NextValue', '-1');
-        curGen.FNextValue := StrToIntDef(S, -1);
+        curGen.FNextValue := StrToInt64Def(S, -1);
         S := Ini.ReadString(ts[I], 'Limit', '-1');
-        curGen.FLimit := StrToIntDef(S, -1);
+        curGen.FLimit := StrToInt64Def(S, -1);
       end;
     finally
       ts.Free;
@@ -1985,17 +2028,17 @@ begin
   FLoaded := True;
 end;
 
-procedure TGeneratorsCache.SaveToFile;
+procedure TFIBGeneratorsCache.SaveToFile;
 var
   Ini: TIniFile;
-  I: integer;
+  I: Integer;
 begin
   if Length(FCacheFileName) > 0 then
   begin
     Ini := TIniFile.Create(FCacheFileName);
     try
       for I := 0 to FGenerators.Count - 1 do
-        with TGeneratorParams(FGenerators.Items[I]) do
+        with TFIBGeneratorParams(FGenerators.Items[I]) do
         begin
           Ini.WriteInteger(Name, 'StepForCache', FStepForCache);
           Ini.WriteString(Name, 'NextValue', IntToStr(FNextValue));
@@ -2007,20 +2050,20 @@ begin
   end
 end;
 
-procedure TGeneratorsCache.SetGenerators(const Value: TOwnedCollection);
+procedure TFIBGeneratorsCache.SetGenerators(const Value: TOwnedCollection);
 begin
   FGenerators.Assign(Value);
 end;
 
-procedure TGeneratorsCache.InternalSetGenParams(const GenName: string; Limit: Int64);
+procedure TFIBGeneratorsCache.InternalSetGenParams(const GenName: string; Limit: Int64);
 var
-  GenParams: TGeneratorParams;
+  GenParams: TFIBGeneratorParams;
 begin
   GenParams := Find(GenName);
   if GenParams = nil then
     if FUseGeneratorCache = forAll then
     begin
-      GenParams := TGeneratorParams(FGenerators.Add);
+      GenParams := TFIBGeneratorParams(FGenerators.Add);
       GenParams.Name := GenName
     end;
   if GenParams <> nil then
@@ -2031,9 +2074,9 @@ begin
   end;
 end;
 
-function TGeneratorsCache.GetStep(const GenName: string): integer;
+function TFIBGeneratorsCache.GetStep(const GenName: string): Integer;
 var
-  GenParams: TGeneratorParams;
+  GenParams: TFIBGeneratorParams;
 begin
   GenParams := Find(GenName);
   if GenParams <> nil then
@@ -2042,41 +2085,39 @@ begin
     result := DefaultStep
 end;
 
-procedure TGeneratorsCache.AddGenerator(const GenName: string; Limit: Int64);
+procedure TFIBGeneratorsCache.AddGenerator(const GenName: string; Limit: Int64);
 var
-  GenParams: TGeneratorParams;
+  GenParams: TFIBGeneratorParams;
 begin
   GenParams := Find(GenName);
   if GenParams = nil then
   begin
-    GenParams := TGeneratorParams(FGenerators.Add);
+    GenParams := TFIBGeneratorParams(FGenerators.Add);
     GenParams.Name := GenName;
     GenParams.FLimit := Limit;
   end;
 end;
 
-procedure TGeneratorsCache.RemoveGenerator(const GenName: string);
+procedure TFIBGeneratorsCache.RemoveGenerator(const GenName: string);
 var
-  I: integer;
+  I: Integer;
 begin
   I := IndexOf(GenName);
   if I >= 0 then
     FGenerators.Delete(I)
 end;
 
-function TGeneratorsCache.DoSaveGenList: boolean;
+function TFIBGeneratorsCache.DoSaveGenList: Boolean;
 begin
   result := FGenerators.Count > 0
 end;
 
-{ TMemoSubtypes }
+{ TFIBMemoSubtypes }
 
-function TMemoSubtypes.IsMemoSubtype(aSubtype: SmallInt): boolean;
+function TFIBMemoSubtypes.IsMemoSubtype(aSubtype: SmallInt): Boolean;
 var
   I: NativeInt;
 begin
-  { Result:=(aSubtype=FSubType1) or (aSubtype=FSubType2) or (aSubtype=FSubType2)
-    or  (aSubtype=FSubType3) or (aSubtype=FSubType4) }
   result := False;
   for I := 0 to High(FSubTypes) do
     if aSubtype = FSubTypes[I] then
@@ -2087,9 +2128,9 @@ begin
 
 end;
 
-procedure TMemoSubtypes.SetSubTypes(const SubTypesStr: string);
+procedure TFIBMemoSubtypes.SetSubTypes(const SubTypesStr: string);
 var
-  wc, I: integer;
+  wc, I: Integer;
   SubType: Integer;
   S: string;
 begin
@@ -2115,26 +2156,26 @@ begin
 end;
 
 // StreamRtn
-procedure WriteStrToStream(const s: Ansistring; Stream: TStream);
+procedure WriteStrToStream(const s: AnsiString; Stream: TStream);
 var
-  L: integer;
+  L: Integer;
 begin
   L := Length(s);
   with Stream do
   begin
-    WriteBuffer(L, SizeOf(integer));
+    WriteBuffer(L, SizeOf(Integer));
     if L > 0 then
       WriteBuffer(s[1], L);
   end;
 end;
 
-procedure ReadStrFromStream(const Stream: TStream; var ResStr: Ansistring);
+procedure ReadStrFromStream(const Stream: TStream; var ResStr: AnsiString);
 var
-  L: integer;
+  L: Integer;
 begin
   with Stream do
   begin
-    ReadBuffer(L, SizeOf(integer));
+    ReadBuffer(L, SizeOf(Integer));
     SetLength(ResStr, L);
     if L > 0 then
       ReadBuffer(ResStr[1], L);
@@ -2171,25 +2212,25 @@ begin
   inherited Destroy;
 end;
 
-function TFIBFieldInfo.GetCanBeBoolean: boolean;
+function TFIBFieldInfo.GetCanBeBoolean: Boolean;
 begin
   case FCanBeBoolean of
     eTrue: Result := True;
     eFalse: Result := False;
   else
     Result := PosCI('BOOLEAN', DomainName) > 0;
-    FCanBeBoolean := TExtBoolean(Result);
+    FCanBeBoolean := TFIBExtendedBoolean(Result);
   end;
 end;
 
-function TFIBFieldInfo.GetCanBeGUID: boolean;
+function TFIBFieldInfo.GetCanBeGUID: Boolean;
 begin
   case FCanBeGUID of
     eTrue: Result := True;
     eFalse: Result := False;
   else
     Result := PosCI('GUID', DomainName) > 0;
-    FCanBeGUID := TExtBoolean(Result);
+    FCanBeGUID := TFIBExtendedBoolean(Result);
   end;
 end;
 
@@ -2204,14 +2245,14 @@ procedure TFIBFieldInfo.SaveToStream(Stream: TStream);
 begin
   with Stream do
   begin
-    WriteBuffer(FIsComputed, SizeOf(boolean));
-    WriteBuffer(FCanIncToWhereClause, SizeOf(boolean));
-    WriteBuffer(FDefaultValueEmptyString, SizeOf(boolean));
-    WriteBuffer(FWithAdditionalInfo, SizeOf(boolean));
-    WriteBuffer(FVisible, SizeOf(boolean));
-    WriteBuffer(FIsTriggered, SizeOf(boolean));
-    WriteBuffer(FDisplayWidth, SizeOf(integer));
-    WriteBuffer(FCharSet, SizeOf(integer));
+    WriteBuffer(FIsComputed, SizeOf(Boolean));
+    WriteBuffer(FCanIncToWhereClause, SizeOf(Boolean));
+    WriteBuffer(FDefaultValueEmptyString, SizeOf(Boolean));
+    WriteBuffer(FWithAdditionalInfo, SizeOf(Boolean));
+    WriteBuffer(FVisible, SizeOf(Boolean));
+    WriteBuffer(FIsTriggered, SizeOf(Boolean));
+    WriteBuffer(FDisplayWidth, SizeOf(Integer));
+    WriteBuffer(FCharSet, SizeOf(Integer));
     WriteUTF8StrToStream(FDefaultValue, Stream);
     WriteUTF8StrToStream(FDomainName, Stream);
     WriteUTF8StrToStream(FDisplayLabel, Stream);
@@ -2232,14 +2273,14 @@ begin
   begin
     if FromBegin then
       Seek(0, soFromBeginning);
-    ReadBuffer(FIsComputed, SizeOf(boolean));
-    ReadBuffer(FCanIncToWhereClause, SizeOf(boolean));
-    ReadBuffer(FDefaultValueEmptyString, SizeOf(boolean));
-    ReadBuffer(FWithAdditionalInfo, SizeOf(boolean));
-    ReadBuffer(FVisible, SizeOf(boolean));
-    ReadBuffer(FIsTriggered, SizeOf(boolean));
-    ReadBuffer(FDisplayWidth, SizeOf(integer));
-    ReadBuffer(FCharSet, SizeOf(integer));
+    ReadBuffer(FIsComputed, SizeOf(Boolean));
+    ReadBuffer(FCanIncToWhereClause, SizeOf(Boolean));
+    ReadBuffer(FDefaultValueEmptyString, SizeOf(Boolean));
+    ReadBuffer(FWithAdditionalInfo, SizeOf(Boolean));
+    ReadBuffer(FVisible, SizeOf(Boolean));
+    ReadBuffer(FIsTriggered, SizeOf(Boolean));
+    ReadBuffer(FDisplayWidth, SizeOf(Integer));
+    ReadBuffer(FCharSet, SizeOf(Integer));
 
     FDefaultValue := ReadUTF8StrFromStream(Stream, UTF8);
     FDomainName := ReadUTF8StrFromStream(Stream, UTF8);

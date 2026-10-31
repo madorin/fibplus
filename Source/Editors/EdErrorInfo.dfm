@@ -1,4 +1,4 @@
-object frmErrors: TfrmErrors
+object frmErrors: TFIBErrorMessagesForm
   Left = 229
   Top = 175
   Width = 692

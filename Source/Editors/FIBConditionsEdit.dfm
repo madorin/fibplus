@@ -1,4 +1,4 @@
-object frmEditCheckStrings: TfrmEditCheckStrings
+object frmEditCheckStrings: TFIBConditionsForm
   Left = 197
   Top = 124
   Caption = 'Edit Conditions '
@@ -15,7 +15,7 @@ object frmEditCheckStrings: TfrmEditCheckStrings
   OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 15
-  inline fraEdConditions1: TfraEdConditions
+  inline fraEdConditions1: TFIBConditionsFrame
     Left = 0
     Top = 0
     Width = 458

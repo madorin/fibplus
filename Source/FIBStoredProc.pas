@@ -78,7 +78,7 @@ begin
     if Deferred and Assigned(Database) and Database.Connected then
     begin
       // In the IDE the procedure may have been altered, re-read its metadata
-      SQLText := ListSPInfo.GetExecProcTxt(Database, FormattedName, csDesigning in ComponentState);
+      SQLText := StoredProcInfoCache.GetExecProcTxt(Database, FormattedName, csDesigning in ComponentState);
       Deferred := False;
     end;
   finally
@@ -136,7 +136,7 @@ begin
   if IsBlank(FStoredProcName) or (Database = nil) then
     Result := ''
   else
-    Result := ListSPInfo.GetParamDefValue(Database, FormattedName, ParamNo);
+    Result := StoredProcInfoCache.GetParamDefValue(Database, FormattedName, ParamNo);
 end;
 
 end.

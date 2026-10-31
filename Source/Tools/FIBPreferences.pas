@@ -18,7 +18,7 @@ type
     chSetReadOnlyFields: TCheckBox;
     chImportDefaultValues: TCheckBox;
     chUseBooleanField: TCheckBox;
-    chApplyRepositary: TCheckBox;
+    chApplyRepository: TCheckBox;
     chGetOrderInfo: TCheckBox;
     chAskRecordCount: TCheckBox;
     DataSetOptionsGroup: TGroupBox;
@@ -95,7 +95,7 @@ type
   private
     FDataSetOptionBoxes: array[TFIBDataSetOption] of TCheckBox;
     FPrepareOptionBoxes: array[TFIBPrepareOption] of TCheckBox;
-    FDetailConditionBoxes: array[TDetailCondition] of TCheckBox;
+    FDetailConditionBoxes: array[TFIBDetailCondition] of TCheckBox;
     FQueryOptionBoxes: array[TFIBQueryOption] of TCheckBox;
     procedure LoadPreferences;
     procedure SavePreferences;
@@ -128,7 +128,7 @@ const
     'ImportDefaultValues', 'UseBooleanField', 'UseGuidField', 'SQLINT64ToBCD', 'ApplyRepositary', 'GetOrderInfo',
     'AskRecordCount', 'CanEditComputedFields', 'SetEmptyStrToNull', 'SupportUnicodeBlobs', 'UseLargeIntField');
 
-  DetailConditionNames: array[TDetailCondition] of string = ('ForceOpen', 'IgnoreMasterClose',
+  DetailConditionNames: array[TFIBDetailCondition] of string = ('ForceOpen', 'IgnoreMasterClose',
     'ForceMasterRefresh', 'WaitEndMasterScroll');
 
   QueryOptionNames: array[TFIBQueryOption] of string = ('AutoStartTransaction', 'AutoCommitTransaction',
@@ -150,7 +150,7 @@ begin
     Exclude(Options, Option);
 end;
 
-procedure SetOption(var Options: TDetailConditions; Option: TDetailCondition; Value: Boolean); overload;
+procedure SetOption(var Options: TFIBDetailConditions; Option: TFIBDetailCondition; Value: Boolean); overload;
 begin
   if Value then
     Include(Options, Option)
@@ -196,7 +196,7 @@ var
   Text: string;
   DataSetOption: TFIBDataSetOption;
   PrepareOption: TFIBPrepareOption;
-  DetailCondition: TDetailCondition;
+  DetailCondition: TFIBDetailCondition;
   QueryOption: TFIBQueryOption;
 begin
   Values := DefReadFromRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBDataSet', 'Options'],
@@ -213,7 +213,7 @@ begin
 
   Values := DefReadFromRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBDataSet', 'DetailConditions'],
     DetailConditionNames);
-  for DetailCondition := Low(TDetailCondition) to High(TDetailCondition) do
+  for DetailCondition := Low(TFIBDetailCondition) to High(TFIBDetailCondition) do
     if ReadBoolean(Values, Ord(DetailCondition), Flag) then
       SetOption(DefaultDetailConditions, DetailCondition, Flag);
 
@@ -235,7 +235,7 @@ begin
   if ReadString(Values, 0, Text) then
     DefPrefixGenName := Text;
   if ReadString(Values, 1, Text) then
-    DefSufixGenName := Text;
+    DefSuffixGenName := Text;
 
   Values := DefReadFromRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBDatabase'],
     ['DialectC', 'CharSetC', 'UseLoginPrompt', 'UpperOldNames', 'SynchronizeTime', 'StoreConnected',
@@ -269,13 +269,13 @@ begin
 
   Values := DefReadFromRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBTransaction'],
     ['TimeOutAction', 'TimeOut', 'TPBMode']);
-  if ReadInteger(Values, 0, Number) and (Number >= Ord(Low(TTransactionAction1))) and
-    (Number <= Ord(High(TTransactionAction1))) then
-    DefTimeOutAction := TTransactionAction1(Number);
+  if ReadInteger(Values, 0, Number) and (Number >= Ord(Low(TFIBDefaultTimeoutAction))) and
+    (Number <= Ord(High(TFIBDefaultTimeoutAction))) then
+    DefTimeOutAction := TFIBDefaultTimeoutAction(Number);
   if ReadInteger(Values, 1, Number) and (Number >= 0) then
     DefTimeOut := Number;
-  if ReadInteger(Values, 2, Number) and (Number >= Ord(Low(TTPBMode))) and (Number <= Ord(High(TTPBMode))) then
-    DefTPBMode := TTPBMode(Number);
+  if ReadInteger(Values, 2, Number) and (Number >= Ord(Low(TFIBTPBMode))) and (Number <= Ord(High(TFIBTPBMode))) then
+    DefTPBMode := TFIBTPBMode(Number);
 end;
 
 procedure SaveToReg;
@@ -283,7 +283,7 @@ var
   Values: TArray<Variant>;
   DataSetOption: TFIBDataSetOption;
   PrepareOption: TFIBPrepareOption;
-  DetailCondition: TDetailCondition;
+  DetailCondition: TFIBDetailCondition;
   QueryOption: TFIBQueryOption;
 begin
   SetLength(Values, Length(DataSetOptionNames));
@@ -298,7 +298,7 @@ begin
     Values);
 
   SetLength(Values, Length(DetailConditionNames));
-  for DetailCondition := Low(TDetailCondition) to High(TDetailCondition) do
+  for DetailCondition := Low(TFIBDetailCondition) to High(TFIBDetailCondition) do
     Values[Ord(DetailCondition)] := DetailCondition in DefaultDetailConditions;
   DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBDataSet', 'DetailConditions'],
     DetailConditionNames, Values);
@@ -308,7 +308,7 @@ begin
     [dDefDateFormat, dDefTimeFormat, dDefDisplayFormatNum, dDefEditFormatNum, dDefDateTimeFormat]);
 
   DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBDataSet', 'Other'],
-    ['DefPrefixGenName', 'DefSufixGenName'], [DefPrefixGenName, DefSufixGenName]);
+    ['DefPrefixGenName', 'DefSufixGenName'], [DefPrefixGenName, DefSuffixGenName]);
 
   DefWriteToRegistry(['Software', RegFIBRoot, RegPreferences, 'FIBDatabase'],
     ['DialectC', 'CharSetC', 'UseLoginPrompt', 'UpperOldNames', 'SynchronizeTime', 'StoreConnected',
@@ -370,7 +370,7 @@ begin
   FPrepareOptionBoxes[psUseBooleanField] := chUseBooleanField;
   FPrepareOptionBoxes[psUseGuidField] := chUseGuidField;
   FPrepareOptionBoxes[psSQLINT64ToBCD] := chUseSQLINT64ToBCD;
-  FPrepareOptionBoxes[psApplyRepositary] := chApplyRepositary;
+  FPrepareOptionBoxes[psApplyRepositary] := chApplyRepository;
   FPrepareOptionBoxes[psGetOrderInfo] := chGetOrderInfo;
   FPrepareOptionBoxes[psAskRecordCount] := chAskRecordCount;
   FPrepareOptionBoxes[psCanEditComputedFields] := chCanEditComputedFields;
@@ -389,23 +389,23 @@ begin
   FQueryOptionBoxes[qoNoForceIsNull] := chQueryNoForceIsNull;
   FQueryOptionBoxes[qoFreeHandleAfterExecute] := chFreeHandleAfterExecute;
 
-  Caption := FPTPrefCaption;
-  GeneratorPrefixLabel.Caption := FPTGeneratorPref;
-  GeneratorSuffixLabel.Caption := FPTGeneratorSuf;
+  Caption := SPreferencesCaption;
+  GeneratorPrefixLabel.Caption := SPreferencesGeneratorPrefix;
+  GeneratorSuffixLabel.Caption := SPreferencesGeneratorSuffix;
 
-  CharSetLabel.Caption := FPTCharSet;
-  SQLDialectLabel.Caption := FPTSQLDialect;
-  chStoreConnected.Caption := FPTStoreConnected;
-  chSynchronizeTime.Caption := FPTSyncTime;
-  chUpperOldNames.Caption := FPTUpperOldNames;
-  chUseLoginPrompt.Caption := FPTUseLoginPrompt;
-  chCloseDesignConnections.Caption := FPTCloseDesignConnections;
-  TimeoutActionLabel.Caption := FPTTimeoutAction;
-  TimeoutLabel.Caption := FPTTimeout;
-  chGoToFirstRecord.Caption := FPTGotoFirstRecord;
-  chParamCheck.Caption := FPTCheckParam;
-  chAutoStartTransaction.Caption := FPTAutoStartTrans;
-  chAutoCommitTransaction.Caption := FPTAutoCommitTrans;
+  CharSetLabel.Caption := SPreferencesCharSet;
+  SQLDialectLabel.Caption := SPreferencesSQLDialect;
+  chStoreConnected.Caption := SPreferencesStoreConnected;
+  chSynchronizeTime.Caption := SPreferencesSyncTime;
+  chUpperOldNames.Caption := SPreferencesUpperOldNames;
+  chUseLoginPrompt.Caption := SPreferencesUseLoginPrompt;
+  chCloseDesignConnections.Caption := SPreferencesCloseDesignConnections;
+  TimeoutActionLabel.Caption := SPreferencesTimeoutAction;
+  TimeoutLabel.Caption := SPreferencesTimeout;
+  chGoToFirstRecord.Caption := SPreferencesGotoFirstRecord;
+  chParamCheck.Caption := SPreferencesCheckParams;
+  chAutoStartTransaction.Caption := SPreferencesAutoStartTransaction;
+  chAutoCommitTransaction.Caption := SPreferencesAutoCommitTransaction;
 
   OKButton.Caption := SOKButton;
   CancelButton.Caption := SCancelButton;
@@ -420,7 +420,7 @@ begin
     CanClose := False;
     PageControl.ActivePage := TransactionPage;
     edTimeout.SetFocus;
-    MessageDlg(FPTInvalidTimeout, mtError, [mbOK], 0);
+    MessageDlg(SPreferencesInvalidTimeout, mtError, [mbOK], 0);
   end;
 end;
 
@@ -428,7 +428,7 @@ procedure TFIBPreferencesForm.LoadPreferences;
 var
   DataSetOption: TFIBDataSetOption;
   PrepareOption: TFIBPrepareOption;
-  DetailCondition: TDetailCondition;
+  DetailCondition: TFIBDetailCondition;
   QueryOption: TFIBQueryOption;
 begin
   for DataSetOption := Low(TFIBDataSetOption) to High(TFIBDataSetOption) do
@@ -436,7 +436,7 @@ begin
       FDataSetOptionBoxes[DataSetOption].Checked := DataSetOption in DefaultOptions;
   for PrepareOption := Low(TFIBPrepareOption) to High(TFIBPrepareOption) do
     FPrepareOptionBoxes[PrepareOption].Checked := PrepareOption in DefaultPrepareOptions;
-  for DetailCondition := Low(TDetailCondition) to High(TDetailCondition) do
+  for DetailCondition := Low(TFIBDetailCondition) to High(TFIBDetailCondition) do
     FDetailConditionBoxes[DetailCondition].Checked := DetailCondition in DefaultDetailConditions;
   for QueryOption := Low(TFIBQueryOption) to High(TFIBQueryOption) do
     FQueryOptionBoxes[QueryOption].Checked := QueryOption in DefQueryOptions;
@@ -457,7 +457,7 @@ begin
   chParamCheck.Checked := DefParamCheck;
 
   edGeneratorPrefix.Text := DefPrefixGenName;
-  edGeneratorSuffix.Text := DefSufixGenName;
+  edGeneratorSuffix.Text := DefSuffixGenName;
   edDateFormat.Text := dDefDateFormat;
   edTimeFormat.Text := dDefTimeFormat;
   edDisplayNumFormat.Text := dDefDisplayFormatNum;
@@ -469,7 +469,7 @@ procedure TFIBPreferencesForm.SavePreferences;
 var
   DataSetOption: TFIBDataSetOption;
   PrepareOption: TFIBPrepareOption;
-  DetailCondition: TDetailCondition;
+  DetailCondition: TFIBDetailCondition;
   QueryOption: TFIBQueryOption;
 begin
   for DataSetOption := Low(TFIBDataSetOption) to High(TFIBDataSetOption) do
@@ -477,7 +477,7 @@ begin
       SetOption(DefaultOptions, DataSetOption, FDataSetOptionBoxes[DataSetOption].Checked);
   for PrepareOption := Low(TFIBPrepareOption) to High(TFIBPrepareOption) do
     SetOption(DefaultPrepareOptions, PrepareOption, FPrepareOptionBoxes[PrepareOption].Checked);
-  for DetailCondition := Low(TDetailCondition) to High(TDetailCondition) do
+  for DetailCondition := Low(TFIBDetailCondition) to High(TFIBDetailCondition) do
     SetOption(DefaultDetailConditions, DetailCondition, FDetailConditionBoxes[DetailCondition].Checked);
   for QueryOption := Low(TFIBQueryOption) to High(TFIBQueryOption) do
     SetOption(DefQueryOptions, QueryOption, FQueryOptionBoxes[QueryOption].Checked);
@@ -490,14 +490,14 @@ begin
   DefSQLDialect := cmbSQLDialect.ItemIndex + 1;
   CloseDesignConnections := chCloseDesignConnections.Checked;
 
-  DefTimeOutAction := TTransactionAction1(cmbTimeOutAction.ItemIndex);
+  DefTimeOutAction := TFIBDefaultTimeoutAction(cmbTimeOutAction.ItemIndex);
   DefTimeOut := StrToInt(Trim(edTimeout.Text));
-  DefTPBMode := TTPBMode(cmbTPBMode.ItemIndex);
+  DefTPBMode := TFIBTPBMode(cmbTPBMode.ItemIndex);
 
   DefGoToFirstRecordOnExecute := chGoToFirstRecord.Checked;
   DefParamCheck := chParamCheck.Checked;
   DefPrefixGenName := edGeneratorPrefix.Text;
-  DefSufixGenName := edGeneratorSuffix.Text;
+  DefSuffixGenName := edGeneratorSuffix.Text;
 
   dDefDateFormat := edDateFormat.Text;
   dDefTimeFormat := edTimeFormat.Text;

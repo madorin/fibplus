@@ -13,19 +13,23 @@ uses
   SysUtils;
 
 const
-  SIB_MAX_EVENT_BLOCK  = 15;  // maximum events handled per block by InterBase
-  SIB_MAX_EVENT_LENGTH = 128; // maximum event name length
+  FIBMaxEventBlock      = 15;  // maximum events handled per block by InterBase
+  FIBMaxEventNameLength = 128; // maximum event name length
 
 type
-  ESIBError = class(Exception);
+  EFIBEventAlerterError = class(Exception);
 
 resourcestring
-  SIB_RS_NOT_REGISTERED       = 'Events not registered';
-  SIB_RS_ALREADY_REGISTERED   = 'Events already registered';
-  SIB_RS_EMPTY_STRINGS        = 'Can not assign empty strings as events.  ';
-  SIB_RS_TOO_LONG             = 'Some event names are longer than %d characters.  ';
-  SIB_RS_FIB_SET_NATIVEHANDLE = 'TFIBEventAlerter does not allow you to set the NativeHandle property';
-  SIB_RS_FIB_NO_DATABASE      = 'Cannot register events, no database assigned or database not connected';
+  SFIBEventsNotRegistered         = 'Events not registered';
+  SFIBEventsAlreadyRegistered     = 'Events already registered';
+  SFIBEventsEmptyNames            = 'Can not assign empty strings as events.  ';
+  SFIBEventNamesTooLong           = 'Some event names are longer than %d characters.  ';
+  SFIBEventAlerterSetNativeHandle = 'TFIBEventAlerter does not allow you to set the NativeHandle property';
+  SFIBEventAlerterNoDatabase      = 'Cannot register events, no database assigned or database not connected';
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  ESIBError = EFIBEventAlerterError deprecated 'Use EFIBEventAlerterError';
 
 implementation
 

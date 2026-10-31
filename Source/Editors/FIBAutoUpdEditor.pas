@@ -35,14 +35,14 @@ type
   TFIBAutoUpdateOptionForm = class(TFIBEditorCustomForm)
     OkB: TButton;
     CancelB: TButton;
-    fAutoUpdateOptionForm1: TfAutoUpdateOptionForm;
+    fAutoUpdateOptionForm1: TFIBAutoUpdateOptionsFrame;
     procedure FormCreate(Sender: TObject);
   private
   public
     { Public declarations }
   end;
 
-function EditAutoUpdateOptions(aDataSet: TDataSet): boolean;
+function EditAutoUpdateOptions(aDataSet: TDataSet): Boolean;
 
 implementation
 
@@ -51,7 +51,7 @@ uses
 
 {$R *.dfm}
 
-function EditAutoUpdateOptions(aDataSet: TDataSet): boolean;
+function EditAutoUpdateOptions(aDataSet: TDataSet): Boolean;
 var
   aForm: TFIBAutoUpdateOptionForm;
 begin

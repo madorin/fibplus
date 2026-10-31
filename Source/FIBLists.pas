@@ -33,92 +33,94 @@ type
   TFIBList = TList;
 {$ENDIF}
 
-  TCallObject = class
+  TFIBCreatableObject = class
   public
     constructor Create; virtual;
   end;
 
-  TCallClass = class of TCallObject;
+  TFIBCreatableClass = class of TFIBCreatableObject;
 
-  TObjStringList = class
+  TFIBObjectStringList = class
   private
     FOwner: TObject;
     FList: TStringList;
     FHashList: TList;
-    FUseHash: boolean;
-    function GetObject(const Index: integer): TObject;
-    function GetCount: integer;
-    function GetItem(const Index: integer): string;
-    function HashFunc(const Str: string): integer;
-    function FindInHash(const Search: string; var Hash, Index: integer): boolean;
+    FUseHash: Boolean;
+    function GetObject(const Index: Integer): TObject;
+    function GetCount: Integer;
+    function GetItem(const Index: Integer): string;
+    function HashFunc(const Str: string): Integer;
+    function FindInHash(const Search: string; var Hash, Index: Integer): Boolean;
   public
-    constructor Create(Owner: TObject; aUseHash: boolean);
+    constructor Create(Owner: TObject; aUseHash: Boolean);
     destructor Destroy; override;
     procedure FullClear;
-    function FindObject(const ObjName: string; ObjClass: TCallClass; var InitRes: boolean): integer;
-    function Find(const S: string; var Index: integer): boolean;
-    function AddObject(const S: string; AObject: TObject): integer;
-    function IndexOfObject(AObject: TObject): integer;
+    function FindObject(const ObjName: string; ObjClass: TFIBCreatableClass; var InitRes: Boolean): Integer;
+    function Find(const S: string; var Index: Integer): Boolean;
+    function AddObject(const S: string; AObject: TObject): Integer;
+    function IndexOfObject(AObject: TObject): Integer;
     procedure Remove(const S: string);
-    procedure Delete(Index: integer);
+    procedure Delete(Index: Integer);
 
-    property Objects[const Index: integer]: TObject read GetObject;
-    property Count: integer read GetCount;
-    property Item[const Index: integer]: string read GetItem; default;
-    property UseHash: boolean read FUseHash;
+    property Objects[const Index: Integer]: TObject read GetObject;
+    property Count: Integer read GetCount;
+    property Item[const Index: Integer]: string read GetItem; default;
+    property UseHash: Boolean read FUseHash;
   end;
 
-  TSortedList = class(TObject)
+  TFIBSortedIntegerList = class(TObject)
     // Note : Only for Items compatibled with Integer
   private
     FList: TFIBList;
-    FTag: integer;
-    function GetItem(const Index: integer): integer;
-    function GetCount: integer;
+    function GetItem(const Index: Integer): Integer;
+    function GetCount: Integer;
   protected
   public
     constructor Create;
     destructor Destroy; override;
-    procedure IncValuesDiapazon(FromValue, ToValue: integer; Distance: integer);
-    procedure IncValues(FromValue: integer; Distance: integer);
-    function Add(const Item): integer;
-    function Find(const Item; var Index: integer): boolean;
-    function IndexOf(const Item): integer;
-    procedure Delete(const Index: integer);
+    procedure IncValuesInRange(FromValue, ToValue: Integer; Distance: Integer);
+    procedure IncValues(FromValue: Integer; Distance: Integer);
+    function Add(const Item): Integer;
+    function Find(const Item; var Index: Integer): Boolean;
     procedure Remove(const Item);
     procedure Clear;
-    function LastItem: integer;
-    property Item[const Index: integer]: integer read GetItem; default;
-    property Count: integer read GetCount;
-    property Tag: integer read FTag write FTag;
+    function LastItem: Integer;
+    property Item[const Index: Integer]: Integer read GetItem; default;
+    property Count: Integer read GetCount;
   end;
 
-  TStringCollection = class
+  TFIBStringCollection = class
   private
     FData: array of array of FIBByteString;
-    FHighBounds: integer;
-    FCount: integer;
-    FCapacity: integer;
+    FHighBounds: Integer;
+    FCount: Integer;
+    FCapacity: Integer;
     procedure Grow;
-    procedure SetCapacity(NewCapacity: integer);
-    function GetValue(X, Y: integer): FIBByteString;
-    procedure SetValue(X, Y: integer; const Value: FIBByteString);
-    function GetPValue(X, Y: integer): PFIBByteString;
+    procedure SetCapacity(NewCapacity: Integer);
+    function GetValue(X, Y: Integer): FIBByteString;
+    procedure SetValue(X, Y: Integer; const Value: FIBByteString);
+    function GetPValue(X, Y: Integer): PFIBByteString;
   public
-    constructor Create(aHighBounds: integer);
+    constructor Create(aHighBounds: Integer);
     destructor Destroy; override;
-    function Add: integer;
+    function Add: Integer;
     procedure Clear;
-    procedure Insert(Index: integer);
-    procedure Delete(Index: integer);
-    procedure Exchange(X1, X2: integer);
-    procedure SetPCharValue(X, Y: integer; const Value: PAnsiChar; Len: integer);
-    property PValue[X, Y: integer]: PFIBByteString read GetPValue;
-    property Value[X, Y: integer]: FIBByteString read GetValue write SetValue; default;
-    property HighX: integer read FHighBounds;
-    property CountY: integer read FCount;
-    property Capacity: integer read FCapacity write SetCapacity;
+    procedure Delete(Index: Integer);
+    procedure SetPCharValue(X, Y: Integer; const Value: PAnsiChar; Len: Integer);
+    property PValue[X, Y: Integer]: PFIBByteString read GetPValue;
+    property Value[X, Y: Integer]: FIBByteString read GetValue write SetValue; default;
+    property HighX: Integer read FHighBounds;
+    property CountY: Integer read FCount;
+    property Capacity: Integer read FCapacity write SetCapacity;
   end;
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TCallObject = TFIBCreatableObject deprecated 'Use TFIBCreatableObject';
+  TCallClass = TFIBCreatableClass deprecated 'Use TFIBCreatableClass';
+  TObjStringList = TFIBObjectStringList deprecated 'Use TFIBObjectStringList';
+  TSortedList = TFIBSortedIntegerList deprecated 'Use TFIBSortedIntegerList';
+  TStringCollection = TFIBStringCollection deprecated 'Use TFIBStringCollection';
 
 implementation
 
@@ -133,17 +135,17 @@ end;
 
 {$ENDIF}
 
-{ TCallObject }
-constructor TCallObject.Create;
+{ TFIBCreatableObject }
+constructor TFIBCreatableObject.Create;
 begin
   inherited Create;
 end;
 
-{ TObjStringList }
+{ TFIBObjectStringList }
 
-function TObjStringList.AddObject(const S: string; AObject: TObject): integer;
+function TFIBObjectStringList.AddObject(const S: string; AObject: TObject): Integer;
 var
-  Hash: integer;
+  Hash: Integer;
 begin
   if not UseHash then
     Result := FList.AddObject(S, AObject)
@@ -157,15 +159,15 @@ begin
   end;
 end;
 
-function TObjStringList.IndexOfObject(AObject: TObject): integer;
+function TFIBObjectStringList.IndexOfObject(AObject: TObject): Integer;
 begin
   Result := FList.IndexOfObject(AObject);
 end;
 
-procedure TObjStringList.Remove(const S: string);
+procedure TFIBObjectStringList.Remove(const S: string);
 var
-  Index: integer;
-  Hash: integer;
+  Index: Integer;
+  Hash: Integer;
 begin
   if not UseHash then
   begin
@@ -183,7 +185,7 @@ begin
   end;
 end;
 
-constructor TObjStringList.Create(Owner: TObject; aUseHash: boolean);
+constructor TFIBObjectStringList.Create(Owner: TObject; aUseHash: Boolean);
 begin
   inherited Create;
   FOwner := Owner;
@@ -202,7 +204,7 @@ begin
   end;
 end;
 
-destructor TObjStringList.Destroy;
+destructor TFIBObjectStringList.Destroy;
 begin
   FullClear;
   FList.Free;
@@ -210,9 +212,9 @@ begin
   inherited Destroy;
 end;
 
-function TObjStringList.Find(const S: string; var Index: integer): boolean;
+function TFIBObjectStringList.Find(const S: string; var Index: Integer): Boolean;
 var
-  Hash: integer;
+  Hash: Integer;
 begin
   if not UseHash then
     Result := FList.Find(S, Index)
@@ -220,9 +222,9 @@ begin
     Result := FindInHash(S, Hash, Index)
 end;
 
-function TObjStringList.FindInHash(const Search: string; var Hash, Index: integer): boolean;
+function TFIBObjectStringList.FindInHash(const Search: string; var Hash, Index: Integer): Boolean;
 var
-  L, H, I: integer;
+  L, H, I: Integer;
 begin
   Result := False;
   Hash := HashFunc(Search);
@@ -235,7 +237,7 @@ begin
   while L <= H do
   begin
     I := (L + H) shr 1;
-    if integer(FHashList[I]) < Hash then
+    if Integer(FHashList[I]) < Hash then
       L := I + 1
     else
       H := I - 1;
@@ -243,9 +245,9 @@ begin
 
   // The items with the same hash (collisions) are next to each other
   Index := L;
-  while (Index < FList.Count) and (integer(FHashList[Index]) = Hash) do
+  while (Index < FList.Count) and (Integer(FHashList[Index]) = Hash) do
   begin
-    if EquelNames(False, Search, FList[Index]) then
+    if EqualNames(False, Search, FList[Index]) then
     begin
       Result := true;
       Exit;
@@ -257,9 +259,9 @@ begin
   Index := L;
 end;
 
-function TObjStringList.FindObject(const ObjName: string; ObjClass: TCallClass; var InitRes: boolean): integer;
+function TFIBObjectStringList.FindObject(const ObjName: string; ObjClass: TFIBCreatableClass; var InitRes: Boolean): Integer;
 var
-  Hash: integer;
+  Hash: Integer;
 begin
   if not UseHash then
   begin
@@ -282,9 +284,9 @@ begin
     InitRes := False;
 end;
 
-procedure TObjStringList.FullClear;
+procedure TFIBObjectStringList.FullClear;
 var
-  I: integer;
+  I: Integer;
   Obj: TObject;
 begin
   // Backwards: freeing an object may remove it from the list
@@ -301,24 +303,24 @@ begin
     FHashList.Clear;
 end;
 
-function TObjStringList.GetCount: integer;
+function TFIBObjectStringList.GetCount: Integer;
 begin
   Result := FList.Count
 end;
 
-function TObjStringList.GetItem(const Index: integer): string;
+function TFIBObjectStringList.GetItem(const Index: Integer): string;
 begin
   Result := FList[Index]
 end;
 
-function TObjStringList.GetObject(const Index: integer): TObject;
+function TFIBObjectStringList.GetObject(const Index: Integer): TObject;
 begin
   Result := FList.Objects[Index]
 end;
 
-function TObjStringList.HashFunc(const Str: string): integer;
+function TFIBObjectStringList.HashFunc(const Str: string): Integer;
 var
-  I: integer;
+  I: Integer;
 begin
   // All the chars: sampling only some of them made similar SQL texts
   // (e.g. different generator names) collide. Overflow wraps ({$Q-}).
@@ -327,45 +329,40 @@ begin
     Result := Result * 37 + Ord(Str[I]);
 end;
 
-procedure TObjStringList.Delete(Index: integer);
+procedure TFIBObjectStringList.Delete(Index: Integer);
 begin
   FList.Delete(Index);
   if FUseHash then
     FHashList.Delete(Index);
 end;
 
-{ TSortedList }
+{ TFIBSortedIntegerList }
 
-constructor TSortedList.Create;
+constructor TFIBSortedIntegerList.Create;
 begin
   inherited Create;
   FList := TFIBList.Create;
 end;
 
-function TSortedList.Add(const Item): integer;
+function TFIBSortedIntegerList.Add(const Item): Integer;
 begin
   if not Find(Item, Result) then
     FList.Insert(Result, Pointer(Item));
 end;
 
-procedure TSortedList.Delete(const Index: integer);
-begin
-  FList.Delete(Index);
-end;
-
-destructor TSortedList.Destroy;
+destructor TFIBSortedIntegerList.Destroy;
 begin
   FList.Free;
   inherited Destroy;
 end;
 
-procedure TSortedList.IncValuesDiapazon(FromValue, ToValue: integer; Distance: integer);
+procedure TFIBSortedIntegerList.IncValuesInRange(FromValue, ToValue: Integer; Distance: Integer);
 var
-  I: integer;
-  Index: integer;
-  Index1: integer;
-  MaxValue: integer;
-  MinValue: integer;
+  I: Integer;
+  Index: Integer;
+  Index1: Integer;
+  MaxValue: Integer;
+  MinValue: Integer;
 
 begin
   if FList.Count = 0 then
@@ -384,29 +381,29 @@ begin
   Find(MaxValue, Index1);
   if Index1 >= Count then
     Index1 := Count - 1;
-  if MaxValue < integer(FList.List^[Index1]) then
+  if MaxValue < Integer(FList.List^[Index1]) then
     Dec(Index1);
 
   for I := Index1 downto Index do
-    FList.List^[I] := Pointer(integer(FList.List^[I]) + Distance)
+    FList.List^[I] := Pointer(Integer(FList.List^[I]) + Distance)
 
 end;
 
-procedure TSortedList.IncValues(FromValue: integer; Distance: integer);
+procedure TFIBSortedIntegerList.IncValues(FromValue: Integer; Distance: Integer);
 var
-  I: integer;
-  Index: integer;
+  I: Integer;
+  Index: Integer;
 begin
   Find(FromValue, Index);
   for I := Count - 1 downto Index do
-    FList.List^[I] := Pointer(integer(FList.List^[I]) + Distance)
+    FList.List^[I] := Pointer(Integer(FList.List^[I]) + Distance)
 end;
 
-function TSortedList.Find(const Item; var Index: integer): boolean;
+function TFIBSortedIntegerList.Find(const Item; var Index: Integer): Boolean;
 var
-  L, H, I, C: integer;
+  L, H, I, C: Integer;
 
-  function Compare(I, I1: integer): integer;
+  function Compare(I, I1: Integer): Integer;
   begin
     if I = I1 then
       Result := 0
@@ -424,7 +421,7 @@ begin
   while L <= H do
   begin
     I := (L + H) shr 1;
-    C := Compare(integer(FList.List^[I]), integer(Item));
+    C := Compare(Integer(FList.List^[I]), Integer(Item));
     if C < 0 then
       L := I + 1
     else
@@ -437,49 +434,43 @@ begin
   Index := L;
 end;
 
-function TSortedList.IndexOf(const Item): integer;
-begin
-  if not Find(Item, Result) then
-    Result := -1
-end;
-
-procedure TSortedList.Remove(const Item);
+procedure TFIBSortedIntegerList.Remove(const Item);
 var
-  Index: integer;
+  Index: Integer;
 begin
   if Find(Item, Index) then
     FList.Delete(Index);
 end;
 
-function TSortedList.GetItem(const Index: integer): integer;
+function TFIBSortedIntegerList.GetItem(const Index: Integer): Integer;
 begin
-  Result := integer(FList.List^[Index]);
+  Result := Integer(FList.List^[Index]);
 end;
 
-function TSortedList.GetCount: integer;
+function TFIBSortedIntegerList.GetCount: Integer;
 begin
   Result := Integer(FList.Count)
 end;
 
-procedure TSortedList.Clear;
+procedure TFIBSortedIntegerList.Clear;
 begin
   FList.Clear
 end;
 
-function TSortedList.LastItem: integer;
+function TFIBSortedIntegerList.LastItem: Integer;
 begin
   if Count = 0 then
     Result := -1
   else
-    Result := integer(FList.List^[FList.Count - 1])
+    Result := Integer(FList.List^[FList.Count - 1])
 end;
 
-{ TStringCollection }
+{ TFIBStringCollection }
 
-function TStringCollection.Add: integer;
+function TFIBStringCollection.Add: Integer;
 var
-  I: integer;
-  C: integer;
+  I: Integer;
+  C: Integer;
 begin
   if FCapacity = FCount then
     Grow;
@@ -490,23 +481,23 @@ begin
   Result := FCount
 end;
 
-procedure TStringCollection.Clear;
+procedure TFIBStringCollection.Clear;
 begin
   Finalize(FData[0], FHighBounds);
   FCount := 0;
   FCapacity := 0;
 end;
 
-constructor TStringCollection.Create(aHighBounds: integer);
+constructor TFIBStringCollection.Create(aHighBounds: Integer);
 begin
   inherited Create;
   FHighBounds := aHighBounds;
   SetLength(FData, aHighBounds);
 end;
 
-procedure TStringCollection.Delete(Index: integer);
+procedure TFIBStringCollection.Delete(Index: Integer);
 var
-  I: integer;
+  I: Integer;
 begin
   for I := 0 to Pred(FHighBounds) do
   begin
@@ -517,31 +508,16 @@ begin
   Dec(FCount);
 end;
 
-destructor TStringCollection.Destroy;
+destructor TFIBStringCollection.Destroy;
 begin
   Clear;
   SetLength(FData, 0);
   inherited;
 end;
 
-procedure TStringCollection.Exchange(X1, X2: integer);
-var
-  I: integer;
-  p: Pointer;
+function TFIBStringCollection.GetPValue(X, Y: Integer): PFIBByteString;
 begin
-  for I := 0 to Pred(FHighBounds) do
-  begin
-    p := Pointer(FData[I][X1]);
-    Pointer(FData[I][X1]) := Pointer(FData[I][X2]);
-    Pointer(FData[I][X2]) := p
-  end;
-end;
-
-function TStringCollection.GetPValue(X, Y: integer): PFIBByteString;
-begin
-  { Assert(X<=FHighBounds,'Can''t read value to StrCollection. Bad X-Index');
-    Assert(Y<FCount,'Can''t read value to StrCollection. Bad Y-Index'); }
-  if (X <= FHighBounds) and (Y < FCount) then
+  if (X >= 0) and (X < FHighBounds) and (Y >= 0) and (Y < FCount) then
     Result := @(FData[X][Y])
   else
   begin
@@ -549,14 +525,14 @@ begin
   end;
 end;
 
-function TStringCollection.GetValue(X, Y: integer): FIBByteString;
+function TFIBStringCollection.GetValue(X, Y: Integer): FIBByteString;
 begin
-  Assert(X <= FHighBounds, 'Can''t read value to StrCollection. Bad X-Index');
+  Assert(X < FHighBounds, 'Can''t read value to StrCollection. Bad X-Index');
   Assert(Y < FCount, 'Can''t read value to StrCollection. Bad Y-Index');
   Result := FData[X][Y]
 end;
 
-procedure TStringCollection.Grow;
+procedure TFIBStringCollection.Grow;
 begin
   if FCapacity = 0 then
     SetCapacity(128)
@@ -564,36 +540,20 @@ begin
     SetCapacity(FCapacity + (FCapacity shr 1));
 end;
 
-procedure TStringCollection.Insert(Index: integer);
+procedure TFIBStringCollection.SetCapacity(NewCapacity: Integer);
 var
-  I: integer;
-begin
-  if FCount = FCapacity then
-    Grow;
-  if Index < FCount then
-    for I := 0 to Pred(FHighBounds) do
-    begin
-      Move(FData[I][Index], FData[I][Index + 1], (FCount - Index) * SizeOf(string));
-      Pointer(FData[I][Index]) := nil;
-    end;
-  Inc(FCount);
-end;
-
-procedure TStringCollection.SetCapacity(NewCapacity: integer);
-var
-  I: integer;
+  I: Integer;
 begin
   for I := 0 to FHighBounds - 1 do
     SetLength(FData[I], NewCapacity);
-  // SetLength(PStrArray(@FData)^,NewCapacity*FHighBounds);
   FCapacity := NewCapacity;
 end;
 
-procedure TStringCollection.SetValue(X, Y: integer; const Value: FIBByteString);
+procedure TFIBStringCollection.SetValue(X, Y: Integer; const Value: FIBByteString);
 var
-  Len: integer;
+  Len: Integer;
 begin
-  Assert(X <= FHighBounds, 'Can''t write value to StrCollection. Bad X-Index');
+  Assert(X < FHighBounds, 'Can''t write value to StrCollection. Bad X-Index');
   Assert(Y < FCount, 'Can''t write value to StrCollection. Bad Y-Index');
   Len := Length(Value);
   if Len = 0 then
@@ -602,9 +562,9 @@ begin
     SetString(FData[X][Y], PAnsiChar(@Value[1]), Length(Value));
 end;
 
-procedure TStringCollection.SetPCharValue(X, Y: integer; const Value: PAnsiChar; Len: integer);
+procedure TFIBStringCollection.SetPCharValue(X, Y: Integer; const Value: PAnsiChar; Len: Integer);
 begin
-  Assert(X <= FHighBounds, 'Can''t write value to StrCollection. Bad X-Index');
+  Assert(X < FHighBounds, 'Can''t write value to StrCollection. Bad X-Index');
   Assert(Y < FCount, 'Can''t write value to StrCollection. Bad Y-Index');
   if Len < 0 then
     SetString(FData[X][Y], Value, Q_StrLen(Value))

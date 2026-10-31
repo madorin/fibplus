@@ -15,8 +15,8 @@
 {$IFDEF FIB_INTERFACE}
  FCurOption:TFIBDataSetOption;
  FCurPrepareOption:TFIBPrepareOption;
- FCurDetailCondition :TDetailCondition;
- FLoadingPrepared    :boolean;
+ FCurDetailCondition :TFIBDetailCondition;
+ FLoadingPrepared    :Boolean;
 
 
 
@@ -99,9 +99,9 @@ end;
 procedure TFIBCustomDataSet.DefineProperties(Filer: TFiler);
 
 var
-   IsWriteProcess:boolean;
+   IsWriteProcess:Boolean;
 
-function DoSaveDetailCond:boolean;
+function DoSaveDetailCond:Boolean;
 begin
    if IsWriteProcess then
      if Filer.Ancestor <> nil then
@@ -115,7 +115,7 @@ begin
     Result := False;
 end;
 
-function DoSavePrepareOption(WriteTrueValue:boolean):boolean;
+function DoSavePrepareOption(WriteTrueValue:Boolean):Boolean;
 begin
   if IsWriteProcess then
    if Filer.Ancestor <> nil then
@@ -134,7 +134,7 @@ begin
     Result := False;
 end;
 
-function DoSaveOption(WhenInclude:boolean):boolean;
+function DoSaveOption(WhenInclude:Boolean):Boolean;
 begin
    if IsWriteProcess then
      if Filer.Ancestor <> nil then
@@ -161,7 +161,6 @@ begin
   // Paste component in DesignTime
   // Clear Values from tools
    FOptions:=StatDefDataSetOptions;
-//   [poTrimCharFields,poStartTransaction,poAutoFormatFields,poRefreshAfterPost];
    FDetailConditions:=[];
    FPrepareOptions  :=StatDefPrepareOptions;
    FLoadingPrepared :=True;

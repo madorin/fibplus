@@ -16,13 +16,12 @@ uses
   fraSQLEdit, DB, FIBInterfaces, uFIBEditorForm;
 
 type
-  TOnCanUseFields = procedure(const FieldName: string; Allow: boolean) of object;
   TFrame = TFIBEditorCustomFrame;
 
-  TfDSSQLEdit = class(TFrame)
+  TFIBDataSetSQLFrame = class(TFrame)
     pgCtrl: TPageControl;
     shSelect: TTabSheet;
-    SelectSQLEdit: TfSQLEdit;
+    SelectSQLEdit: TFIBSQLEditFrame;
     shGenOptions: TTabSheet;
     Panel2: TPanel;
     Label3: TLabel;
@@ -46,7 +45,7 @@ type
     LstUpdFields: TListBox;
     shModifySQLs: TTabSheet;
     grSQLKind: TRadioGroup;
-    ModifySQLEdit: TfSQLEdit;
+    ModifySQLEdit: TFIBSQLEditFrame;
     cmbGenerateKind: TComboBox;
     procedure pgCtrlChange(Sender: TObject);
     procedure btnGetFieldsClick(Sender: TObject);
@@ -62,7 +61,6 @@ type
     procedure viewSQLOnExit(Sender: TObject);
   private
     FDatabase: TComponent;
-    FOnCanUseFields: TOnCanUseFields;
     FAllFields: TStrings;
     FUpdTableSynonym: string;
 
@@ -75,11 +73,11 @@ type
     procedure GenerateDeleteSQL;
     procedure GenerateRefreshSQL;
 
-    function WhereClause(withSyn: boolean): string;
+    function WhereClause(withSyn: Boolean): string;
     property Dialect: Integer read GetDialect;
   public
-    vDataSet: TDataSet;
-    vShablonDS: TDataSet;
+    FDataSet: TDataSet;
+    FTemplateDataSet: TDataSet;
     FInsertSQL, FUpdateSQL, FDeleteSQL, FRefreshSQL: string;
     procedure ReadOptions;
     procedure SaveOptions;
@@ -88,7 +86,6 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure PrepareFrame(Database: TComponent; const aSelectSQLText, aInsertSQL, aUpdateSQL, aDeleteSQL, aRefreshSQL: string);
-    property OnCanUseFields: TOnCanUseFields read FOnCanUseFields write FOnCanUseFields;
   end;
 
 const
@@ -101,40 +98,27 @@ uses
   RTTIRoutines, IBSQLSyn;
 
 {$R *.dfm}
-{ TfDSSQLEdit }
+{ TFIBDataSetSQLFrame }
 
-constructor TfDSSQLEdit.Create(AOwner: TComponent);
+constructor TFIBDataSetSQLFrame.Create(AOwner: TComponent);
 begin
   inherited;
   FAllFields := TStringList.Create;
   cmbGenerateKind.ItemIndex := 0;
-  vShablonDS := TDataSet(expDatasetClass.Create(Self))
+  FTemplateDataSet := TDataSet(expDatasetClass.Create(Self))
 end;
 
-destructor TfDSSQLEdit.Destroy;
+destructor TFIBDataSetSQLFrame.Destroy;
 begin
-  // SaveOptions;
   FAllFields.Free;
   inherited;
 end;
 
-procedure TfDSSQLEdit.FillCmbTables;
-{ var
-  i:integer; }
+procedure TFIBDataSetSQLFrame.FillCmbTables;
 begin
   with cmbTables do
   begin
     SelectSQLEdit.FStringer.AllTables(SelectSQLEdit.SQLText, Items, False, True);
-    { for i:=0 to Pred(Items.Count) do
-      begin
-      if Pos('"',Items[i])>0 then
-      begin
-      Items[i]:=Copy(Items[i],2,MaxInt);
-      Items[i]:=Copy(Items[i],1,Pos('"',Items[i])-1);
-      end
-      else
-      Items[i]:=FastUpperCase(ExtractWord(1, Items[i],[' ']));
-      end; }
     if Items.Count > 0 then
     begin
       ItemIndex := 0;
@@ -145,30 +129,30 @@ begin
   end;
 end;
 
-procedure TfDSSQLEdit.pgCtrlChange(Sender: TObject);
+procedure TFIBDataSetSQLFrame.pgCtrlChange(Sender: TObject);
 begin
   if (pgCtrl.ActivePage = shGenOptions) and ((cmbTables.Items.Count = 0) or (FPreparedSelect <> SelectSQLEdit.SQLText))
     then
     FillCmbTables
 end;
 
-procedure TfDSSQLEdit.btnGetFieldsClick(Sender: TObject);
+procedure TFIBDataSetSQLFrame.btnGetFieldsClick(Sender: TObject);
 var
   i, j: Integer;
   tfd: TFieldDef;
-  NeedField: boolean;
+  NeedField: Boolean;
   PrimaryKey: string;
   tn: string;
   ids: IFIBDataSet;
 begin
-  if ObjSupports(vShablonDS, IFIBDataSet, ids) then
-    with vShablonDS, ids, SelectSQLEdit.FStringer do
+  if ObjSupports(FTemplateDataSet, IFIBDataSet, ids) then
+    with FTemplateDataSet, ids, SelectSQLEdit.FStringer do
     begin
-      SetObjectProp(vShablonDS, 'Database', FDatabase);
-      SetObjectProp(vShablonDS, 'Transaction', SelectSQLEdit.trTransaction);
-      SetPropValue(vShablonDS, 'PrepareOptions', '[]');
-      SetPropValue(vShablonDS, 'Options', '[poNoForceIsNull]');
-      AssignStringsToProp(vShablonDS, 'SelectSQL', SelectSQLEdit.SQLText);
+      SetObjectProp(FTemplateDataSet, 'Database', FDatabase);
+      SetObjectProp(FTemplateDataSet, 'Transaction', SelectSQLEdit.trTransaction);
+      SetPropValue(FTemplateDataSet, 'PrepareOptions', '[]');
+      SetPropValue(FTemplateDataSet, 'Options', '[poNoForceIsNull]');
+      AssignStringsToProp(FTemplateDataSet, 'SelectSQL', SelectSQLEdit.SQLText);
 
       ids.Prepare;
       FAllFields.Clear;
@@ -176,8 +160,6 @@ begin
       begin
         tfd := FieldDefs[j];
         NeedField := True;
-        if Assigned(FOnCanUseFields) then
-          FOnCanUseFields(tfd.Name, NeedField);
         if NeedField then
           if FUpdTableSynonym <> '' then
           begin
@@ -232,13 +214,13 @@ end;
 type
   THackWinControl = class(TWinControl);
 
-procedure TfDSSQLEdit.PrepareFrame(Database: TComponent; const aSelectSQLText, aInsertSQL, aUpdateSQL, aDeleteSQL, aRefreshSQL: string);
+procedure TFIBDataSetSQLFrame.PrepareFrame(Database: TComponent; const aSelectSQLText, aInsertSQL, aUpdateSQL, aDeleteSQL, aRefreshSQL: string);
 begin
   FDatabase := Database;
   with SelectSQLEdit do
   begin
     FDatabase := Database;
-    vEditedQuery := vDataSet.FindComponent('SelectQuery');
+    FEditedQuery := FDataSet.FindComponent('SelectQuery');
     PrepareFrame(Database);
     SQLText := aSelectSQLText;
     cmbKindSQL.Enabled := False;
@@ -260,66 +242,57 @@ begin
   ShowModifySQL
 end;
 
-procedure TfDSSQLEdit.ShowModifySQL;
+procedure TFIBDataSetSQLFrame.ShowModifySQL;
 begin
   with ModifySQLEdit do
     case grSQLKind.ItemIndex of
       - 1, 0:
         begin
-          vEditedQuery := vDataSet.FindComponent('InsertQuery');
+          FEditedQuery := FDataSet.FindComponent('InsertQuery');
           SQLText := FInsertSQL;
         end;
       1:
         begin
-          vEditedQuery := vDataSet.FindComponent('UpdateQuery');
+          FEditedQuery := FDataSet.FindComponent('UpdateQuery');
           SQLText := FUpdateSQL;
         end;
       2:
         begin
-          vEditedQuery := vDataSet.FindComponent('DeleteQuery');
+          FEditedQuery := FDataSet.FindComponent('DeleteQuery');
           SQLText := FDeleteSQL;
         end;
       3:
         begin
-          vEditedQuery := vDataSet.FindComponent('RefreshQuery');
+          FEditedQuery := FDataSet.FindComponent('RefreshQuery');
           SQLText := FRefreshSQL;
         end;
     end;
   ModifySQLEdit.ShowEditorStatus
 end;
 
-procedure TfDSSQLEdit.grSQLKindClick(Sender: TObject);
+procedure TFIBDataSetSQLFrame.grSQLKindClick(Sender: TObject);
 begin
   ShowModifySQL
 end;
 
-procedure TfDSSQLEdit.GenerateInsertSQL;
+procedure TFIBDataSetSQLFrame.GenerateInsertSQL;
 var
   j: Integer;
   pn, rfn, tmpStr, tmpStr1: string;
-  // vpFIBTableInfo:TFIBTableInfo;
-  // vFi:TFIBFieldInfo;
   tn: string;
   ids: IFIBDataSet;
 begin
-  if ObjSupports(vShablonDS, IFIBDataSet, ids) then
+  if ObjSupports(FTemplateDataSet, IFIBDataSet, ids) then
     with LstUpdFields, SelectSQLEdit.FStringer do
     begin
       FInsertSQL := '';
       tmpStr := '';
       tmpStr1 := '';
-      // ListTableInfo.Clear;
       tn := ExtractWord(1, cmbTables.Text, [' ']);
-      { vpFIBTableInfo:=                                                pFIBDataSet
-        ListTableInfo.GetTableInfo(FDatabase, tn ,False);
-      }
       for j := 0 to Pred(Items.Count) do
         if Selected[j] then
         begin
           rfn := ids.GetRelationFieldName(Items.Objects[j]);
-          { vFi:=vpFIBTableInfo.FieldInfo(rfn);
-            if (vFi=nil) or  vFi.IsComputed or vFi.IsTriggered then
-            Continue; }
           if SelectSQLEdit.FMetaExtractor.IsCalculatedField(tn, rfn, SelectSQLEdit.trTransaction) then
             Continue;
           rfn := FormatIdentifier(GetDialect, rfn);
@@ -337,7 +310,7 @@ begin
     end;
 end;
 
-procedure TfDSSQLEdit.btnGenSqlClick(Sender: TObject);
+procedure TFIBDataSetSQLFrame.btnGenSqlClick(Sender: TObject);
 begin
   case cmbGenerateKind.ItemIndex of
     0:
@@ -360,32 +333,23 @@ begin
     grSQLKind.ItemIndex := 0;
 end;
 
-procedure TfDSSQLEdit.GenerateUpdateSQL;
+procedure TFIBDataSetSQLFrame.GenerateUpdateSQL;
 var
   j: Integer;
   pn, rfn, tmpStr: string;
-  { vpFIBTableInfo:TFIBTableInfo;
-    vFi:TFIBFieldInfo; }
   PrimaryKey: string;
   tn: string;
   ids: IFIBDataSet;
 begin
-  if ObjSupports(vShablonDS, IFIBDataSet, ids) then
+  if ObjSupports(FTemplateDataSet, IFIBDataSet, ids) then
     with LstUpdFields, ids, SelectSQLEdit.FStringer do
     begin
       FUpdateSQL := '';
       tmpStr := '';
-      // ListTableInfo.Clear;
       tn := ExtractWord(1, cmbTables.Text, [' ']);
-      { vpFIBTableInfo:=
-        ListTableInfo.GetTableInfo(FDatabase,tn,False);
-      }
       for j := 0 to Pred(Items.Count) do
       begin
         rfn := ids.GetRelationFieldName(Items.Objects[j]);
-        { vFi:=vpFIBTableInfo.FieldInfo(rfn);
-          if (vFi=nil) or  vFi.IsComputed or vFi.IsTriggered then
-          Continue; }
         if SelectSQLEdit.FMetaExtractor.IsCalculatedField(tn, rfn, SelectSQLEdit.trTransaction) then
           Continue;
 
@@ -412,13 +376,13 @@ begin
     end;
 end;
 
-function TfDSSQLEdit.WhereClause(withSyn: boolean): string;
+function TFIBDataSetSQLFrame.WhereClause(withSyn: Boolean): string;
 var
   i, j: Integer;
   pn, rfn: string;
   ids: IFIBDataSet;
 begin
-  if ObjSupports(vShablonDS, IFIBDataSet, ids) then
+  if ObjSupports(FTemplateDataSet, IFIBDataSet, ids) then
     with LstKeyFields, SelectSQLEdit.FStringer do
     begin
       i := 0;
@@ -447,7 +411,7 @@ begin
     end;
 end;
 
-function TfDSSQLEdit.GetDialect: Integer;
+function TFIBDataSetSQLFrame.GetDialect: Integer;
 begin
   if Assigned(FDatabase) then
     Result := GetPropValue(FDatabase, 'SQLDialect')
@@ -455,7 +419,7 @@ begin
     Result := 3
 end;
 
-procedure TfDSSQLEdit.cmbTablesChange(Sender: TObject);
+procedure TFIBDataSetSQLFrame.cmbTablesChange(Sender: TObject);
 begin
   with cmbTables, FDatabase do
     if ItemIndex > -1 then
@@ -477,7 +441,7 @@ begin
   btnGetFieldsClick(btnGetFields);
 end;
 
-procedure TfDSSQLEdit.GenerateDeleteSQL;
+procedure TFIBDataSetSQLFrame.GenerateDeleteSQL;
 begin
   with LstKeyFields, SelectSQLEdit.FStringer do
   begin
@@ -487,7 +451,7 @@ begin
 
 end;
 
-procedure TfDSSQLEdit.GenerateRefreshSQL;
+procedure TFIBDataSetSQLFrame.GenerateRefreshSQL;
 begin
   with SelectSQLEdit.FStringer do
   begin
@@ -496,7 +460,7 @@ begin
   end
 end;
 
-procedure TfDSSQLEdit.viewSQLOnExit(Sender: TObject);
+procedure TFIBDataSetSQLFrame.viewSQLOnExit(Sender: TObject);
 begin
   case grSQLKind.ItemIndex of
     0: FInsertSQL := ModifySQLEdit.SQLText;
@@ -507,36 +471,36 @@ begin
 
 end;
 
-procedure TfDSSQLEdit.ReadOptions;
+procedure TFIBDataSetSQLFrame.ReadOptions;
 {$IFNDEF NO_REGISTRY}
 var
-  v: Variant;
+  RegValues: Variant;
   i: Integer;
 {$ENDIF}
 begin
 {$IFNDEF NO_REGISTRY}
-  v := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBSQLEdOptions],
+  RegValues := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBSQLEdOptions],
     ['WhereByPK', 'NotUpdatePK', 'Use?', 'Origins']);
-  if (VarType(v) <> varBoolean) then
+  if (VarType(RegValues) <> varBoolean) then
     for i := 0 to 3 do
-      if v[1, i] then
+      if RegValues[1, i] then
         case i of
-          0: chByPrimary.Checked := v[0, i];
-          1: chNonUpdPrKey.Checked := v[0, i];
+          0: chByPrimary.Checked := RegValues[0, i];
+          1: chNonUpdPrKey.Checked := RegValues[0, i];
           2:
-            if v[0, i] then
+            if RegValues[0, i] then
               cmbParamSymbol.ItemIndex := 1
             else
               cmbParamSymbol.ItemIndex := 0;
 
-          3: chFieldOrigin.Checked := v[0, i];
+          3: chFieldOrigin.Checked := RegValues[0, i];
         end;
   SelectSQLEdit.ReadOptions;
   ModifySQLEdit.ReadOptions;
 {$ENDIF}
 end;
 
-procedure TfDSSQLEdit.SaveOptions;
+procedure TFIBDataSetSQLFrame.SaveOptions;
 begin
 {$IFNDEF NO_REGISTRY}
   DefWriteToRegistry(['Software', RegFIBRoot, RegFIBSQLEdOptions], ['WhereByPK', 'NotUpdatePK', 'Use?', 'Origins'],
@@ -546,13 +510,13 @@ begin
 {$ENDIF}
 end;
 
-procedure TfDSSQLEdit.SelectSQLEditSpeedButton1Click(Sender: TObject);
+procedure TFIBDataSetSQLFrame.SelectSQLEditSpeedButton1Click(Sender: TObject);
 begin
   SelectSQLEdit.SpeedButton1Click(Sender);
   THackWinControl(ModifySQLEdit.viewSQL).Font := THackWinControl(SelectSQLEdit.viewSQL).Font
 end;
 
-procedure TfDSSQLEdit.btnClearSQLsClick(Sender: TObject);
+procedure TFIBDataSetSQLFrame.btnClearSQLsClick(Sender: TObject);
 begin
   FInsertSQL := '';
   FUpdateSQL := '';
@@ -561,18 +525,18 @@ begin
   ShowModifySQL
 end;
 
-procedure TfDSSQLEdit.SelectSQLEditbtnGenSQLClick(Sender: TObject);
+procedure TFIBDataSetSQLFrame.SelectSQLEditbtnGenSQLClick(Sender: TObject);
 begin
   SelectSQLEdit.btnGenSqlClick(Sender);
 
 end;
 
-procedure TfDSSQLEdit.Panel2MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+procedure TFIBDataSetSQLFrame.Panel2MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
 begin
   cmbTables.Hint := cmbTables.Text
 end;
 
-procedure TfDSSQLEdit.SetProposal;
+procedure TFIBDataSetSQLFrame.SetProposal;
 begin
   if (SelectSQLEdit.FDatabase = nil) or not Boolean(GetPropValue(SelectSQLEdit.FDatabase, 'Connected')) then
     SelectSQLEdit.iViewSQL.ISetProposalItems(DefProposalShadow[0], DefProposalShadow[1]);

@@ -38,7 +38,7 @@ Query.ExecQuery;
 `LoadFromFile` has two overloads.
 
 - `LoadFromFile(FileName)` reads the whole file into memory and works like `LoadFromStream`: the BLOB is created when the statement runs.
-- `LoadFromFile(FileName, Callback)` creates the BLOB on the server at once, in the transaction of the query, and sets the parameter to its ID. The file is read in chunks. `Callback` is a `TCallBackBlobReadWrite` that gets the progress and can stop the transfer.
+- `LoadFromFile(FileName, Callback)` creates the BLOB on the server at once, in the transaction of the query, and sets the parameter to its ID. The file is read in chunks. `Callback` is a `TFIBBlobProgressEvent` that gets the progress and can stop the transfer.
 
 ```delphi
 Query.ParamByName('BODY').LoadFromFile('D:\Data\report.pdf');
@@ -239,10 +239,10 @@ begin
   // reverse the change of EncodeNote
 end;
 
-Database.RegisterBlobFilter(-100, PIBBlobFilterProc(@EncodeNote), PIBBlobFilterProc(@DecodeNote));
+Database.RegisterBlobFilter(-100, PFIBBlobFilterProc(@EncodeNote), PFIBBlobFilterProc(@DecodeNote));
 ```
 
-- The unit `IBBlobFilter` declares `TIBBlobFilterProc` and `PIBBlobFilterProc`.
+- The unit `IBBlobFilter` declares `TFIBBlobFilterProc` and `PFIBBlobFilterProc`.
 - The procedure receives the address of the buffer pointer, not of the data. The library allocates the buffer with the Delphi memory manager and frees it after use, so a filter that changes the length must reallocate it with `ReallocMem` and set `BlobSize`.
 - `EncodeProc` runs when the BLOB is written to the server, `DecodeProc` when it is read.
 - A filter applies only to negative subtypes and to BLOBs that are not empty. Registering a subtype again replaces its procedures.

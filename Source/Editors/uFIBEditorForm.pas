@@ -36,11 +36,20 @@ function RegistryInteger(const Values: Variant; Index: Integer; out Value: Integ
 implementation
 
 uses
-  SysUtils, Math, RegUtils, FIBProps;
+  SysUtils, Math, RTLConsts, RegUtils, FIBProps;
 
 const
   DefaultPPI = 96;
   PositionValueNames: array[0..5] of string = ('Top', 'Left', 'Height', 'Width', 'Maximized', 'PixelsPerInch');
+
+// DFM properties of a newer IDE are skipped, other read errors are raised
+function IsUnknownPropertyError(const Message: string): Boolean;
+var
+  Prefix: string;
+begin
+  Prefix := Copy(SUnknownProperty, 1, Pos('%s', SUnknownProperty) - 1);
+  Result := (Prefix <> '') and (Pos(Prefix, Message) > 0);
+end;
 
 function ControlPPI(Control: TControl): Integer;
 begin
@@ -85,7 +94,7 @@ end;
 
 procedure TFIBEditorCustomForm.OnReadError(Reader: TReader; const Message: string; var Handled: Boolean);
 begin
-  Handled := True
+  Handled := IsUnknownPropertyError(Message)
 end;
 
 procedure TFIBEditorCustomForm.RestorePosition;
@@ -150,7 +159,7 @@ end;
 
 procedure TFIBEditorCustomFrame.OnReadError(Reader: TReader; const Message: string; var Handled: Boolean);
 begin
-  Handled := True
+  Handled := IsUnknownPropertyError(Message)
 end;
 
 procedure TFIBEditorCustomFrame.ReadState(Reader: TReader);

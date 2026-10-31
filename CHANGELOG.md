@@ -69,11 +69,11 @@
   connection (65535 bytes on Firebird 3 and later, a 65533 bytes statement
   before) is written as a `/* ... */` note, since `COMMENT ON` takes only a
   literal.
-- `TMetaPackage.Procedures` and `Functions` (with `ProceduresCount` and
+- `TFIBMetaPackage.Procedures` and `Functions` (with `ProceduresCount` and
   `FunctionsCount`): the routines of a package, with their parameters.
-- Read-only properties of the meta objects: `TMetaGenerator.InitialValue` and
-  `Increment`, `TMetaTableField.Collation`, `TMetaIndex.Expression` and
-  `Condition` (the `WHERE` of a partial index), `TCustomMetaTrigger.TriggerType`.
+- Read-only properties of the meta objects: `TFIBMetaGenerator.InitialValue` and
+  `Increment`, `TFIBMetaTableField.Collation`, `TFIBMetaIndex.Expression` and
+  `Condition` (the `WHERE` of a partial index), `TFIBCustomMetaTrigger.TriggerType`.
 
 #### Errors
 
@@ -135,6 +135,45 @@ The lists of old and new names, and what an application has to change, are in
   once in the FIBPlus preferences. The stored preferences are read by
   `dclFIBTools` (Delphi 10.4 and later); without it they are not applied.
 
+#### Naming
+
+The full list of old and new names is in
+[Upgrading](Docs/guide/upgrading.md#renamed-types-routines-and-constants).
+
+- Types, interfaces, exceptions, routines, constants and resource strings have
+  descriptive names with the `FIB` prefix (`TFIB...`, `PFIB...`, `EFIB...`,
+  `IFIB...`) in all units: `TMetaTable` is now `TFIBMetaTable`, `TOnSQLExecute`
+  is `TFIBSQLExecuteEvent`, `ISQLParser` is `IFIBSQLParser`. The old type names
+  stay as deprecated aliases in the unit that declared them (the compiler warns
+  where they are used) and will be removed in the next major version; routines,
+  constants and fields are renamed without aliases.
+- The schema extract classes (`TMeta...` in `FIBMetaData`), the types of
+  `FIBServices`, `FIBScripter`, `FIBProps`, `FIBDatabase`, `FIBDataSet`,
+  `FIBQuery`, `FIBErrorHandler`, the cache, list and parser helpers, the event
+  alerter (`TSIBEventAlerter` is `TFIBCustomEventAlerter`, the `SIB_RS_...`
+  messages are `SFIBEvent...`) and the design-time editors and forms are
+  renamed.
+- `TTestInfo` in `FIBTestInfo` is `TFIBStatistics`; `TestExecProc`,
+  `TestExecProcObj` and `TestExecFuncStr` are `RepeatProc`, `RepeatMethod` and
+  `RepeatStringFunc`.
+- The repository routines of `FIBDataInfo` (`CreateFRepositaryTable`,
+  `Update1RepositaryTable` ...) are `CreateFieldsRepositoryTable`,
+  `UpgradeFieldsRepositoryTable` ..., and `ListTableInfo`, `ListDataSetInfo`,
+  `ListSPInfo` and `ListErrorMessages` are `TableInfoCache`,
+  `DataSetInfoCache`, `StoredProcInfoCache` and `ErrorMessageCache`.
+  `ApplyUpdToBase` and `CommitUpdToCach` of `FIBDatabase` are
+  `ApplyUpdatesToDatabase` and `CommitUpdatesToCache`.
+- Typos are fixed in the names: `Equel` is `Equal` (`EquelStrings`,
+  `IsEquelSQLNames`), `Deffered` is `Deferred`, `Repositary` is `Repository`,
+  `Diapazon` is `Range` (`FindInDiapazon` is `FindInRange`), `Sufix` is
+  `Suffix` (`DefSufixGenName` is `DefSuffixGenName`), `CLRF` is `CRLF`
+  (`TrimCLRF` is `TrimCRLF`).
+- Names stored in `.dfm` and `.fmx` files or in the registry keep their
+  names: `psApplyRepositary`, `TDataSetsContainer`, the published properties
+  `ErrorLexems`, `DataSet_ID`, `WhenGetGenID` and `SelectGenID`, the
+  unprefixed values of the enumerations of published properties in
+  `FIBServices` and `FIBProps`, and the registry keys of the IDE preferences.
+
 #### Merged components
 
 - `TpFIBDataSet`, `TpFIBQuery`, `TpFIBUpdateObject`, `TpFIBDatabase` and
@@ -157,12 +196,12 @@ The lists of old and new names, and what an application has to change, are in
   `feInTransaction` (`TpFIBTransaction` did nothing); `Active := True` still
   does nothing. `AfterStart` and `AfterStartTransaction` are raised only when
   the transaction started. `CacheSchemaOptions :=` in code copies the values.
-- Types that moved with the merge: `TFIBUpdateObject`, `TLockStatus`,
-  `TCachRefreshKind` and the other dataset types are in `FIBDataSet`;
-  `TFIBLoginEvent`, `TOnLostConnectActions`, `TOnSQLExecute` and the other
+- Types that moved with the merge: `TFIBUpdateObject`, `TFIBLockStatus`,
+  `TFIBCacheRefreshKind` and the other dataset types are in `FIBDataSet`;
+  `TFIBLoginEvent`, `TFIBLostConnectAction`, `TFIBSQLExecuteEvent` and the other
   connection types are in `FIBDatabase`; `TFIBFieldInfo`,
-  `TOnBlobFieldProcessing` and `TFIBSQLTypes` are in `FIBProps`.
-- Changed signatures: `TOnSQLExecute` has the parameter `Query: TComponent`
+  `TFIBBlobFieldProcessingEvent` and `TFIBSQLTypes` are in `FIBProps`.
+- Changed signatures: `TFIBSQLExecuteEvent` has the parameter `Query: TComponent`
   (it was `TFIBQuery`); `FIBDataSets[Index]` and `FIBQueries[Index]` of the
   database and the transaction return `TDataSet` and `TComponent`;
   `TFIBUpdateObject.DataSet` has the type `TFIBCustomDataSet` and accepts any
@@ -263,7 +302,7 @@ The lists of old and new names, and what an application has to change, are in
   deprecated, use `Fields.LifeCycles`. Delphi 2009 to XE5 keep the property.
 - `TFIBDataSet.FetchNext` takes an `Integer` count (was `DWORD`), like
   `RecordCount`: a negative count fetches no row (it fetched all the rows).
-  `ISQLStatMaker.FixStartTime` and `TTestInfo.FixStartTime` return the tick
+  `IFIBSQLStatisticsMaker.FixStartTime` and `TFIBStatistics.FixStartTime` return the tick
   count as `Cardinal` (was `Integer`).
 - On Delphi XE3 and later `TFIBCustomDataSet` and `TFIBClientDataSet` override only the
   `TValueBuffer` overload of `DataConvert` (the deprecated `Pointer` one stays for Delphi 2009
@@ -281,14 +320,14 @@ The lists of old and new names, and what an application has to change, are in
   [Upgrading](Docs/guide/upgrading.md#800).
 - `FIBAlloc` takes `NativeInt` sizes (was `DWORD`). `TFIBCustomTimer.Interval` (`FIBSafeTimer`,
   alias `TFIBTimer` in `StdFuncs`) and `TFIBDataSet.WaitEndMasterInterval` are `Cardinal` (were
-  `Integer`), like `TTimer.Interval`. `IIbClientLibrary.isc_interprete` and `fb_Interpret` return
+  `Integer`), like `TTimer.Interval`. `IFIBClientLibrary.isc_interprete` and `fb_Interpret` return
   `ISC_LONG` (were `ISC_STATUS`, 64 bits on Win64), as the client library. The `Length` of
   `SIB_QueEvents` and `SIB_EventCounts` is `SIB_Short` (was `SIB_UShort`), as in the client API.
   `SIB_Status` (`SIBAPI`) is `ISC_STATUS` (was `SIB_Long`, 32 bits on Win64), so the event status
-  vector has the entries the client writes. `IIBClientLibrary.isc_event_counts` and
+  vector has the entries the client writes. `IFIBClientLibrary.isc_event_counts` and
   `Tisc_event_counts` take a `PUISC_LONG` (was `PISC_STATUS`), as `ISC_ULONG*` in the C header,
   and `SIB_EventCounts` a `SIB_PEventCountVector`.
-  `TFIBDatabase.IsMemoSubtype` and `TMemoSubtypes.IsMemoSubtype` take a `SmallInt` (was
+  `TFIBDatabase.IsMemoSubtype` and `TFIBMemoSubtypes.IsMemoSubtype` take a `SmallInt` (was
   `ShortInt`), and `TFIBFieldDescrList.LoadFromStream` an `Integer` version (was `Byte`).
 - `DBPrimaryKeyFields` (`FIBDataInfo`) has a last parameter `Database` (default `nil`: the
   default database of the transaction). `FIBPlatforms.CLRF` is deprecated: use `sLineBreak`.
@@ -327,17 +366,17 @@ The lists of old and new names, and what an application has to change, are in
 #### Schema extract
 
 - `TFIBDBSchemaExtract.DDLTextOptions` is `[dtoIncludeComments]` by default
-  (was `[]`), and `TMetaDataBase` and `ExtGenerateDDLText` use
+  (was `[]`), and `TFIBMetaDatabase` and `ExtGenerateDDLText` use
   `DefDDLTextOptions` (`dtoIncludeComments` added). Forms saved with
   `DDLTextOptions = []` keep writing no comments; see
   [Upgrading](Docs/guide/upgrading.md#800).
-- `TMetaGenerator.Value` is `Int64` (was `Integer`). `FieldsCount` and the
-  index of `Fields` of `TMetaConstraint` (primary keys, unique constraints,
+- `TFIBMetaGenerator.Value` is `Int64` (was `Integer`). `FieldsCount` and the
+  index of `Fields` of `TFIBMetaConstraint` (primary keys, unique constraints,
   indices, foreign keys), and `ForFieldsCount` and `ForFields` of
-  `TMetaForeignKey`, are `Integer` (were `Word`), as in the rest of the meta
+  `TFIBMetaForeignKey`, are `Integer` (were `Word`), as in the rest of the meta
   objects.
 - `DefObjects`, the default of `LoadOptions.DBObjects` of `TFIBDBSchemaExtract` and of
-  `TMetaDataBase` (`FullExtractDDL`), has `otStoredFunctions` and `otPackage`: PSQL functions
+  `TFIBMetaDatabase` (`FullExtractDDL`), has `otStoredFunctions` and `otPackage`: PSQL functions
   and packages are extracted by default. Forms saved with the old default load the new one; see
   [Upgrading](Docs/guide/upgrading.md#schema-extract).
 - The script of `GetDDLText` writes the database and DDL triggers at the end. With Firebird 3
@@ -378,7 +417,7 @@ The lists of old and new names, and what an application has to change, are in
   polyfills `StrUtil.CharInSet` and `FIBPlatforms.WideCompareStr` (`SysUtils`
   declares both); see [Upgrading](Docs/guide/upgrading.md#800).
 - The samples `UnicodeFSS` (TNT controls) and `UnicodeFSS_2009`.
-- `TMetaTable.GenerateDDLTextOnlyTable` (protected): use `GenerateObjectDDL`.
+- `TFIBMetaTable.GenerateDDLTextOnlyTable` (protected): use `GenerateObjectDDL`.
 - `StrUtil.TFastStringStream`: the DDL methods of `FIBMetaData`
   (`GenerateDDLText`, `GenerateObjectDDL` and the others) take a
   `TStringStream`; see [Upgrading](Docs/guide/upgrading.md#800).
@@ -392,6 +431,32 @@ The lists of old and new names, and what an application has to change, are in
   saved in the old format), which no longer compiled.
 - The **Find Component** editor units `FindCmp` and `uFrmSearchResult`, which no menu opened,
   and the editors unit `RegistryUtils`: use `RegUtils`, which has the same routines.
+- Unused helper routines, many of them in the RTL of newer Delphi versions: in
+  `StdFuncs` the calendar and base conversion helpers (`Year`, `Month`,
+  `DayOfYear`, `DayOfMonth`, `WeekOfYear`, `ClosestWeekday`, `ConvertToBase`,
+  `ConvertFromBase`, `Soundex`, `Signum`, `MaxD`, `MinD`, `HexStr2Int`,
+  `InitFPU`, `StreamToVariant`, `IBStrToTime` and others), in `StrUtil` the mask
+  and comparison helpers (`MaskCompare`, `WildStringCompare`, `StrOnMask`,
+  `StrIsInteger`, `PosInSubstrExt`, `DoUtf8Decode` and others),
+  `FIBCloneComponents.CreateClone` and the `SaveCmp...`/`LoadCmp...` routines,
+  `FBDecimalIsZero`, `VariantRtn.CompareVarArray1`; see
+  [Upgrading](Docs/guide/upgrading.md#removed-identifiers).
+- `TFIBQuery.ExecuteAsBatch` and `SQLDescribeInfo`, the `BATCH` statements of
+  the InterBase 2007 API in `TFIBScripter`, and the deprecated `AddDataSet`,
+  `RemoveDataSet`, `RemoveDataSets`, `DataSetCount` and `DataSets` of
+  `TFIBDatabase` and `TFIBTransaction` (`USE_DEPRECATE_METHODS1`).
+- `FIB.FIBErrorEx` and `StatusVectorAsText`, `FIBDatabase.GetConnectedDataBase`
+  and `CloseAllDatabases`, and the unused declarations of `ibase`
+  (`add_spb_length`, `add_spb_numeric`, the `SCROLLABLE_CURSORS` fetch
+  functions), `IB_Externals` (the C time structure and its constants,
+  `TISC_VARYING`, `TBlob`) and `SIBAPI`.
+- `TFIBFilterType`, `PFIBFieldData` and `ufsRefresh` of `FIBDataSet`;
+  `TFIBRecordsCache.Capacity`, `RecordSize`, `RecordCount` and three other
+  unused members; unused members of `TFIBSortedIntegerList`,
+  `TFIBStringCollection`, `TFIBStatistics` and `IFIBSQLParser`.
+- Design-time units: `RegUtils.SaveRegKey` and `LoadRegKey`, `ShowDSSQLsEdit`,
+  the `OnCanUseFields` event of the SQL frame and the `USE_SYN_EDIT` code of the
+  SQL editors.
 
 ### Fixed
 
@@ -433,7 +498,7 @@ The lists of old and new names, and what an application has to change, are in
   and later check the range.
 - `LibraryName` of `TFIBDatabase` went through the system code page: a client library in a
   folder with a name outside it could not be loaded.
-- macOS: the client library was never unloaded, neither by `IIBClientLibrary.FreeIBLibrary` nor
+- macOS: the client library was never unloaded, neither by `IFIBClientLibrary.FreeIBLibrary` nor
   at program exit.
 - `DBParams`: a last `shutdown` value of one character (`shutdown=2`) was ignored, and an unknown
   word or a word with spaces (`shutdown=force, full`) set every bit of the value. The words are
@@ -467,6 +532,23 @@ The lists of old and new names, and what an application has to change, are in
 - `TFIBDatabase.Gen_Id` ran in `FirstActiveTransaction` even when `aTransaction` was passed, and
   a transaction it had started stayed active when the statement failed. It runs in
   `aTransaction` when one is passed, and rolls back only a transaction it started.
+- A handler of a database or transaction event could not unregister itself or
+  free a registered component while the events were called (access violation).
+  An exception in `AfterConnect` skipped the connect notifications of the
+  datasets; `Open` now raises it after the connect is complete.
+- A lost connection did not release the client attachment, and a failed `Commit`
+  or `Rollback` left the state `tsDoCommit` instead of `tsActive`.
+- `ServerActiveTransactions` listed at most 72 transactions and leaked its list;
+  the operation counts could read past the buffer.
+- The login prompt blocked the connects of other threads. A timer of a worker
+  thread that synchronizes its event deadlocked with the main thread creating
+  datasets or transactions, and the idle `Timeout` of a database used by other
+  threads never fired; it now fires within a quarter of the `Timeout` after it
+  elapses.
+- `Busy` was `False` while another call of the client library ran, and client
+  library names that differ only in case made two library objects.
+  `RaiseCancelOperations` no longer raises "Nothing to cancel" while another
+  database of the same client library runs a call.
 
 #### Queries and parameters
 
@@ -522,6 +604,30 @@ The lists of old and new names, and what an application has to change, are in
   returned `False` with an empty file, so a `BatchInput` from it inserted no row.
 - `BatchOutputRawFile` wrote the second and later BLOB columns of a row with the BLOBs before
   them in that row in front of their own content.
+- `FindField`, `FindParam` and `FieldByName` with a quoted name that does not
+  exist returned an invalid object instead of `nil`.
+- A raw `TIME`/`TIMESTAMP WITH TIME ZONE` parameter lost its time zone when the
+  statement had macros or a null comparison rewritten to `IS NULL`.
+- Assigning a `VARCHAR` value to a `BLOB` parameter wrote the two length bytes
+  and lost the last two characters.
+- A null parameter in a `WHERE` comparison prepared the statement again at every
+  execute. `= (:Param)` with a null value gave a syntax error, and `= -:Param`
+  was rewritten to `IS NULL`.
+- `BatchToQuery` inserted an empty row when `GoToFirstRecordOnExecute` is
+  `False` and left the cursor open after a stop or an error; `BatchInput`
+  refused a file whose charset differs only in letter case.
+- Setting `ParamCheck` at run time did not parse the parameters again.
+- `EXECUTE BLOCK` parameters were not found after a name ending in `AS` (like
+  `GAS`), and a closing quote at the very end of the text raised "EOF in
+  string".
+- `ExecProc` did nothing when a line break followed `EXECUTE` or a comment
+  preceded it, and a macro at the start of the text was not found.
+- Changing `Database` of a query with an open cursor left it marked open; a
+  failed DDL statement of `ExecuteImmediate` was not reported to the SQL monitor
+  and logger.
+- `AsBcd` of `NUMERIC(9,6)` and similar fields kept only four decimals and read
+  stale data for a null `NUMERIC(18,x)`; `AsDateTime` of a text value with a
+  time failed; `AsGuid` of a non-text value returned a stale value.
 
 #### Datasets and fields
 
@@ -697,7 +803,7 @@ The lists of old and new names, and what an application has to change, are in
   (`from "RevMixed" t`, `UpdateTableName` `RevMixed`) was not found there, so no field matched
   its alias and an edit was not written (`No Action`), without an error. A quote inside a quoted
   identifier or alias (`"Q""A"`) was not doubled in the generated SQL.
-- `EquelStrings` (`StrUtil`) took any two characters 32 codes apart for the same letter (`'T0'`
+- `EqualStrings` (`StrUtil`) took any two characters 32 codes apart for the same letter (`'T0'`
   matched `'TP'`, `'A$B'` matched `'ADB'`); only `a`..`z` and `A`..`Z` match now.
   `pfSetReadOnlyFields` also took a table that differs only in case from `UpdateTableName` for
   it.
@@ -730,6 +836,57 @@ The lists of old and new names, and what an application has to change, are in
   field matched the filter `B`); as in SQL and the VCL `TClientDataSet`, `=`, `<>`, `>`, `>=`,
   `<`, `<=`, `LIKE` and `IN` no longer match when an operand is NULL; see
   [Upgrading](Docs/guide/upgrading.md#null-in-filter-comparisons).
+- `CachedUpdates` with `poCacheCalcFields`: `Undelete`, `CanEdit` of an inserted
+  record and `CachedUpdateStatus` failed on records whose calculated fields were
+  cached.
+- `CachedUpdates`: `RevertRecord` of an unmodified record and `Undelete` left
+  `UpdatesPending` and `CountUpdatesPending` wrong, so `CancelUpdates` could do
+  nothing; `Undelete` of a reverted insert did not mark the updates pending.
+- `CachedUpdates`: after deleting a modified record, `Undelete`, `RevertRecord`
+  and `CancelUpdates` showed the edited values while `ApplyUpdates` never wrote
+  them. The record now returns with its original values.
+- Limited cache: scrolling with a nullable sort field ignored `NULLS
+  FIRST`/`NULLS LAST`, misordered `TIMESTAMP` values before 1753 and failed for
+  `BOOLEAN` sort fields; an error while fetching the last records was hidden.
+- Limited cache: `GotoBookmark` outside the buffered records failed for
+  `BIGINT`, `NUMERIC`, `BOOLEAN` and `GUID` keys, and could go to a record whose
+  key differs only in the last byte (1.5 and -1.5).
+- A failed `Locate` on a filtered dataset moved the cursor, so the next `Next`
+  or `Prior` went to a wrong record; `Locate` with fewer key values than key
+  fields read past the values and now raises an error.
+- `TFIBDSContainer`: a freed global container was still called, a container
+  whose `MasterContainer` is the global one got every dataset event twice, and
+  the container of a dataset overrode the global comparison even when it did not
+  compare.
+- `NUMERIC` and `DECIMAL` fields of up to 9 digits read as `Double` were off in
+  the last digit (0.7 read as 0.7000000000000001).
+  `TFIBWideStringField.CollateNumber` returned a wrong value.
+- `Sort` with a wrong field name left the controls disabled, and errors of
+  `OnCompareFieldValues` were hidden. An exception in `OnCalcFields` leaked a
+  record buffer.
+- `AsBoolean` of `TFIBIntegerField` and `TFIBSmallIntField` returned `False` for
+  negative values; `TFIBGuidField` accepted any field size.
+- A filter with `NOT`, `AND` or `OR` on a `NULL` boolean operand raised an
+  error; the operand now counts as `False`, and `UPPER`/`LOWER` of `NULL` give
+  `NULL` instead of an empty string. `LIKE` and `Locate` with wildcards never
+  matched masks such as `%_x`.
+- Loading a dataset from a stream leaked memory, a cloned sorted dataset lost
+  the sort order, and reading a record beyond the record map read outside the
+  cache.
+- `TFIBTableChangesReader` kept a freed transaction when it was freed first.
+- Array elements: a `CHAR` value with blanks beyond the column length was
+  refused, and a `UInt64` value lost precision. The query cache did not reuse a
+  query for SQL with LF-only line breaks.
+- `CachedUpdates`: setting a field and then calling `Cancel` left
+  `CountUpdatesPending` raised, so a later `Delete` or `Undelete` set
+  `UpdatesPending` wrongly. The count changes when the record is posted.
+- `LoadFromStream` of a `CachedUpdates` dataset with calculated fields and
+  `poCacheCalcFields` returned damaged records and `ApplyUpdates` wrote nothing;
+  after the load `UpdatesPending` and `CountUpdatesPending` now show the cached
+  updates of the stream.
+- `RevertRecord` of an edited record left its calculated fields empty until the
+  cursor moved.
+
 
 #### Events
 
@@ -751,10 +908,13 @@ The lists of old and new names, and what an application has to change, are in
   and hung.
 - With `VCLSynchronize = False`, an event thread that failed read the error text through
   `Synchronize` and blocked in a program whose main thread doesn't call `CheckSynchronize`.
+- `TFIBEventAlerter` kept a dangling `Database` when the database was freed
+  first, and `AutoRegister` did not register a connected database assigned at
+  run time.
 
 #### Errors and messages
 
-- The error message cache (`ListErrorMessages`, used by `TFIBErrorHandler` for
+- The error message cache (`ErrorMessageCache`, used by `TFIBErrorHandler` for
   the messages of `FIB$ERROR_MESSAGES`) was not thread safe: errors handled in
   several threads at once could raise access violations. With a schema cache
   file, `FIB$VERSION` was checked once per process for all databases, so the
@@ -776,7 +936,7 @@ The lists of old and new names, and what an application has to change, are in
   a database other than the default one of the transaction was looked up in
   `FIB$ERROR_MESSAGES` of the default database (with its `UseRepositories`)
   and cached under it. The lookup now uses the database of the failing
-  statement; `ListErrorMessages.ErrorMessage` takes the database as its first
+  statement; `ErrorMessageCache.ErrorMessage` takes the database as its first
   parameter, and `GetQueryForUse` has an overload with the database.
   The server version that decides whether `ExceptionName` is read was also
   taken from the default database; without one, and for a user exception
@@ -818,6 +978,9 @@ The lists of old and new names, and what an application has to change, are in
 - English messages: typos ("functonality", "equel", "an Firebird 2"), the
   space before the colon in "%s :Transaction is not active" and the others,
   and "Column types ... is not array field".
+- `ErrorLexems` written in mixed case never matched the server messages, and the
+  statistics error message named the table `FIB$APP_STATISIC` instead of
+  `FIB$APP_STATISTICS`.
 
 #### Services
 
@@ -843,11 +1006,14 @@ The lists of old and new names, and what an application has to change, are in
 - `TFIBRestoreService.PageSize` was `4096` by default and always sent, so a database with larger
   pages was restored with 4096-byte pages. The default is `0`, which keeps the page size of the
   backup as gbak does without `-page`; see [Upgrading](Docs/guide/upgrading.md#restore-page-size).
+- A failed service call left the service attached on the server, a configuration
+  setter on an inactive service gave "invalid service handle", and the parameter
+  buffer leaked when the client library could not be loaded.
 
 #### Schema cache
 
-- The metadata, dataset info and error message caches (`ListTableInfo`,
-  `ListDataSetInfo`, `ListErrorMessages`) kept the database name in the system
+- The metadata, dataset info and error message caches (`TableInfoCache`,
+  `DataSetInfoCache`, `ErrorMessageCache`) kept the database name in the system
   code page: with a name outside it no entry was found, and each
   `GetTableInfo` read the metadata again and added an entry. They also lost
   the texts outside it: table and column names, primary key fields, defaults,
@@ -860,6 +1026,15 @@ The lists of old and new names, and what an application has to change, are in
 - A schema cache file that could not be written completely (disk full, ...)
   was left truncated, and the next `Open` with `AutoLoadFromFile` failed
   reading it. The file is now deleted instead.
+- A dataset with `DataSet_ID` but no row in `FIB$DATASETS_INFO` lost its
+  `KeyFields`, `GeneratorName`, `UpdateTableName`, `Conditions` and
+  `Description`. The repository upgrade committed the transaction of the
+  application.
+- The field info of a selectable procedure was not loaded and mixed in the
+  parameters of packaged procedures with the same name. Tables or fields whose
+  names differ only in case shared the cached info, and validating such a cache
+  could overflow the stack; a damaged schema cache file raised an error at
+  connect.
 
 #### Schema extract
 
@@ -875,7 +1050,7 @@ The lists of old and new names, and what an application has to change, are in
   function after the first held its first parameter, identity columns lost
   `GENERATED ... AS IDENTITY`, the system domains `MON$...` of Firebird 4 and
   later were created, and index and trigger names were not quoted.
-  `TMetaProcedure.PackageName` held the procedure body after `LoadMetaData`.
+  `TFIBMetaProcedure.PackageName` held the procedure body after `LoadMetaData`.
 - `GetObjectDDL` and `AsDDL`: the DDL of a domain had no terminator and that
   of a package ended with `;;`. Before a `LoadMetaData`, `GetObjectDDL` ignored
   `DDLTextOptions` (for example `dtoDecodeDomains`), lost identity columns
@@ -911,13 +1086,31 @@ The lists of old and new names, and what an application has to change, are in
   `GetObjectDDL` of a database trigger leaked one object on each call.
 - `TFIBDBSchemaExtract.GetObjectDDL` of a package or a PSQL function on a server before
   Firebird 3 raised "Table unknown" instead of returning an empty string.
+- Grants of an object with 1000 or more grantees overran memory. `WITH ADMIN
+  OPTION` of role grants and `WITH GRANT OPTION` of `EXECUTE` grants were lost,
+  and a function or role named like a procedure or table mixed their grants.
+  Grants on functions, packages, sequences and exceptions are extracted too.
+- `DECIMAL` columns were written as `NUMERIC`, a narrower type for precisions 1
+  to 4; text `BLOB` columns lost their `CHARACTER SET`; named `CHECK`
+  constraints lost their name.
+- A package header with `TYPE OF COLUMN` parameters failed because it ran before
+  the tables. The script no longer contains `SYSDBA`/`masterkey` (it uses the
+  user of the connection, no password) nor an empty `SET NAMES`; quoted names
+  with `""` were not found by `GetObjectDDL`.
+- A load of the names only made one foreign key per column and wrote objects
+  dropped in the meantime as empty statements.
+- UDR procedures, functions and triggers (`EXTERNAL NAME`, `ENGINE`),
+  `DETERMINISTIC` and `SQL SECURITY` are extracted (new properties `Engine`,
+  `EntryPoint`, `Deterministic` and `SQLSecurity`).
+- `IsCalculatedField` of the SQL editor cleared the table info cache of all
+  datasets.
 
 #### Scripter
 
 - `TFIBScripter` with `UseExecBlockForDML`: an `INSERT`, `UPDATE`, `DELETE` or
   `MERGE` with `RETURNING` was grouped into an `EXECUTE BLOCK`, where it needs
   `INTO`, so the whole block failed. Such a statement now runs alone; the new
-  `TStatementDesc.HasReturning` field marks it.
+  `TFIBStatementDesc.HasReturning` field marks it.
 - `TFIBScripter` with `UseExecBlockForDML`: the size limit of an
   `EXECUTE BLOCK` counted characters, so with UTF8 and non-ASCII text a block
   could be over the 64 KB the server accepts. The limit is now in bytes of the
@@ -944,11 +1137,20 @@ The lists of old and new names, and what an application has to change, are in
 - `TFIBScripter.ExecuteFromFile` read the file in the system code page and passed a byte order
   mark to the parser; a UTF-8 or UTF-16 BOM now selects the encoding, as in
   `TStrings.LoadFromFile`.
+- `TFIBScripter` ran the `{$ELSE}` part of a nested directive whose outer
+  directive was false; `DISCONNECT` without a database raised an access
+  violation; directive errors reported the line before the directive.
+- `DESCRIBE` failed on Firebird 3+ and matched no object for an unquoted name;
+  it runs `COMMENT ON`. A UTF-8 script file without a BOM is read as UTF-8.
 
 #### SQL monitor
 
 - SQL monitor: non-ASCII text could arrive garbled, through the system code
   page or a chunk of a long event cut inside a character.
+- A failing SQL log file no longer makes `Open`, `StartTransaction`, `Commit`,
+  `Rollback` or `Close` raise; the unsaved rows are kept for the next save.
+  `TFIBSQLLogger` saves the pending log when freed and writes it as UTF-8.
+- A process with a SQL monitor still alive at exit no longer hangs.
 
 #### Helper units
 
@@ -957,7 +1159,38 @@ The lists of old and new names, and what an application has to change, are in
   the address of its message.
 - `StringAsGUID` (`StrUtil`) rejected lowercase hex digits and read some other characters (`G`,
   `x`, a space) as 0. `HexStr2Int` (`StdFuncs`) reads lowercase hex digits.
-- `TCallBackList.Delete` ignored the index 0 and did not free the deleted entry.
+- `TFIBCallbackList.Delete` ignored the index 0 and did not free the deleted entry.
+- SQL text parsing: a `--` comment ending with LF hid `FROM`, `WHERE` and `ORDER
+  BY`, a `--` comment containing `/*` started a block comment, and a statement
+  starting with `-` or `/` hung.
+- `AddToWhereClause`, the order and group clauses and the table list ignored
+  `ROWS`, `OFFSET`/`FETCH`, `WITH LOCK` and `RETURNING`; `SetGroupClause`
+  dropped `HAVING` and `ORDER BY`; `WITH ... SELECT` was not a select and
+  `MERGE` was.
+- The descending query of the limited cache broke `DESCENDING`, `ASCENDING`,
+  `NULLS` and expressions with commas in `ORDER BY`.
+- The export data script looped forever for a row of 64K or more, appended to an
+  existing file, wrote ANSI, used the locale time separator and wrote wrong
+  `BLOB` values.
+- Identifiers with `#` or `%` were not quoted in generated SQL; `Int64ToBCD` of
+  the lowest `Int64` and the conversion of a BCD to a float in dialect 1 and 2
+  were inexact (0.3 read as 0.30000000000000004); variant comparison treated
+  doubles within 1E-11 as equal and raised an overflow for a `UInt64` against a
+  negative value.
+- `TFIBBlobStream.BlobToFile` left the blob open and `SaveToFile` wrote nothing
+  for a stream without a table name. A full disk during a batch export left a
+  truncated file without an error; a corrupt raw batch file raised conversion or
+  memory errors.
+- The delimited import mishandled delimiters of several characters;
+  `TFIBStatistics.Clear` caused a range error on the next use; the generator cache
+  file lost values above 2147483647.
+- A `--` comment ended by a bare LF or CR before `WHERE` or `ORDER BY` no longer
+  breaks the `FROM` clause (`RecordCount`, `AddToWhereClause`).
+- `MainPlanClause` and `SetMainPlan` lost or duplicated the closing bracket when
+  `PLAN` was the last text of the statement.
+- `SQLKind` returned `skDDL` for every statement starting with S other than
+  `SET` (`SAVEPOINT`, `SUSPEND`).
+
 
 #### IDE, editors and packages
 
@@ -1010,6 +1243,17 @@ The lists of old and new names, and what an application has to change, are in
   (`Form1.Query1.SQL` instead of `dfm.Form1.Query1.SQL`), so the IDE could not find the component
   of the tab ("Unable to find component") and the edited text was not written back to the
   property.
+- The condition editors showed disabled conditions as enabled and exported wrong
+  data; saving a dataset to the repository failed when an SQL text contained an
+  apostrophe; the key field list of `AutoUpdateOptions` listed fields of other
+  joined tables; the table name list closed the transaction of the user.
+- The **Check SQLs** verb of `TFIBQuery` did not check anything and always
+  reported no errors.
+- The registry key of the editors stayed open and later settings were written
+  under a wrong key; the database editor reported "Unknown Error" for UNC paths.
+- The FMX login dialog showed the password in clear text and its **OK** and
+  **Cancel** buttons did not respond to Enter and Esc; the password in the
+  database editor is masked.
 
 ## [7.9.1] - 2026-10-09
 

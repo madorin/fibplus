@@ -14,7 +14,7 @@
 {***************************************************************}
 
 {********************************************************************}
-{ TIBBlobFilter                                                      }
+{ TFIBBlobFilter                                                      }
 {     Copyright (c)  2002 by                                         }
 {     Ivan Ravin email:      <ivan_ra@chat.ru>                       }
 {                                                                    }
@@ -32,64 +32,59 @@ uses
   Classes;
 
 type
-  PIBBlobFilterProc = ^TIBBlobFilterProc;
-  TIBBlobFilterProc = procedure(var BlobBuffer; var BlobSize: longint);
+  PFIBBlobFilterProc = ^TFIBBlobFilterProc;
+  TFIBBlobFilterProc = procedure(var BlobBuffer; var BlobSize: LongInt);
 
-  TIBBlobFilters = class(TObject)
+  TFIBBlobFilters = class(TObject)
   private
     FIBBlobFilterList: TList;
-    FSorted: boolean;
-    function GetFilterProc(BlobSubType: integer; ForEncode: boolean): PIBBlobFilterProc;
+    FSorted: Boolean;
+    function GetFilterProc(BlobSubType: Integer; ForEncode: Boolean): PFIBBlobFilterProc;
     procedure Sort;
   public
     destructor Destroy; override;
-    function Find(BlobSubType: integer; var anIndex: integer): boolean;
-    procedure RegisterBlobFilter(BlobSubType: integer; EncodeProc, DecodeProc: PIBBlobFilterProc);
-    procedure RemoveBlobFilter(BlobSubType: integer);
-    procedure IBFilterBuffer(var BlobBuffer: PAnsiChar; var BlobSize: longint; BlobSubType: integer; ForEncode: boolean);
+    function Find(BlobSubType: Integer; var anIndex: Integer): Boolean;
+    procedure RegisterBlobFilter(BlobSubType: Integer; EncodeProc, DecodeProc: PFIBBlobFilterProc);
+    procedure RemoveBlobFilter(BlobSubType: Integer);
+    procedure IBFilterBuffer(var BlobBuffer: PAnsiChar; var BlobSize: LongInt; BlobSubType: Integer; ForEncode: Boolean);
   end;
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  PIBBlobFilterProc = PFIBBlobFilterProc deprecated 'Use PFIBBlobFilterProc';
+  TIBBlobFilterProc = TFIBBlobFilterProc deprecated 'Use TFIBBlobFilterProc';
+  TIBBlobFilters = TFIBBlobFilters deprecated 'Use TFIBBlobFilters';
 
 implementation
 
 type
-  PIBBlobFilter = ^TIBBlobFilter;
+  PFIBBlobFilter = ^TFIBBlobFilter;
 
-  TIBBlobFilter = record
-    SubType: integer;
-    EncodeProc: PIBBlobFilterProc;
-    DecodeProc: PIBBlobFilterProc;
+  TFIBBlobFilter = record
+    SubType: Integer;
+    EncodeProc: PFIBBlobFilterProc;
+    DecodeProc: PFIBBlobFilterProc;
   end;
 
-var
-  IBBlobFilters: TIBBlobFilters;
+{ TFIBBlobFilters }
 
-procedure UnLoadFilterList;
-begin
-  if not assigned(IBBlobFilters) then
-    Exit;
-  IBBlobFilters.Free;
-  IBBlobFilters := nil;
-end;
-
-{ TIBBlobFilters }
-
-destructor TIBBlobFilters.Destroy;
+destructor TFIBBlobFilters.Destroy;
 var
   IBBlobFilter: Pointer;
 begin
   if assigned(FIBBlobFilterList) then
   begin
     for IBBlobFilter in FIBBlobFilterList do
-      Dispose(PIBBlobFilter(IBBlobFilter));
+      Dispose(PFIBBlobFilter(IBBlobFilter));
     FIBBlobFilterList.Free;
     FIBBlobFilterList := nil;
   end;
   inherited;
 end;
 
-function TIBBlobFilters.Find(BlobSubType: integer; var anIndex: integer): boolean;
+function TFIBBlobFilters.Find(BlobSubType: Integer; var anIndex: Integer): Boolean;
 var
-  L, H, i, C: integer;
+  L, H, i, C: Integer;
 begin
   if not assigned(FIBBlobFilterList) then
   begin
@@ -105,7 +100,7 @@ begin
   while L <= H do
   begin
     i := (L + H) shr 1;
-    C := PIBBlobFilter(FIBBlobFilterList.Items[i])^.SubType - BlobSubType;
+    C := PFIBBlobFilter(FIBBlobFilterList.Items[i])^.SubType - BlobSubType;
     if C < 0 then
       L := i + 1
     else
@@ -121,10 +116,10 @@ begin
   anIndex := L;
 end;
 
-function TIBBlobFilters.GetFilterProc(BlobSubType: integer; ForEncode: boolean): PIBBlobFilterProc;
+function TFIBBlobFilters.GetFilterProc(BlobSubType: Integer; ForEncode: Boolean): PFIBBlobFilterProc;
 var
-  i: integer;
-  IBBlobFilter: PIBBlobFilter;
+  i: Integer;
+  IBBlobFilter: PFIBBlobFilter;
 begin
   Result := nil;
   if not assigned(FIBBlobFilterList) then
@@ -139,25 +134,25 @@ begin
   end;
 end;
 
-procedure TIBBlobFilters.IBFilterBuffer(var BlobBuffer: PAnsiChar; var BlobSize: integer; BlobSubType: integer; ForEncode: boolean);
+procedure TFIBBlobFilters.IBFilterBuffer(var BlobBuffer: PAnsiChar; var BlobSize: Integer; BlobSubType: Integer; ForEncode: Boolean);
 var
-  pProc: PIBBlobFilterProc;
-  IBBlobFilterProc: TIBBlobFilterProc;
+  pProc: PFIBBlobFilterProc;
+  IBBlobFilterProc: TFIBBlobFilterProc;
 begin
   pProc := nil;
   if (BlobSubType < 0) and (BlobSize > 0) and (BlobBuffer <> nil) then
     pProc := GetFilterProc(BlobSubType, ForEncode);
   if assigned(pProc) then
   begin
-    IBBlobFilterProc := TIBBlobFilterProc(pProc);
+    IBBlobFilterProc := TFIBBlobFilterProc(pProc);
     IBBlobFilterProc(BlobBuffer, BlobSize)
   end;
 end;
 
-procedure TIBBlobFilters.RegisterBlobFilter(BlobSubType: integer; EncodeProc, DecodeProc: PIBBlobFilterProc);
+procedure TFIBBlobFilters.RegisterBlobFilter(BlobSubType: Integer; EncodeProc, DecodeProc: PFIBBlobFilterProc);
 var
-  IBBlobFilter: PIBBlobFilter;
-  i: integer;
+  IBBlobFilter: PFIBBlobFilter;
+  i: Integer;
 begin
   i := 0;
   if not assigned(FIBBlobFilterList) then
@@ -175,10 +170,10 @@ begin
   IBBlobFilter^.DecodeProc := DecodeProc;
 end;
 
-procedure TIBBlobFilters.RemoveBlobFilter(BlobSubType: integer);
+procedure TFIBBlobFilters.RemoveBlobFilter(BlobSubType: Integer);
 var
-  i: integer;
-  IBBlobFilter: PIBBlobFilter;
+  i: Integer;
+  IBBlobFilter: PFIBBlobFilter;
 begin
   if not assigned(FIBBlobFilterList) then
     Exit;
@@ -190,12 +185,12 @@ begin
   end;
 end;
 
-function CompareFilters(p1, p2: Pointer): integer;
+function CompareFilters(p1, p2: Pointer): Integer;
 begin
-  Result := PIBBlobFilter(p1)^.SubType - PIBBlobFilter(p2)^.SubType;
+  Result := PFIBBlobFilter(p1)^.SubType - PFIBBlobFilter(p2)^.SubType;
 end;
 
-procedure TIBBlobFilters.Sort;
+procedure TFIBBlobFilters.Sort;
 begin
   if assigned(FIBBlobFilterList) then
   begin
@@ -203,11 +198,5 @@ begin
     FSorted := True;
   end;
 end;
-
-initialization
-
-finalization
-
-UnLoadFilterList;
 
 end.

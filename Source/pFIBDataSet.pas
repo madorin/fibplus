@@ -8,11 +8,11 @@ uses
 type
   TpFIBDataSet = TFIBDataSet deprecated 'Use TFIBDataSet';
   TpSQLKind = FIBDataSet.TFIBSQLKind deprecated 'Use TFIBSQLKind';
-  TLockStatus = FIBDataSet.TLockStatus;
-  TLockErrorEvent = FIBDataSet.TLockErrorEvent;
-  TCachRefreshKind = FIBDataSet.TCachRefreshKind;
-  TOnGetSQLTextProc = FIBDataSet.TOnGetSQLTextProc;
-  TIncludeFieldsToSQL = FIBDataSet.TIncludeFieldsToSQL;
+  TLockStatus = FIBDataSet.TFIBLockStatus;
+  TLockErrorEvent = FIBDataSet.TFIBLockErrorEvent;
+  TCachRefreshKind = FIBDataSet.TFIBCacheRefreshKind;
+  TOnGetSQLTextProc = FIBDataSet.TFIBGetSQLTextEvent;
+  TIncludeFieldsToSQL = FIBDataSet.TFIBIncludeFieldsToSQL;
 
 const
   lsSuccess = FIBDataSet.lsSuccess;

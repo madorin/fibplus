@@ -187,7 +187,6 @@ ResourceString
   SCompEditEditFieldInfo = 'Edit field information table';
   SCompEditErrorMessages = 'Edit error messages table';
   SRepositoriesScript    = 'Metadata for repository tables';
-  SScriptExecutor        = 'Execute script';
 
   SDBEditCaption        = 'Connection Properties';
   SDBEditServerGroup    = ' Server ';
@@ -197,7 +196,6 @@ ResourceString
   SDBEditAlias          = '&Alias name';
   SDBEditLocal          = '&Local engine';
   SDBEditRemote         = '&Remote server';
-  SDBEditBrowse         = '&Browse';
   SDBEditConnectParams  = 'Connection Parameters';
   SDBEditUserName       = '&User name';
   SDBEditPassword       = '&Password';
@@ -244,7 +242,6 @@ ResourceString
   FPConditionsClear            = 'C&lear';
   // Dataset Repository editor
   SEdDataSetInfoCaption   = 'Choose DataSet repository information';
-  SEdDataSetInfoFields    = 'Other fields';
   SEdDataSetInfoKeyField  = 'Key field';
   SEdDataSetInfoGenerator = 'Generator';
   SEdDataSetInfoFilter    = 'Filter';
@@ -302,48 +299,9 @@ ResourceString
   FPAutoOptEditorWhenGet3   = 'Get new generator value before posting of new record';
 
   // SQL generator
-  SGenSQLCaption              = 'FIBPlus SQL Generator';
-  SGenSQLOptions              = 'Options';
-  SGenSQLGetFieldsButton      = 'Get &table fields';
-  SGenSQLGenerateButton       = '&Generate SQLs';
-  SGenSQLClearButton          = '&Clear SQLs';
-  SGenSQLOnSaveGroup          = 'On save SQLs';
-  SGenSQLCheckSQLHint         = 'Check SQLs before saving properties';
-  SGenSQLCheckSQL             = 'Check SQLs';
-  SGenSQLFieldOriginHint      = 'Save fields origin';
-  SGenSQLFieldOrigin          = 'Field origins';
-  SGenSQLGeneratorOptions     = 'Options of SQLs generation';
-  SGenSQLPrimaryHint          = 'Use only primary key in where clause';
-  SGenSQLPrimary              = 'Where by primary key';
-  SGenSQLNonUpdatePrimaryHint = 'Not to change primary key in UpdateSQL';
-  SGenSQLNonUpdatePrimary     = 'Not to update primary key';
-  SGenSQLDefaultSymbol        = 'Use '#39'?'#39' for parameters';
-  SGenSQLCheckButton          = 'C&heck SQLs';
-  SGenSQLKeyFields            = 'Key fields';
-  SGenSQLUpdateFields         = 'Update fields';
-  SGenSQL_SQLsTabs            = 'SQLs';
-  SGenSQLStatement            = 'Statement &type';
-  SGenSQLMakeSQLTab           = 'Make SQL';
-  SGenSQLFilterBy             = 'Filter by';
-  SGenSQLAlias                = 'Table alias';
-  SGenSQLTablesColumn         = 'Tables';
   SGenSQLView1                = 'No Objects';
   SGenSQLView2                = 'Tables/Views';
   SGenSQLView3                = 'Stored Procedures';
-  SGenSQLTargetMemo           = 'Target memo';
-  SGenSQLOutput1              = 'Add to buffer memo';
-  SGenSQLOutput2              = 'Replace SelectSQL ';
-  SGenSQLOutput3              = 'Add as JOIN to SelectSQL';
-  SGenSQLSaveAllButton        = 'Save &all';
-  SGenSQLReplaceButton        = 'Re&place "*"';
-  SGenSQLCheckErrorButton     = 'Check &error';
-  SGenSQLSaveSQLButtonHint    = 'Save current SQL';
-  SReplaceSQL                 = '&Replace Select SQL text';
-  SGenSQLSaveSQLButton        = '&Save SQL';
-  SGenSQLErrorPreffix         = 'Error in %s';
-  SGenSQLEmpty                = 'SQL is empty';
-  SGenSQLCorrectSQL           = 'SQL is correct';
-  SGenSQLFromNotFound         = 'Clause "FROM" is not found';
 
   SCheckSQLs           = 'Check SQLs';
   SEditSQL             = 'Edit SQL text';
@@ -359,14 +317,9 @@ ResourceString
   SCompEditDataSetInfo            = 'Edit dataSets repository table';
   SCompEditDataSet_ID             = '.DataSet_ID should be greater than 0';
   SCompEditSQLText                = '(SQL Text)';
-  SCompEditStatTableExist         = 'Statistic table already exists.';
-  SCompEditStatTableCreated       = 'Statistic table has been created successfully.';
-  SCompEditCreateStatTable        = 'Create statistic table';
   SCompEditDataSetInfoNotExists   = 'Table FIB$DATASETS_INFO does not exist.';
   SCompEditDataSetInfoForbid      = 'Can''t use FIB$DATASETS_INFO.'#13#10 + 'urDataSetInfo not included into Database.UseRepositories.';
   SCompEditUnableInsertInfoRecord = 'Error of inserting new information record';
-  SCompEditSaveDataSetProperty    = 'Save FIBDataSet properties';
-  SCompEditDataSetDesc            = 'Set dataset description';
   SCompEditFieldInfoLoadError     = 'Error of loading FieldInfo from stream';
   SDataBaseNotAssigned            = 'Database is not assigned';
   SCompEditDeltaReceiver1         = 'Create common triggers';

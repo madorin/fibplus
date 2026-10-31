@@ -23,22 +23,12 @@ uses
 
   SysUtils, FIBPlatforms, Variants;
 
-function CompareVarArray1(vArray1, vArray2: Variant): boolean;
-function EasyCompareVarArray1(vArray1, vArray2: Variant; HighBound: integer): boolean;
-function NeedCastForCompare(const v, v1: Variant): boolean;
+function EasyCompareVarArray1(FirstArray, SecondArray: Variant; HighBound: Integer): Boolean;
 
-function CompareVariantsEQ(const v, v1: Variant): boolean;
-function CompareVariants(const v, v1: Variant): integer;
+function CompareVariantsEQ(const v, v1: Variant): Boolean;
+function CompareVariants(const v, v1: Variant): Integer;
 
-function ComparePDoubleAndVariant(P: PDouble; const V: Variant): Integer;
-function ComparePIntegerAndVariant(P: PInteger; const v: Variant): integer;
-function ComparePInt64AndVariant(P: PInt64; const V: Variant): Integer;
-function ComparePByteAndVariant(P: PByte; const v: Variant): integer;
-function ComparePDateAndVariant(P: PDateTime; const V: Variant): Integer;
-function ComparePSmallAndVariant(P: PSmallInt; const v: Variant): integer;
-function CompareWideStringAndVariant(P: Pointer; const v: Variant): integer;
-function ComparePCurrencyAndVariant(P: PCurrency; const V: Variant): Integer;
-function ComparePShortAndVariant(P: PShortInt; const v: Variant): integer;
+function CompareWideStringAndVariant(P: Pointer; const v: Variant): Integer;
 
 implementation
 
@@ -91,6 +81,42 @@ begin
       Result := 1
     else
       Result := -1;
+end;
+
+// Value rounded to the precision of a Single key
+function CompareAsSingles(const Value: Extended; Key: Single): Integer;
+const
+  MaxSingleValue = 3.4028234663852886e+38;
+var
+  S: Single;
+begin
+  if Abs(Value) > MaxSingleValue then
+    Result := CompareNumbers(Value, Key)
+  else
+  begin
+    S := Value;
+    Result := CompareNumbers(S, Key);
+  end;
+end;
+
+// Key rounded to the 4 decimals of a Currency value
+function CompareAsCurrencies(const Value: Currency; const Key: Extended): Integer;
+var
+  C: Currency;
+begin
+  if Abs(Key) >= 922337203685477 then
+    Result := CompareNumbers(Value, Key)
+  else
+  begin
+    C := Key;
+    if Value = C then
+      Result := 0
+    else
+      if Value > C then
+        Result := 1
+      else
+        Result := -1;
+  end;
 end;
 
 function CompareTexts(const ValueText, Text: string): Integer;
@@ -152,12 +178,18 @@ end;
 // P^ holds a value of an integer type up to 32 bits; strings are parsed as floats
 function CompareWidenedIntegerAndVariant(P: PInt64; const V: Variant): Integer;
 {$I VarFnc.inc}
+{$DEFINE C_FLOAT}
 function ComparePSingleAndVariant(P: PSingle; const V: Variant): Integer;
+{$DEFINE C_SINGLE}
 {$I VarFnc.inc}
+{$UNDEF C_SINGLE}
 function ComparePDoubleAndVariant(P: PDouble; const V: Variant): Integer;
 {$I VarFnc.inc}
+{$UNDEF C_FLOAT}
 function ComparePCurrencyAndVariant(P: PCurrency; const V: Variant): Integer;
+{$DEFINE C_CURRENCY}
 {$I VarFnc.inc}
+{$UNDEF C_CURRENCY}
 function ComparePDateAndVariant(P: PDateTime; const V: Variant): Integer;
 {$DEFINE C_DATE}
 {$I VarFnc.inc}
@@ -167,6 +199,20 @@ function ComparePInt64AndVariant(P: PInt64; const V: Variant): Integer;
 {$I VarFnc.inc}
 {$UNDEF C_INT64}
 {$UNDEF BODY_NUMERIC_COMPARE_EQ}
+
+// the Variant compare of a UInt64 with a negative integer raises an overflow
+function CompareUInt64AndVariant(const V, V1: Variant): Integer;
+begin
+  case TVarData(V1).VType of
+    varShortInt, varSmallInt, varInteger, varInt64:
+      if V1 < 0 then
+      begin
+        Result := 1;
+        Exit;
+      end;
+  end;
+  Result := CompareAsVariants(V, V1);
+end;
 
 function ComparePIntegerAndVariant(P: PInteger; const V: Variant): Integer;
 var
@@ -216,7 +262,7 @@ begin
   Result := CompareWidenedIntegerAndVariant(@Value, V);
 end;
 
-                      function CompareWideStringAndVariantEQ(P: Pointer; const v: Variant): boolean;
+                      function CompareWideStringAndVariantEQ(P: Pointer; const v: Variant): Boolean;
                       begin
                         case VarType(v) of
                           varString: result := WideString(P) = string(AnsiString(TVarData(v).VString));
@@ -227,7 +273,7 @@ end;
                         end;
                       end;
 
-                      function CompareStringAndVariantEQ(P: Pointer; const v: Variant): boolean;
+                      function CompareStringAndVariantEQ(P: Pointer; const v: Variant): Boolean;
                       begin
                         case VarType(v) of
                           varString: result := AnsiString(P) = AnsiString(TVarData(v).VString);
@@ -238,7 +284,7 @@ end;
                         end;
                       end;
 
-                      function CompareWideStringAndVariant(P: Pointer; const v: Variant): integer;
+                      function CompareWideStringAndVariant(P: Pointer; const v: Variant): Integer;
                       begin
                         case VarType(v) of
                           varString:
@@ -279,7 +325,7 @@ end;
                       end;
 
                       // P is the AnsiString of a varString variant: decoded with its code page
-                      function CompareStringAndVariant(P: Pointer; const v: Variant): integer;
+                      function CompareStringAndVariant(P: Pointer; const v: Variant): Integer;
                       var
                         s: UnicodeString;
                       begin
@@ -325,7 +371,7 @@ end;
                         end;
                       end;
 
-                      function CompareVariants(const v, v1: Variant): integer;
+                      function CompareVariants(const v, v1: Variant): Integer;
                       begin
                         case TVarData(v).VType of
                           varSmallInt:
@@ -367,12 +413,14 @@ end;
                           varString:
                             result := CompareStringAndVariant
                               (GetVariantData(v), v1);
+                          varUInt64:
+                            result := CompareUInt64AndVariant(v, v1);
                         else
                           result := CompareAsVariants(v, v1);
                         end;
                       end;
 
-                      function CompareVariantsEQ(const v, v1: Variant): boolean;
+                      function CompareVariantsEQ(const v, v1: Variant): Boolean;
                       begin
                         case TVarData(v).VType of
                           varSmallInt:
@@ -414,37 +462,24 @@ end;
                           varString:
                             result := CompareStringAndVariantEQ
                               (GetVariantData(v), v1);
+                          varUInt64:
+                            result := CompareUInt64AndVariant(v, v1) = 0;
                         else
                           result := v = v1;
                         end;
                       end;
-                    /// ///
-                      function NeedCastForCompare(const v, v1: Variant): boolean;
-                      begin
-                        case VarType(v) of
-                          varDate: result := not(VarIsNumeric(v1) or (VarType(v1) = varDate));
-                          varBoolean: result := VarType(v1) <> varBoolean;
-                        else
-                          case VarType(v1) of
-                            varDate: result := not (VarIsNumeric(v) { or (VarType(v)=varDate) } );
-                            varBoolean: result := True;
-                          else
-                            result := (VarIsNumeric(v1) xor VarIsNumeric(v))
-                          end
-                        end;
-                      end;
 
-                      function EasyCompareVarArray1(vArray1, vArray2: Variant; HighBound: integer): boolean;
+                      function EasyCompareVarArray1(FirstArray, SecondArray: Variant; HighBound: Integer): Boolean;
                       var
-                        j: integer;
+                        j: Integer;
                         v, v1: Variant;
                       begin
                         result := False;
                         try
                           for j := HighBound downto 0 do
                           begin
-                            v1 := vArray2[j];
-                            v := vArray1[j];
+                            v1 := SecondArray[j];
+                            v := FirstArray[j];
                             if VarIsEmpty(v) then
                               v := Null;
                             if VarIsEmpty(v1) then
@@ -454,27 +489,6 @@ end;
                               Exit;
                           end;
                           result := True
-                        except
-                        end
-                      end;
-
-                      function CompareVarArray1(vArray1, vArray2: Variant): boolean;
-                      var
-                        j, l, h: integer;
-                      begin
-                        result := False;
-                        try
-                          if VarIsArray(vArray1) and VarIsArray(vArray2) then
-                          begin
-                            h := VarArrayHighBound(vArray1, 1);
-                            l := VarArrayLowBound(vArray1, 1);
-                            for j := l to h do
-                            begin
-                              if vArray1[j] <> vArray2[j] then
-                                Exit;
-                            end;
-                            result := True
-                          end
                         except
                         end
                       end;

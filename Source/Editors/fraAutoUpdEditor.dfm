@@ -1,4 +1,4 @@
-object fAutoUpdateOptionForm: TfAutoUpdateOptionForm
+object fAutoUpdateOptionForm: TFIBAutoUpdateOptionsFrame
   Left = 0
   Top = 0
   Width = 374

@@ -52,14 +52,13 @@ type
     FFieldNo: Integer;
     FNeedSaveOldBuffer: Boolean;
     FIsClientField: Boolean;
-    procedure DoOnDatabaseFree(Sender: TObject);
     // Reads the value with FBlobID from the server into the buffer
-    procedure Load(CallBack: TCallBackBlobReadWrite); virtual; abstract;
+    procedure Load(CallBack: TFIBBlobProgressEvent); virtual; abstract;
     // Writes the buffer to the server as a new value, FBlobID gets its ID
-    procedure Store(CallBack: TCallBackBlobReadWrite); virtual; abstract;
+    procedure Store(CallBack: TFIBBlobProgressEvent); virtual; abstract;
     procedure DoAfterInitialize; virtual;
     procedure CreateEmpty;
-    procedure EnsureInitialized(CallBack: TCallBackBlobReadWrite = nil);
+    procedure EnsureInitialized(CallBack: TFIBBlobProgressEvent = nil);
     function GetDatabase: TFIBDatabase;
     function GetDBHandle: PISC_DB_HANDLE;
     function GetTransaction: TFIBTransaction;
@@ -80,19 +79,19 @@ type
     function Call(ErrCode: ISC_STATUS; RaiseError: Boolean): ISC_STATUS;
     procedure CheckReadable;
     procedure CheckWritable;
-    procedure DoFinalize(ClearModified, ForceWrite: Boolean; CallBack: TCallBackBlobReadWrite = nil); virtual;
+    procedure DoFinalize(ClearModified, ForceWrite: Boolean; CallBack: TFIBBlobProgressEvent = nil); virtual;
     procedure Finalize;
     procedure Cancel;
     procedure FreeOldBuffer;
     procedure DeInitialize;
-    function Read(var Buffer; Count: Longint): Longint; override;
-    function ReadOldBuffer(var Buffer; Count: Longint): Longint;
-    function Seek(Offset: Longint; Origin: Word): Longint; override;
-    function DoSeek(Offset: Longint; Origin: Word; CallBack: TCallBackBlobReadWrite): Longint;
-    function SeekInOldBuffer(Offset: Longint; Origin: Word): Longint;
+    function Read(var Buffer; Count: LongInt): LongInt; override;
+    function ReadOldBuffer(var Buffer; Count: LongInt): LongInt;
+    function Seek(Offset: LongInt; Origin: Word): LongInt; override;
+    function DoSeek(Offset: LongInt; Origin: Word; CallBack: TFIBBlobProgressEvent): LongInt;
+    function SeekInOldBuffer(Offset: LongInt; Origin: Word): LongInt;
     procedure SetSize(NewSize: Long); override;
     procedure Truncate;
-    function Write(const Buffer; Count: Longint): Longint; override;
+    function Write(const Buffer; Count: LongInt): LongInt; override;
     // ARRAY values are stored as blobs too, their IDs are blob IDs
     property BlobID: TISC_QUAD read FBlobID write SetBlobID;
     property Database: TFIBDatabase read GetDatabase write SetDatabase;
@@ -118,29 +117,29 @@ type
     FBlobHandle: TISC_BLOB_HANDLE;
     FTableName: string;
     FFieldName: string;
-    FKeyValues: TDynArray;
+    FKeyValues: TFIBVariantArray;
     FLoadedFromCache: Boolean;
     FCharSet: Integer;
     function GetRecKeyValuesAsStr: string;
     // InternalSetCharSet, else the attachment charset
     function BlobCodePage: Word;
   protected
-    procedure Load(CallBack: TCallBackBlobReadWrite); override;
-    procedure Store(CallBack: TCallBackBlobReadWrite); override;
+    procedure Load(CallBack: TFIBBlobProgressEvent); override;
+    procedure Store(CallBack: TFIBBlobProgressEvent); override;
     procedure DoAfterInitialize; override;
     procedure GetBlobInfo;
-    procedure OpenBlob(CallBack: TCallBackBlobReadWrite = nil);
+    procedure OpenBlob(CallBack: TFIBBlobProgressEvent = nil);
     procedure ReplaceBlobID(const Value: TISC_QUAD); override;
     function GetAsString: AnsiString;
     function GetAsWideString: WideString;
   public
     constructor CreateNew(AFieldNo: Integer; AStreamList: TList;
       const ATableName: string = ''; const AFieldName: string = '';
-      PKeyValues: PDynArray = nil); reintroduce;
+      PKeyValues: PFIBVariantArray = nil); reintroduce;
     constructor Create;
     procedure InternalSetCharSet(Value: Integer); // Internal Use only
     destructor Destroy; override;
-    procedure DoFinalize(ClearModified, ForceWrite: Boolean; CallBack: TCallBackBlobReadWrite = nil); override;
+    procedure DoFinalize(ClearModified, ForceWrite: Boolean; CallBack: TFIBBlobProgressEvent = nil); override;
     procedure CloseBlob;
     function LoadFromFile(const FileName: string; IsCacheFile: Boolean = False): Boolean;
     function LoadFromStream(Stream: TStream; IsCacheStream: Boolean = False): Boolean;
@@ -149,9 +148,8 @@ type
     procedure SaveToFile(const FileName: string; FullInfo: Boolean = False);
     procedure SaveToStream(Stream: TStream; IsCacheStream: Boolean = False);
     // For big blobs
-    function FileToBlob(const FileName: string; CallBack: TCallBackBlobReadWrite = nil): TISC_QUAD;
-    procedure BlobToFile(const FileName: string; CallBack: TCallBackBlobReadWrite = nil);
-    property BlobInitialized: Boolean read FInitialized;
+    function FileToBlob(const FileName: string; CallBack: TFIBBlobProgressEvent = nil): TISC_QUAD;
+    procedure BlobToFile(const FileName: string; CallBack: TFIBBlobProgressEvent = nil);
     property Handle: TISC_BLOB_HANDLE read FBlobHandle;
     property BlobHandle: TISC_BLOB_HANDLE read FBlobHandle;
     property BlobMaxSegmentSize: Long read FBlobMaxSegmentSize;
@@ -163,7 +161,7 @@ type
     property AsWideString: WideString read GetAsWideString;
     property FieldName: string read FFieldName write FFieldName;
     property TableName: string read FTableName write FTableName;
-    property RecordKeyValues: TDynArray read FKeyValues write FKeyValues;
+    property RecordKeyValues: TFIBVariantArray read FKeyValues write FKeyValues;
   end;
 
 {$IFDEF SUPPORT_ARRAY_FIELD}
@@ -172,8 +170,8 @@ type
   private
     FArrayInfo: TFIBArray;
   protected
-    procedure Load(CallBack: TCallBackBlobReadWrite); override;
-    procedure Store(CallBack: TCallBackBlobReadWrite); override;
+    procedure Load(CallBack: TFIBBlobProgressEvent); override;
+    procedure Store(CallBack: TFIBBlobProgressEvent); override;
   public
     constructor CreateNew(AFieldNo: Integer; AStreamList: TList; AArray: TFIBArray); reintroduce;
     property ArrayInfo: TFIBArray read FArrayInfo;
@@ -181,30 +179,30 @@ type
 {$ENDIF}
 
   // Blob routine functions
-  TBlobInfo = record
+  TFIBBlobInfo = record
     NumSegments, MaxSegmentSize, TotalSize: Long;
     BlobType: Short;
   end;
 
-function GetBlobInfoRec(DB: TFIBDatabase; TR: TFIBTransaction; blob_id: TISC_QUAD; var Success: Boolean): TBlobInfo;
+function GetBlobInfoRec(DB: TFIBDatabase; TR: TFIBTransaction; blob_id: TISC_QUAD; var Success: Boolean): TFIBBlobInfo;
 
-procedure GetBlobInfo(ClientLibrary: IIbClientLibrary;
+procedure GetBlobInfo(ClientLibrary: IFIBClientLibrary;
   hBlobHandle: PISC_BLOB_HANDLE; var NumSegments, MaxSegmentSize,
   TotalSize: Long; var BlobType: Short);
-procedure ReadBlob(ClientLibrary: IIbClientLibrary;
+procedure ReadBlob(ClientLibrary: IFIBClientLibrary;
   hBlobHandle: PISC_BLOB_HANDLE; var Buffer: PAnsiChar; var BlobSize: Long;
-  CallBack: TCallBackBlobReadWrite = nil);
-procedure WriteBlob(ClientLibrary: IIbClientLibrary;
+  CallBack: TFIBBlobProgressEvent = nil);
+procedure WriteBlob(ClientLibrary: IFIBClientLibrary;
   hBlobHandle: PISC_BLOB_HANDLE; Buffer: PAnsiChar; BlobSize: Long;
-  CallBack: TCallBackBlobReadWrite = nil);
+  CallBack: TFIBBlobProgressEvent = nil);
 
-function BlobExist(ClientLibrary: IIbClientLibrary; DBHandle: TISC_DB_HANDLE; TRHandle: TISC_TR_HANDLE; blob_id: TISC_QUAD): Boolean;
+function BlobExist(ClientLibrary: IFIBClientLibrary; DBHandle: TISC_DB_HANDLE; TRHandle: TISC_TR_HANDLE; blob_id: TISC_QUAD): Boolean;
 
-function FileToBlob(const FileName: string; Database: TFIBDatabase; Transaction: TFIBTransaction; cb: TCallBackBlobReadWrite): TISC_QUAD;
+function FileToBlob(const FileName: string; Database: TFIBDatabase; Transaction: TFIBTransaction; cb: TFIBBlobProgressEvent): TISC_QUAD;
 
 procedure BlobToFile(BlobID: TISC_QUAD; const FileName: string;
   Database: TFIBDatabase; Transaction: TFIBTransaction;
-  cb: TCallBackBlobReadWrite);
+  cb: TFIBBlobProgressEvent);
 
 type
 
@@ -216,7 +214,7 @@ type
     FBuffPos: Integer;
     procedure CloseFile;
     procedure FlushBuf(Force: Boolean; Count: Integer);
-    function WriteValue(const ValBuffer; Count: Longint): Integer;
+    function WriteValue(const ValBuffer; Count: LongInt): Integer;
   public
     constructor Create;
     destructor Destroy; override;
@@ -224,15 +222,11 @@ type
 
   TFIBOutputDelimitedFile = class(TFIBFileOutputStream)
   protected
-    // FFile:TFileStream;
     FOutputTitles: Boolean;
     FColDelimiter, FRowDelimiter: string;
     st: string;
     val: string;
     procedure CloseFile;
-    { procedure PrepareBuffer;
-      procedure FlushBuf(Force:boolean; Count:integer);
-      function  WriteValue(const ValBuffer; Count: Longint):Integer; }
   public
     procedure ReadyStream; override;
     function WriteColumns: Boolean; override;
@@ -274,7 +268,6 @@ type
   // TFIBInputRawFile
   TFIBInputRawFile = class(TFIBBatchInputStream)
   protected
-    // FHandle: THandle;
     FFile: TFileStream;
     FMap: TList;
     SkippedLen: array of Integer;
@@ -289,8 +282,14 @@ type
 var
   NullQUID: TISC_QUAD;
 
-function EquelQUADs(const Value1, Value2: TISC_QUAD): Boolean;
+function EqualQuads(const Value1, Value2: TISC_QUAD): Boolean;
 procedure ValidateBlobCacheDirectory(Database: TFIBDatabase);
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+{$IFDEF SUPPORT_ARRAY_FIELD}
+  TBlobInfo = TFIBBlobInfo deprecated 'Use TFIBBlobInfo';
+{$ENDIF}
 
 implementation
 
@@ -301,7 +300,7 @@ uses
 {$ENDIF}
     , Variants, FIBProps;
 
-function EquelQUADs(const Value1, Value2: TISC_QUAD): Boolean;
+function EqualQuads(const Value1, Value2: TISC_QUAD): Boolean;
 begin
   Result := (Value1.gds_quad_high = Value2.gds_quad_high) and (Value1.gds_quad_low = Value2.gds_quad_low)
 end;
@@ -318,10 +317,10 @@ var
   tmpStr: AnsiString;
   tmpInt: Integer;
   tmpBlobId: TISC_QUAD;
-  vFileIsValid: Boolean;
+  FileIsValid: Boolean;
 
 begin
-  vFileIsValid := False;
+  FileIsValid := False;
   BlobCacheOperation.Acquire;
   try
     Stream := TFileStream.Create(FileName, fmOpenRead);
@@ -340,7 +339,7 @@ begin
 
           if not Transaction.InTransaction then
             Transaction.StartTransaction;
-          vFileIsValid := BlobExist(Database.ClientLibrary, Database.Handle, Transaction.Handle, tmpBlobId);
+          FileIsValid := BlobExist(Database.ClientLibrary, Database.Handle, Transaction.Handle, tmpBlobId);
         end;
       end;
     finally
@@ -349,7 +348,7 @@ begin
   except
   end;
   try
-    if not vFileIsValid then
+    if not FileIsValid then
       DeleteFile(FileName);
   finally
     BlobCacheOperation.Release;
@@ -419,7 +418,6 @@ begin
     LibraryName := Database.LibraryName;
     CryptKey := Database.CryptKey;
     OnCryptKeyRequest := Database.OnCryptKeyRequest;
-    // Connected:=True;
   end;
 
   FTransaction := CreateInternalTransaction(FDatabase, True);
@@ -452,7 +450,7 @@ begin
   TValidateBlobCacheThread.Create(Database);
 end;
 
-function GetBlobInfoRec(DB: TFIBDatabase; TR: TFIBTransaction; blob_id: TISC_QUAD; var Success: Boolean): TBlobInfo;
+function GetBlobInfoRec(DB: TFIBDatabase; TR: TFIBTransaction; blob_id: TISC_QUAD; var Success: Boolean): TFIBBlobInfo;
 var
   BlobHandle: TISC_BLOB_HANDLE;
 begin
@@ -462,7 +460,7 @@ begin
     Exit;
   end;
   if not Assigned(DB.ClientLibrary) then
-    raise EAPICallException.Create(Format(SUnknownClientLibrary, ['GetBlobInfo']));
+    raise EFIBAPICallException.Create(Format(SUnknownClientLibrary, ['GetBlobInfo']));
 
   BlobHandle := nil;
   Success := DB.ClientLibrary.isc_open_blob2(StatusVector, @DB.Handle, @TR.Handle, @BlobHandle, @blob_id, 0, nil) = 0;
@@ -476,7 +474,7 @@ begin
     FillChar(Result, SizeOf(Result), 0);
 end;
 
-procedure GetBlobInfo(ClientLibrary: IIbClientLibrary;
+procedure GetBlobInfo(ClientLibrary: IFIBClientLibrary;
   hBlobHandle: PISC_BLOB_HANDLE; var NumSegments, MaxSegmentSize,
   TotalSize: Long; var BlobType: Short);
 var
@@ -487,7 +485,7 @@ var
   item: Integer;
 begin
   if not Assigned(ClientLibrary) then
-    raise EAPICallException.Create(Format(SUnknownClientLibrary, ['GetBlobInfo']));
+    raise EFIBAPICallException.Create(Format(SUnknownClientLibrary, ['GetBlobInfo']));
 
   items[0] := AnsiChar(isc_info_blob_num_segments);
   items[1] := AnsiChar(isc_info_blob_max_segment);
@@ -514,9 +512,9 @@ begin
   end;
 end;
 
-procedure OldReadBlob(ClientLibrary: IIbClientLibrary;
+procedure ReadBlobKnownSize(ClientLibrary: IFIBClientLibrary;
   hBlobHandle: PISC_BLOB_HANDLE; var Buffer: PAnsiChar; var BlobSize: Long;
-  CallBack: TCallBackBlobReadWrite = nil);
+  CallBack: TFIBBlobProgressEvent = nil);
 var
   BytesRead, SegLen: UShort;
   LocalBuffer: PAnsiChar;
@@ -524,7 +522,7 @@ var
   Stop: Boolean;
 begin
   if not Assigned(ClientLibrary) then
-    raise EAPICallException.Create(Format(SUnknownClientLibrary, ['ReadBlob']));
+    raise EFIBAPICallException.Create(Format(SUnknownClientLibrary, ['ReadBlob']));
 
   LocalBuffer := Buffer;
   if BlobSize < DefaultBlobSegmentSize then
@@ -549,24 +547,24 @@ begin
   end;
 end;
 
-procedure ReadBlob(ClientLibrary: IIbClientLibrary;
+procedure ReadBlob(ClientLibrary: IFIBClientLibrary;
   hBlobHandle: PISC_BLOB_HANDLE; var Buffer: PAnsiChar; var BlobSize: Long;
-  CallBack: TCallBackBlobReadWrite = nil);
+  CallBack: TFIBBlobProgressEvent = nil);
 var
-  vBlobSize: Long;
+  TotalRead: Long;
   BytesRead, SegLen: UShort;
   LocalBuffer: PAnsiChar;
   Stop: Boolean;
 begin
   // Don't work correctly for FB1.5 local connect
   if not Assigned(ClientLibrary) then
-    raise EAPICallException.Create(Format(SUnknownClientLibrary, ['ReadBlob']));
+    raise EFIBAPICallException.Create(Format(SUnknownClientLibrary, ['ReadBlob']));
   Stop := False;
-  vBlobSize := 0;
+  TotalRead := 0;
   LocalBuffer := Buffer;
   while True do
   begin
-    if vBlobSize = BlobSize then
+    if TotalRead = BlobSize then
       SegLen := 0
     else if BlobSize < DefaultBlobSegmentSize then
       SegLen := Word(BlobSize) // Avoid IB2007 bug
@@ -577,20 +575,20 @@ begin
       0, isc_segment:
         begin
           Inc(LocalBuffer, BytesRead);
-          Inc(vBlobSize, BytesRead);
+          Inc(TotalRead, BytesRead);
           if Assigned(CallBack) then
-            CallBack(BlobSize, vBlobSize, Stop);
+            CallBack(BlobSize, TotalRead, Stop);
           if Stop then
             Exit;
         end;
       isc_segstr_eof:
         begin
-          if vBlobSize < BlobSize then
-            ReallocMem(Buffer, vBlobSize);
-          Inc(vBlobSize, BytesRead);
-          BlobSize := vBlobSize;
+          if TotalRead < BlobSize then
+            ReallocMem(Buffer, TotalRead);
+          Inc(TotalRead, BytesRead);
+          BlobSize := TotalRead;
           if Assigned(CallBack) then
-            CallBack(BlobSize, vBlobSize, Stop);
+            CallBack(BlobSize, TotalRead, Stop);
           Exit;
         end
     else
@@ -599,15 +597,15 @@ begin
   end;
 end;
 
-procedure WriteBlob(ClientLibrary: IIbClientLibrary;
+procedure WriteBlob(ClientLibrary: IFIBClientLibrary;
   hBlobHandle: PISC_BLOB_HANDLE; Buffer: PAnsiChar; BlobSize: Long;
-  CallBack: TCallBackBlobReadWrite = nil);
+  CallBack: TFIBBlobProgressEvent = nil);
 var
   CurPos, SegLen: Long;
   Stop: Boolean;
 begin
   if not Assigned(ClientLibrary) then
-    raise EAPICallException.Create(Format(SUnknownClientLibrary, ['WriteBlob']));
+    raise EFIBAPICallException.Create(Format(SUnknownClientLibrary, ['WriteBlob']));
   Stop := False;
   CurPos := 0;
   SegLen := DefaultBlobSegmentSize;
@@ -630,12 +628,12 @@ begin
   end;
 end;
 
-function BlobExist(ClientLibrary: IIbClientLibrary; DBHandle: TISC_DB_HANDLE; TRHandle: TISC_TR_HANDLE; blob_id: TISC_QUAD): Boolean;
+function BlobExist(ClientLibrary: IFIBClientLibrary; DBHandle: TISC_DB_HANDLE; TRHandle: TISC_TR_HANDLE; blob_id: TISC_QUAD): Boolean;
 var
   BlobHandle: TISC_BLOB_HANDLE;
 begin
   if not Assigned(ClientLibrary) then
-    raise EAPICallException.Create(Format(SUnknownClientLibrary, ['BlobExist']));
+    raise EFIBAPICallException.Create(Format(SUnknownClientLibrary, ['BlobExist']));
   BlobHandle := nil;
   Result := ClientLibrary.isc_open_blob2(StatusVector, @DBHandle, @TRHandle, @BlobHandle, @blob_id, 0, nil) = 0;
 
@@ -643,7 +641,7 @@ begin
     ClientLibrary.isc_close_blob(StatusVector, @BlobHandle)
 end;
 
-function FileToBlob(const FileName: string; Database: TFIBDatabase; Transaction: TFIBTransaction; cb: TCallBackBlobReadWrite): TISC_QUAD;
+function FileToBlob(const FileName: string; Database: TFIBDatabase; Transaction: TFIBTransaction; cb: TFIBBlobProgressEvent): TISC_QUAD;
 var
   fs: TFIBBlobStream;
 begin
@@ -660,7 +658,7 @@ end;
 
 procedure BlobToFile(BlobID: TISC_QUAD; const FileName: string;
   Database: TFIBDatabase; Transaction: TFIBTransaction;
-  cb: TCallBackBlobReadWrite);
+  cb: TFIBBlobProgressEvent);
 var
   fs: TFIBBlobStream;
 begin
@@ -674,12 +672,6 @@ begin
   finally
     fs.Free;
   end;
-end;
-
-procedure TFIBFieldStream.DoOnDatabaseFree(Sender: TObject);
-begin
-  FDatabase := nil;
-  FTransaction := nil;
 end;
 
 constructor TFIBFieldStream.CreateNew(AFieldNo: Integer; AStreamList: TList);
@@ -745,7 +737,7 @@ procedure TFIBFieldStream.DoAfterInitialize;
 begin
 end;
 
-procedure TFIBFieldStream.EnsureInitialized (CallBack: TCallBackBlobReadWrite = nil);
+procedure TFIBFieldStream.EnsureInitialized (CallBack: TFIBBlobProgressEvent = nil);
 begin
   if FInitialized then
     Exit;
@@ -769,7 +761,7 @@ begin
 end;
 
 // ClearModified: the value is already stored, the cache becomes unmodified only
-procedure TFIBFieldStream.DoFinalize(ClearModified, ForceWrite: Boolean; CallBack: TCallBackBlobReadWrite = nil);
+procedure TFIBFieldStream.DoFinalize(ClearModified, ForceWrite: Boolean; CallBack: TFIBBlobProgressEvent = nil);
 begin
   if not FInitialized or (FMode = bmRead) or (not FModified and not ForceWrite) then
     Exit;
@@ -891,7 +883,7 @@ begin
       FIBError(feNotInTransaction, ['BlobStream']);
 end;
 
-function TFIBFieldStream.Read(var Buffer; Count: Longint): Longint;
+function TFIBFieldStream.Read(var Buffer; Count: LongInt): LongInt;
 begin
   CheckReadable;
   EnsureInitialized;
@@ -908,7 +900,7 @@ begin
   Inc(FPosition, Result);
 end;
 
-function TFIBFieldStream.ReadOldBuffer(var Buffer; Count: Longint): Longint;
+function TFIBFieldStream.ReadOldBuffer(var Buffer; Count: LongInt): LongInt;
 begin
   if Assigned(FOldBuffer) then
   begin
@@ -922,12 +914,12 @@ begin
     Result := Read(Buffer, Count);
 end;
 
-function TFIBFieldStream.Seek(Offset: Longint; Origin: Word): Longint;
+function TFIBFieldStream.Seek(Offset: LongInt; Origin: Word): LongInt;
 begin
   Result := DoSeek(Offset, Origin, nil);
 end;
 
-function TFIBFieldStream.DoSeek(Offset: Longint; Origin: Word; CallBack: TCallBackBlobReadWrite): Longint;
+function TFIBFieldStream.DoSeek(Offset: LongInt; Origin: Word; CallBack: TFIBBlobProgressEvent): LongInt;
 begin
   EnsureInitialized(CallBack);
   case Origin of
@@ -938,7 +930,7 @@ begin
   Result := FPosition;
 end;
 
-function TFIBFieldStream.SeekInOldBuffer(Offset: Longint; Origin: Word): Longint;
+function TFIBFieldStream.SeekInOldBuffer(Offset: LongInt; Origin: Word): LongInt;
 begin
   if Assigned(FOldBuffer) then
     Result := FOldDataSize
@@ -1013,7 +1005,7 @@ begin
     SetSize(0);
 end;
 
-function TFIBFieldStream.Write(const Buffer; Count: Longint): Longint;
+function TFIBFieldStream.Write(const Buffer; Count: LongInt): LongInt;
 begin
   CheckWritable;
   EnsureInitialized;
@@ -1032,7 +1024,7 @@ end;
 // TFIBBlobStream
 constructor TFIBBlobStream.CreateNew(AFieldNo: Integer; AStreamList: TList;
   const ATableName: string = ''; const AFieldName: string = '';
-  PKeyValues: PDynArray = nil);
+  PKeyValues: PFIBVariantArray = nil);
 begin
   inherited CreateNew(AFieldNo, AStreamList);
   FCharSet := -1;
@@ -1068,7 +1060,7 @@ begin
   FInitialized := False;
 end;
 
-procedure TFIBBlobStream.Load(CallBack: TCallBackBlobReadWrite);
+procedure TFIBBlobStream.Load(CallBack: TFIBBlobProgressEvent);
 begin
   OpenBlob(CallBack);
 end;
@@ -1078,14 +1070,14 @@ begin
   SaveToSwapFile;
 end;
 
-procedure TFIBBlobStream.DoFinalize(ClearModified, ForceWrite: Boolean; CallBack: TCallBackBlobReadWrite = nil);
+procedure TFIBBlobStream.DoFinalize(ClearModified, ForceWrite: Boolean; CallBack: TFIBBlobProgressEvent = nil);
 begin
   if FInitialized and (FMode <> bmRead) and (FModified or ForceWrite) then
     FLoadedFromCache := False;
   inherited DoFinalize(ClearModified, ForceWrite, CallBack);
 end;
 
-procedure TFIBBlobStream.Store(CallBack: TCallBackBlobReadWrite);
+procedure TFIBBlobStream.Store(CallBack: TFIBBlobProgressEvent);
 var
   Temp: PAnsiChar;
   SizeBeforeFilter: Integer;
@@ -1181,7 +1173,7 @@ var
     )
   );
 
-procedure TFIBBlobStream.OpenBlob(CallBack: TCallBackBlobReadWrite = nil);
+procedure TFIBBlobStream.OpenBlob(CallBack: TFIBBlobProgressEvent = nil);
 var
   FileName: string;
   CanLoadFromFile: Boolean;
@@ -1238,7 +1230,7 @@ begin
     if FDatabase.NeedUTFEncodeDDL then
       FIBMiscellaneous.ReadBlob(FDatabase.ClientLibrary, @FBlobHandle, FBuffer, FDataSize, CallBack)
     else
-      FIBMiscellaneous.OldReadBlob(FDatabase.ClientLibrary, @FBlobHandle, FBuffer, FDataSize, CallBack);
+      FIBMiscellaneous.ReadBlobKnownSize(FDatabase.ClientLibrary, @FBlobHandle, FBuffer, FDataSize, CallBack);
     IBFilterBuffer(Database, FBuffer, FDataSize, FBlobSubType, False);
   except
     Call(FDatabase.ClientLibrary.isc_close_blob(StatusVector, @FBlobHandle), False);
@@ -1311,31 +1303,36 @@ procedure TFIBBlobStream.SaveToFile(const FileName: string; FullInfo: Boolean = 
 var
   Stream: TStream;
 begin
-  if FullInfo and (Length(FKeyValues) = 0) or (Length(FTableName) = 0) then
+  if FullInfo and ((Length(FKeyValues) = 0) or (Length(FTableName) = 0)) then
     Exit;
   BlobCacheOperation.Acquire;
   try
-    Stream := TFileStream.Create(FileName, fmCreate);
     try
-      SaveToStream(Stream, FullInfo);
-    finally
-      Stream.Free;
+      Stream := TFileStream.Create(FileName, fmCreate);
+      try
+        SaveToStream(Stream, FullInfo);
+      finally
+        Stream.Free;
+      end;
+    except
+      // a failed swap file is skipped, a user file reports the error
+      if not FullInfo then
+        raise;
     end;
-  except
+  finally
+    BlobCacheOperation.Release;
   end;
-  BlobCacheOperation.Release
 end;
 
 procedure TFIBBlobStream.SaveToStream(Stream: TStream; IsCacheStream: Boolean = False);
 var
   KeyCount: Integer;
-  vFiltered: Boolean;
+  BlobIsFiltered: Boolean;
   Temp: PAnsiChar;
   TempSize: Integer;
 begin
   CheckReadable;
   EnsureInitialized;
-  // Stream.Size:=0;
   if FDataSize <> 0 then
   begin
     Seek(0, soFromBeginning);
@@ -1346,8 +1343,8 @@ begin
       Stream.Write(SwapVersion, SizeOf(SwapVersion));
       Stream.Write(FBlobID, SizeOf(TISC_QUAD));
       TempSize := FDataSize;
-      vFiltered := ExistBlobFilter(Database, FBlobSubType);
-      if vFiltered then
+      BlobIsFiltered := ExistBlobFilter(Database, FBlobSubType);
+      if BlobIsFiltered then
       begin
         GetMem(Temp, TempSize);
         Move(FBuffer[0], Temp[0], TempSize);
@@ -1359,7 +1356,7 @@ begin
       WriteUTF8StrToStream(FTableName, Stream);
       WriteUTF8StrToStream(FFieldName, Stream);
       WriteUTF8StrToStream(GetRecKeyValuesAsStr, Stream);
-      if vFiltered then
+      if BlobIsFiltered then
       begin
         try
           Stream.WriteBuffer(Temp^, TempSize);
@@ -1395,8 +1392,6 @@ begin
     if tmpInt <> SwapVersion then
       Exit;
     Stream.Read(tmpBlobId, SizeOf(TISC_QUAD));
-    { if not EquelQUADs(tmpBlobId,FBlobID)  then
-      Exit; }
     if PInt64(@tmpBlobId)^ <> PInt64(@FBlobID)^ then
       Exit;
     Stream.Read(tmpInt, SizeOf(tmpInt));
@@ -1487,10 +1482,20 @@ begin
     Result := '';
 end;
 
-procedure TFIBBlobStream.BlobToFile(const FileName: string; CallBack: TCallBackBlobReadWrite = nil);
+// TFIBBlobProgressEvent takes Integer: MaxInt for a size over 2 GB
+function ProgressValue(Value: Int64): Integer;
+begin
+  if Value > MaxInt then
+    Result := MaxInt
+  else
+    Result := Integer(Value);
+end;
+
+procedure TFIBBlobStream.BlobToFile(const FileName: string; CallBack: TFIBBlobProgressEvent = nil);
 var
   f: TFileStream;
-  iBlobSize, vBlobSize: Integer;
+  TotalLength: Long;
+  iBlobSize, TotalRead: Int64;
   BytesRead, SegLen: UShort;
   LocalBuffer: PAnsiChar;
   Stop: Boolean;
@@ -1501,70 +1506,69 @@ begin
   CheckReadable;
   CheckHandles;
   Call(FDatabase.ClientLibrary.isc_open_blob2(StatusVector, DBHandle, TRHandle, @FBlobHandle, @FBlobID, 0, nil), True);
-  FIBMiscellaneous.GetBlobInfo(FDatabase.ClientLibrary, @FBlobHandle,
-    FBlobNumSegments, FBlobMaxSegmentSize, iBlobSize, FBlobType);
-  if iBlobSize > 0 then
-  begin
-    f := TFileStream.Create(FileName, fmCreate or fmShareDenyWrite);
-    GetMem(LocalBuffer, DefaultBlobSegmentSize);
+  try
+    FIBMiscellaneous.GetBlobInfo(FDatabase.ClientLibrary, @FBlobHandle,
+      FBlobNumSegments, FBlobMaxSegmentSize, TotalLength, FBlobType);
+    // the total length is an unsigned 32 bit value
+    iBlobSize := Cardinal(TotalLength);
+    if iBlobSize > 0 then
+    begin
+      f := TFileStream.Create(FileName, fmCreate or fmShareDenyWrite);
+      GetMem(LocalBuffer, DefaultBlobSegmentSize);
 
-    try
-      vBlobSize := 0;
-      while True do
-      begin
-        if vBlobSize = iBlobSize then
-          SegLen := 0
-        else if iBlobSize < DefaultBlobSegmentSize then
-          SegLen := Word(iBlobSize) // Avoid IB2007 bug
-        else
-          SegLen := DefaultBlobSegmentSize;
+      try
+        TotalRead := 0;
+        while True do
+        begin
+          if TotalRead = iBlobSize then
+            SegLen := 0
+          else if iBlobSize < DefaultBlobSegmentSize then
+            SegLen := Word(iBlobSize) // Avoid IB2007 bug
+          else
+            SegLen := DefaultBlobSegmentSize;
 
-        // a status code: 32 bits on Win64 too
-        case Long(FDatabase.ClientLibrary.isc_get_segment(StatusVector, @FBlobHandle, @BytesRead, SegLen,
-          LocalBuffer)) of
-          0, isc_segment:
-            begin
-              f.WriteBuffer(LocalBuffer^, BytesRead);
-              Inc(vBlobSize, BytesRead);
-              if Assigned(CallBack) then
-                CallBack(iBlobSize, vBlobSize, Stop);
-              if Stop then
+          // a status code: 32 bits on Win64 too
+          case Long(FDatabase.ClientLibrary.isc_get_segment(StatusVector, @FBlobHandle, @BytesRead, SegLen,
+            LocalBuffer)) of
+            0, isc_segment:
+              begin
+                f.WriteBuffer(LocalBuffer^, BytesRead);
+                Inc(TotalRead, BytesRead);
+                if Assigned(CallBack) then
+                  CallBack(ProgressValue(iBlobSize), ProgressValue(TotalRead), Stop);
+                if Stop then
+                  Exit;
+              end;
+            isc_segstr_eof:
+              begin
+                Inc(TotalRead, BytesRead);
+                f.WriteBuffer(LocalBuffer^, BytesRead);
+                if Assigned(CallBack) then
+                  CallBack(ProgressValue(iBlobSize), ProgressValue(TotalRead), Stop);
                 Exit;
-            end;
-          isc_segstr_eof:
-            begin
-              Inc(vBlobSize, BytesRead);
-              f.WriteBuffer(LocalBuffer^, BytesRead);
-              if Assigned(CallBack) then
-                CallBack(iBlobSize, vBlobSize, Stop);
-              Exit;
-            end
-        else
-          IBError(FDatabase.ClientLibrary, Self);
+              end
+          else
+            IBError(FDatabase.ClientLibrary, Self);
+          end;
+
         end;
 
+      finally
+        FreeMem(LocalBuffer);
+        f.Free;
       end;
-
-    finally
-      FreeMem(LocalBuffer);
-      f.Free;
     end;
+  finally
+    if FBlobHandle <> nil then
+      Call(FDatabase.ClientLibrary.isc_close_blob(StatusVector, @FBlobHandle), False);
+    FBlobHandle := nil;
   end;
 end;
 
-// TCallBackBlobReadWrite takes Integer: MaxInt for a file over 2 GB
-function ProgressValue(Value: Int64): Integer;
-begin
-  if Value > MaxInt then
-    Result := MaxInt
-  else
-    Result := Integer(Value);
-end;
-
-function TFIBBlobStream.FileToBlob(const FileName: string; CallBack: TCallBackBlobReadWrite = nil): TISC_QUAD;
+function TFIBBlobStream.FileToBlob(const FileName: string; CallBack: TFIBBlobProgressEvent = nil): TISC_QUAD;
 var
   f: TFileStream;
-  seg: Longint;
+  seg: LongInt;
   Stop: Boolean;
   CurPos: Int64;
 begin
@@ -1611,7 +1615,7 @@ begin
   FArrayInfo := AArray;
 end;
 
-procedure TFIBArrayStream.Load(CallBack: TCallBackBlobReadWrite);
+procedure TFIBArrayStream.Load(CallBack: TFIBBlobProgressEvent);
 begin
   CheckReadable;
   CheckHandles;
@@ -1620,7 +1624,7 @@ begin
     SetSize(0);
 end;
 
-procedure TFIBArrayStream.Store(CallBack: TCallBackBlobReadWrite);
+procedure TFIBArrayStream.Store(CallBack: TFIBBlobProgressEvent);
 begin
   // an empty value is NULL
   if FDataSize = 0 then
@@ -1642,11 +1646,12 @@ end;
 procedure TFIBOutputDelimitedFile.CloseFile;
 begin
   if FFile <> nil then
-  begin
-    FlushBuf(True, 0);
-    FFile.Free;
-    FFile := nil
-  end;
+    try
+      FlushBuf(True, 0);
+    finally
+      FFile.Free;
+      FFile := nil
+    end;
 end;
 
 const
@@ -1675,7 +1680,6 @@ begin
       else
         st := st + FColDelimiter + Columns[i].AliasName;
     st := st + FRowDelimiter;
-    // FFile.Write(st[1],Length(st)*SizeOf(Char));
     WriteValue(st[1], Length(st) * SizeOf(Char));
   end;
 end;
@@ -1748,7 +1752,30 @@ end;
 function TFIBInputDelimitedFile.GetColumn(var Col: string): Integer;
 var
   c: Char;
-  BytesRead: Integer;
+  BytesRead, Len: Integer;
+  Buf: string;
+  ColIsCharSet, RowIsCharSet: Boolean;
+
+  // one character or a line break: every character of it ends the item
+  function IsCharSet(const Delimiter: string): Boolean;
+  var
+    i: Integer;
+  begin
+    Result := True;
+    if Length(Delimiter) > 1 then
+      for i := 1 to Length(Delimiter) do
+        if (Delimiter[i] <> CR) and (Delimiter[i] <> LF) then
+        begin
+          Result := False;
+          Exit;
+        end;
+  end;
+
+  function EndsWithDelimiter(const Delimiter: string): Boolean;
+  begin
+    Result := (Len >= Length(Delimiter)) and
+      CompareMem(@Buf[Len - Length(Delimiter) + 1], PChar(Delimiter), Length(Delimiter) * SizeOf(Char));
+  end;
 
   procedure ReadInput;
   begin
@@ -1773,27 +1800,48 @@ var
   end;
 
 begin
-  Col := '';
   Result := 0;
+  Len := 0;
+  SetLength(Buf, 256);
+  ColIsCharSet := IsCharSet(FColDelimiter);
+  RowIsCharSet := IsCharSet(FRowDelimiter);
   ReadInput;
   while BytesRead <> 0 do
   begin
-    if Pos(c, FColDelimiter) > 0 then
+    if ColIsCharSet and (Pos(c, FColDelimiter) > 0) then
     begin
       CheckCRLF(FColDelimiter);
       Result := 1;
       Break;
     end
-    else if Pos(c, FRowDelimiter) > 0 then
+    else if RowIsCharSet and (Pos(c, FRowDelimiter) > 0) then
     begin
       CheckCRLF(FRowDelimiter);
       Result := 2;
       Break;
     end
     else
-      Col := Col + c;
+    begin
+      if Len = Length(Buf) then
+        SetLength(Buf, Len * 2);
+      Inc(Len);
+      Buf[Len] := c;
+      if not ColIsCharSet and EndsWithDelimiter(FColDelimiter) then
+      begin
+        Dec(Len, Length(FColDelimiter));
+        Result := 1;
+        Break;
+      end;
+      if not RowIsCharSet and EndsWithDelimiter(FRowDelimiter) then
+      begin
+        Dec(Len, Length(FRowDelimiter));
+        Result := 2;
+        Break;
+      end;
+    end;
     ReadInput;
   end;
+  SetString(Col, PChar(Buf), Len);
 end;
 
 function TFIBInputDelimitedFile.ReadParameters: Boolean;
@@ -1896,13 +1944,11 @@ var
 begin
   FFile := TFileStream.Create(FileName, fmCreate);
   begin
-    // FFile.Write(SignRowFile[1], Length(SignRowFile));
     WriteValue(SignRowFile[1], Length(SignRowFile));
     st := AnsiString(IntToStr(FVersion));
     WriteValue(st[1], 1);
     if FVersion >= 2 then
     begin
-      // FFile.Write(Columns.Count, SizeOf(Columns.Count));
       WriteValue(Columns.Count, SizeOf(Columns.Count));
       for i := 0 to Columns.Count - 1 do
         with Columns[i].Data^ do
@@ -1937,7 +1983,7 @@ var
   i: Integer;
   BytesWritten: Integer;
   b: Boolean;
-  Buffer: TDataBuffer;
+  Buffer: TFIBDataBuffer;
   bs: TMemoryStream;
   Bytes: Integer;
 begin
@@ -2010,7 +2056,7 @@ var
   BytesRead: Integer;
   b: Boolean;
   Bytes: Integer;
-  Buffer: TDataBuffer;
+  Buffer: TFIBDataBuffer;
   bs: TMemoryStream;
 
   function ReadParam(CurPar: TFIBXSQLVAR; DataLen: Integer): Boolean;
@@ -2030,7 +2076,6 @@ var
         if DataLen < 0 then // It is Blob
           BytesRead := FFile.Read(DataLen, SizeOf(Integer));
         FFile.Seek(DataLen, 1)
-        // FileSeek(FHandle,DataLen,1);
       end
     end
     else
@@ -2131,15 +2176,16 @@ var
     end;
   end;
 
+  // reads a count or a length that must fit into the rest of the file
+  function ReadCount(var Value: Integer; ItemSize: Integer): Boolean;
+  begin
+    Result := (FFile.Read(Value, SizeOf(Value)) = SizeOf(Value)) and (Value >= 0) and
+      (Int64(Value) * ItemSize <= FFile.Size - FFile.Position);
+  end;
+
 begin
   CloseFile;
   FFile := TFileStream.Create(FileName, fmOpenRead);
-  { if FHandle = INVALID_HANDLE_VALUE then
-    begin
-    FHandle := 0 ;
-    FState  :=bsInError;
-    end
-    else }
   begin
     SetLength(ast, Length(SignRowFile));
     BytesRead := FFile.Read(ast[1], Length(SignRowFile));
@@ -2151,7 +2197,13 @@ begin
     else
     begin
       BytesRead := FFile.Read(ast[1], 1);
-      FVersion := StrToInt(string(ast[1]));
+      if (BytesRead <> 1) or not(ast[1] in ['0' .. '9']) then
+      begin
+        CloseFile;
+        FState := bsInError;
+        Exit;
+      end;
+      FVersion := Ord(ast[1]) - Ord('0');
       if FVersion > RawFileVersion then
       begin
         CloseFile;
@@ -2162,14 +2214,25 @@ begin
         if Assigned(FMap) then
           FMap.Free;
 
-        BytesRead := FFile.Read(pc, SizeOf(pc));
+        // a column header takes at least a name length and four Shorts
+        if not ReadCount(pc, SizeOf(Integer) + 4 * SizeOf(Short)) then
+        begin
+          CloseFile;
+          FState := bsInError;
+          Exit;
+        end;
         SetLength(SkippedLen, pc);
         FMap := TList.Create;
         FMap.Capacity := pc;
 
         for i := 1 to pc do
         begin
-          BytesRead := FFile.Read(L, SizeOf(L));
+          if not ReadCount(L, 1) then
+          begin
+            CloseFile;
+            FState := bsInError;
+            Exit;
+          end;
           SetLength(s, L);
           if L > 0 then
             BytesRead := FFile.Read(s[1], L);
@@ -2205,7 +2268,12 @@ begin
       if FVersion > 2 then
       begin
         // Charset
-        FFile.Read(L, SizeOf(L));
+        if not ReadCount(L, 1) then
+        begin
+          CloseFile;
+          FState := bsInError;
+          Exit;
+        end;
         if L > 0 then
         begin
           SetLength(FCharSet, L);
@@ -2223,11 +2291,12 @@ end;
 procedure TFIBFileOutputStream.CloseFile;
 begin
   if FFile <> nil then
-  begin
-    FlushBuf(True, 0);
-    FFile.Free;
-    FFile := nil
-  end;
+    try
+      FlushBuf(True, 0);
+    finally
+      FFile.Free;
+      FFile := nil
+    end;
 end;
 
 constructor TFIBFileOutputStream.Create;
@@ -2238,9 +2307,12 @@ end;
 
 destructor TFIBFileOutputStream.Destroy;
 begin
-  CloseFile;
-  if FBuffer <> nil then
-    FreeMem(FBuffer);
+  try
+    CloseFile;
+  finally
+    if FBuffer <> nil then
+      FreeMem(FBuffer);
+  end;
   inherited Destroy;
 end;
 
@@ -2248,7 +2320,8 @@ procedure TFIBFileOutputStream.FlushBuf(Force: Boolean; Count: Integer);
 begin
   if Force or (FBuffPos + Count >= cBufSize) then
   begin
-    FFile.Write(FBuffer^, FBuffPos);
+    // a short write (disk full) must not give a silently truncated file
+    FFile.WriteBuffer(FBuffer^, FBuffPos);
     FBuffPos := 0
   end;
 end;
@@ -2259,7 +2332,8 @@ begin
   if Count > cBufSize then
   begin
     FlushBuf(True, 0);
-    Result := FFile.Write(ValBuffer, Count)
+    FFile.WriteBuffer(ValBuffer, Count);
+    Result := Count;
   end
   else
   begin

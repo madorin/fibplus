@@ -30,8 +30,8 @@ uses
   DB, fraSQLEdit, uFIBEditorForm, Variants;
 
 type
-  TfrmSQLEdit = class(TFIBEditorCustomForm)
-    fSQLEdit1: TfSQLEdit;
+  TFIBSQLEditForm = class(TFIBEditorCustomForm)
+    fSQLEdit1: TFIBSQLEditFrame;
     Panel1: TPanel;
     btnOK: TBitBtn;
     btnCancel: TBitBtn;
@@ -39,15 +39,13 @@ type
     procedure fSQLEdit1btnShowDDLClick(Sender: TObject);
     procedure fSQLEdit1SpeedButton1Click(Sender: TObject);
   private
-    procedure SetProposal;
-  public
     { Public declarations }
   end;
 
 var
-  frmSQLEdit: TfrmSQLEdit;
+  frmSQLEdit: TFIBSQLEditForm;
 
-function ShowSQLEdit(aQuery: TComponent): boolean;
+function ShowSQLEdit(aQuery: TComponent): Boolean;
 
 implementation
 
@@ -58,108 +56,41 @@ uses
   FIBInterfaces,
   RegFIBEditors;
 
-function ShowSQLEdit(aQuery: TComponent): boolean;
+function ShowSQLEdit(aQuery: TComponent): Boolean;
 var
   ts: TStrings;
 begin
-  frmSQLEdit := TfrmSQLEdit.Create(Application);
-  with frmSQLEdit do
-  begin
-
-    // fSQLEdit1.PrepareFrame(aQuery.Database);
-
-    fSQLEdit1.PrepareFrame(TComponent(GetObjectProp(aQuery, 'Database')));
-    fSQLEdit1.ReadOptions;
-    ts := TStrings(GetObjectProp(aQuery, 'SQL'));
-    fSQLEdit1.SQLText := ts.Text;
-    fSQLEdit1.vEditedQuery := aQuery;
-    Caption := 'SQL edit :' + aQuery.Name;
-    SetProposal;
-    Result := ShowModal = mrOk;
-    if Result then
-      AssignStringsToProp(aQuery, 'SQL', fSQLEdit1.SQLText);
-    Free
+  frmSQLEdit := TFIBSQLEditForm.Create(Application);
+  try
+    with frmSQLEdit do
+    begin
+      fSQLEdit1.PrepareFrame(TComponent(GetObjectProp(aQuery, 'Database')));
+      fSQLEdit1.ReadOptions;
+      ts := TStrings(GetObjectProp(aQuery, 'SQL'));
+      fSQLEdit1.SQLText := ts.Text;
+      fSQLEdit1.FEditedQuery := aQuery;
+      Caption := 'SQL edit :' + aQuery.Name;
+      Result := ShowModal = mrOk;
+      if Result then
+        AssignStringsToProp(aQuery, 'SQL', fSQLEdit1.SQLText);
+    end;
+  finally
+    FreeAndNil(frmSQLEdit);
   end;
 end;
 
-procedure TfrmSQLEdit.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TFIBSQLEditForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   fSQLEdit1.SaveOptions;
 end;
 
-procedure TfrmSQLEdit.fSQLEdit1btnShowDDLClick(Sender: TObject);
+procedure TFIBSQLEditForm.fSQLEdit1btnShowDDLClick(Sender: TObject);
 begin
   fSQLEdit1.btnShowDDLClick(Sender);
 
 end;
 
-procedure TfrmSQLEdit.SetProposal;
-{
-  var
-  i:integer;
-  ts,ts1:TStrings;
-  DDLExtractor1:IFIBMetaDataExtractor;
-  Stringer:IFIBStringer;
-  v:Variant;
-}
-begin
-  { if (fSQLEdit1.FDatabase=nil) then
-    begin
-    // or not GetPropValue(fSQLEdit1.FDatabase,'Connected')
-    fSQLEdit1.iViewSQL.ISetProposalItems(DefProposalShadow[0],DefProposalShadow[1]);
-    Exit;
-    end;
-    v:=GetPropValue(fSQLEdit1.FDatabase,'Connected');
-    v:=VarToStr(v)='True';
-    if not v then
-    begin
-    fSQLEdit1.iViewSQL.ISetProposalItems(DefProposalShadow[0],DefProposalShadow[1]);
-    Exit;
-    end;
-
-    DDLExtractor1:=FIBClassesExporter.iGetMetaExtractor;
-    DDLExtractor1.SetDatabase(fSQLEdit1.FDatabase);
-    DDLExtractor1.LoadObjectNames;
-    Stringer:=FIBClassesExporter.iGetStringer;
-
-    ts:=TStringList.Create;
-    ts1:=TStringList.Create;
-    with DDLExtractor1 do
-    try
-    ts.Assign(DefProposalShadow[0]);
-    ts1.Assign(DefProposalShadow[1]);
-    for i:=0 to  Pred(TablesCount) do
-    begin
-    ts.Add('table '+ProposalDelimiterShadow+'M '+Stringer.FormatIdentifier(3,TableName[i]));
-    ts1.Add(Stringer.FormatIdentifier(3,TableName[i]));
-    end;
-
-    for i:=0 to  Pred(ViewsCount) do
-    begin
-    ts.Add('view '+ProposalDelimiterShadow+'O '+Stringer.FormatIdentifier(3,ViewName[i]));
-    ts1.Add(Stringer.FormatIdentifier(3,ViewName[i]));
-    end;
-
-    for i:=0 to  Pred(ProceduresCount) do
-    begin
-    ts.Add('procedure '+ProposalDelimiterShadow+'N '+Stringer.FormatIdentifier(3,ProcedureName[i]));
-    ts1.Add(Stringer.FormatIdentifier(3,ProcedureName[i]));
-    end;
-
-    for i:=0 to  Pred(UDFSCount) do
-    begin
-    ts.Add('udf '+ProposalDelimiterShadow+'T '+Stringer.FormatIdentifier(3,UDFName[i]));
-    ts1.Add(Stringer.FormatIdentifier(3,UDFName[i]));
-    end;
-    fSQLEdit1.iViewSQL.ISetProposalItems(ts,ts1);
-    //  SynMemo.SetProposalItems(ts);
-    finally
-    ts.Free;
-    ts1.Free;
-    end }
-end;
-
-procedure TfrmSQLEdit.fSQLEdit1SpeedButton1Click(Sender: TObject);
+procedure TFIBSQLEditForm.fSQLEdit1SpeedButton1Click(Sender: TObject);
 begin
   fSQLEdit1.SpeedButton1Click(Sender);
 

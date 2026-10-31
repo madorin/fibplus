@@ -1,7 +1,7 @@
 object FIBLoginFormFMX: TFIBLoginFormFMX
   Left = 0
   Top = 0
-  Caption = 'Form3'
+  Caption = 'Database login'
   ClientHeight = 191
   ClientWidth = 417
   FormFactor.Width = 320
@@ -70,7 +70,7 @@ object FIBLoginFormFMX: TFIBLoginFormFMX
       FocusControl = EdRole
     end
     object EdUserName: TEdit
-      TabOrder = 3
+      TabOrder = 0
       Position.X = 124.000000000000000000
       Position.Y = 8.000000000000000000
       Width = 233.000000000000000000
@@ -78,7 +78,8 @@ object FIBLoginFormFMX: TFIBLoginFormFMX
       KillFocusByReturn = False
     end
     object EdPassword: TEdit
-      TabOrder = 5
+      TabOrder = 1
+      Password = True
       Position.X = 124.000000000000000000
       Position.Y = 32.000000000000000000
       Width = 233.000000000000000000
@@ -86,7 +87,7 @@ object FIBLoginFormFMX: TFIBLoginFormFMX
       KillFocusByReturn = False
     end
     object EdRole: TEdit
-      TabOrder = 4
+      TabOrder = 2
       Position.X = 124.000000000000000000
       Position.Y = 56.000000000000000000
       Width = 233.000000000000000000
@@ -95,6 +96,7 @@ object FIBLoginFormFMX: TFIBLoginFormFMX
     end
   end
   object Button1: TButton
+    Default = True
     Height = 22.000000000000000000
     ModalResult = 1
     Position.X = 216.000000000000000000
@@ -104,6 +106,7 @@ object FIBLoginFormFMX: TFIBLoginFormFMX
     Width = 80.000000000000000000
   end
   object Button2: TButton
+    Cancel = True
     Height = 22.000000000000000000
     ModalResult = 2
     Position.X = 304.000000000000000000

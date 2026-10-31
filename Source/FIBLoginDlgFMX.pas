@@ -44,12 +44,13 @@ begin
   Form := TFIBLoginFormFMX.Create(nil);
   with Form do
     try
-      if Length(ADatabaseName) <= 50 then
+      if Length(ADatabaseName) <= 45 then
         lbDBName.Text := ADatabaseName
       else
         lbDBName.Text := Copy(ADatabaseName, 1, 10) + '...' + Copy(ADatabaseName, Length(ADatabaseName) - 32, MaxInt);
       EdUserName.Text := AUserName;
       EdRole.Text := ARoleName;
+      ActiveControl := EdPassword;
       Result := ShowModal = mrOk;
       if Result then
         begin

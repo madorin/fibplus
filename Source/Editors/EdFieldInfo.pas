@@ -31,7 +31,7 @@ uses
   RegUtils, FIBProps, Variants;
 
 type
-  TfrmFields = class(TFIBEditorCustomForm)
+  TFIBFieldsInfoForm = class(TFIBEditorCustomForm)
     dsQryFL: TDataSource;
     sbDBGrid1: TDBGrid;
     Panel1: TPanel;
@@ -80,7 +80,7 @@ type
   end;
 
 var
-  frmFields: TfrmFields;
+  frmFields: TFIBFieldsInfoForm;
 
 procedure ShowFieldInfo(aDataBase: TComponent);
 
@@ -108,9 +108,8 @@ var
   iDB: IFIBConnect;
   s: string;
   ts: TStrings;
-  // m:TMethod;
 begin
-  frmFields := TfrmFields.Create(Application);
+  frmFields := TFIBFieldsInfoForm.Create(Application);
   ts := TStringList.Create;
   with frmFields do
     try
@@ -132,9 +131,6 @@ begin
         PrepareDataSetProps(qryTabs, aDataBase, InfoTransaction);
         PrepareDataSetProps(qryTabFields, aDataBase, InfoTransaction);
 
-        { m.Data:=frmFields;
-          m.Code:=MethodAddress('qrySPsFilterRecord');
-          SetMethodProp(qryTabs,'OnFilterRecord',m); }
         qryTabs.OnFilterRecord := qrySPsFilterRecord;
         qrySPs.OnFilterRecord := qrySPsFilterRecord;
         dsQryFL.DataSet := qryFL;
@@ -174,14 +170,14 @@ begin
     end;
 end;
 
-procedure TfrmFields.PrepareDataSetProps(DataSet, Database, Transaction: TComponent);
+procedure TFIBFieldsInfoForm.PrepareDataSetProps(DataSet, Database, Transaction: TComponent);
 begin
   SetObjectProp(DataSet, 'DataBase', Database);
   SetObjectProp(DataSet, 'Transaction', Transaction);
   SetPropValue(DataSet, 'AutoCommit', 'True');
 end;
 
-procedure TfrmFields.qryTabFieldsBeforeOpen(DataSet: TDataSet);
+procedure TFIBFieldsInfoForm.qryTabFieldsBeforeOpen(DataSet: TDataSet);
 var
   ids: IFIBDataSet;
 begin
@@ -195,7 +191,7 @@ begin
   end;
 end;
 
-procedure TfrmFields.CopyTableFields;
+procedure TFIBFieldsInfoForm.CopyTableFields;
 var
   Q: TDataSet;
 begin
@@ -230,25 +226,25 @@ begin
     end;
 end;
 
-procedure TfrmFields.btnCopyFieldsClick(Sender: TObject);
+procedure TFIBFieldsInfoForm.btnCopyFieldsClick(Sender: TObject);
 begin
   CopyTableFields
 end;
 
-procedure TfrmFields.chFiltClick(Sender: TObject);
+procedure TFIBFieldsInfoForm.chFiltClick(Sender: TObject);
 begin
   qryFL.Filtered := chFilt.Checked;
   qryFL.FindField('TABLE_NAME').Visible := not chFilt.Checked;
 end;
 
-procedure TfrmFields.qryFLFilterRecord(DataSet: TDataSet; var Accept: Boolean);
+procedure TFIBFieldsInfoForm.qryFLFilterRecord(DataSet: TDataSet; var Accept: Boolean);
 begin
   if chFilt.Checked then
     Accept := AnsiUpperCase(DataSet.FieldByName('TABLE_NAME').asString)
       = AnsiUpperCase(sbDBGrid2.dataSource.DataSet.Fields[0].asString)
 end;
 
-procedure TfrmFields.DataSource2DataChange(Sender: TObject; Field: TField);
+procedure TFIBFieldsInfoForm.DataSource2DataChange(Sender: TObject; Field: TField);
 begin
   if chFilt.Checked then
   begin
@@ -257,7 +253,7 @@ begin
   end
 end;
 
-procedure TfrmFields.miProcedures1Click(Sender: TObject);
+procedure TFIBFieldsInfoForm.miProcedures1Click(Sender: TObject);
 begin
   TMenuItem(Sender).Checked := not TMenuItem(Sender).Checked;
   if Sender = miTables1 then
@@ -282,7 +278,7 @@ begin
 
 end;
 
-procedure TfrmFields.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TFIBFieldsInfoForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   if qryFL.State in [dsEdit, dsInsert] then
     qryFL.Post;
@@ -290,7 +286,7 @@ begin
     iTr.Commit;
 end;
 
-procedure TfrmFields.EdFilterChange(Sender: TObject);
+procedure TFIBFieldsInfoForm.EdFilterChange(Sender: TObject);
 begin
   with sbDBGrid2.dataSource.DataSet do
   begin
@@ -299,13 +295,13 @@ begin
   end;
 end;
 
-procedure TfrmFields.qrySPsFilterRecord(DataSet: TDataSet; var Accept: Boolean);
+procedure TFIBFieldsInfoForm.qrySPsFilterRecord(DataSet: TDataSet; var Accept: Boolean);
 begin
   with DataSet do
     Accept := Pos(Trim(EdFilter.Text), AnsiUpperCase(FieldByName('RDB$RELATION_NAME').asString)) > 0
 end;
 
-procedure TfrmFields.FormCreate(Sender: TObject);
+procedure TFIBFieldsInfoForm.FormCreate(Sender: TObject);
 begin
   cmbKindObjs.ItemIndex := 0;
   btnCopyFields.Hint := SFieldInfoCopyFieldsHint;
@@ -322,7 +318,7 @@ begin
   miUserForms.Caption := SFieldInfoUserFormsItem;
 end;
 
-procedure TfrmFields.cmbKindObjsChange(Sender: TObject);
+procedure TFIBFieldsInfoForm.cmbKindObjsChange(Sender: TObject);
 begin
 
   with cmbKindObjs do
@@ -340,7 +336,7 @@ begin
     end
 end;
 
-procedure TfrmFields.qryFLAfterOpen(DataSet: TDataSet);
+procedure TFIBFieldsInfoForm.qryFLAfterOpen(DataSet: TDataSet);
 var
   tf: TField;
 begin
@@ -353,16 +349,16 @@ begin
   end;
 end;
 
-procedure TfrmFields.qryFLNewRecord(DataSet: TDataSet);
+procedure TFIBFieldsInfoForm.qryFLNewRecord(DataSet: TDataSet);
 begin
   if chFilt.Checked then
     qryFL.FieldByName('TABLE_NAME').asString := sbDBGrid2.dataSource.DataSet.Fields[0].asString;
 end;
 
-procedure TfrmFields.SaveLoadFieldsDisplaySize(isSave: Boolean);
+procedure TFIBFieldsInfoForm.SaveLoadFieldsDisplaySize(isSave: Boolean);
 var
   i: Integer;
-  v: Variant;
+  RegValues: Variant;
 begin
   with qryFL do
   begin
@@ -374,21 +370,21 @@ begin
       end
       else
       begin
-        v := DefReadFromRegistry(['Software', RegFIBRoot, RegRepository,
+        RegValues := DefReadFromRegistry(['Software', RegFIBRoot, RegRepository,
           'FieldInfoEditor', Fields[i].FieldName], ['DisplayWidth']);
-        if VarType(v) <> varBoolean then
-          if v[1, 0] then
-            Fields[i].DisplayWidth := v[0, 0];
+        if VarType(RegValues) <> varBoolean then
+          if RegValues[1, 0] then
+            Fields[i].DisplayWidth := RegValues[0, 0];
       end;
   end;
 end;
 
-procedure TfrmFields.qryFLBeforeClose(DataSet: TDataSet);
+procedure TFIBFieldsInfoForm.qryFLBeforeClose(DataSet: TDataSet);
 begin
   SaveLoadFieldsDisplaySize(True);
 end;
 
-procedure TfrmFields.qrySPFieldsBeforeOpen(DataSet: TDataSet);
+procedure TFIBFieldsInfoForm.qrySPFieldsBeforeOpen(DataSet: TDataSet);
 var
   ids: IFIBDataSet;
 begin

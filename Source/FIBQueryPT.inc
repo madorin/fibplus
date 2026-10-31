@@ -14,7 +14,7 @@
 {***************************************************************}
 
 {$IFDEF FIB_INTERFACE}
-    FLoadingPrepared: boolean;
+    FLoadingPrepared: Boolean;
     procedure ReadQueryStartTransaction(Reader: TReader);
     procedure WriteQueryStartTransaction(Writer: TWriter);
     procedure ReadQueryAutoCommit(Reader: TReader);
@@ -96,7 +96,7 @@ end;
 
 procedure TFIBQuery.DefineProperties(Filer: TFiler);
 var
-  IsWriteProcess: boolean;
+  IsWriteProcess: Boolean;
 
   function DoSave(Option: TFIBQueryOption): Boolean;
   begin

@@ -1,4 +1,4 @@
-object frmSQLEdit: TfrmSQLEdit
+object frmSQLEdit: TFIBSQLEditForm
   Left = 474
   Top = 344
   Width = 798
@@ -15,7 +15,7 @@ object frmSQLEdit: TfrmSQLEdit
   OnClose = FormClose
   PixelsPerInch = 96
   TextHeight = 15
-  inline fSQLEdit1: TfSQLEdit
+  inline fSQLEdit1: TFIBSQLEditFrame
     Left = 0
     Top = 0
     Width = 790

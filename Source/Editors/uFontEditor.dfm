@@ -1,4 +1,4 @@
-object frmFontEditor: TfrmFontEditor
+object frmFontEditor: TFIBFontEditorForm
   Left = 398
   Top = 249
   BorderStyle = bsDialog

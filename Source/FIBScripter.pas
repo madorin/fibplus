@@ -24,9 +24,8 @@ uses
   SysUtils, Classes, Types, FIBDatabase, FIBQuery,
   FIB, FIBInterfaces;
 
-// {$DEFINE BEZBAZY}
 type
-  TStmtType = (
+  TFIBStatementType = (
     sUnknown,
     sInvalid,
     sDML,
@@ -58,7 +57,7 @@ type
     sDirective,
     sSetSession
   );
-  TObjectType = (
+  TFIBScriptObjectType = (
     otNone,
     otDatabase,
     otDomain,
@@ -82,54 +81,54 @@ type
     otFunction
   );
 
-  TStmtCoord = record
+  TFIBStatementCoord = record
     X: Integer;
     Y: Integer;
   end;
 
-  PStmtCoord = ^TStmtCoord;
+  PFIBStatementCoord = ^TFIBStatementCoord;
 
   // smdEnd is the last character of the statement text, without the terminator,
   // blanks and comments after it. smdEnd.X=0 means the statement has no terminator
   // (only when ParseScript is called with IgnoreLastTerm=False)
-  TStatementDesc = record
-    smdBegin: TStmtCoord;
-    smdEnd: TStmtCoord;
-    smtType: TStmtType;
-    objType: TObjectType;
+  TFIBStatementDesc = record
+    smdBegin: TFIBStatementCoord;
+    smdEnd: TFIBStatementCoord;
+    smtType: TFIBStatementType;
+    objType: TFIBScriptObjectType;
     objName: string;
     DirectiveNum: Integer;
-    DirectiveElse: boolean;
+    DirectiveElse: Boolean;
     HasReturning: Boolean;
   end;
 
-  PStatementDesc = ^TStatementDesc;
+  PFIBStatementDesc = ^TFIBStatementDesc;
 
-  TScriptMap = array of TStatementDesc;
+  TFIBScriptMap = array of TFIBStatementDesc;
 
-  TOnParseStmt = procedure(Sender: TObject; StatementNo: Integer; Coord: TStatementDesc; SQLText: TStrings) of object;
+  TFIBParseStatementEvent = procedure(Sender: TObject; StatementNo: Integer; Coord: TFIBStatementDesc; SQLText: TStrings) of object;
 
-  TDirectiveState = (dsUnknown, dsTrue, dsFalse);
+  TFIBDirectiveState = (dsUnknown, dsTrue, dsFalse);
 
-  TDirectiveDesc = record
-    dBegin: TStmtCoord;
-    dConditionClose: TStmtCoord;
-    dElse: TStmtCoord;
-    dEnd: TStmtCoord;
-    dState: TDirectiveState;
+  TFIBDirectiveDesc = record
+    dBegin: TFIBStatementCoord;
+    dConditionClose: TFIBStatementCoord;
+    dElse: TFIBStatementCoord;
+    dEnd: TFIBStatementCoord;
+    dState: TFIBDirectiveState;
     OwnerDirectiveNum: Integer;
-    OwnerDirectiveElse: boolean;
+    OwnerDirectiveElse: Boolean;
     dCondition: string; // text from dBegin to dConditionClose
   end;
 
-  PDirectiveDesc = ^TDirectiveDesc;
-  TDirectivesMap = array of TDirectiveDesc;
-  PDirectivesMap = array of PDirectiveDesc;
+  PFIBDirectiveDesc = ^TFIBDirectiveDesc;
+  TFIBDirectivesMap = array of TFIBDirectiveDesc;
+  PFIBDirectivesMap = array of PFIBDirectiveDesc;
 
-  TParseDisposition = (pdBetweenStatements, pdInStatement, pdInDirective);
-  TParserState = (psNormal, psInComment, psInQuote, psInDoubleQuote, psInQString, psInConditional);
+  TFIBParseDisposition = (pdBetweenStatements, pdInStatement, pdInDirective);
+  TFIBScriptParserState = (psNormal, psInComment, psInQuote, psInDoubleQuote, psInQString, psInConditional);
   // Words that decide where a statement ends
-  TScriptKeyword = (
+  TFIBScriptKeyword = (
     kwOther,
     kwAlter,
     kwAs,
@@ -166,89 +165,88 @@ type
     FTerminator: string;
     FTermFirst, FTermFirstLower: Char;
     // first char of FTerminator in both cases
-    FStatements: TScriptMap;
+    FStatements: TFIBScriptMap;
     FStatementCount: Integer;
     // started statements, the last one may be incomplete
     FCompleteCount: Integer;
     FTakenCount: Integer; // complete statements returned by NextStatement
-    FDirectives: TDirectivesMap;
+    FDirectives: TFIBDirectivesMap;
     FDirectiveCount: Integer;
     FDirectiveStack: array of Integer;
     FCurDirective: Integer;
-    FDisposition: TParseDisposition;
-    FState: TParserState;
+    FDisposition: TFIBParseDisposition;
+    FState: TFIBScriptParserState;
     FQuoteClose: Char;
-    FLastSignificant: TStmtCoord; // last character out of blanks and comments
+    FLastSignificant: TFIBStatementCoord; // last character out of blanks and comments
     // Structure of the current statement
     FWordCount: Integer;
-    FHeader: array [0 .. 3] of TScriptKeyword; // first words
+    FHeader: array [0 .. 3] of TFIBScriptKeyword; // first words
     FParenDepth: Integer;
-    FMayHaveBody: boolean;
+    FMayHaveBody: Boolean;
     // CREATE, ALTER, RECREATE or EXECUTE with the ";" terminator
-    FExternal: boolean; // EXTERNAL module, without a PSQL body
-    FInBody: boolean; // in the body of a PSQL module, after AS
+    FExternal: Boolean; // EXTERNAL module, without a PSQL body
+    FInBody: Boolean; // in the body of a PSQL module, after AS
     FBlockDepth: Integer; // BEGIN and CASE blocks open in the body
-    FLastWordIsEnd: boolean;
+    FLastWordIsEnd: Boolean;
     FCheckReturning: Boolean;
-    FInSetTerm: boolean;
+    FInSetTerm: Boolean;
     FNewTerminator: string;
-    FNewTerminatorDone: boolean;
+    FNewTerminatorDone: Boolean;
     // Details of the script
     FCurDBName: string;
-    FMakeConnectInScript: boolean;
-    FHaveDMLStatements: boolean;
-    FHaveUnknownStatements: boolean;
+    FMakeConnectInScript: Boolean;
+    FHaveDMLStatements: Boolean;
+    FHaveUnknownStatements: Boolean;
     function Line(Y: Integer): string;
     procedure ScanLine(Y: Integer);
-    function IsTerminatorAt(const S: string; X: Integer): boolean;
-    function IsModuleHeader: boolean;
+    function IsTerminatorAt(const S: string; X: Integer): Boolean;
+    function IsModuleHeader: Boolean;
     procedure SetTerminator(const Value: string);
     procedure ProcessWord(const S: string; X, Len: Integer);
-    procedure BeginStatement(X, Y: Integer; StmtType: TStmtType);
+    procedure BeginStatement(X, Y: Integer; StmtType: TFIBStatementType);
     procedure EndStatement;
     procedure EndSetTerm;
     procedure BeginDirective(X, Y: Integer);
     procedure CloseDirectiveCondition(X, Y: Integer);
     procedure ElseDirective(X, Y: Integer);
     procedure EndIfDirective(X, Y: Integer);
-    function NextTokenPos(TokenPos: TStmtCoord; EndCoord: TStmtCoord): TStmtCoord;
-    function GetToken(TokenPos: TStmtCoord; IgnoreQuote: boolean = True): string;
-    procedure SearchObjectType(var stmtDesc: TStatementDesc; var BegSearch: TStmtCoord; ForGrant: boolean = False);
-    procedure ValidateStatement(var stmtDesc: TStatementDesc);
-    function StmtTypeNameToType(const TestString: string; Position: Integer): TStmtType;
-    function TypeNameToObjectType(const TestString: string; Position: Integer): TObjectType;
+    function NextTokenPos(TokenPos: TFIBStatementCoord; EndCoord: TFIBStatementCoord): TFIBStatementCoord;
+    function GetToken(TokenPos: TFIBStatementCoord; IgnoreQuote: Boolean = True): string;
+    procedure SearchObjectType(var stmtDesc: TFIBStatementDesc; var BegSearch: TFIBStatementCoord; ForGrant: Boolean = False);
+    procedure ValidateStatement(var stmtDesc: TFIBStatementDesc);
+    function StmtTypeNameToType(const TestString: string; Position: Integer): TFIBStatementType;
+    function TypeNameToObjectType(const TestString: string; Position: Integer): TFIBScriptObjectType;
   public
     procedure ParseScript(AScript: TStrings; var Terminator: string;
-      var ScriptMap: TScriptMap; var DirectivesMap: TDirectivesMap;
-      IgnoreLastTerm: boolean = True);
+      var ScriptMap: TFIBScriptMap; var DirectivesMap: TFIBDirectivesMap;
+      IgnoreLastTerm: Boolean = True);
     // Incremental parsing: BeginParse, then Scan after lines are added to AScript,
     // NextStatement to take the complete statements and DiscardParsed to drop
     // them with their lines. EndParse completes the last statement.
     procedure BeginParse(AScript: TStrings; const Terminator: string);
     procedure Scan;
-    procedure EndParse(IgnoreLastTerm: boolean);
-    function NextStatement(var Stmt: PStatementDesc): boolean;
+    procedure EndParse(IgnoreLastTerm: Boolean);
+    function NextStatement(var Stmt: PFIBStatementDesc): Boolean;
     procedure DiscardParsed;
-    procedure CopyFragment(BegPos, EndPos: TStmtCoord; Dest: TStrings);
+    procedure CopyFragment(BegPos, EndPos: TFIBStatementCoord; Dest: TStrings);
     property Terminator: string read FTerminator;
   end;
 
-  TOnStatementExecute = procedure(Sender: TObject; Line: Integer;
-    StatementNo: Integer; Desc: TStatementDesc; Statement: TStrings) of object;
-  TOnSQLScriptExecError = procedure(Sender: TObject; StatementNo: Integer;
+  TFIBStatementExecuteEvent = procedure(Sender: TObject; Line: Integer;
+    StatementNo: Integer; Desc: TFIBStatementDesc; Statement: TStrings) of object;
+  TFIBScriptExecErrorEvent = procedure(Sender: TObject; StatementNo: Integer;
     Line: Integer; Statement: TStrings; SQLCode: Integer; const Msg: string;
-    var doRollBack: boolean; var Stop: boolean) of object;
+    var doRollBack: Boolean; var Stop: Boolean) of object;
 
-  TDynStringArray = array of Ansistring;
+  TFIBAnsiStringArray = array of AnsiString;
 
-  // TDynStringArray= array of string;
   TFIBScripter = class(TComponent, IFIBScripter)
   private
-    FPrepared: boolean;
-    FMakeConnectInScript: boolean;
+    FPrepared: Boolean;
+    FMakeConnectInScript: Boolean;
     FParser: TFIBScriptParser;
     FScript: TStrings;
-    FScriptMap: TScriptMap;
+    FScriptMap: TFIBScriptMap;
     FLineCountInFile: Integer;
     FRunDepth: Integer; // nesting of ExecuteScript and ExecuteFromFile (INPUT)
     FFileEncoding: TEncoding; // Encoding of the file being run, used by its INPUT files
@@ -257,63 +255,63 @@ type
     FDatabase: TFIBDatabase;
     FTransaction: TFIBTransaction;
     FQuery: TFIBQuery;
-    FPaused: boolean;
-    FSkipStatement: boolean;
+    FPaused: Boolean;
+    FSkipStatement: Boolean;
     FStopStatementNo: Integer;
     FSQLDialect: Integer;
     FLibraryName: string;
     FCharSet: string;
-    FAutoDDL: boolean;
+    FAutoDDL: Boolean;
     FBlobFile: string;
     FBlobFileStream: TFileStream;
-    vInternalDatabase: boolean;
+    FInternalDatabase: Boolean;
     FExternalTransaction: TFIBTransaction;
-    FHaveDMLStatements: boolean;
-    FHaveUnknownStatements: boolean;
-    FNeedRestoreForceWrite: boolean;
+    FHaveDMLStatements: Boolean;
+    FHaveUnknownStatements: Boolean;
+    FNeedRestoreForceWrite: Boolean;
     FDBParamsFromCreate: Boolean; // DBParams were replaced by CREATE DATABASE
-    vReinsPrepared: boolean;
-    vLastInsertStmt: string;
+    FReinsertPrepared: Boolean;
+    FLastInsertStatement: string;
   private
     // AutoExecBlock support
-    FUseExecBlockForDML: boolean;
+    FUseExecBlockForDML: Boolean;
     FBlockStatementCount: Integer;
     FBlockSize: Integer; // bytes in FBlockCodePage
     FBlockMaxSize: Integer;
     FBlockCodePage: Word;
     FExecBlockStatement: TStrings;
     // the last statement added to the block, reported when the block runs
-    FBlockLastStmt: TStatementDesc;
+    FBlockLastStmt: TFIBStatementDesc;
     FBlockLastStmtNo: Integer;
     FBlockLastLine: Integer;
     procedure RestartBlock;
-    function CanGroupInExecuteBlock(const Stmt: TStatementDesc): Boolean;
+    function CanGroupInExecuteBlock(const Stmt: TFIBStatementDesc): Boolean;
     function ExecuteBlockMaxSize(out CodePage: Word): Integer;
-    function AddStatementToExecuteBlock(const Stmt: TStatementDesc; StmtNo, Line: Integer; SQLText: TStrings): Boolean;
+    function AddStatementToExecuteBlock(const Stmt: TFIBStatementDesc; StmtNo, Line: Integer; SQLText: TStrings): Boolean;
     function FlushExecBlock: Boolean;
   private
-    FOnExecuteError: TOnSQLScriptExecError;
-    FBeforeStatementExecute: TOnStatementExecute;
-    FAfterStatementExecute: TOnStatementExecute;
+    FOnExecuteError: TFIBScriptExecErrorEvent;
+    FBeforeStatementExecute: TFIBStatementExecuteEvent;
+    FAfterStatementExecute: TFIBStatementExecuteEvent;
     procedure SetDatabase(const Value: TFIBDatabase);
     procedure SetTransaction(const Value: TFIBTransaction);
     function GetTransaction: TFIBTransaction;
     procedure DoReconnect;
-    procedure SetConnectParams(StartToken: TStmtCoord; EndCoord: TStmtCoord; KeepDBParams: Boolean = False);
+    procedure SetConnectParams(StartToken: TFIBStatementCoord; EndCoord: TFIBStatementCoord; KeepDBParams: Boolean = False);
     procedure TryFillBlobParams;
     function PrepareReinsert(const InsTxt, ReInsTxt: string): string;
     procedure BeginRun(Resume: Boolean);
     procedure EndRun;
-    function HandleExecuteError(E: EFIBError; const Stmt: TStatementDesc; StmtNo: Integer; SQLText: TStrings): Boolean;
-    procedure ApplyCommand(const Stmt: TStatementDesc; StmtNo, Line: Integer; StmtTxt, SQLText: TStrings);
-    function RunStatement(Stmt: PStatementDesc; StmtNo: Integer; StmtTxt: TStrings): Boolean;
-    function ExecuteParsed(var StmtNo: Integer; StmtTxt: TStrings): boolean;
+    function HandleExecuteError(E: EFIBError; const Stmt: TFIBStatementDesc; StmtNo: Integer; SQLText: TStrings): Boolean;
+    procedure ApplyCommand(const Stmt: TFIBStatementDesc; StmtNo, Line: Integer; StmtTxt, SQLText: TStrings);
+    function RunStatement(Stmt: PFIBStatementDesc; StmtNo: Integer; StmtTxt: TStrings): Boolean;
+    function ExecuteParsed(var StmtNo: Integer; StmtTxt: TStrings): Boolean;
   private
     // IB2007
-    FInBatchCollect: boolean;
-    FBatchSQLs: TDynStringArray;
-    FInternalOnStatementExec: TOnScriptStatementExec;
-    procedure SetOnStatExec(CallBack: TOnScriptStatementExec);
+    FInBatchCollect: Boolean;
+    FBatchSQLs: TFIBAnsiStringArray;
+    FInternalOnStatementExec: TFIBScriptStatementExecEvent;
+    procedure SetOnStatExec(CallBack: TFIBScriptStatementExecEvent);
     // Directives
   private
     FDefines: TStrings;
@@ -321,14 +319,13 @@ type
     procedure SetScript(const Value: TStrings);
     procedure SetDefines(const Value: TStrings);
     function DirectiveAllows(DirNum: Integer; InElse: Boolean): Boolean;
-    function CalcDirective(Directive: TDirectiveDesc): TDirectiveState;
-    function CalcExists(Condition: TStrings): TDirectiveState;
-    function CalcIF(Condition: TStrings): TDirectiveState;
+    function CalcDirective(Directive: TFIBDirectiveDesc): TFIBDirectiveState;
+    function CalcExists(Condition: TStrings): TFIBDirectiveState;
+    function CalcIF(Condition: TStrings): TFIBDirectiveState;
   protected
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     procedure CreateInternalDatabase;
-    procedure CopyFragment(BegPos, EndPos: TStmtCoord; Dest: TStrings);
-    procedure DoQueryExecute(SQL: TStrings; ParamValues: array of variant);
+    procedure CopyFragment(BegPos, EndPos: TFIBStatementCoord; Dest: TStrings);
 
   public
     constructor Create(AOwner: TComponent); override;
@@ -338,35 +335,35 @@ type
     procedure ExecuteFromFile(const FileName: string; Terminator: string = ';'); overload;
     procedure ExecuteFromFile(const FileName: string; Encoding: TEncoding;
       Terminator: string = ';'); overload;
-    function ExecuteStatement(StmtTxt: TStrings; Stmt: PStatementDesc; StmtNo: Integer;
+    function ExecuteStatement(StmtTxt: TStrings; Stmt: PFIBStatementDesc; StmtNo: Integer;
       TmpSQL: TStrings = nil; LineInFile: Integer = -1): Boolean;
     procedure ClearPrepared;
     function StatementsCount: Integer;
-    function GetStatement(StmtNo: Integer; Text: TStrings): PStatementDesc;
+    function GetStatement(StmtNo: Integer; Text: TStrings): PFIBStatementDesc;
     function LineCountInCurrentFile: Integer;
 
     procedure AddDefine(const Def: string);
     procedure DeleteDefine(const Def: string);
     procedure PreparePreDefines;
-    property Prepared: boolean read FPrepared;
+    property Prepared: Boolean read FPrepared;
     property StopStatementNo: Integer read FStopStatementNo;
     property Query: TFIBQuery read FQuery;
-    property MakeConnectInScript: boolean read FMakeConnectInScript;
-    property SkipStatement: boolean read FSkipStatement write FSkipStatement;
-    property Paused: boolean read FPaused write FPaused;
+    property MakeConnectInScript: Boolean read FMakeConnectInScript;
+    property SkipStatement: Boolean read FSkipStatement write FSkipStatement;
+    property Paused: Boolean read FPaused write FPaused;
     property Defines: TStrings read FDefines write SetDefines;
   published
     property Script: TStrings read FScript write SetScript;
     property Database: TFIBDatabase read FDatabase write SetDatabase;
     property Transaction: TFIBTransaction read FExternalTransaction write SetTransaction;
-    property OnExecuteError: TOnSQLScriptExecError read FOnExecuteError write FOnExecuteError;
-    property AutoDDL: boolean read FAutoDDL write FAutoDDL default True;
-    property BeforeStatementExecute: TOnStatementExecute read FBeforeStatementExecute write FBeforeStatementExecute;
-    property AfterStatementExecute: TOnStatementExecute read FAfterStatementExecute write FAfterStatementExecute;
-    property UseExecBlockForDML: boolean read FUseExecBlockForDML write FUseExecBlockForDML default False;
+    property OnExecuteError: TFIBScriptExecErrorEvent read FOnExecuteError write FOnExecuteError;
+    property AutoDDL: Boolean read FAutoDDL write FAutoDDL default True;
+    property BeforeStatementExecute: TFIBStatementExecuteEvent read FBeforeStatementExecute write FBeforeStatementExecute;
+    property AfterStatementExecute: TFIBStatementExecuteEvent read FAfterStatementExecute write FAfterStatementExecute;
+    property UseExecBlockForDML: Boolean read FUseExecBlockForDML write FUseExecBlockForDML default False;
   end;
 
-function StatementTypeName(tn: TStmtType): string;
+function StatementTypeName(tn: TFIBStatementType): string;
 
 // Possible Directives
 // $IFDEF,$IFNDEF,$IFEXISTS,$IFNEXISTS,$IFNOTEXISTS,$ELSE,$ENDIF
@@ -395,6 +392,28 @@ const
   dbODSMajorVersion = 'ODS_MAJOR_VER';
   dbODSMinorVersion = 'ODS_MINOR_VER';
 
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TStmtType = TFIBStatementType deprecated 'Use TFIBStatementType';
+  TObjectType = TFIBScriptObjectType deprecated 'Use TFIBScriptObjectType';
+  TStmtCoord = TFIBStatementCoord deprecated 'Use TFIBStatementCoord';
+  PStmtCoord = PFIBStatementCoord deprecated 'Use PFIBStatementCoord';
+  TStatementDesc = TFIBStatementDesc deprecated 'Use TFIBStatementDesc';
+  PStatementDesc = PFIBStatementDesc deprecated 'Use PFIBStatementDesc';
+  TScriptMap = TFIBScriptMap deprecated 'Use TFIBScriptMap';
+  TOnParseStmt = TFIBParseStatementEvent deprecated 'Use TFIBParseStatementEvent';
+  TDirectiveState = TFIBDirectiveState deprecated 'Use TFIBDirectiveState';
+  TDirectiveDesc = TFIBDirectiveDesc deprecated 'Use TFIBDirectiveDesc';
+  PDirectiveDesc = PFIBDirectiveDesc deprecated 'Use PFIBDirectiveDesc';
+  TDirectivesMap = TFIBDirectivesMap deprecated 'Use TFIBDirectivesMap';
+  PDirectivesMap = PFIBDirectivesMap deprecated 'Use PFIBDirectivesMap';
+  TParseDisposition = TFIBParseDisposition deprecated 'Use TFIBParseDisposition';
+  TScriptKeyword = TFIBScriptKeyword deprecated 'Use TFIBScriptKeyword';
+  TOnStatementExecute = TFIBStatementExecuteEvent deprecated 'Use TFIBStatementExecuteEvent';
+  TOnSQLScriptExecError = TFIBScriptExecErrorEvent deprecated 'Use TFIBScriptExecErrorEvent';
+  TDynStringArray = TFIBAnsiStringArray deprecated 'Use TFIBAnsiStringArray';
+  TParserState = TFIBScriptParserState deprecated 'Use TFIBScriptParserState';
+
 implementation
 
 uses
@@ -417,7 +436,7 @@ begin
   raise Exception.Create(S);
 end;
 
-function StatementTypeName(tn: TStmtType): string;
+function StatementTypeName(tn: TFIBStatementType): string;
 begin
   case tn of
     sUnknown: Result := 'Unknown';
@@ -450,13 +469,13 @@ begin
 
 end;
 
-function StmtCoord(X, Y: Integer): TStmtCoord; inline;
+function StmtCoord(X, Y: Integer): TFIBStatementCoord; inline;
 begin
   Result.X := X;
   Result.Y := Y;
 end;
 
-function IsClause(const EtalonClause: string; const Source: string; Position: Integer): boolean;
+function IsClause(const EtalonClause: string; const Source: string; Position: Integer): Boolean;
 // EtalonClause must be in UpperCase
 var
   LenEtalon: Integer;
@@ -467,15 +486,8 @@ begin
     Result := CharInSet(Source[Position + LenEtalon], [' ', #13, #9, #10, '/', '-', ';', '^', ',', '}'])
 end;
 
-function StrIsIfDirective(const CheckStr: string; X: Integer): boolean;
+function StrIsIfDirective(const CheckStr: string; X: Integer): Boolean;
 begin
-  { dIfDef='{$IFDEF';
-    dIfNDef='{$IFNDEF';
-    dIf    ='{$IF';
-    dIfExists  ='{$IFEXISTS';
-    dIfNExists  ='{$IFNEXISTS';
-    dIfNotExists  ='{$IFNOTEXISTS';
-  }
   Result := IsClause(dIfDef, CheckStr, X) or IsClause(dIfNDef, CheckStr, X) or
     IsClause(dIf, CheckStr, X) or IsClause(dIfExists, CheckStr, X) or
     IsClause(dIfNExists, CheckStr, X) or IsClause(dIfNotExists, CheckStr, X)
@@ -488,7 +500,7 @@ begin
   FPrepared := False;
 end;
 
-procedure TFIBScripter.CopyFragment(BegPos, EndPos: TStmtCoord; Dest: TStrings);
+procedure TFIBScripter.CopyFragment(BegPos, EndPos: TFIBStatementCoord; Dest: TStrings);
 begin
   FParser.CopyFragment(BegPos, EndPos, Dest);
 end;
@@ -496,14 +508,12 @@ end;
 constructor TFIBScripter.Create(AOwner: TComponent);
 begin
   inherited;
-  // FUseExecBlockForDML:=True;
   FScript := TStringList.Create;
   TStringList(FScript).OnChanging := DoOnChangeScript;
   FParser := TFIBScriptParser.Create;
 
   FDefines := TStringList.Create;
   FDirectiveConsts := TStringList.Create;
-  // FDirectiveConsts.Add('A= 11');
   FExecBlockStatement := TStringList.Create;
   FTransaction := TFIBTransaction.Create(Self);
   FQuery := TFIBQuery.Create(Self);
@@ -517,7 +527,7 @@ begin
   if not Assigned(FDatabase) then
   begin
     Database := TFIBDatabase.Create(Self);
-    vInternalDatabase := True
+    FInternalDatabase := True
   end
 end;
 
@@ -539,11 +549,6 @@ begin
   ClearPrepared
 end;
 
-procedure TFIBScripter.DoQueryExecute(SQL: TStrings; ParamValues: array of variant);
-begin
-
-end;
-
 procedure TFIBScripter.DoReconnect;
 begin
   if Assigned(FDatabase) then
@@ -555,7 +560,7 @@ begin
   end;
 end;
 
-function TFIBScripter.CalcIF(Condition: TStrings): TDirectiveState;
+function TFIBScripter.CalcIF(Condition: TStrings): TFIBDirectiveState;
 type
   TState = (sConstName, sOperator, sValue);
 var
@@ -706,12 +711,12 @@ const
 
   QRYRoleExist = 'SELECT RDB$ROLE_NAME FROM RDB$ROLES WHERE RDB$ROLE_NAME =:NAME ';
 
-function TFIBScripter.CalcExists(Condition: TStrings): TDirectiveState;
+function TFIBScripter.CalcExists(Condition: TStrings): TFIBDirectiveState;
 var
-  CheckExists: boolean;
+  CheckExists: Boolean;
   i, L: Integer;
   tmpStr: string;
-  chObjectType: TObjectType;
+  chObjectType: TFIBScriptObjectType;
   chObjName: string;
   chQryTxt: string;
 begin
@@ -824,7 +829,6 @@ begin
 
     FQuery.SQL.Text := chQryTxt;
 
-{$IFNDEF BEZBAZY}
     if Assigned(FDatabase) and FDatabase.Connected then
     begin
       FQuery.Params[0].AsString := chObjName;
@@ -841,14 +845,12 @@ begin
         FQuery.Close;
       end;
     end;
-{$ENDIF}
   end
   else if IsClause('SELECT', tmpStr, 1) then
   begin
     chQryTxt := tmpStr;
     SetLength(chQryTxt, Length(chQryTxt) - 1);
 
-{$IFNDEF BEZBAZY}
     if Assigned(FDatabase) and FDatabase.Connected then
     begin
       FQuery.SQL.Text := chQryTxt;
@@ -865,12 +867,11 @@ begin
         FQuery.Close;
       end;
     end;
-{$ENDIF}
   end;
 
 end;
 
-function TFIBScripter.CalcDirective(Directive: TDirectiveDesc): TDirectiveState;
+function TFIBScripter.CalcDirective(Directive: TFIBDirectiveDesc): TFIBDirectiveState;
 var
   TmpSQL: TStrings;
   S: string;
@@ -921,64 +922,25 @@ end;
 
 function TFIBScripter.DirectiveAllows(DirNum: Integer; InElse: Boolean): Boolean;
 var
-  Directives: TDirectivesMap; // of the script being executed
-  NeedCalc: PDirectivesMap;
-  i, j: Integer;
-  vInElse: boolean;
+  D: PFIBDirectiveDesc;
 begin
-  Directives := FParser.FDirectives;
-  if (DirNum >= 0) and (DirNum < FParser.FDirectiveCount) then
+  if (DirNum < 0) or (DirNum >= FParser.FDirectiveCount) then
   begin
-    case Directives[DirNum].dState of
-      dsTrue: Result := not InElse;
-      dsFalse: Result := InElse;
-    else
-      // dsUnknown
-      begin
-        Result := True;
-        SetLength(NeedCalc, 1000);
-        i := 0;
-        j := DirNum;
-        while (j > -1) and (Directives[j].dState = dsUnknown) do
-        begin
-          NeedCalc[i] := @Directives[j];
-          j := Directives[j].OwnerDirectiveNum;
-          Inc(i)
-        end;
-        SetLength(NeedCalc, i);
-        Dec(i);
-        //
-        if j > -1 then
-        begin
-          Result := (Directives[j].dState = dsTrue) xor (NeedCalc[i].OwnerDirectiveElse);
-        end;
-
-        //
-
-        while (i >= 0) and Result do
-        begin
-          if i > 0 then
-            vInElse := NeedCalc[i - 1].OwnerDirectiveElse
-          else
-            vInElse := InElse;
-          NeedCalc[i].dState := CalcDirective(NeedCalc[i]^);
-          Result := (NeedCalc[i].dState = dsTrue) xor vInElse;
-          Dec(i)
-        end;
-        if not Result then
-          if InElse then
-            Directives[DirNum].dState := dsTrue
-          else
-            Directives[DirNum].dState := dsFalse;
-      end;
-    end;
-  end
-  else
-    Result := True
+    Result := True;
+    Exit;
+  end;
+  D := @FParser.FDirectives[DirNum];
+  // the condition is evaluated only when the owner directives allow its branch
+  Result := DirectiveAllows(D.OwnerDirectiveNum, D.OwnerDirectiveElse);
+  if not Result then
+    Exit;
+  if D.dState = dsUnknown then
+    D.dState := CalcDirective(D^);
+  Result := (D.dState = dsTrue) xor InElse;
 end;
 
 // False when there is no OnExecuteError handler and the error must propagate
-function TFIBScripter.HandleExecuteError(E: EFIBError; const Stmt: TStatementDesc;
+function TFIBScripter.HandleExecuteError(E: EFIBError; const Stmt: TFIBStatementDesc;
   StmtNo: Integer; SQLText: TStrings): Boolean;
 var
   DoRollBack: Boolean;
@@ -994,10 +956,9 @@ begin
 end;
 
 // Runs FQuery.SQL
-procedure TFIBScripter.ApplyCommand(const Stmt: TStatementDesc; StmtNo, Line: Integer; StmtTxt, SQLText: TStrings);
+procedure TFIBScripter.ApplyCommand(const Stmt: TFIBStatementDesc; StmtNo, Line: Integer; StmtTxt, SQLText: TStrings);
 begin
   try
-{$IFNDEF BEZBAZY}
     if not GetTransaction.InTransaction then
       GetTransaction.StartTransaction;
     if (Length(FBlobFile) > 0) and (FQuery.ParamCount > 0) then
@@ -1009,7 +970,6 @@ begin
       FAfterStatementExecute(Self, Line, StmtNo + 1, Stmt, StmtTxt);
     if FAutoDDL and (FQuery.SQLKind = skDDL) then
       FQuery.Transaction.Commit;
-{$ENDIF}
   except
     on E: EFIBError do
       if not HandleExecuteError(E, Stmt, StmtNo, SQLText) then
@@ -1019,12 +979,30 @@ end;
 
 // False when the pending EXECUTE BLOCK, run first, paused the run, so the statement did not run
 function TFIBScripter.ExecuteStatement(StmtTxt: TStrings;
-  Stmt: PStatementDesc; StmtNo: Integer; TmpSQL: TStrings = nil;
+  Stmt: PFIBStatementDesc; StmtNo: Integer; TmpSQL: TStrings = nil;
   LineInFile: Integer = -1): Boolean;
+
+  // An object name of DESCRIBE: quoted for COMMENT ON, or as stored in the system tables
+  function DescribeName(const TokenPos: TFIBStatementCoord; ForComment: Boolean): string;
+  var
+    Quoted: Boolean;
+  begin
+    Quoted := FParser.Line(TokenPos.Y)[TokenPos.X] = '"';
+    Result := FParser.GetToken(TokenPos);
+    if Quoted then
+    begin
+      if ForComment then
+        Result := '"' + Result + '"';
+    end
+    else if not ForComment then
+      Result := AnsiUpperCase(Result);
+  end;
+
 var
-  vToken: TStmtCoord;
+  Token, NameToken, OwnerToken: TFIBStatementCoord;
+  UseComment: Boolean;
   tmpStr, tmpStr1: string;
-  vIsInternalTmpSQL: Boolean;
+  IsInternalTmpSQL: Boolean;
   CanGroup: Boolean;
   WasPaused: Boolean;
   Line: Integer;
@@ -1037,11 +1015,11 @@ begin
       FQuery.Close;
     if TmpSQL = nil then
     begin
-      vIsInternalTmpSQL := True;
+      IsInternalTmpSQL := True;
       TmpSQL := TStringList.Create;
     end
     else
-      vIsInternalTmpSQL := False;
+      IsInternalTmpSQL := False;
     try
       SkipStatement := (Stmt.DirectiveNum >= 0) and not DirectiveAllows(Stmt.DirectiveNum, Stmt.DirectiveElse);
       if SkipStatement then
@@ -1067,30 +1045,27 @@ begin
         sCreateDatabase:
           begin
             CreateInternalDatabase;
-            vToken := FParser.NextTokenPos(Stmt.smdBegin, Stmt.smdEnd);
-            vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
+            Token := FParser.NextTokenPos(Stmt.smdBegin, Stmt.smdEnd);
+            Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
             if FDatabase.Connected then
               FDatabase.Close;
 
-            FDatabase.DBName := FParser.GetToken(vToken);
-            vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-            CopyFragment(vToken, Stmt.smdEnd, FDatabase.DBParams);
+            FDatabase.DBName := FParser.GetToken(Token);
+            Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+            CopyFragment(Token, Stmt.smdEnd, FDatabase.DBParams);
             FDBParamsFromCreate := True;
             FDatabase.SQLDialect := FSQLDialect;
             if FLibraryName <> '' then
               FDatabase.LibraryName := FLibraryName;
-{$IFNDEF BEZBAZY}
             try
               FDatabase.CreateDatabase;
               PreparePreDefines;
-              if FDatabase.NeedUTFEncodeDDL
-              // and (FHaveDMLStatements or FHaveUnknownStatements)
-              then
+              if FDatabase.NeedUTFEncodeDDL then
               begin
                 if FDatabase.Capabilities.AttachmentCharSetID = 0 then
                 begin
                   FDatabase.Connected := False;
-                  SetConnectParams(vToken, Stmt.smdEnd);
+                  SetConnectParams(Token, Stmt.smdEnd);
                   FDatabase.DBParams.Add('force_write=0');
                   FNeedRestoreForceWrite := True;
                   FDatabase.Connected := True;
@@ -1101,45 +1076,44 @@ begin
                 if not HandleExecuteError(E, Stmt^, StmtNo, TmpSQL) then
                   raise;
             end
-{$ENDIF}
           end;
         sDropDatabase:
           begin
             CreateInternalDatabase;
-            vToken := FParser.NextTokenPos(Stmt.smdBegin, Stmt.smdEnd);
-            vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
+            Token := FParser.NextTokenPos(Stmt.smdBegin, Stmt.smdEnd);
+            Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
             if FDatabase.Connected then
               FDatabase.Close;
             if FLibraryName <> '' then
               FDatabase.LibraryName := FLibraryName;
-            FDatabase.DBName := FParser.GetToken(vToken);
-            vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-            tmpStr := FParser.GetToken(vToken);
+            FDatabase.DBName := FParser.GetToken(Token);
+            Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+            tmpStr := FParser.GetToken(Token);
             if IsClause('USER', tmpStr, 1) then
             begin
-              vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-              tmpStr := FParser.GetToken(vToken);
+              Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+              tmpStr := FParser.GetToken(Token);
               FDatabase.ConnectParams.UserName := tmpStr;
             end
             else if IsClause('PASSWORD', tmpStr, 1) then
             begin
-              vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-              tmpStr := FParser.GetToken(vToken);
+              Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+              tmpStr := FParser.GetToken(Token);
               FDatabase.ConnectParams.Password := tmpStr;
             end;
 
-            vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-            tmpStr := FParser.GetToken(vToken);
+            Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+            tmpStr := FParser.GetToken(Token);
             if IsClause('USER', tmpStr, 1) then
             begin
-              vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-              tmpStr := FParser.GetToken(vToken);
+              Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+              tmpStr := FParser.GetToken(Token);
               FDatabase.ConnectParams.UserName := tmpStr;
             end
             else if IsClause('PASSWORD', tmpStr, 1) then
             begin
-              vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-              tmpStr := FParser.GetToken(vToken);
+              Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+              tmpStr := FParser.GetToken(Token);
               FDatabase.ConnectParams.Password := tmpStr;
             end;
 
@@ -1152,18 +1126,20 @@ begin
                   raise;
             end
           end;
-        sDisconnect: FDatabase.Connected := False;
+        sDisconnect:
+          if Assigned(FDatabase) then
+            FDatabase.Connected := False;
         sConnect:
           begin
             CreateInternalDatabase;
             try
               if FDatabase.Connected then
                 FDatabase.Close;
-              vToken := FParser.NextTokenPos(Stmt.smdBegin, Stmt.smdEnd);
-              FDatabase.DBName := FParser.GetToken(vToken);
-              vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
+              Token := FParser.NextTokenPos(Stmt.smdBegin, Stmt.smdEnd);
+              FDatabase.DBName := FParser.GetToken(Token);
+              Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
               // An assigned database keeps its DBParams, CONNECT sets only its own clauses
-              SetConnectParams(vToken, Stmt.smdEnd, not vInternalDatabase and not FDBParamsFromCreate);
+              SetConnectParams(Token, Stmt.smdEnd, not FInternalDatabase and not FDBParamsFromCreate);
               FDBParamsFromCreate := False;
               FDatabase.Connected := True;
 
@@ -1196,7 +1172,7 @@ begin
                 else if IsClause('OFF', tmpStr, 1) then
                   FUseExecBlockForDML := False
                 else
-                  RaiseParserDirectiveError(dExecBlock, Stmt.smdBegin.Y);
+                  RaiseParserDirectiveError(dExecBlock, Line);
               end
               else if IsClause(dDefine, TmpSQL[0], 1) then
               begin
@@ -1219,7 +1195,6 @@ begin
               begin
                 tmpStr := Trim(Copy(TmpSQL.Text, 6, MaxInt));
                 SetLength(tmpStr, Length(tmpStr) - 1);
-                // tmpStr:=UpperCase(Trim(tmpStr));
                 i := Pos('=', tmpStr);
                 if i > 0 then
                 begin
@@ -1232,7 +1207,7 @@ begin
               end
               else
                 raise Exception.Create('Unknown directive :' + sLineBreak + 'Line ' +
-                  IntToStr(Stmt.smdBegin.Y) + sLineBreak + TmpSQL.Text);
+                  IntToStr(Line) + sLineBreak + TmpSQL.Text);
 
           end;
         sRollBack:
@@ -1240,16 +1215,16 @@ begin
             GetTransaction.Rollback;
         sSet:
           begin
-            vToken := FParser.NextTokenPos(Stmt.smdBegin, Stmt.smdEnd);
-            if vToken.X > 0 then
+            Token := FParser.NextTokenPos(Stmt.smdBegin, Stmt.smdEnd);
+            if Token.X > 0 then
             begin
-              tmpStr := FParser.GetToken(vToken);
+              tmpStr := FParser.GetToken(Token);
               if IsClause('AUTODDL', tmpStr, 1) then
               begin
-                vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-                if (vToken.X > 0) then
+                Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+                if (Token.X > 0) then
                 begin
-                  tmpStr := FParser.GetToken(vToken);
+                  tmpStr := FParser.GetToken(Token);
                   if IsClause('ON', tmpStr, 1) then
                     FAutoDDL := True
                   else if IsClause('OFF', tmpStr, 1) then
@@ -1258,16 +1233,16 @@ begin
               end
               else if IsClause('SQL', tmpStr, 1) then
               begin
-                vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-                if (vToken.X > 0) then
+                Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+                if (Token.X > 0) then
                 begin
-                  tmpStr := FParser.GetToken(vToken);
+                  tmpStr := FParser.GetToken(Token);
                   if IsClause('DIALECT', tmpStr, 1) then
                   begin
-                    vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-                    if (vToken.X > 0) then
+                    Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+                    if (Token.X > 0) then
                     begin
-                      tmpStr := FParser.GetToken(vToken);
+                      tmpStr := FParser.GetToken(Token);
                       FSQLDialect := StrToInt(tmpStr)
                     end;
                   end;
@@ -1275,129 +1250,165 @@ begin
               end
               else if IsClause('NAMES', tmpStr, 1) then
               begin
-                vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-                if (vToken.X > 0) then
+                Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+                if (Token.X > 0) then
                 begin
-                  FCharSet := FParser.GetToken(vToken);
+                  FCharSet := FParser.GetToken(Token);
                 end
               end
               else // CLIENTLIB
                 if IsClause('CLIENTLIB', tmpStr, 1) then
                 begin
-                  vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-                  if vToken.X <> 0 then
+                  Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+                  if Token.X <> 0 then
                   begin
-                    tmpStr := FParser.GetToken(vToken);
-                    FLibraryName := FParser.GetToken(vToken);
+                    FLibraryName := FParser.GetToken(Token);
                   end
                 end
                 else if IsClause('BLOBFILE', tmpStr, 1) then
                 begin
-                  vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-                  if (vToken.X > 0) then
+                  Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+                  if (Token.X > 0) then
                   begin
                     if Assigned(FBlobFileStream) then
                     begin
                       FBlobFileStream.Free;
                       FBlobFileStream := nil;
                     end;
-                    FBlobFile := FParser.GetToken(vToken);
+                    FBlobFile := FParser.GetToken(Token);
                   end
                 end;
             end;
           end;
         sReconnect:
           begin
-{$IFNDEF BEZBAZY}
             DoReconnect;
-{$ENDIF}
           end;
         sDescribe:
           begin
-            vToken := FParser.NextTokenPos(Stmt.smdBegin, Stmt.smdEnd);
-            if (vToken.X > 0) then
+            Token := FParser.NextTokenPos(Stmt.smdBegin, Stmt.smdEnd);
+            if (Token.X > 0) then
             begin
               TmpSQL.Clear;
               case Stmt.objType of
                 otDomain:
-                  TmpSQL.Add
-                    ('UPDATE RDB$FIELDS SET RDB$DESCRIPTION = :DESCR WHERE (RDB$FIELD_NAME = :FIELD)');
+                  begin
+                    tmpStr1 := 'DOMAIN';
+                    TmpSQL.Add
+                      ('UPDATE RDB$FIELDS SET RDB$DESCRIPTION = :DESCR WHERE (RDB$FIELD_NAME = :FIELD)');
+                  end;
                 otView, otTable:
                   begin
+                    if Stmt.objType = otView then
+                      tmpStr1 := 'VIEW'
+                    else
+                      tmpStr1 := 'TABLE';
                     TmpSQL.Add
                       ('UPDATE RDB$RELATIONS SET RDB$DESCRIPTION = :DESCR ' + 'WHERE RDB$RELATION_NAME = :TABNAME');
                   end;
                 otTrigger:
-                  TmpSQL.Add
-                    ('UPDATE RDB$TRIGGERS SET RDB$DESCRIPTION = :DESCR WHERE (RDB$TRIGGER_NAME = :TR_NAME)');
+                  begin
+                    tmpStr1 := 'TRIGGER';
+                    TmpSQL.Add
+                      ('UPDATE RDB$TRIGGERS SET RDB$DESCRIPTION = :DESCR WHERE (RDB$TRIGGER_NAME = :TR_NAME)');
+                  end;
                 otField:
-                  TmpSQL.Add
-                    ('UPDATE RDB$RELATION_FIELDS SET RDB$DESCRIPTION = :DESCR ' +
-                      'WHERE (RDB$RELATION_NAME = :TABNAME) and (RDB$FIELD_NAME = :FIELD)');
+                  begin
+                    tmpStr1 := 'COLUMN';
+                    TmpSQL.Add
+                      ('UPDATE RDB$RELATION_FIELDS SET RDB$DESCRIPTION = :DESCR ' +
+                        'WHERE (RDB$RELATION_NAME = :TABNAME) and (RDB$FIELD_NAME = :FIELD)');
+                  end;
                 otParameter:
-                  TmpSQL.Add
-                    ('UPDATE RDB$PROCEDURE_PARAMETERS SET RDB$DESCRIPTION = :DESCR ' +
-                      'WHERE (RDB$PROCEDURE_NAME = :PROCNAME) and(RDB$PARAMETER_NAME = :FIELD)');
+                  begin
+                    tmpStr1 := 'PARAMETER';
+                    TmpSQL.Add
+                      ('UPDATE RDB$PROCEDURE_PARAMETERS SET RDB$DESCRIPTION = :DESCR ' +
+                        'WHERE (RDB$PROCEDURE_NAME = :PROCNAME) and(RDB$PARAMETER_NAME = :FIELD)');
+                  end;
                 otProcedure:
-                  TmpSQL.Add
-                    ('UPDATE RDB$PROCEDURES SET RDB$DESCRIPTION = :DESCR ' + 'WHERE (RDB$PROCEDURE_NAME = :PROCNAME)');
-
+                  begin
+                    tmpStr1 := 'PROCEDURE';
+                    TmpSQL.Add
+                      ('UPDATE RDB$PROCEDURES SET RDB$DESCRIPTION = :DESCR ' + 'WHERE (RDB$PROCEDURE_NAME = :PROCNAME)');
+                  end;
                 otException:
-                  TmpSQL.Add
-                    ('UPDATE RDB$EXCEPTIONS SET RDB$DESCRIPTION = :DESCR ' + 'WHERE (RDB$EXCEPTION_NAME = :EXC_NAME)');
-                otFunction:
-                  TmpSQL.Add
-                    ('update RDB$FUNCTIONS set RDB$DESCRIPTION = ?DESC where (RDB$FUNCTION_NAME = ?FUNC_NAME)');
-                otUDF:
-                  TmpSQL.Add
-                    ('update RDB$FUNCTIONS set RDB$DESCRIPTION = ?DESC where (RDB$FUNCTION_NAME = ?FUNC_NAME)');
-
+                  begin
+                    tmpStr1 := 'EXCEPTION';
+                    TmpSQL.Add
+                      ('UPDATE RDB$EXCEPTIONS SET RDB$DESCRIPTION = :DESCR ' + 'WHERE (RDB$EXCEPTION_NAME = :EXC_NAME)');
+                  end;
+                otFunction, otUDF:
+                  begin
+                    if Stmt.objType = otUDF then
+                      tmpStr1 := 'EXTERNAL FUNCTION'
+                    else
+                      tmpStr1 := 'FUNCTION';
+                    TmpSQL.Add
+                      ('update RDB$FUNCTIONS set RDB$DESCRIPTION = ?DESC where (RDB$FUNCTION_NAME = ?FUNC_NAME)');
+                  end;
                 otGenerator:
-                  TmpSQL.Add
-                    ('update RDB$GENERATORS SET RDB$DESCRIPTION = ?DESC where (RDB$GENERATOR_NAME = ?GEN_NAME)');
+                  begin
+                    tmpStr1 := 'GENERATOR';
+                    TmpSQL.Add
+                      ('update RDB$GENERATORS SET RDB$DESCRIPTION = ?DESC where (RDB$GENERATOR_NAME = ?GEN_NAME)');
+                  end;
                 otPackage:
-                  TmpSQL.Add('UPDATE RDB$PACKAGES SET RDB$DESCRIPTION = :DESCR ' +
-                    'WHERE (RDB$PACKAGE_NAME = :PACKAGENAME)');
-
+                  begin
+                    tmpStr1 := 'PACKAGE';
+                    TmpSQL.Add('UPDATE RDB$PACKAGES SET RDB$DESCRIPTION = :DESCR ' +
+                      'WHERE (RDB$PACKAGE_NAME = :PACKAGENAME)');
+                  end;
               else
-                tmpStr := FParser.GetToken(vToken);
+                tmpStr := FParser.GetToken(Token);
                 raise Exception.Create('Unsupported DESCRIBE type ' + tmpStr)
                 // mark as invalid later
               end;
 
-              vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-              // Object Name
-              tmpStr := FParser.GetToken(vToken); // Object Name
-
-              FQuery.SQL.Assign(TmpSQL);
-
+              // DESCRIBE <type> <name> [<owner type> <owner name>] '<text>'
+              Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+              NameToken := Token;
+              OwnerToken := Token;
               if Stmt.objType in [otField, otParameter] then
               begin
-                FQuery.Params[2].AsString := tmpStr; // Parameter name;
-                vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-                // Owner object type
-                vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
-                // Owner object name
-                FQuery.Params[1].AsString := FParser.GetToken(vToken);
+                Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+                Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+                OwnerToken := Token;
+              end;
+              Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
+              // system tables are read only in Firebird 3+, COMMENT ON exists since Firebird 2
+              UseComment := Assigned(FDatabase) and FDatabase.Connected and FDatabase.IsFirebirdConnect;
+              if UseComment then
+              begin
+                tmpStr := DescribeName(NameToken, True);
+                if Stmt.objType in [otField, otParameter] then
+                  tmpStr := DescribeName(OwnerToken, True) + '.' + tmpStr;
+                tmpStr1 := 'COMMENT ON ' + tmpStr1 + ' ' + tmpStr + ' IS ';
               end
               else
-                FQuery.Params[1].AsString := tmpStr; // Object Name
-              vToken := FParser.NextTokenPos(vToken, Stmt.smdEnd);
+              begin
+                FQuery.SQL.Assign(TmpSQL);
+                if Stmt.objType in [otField, otParameter] then
+                  FQuery.Params[2].AsString := DescribeName(NameToken, False);
+                FQuery.Params[1].AsString := DescribeName(OwnerToken, False);
+              end;
 
-              CopyFragment(vToken, Stmt.smdEnd, TmpSQL);
-              FQuery.Params[0].AsString := AnsiDequotedStr(TmpSQL.Text, '''');
-{$IFNDEF BEZBAZY}
+              CopyFragment(Token, Stmt.smdEnd, TmpSQL);
+              tmpStr := AnsiDequotedStr(TmpSQL.Text, '''');
+              if UseComment then
+                FQuery.SQL.Text := tmpStr1 + QuotedStr(tmpStr)
+              else
+                FQuery.Params[0].AsString := tmpStr;
               if not GetTransaction.InTransaction then
                 GetTransaction.StartTransaction;
               FQuery.ExecQuery;
-{$ENDIF}
             end;
           end;
         sRunFromFile:
           begin
-            vToken := FParser.NextTokenPos(Stmt.smdBegin, Stmt.smdEnd);
+            Token := FParser.NextTokenPos(Stmt.smdBegin, Stmt.smdEnd);
             // FileName
-            tmpStr := FParser.GetToken(vToken); // FileName
+            tmpStr := FParser.GetToken(Token); // FileName
             WasPaused := FPaused; // BeginRun of the file clears it
             ExecuteFromFile(tmpStr, FFileEncoding);
             FPaused := FPaused or WasPaused;
@@ -1406,10 +1417,10 @@ begin
         case Stmt.smtType of
           sInsert:
             begin
-              vLastInsertStmt := TmpSQL.Text;
-              vReinsPrepared := False;
+              FLastInsertStatement := TmpSQL.Text;
+              FReinsertPrepared := False;
             end;
-          sReinsert: TmpSQL.Text := PrepareReinsert(vLastInsertStmt, TmpSQL.Text);
+          sReinsert: TmpSQL.Text := PrepareReinsert(FLastInsertStatement, TmpSQL.Text);
         end;
 
         if CanGroup and (Length(FBlobFile) > 0) then
@@ -1431,7 +1442,7 @@ begin
         ApplyCommand(Stmt^, StmtNo, Line, StmtTxt, TmpSQL);
       end;
     finally
-      if vIsInternalTmpSQL then
+      if IsInternalTmpSQL then
         TmpSQL.Free
     end
   end;
@@ -1449,8 +1460,8 @@ begin
     FStopStatementNo := 0;
     if not Resume then
     begin
-      vLastInsertStmt := '';
-      vReinsPrepared := False;
+      FLastInsertStatement := '';
+      FReinsertPrepared := False;
       FSQLDialect := 3;
       FCharSet := '';
     end;
@@ -1474,7 +1485,7 @@ begin
   end;
   FNeedRestoreForceWrite := False;
 
-  if vInternalDatabase then
+  if FInternalDatabase then
   begin
     if GetTransaction.InTransaction then
       GetTransaction.Commit;
@@ -1489,7 +1500,7 @@ begin
 end;
 
 // False when the run paused before the statement, see ExecuteStatement
-function TFIBScripter.RunStatement(Stmt: PStatementDesc; StmtNo: Integer; StmtTxt: TStrings): Boolean;
+function TFIBScripter.RunStatement(Stmt: PFIBStatementDesc; StmtNo: Integer; StmtTxt: TStrings): Boolean;
 begin
   Result := True;
   case Stmt.smtType of
@@ -1505,12 +1516,7 @@ begin
           GetTransaction.StartTransaction;
         if Assigned(FBeforeStatementExecute) then
           FBeforeStatementExecute(Self, Stmt.smdBegin.Y + 1, StmtNo + 1, Stmt^, nil);
-{$IFDEF SUPPORT_IB2007}
-        FQuery.ExecuteAsBatch(FBatchSQLs);
-{$ELSE}
         raise Exception.Create('Batch execute support for IB2007 only');
-{$ENDIF}
-        SetLength(FBatchSQLs, 0);
       end;
   else
     if not FInBatchCollect then
@@ -1579,7 +1585,7 @@ begin
   end;
 end;
 
-function TFIBScripter.GetStatement(StmtNo: Integer; Text: TStrings): PStatementDesc;
+function TFIBScripter.GetStatement(StmtNo: Integer; Text: TStrings): PFIBStatementDesc;
 begin
   if StmtNo > Length(FScriptMap) then
     raise Exception.Create('Statement #' + IntToStr(StmtNo) + ' don''t exist');
@@ -1601,7 +1607,7 @@ end;
 
 procedure TFIBScripter.Parse(Terminator: string = ';');
 var
-  Directives: TDirectivesMap; // the parser keeps them for DirectiveAllows
+  Directives: TFIBDirectivesMap; // the parser keeps them for DirectiveAllows
 begin
   FMakeConnectInScript := False;
   FHaveDMLStatements := False;
@@ -1621,11 +1627,11 @@ begin
     GetTransaction.Commit;
 
   if Assigned(FDatabase) then
-    if vInternalDatabase and ((Value = nil) or (Value.Owner <> Self)) then
+    if FInternalDatabase and ((Value = nil) or (Value.Owner <> Self)) then
     // Old database -  InternalDatabase
     begin
       FDatabase.Free;
-      vInternalDatabase := False;
+      FInternalDatabase := False;
     end;
   FDatabase := Value;
   FDBParamsFromCreate := False;
@@ -1703,9 +1709,9 @@ begin
     end;
 end;
 
-procedure TFIBScripter.SetConnectParams(StartToken: TStmtCoord; EndCoord: TStmtCoord; KeepDBParams: Boolean = False);
+procedure TFIBScripter.SetConnectParams(StartToken: TFIBStatementCoord; EndCoord: TFIBStatementCoord; KeepDBParams: Boolean = False);
 var
-  vToken: TStmtCoord;
+  Token: TFIBStatementCoord;
   tmpStr: String;
   CharSetGiven: Boolean;
 begin
@@ -1713,49 +1719,49 @@ begin
   if not KeepDBParams then
     FDatabase.DBParams.Clear;
   CharSetGiven := False;
-  vToken := StartToken;
-  while (vToken.X <> 0) do
+  Token := StartToken;
+  while (Token.X <> 0) do
   begin
-    tmpStr := FParser.GetToken(vToken);
+    tmpStr := FParser.GetToken(Token);
     if IsClause('USER', tmpStr, 1) then
     begin
-      vToken := FParser.NextTokenPos(vToken, EndCoord);
-      if vToken.X <> 0 then
-        FDatabase.ConnectParams.UserName := FParser.GetToken(vToken);
+      Token := FParser.NextTokenPos(Token, EndCoord);
+      if Token.X <> 0 then
+        FDatabase.ConnectParams.UserName := FParser.GetToken(Token);
     end
     else if IsClause('PASSWORD', tmpStr, 1) then
     begin
-      vToken := FParser.NextTokenPos(vToken, EndCoord);
-      if vToken.X <> 0 then
-        FDatabase.ConnectParams.Password := FParser.GetToken(vToken);
+      Token := FParser.NextTokenPos(Token, EndCoord);
+      if Token.X <> 0 then
+        FDatabase.ConnectParams.Password := FParser.GetToken(Token);
     end
     else if IsClause('ROLE', tmpStr, 1) then
     begin
-      vToken := FParser.NextTokenPos(vToken, EndCoord);
-      if vToken.X <> 0 then
-        FDatabase.ConnectParams.RoleName := FParser.GetToken(vToken);
+      Token := FParser.NextTokenPos(Token, EndCoord);
+      if Token.X <> 0 then
+        FDatabase.ConnectParams.RoleName := FParser.GetToken(Token);
     end
     else if IsClause('SET', tmpStr, 1) then
     begin
-      vToken := FParser.NextTokenPos(vToken, EndCoord);
-      if vToken.X <> 0 then
+      Token := FParser.NextTokenPos(Token, EndCoord);
+      if Token.X <> 0 then
       begin
-        tmpStr := FParser.GetToken(vToken);
+        tmpStr := FParser.GetToken(Token);
         if IsClause('CHARACTER', tmpStr, 1) then
         begin
-          vToken := FParser.NextTokenPos(vToken, EndCoord);
-          if (vToken.X <> 0) and SameText(FParser.GetToken(vToken), 'SET') then
-            vToken := FParser.NextTokenPos(vToken, EndCoord); // SET CHARACTER SET cs
-          if vToken.X <> 0 then
+          Token := FParser.NextTokenPos(Token, EndCoord);
+          if (Token.X <> 0) and SameText(FParser.GetToken(Token), 'SET') then
+            Token := FParser.NextTokenPos(Token, EndCoord); // SET CHARACTER SET cs
+          if Token.X <> 0 then
           begin
-            FDatabase.ConnectParams.CharSet := FParser.GetToken(vToken);
+            FDatabase.ConnectParams.CharSet := FParser.GetToken(Token);
             CharSetGiven := True;
           end
         end
       end
     end;
-    if vToken.X <> 0 then
-      vToken := FParser.NextTokenPos(vToken, EndCoord);
+    if Token.X <> 0 then
+      Token := FParser.NextTokenPos(Token, EndCoord);
   end;
   FDatabase.SQLDialect := FSQLDialect;
   if FLibraryName <> '' then
@@ -1769,7 +1775,48 @@ begin
   Result := Integer(Length(FScriptMap)) // statements of one script text
 end;
 
-// A byte order mark selects the encoding; without one Encoding is used (nil = TEncoding.Default).
+// True when the rest of the stream is valid UTF-8 with at least one multibyte character
+function IsUTF8Text(Stream: TStream): Boolean;
+var
+  Buffer: TBytes;
+  Count, i, Pending: Integer;
+  B: Byte;
+  HasMultiByte: Boolean;
+begin
+  Result := False;
+  SetLength(Buffer, 65536);
+  Pending := 0;
+  HasMultiByte := False;
+  repeat
+    Count := Stream.Read(Buffer[0], Length(Buffer));
+    for i := 0 to Count - 1 do
+    begin
+      B := Buffer[i];
+      if Pending > 0 then
+      begin
+        if B and $C0 <> $80 then
+          Exit;
+        Dec(Pending);
+      end
+      else if B >= $80 then
+      begin
+        if (B >= $C2) and (B <= $DF) then
+          Pending := 1
+        else if B and $F0 = $E0 then
+          Pending := 2
+        else if (B >= $F0) and (B <= $F4) then
+          Pending := 3
+        else
+          Exit;
+        HasMultiByte := True;
+      end;
+    end;
+  until Count = 0;
+  Result := HasMultiByte and (Pending = 0);
+end;
+
+// A byte order mark selects the encoding; without one Encoding is used, and when it is nil
+// a valid UTF-8 text is read as UTF-8, otherwise as TEncoding.Default.
 // The BOM is detected here: TStreamReader.DetectBOM differs between Delphi versions.
 function CreateScriptReader(const FileName: string; Encoding: TEncoding;
   out Stream: TFileStream): TStreamReader;
@@ -1787,7 +1834,13 @@ begin
     if BomLength > 0 then
       Encoding := BomEncoding
     else if Encoding = nil then
-      Encoding := TEncoding.Default;
+    begin
+      Stream.Position := 0;
+      if IsUTF8Text(Stream) then
+        Encoding := TEncoding.UTF8
+      else
+        Encoding := TEncoding.Default;
+    end;
     Stream.Position := BomLength;
     Result := TStreamReader.Create(Stream, Encoding, False);
   except
@@ -1816,9 +1869,9 @@ begin
 end;
 
 // Executes the complete statements of the current parser, False when paused
-function TFIBScripter.ExecuteParsed(var StmtNo: Integer; StmtTxt: TStrings): boolean;
+function TFIBScripter.ExecuteParsed(var StmtNo: Integer; StmtTxt: TStrings): Boolean;
 var
-  Stmt: PStatementDesc;
+  Stmt: PFIBStatementDesc;
 begin
   while not FPaused and FParser.NextStatement(Stmt) do
   begin
@@ -1919,7 +1972,7 @@ begin
   Result := FLineCountInFile;
 end;
 
-procedure TFIBScripter.SetOnStatExec(CallBack: TOnScriptStatementExec);
+procedure TFIBScripter.SetOnStatExec(CallBack: TFIBScriptStatementExecEvent);
 begin
   FInternalOnStatementExec := CallBack
 end;
@@ -1937,7 +1990,7 @@ begin
 end;
 
 // Compares the word of Len chars at X in S with UpperWord, case insensitive
-function SameWord(const S: string; X, Len: Integer; const UpperWord: string): boolean;
+function SameWord(const S: string; X, Len: Integer; const UpperWord: string): Boolean;
 var
   i: Integer;
 begin
@@ -1951,7 +2004,7 @@ begin
       end;
 end;
 
-function KeywordOf(const S: string; X, Len: Integer): TScriptKeyword;
+function KeywordOf(const S: string; X, Len: Integer): TFIBScriptKeyword;
 begin
   Result := kwOther;
   case Len of
@@ -2025,7 +2078,7 @@ begin
   FTermFirstLower := LowerCase(FTermFirst)[1];
 end;
 
-function TFIBScriptParser.IsTerminatorAt(const S: string; X: Integer): boolean;
+function TFIBScriptParser.IsTerminatorAt(const S: string; X: Integer): Boolean;
 var
   L, i: Integer;
 begin
@@ -2046,7 +2099,7 @@ begin
     Result := False;
 end;
 
-function TFIBScriptParser.IsModuleHeader: boolean;
+function TFIBScriptParser.IsModuleHeader: Boolean;
 var
   ObjWord: Integer;
 begin
@@ -2070,7 +2123,7 @@ end;
 // Other words are only skipped.
 procedure TFIBScriptParser.ProcessWord(const S: string; X, Len: Integer);
 var
-  K: TScriptKeyword;
+  K: TFIBScriptKeyword;
 begin
   if FCheckReturning and SameWord(S, X, Len, 'RETURNING') then
   begin
@@ -2112,9 +2165,9 @@ begin
   end;
 end;
 
-procedure TFIBScriptParser.BeginStatement(X, Y: Integer; StmtType: TStmtType);
+procedure TFIBScriptParser.BeginStatement(X, Y: Integer; StmtType: TFIBStatementType);
 var
-  P: PStatementDesc;
+  P: PFIBStatementDesc;
   i: Integer;
 begin
   if FStatementCount = Length(FStatements) then
@@ -2149,7 +2202,7 @@ end;
 
 procedure TFIBScriptParser.EndStatement;
 var
-  P: PStatementDesc;
+  P: PFIBStatementDesc;
 begin
   P := @FStatements[FStatementCount - 1];
   P.smdEnd := FLastSignificant;
@@ -2179,7 +2232,7 @@ end;
 
 procedure TFIBScriptParser.BeginDirective(X, Y: Integer);
 var
-  D: PDirectiveDesc;
+  D: PFIBDirectiveDesc;
   Owner: Integer;
 begin
   if FDirectiveCount = Length(FDirectives) then
@@ -2211,7 +2264,7 @@ end;
 
 procedure TFIBScriptParser.CloseDirectiveCondition(X, Y: Integer);
 var
-  D: PDirectiveDesc;
+  D: PFIBDirectiveDesc;
   Text: TStrings;
 begin
   D := @FDirectives[FCurDirective];
@@ -2470,7 +2523,7 @@ begin
   end;
 end;
 
-procedure TFIBScriptParser.EndParse(IgnoreLastTerm: boolean);
+procedure TFIBScriptParser.EndParse(IgnoreLastTerm: Boolean);
 begin
   case FDisposition of
     pdInStatement:
@@ -2487,7 +2540,7 @@ begin
       IntToStr(Length(FDirectiveStack)) + ' times');
 end;
 
-function TFIBScriptParser.NextStatement(var Stmt: PStatementDesc): boolean;
+function TFIBScriptParser.NextStatement(var Stmt: PFIBStatementDesc): Boolean;
 begin
   Result := FTakenCount < FCompleteCount;
   if Result then
@@ -2524,8 +2577,8 @@ begin
 end;
 
 procedure TFIBScriptParser.ParseScript(AScript: TStrings;
-  var Terminator: string; var ScriptMap: TScriptMap;
-  var DirectivesMap: TDirectivesMap; IgnoreLastTerm: boolean);
+  var Terminator: string; var ScriptMap: TFIBScriptMap;
+  var DirectivesMap: TFIBDirectivesMap; IgnoreLastTerm: Boolean);
 begin
   BeginParse(AScript, Terminator);
   try
@@ -2538,7 +2591,7 @@ begin
   end;
 end;
 
-procedure TFIBScriptParser.CopyFragment(BegPos, EndPos: TStmtCoord; Dest: TStrings);
+procedure TFIBScriptParser.CopyFragment(BegPos, EndPos: TFIBStatementCoord; Dest: TStrings);
 var
   Y: Integer;
   S: string;
@@ -2563,9 +2616,9 @@ begin
   end;
 end;
 
-procedure TFIBScriptParser.SearchObjectType(var stmtDesc: TStatementDesc; var BegSearch: TStmtCoord; ForGrant: boolean = False);
+procedure TFIBScriptParser.SearchObjectType(var stmtDesc: TFIBStatementDesc; var BegSearch: TFIBStatementCoord; ForGrant: Boolean = False);
 var
-  TmpCoord1: TStmtCoord;
+  TmpCoord1: TFIBStatementCoord;
   CurStr: string;
   S: string;
 
@@ -2605,13 +2658,13 @@ begin
 end;
 
 // Sets the type and the object of a complete statement
-procedure TFIBScriptParser.ValidateStatement(var stmtDesc: TStatementDesc);
+procedure TFIBScriptParser.ValidateStatement(var stmtDesc: TFIBStatementDesc);
 const
   SessionSetWords: array [0 .. 7] of string = ('STATEMENT', 'SESSION', 'BIND', 'DECFLOAT', 'ROLE', 'TRUSTED',
     'OPTIMIZE', 'SEARCH_PATH');
 var
   CurStr: string;
-  TmpCoord: TStmtCoord;
+  TmpCoord: TFIBStatementCoord;
   i: Integer;
 begin
   // Step 1
@@ -2824,9 +2877,9 @@ begin
   end;
 end;
 
-function TFIBScriptParser.NextTokenPos(TokenPos: TStmtCoord; EndCoord: TStmtCoord): TStmtCoord;
+function TFIBScriptParser.NextTokenPos(TokenPos: TFIBStatementCoord; EndCoord: TFIBStatementCoord): TFIBStatementCoord;
 var
-  InComment: boolean;
+  InComment: Boolean;
   i, j, Len: Integer;
   CurStr: string;
   FirstChar: Char;
@@ -2900,7 +2953,7 @@ begin
   end;
 end;
 
-function TFIBScriptParser.GetToken(TokenPos: TStmtCoord; IgnoreQuote: boolean = True): string;
+function TFIBScriptParser.GetToken(TokenPos: TFIBStatementCoord; IgnoreQuote: Boolean = True): string;
 var
   CurStr: string;
   StartPosInStr: Integer;
@@ -2933,10 +2986,9 @@ begin
     Inc(P, StartPosInStr - 1);
     Move(P^, Result[1], L * SizeOf(Char))
   end;
-  // SetString(Result,@CurStr[StartPosInStr],EndPosInStr-StartPosInStr)
 end;
 
-function TFIBScriptParser.TypeNameToObjectType(const TestString: string; Position: Integer): TObjectType;
+function TFIBScriptParser.TypeNameToObjectType(const TestString: string; Position: Integer): TFIBScriptObjectType;
 begin
   Result := otNone;
   case TestString[Position] of
@@ -2993,7 +3045,7 @@ begin
   end;
 end;
 
-function TFIBScriptParser.StmtTypeNameToType(const TestString: string; Position: Integer): TStmtType;
+function TFIBScriptParser.StmtTypeNameToType(const TestString: string; Position: Integer): TFIBStatementType;
 begin
   Result := sUnknown;
   case TestString[Position] of
@@ -3159,9 +3211,9 @@ var
   i, L: Integer;
   StartValues: Integer;
 begin
-  if vReinsPrepared then
+  if FReinsertPrepared then
   begin
-    Result := vLastInsertStmt + Copy(ReInsTxt, 9, MaxInt);
+    Result := FLastInsertStatement + Copy(ReInsTxt, 9, MaxInt);
     Exit;
   end;
 
@@ -3177,9 +3229,9 @@ begin
   end;
   if (StartValues > 0) then
   begin
-    vReinsPrepared := True;
-    vLastInsertStmt := Copy(InsTxt, 1, StartValues + 5);
-    Result := vLastInsertStmt + Copy(ReInsTxt, 9, MaxInt)
+    FReinsertPrepared := True;
+    FLastInsertStatement := Copy(InsTxt, 1, StartValues + 5);
+    Result := FLastInsertStatement + Copy(ReInsTxt, 9, MaxInt)
   end
   else
     Result := ReInsTxt;
@@ -3195,7 +3247,7 @@ end;
 
 // Only inside a run, which flushes the block at its end. A user EXECUTE BLOCK or
 // EXECUTE PROCEDURE is not nested into a block, nor RETURNING, which needs INTO in PSQL.
-function TFIBScripter.CanGroupInExecuteBlock(const Stmt: TStatementDesc): Boolean;
+function TFIBScripter.CanGroupInExecuteBlock(const Stmt: TFIBStatementDesc): Boolean;
 begin
   Result := FUseExecBlockForDML and (FRunDepth > 0) and (Stmt.smtType in [sInsert, sReinsert, sDML]) and
     not Stmt.HasReturning and not IsClause('EXECUTE', FParser.GetToken(Stmt.smdBegin), 1);
@@ -3226,7 +3278,7 @@ begin
 end;
 
 // False when the statement does not fit into the pending block
-function TFIBScripter.AddStatementToExecuteBlock(const Stmt: TStatementDesc;
+function TFIBScripter.AddStatementToExecuteBlock(const Stmt: TFIBStatementDesc;
   StmtNo, Line: Integer; SQLText: TStrings): Boolean;
 const
   cHeader = 'EXECUTE BLOCK AS BEGIN';

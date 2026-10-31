@@ -22,7 +22,7 @@ uses
 type
   TFrame = TFIBEditorCustomFrame;
 
-  TfSQLEdit = class(TFrame)
+  TFIBSQLEditFrame = class(TFrame)
     Panel1: TPanel;
     Panel10: TPanel;
     SpeedButton1: TSpeedButton;
@@ -103,12 +103,11 @@ type
     qrySPFields: TDataSet;
     qryTabFields1: TDataSet;
     qryAllTables1: TDataSet;
-    // ~ qryAllGenerators:TDataSet;
 
   private
     OutPutTxt: TStrings;
     Dialect: Integer;
-    vParamSymb: Char;
+    FParamSymbol: Char;
     FCanConnect: Boolean;
     FConnectForced: Boolean;
     FExistField_ForPrecision: Integer;
@@ -133,7 +132,7 @@ type
     FStringer: IFIBStringer;
     FMetaExtractor: IFIBMetaDataExtractor;
 
-    vEditedQuery: TComponent;
+    FEditedQuery: TComponent;
     FDatabase: TComponent;
     trTransaction: TComponent;
     viewSQL: TWinControl;
@@ -158,7 +157,6 @@ type
 const
   SpaceStr    = '    ';
   ForceNewStr = #13#10 + SpaceStr;
-  QuotMarks   = #39;
 
 implementation
 
@@ -175,7 +173,7 @@ const
 type
   THackWinControl = class(TCustomControl);
 
-  TDBObjectType = (
+  TFIBDBObjectType = (
     otDomain,
     otTable,
     otView,
@@ -186,17 +184,15 @@ type
     otRole,
     otDBTrigger
   );
-  // must be equal TDBObjectType from FIBMetaData.pas
+  // must be equal TFIBDBObjectType from FIBMetaData.pas
 
-procedure TfSQLEdit.Panel7Resize(Sender: TObject);
+procedure TFIBSQLEditFrame.Panel7Resize(Sender: TObject);
 begin
   DBGrid1.Columns[0].Width := Panel7.Width - ScaleToPPI(Self, 30);
   DBGrid2.Columns[0].Width := DBGrid1.Columns[0].Width;
 end;
 
-procedure TfSQLEdit.PrepareFrame(Database: TComponent);
-
-// var Splitter1:TSplitter;
+procedure TFIBSQLEditFrame.PrepareFrame(Database: TComponent);
 
   procedure PrepareDataSet(var ds: TDataSet);
   begin
@@ -206,7 +202,6 @@ procedure TfSQLEdit.PrepareFrame(Database: TComponent);
   end;
 
 begin
-  // StatusBar1.Visible:=False;
   FDatabase := Database;
   if Assigned(Database) then
   begin
@@ -218,7 +213,6 @@ begin
         SetPropValue(Database, 'Connected', 'True');
         FCanConnect := GetPropValue(Database, 'Connected');
         FConnectForced := FCanConnect;
-        // Database.Connected:=False
       except
       end;
   end
@@ -230,7 +224,7 @@ begin
     btnCheck.Enabled := False;
     btnGenSQL.Visible := False;
   end;
-  vParamSymb := ':';
+  FParamSymbol := ':';
 
   FStringer := FIBClassesExporter.iGetStringer;
   FMetaExtractor := FIBClassesExporter.iGetMetaExtractor;
@@ -242,8 +236,6 @@ begin
 
   ObjSupports(viewSQL, IFIBSQLTextEditor, iViewSQL);
   ObjSupports(viewPlan, IFIBSQLTextEditor, iViewPlan);
-  // Bug
-  // PrepareProposals;
 
   OutPutTxt := iViewSQL.Lines;
   iViewSQL.DoBeforeProposalCall := CallBackProposal;
@@ -285,7 +277,6 @@ begin
     PrepareDataSet(qrySPFields);
     PrepareDataSet(qryTabFields1);
     PrepareDataSet(qryAllTables1);
-    // PrepareDataSet(qryAllGenerators);
 
     AssignStringsToProp(qryAllTables, 'SelectSQL',
       'select RDB$RELATION_NAME AS NAME' + ' from RDB$RELATIONS' +
@@ -355,16 +346,6 @@ begin
 
     qryAllTables1.Filtered := True;
     qryAllTables1.OnFilterRecord := qrySPsFilterRecord;
-
-    { AssignStringsToProp(qryAllGenerators,'SelectSQL',
-      ' SELECT RDB$GENERATOR_NAME '+
-      ' FROM RDB$GENERATORS '+
-      ' WHERE  RDB$SYSTEM_FLAG IS NULL '+
-      ' ORDER BY 1');
-
-      qryAllGenerators.Filtered := True;
-      qryAllGenerators.OnFilterRecord := qrySPsFilterRecord;
-    }
   end;
 
   cmbTabsNameViews.Items.Add(SGenSQLView1);
@@ -388,12 +369,7 @@ begin
     ShowHideTemplateSupport;
 end;
 
-const
-  CMPFORMAT = '\color{clBlue}%s \style{+B}\color{clBlack}%s\style{-B} ';
-
-  { TODO : Finish the proposal }
-
-procedure TfSQLEdit.cmbTabsNameViewsChange(Sender: TObject);
+procedure TFIBSQLEditFrame.cmbTabsNameViewsChange(Sender: TObject);
 begin
   case cmbTabsNameViews.ItemIndex of
     0:
@@ -421,7 +397,7 @@ begin
   end;
 end;
 
-procedure TfSQLEdit.qrySPsFilterRecord(DataSet: TDataSet; var Accept: Boolean);
+procedure TFIBSQLEditFrame.qrySPsFilterRecord(DataSet: TDataSet; var Accept: Boolean);
 begin
   Accept := True;
   with DataSet do
@@ -429,7 +405,7 @@ begin
       Accept := Pos(UpperCase(Trim(Edit1.Text)), UpperCase(Fields[0].AsString)) <> 0;
 end;
 
-procedure TfSQLEdit.Edit1Change(Sender: TObject);
+procedure TFIBSQLEditFrame.Edit1Change(Sender: TObject);
 begin
   qryAllTables.Filtered := False;
   qryAllTables.Filtered := True;
@@ -439,7 +415,7 @@ begin
   qryAllTables1.Filtered := True;
 end;
 
-procedure TfSQLEdit.DBGrid1DblClick(Sender: TObject);
+procedure TFIBSQLEditFrame.DBGrid1DblClick(Sender: TObject);
 begin
   GenTemplate(cmbTabsNameViews.ItemIndex = 2, chOnlySelFields.Checked);
 end;
@@ -457,7 +433,7 @@ begin
   end;
 end;
 
-procedure TfSQLEdit.GenTemplate(IsSP, OnlySelFields: Boolean);
+procedure TFIBSQLEditFrame.GenTemplate(IsSP, OnlySelFields: Boolean);
 var
   DefSyn: string;
   DefSyn1: string;
@@ -493,7 +469,7 @@ var
     with Dest do
     begin
       fn := FStringer.FormatIdentifier(Dialect, FName);
-      Add(SpaceStr + fn + '=' + vParamSymb + fn + ',')
+      Add(SpaceStr + fn + '=' + FParamSymbol + fn + ',')
     end;
   end;
 
@@ -524,13 +500,6 @@ begin
   ObjSupports(SysTab, IFIBDataSet, iSysTab);
   with SysTab, Dest do
   begin
-    { if Params[0].AsString<>CurMetaObj then
-      begin
-      Params[0].AsString :=CurMetaObj;
-      Close;    Open;
-      end;
-    }
-
     if iSysTab.ParamValue('NAME') <> CurMetaObj then
     begin
       iSysTab.SetParamValues('NAME', [CurMetaObj]);
@@ -628,7 +597,7 @@ begin
         begin
           if pars <> '' then
             pars := pars + ',' + ForceNewStr;
-          pars := pars + vParamSymb + Trim(Fields[0].AsString);
+          pars := pars + FParamSymbol + Trim(Fields[0].AsString);
         end;
         Next
       end;
@@ -652,7 +621,7 @@ begin
             c := Count - 2;
             for i := 1 to c do
             begin
-              Add(SpaceStr + vParamSymb + Trim(Strings[i]));
+              Add(SpaceStr + FParamSymbol + Trim(Strings[i]));
             end;
             Add(')');
           end;
@@ -669,12 +638,12 @@ begin
               while p > 0 do
               begin
                 pars := FStringer.FormatIdentifier(Dialect, Copy(s, p1, p - p1));
-                Add(SpaceStr + pars + '=' + vParamSymb + pars + ' AND ');
+                Add(SpaceStr + pars + '=' + FParamSymbol + pars + ' AND ');
                 p1 := p + 1;
                 p := FStringer.PosCh1(';', s, p1);
               end;
               pars := FStringer.FormatIdentifier(Dialect, Copy(s, p1, Length(s) - p1 + 1));
-              Add(SpaceStr + pars + '=' + vParamSymb + pars);
+              Add(SpaceStr + pars + '=' + FParamSymbol + pars);
             end
             else
             begin
@@ -697,12 +666,12 @@ begin
               while p > 0 do
               begin
                 pars := FStringer.FormatIdentifier(Dialect, Copy(s, p1, p - p1));
-                Add(SpaceStr + pars + '=' + vParamSymb + pars + ' AND ');
+                Add(SpaceStr + pars + '=' + FParamSymbol + pars + ' AND ');
                 p1 := p + 1;
                 p := FStringer.PosCh1(';', s, p1);
               end;
               pars := FStringer.FormatIdentifier(Dialect, Copy(s, p1, Length(s) - p1 + 1));
-              Add(SpaceStr + pars + '=' + vParamSymb + pars);
+              Add(SpaceStr + pars + '=' + FParamSymbol + pars);
             end
           end;
         4: Add(pars);
@@ -722,7 +691,7 @@ begin
   end;
 end;
 
-procedure TfSQLEdit.SpeedButton1Click(Sender: TObject);
+procedure TFIBSQLEditFrame.SpeedButton1Click(Sender: TObject);
 begin
   if viewSQL is TMPSyntaxMemo then
     ChangeEditorProps(TMPSyntaxMemo(viewSQL))
@@ -740,17 +709,17 @@ begin
     end;
 end;
 
-procedure TfSQLEdit.SpeedButton2Click(Sender: TObject);
+procedure TFIBSQLEditFrame.SpeedButton2Click(Sender: TObject);
 begin
   FindDialog1.Execute
 end;
 
-procedure TfSQLEdit.FindDialog1Find(Sender: TObject);
+procedure TFIBSQLEditFrame.FindDialog1Find(Sender: TObject);
 begin
   Search(False);
 end;
 
-procedure TfSQLEdit.Search(Again: Boolean);
+procedure TFIBSQLEditFrame.Search(Again: Boolean);
 var
   L, p, j: Integer;
   curL: Integer;
@@ -758,11 +727,6 @@ var
   sStart: Integer;
   CurMemo: TControl;
   iCurMemo: IFIBSQLTextEditor;
-  (* {$IFDEF USE_SYN_EDIT}
-    CurMemo:TSynMemo;
-    {$ELSE}
-    CurMemo:TMemo;
-    {$ENDIF} *)
 begin
   // A kind of search.
   L := 0;
@@ -782,19 +746,10 @@ begin
       begin
         if (L - 1) < sStart then
         begin
-{$IFDEF USE_SYN_EDIT}
-          lv := Copy(Lines[j], sStart + SelEnd - L, MaxInt);
-{$ELSE}
           lv := Copy(Lines[j], sStart + SelLength - L, MaxInt);
-{$ENDIF}
           p := PosCI(FindDialog1.FindText, lv);
-{$IFDEF USE_SYN_EDIT}
-          if p > 0 then
-            p := p + sStart + SelEnd - L - 1;
-{$ELSE}
           if p > 0 then
             p := p + sStart + SelLength - L - 1;
-{$ENDIF}
         end
         else
         begin
@@ -809,11 +764,7 @@ begin
             SelStart := p - 1
           else
             SelStart := L + p - 1;
-{$IFDEF USE_SYN_EDIT}
-          SelEnd := SelStart + Length(FindDialog1.FindText);
-{$ELSE}
           SelLength := Length(FindDialog1.FindText);
-{$ENDIF}
           SetFocus;
           FindDialog1.CloseDialog;
           Exit;
@@ -823,35 +774,28 @@ begin
   FindDialog1.CloseDialog;
 end;
 
-procedure TfSQLEdit.DBGrid1KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+procedure TFIBSQLEditFrame.DBGrid1KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   if Key = VK_RETURN then
     DBGrid1DblClick(Sender);
 end;
 
-procedure TfSQLEdit.ShowEditorStatus;
+procedure TFIBSQLEditFrame.ShowEditorStatus;
 begin
   if Modified then
     StatusBar1.Panels[0].Text := 'Modified';
-{$IFDEF USE_SYN_EDIT}
-  with viewSQL do
-  begin
-    StatusBar1.Panels[1].Text := IntToStr(CaretY) + ':' + IntToStr(CaretX);
-  end;
-{$ELSE}
   with iViewSQL do
   begin
     StatusBar1.Panels[1].Text := IntToStr(GetCaretY + 1) + ':' + IntToStr(GetCaretX + 1);
   end;
-{$ENDIF}
 end;
 
-procedure TfSQLEdit.viewSQLKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+procedure TFIBSQLEditFrame.viewSQLKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   ShowEditorStatus
 end;
 
-procedure TfSQLEdit.viewSQLMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+procedure TFIBSQLEditFrame.viewSQLMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 var
   s: string;
   p: TPoint;
@@ -894,7 +838,7 @@ begin
 
 end;
 
-procedure TfSQLEdit.viewSQLKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+procedure TFIBSQLEditFrame.viewSQLKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   with viewSQL, iViewSQL do
     if ssCtrl in Shift then
@@ -905,7 +849,6 @@ begin
     else
       case Key of
         VK_F3:
-          // FindDialog1Find(FindDialog1);
           Search(True);
         VK_F11:
           begin
@@ -915,7 +858,7 @@ begin
       end;
 end;
 
-procedure TfSQLEdit.ShowHideTemplateSupport;
+procedure TFIBSQLEditFrame.ShowHideTemplateSupport;
 begin
   if (ds.DataSet <> nil) and ds.DataSet.Active then
   begin
@@ -934,17 +877,17 @@ begin
   btnReplaceZv.Visible := Panel6.Visible;
 end;
 
-procedure TfSQLEdit.btnGenSQLClick(Sender: TObject);
+procedure TFIBSQLEditFrame.btnGenSQLClick(Sender: TObject);
 begin
   DBGrid1DblClick(DBGrid1);
 end;
 
-procedure TfSQLEdit.Panel10Resize(Sender: TObject);
+procedure TFIBSQLEditFrame.Panel10Resize(Sender: TObject);
 begin
   btnGenSQL.Left := Panel10.Width - btnGenSQL.Width - 1
 end;
 
-procedure TfSQLEdit.CheckSQL;
+procedure TFIBSQLEditFrame.CheckSQL;
 var
   qryCheck: TComponent;
   iCheck: IFIBQuery;
@@ -980,70 +923,40 @@ begin
   end;
 end;
 
-procedure TfSQLEdit.btnCheckClick(Sender: TObject);
+procedure TFIBSQLEditFrame.btnCheckClick(Sender: TObject);
 begin
   CheckSQL
 end;
 
-procedure TfSQLEdit.miHidePlanClick(Sender: TObject);
+procedure TFIBSQLEditFrame.miHidePlanClick(Sender: TObject);
 begin
   viewPlan.Visible := False;
   splPlan.Visible := False;
 end;
 
-procedure TfSQLEdit.cmbParamSymbolChange(Sender: TObject);
+procedure TFIBSQLEditFrame.cmbParamSymbolChange(Sender: TObject);
 begin
   if Length(cmbParamSymbol.Text) > 0 then
-    vParamSymb := cmbParamSymbol.Text[1];
+    FParamSymbol := cmbParamSymbol.Text[1];
 end;
 
-function TfSQLEdit.GetSQLText: string;
+function TFIBSQLEditFrame.GetSQLText: string;
 begin
   Result := iViewSQL.Lines.Text
 end;
 
-procedure TfSQLEdit.SetSQLText(const Value: string);
+procedure TFIBSQLEditFrame.SetSQLText(const Value: string);
 begin
   iViewSQL.Lines.Text := Value;
   iViewSQL.SetModified(False);
 end;
 
-procedure TfSQLEdit.EditorDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
+procedure TFIBSQLEditFrame.EditorDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
 begin
   Accept := (Source = DBGrid1) or (Source = DBGrid2)
 end;
 
-{$IFDEF USE_SYN_EDIT}
-function GetPositionOfMouse(Mem: TSynMemo; out Point: TPoint): Boolean;
-begin
-  { Get XY caret position of mouse. Returns False if point is outside the
-    region of the SynEdit control. }
-  with Mem do
-  begin
-    Result := False;
-    GetCursorPos(Point); // mouse position (on screen)
-    Point := ScreenToClient(Point); // convert to SynEdit coordinates
-    { Make sure it fits within the SynEdit bounds }
-    if (Point.X < 0) or (Point.Y < 0) or (Point.X > Width) or (Point.Y > Height) then
-      Exit;
-
-    { inside the eidtor, get the word under the mouse pointer }
-{$IFNDEF SYNEDIT_1.3}
-    Point := PixelsToRowColumn(Point);
-    // convert coordinate to LineCol coordinates
-{$ELSE}
-    with PixelsToRowColumn(Point.X, Point.Y) do
-    begin
-      Point.X := Column;
-      Point.Y := Row
-    end;
-{$ENDIF}
-    Result := True; // return that the point was valid
-  end;
-end;
-{$ENDIF}
-
-procedure TfSQLEdit.EditorDragDrop(Sender, Source: TObject; X, Y: Integer);
+procedure TFIBSQLEditFrame.EditorDragDrop(Sender, Source: TObject; X, Y: Integer);
 var
   s, s1: string;
   i: Integer;
@@ -1113,15 +1026,13 @@ begin
   iViewSQL.SetFocus
 end;
 
-procedure TfSQLEdit.DBGrid1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+procedure TFIBSQLEditFrame.DBGrid1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
 begin
-  // {$IFDEF USE_SYN_EDIT}
   if ssLeft in Shift then
     TDBGrid(Sender).BeginDrag(False)
-    // {$ENDIF}
 end;
 
-procedure TfSQLEdit.btnReplaceZvClick(Sender: TObject);
+procedure TFIBSQLEditFrame.btnReplaceZvClick(Sender: TObject);
 var
   i, j, p: Integer;
   s, s1: string;
@@ -1160,7 +1071,6 @@ begin
         SetObjectProp(dsShablon, 'Database', FDatabase);
         SetObjectProp(dsShablon, 'Transaction', trTransaction);
         SetPropValue(dsShablon, 'PrepareOptions', '[]');
-        // dsShablon.PrepareOptions:=[];
         s1 := iViewSQL.Lines.Text;
         s := '';
         p := FStringer.PosCh('*', s1);
@@ -1277,17 +1187,20 @@ begin
     end;
 end;
 
-destructor TfSQLEdit.Destroy;
+destructor TFIBSQLEditFrame.Destroy;
 begin
   iViewSQL := nil;
   iViewPlan := nil;
   FStringer := nil;
   FMetaExtractor := nil;
-  if FConnectForced then
-    SetPropValue(FDatabase, 'Connected', 'False');
-  if frmScript <> nil then
-    frmScript.Free;
-  inherited;
+  try
+    if FConnectForced then
+      SetPropValue(FDatabase, 'Connected', 'False');
+  finally
+    if frmScript <> nil then
+      frmScript.Free;
+    inherited;
+  end;
 end;
 
 function StrToFontStyle(const Str: String): TFontStyles;
@@ -1303,52 +1216,52 @@ begin
     Include(Result, fsStrikeOut);
 end;
 
-procedure TfSQLEdit.ReadOptions;
+procedure TFIBSQLEditFrame.ReadOptions;
 
 var
-  v: Variant;
+  RegValues: Variant;
   i: Integer;
   SavedPPI: Integer;
 
 begin
 
-  v := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBSQLEdOptions],
+  RegValues := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBSQLEdOptions],
     ['FontName', 'FontSize', 'FontColor', 'FontStyle', 'FontCharSet',
     'DoReplaceSQL', 'UseOnlySelectedFields', 'UseTableAlias', 'ParamSymbol',
     'AssistantWidth', 'TableListHeigth', 'BackgroundColor',
     'DontUseMetadataInProposal', 'PixelsPerInch']);
 
-  if (VarType(v) <> varBoolean) then
+  if (VarType(RegValues) <> varBoolean) then
   begin
     // Sizes saved without the PPI come from the raw pixels of older versions
-    if not RegistryInteger(v, 13, SavedPPI) or (SavedPPI <= 0) then
+    if not RegistryInteger(RegValues, 13, SavedPPI) or (SavedPPI <= 0) then
       SavedPPI := ControlPPI(Self);
     for i := 0 to 12 do
-      if v[1, i] then
+      if RegValues[1, i] then
         case i of
-          0: THackWinControl(viewSQL).Font.Name := v[0, i];
-          1: THackWinControl(viewSQL).Font.Size := v[0, i];
-          2: THackWinControl(viewSQL).Font.Color := v[0, i];
-          3: THackWinControl(viewSQL).Font.Style := StrToFontStyle(v[0, i]);
-          4: THackWinControl(viewSQL).Font.CharSet := v[0, i];
-          5: chReplaceSQL.Checked := v[0, i];
-          6: chOnlySelFields.Checked := v[0, i];
-          7: LbTableSyn.Checked := v[0, i];
-          8: cmbParamSymbol.Text := v[0, i];
-          9: Panel6.Width := Max(Panel6.Width, Min(MulDiv(v[0, i], ControlPPI(Self), SavedPPI), Width div 2));
-          10: DBGrid1.Height := Max(ScaleToPPI(Self, 20), MulDiv(v[0, i], ControlPPI(Self), SavedPPI));
+          0: THackWinControl(viewSQL).Font.Name := RegValues[0, i];
+          1: THackWinControl(viewSQL).Font.Size := RegValues[0, i];
+          2: THackWinControl(viewSQL).Font.Color := RegValues[0, i];
+          3: THackWinControl(viewSQL).Font.Style := StrToFontStyle(RegValues[0, i]);
+          4: THackWinControl(viewSQL).Font.CharSet := RegValues[0, i];
+          5: chReplaceSQL.Checked := RegValues[0, i];
+          6: chOnlySelFields.Checked := RegValues[0, i];
+          7: LbTableSyn.Checked := RegValues[0, i];
+          8: cmbParamSymbol.Text := RegValues[0, i];
+          9: Panel6.Width := Max(Panel6.Width, Min(MulDiv(RegValues[0, i], ControlPPI(Self), SavedPPI), Width div 2));
+          10: DBGrid1.Height := Max(ScaleToPPI(Self, 20), MulDiv(RegValues[0, i], ControlPPI(Self), SavedPPI));
           11:
             begin
-              THackWinControl(viewSQL).Color := v[0, i];
-              THackWinControl(viewPlan).Color := v[0, i];
+              THackWinControl(viewSQL).Color := RegValues[0, i];
+              THackWinControl(viewPlan).Color := RegValues[0, i];
             end;
-          12: viewSQL.Tag := v[0, i]
+          12: viewSQL.Tag := RegValues[0, i]
         end;
   end;
 
   if viewSQL is TMPSyntaxMemo then
   begin
-    v := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBSQLEdOptions],
+    RegValues := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBSQLEdOptions],
       ['KeyWordsFontColor', 'KeyWordsFontStyle', 'FunctionsFontColor',
       'FunctionsFontStyle', 'ParametersFontColor', 'ParametersFontStyle',
       'TypesFontColor', 'TypesFontStyle', 'CommentsFontColor',
@@ -1356,29 +1269,29 @@ begin
       'NumbersFontColor', 'NumbersFontStyle', 'SelectedColor'
 
       ]);
-    if (VarType(v) <> varBoolean) then
+    if (VarType(RegValues) <> varBoolean) then
       for i := 0 to 14 do
-        if v[1, i] then
+        if RegValues[1, i] then
           case i of
-            0: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor[tokKeyWord] := v[0, i];
-            1: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle[tokKeyWord] := StrToFontStyle(v[0, i]);
-            2: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor[tokFunction] := v[0, i];
-            3: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle[tokFunction] := StrToFontStyle(v[0, i]);
-            4: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor[tokParam] := v[0, i];
-            5: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle[tokParam] := StrToFontStyle(v[0, i]);
+            0: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor[tokKeyWord] := RegValues[0, i];
+            1: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle[tokKeyWord] := StrToFontStyle(RegValues[0, i]);
+            2: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor[tokFunction] := RegValues[0, i];
+            3: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle[tokFunction] := StrToFontStyle(RegValues[0, i]);
+            4: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor[tokParam] := RegValues[0, i];
+            5: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle[tokParam] := StrToFontStyle(RegValues[0, i]);
 
-            6: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor[tokTypes] := v[0, i];
-            7: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle[tokTypes] := StrToFontStyle(v[0, i]);
+            6: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor[tokTypes] := RegValues[0, i];
+            7: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle[tokTypes] := StrToFontStyle(RegValues[0, i]);
 
-            8: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor[tokILComment] := v[0, i];
-            9: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle[tokILComment] := StrToFontStyle(v[0, i]);
+            8: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor[tokILComment] := RegValues[0, i];
+            9: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle[tokILComment] := StrToFontStyle(RegValues[0, i]);
 
-            10: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor[tokString] := v[0, i];
-            11: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle[tokString] := StrToFontStyle(v[0, i]);
+            10: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor[tokString] := RegValues[0, i];
+            11: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle[tokString] := StrToFontStyle(RegValues[0, i]);
 
-            12: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor[tokInteger] := v[0, i];
-            13: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle[tokInteger] := StrToFontStyle(v[0, i]);
-            14: TMPSyntaxMemo(viewSQL).SelColor := v[0, i];
+            12: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontColor[tokInteger] := RegValues[0, i];
+            13: TMPSyntaxMemo(viewSQL).SyntaxAttributes.FontStyle[tokInteger] := StrToFontStyle(RegValues[0, i]);
+            14: TMPSyntaxMemo(viewSQL).SelColor := RegValues[0, i];
           end
   end;
 
@@ -1422,7 +1335,7 @@ begin
     Result := Result + ']'
 end;
 
-procedure TfSQLEdit.SaveOptions;
+procedure TFIBSQLEditFrame.SaveOptions;
 begin
   with THackWinControl(viewSQL) do
   begin
@@ -1466,7 +1379,7 @@ begin
   end;
 end;
 
-procedure TfSQLEdit.qryTabFieldsBeforeOpen(DataSet: TDataSet);
+procedure TFIBSQLEditFrame.qryTabFieldsBeforeOpen(DataSet: TDataSet);
 var
   iTabFields: IFIBDataSet;
   iDb: IFIBConnect;
@@ -1500,7 +1413,7 @@ begin
     iTabFields.SetParamValues('PREC', [iTabFields.DefMacroValue('PREC')])
 end;
 
-procedure TfSQLEdit.btnShowInCodeEditorClick(Sender: TObject);
+procedure TFIBSQLEditFrame.btnShowInCodeEditorClick(Sender: TObject);
 var
   Form: TComponent;
 begin
@@ -1514,40 +1427,24 @@ begin
     if (Form <> nil) and (Form is TForm) then
       TForm(Form).ModalResult := mrYes;
 
-    if not(vEditedQuery.Owner is FDataSetClass) then
-      ICreatePropInCode(vEditedQuery, 'SQL', iViewSQL.Lines, GetModified)
+    if not(FEditedQuery.Owner is FDataSetClass) then
+      ICreatePropInCode(FEditedQuery, 'SQL', iViewSQL.Lines, GetModified)
     else
     begin
-      ICreatePropInCode(vEditedQuery.Owner, vEditedQuery.Name, iViewSQL.Lines, GetModified)
-
-      { if vEditedQuery= TFIBDataSet(vEditedQuery.Owner).QSelect then
-        if vEditedQuery= TFIBDataSet(vEditedQuery.Owner).QSelect then
-        ICreatePropInCode(vEditedQuery.Owner,'SelectSQL',viewSQL.Lines,GetModified)
-        else
-        if vEditedQuery= TFIBDataSet(vEditedQuery.Owner).QInsert then
-        ICreatePropInCode(vEditedQuery.Owner,'InsertSQL',viewSQL.Lines,GetModified)
-        else
-        if vEditedQuery= TFIBDataSet(vEditedQuery.Owner).QUpdate then
-        ICreatePropInCode(vEditedQuery.Owner,'UpdateSQL',viewSQL.Lines,GetModified)
-        else
-        if vEditedQuery= TFIBDataSet(vEditedQuery.Owner).QDelete then
-        ICreatePropInCode(vEditedQuery.Owner,'DeleteSQL',viewSQL.Lines,GetModified)
-        else
-        if vEditedQuery= TFIBDataSet(vEditedQuery.Owner).QRefresh then
-        ICreatePropInCode(vEditedQuery.Owner,'RefreshSQL',viewSQL.Lines,GetModified); }
+      ICreatePropInCode(FEditedQuery.Owner, FEditedQuery.Name, iViewSQL.Lines, GetModified)
     end;
   end;
 end;
 
-function TfSQLEdit.GetModified: Boolean;
+function TFIBSQLEditFrame.GetModified: Boolean;
 var
   Strings: TStrings;
 begin
-  Strings := TStrings(GetObjectProp(vEditedQuery, 'SQL'));
+  Strings := TStrings(GetObjectProp(FEditedQuery, 'SQL'));
   Result := Strings.Text <> iViewSQL.Lines.Text
 end;
 
-procedure TfSQLEdit.qryAllTablesAfterScroll(DataSet: TDataSet);
+procedure TFIBSQLEditFrame.qryAllTablesAfterScroll(DataSet: TDataSet);
 var
   objName: string;
   s: String;
@@ -1567,7 +1464,7 @@ begin
   end;
 end;
 
-procedure TfSQLEdit.qryTabFieldsAfterScroll(DataSet: TDataSet);
+procedure TFIBSQLEditFrame.qryTabFieldsAfterScroll(DataSet: TDataSet);
 var
   s: string;
   prec: string;
@@ -1637,19 +1534,19 @@ begin
   edFieldType.Text := s;
 end;
 
-procedure TfSQLEdit.qrySPFieldsAfterOpen(DataSet: TDataSet);
+procedure TFIBSQLEditFrame.qrySPFieldsAfterOpen(DataSet: TDataSet);
 begin
   edFieldType.Text := ''
 end;
 
-procedure TfSQLEdit.btnColorBackClick(Sender: TObject);
+procedure TFIBSQLEditFrame.btnColorBackClick(Sender: TObject);
 begin
   ColorDialog1.Color := THackWinControl(viewSQL).Color;
   if ColorDialog1.Execute then
     THackWinControl(viewSQL).Color := ColorDialog1.Color
 end;
 
-procedure TfSQLEdit.btnShowDDLClick(Sender: TObject);
+procedure TFIBSQLEditFrame.btnShowDDLClick(Sender: TObject);
 var
   ts: TStrings;
   s: String;
@@ -1689,7 +1586,7 @@ begin
   end
 end;
 
-procedure TfSQLEdit.PrepareProposals;
+procedure TFIBSQLEditFrame.PrepareProposals;
 var
   ts, ts1: TStrings;
   i: Integer;
@@ -1773,13 +1670,13 @@ begin
 
 end;
 
-procedure TfSQLEdit.CallBackProposal(const ProposalName: string);
+procedure TFIBSQLEditFrame.CallBackProposal(const ProposalName: string);
 var
   AliasName: string;
-  Parser: ISQLParser;
+  Parser: IFIBSQLParser;
 
   Position: Integer;
-  CurSections: TiSQLSections;
+  CurSections: TFIBInterfaceSQLSections;
   c: Integer;
 
   objName, DBObjName: string;
@@ -1859,7 +1756,6 @@ begin
       else
         case CurSections[Length(CurSections) - 1] of
           FIBInterfaces.stFrom:
-            // if ProposalName<>'MAIN' then
             ApplyProposal('MAIN');
           FIBInterfaces.stFields, FIBInterfaces.stWhere, FIBInterfaces.stGroupBy, FIBInterfaces.stHaving,
             FIBInterfaces.stOrderBy:
@@ -1893,8 +1789,6 @@ begin
                 end;
 
               end
-
-              // ShowMessage(s+#13+'______'+#13+s1)
             end;
         end
     end
@@ -1903,7 +1797,7 @@ begin
 
 end;
 
-procedure TfSQLEdit.btnSQLScriptClick(Sender: TObject);
+procedure TFIBSQLEditFrame.btnSQLScriptClick(Sender: TObject);
 begin
   if frmScript1 <> nil then
   begin

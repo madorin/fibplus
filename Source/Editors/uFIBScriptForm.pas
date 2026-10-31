@@ -17,7 +17,7 @@ uses
   FIBInterfaces, RegFIBEditors, uFIBEditorForm;
 
 type
-  TfrmScript = class(TFIBEditorCustomForm)
+  TFIBScriptForm = class(TFIBEditorCustomForm)
     Panel1: TPanel;
     btnSave: TSpeedButton;
     SaveDialog1: TSaveDialog;
@@ -35,28 +35,27 @@ type
     iViewSQL: IFIBSQLTextEditor;
     viewSQL: TWinControl;
     DB: TObject;
-    vScripter: TObject;
+    FScripter: TObject;
     iScripter: IFIBScripter;
-    FReadOnly: boolean;
+    FReadOnly: Boolean;
     procedure ExecProgress(Line: Integer; StatementNo: Integer);
-    procedure PrepareForm(ForReadOnly: boolean = false);
+    procedure PrepareForm(ForReadOnly: Boolean = false);
   public
     destructor Destroy; override;
     procedure ChangeScript(const ACaption, s: String);
   end;
 
-  TfrmScript1 = class(TfrmScript);
-  PForm = ^TfrmScript;
+  TFIBNestedScriptForm = class(TFIBScriptForm);
 
 var
-  frmScript: TfrmScript;
+  frmScript: TFIBScriptForm;
 
-  frmScript1: TfrmScript1;
+  frmScript1: TFIBNestedScriptForm;
 
 procedure ShowScript(const ACaption: string; Database: TObject;
-  Script: TStrings; ForReadOnly: boolean = false; asSubModal: boolean = false);
+  Script: TStrings; ForReadOnly: Boolean = false; asSubModal: Boolean = false);
 procedure ShowScriptEx(const ACaption: string; Database: TObject;
-  Script: TStrings; ForReadOnly: boolean = false; asSubModal: boolean = false;
+  Script: TStrings; ForReadOnly: Boolean = false; asSubModal: Boolean = false;
   ClassCase: Integer = 0);
 
 implementation
@@ -67,20 +66,20 @@ uses
   RTTIRoutines, TypInfo;
 
 procedure ShowScriptEx(const ACaption: string; Database: TObject;
-  Script: TStrings; ForReadOnly: boolean = false; asSubModal: boolean = false;
+  Script: TStrings; ForReadOnly: Boolean = false; asSubModal: Boolean = false;
   ClassCase: Integer = 0);
 var
   Caller: TForm;
-  Form: TfrmScript;
+  Form: TFIBScriptForm;
 begin
   case ClassCase of
     1:
       begin
-        Form := TfrmScript1.Create(Application);
-        frmScript1 := TfrmScript1(Form);
+        Form := TFIBNestedScriptForm.Create(Application);
+        frmScript1 := TFIBNestedScriptForm(Form);
       end
   else
-    Form := TfrmScript.Create(Application);
+    Form := TFIBScriptForm.Create(Application);
     frmScript := Form
   end;
 
@@ -93,17 +92,14 @@ begin
   if not asSubModal then
   begin
     Form.ShowModal;
-    // frmScript.Free
   end
   else
   begin
     Caller := Screen.ActiveForm;
     if fsModal in Caller.FormState then
-    // if (Caller.FormState=TFormState(fsVisible)) then
     begin
       Caller.Enabled := false;
       try
-        // frmScript.FormStyle:=fsStayOnTop;
         Form.Show;
         Form.SetFocus;
       finally
@@ -115,23 +111,23 @@ begin
 end;
 
 procedure ShowScript(const ACaption: string; Database: TObject;
-  Script: TStrings; ForReadOnly: boolean = false; asSubModal: boolean = false);
+  Script: TStrings; ForReadOnly: Boolean = false; asSubModal: Boolean = false);
 begin
   ShowScriptEx(ACaption, Database, Script, ForReadOnly, asSubModal);
 end;
 
 type
   THackWinControl = class(TCustomControl);
-  { TfrmScript }
+  { TFIBScriptForm }
 
-procedure TfrmScript.PrepareForm(ForReadOnly: boolean = false);
+procedure TFIBScriptForm.PrepareForm(ForReadOnly: Boolean = false);
 begin
   btnExec.Enabled := Assigned(DB);
   viewSQL := TWinControl(TComponentClass(GetSQLTextEditor).Create(Self));
   ObjSupports(viewSQL, IFIBSQLTextEditor, iViewSQL);
 
-  vScripter := expScripter.Create(Self);
-  ObjSupports(vScripter, IFIBScripter, iScripter);
+  FScripter := expScripter.Create(Self);
+  ObjSupports(FScripter, IFIBScripter, iScripter);
   iViewSQL.ReadOnly := FReadOnly;
   if FReadOnly then
     btnExec.Enabled := false;
@@ -146,13 +142,13 @@ begin
 
 end;
 
-procedure TfrmScript.btnSaveClick(Sender: TObject);
+procedure TFIBScriptForm.btnSaveClick(Sender: TObject);
 begin
   if SaveDialog1.Execute then
     iViewSQL.Lines.SaveToFile(SaveDialog1.FileName)
 end;
 
-destructor TfrmScript.Destroy;
+destructor TFIBScriptForm.Destroy;
 begin
   iViewSQL := nil;
   iScripter := nil;
@@ -160,31 +156,30 @@ begin
   inherited;
 end;
 
-procedure TfrmScript.btnOpenClick(Sender: TObject);
+procedure TFIBScriptForm.btnOpenClick(Sender: TObject);
 begin
   if OpenDialog1.Execute then
     iViewSQL.Lines.LoadFromFile(OpenDialog1.FileName)
 
 end;
 
-procedure TfrmScript.btnExecClick(Sender: TObject);
+procedure TFIBScriptForm.btnExecClick(Sender: TObject);
 begin
-  //
-  SetObjectProp(vScripter, 'Database', DB);
-  AssignStringsToProp(vScripter, 'Script', iViewSQL.Lines.Text);
+  SetObjectProp(FScripter, 'Database', DB);
+  AssignStringsToProp(FScripter, 'Script', iViewSQL.Lines.Text);
   iScripter.SetOnStatExec(ExecProgress);
   iScripter.ExecuteScript();
   StatusBar1.SimpleText := ''
 end;
 
-procedure TfrmScript.ExecProgress(Line, StatementNo: Integer);
+procedure TFIBScriptForm.ExecProgress(Line, StatementNo: Integer);
 begin
   StatusBar1.SimpleText := 'Execute  ' + IntToStr(StatementNo) + ' statement ' +
     'from ' + IntToStr(iScripter.StatementsCount);
   Application.ProcessMessages
 end;
 
-procedure TfrmScript.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TFIBScriptForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
 
   Action := caFree;
@@ -192,13 +187,13 @@ begin
     frmScript := nil
 end;
 
-procedure TfrmScript.ChangeScript(const ACaption, s: String);
+procedure TFIBScriptForm.ChangeScript(const ACaption, s: String);
 begin
   Caption := ACaption;
   iViewSQL.Lines.Text := s
 end;
 
-procedure TfrmScript.FormDestroy(Sender: TObject);
+procedure TFIBScriptForm.FormDestroy(Sender: TObject);
 begin
   if Self = frmScript then
     frmScript := nil

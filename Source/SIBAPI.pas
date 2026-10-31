@@ -15,7 +15,6 @@ uses
 type
   // data types used to interface with the InterBase API
   SIB_PVoid = ^Pointer;
-  SIB_PPChar = ^PAnsiChar;
   SIB_Long = LongInt;
   SIB_PLong = ^SIB_Long;
   SIB_UShort = Word;
@@ -23,25 +22,22 @@ type
   SIB_DBHandle = SIB_PVoid;
   SIB_PDBHandle = ^SIB_DBHandle;
   SIB_Status = ISC_STATUS;
-  SIB_PStatus = ^SIB_Status;
-  SIB_PPStatus = ^SIB_PStatus;
   SIB_StatusVector = array [0 .. 19] of SIB_Status;
   SIB_PStatusVector = ^SIB_StatusVector;
-  SIB_PPStatusVector = ^SIB_PStatusVector;
   // isc_event_counts writes ISC_ULONG counts, not status entries
-  SIB_EventCountVector = array [0 .. SIB_MAX_EVENT_BLOCK - 1] of UISC_LONG;
+  SIB_EventCountVector = array [0 .. FIBMaxEventBlock - 1] of UISC_LONG;
   SIB_PEventCountVector = ^SIB_EventCountVector;
   SIB_EventCallback = procedure(P: Pointer; Length: SIB_UShort; Updated: PAnsiChar); cdecl;
 
-function SIB_Free(ClientLibrary: IIBClientLibrary; P: PAnsiChar): SIB_Long;
-function SIB_QueEvents(ClientLibrary: IIBClientLibrary;
+function SIB_Free(ClientLibrary: IFIBClientLibrary; P: PAnsiChar): SIB_Long;
+function SIB_QueEvents(ClientLibrary: IFIBClientLibrary;
   Status: SIB_PStatusVector; DBHandle: SIB_PDBHandle; EventID: SIB_PLong;
   Length: SIB_Short; EventBuffer: PAnsiChar; Callback: SIB_EventCallback;
   CallbackArg: Pointer): SIB_Status;
-function SIB_CancelEvents(ClientLibrary: IIBClientLibrary;
+function SIB_CancelEvents(ClientLibrary: IFIBClientLibrary;
   Status: SIB_PStatusVector; DBHandle: SIB_DBHandle; EventID: SIB_PLong)
   : SIB_Status;
-procedure SIB_EventCounts(ClientLibrary: IIBClientLibrary;
+procedure SIB_EventCounts(ClientLibrary: IFIBClientLibrary;
   Counts: SIB_PEventCountVector; Length: SIB_Short;
   EventBuffer, ResultBuffer: PAnsiChar);
 
@@ -52,7 +48,7 @@ uses
 
 // ---------------------------------------------------------------------------
 
-function SIB_QueEvents(ClientLibrary: IIBClientLibrary;
+function SIB_QueEvents(ClientLibrary: IFIBClientLibrary;
   Status: SIB_PStatusVector; DBHandle: SIB_PDBHandle; EventID: SIB_PLong;
   Length: SIB_Short; EventBuffer: PAnsiChar; Callback: SIB_EventCallback;
   CallbackArg: Pointer): SIB_Status;
@@ -65,7 +61,7 @@ end;
 
 // ---------------------------------------------------------------------------
 
-function SIB_CancelEvents(ClientLibrary: IIBClientLibrary;
+function SIB_CancelEvents(ClientLibrary: IFIBClientLibrary;
   Status: SIB_PStatusVector; DBHandle: SIB_DBHandle; EventID: SIB_PLong)
   : SIB_Status;
 begin
@@ -76,7 +72,7 @@ end;
 
 // ---------------------------------------------------------------------------
 
-procedure SIB_EventCounts(ClientLibrary: IIBClientLibrary;
+procedure SIB_EventCounts(ClientLibrary: IFIBClientLibrary;
   Counts: SIB_PEventCountVector; Length: SIB_Short;
   EventBuffer, ResultBuffer: PAnsiChar);
 begin
@@ -86,7 +82,7 @@ end;
 
 // ---------------------------------------------------------------------------
 
-function SIB_Free(ClientLibrary: IIBClientLibrary; P: PAnsiChar): SIB_Long;
+function SIB_Free(ClientLibrary: IFIBClientLibrary; P: PAnsiChar): SIB_Long;
 begin
   with ClientLibrary do
     if Assigned(P) then

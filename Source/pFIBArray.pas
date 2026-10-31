@@ -10,8 +10,8 @@ uses
 {$IFDEF SUPPORT_ARRAY_FIELD}
 type
   TpFIBArray = FIBArray.TFIBArray deprecated 'Use TFIBArray';
-  TArrayBound = FIBArray.TArrayBound;
-  TArrayBounds = FIBArray.TArrayBounds;
+  TArrayBound = FIBArray.TFIBArrayBound;
+  TArrayBounds = FIBArray.TFIBArrayBounds;
   TFIBArray = FIBArray.TFIBArray;
 {$ENDIF}
 

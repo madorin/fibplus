@@ -31,7 +31,7 @@ uses
 
 type
 
-  TFPDataSetOptionsForm = class(TFIBEditorCustomForm)
+  TFIBDataSetOptionsForm = class(TFIBEditorCustomForm)
     Pages: TPageControl;
     OptionsPage: TTabSheet;
     PreparePage: TTabSheet;
@@ -50,7 +50,7 @@ type
     ch_pfImportDefaultValues: TCheckBox;
     ch_psUseBooleanField: TCheckBox;
     ch_psSQLINT64ToBCD: TCheckBox;
-    ch_psApplyRepositary: TCheckBox;
+    ch_psApplyRepository: TCheckBox;
     ch_psGetOrderInfo: TCheckBox;
     ch_psAskRecordCount: TCheckBox;
     ch_poVisibleRecno: TCheckBox;
@@ -74,7 +74,7 @@ type
     function GetMaxOption(const PropName: string): Integer;
   end;
 
-function EditOptions(aDataSets: array of TDataSet; aPageIndex: Integer): boolean;
+function EditOptions(aDataSets: array of TDataSet; aPageIndex: Integer): Boolean;
 
 implementation
 
@@ -83,9 +83,9 @@ uses
 
 {$R *.dfm}
 
-function EditOptions(aDataSets: array of TDataSet; aPageIndex: Integer): boolean;
+function EditOptions(aDataSets: array of TDataSet; aPageIndex: Integer): Boolean;
 var
-  aForm: TFPDataSetOptionsForm;
+  aForm: TFIBDataSetOptionsForm;
   (* I *) Option: Integer;
   chBox: TCheckBox;
   K: NativeInt;
@@ -95,7 +95,7 @@ begin
   Result := False;
   if aDataSets[0] = nil then
     exit;
-  aForm := TFPDataSetOptionsForm.Create(Application);
+  aForm := TFIBDataSetOptionsForm.Create(Application);
   try
     with aForm do
     begin
@@ -164,7 +164,7 @@ begin
   end;
 end;
 
-procedure TFPDataSetOptionsForm.ShowChanges;
+procedure TFIBDataSetOptionsForm.ShowChanges;
 var
   Option: Integer;
   Options: Integer;
@@ -202,7 +202,7 @@ begin
 
 end;
 
-function TFPDataSetOptionsForm.GetOptionBox(aIndex: Integer; const PropName: string): TCheckBox;
+function TFIBDataSetOptionsForm.GetOptionBox(aIndex: Integer; const PropName: string): TCheckBox;
 var
   EnumType: PTypeInfo;
   EnumName: string;
@@ -216,7 +216,7 @@ begin
   Result := TCheckBox(FindComponent('Ch_' + EnumName))
 end;
 
-function TFPDataSetOptionsForm.GetMaxOption(const PropName: string): Integer;
+function TFIBDataSetOptionsForm.GetMaxOption(const PropName: string): Integer;
 var
   EnumType: PTypeInfo;
   PropType: PTypeInfo;
@@ -228,9 +228,8 @@ begin
   Result := GetTypeData(EnumType).MaxValue;
 end;
 
-procedure TFPDataSetOptionsForm.FormCreate(Sender: TObject);
+procedure TFIBDataSetOptionsForm.FormCreate(Sender: TObject);
 begin
-  //
   Caption := FPOptionsCaption;
   OptionsPage.Caption := FPOptionsPage;
   PreparePage.Caption := FPOptionsPreparePage;
@@ -248,13 +247,13 @@ begin
   ch_pfImportDefaultValues.Caption := FPOptionsSetDefault;
   ch_psUseBooleanField.Caption := FPOptionsEmulateBoolean;
   ch_psSQLINT64ToBCD.Caption := FPOptionsCreateBCD;
-  ch_psApplyRepositary.Caption := FPOptionsApplyRepository;
+  ch_psApplyRepository.Caption := FPOptionsApplyRepository;
   ch_psGetOrderInfo.Caption := FPOptionsSortFields;
   ch_psAskRecordCount.Caption := FPOptionsRecordCount;
   ch_poVisibleRecno.Caption := FPVisibleRecno;
 end;
 
-procedure TFPDataSetOptionsForm.ch_poTrimCharFieldsClick(Sender: TObject);
+procedure TFIBDataSetOptionsForm.ch_poTrimCharFieldsClick(Sender: TObject);
 begin
   ShowChanges
 end;

@@ -30,7 +30,7 @@ uses
   Db, uFIBEditorForm, Variants;
 
 type
-  TfrmErrors = class(TFIBEditorCustomForm)
+  TFIBErrorMessagesForm = class(TFIBEditorCustomForm)
     Panel1: TPanel;
     Panel2: TPanel;
     btnCopyConstraints: TButton;
@@ -65,7 +65,7 @@ type
   end;
 
 var
-  frmErrors: TfrmErrors;
+  frmErrors: TFIBErrorMessagesForm;
 
 procedure ShowErrorInfo(aDataBase: TComponent);
 
@@ -88,7 +88,7 @@ procedure ShowErrorInfo(aDataBase: TComponent);
 var
   ts: TStrings;
 begin
-  frmErrors := TfrmErrors.Create(nil);
+  frmErrors := TFIBErrorMessagesForm.Create(nil);
   ts := TStringList.Create;
   with frmErrors do
     try
@@ -158,7 +158,7 @@ begin
     end;
 end;
 
-procedure TfrmErrors.cmbKindObjsChange(Sender: TObject);
+procedure TFIBErrorMessagesForm.cmbKindObjsChange(Sender: TObject);
 var
   ds: TDataSet;
   ids: IFIBDataSet;
@@ -175,7 +175,6 @@ begin
   begin
     s := '';
     case cmbKindObjs.ItemIndex of
-      // 0: Params[0].asString:='ALL  ERRORS';
       1: s := 'PRIMARY KEY';
       2: s := 'UNIQUE';
       3: s := 'FOREIGN KEY';
@@ -198,25 +197,25 @@ begin
   end;
 end;
 
-procedure TfrmErrors.btnCopyConstraintsClick(Sender: TObject);
+procedure TFIBErrorMessagesForm.btnCopyConstraintsClick(Sender: TObject);
 var
-  vName: string;
+  ConstraintName: string;
   ids: IFIBDataSet;
 begin
-  vName := sbDBGrid2.DataSource.DataSet.FieldByName
+  ConstraintName := sbDBGrid2.DataSource.DataSet.FieldByName
     ('rdb$constraint_name').AsString;
   with qryErrorMessages do
-    if not Locate('CONSTRAINT_NAME', vName, []) then
+    if not Locate('CONSTRAINT_NAME', ConstraintName, []) then
     begin
       ObjSupports(qryErrorMessages, IFIBDataSet, ids);
       Insert;
-      FieldByName('CONSTRAINT_NAME').AsString := vName;
+      FieldByName('CONSTRAINT_NAME').AsString := ConstraintName;
       FieldByName('constr_type').AsString := VarToStr(ids.ParamValue(0));
       Post
     end;
 end;
 
-procedure TfrmErrors.EdFilterChange(Sender: TObject);
+procedure TFIBErrorMessagesForm.EdFilterChange(Sender: TObject);
 begin
   with sbDBGrid2.DataSource.DataSet do
   begin
@@ -225,7 +224,7 @@ begin
   end;
 end;
 
-procedure TfrmErrors.qryConstraintsFilterRecord(DataSet: TDataSet; var Accept: Boolean);
+procedure TFIBErrorMessagesForm.qryConstraintsFilterRecord(DataSet: TDataSet; var Accept: Boolean);
 begin
 
   with DataSet do
@@ -236,18 +235,18 @@ begin
   end;
 end;
 
-procedure TfrmErrors.chFiltClick(Sender: TObject);
+procedure TFIBErrorMessagesForm.chFiltClick(Sender: TObject);
 begin
   qryErrorMessages.Filtered := chFilt.Checked;
 end;
 
-procedure TfrmErrors.qryErrorMessagesFilterRecord(DataSet: TDataSet; var Accept: Boolean);
+procedure TFIBErrorMessagesForm.qryErrorMessagesFilterRecord(DataSet: TDataSet; var Accept: Boolean);
 begin
   Accept := qryErrorMessages.FieldByName('CONSTRAINT_NAME').AsString = sbDBGrid2.DataSource.DataSet.FieldByName
     ('rdb$constraint_name').AsString
 end;
 
-procedure TfrmErrors.DataSource1DataChange(Sender: TObject; Field: TField);
+procedure TFIBErrorMessagesForm.DataSource1DataChange(Sender: TObject; Field: TField);
 begin
   if chFilt.Checked then
   begin
@@ -256,12 +255,12 @@ begin
   end
 end;
 
-procedure TfrmErrors.sbDBGrid2DblClick(Sender: TObject);
+procedure TFIBErrorMessagesForm.sbDBGrid2DblClick(Sender: TObject);
 begin
   btnCopyConstraintsClick(btnCopyConstraints)
 end;
 
-procedure TfrmErrors.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TFIBErrorMessagesForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   if qryErrorMessages.State in [dsEdit, dsInsert] then
     qryErrorMessages.Post;

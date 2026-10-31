@@ -5,7 +5,7 @@ Executes an SQL statement on a Firebird or InterBase database and gives access t
 | | |
 |---|---|
 | Unit | `FIBQuery` |
-| Inherits from | `TComponent`; implements `ISQLObject` and `IFIBQuery` |
+| Inherits from | `TComponent`; implements `IFIBParamSource` and `IFIBQuery` |
 | Descendants | [TFIBStoredProc](TFIBStoredProc.md), [TFIBUpdateObject](TFIBUpdateObject.md) |
 
 `Query` is a `TFIBQuery` with `Database` and `Transaction` assigned.
@@ -40,10 +40,10 @@ Available in the Object Inspector. The published events are listed under [Events
 | `GoToFirstRecordOnExecute` | `Boolean` | `True` | Position on the first row after `ExecQuery` of a `SELECT`. |
 | `StatementTimeout` | `Cardinal` | `0` | Server-side limit in milliseconds, *Firebird 4+*, for `SELECT`, `INSERT`, `UPDATE`, `DELETE` and `EXECUTE PROCEDURE`. `0` uses `Database.Session.StatementTimeout`; `FIBNoStatementTimeout` ignores the session value for this statement (the `firebird.conf` limit still applies). See [Timeouts](../guide/timeouts.md). |
 | `Options` | `TFIBQueryOptions` | `[]` | Behavior flags, see [Options](#options). The initial value comes from `DefQueryOptions` at design time and is empty at run time. |
-| `Conditions` | `TConditions` | | Named `WHERE` conditions. `TFIBQuery` does not apply them by itself: call `Conditions.Apply` after enabling or disabling conditions. `Apply` joins the enabled conditions to the main `WHERE` clause with `and`. Assigning `SQL` or `MainWhereClause` discards the applied conditions, and `Apply` must be called again. |
+| `Conditions` | `TFIBConditions` | | Named `WHERE` conditions. `TFIBQuery` does not apply them by itself: call `Conditions.Apply` after enabling or disabling conditions. `Apply` joins the enabled conditions to the main `WHERE` clause with `and`. Assigning `SQL` or `MainWhereClause` discards the applied conditions, and `Apply` must be called again. |
 | `Description` | `string` | | Free text stored with the component. |
 | `About` | `string` | | Read-only version string of the library (`FIBVersionString`). Writing it has no effect, and it is not stored in the form file. |
-| `CSMonitorSupport` | `TCSMonitorSupport` | | Adds monitoring text to the statement. Only when compiled with `CSMonitor`. |
+| `CSMonitorSupport` | `TFIBCSMonitorSupport` | | Adds monitoring text to the statement. Only when compiled with `CSMonitor`. |
 
 ## Options
 
@@ -53,7 +53,7 @@ Available in the Object Inspector. The published events are listed under [Events
 |-------|--------|
 | `qoStartTransaction` | Start `Transaction` automatically when it is not active. |
 | `qoAutoCommit` | Commit the transaction after the statement completes: after `ExecQuery` without a cursor, or when a cursor is closed or reaches its end. Uses `CommitRetaining` when `Transaction.TimeoutAction` is `TACommitRetaining`, otherwise `Commit`. Only when the transaction is active. |
-| `qoTrimCharFields` | Trim trailing blanks of `CHAR` values. |
+| `qoTrimCharFields` | Trim trailing blanks of `CHAR` and `VARCHAR` values. |
 | `qoNoForceIsNull` | Do not rewrite a comparison with a null parameter. Without this option, `= :Param` becomes `IS NULL`, and `<>`, `!=`, `^=`, `~=` become `IS NOT NULL`, when the parameter is null and sits inside a `WHERE` clause. Parameters used in expressions and outside `WHERE` are not rewritten. |
 | `qoFreeHandleAfterExecute` | Release the statement handle after `ExecQuery` without a cursor, or when a cursor is closed or reaches its end. |
 
@@ -69,7 +69,7 @@ Each flag is saved in the form file as its own `qoXxx` entry.
 | `Prepared` | `Boolean` | `True` after `Prepare`. |
 | `Eof` | `Boolean` | `True` when the cursor is closed or no more rows can be fetched. |
 | `Bof` | `Boolean` | `True` before the first row. |
-| `QueryRunState` | `TQueryRunState` | Set of `qrsInPrepare`, `qrsInExecute`, `qrsInClose`; tells what the query is doing now. |
+| `QueryRunState` | `TFIBQueryRunState` | Set of `qrsInPrepare`, `qrsInExecute`, `qrsInClose`; tells what the query is doing now. |
 | `Handle` | `TISC_STMT_HANDLE` | Native statement handle. |
 | `DBHandle`, `TRHandle` | pointers | Native database and transaction handles. |
 
@@ -82,7 +82,7 @@ Each flag is saved in the form file as its own `qoXxx` entry.
 | `FieldIndex[Name]` | `Integer` | Index of a column by name, or `-1`. |
 | `RecordCount` | `Integer` | Rows fetched so far. |
 | `RowsAffected` | `Integer` | Rows changed by the last statement. |
-| `AllRowsAffected` | `TAllRowsAffected` | Counts of selected, inserted, updated, and deleted rows. |
+| `AllRowsAffected` | `TFIBRowsAffected` | Counts of selected, inserted, updated, and deleted rows. |
 | `Plan` | `string` | Access plan of the prepared statement. |
 | `CallTime` | `Cardinal` | Duration of the last `ExecQuery`, in milliseconds. |
 
@@ -92,7 +92,7 @@ Each flag is saved in the form file as its own `qoXxx` entry.
 |------|------|-------------|
 | `Params` | `TFIBXSQLDA` | Statement parameters. |
 | `SQLType` | `TFIBSQLTypes` | Statement type as reported by the server: select, insert, update, and so on. |
-| `SQLKind` | `TSQLKind` | Statement kind as parsed from the text. |
+| `SQLKind` | `TFIBSQLStatementKind` | Statement kind as parsed from the text. |
 | `ModifyTable` | `string` | Table the statement changes. |
 | `MainWhereClause` | `string` | Main `WHERE` clause. Setting it rewrites the SQL. |
 | `WhereClause[Index]` | `string` | One `WHERE` clause by index. |
@@ -119,10 +119,9 @@ Each flag is saved in the form file as its own `qoXxx` entry.
 | `ExecProcedure(ProcName)` | Sets `SQL` to `EXECUTE PROCEDURE ProcName` and runs it. The text is not changed when it is already set. |
 | `ExecProcedure(ProcName, InputParams)` | Sets `SQL` to `EXECUTE PROCEDURE ProcName(?P0, ?P1, ...)` with one parameter for each element of `InputParams`, prepares the statement, assigns the values in order with `AsVariant`, and runs it. Read output values with `FN` or `Fields`.  `ProcName` is inserted into the text as given, it is not quoted or formatted; for a procedure whose parameters come from the database metadata, use [TFIBStoredProc](TFIBStoredProc.md). |
 | `ExecuteImmediate` | Run the text with `isc_dsql_execute_immediate`, without keeping a prepared statement. Returns no rows. |
-| `ExecuteAsBatch` / `ExecuteAsBatch(SQLs)` | *InterBase 2007 only*, when compiled with `SUPPORT_IB2007`; does nothing on other connections. Sends several statements in one call with `isc_dsql_batch_execute_immed`. Without arguments it splits `SQL.Text` on `;`; with an array it sends those statements. |
 | `ExecWP(Values)` | Set parameters from an array in order, then `ExecQuery`. |
 | `ExecWP(Names, Values)` | Same, with parameter names separated by `;`. The number of names must equal the number of values. |
-| `ExecWPS(Source, AllRecords)` / `ExecWPS(Sources)` | Fill the parameters from `ISQLObject` sources, such as another query or dataset, then `ExecQuery`. A parameter takes the value of the column with the same name, otherwise of a source parameter with that name; with several sources, a later source overrides an earlier one. A `NEW_` or `OLD_` prefix on the parameter name is ignored when matching columns (`OLD_` reads the old value). With `AllRecords = True` (default) the statement runs once per source row until `IEof`, advancing with `INext`; `OnBatching` is called with `boInput` for each row, `OnBatchError` handles failures, and `beRetry` runs the row again. With `False`, or with the array overload, it runs once. |
+| `ExecWPS(Source, AllRecords)` / `ExecWPS(Sources)` | Fill the parameters from `IFIBParamSource` sources, such as another query or dataset, then `ExecQuery`. A parameter takes the value of the column with the same name, otherwise of a source parameter with that name; with several sources, a later source overrides an earlier one. A `NEW_` or `OLD_` prefix on the parameter name is ignored when matching columns (`OLD_` reads the old value). With `AllRecords = True` (default) the statement runs once per source row until `IEof`, advancing with `INext`; `OnBatching` is called with `boInput` for each row, `OnBatchError` handles failures, and `beRetry` runs the row again. With `False`, or with the array overload, it runs once. |
 | `Next` | Fetch the next row. Returns `Current`, or `nil` at the end of the data or when `OnSQLFetch` stops the fetch. |
 | `Close` | Close the cursor. |
 | `FreeHandle` | Release the statement on the server. The next run prepares again. |
@@ -176,9 +175,9 @@ Each flag is saved in the form file as its own `qoXxx` entry.
 | `CheckClosed(Op)` / `CheckOpen(Op)` | Raise if the cursor is open, or closed. |
 | `CheckValidStatement` | Prepare the statement to validate it, connecting and starting a transaction temporarily if needed. Raises when the statement cannot be prepared. |
 
-### ISQLObject
+### IFIBParamSource
 
-`ISQLObject` is the interface that `ExecWPS` reads from and writes to. `TFIBQuery` implements it with these members:
+`IFIBParamSource` is the interface that `ExecWPS` reads from and writes to. `TFIBQuery` implements it with these members:
 
 | Name | Description |
 |------|-------------|

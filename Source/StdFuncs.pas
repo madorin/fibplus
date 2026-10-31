@@ -31,33 +31,15 @@ uses
     , FMTBcd, Variants;
 
 type
-  EParserError = class(Exception);
-  TCharSet = set of AnsiChar;
-  TDynArray = array of variant;
-  PDynArray = ^TDynArray;
+  TFIBVariantArray = array of Variant;
+  PFIBVariantArray = ^TFIBVariantArray;
 
   TFIBTimer = TFIBCustomTimer;
 
-function ConvertFromBase(sNum: String; iBase: Integer; cDigits: String): Integer;
-function ConvertToBase(iNum, iBase: Integer; cDigits: String): String;
-
 function Max(n1, n2: Integer): Integer;
-function MaxD(n1, n2: Double): Double;
 function Min(n1, n2: Integer): Integer; inline;
-function MinD(n1, n2: Double): Double;
-function Signum(Arg: Integer): Integer; inline;
 function RandomString(iLength: Integer): String;
-// function RandomInteger(iLow, iHigh: Integer): Integer;
-function Soundex(st: String): String;
 function StripString(const st: String; const CharsToStrip: String): String;
-function ClosestWeekday(const d: TDateTime): TDateTime;
-function Year(d: TDateTime): Integer;
-function Month(d: TDateTime): Integer;
-function DayOfYear(d: TDateTime): Integer;
-function DayOfMonth(d: TDateTime): Integer;
-
-procedure WeekOfYear(d: TDateTime; var Year, Week: Integer);
-function Degree10(Degree: Integer): Extended; inline;
 function ExtPrecision(Value: Extended): Integer; inline;
 function RoundExtend(Value: Extended; Decimals: Integer): Extended;
 
@@ -79,46 +61,32 @@ function ExtendedToScaledInt64(Value: Extended; Scale: Integer; var Scaled: Int6
 function ScaledCurrToStrF(Value: Int64; Scale: Integer; Format: TFloatFormat; Digits: Integer): string;
 
 function BCDToExtended(BCD: TBCD; var Value: Extended): Boolean;
-function BCDToCompWithScale(BCD: TBCD; var Value: Int64; var Scale: byte): Boolean;
 // Value scaled by Scale decimals (decimals beyond Int64 rounded half away from zero); False on overflow
-function BCDToInt64WithScale(BCD: TBCD; var Value: Int64; var Scale: byte): Boolean;
+function BCDToInt64WithScale(BCD: TBCD; var Value: Int64; var Scale: Byte): Boolean;
 function BCDToSQLStr(BCD: TBCD): String;
 function CompareBCD(const BCD1, BCD2: TBCD): Integer; inline;
-function fFormatBcd(const Format: string; BCD: TBCD): string;
 function FormatNumericString(const Format, Source: string; OneSectionFormat: Boolean = False): string;
 
 function TimeStamp(const aDate, aTime: Integer): TTimeStamp;
 function CmpFullName(cmp: TComponent): string;
 function CmpPropPath(Cmp: TComponent; const PropName: string): string;
 function CmpInLoadedState(cmp: TComponent): Boolean; inline;
-procedure FullClearStrings(aStrings: TStrings);
 
-function HookTimeStampToMSecs(const TimeStamp: TTimeStamp): Int64;
 function HookTimeStampToDateTime(const TimeStamp: TTimeStamp): TDateTime;
-function IBStrToTime(const Str: string): TDateTime;
 
 function IntDateToDateTime(aDate: Integer): TDateTime;
 // DB rtns
 
-function FieldOldValAsString(Field: TField; SQLFormat: Boolean): string;
-
-function BCDFieldAsSQLString(Field: TField; OldVal: Boolean): variant;
-function BCDFieldAsString(Field: TField; OldVal: Boolean): variant;
+function BCDFieldAsSQLString(Field: TField; OldVal: Boolean): Variant;
+function BCDFieldAsString(Field: TField; OldVal: Boolean): Variant;
 function GetBCDFieldData(Field: TField; OldVal: Boolean; var BCD: TBCD): Boolean;
 // Fields of DataSet named in FieldNames (separated by ';') added to List
 procedure GetDataSetFieldList(DataSet: TDataSet; List: TList; const FieldNames: string);
 
-function GetBit(InByte: byte; Index: byte): Boolean; inline;
-function SetBit(InByte: byte; Index: byte; Value: Boolean): byte;
+function GetBit(InByte: Byte; Index: Byte): Boolean; inline;
+function SetBit(InByte: Byte; Index: Byte; Value: Boolean): Byte;
 
-function HexStr2Int(const S: String): Integer;
-function HexStr2IntStr(const S: String): string;
-
-procedure InitFPU;
-
-procedure StreamToVariant(Stream: TMemoryStream; var Value: variant);
-procedure StreamToVariantArray(Stream: TMemoryStream; var Value: variant);
-function VariantToStream(Value: variant; Stream: TStream): Integer;
+function VariantToStream(Value: Variant; Stream: TStream): Integer;
 { Length of Blob }
 
 // S uppercased and trimmed: fractional digits kept by a CURRENT_TIME[(n)], CURRENT_TIMESTAMP[(n)],
@@ -127,10 +95,6 @@ function DateTimeDefFunctionPrecision(const S: string): Integer;
 // Precision 0..2 cuts the milliseconds to that many fractional digits
 function TruncateDateTimePrecision(Value: TDateTime; Precision: Integer): TDateTime;
 function StringIsDateTimeDefValue(const S: string): Boolean;
-
-var
-  TempPath: PAnsiChar;
-  TempPathLength: Integer;
 
 const
   E10: array [-18 .. 18] of Double = (1E-18, 1E-17, 1E-16, 1E-15, 1E-14, 1E-13,
@@ -146,33 +110,19 @@ const
 const
   AppPathTemplate = '{APP_PATH}';
 
+type
+  // Deprecated names of the types renamed in 8.0.0
+{$IFDEF WINDOWS}
+  TDynArray = TFIBVariantArray deprecated 'Use TFIBVariantArray';
+  PDynArray = PFIBVariantArray deprecated 'Use PFIBVariantArray';
+{$ENDIF}
+
 implementation
 
 uses
-  SysConst, FIBConsts, StrUtil{$IFDEF C24}, Generics.Collections{$ENDIF};
+  StrUtil{$IFDEF C24}, Generics.Collections{$ENDIF};
 
-procedure StreamToVariantArray(Stream: TMemoryStream; var Value: variant);
-begin
-  // a memory stream fits the address space
-  if Stream.Size > 0 then
-    Move(Stream.Memory^, TVarData(Value).VArray^.Data^, NativeInt(Stream.Size));
-end;
-
-procedure StreamToVariant(Stream: TMemoryStream; var Value: variant);
-begin
-  VarClear(Value);
-  if Stream.Size > 0 then
-  begin
-    // the bounds of a variant array are Integer
-    if Stream.Size > MaxInt then
-      raise EVariantArrayCreateError.Create(SVarArrayCreate);
-    Stream.Position := 0;
-    Value := VarArrayCreate([0, Integer(Stream.Size) - 1], varByte);
-    StreamToVariantArray(Stream, Value);
-  end;
-end;
-
-function VariantToStream(Value: variant; Stream: TStream): Integer;
+function VariantToStream(Value: Variant; Stream: TStream): Integer;
 { Length of Stream }
 var
   B: TVarArrayBound;
@@ -262,22 +212,6 @@ end;
 type
   THackDS = class(TDataSet);
 
-function FieldOldValAsString(Field: TField; SQLFormat: Boolean): string;
-var
-  OldState: TDataSetState;
-begin
-  OldState := Field.DataSet.State;
-  try
-    THackDS(Field.DataSet).SetTempState(dsOldValue);
-    Result := Field.AsString;
-  finally
-    THackDS(Field.DataSet).RestoreState(OldState);
-  end;
-{$IFDEF C24}with FormatSettings do {$ENDIF}
-    if SQLFormat and (DecimalSeparator <> '.') then
-      ReplaceStr(Result, DecimalSeparator, '.')
-end;
-
 function GetBCDFieldData(Field: TField; OldVal: Boolean; var BCD: TBCD): Boolean;
 var
   OldState: TDataSetState;
@@ -326,7 +260,7 @@ begin
 end;
 {$ENDIF}
 
-function InternalBCDFieldAsString(Field: TField; OldVal, SQLFormat: Boolean): variant;
+function InternalBCDFieldAsString(Field: TField; OldVal, SQLFormat: Boolean): Variant;
 var
   BCD: TBCD;
 begin
@@ -343,17 +277,16 @@ begin
   end;
 end;
 
-function BCDFieldAsSQLString(Field: TField; OldVal: Boolean): variant;
+function BCDFieldAsSQLString(Field: TField; OldVal: Boolean): Variant;
 begin
   Result := InternalBCDFieldAsString(Field, OldVal, true)
 end;
 
-function BCDFieldAsString(Field: TField; OldVal: Boolean): variant;
+function BCDFieldAsString(Field: TField; OldVal: Boolean): Variant;
 begin
   Result := InternalBCDFieldAsString(Field, OldVal, False)
 end;
 
-//
 function RoundExtend(Value: Extended; Decimals: Integer): Extended;
 begin
   Result := System.Int(Value) + Round(Frac(Value) * E10[Decimals]) / E10[Decimals];
@@ -368,22 +301,6 @@ begin
   end;
 end;
 
-function HookTimeStampToMSecs(const TimeStamp: TTimeStamp): Int64;
-var
-  t: TTimeStamp;
-  c: Comp;
-begin
-  if TimeStamp.Date = 0 then
-  begin
-    t.Date := 1;
-    t.Time := TimeStamp.Time;
-    c := TimeStampToMSecs(t) - 86400000;
-  end
-  else
-    c := TimeStampToMSecs(TimeStamp);
-  Result := PInt64(@c)^
-end;
-
 function HookTimeStampToDateTime(const TimeStamp: TTimeStamp): TDateTime;
 var
   t: TTimeStamp;
@@ -396,16 +313,6 @@ begin
   end
   else
     Result := TimeStampToDateTime(TimeStamp)
-end;
-
-function IBStrToTime(const Str: string): TDateTime;
-var
-  t: TTimeStamp;
-begin
-  Result := StrToTime(Str);
-  t := DateTimeToTimeStamp(Result);
-  t.Date := 0;
-  Result := HookTimeStampToDateTime(t);
 end;
 
 function IntDateToDateTime(aDate: Integer): TDateTime;
@@ -454,24 +361,6 @@ begin
   Result := tmpCmp <> nil;
 end;
 
-procedure FullClearStrings(aStrings: TStrings);
-var
-  j: Integer;
-begin
-  with aStrings do
-    for j := 0 to Pred(aStrings.Count) do
-    begin
-      if Objects[j] <> nil then
-        Objects[j].Free;
-    end;
-  aStrings.Clear;
-end;
-
-function Degree10(Degree: Integer): Extended;
-begin
-  Result := E10[Degree]
-end;
-
 function ExtPrecision(Value: Extended): Integer;
 var
   L, H, i: Integer;
@@ -504,156 +393,36 @@ end;
 
 function ExtendedToBCD(const Value: Extended; NeedScale: Integer): TBCD;
 var
-  // Pr:Integer;
   c: Comp;
 begin
-  // Pr:=ExtPrecision(Value);
   c := Value * E10[NeedScale];
   Int64ToBCD(PInt64(@c)^, NeedScale, Result);
 end;
 
-procedure PutTwoBcdDigits(const Nibble1, Nibble2: byte; var BCD: TBCD; Digit: Integer);
-var
-  B: byte;
-begin
-  B := Byte(Nibble1 shl 4);
-  B := B OR (Nibble2 AND 15);
-  BCD.Fraction[Digit div 2] := B;
-end;
-
-{$IFDEF C23}
-// CUT FROM Delphi XE
-
-function CurrToBCD(const Curr: Currency; var BCD: TBCD; Precision: Integer = 32; Decimals: Integer = 4): Boolean;
-var
-  Temp: Currency;
-  BcdIndex, StrIndex, StartPos, Digits: Integer;
-  B1, B2: Byte;
-  DotPos: Integer;
-  BcdStr: string;
-  Dot: Char;
-
-  function GetNextByte(): byte;
-  begin
-    Result := 0;
-    if BcdIndex < StartPos then
-      Exit;
-    if (StrIndex <= Digits) and (BcdStr[StrIndex] = Dot) then
-      Inc(StrIndex);
-    if StrIndex <= Digits then
-    begin
-      Result := Byte(Ord(BcdStr[StrIndex]) - Ord('0'));
-      Inc(StrIndex);
-    end;
-  end;
-
-begin
-  Dot := FormatSettings.DecimalSeparator;
-  BCD.Precision := Byte(Precision);
-  BCD.SignSpecialPlaces := Byte(Decimals);
-  for BcdIndex := 0 to 31 do
-    BCD.Fraction[BcdIndex] := 0;
-  if Curr = 0 then
-  begin
-    Result := true;
-    Exit;
-  end;
-  if Curr < 0 then
-    Temp := -Curr
-  else
-    Temp := Curr;
-  BcdStr := CurrToStr(Temp);
-  Digits := Length(BcdStr);
-  DotPos := Pos(Dot, BcdStr);
-  if DotPos > 0 then
-    StartPos := Precision - ((DotPos - 1) + Decimals)
-  else
-    StartPos := Precision - (Digits + Decimals);
-  StrIndex := 1;
-  BcdIndex := 0;
-  while BcdIndex < Precision do
-  begin
-    B1 := GetNextByte();
-    Inc(BcdIndex);
-    B2 := GetNextByte();
-    PutTwoBcdDigits(B1, B2, BCD, BcdIndex - 1);
-    Inc(BcdIndex);
-  end;
-  if Curr < 0 then
-    BCD.SignSpecialPlaces := (BCD.SignSpecialPlaces and 63) or (1 shl 7);
-  Result := true;
-end;
-
-function GetBcdDigit(const BCD: TBCD; Digit: Integer): byte;
-begin
-  if Digit mod 2 = 0 then
-    Result := byte((BCD.Fraction[Digit div 2]) SHR 4)
-  else
-    Result := byte(byte((BCD.Fraction[Digit div 2]) AND 15));
-end;
-
-const
-  DValue: array [-10 .. 20] of Currency = (0, 0, 0, 0, 0, 0, 0, 0.0001, 0.001,
-    0.01, 0.1, 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000,
-    1000000000, 10000000000, 100000000000, 1000000000000, 10000000000000,
-    100000000000000, 0, 0, 0, 0, 0);
-
-  { Currency Value of a Byte for a specific digit column }
-function PutCurrencyDigit(Value: byte; Digit: Integer): Currency;
-begin
-  Result := DValue[Digit] * Value;
-end;
-
-function BCDToCurr(const BCD: TBCD; var Curr: Currency): Boolean;
-var
-  Scale, i: Integer;
-  Negative: Boolean;
-  B: byte;
-begin
-  Curr := 0;
-  Negative := (BCD.SignSpecialPlaces and (1 shl 7)) <> 0;
-  Scale := (BCD.SignSpecialPlaces and 63);
-  for i := 0 to BCD.Precision - 1 do
-  begin
-    B := GetBcdDigit(BCD, i);
-    if B <> 0 then
-      Curr := Curr + PutCurrencyDigit(B, BCD.Precision - (Scale + i));
-  end;
-  if Scale > 4 then
-  begin { 0.12345 = 0.1234, but 0.123450000001 is rounded up to 0.1235 }
-    B := GetBcdDigit(BCD, 4 + (BCD.Precision - Scale));
-    if B >= 5 then
-      if B > 5 then
-        Curr := Curr + 0.0001
-      else
-        for i := 5 + (BCD.Precision - Scale) to BCD.Precision - 1 do
-          if GetBcdDigit(BCD, i) <> 0 then
-          begin
-            Curr := Curr + 0.0001;
-            Break;
-          end;
-  end;
-  if Negative then
-    Curr := -Curr;
-  Result := true;
-end;
-
-{$ENDIF}
-
 function Int64ToBCD(Value: Int64; Scale: Integer; var BCD: TBCD): Boolean;
 var
-  c: Currency;
+  Rest: Int64;
+  Digit, Index: Integer;
 begin
-  PInt64(@c)^ := Value;
-  Result := CurrToBCD(c, BCD);
-  with BCD do
+  // 32 digits, right-aligned; Rest keeps the sign, so Low(Int64) needs no negation
+  FillChar(BCD, SizeOf(BCD), 0);
+  BCD.Precision := 32;
+  Rest := Value;
+  Index := 31;
+  while Rest <> 0 do
   begin
-    if Value < 0 then
-      SignSpecialPlaces := 128
+    Digit := Abs(Rest mod 10);
+    if Odd(Index) then
+      BCD.Fraction[Index shr 1] := Digit
     else
-      SignSpecialPlaces := 0;
-    SignSpecialPlaces := Byte(Scale + SignSpecialPlaces);
+      BCD.Fraction[Index shr 1] := BCD.Fraction[Index shr 1] or (Digit shl 4);
+    Rest := Rest div 10;
+    Dec(Index);
   end;
+  BCD.SignSpecialPlaces := Byte(Scale);
+  if Value < 0 then
+    BCD.SignSpecialPlaces := BCD.SignSpecialPlaces or $80;
+  Result := True;
 end;
 
 function RescaleInt64(Value: Int64; FromScale, ToScale: Integer; var Rescaled: Int64;
@@ -797,12 +566,7 @@ begin
       Int64WithScaleToStr(Value, Scale, DecimalSeparator));
 end;
 
-function BCDToCompWithScale(BCD: TBCD; var Value: Int64; var Scale: byte): Boolean;
-begin
-  Result := BCDToInt64WithScale(BCD, Value, Scale)
-end;
-
-function BCDToInt64WithScale(BCD: TBCD; var Value: Int64; var Scale: byte): Boolean;
+function BCDToInt64WithScale(BCD: TBCD; var Value: Int64; var Scale: Byte): Boolean;
 var
   Places, FirstDecimal, I, Digit: Integer;
 
@@ -855,20 +619,6 @@ begin
       Value := -Value
     else
       Result := False;
-end;
-
-function BCDToSQLStr(BCD: TBCD): String;
-var
-  pd: Integer;
-begin
-  Result := BCDToStr(BCD);
-{$IFDEF C24}with FormatSettings do {$ENDIF}
-    if DecimalSeparator <> '.' then
-    begin
-      pd := Pos(DecimalSeparator, Result);
-      if pd > 0 then
-        Result[pd] := '.';
-    end;
 end;
 
 // True when the decimal Value from Start has only zeros, as 0.000
@@ -1222,15 +972,10 @@ begin
   SetLength(Result, Len);
 end;
 
-function fFormatBcd(const Format: string; BCD: TBCD): string;
-begin
-  Result := FormatNumericString(Format, BCDToStr(BCD));
-end;
-
 function BCDToExtended(BCD: TBCD; var Value: Extended): Boolean;
 var
   c: Int64;
-  Scale: byte;
+  Scale: Byte;
   Places, I: Integer;
 begin
   Result := True;
@@ -1252,13 +997,27 @@ begin
       Value := -Value;
     Places := BCD.SignSpecialPlaces and $3F;
   end;
-  // E10 holds 18 decimals
+  // E10 holds 18 decimals; Value / 10^n rounds once, Value * 10^-n twice (3 * 0.1 <> 0.3)
   while Places > High(E10) do
   begin
-    Value := Value * E10[-High(E10)];
+    Value := Value / E10[High(E10)];
     Dec(Places, High(E10));
   end;
-  Value := Value * E10[-Places];
+  Value := Value / E10[Places];
+end;
+
+function BCDToSQLStr(BCD: TBCD): String;
+var
+  pd: Integer;
+begin
+  Result := BCDToStr(BCD);
+{$IFDEF C24}with FormatSettings do {$ENDIF}
+    if DecimalSeparator <> '.' then
+    begin
+      pd := Pos(DecimalSeparator, Result);
+      if pd > 0 then
+        Result[pd] := '.';
+    end;
 end;
 
 function CompareBCD(const BCD1, BCD2: TBCD): Integer;
@@ -1313,53 +1072,6 @@ begin
   end;
 end;
 
-//
-function ConvertFromBase(sNum: String; iBase: Integer; cDigits: String): Integer;
-var
-  i: Integer;
-
-  function GetValue(c: Char): Integer;
-  var
-    i: Integer;
-  begin
-    Result := 0;
-    for i := 1 to Length(cDigits) do
-      if (cDigits[i] = c) then
-      begin
-        Result := i - 1;
-        Exit;
-      end;
-  end;
-
-begin
-  Result := 0;
-  for i := 1 to Length(sNum) do
-    Result := (Result * iBase) + GetValue(sNum[i]);
-end;
-
-function ConvertToBase(iNum, iBase: Integer; cDigits: String): String;
-var
-  i, r: Integer;
-  S: String;
-const
-  iLength = 16;
-begin
-  Result := '';
-  SetString(S, nil, iLength);
-  i := 0;
-  repeat
-    r := iNum mod iBase;
-    Inc(i);
-    if (i > iLength) then
-      SetString(S, PChar(S), Length(S) + iLength);
-    S[i] := cDigits[r + 1];
-    iNum := iNum div iBase;
-  until iNum = 0;
-  SetString(Result, nil, i);
-  for r := 1 to i do
-    Result[r] := S[i - r + 1];
-end;
-
 function Max(n1, n2: Integer): Integer;
 begin
   if (n1 > n2) then
@@ -1368,33 +1080,7 @@ begin
     Result := n2;
 end;
 
-function MaxD(n1, n2: Double): Double;
-begin
-  if (n1 > n2) then
-    Result := n1
-  else
-    Result := n2;
-end;
-
 function Min(n1, n2: Integer): Integer;
-begin
-  if (n1 < n2) then
-    Result := n1
-  else
-    Result := n2;
-end;
-
-function Signum(Arg: Integer): Integer;
-begin
-  if Arg > 0 then
-    Result := 1
-  else if Arg < 0 then
-    Result := -1
-  else
-    Result := 0;
-end;
-
-function MinD(n1, n2: Double): Double;
 begin
   if (n1 < n2) then
     Result := n1
@@ -1416,43 +1102,7 @@ begin
     Result := FastCopy(Result, 1, iLength);
 end;
 
-function Soundex(st: String): String;
-var
-  code: Char;
-  i, j, len: Integer;
-begin
-  Result := ' 0000';
-  if (st = '') then
-    Exit;
-  Result[1] := UpCase(st[1]);
-  j := 2;
-  i := 2;
-  len := Length(st);
-  while (i <= len) and (j < 6) do
-  begin
-    case st[i] of
-      'B', 'F', 'P', 'V', 'b', 'f', 'p', 'v': code := '1';
-      'C', 'G', 'J', 'K', 'Q', 'S', 'X', 'Z', 'c', 'g', 'j', 'k', 'q', 's', 'x', 'z': code := '2';
-      'D', 'T', 'd', 't': code := '3';
-      'L', 'l': code := '4';
-      'M', 'N', 'm', 'n': code := '5';
-      'R', 'r': code := '6';
-    else
-      code := '0';
-    end; { case }
-
-    if (code <> '0') and (code <> Result[j - 1]) then
-    begin
-      Result[j] := code;
-      Inc(j);
-    end;
-    Inc(i);
-  end;
-end;
-
 function StripString(const st: String; const CharsToStrip: String): String;
-{ var
-  i: Integer; }
 begin
   if Pos(CharsToStrip, st) = 0 then
     Result := st
@@ -1460,148 +1110,8 @@ begin
     Result := ReplaceStr(st, CharsToStrip, '');
 end;
 
-function ClosestWeekday(const d: TDateTime): TDateTime;
-begin
-  if (DayOfWeek(d) = 1) then
-    Result := d + 1
-  else if (DayOfWeek(d) = 7) then
-    Result := d + 2
-  else
-    Result := d;
-end;
-
-function Year(d: TDateTime): Integer;
 var
-  y, m, day: Word;
-begin
-  DecodeDate(d, y, m, day);
-  Result := y;
-end;
-
-function Month(d: TDateTime): Integer;
-var
-  yr, mn, dy: Word;
-begin
-  DecodeDate(d, yr, mn, dy);
-  Result := mn;
-end;
-
-function DayOfYear(d: TDateTime): Integer;
-var
-  yr, mn, dy: Word;
-  B: TDateTime;
-begin
-  DecodeDate(d, yr, mn, dy);
-  B := EncodeDate(yr, 1, 1);
-  Result := Integer(Trunc(d - B));
-end;
-
-function DayOfMonth(d: TDateTime): Integer;
-var
-  yr, mn, dy: Word;
-begin
-  DecodeDate(d, yr, mn, dy);
-  Result := dy;
-end;
-
-procedure WeekOfYear(d: TDateTime; var Year, Week: Integer);
-var
-  yr, mn, dy: Word;
-  dow_ybeg: Integer;
-  ThisLeapYear, LastLeapYear: Boolean;
-begin
-  DecodeDate(d, yr, mn, dy);
-  // When did the year begin?
-  Year := yr;
-  dow_ybeg := SysUtils.DayOfWeek(EncodeDate(yr, 1, 1));
-  ThisLeapYear := IsLeapYear(yr);
-  LastLeapYear := IsLeapYear(Word(yr - 1));
-  // Get the Sunday beginning this week.
-  Week := (DayOfYear(d) - DayOfWeek(d) + 1);
-  (*
-    * If the Sunday beginning this week was last year, then
-    *   if this year begins on a Wednesday or previous, then
-    *     this is most certainly the first week of the year.
-    *   if this year begins on a thursday or
-    *     last year was a leap year and this year begins on a friday, then
-    *     this week is 53 of last year.
-    *   Otherwise this week is 52 of last year.
-  *)
-  if Week <= 0 then
-  begin
-    if (dow_ybeg <= 4) then
-      Week := 1
-    else if (dow_ybeg = 5) or (LastLeapYear and (dow_ybeg = 6)) then
-    begin
-      Week := 53;
-      Dec(Year);
-    end
-    else
-    begin
-      Week := 52;
-      Dec(Year);
-    end;
-    (* If the Sunday beginning this week falls in this year!!! Yeah
-      *   if the year begins on a Sun, Mon, Tue or Wed then
-      *     This week # is (Week + 7) div 7
-      *   otherwise this week is
-      *     Week div 7 + 1.
-      *   if the week is > 52 then
-      *     if this year began on a wed or this year is leap year and it
-      *       began on a tuesday, then set the week to 53.
-      *     otherwise set the week to 1 of *next* year.
-    *)
-  end
-  else
-  begin
-    if (dow_ybeg <= 4) then
-      Week := (Week + 6 + dow_ybeg) div 7
-    else
-      Week := (Week div 7) + 1;
-    if Week > 52 then
-    begin
-      if (dow_ybeg = 4) or (ThisLeapYear and (dow_ybeg = 3)) then
-        Week := 53
-      else
-      begin
-        Week := 1;
-        Inc(Year);
-      end;
-    end;
-  end;
-end;
-
-procedure InitFPU;
-var
-  ControlWord: Word;
-asm
-  FSTCW ControlWord
-  OR ControlWord, 0300h
-  FLDCW ControlWord
-end;
-
-function HexStr2Int(const S: String): Integer;
-var
-  i, Digit: Integer;
-begin
-  Result := 0;
-  for i := 1 to Length(S) do
-  begin
-    // Other characters count as 0
-    Digit := HexDigitValue(S[i]);
-    if Digit < 0 then
-      Digit := 0;
-    Result := Result shl 4 or Digit;
-  end;
-end;
-
-function HexStr2IntStr(const S: String): string;
-begin
-  Result := IntToStr(HexStr2Int(S))
-end;
-
-var
-  vBits: array [0 .. 7] of byte = (
+  Bits: array [0 .. 7] of Byte = (
     1,
     2,
     4,
@@ -1612,17 +1122,17 @@ var
     128
   );
 
-function GetBit(InByte: byte; Index: byte): Boolean;
+function GetBit(InByte: Byte; Index: Byte): Boolean;
 begin
   Result := Boolean(InByte shr Index and 1)
 end;
 
-function SetBit(InByte: byte; Index: byte; Value: Boolean): byte;
+function SetBit(InByte: Byte; Index: Byte; Value: Boolean): Byte;
 begin
   if Value then
-    Result := InByte or vBits[Index]
+    Result := InByte or Bits[Index]
   else
-    Result := InByte and not vBits[Index]
+    Result := InByte and not Bits[Index]
 end;
 
 initialization

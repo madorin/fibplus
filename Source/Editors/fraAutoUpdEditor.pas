@@ -33,7 +33,7 @@ uses
 type
   TFrame = TFIBEditorCustomFrame;
 
-  TfAutoUpdateOptionForm = class(TFrame)
+  TFIBAutoUpdateOptionsFrame = class(TFrame)
     GroupBox1: TGroupBox;
     AllowChangeC: TCheckBox;
     AutoGenC: TCheckBox;
@@ -66,14 +66,14 @@ uses
 
 {$R *.dfm}
 
-procedure TfAutoUpdateOptionForm.AutoGenCClick(Sender: TObject);
+procedure TFIBAutoUpdateOptionsFrame.AutoGenCClick(Sender: TObject);
 begin
   ModFieldsC.Enabled := AutoGenC.Checked;
   if not ModFieldsC.Enabled then
     ModFieldsC.Checked := False;
 end;
 
-procedure TfAutoUpdateOptionForm.PrepareControls;
+procedure TFIBAutoUpdateOptionsFrame.PrepareControls;
 var
   Qry: TComponent;
   Trans: TComponent;
@@ -85,7 +85,6 @@ begin
   PrimaryKeyL.Caption := FPAutoOptEditorPrimaryKey;
   ModTableL.Caption := FPAutoOptEditorModTable;
   GroupBox1.Caption := FPAutoOptEditorSQL;
-  // AllowChangeC.Caption:= FPAutoOptEditorAllowChange;
   AutoGenC.Caption := FPAutoOptEditorAutoGen;
   ModFieldsC.Caption := FPAutoOptEditorModFields;
   GroupBox2.Caption := FPAutoOptEditorAutoInc;
@@ -95,8 +94,6 @@ begin
   WhenGetC.Items.Add(FPAutoOptEditorWhenGet3);
   SQLText := TStrings(GetObjectProp(FDataSet, 'SelectSQL')).Text;
   FIBClassesExporter.iGetStringer.AllTables(SQLText, TableC.Items);
-  { TODO : maybe fill in the key field + add new options }
-
   begin
     AllowChangeC.Checked := GetSubPropValue(FDataSet, 'AutoUpdateOptions.CanChangeSQLs');
     AutoGenC.Checked := GetSubPropValue(FDataSet, 'AutoUpdateOptions.AutoReWriteSqls');
@@ -116,7 +113,6 @@ begin
   Db := TComponent(GetObjectProp(FDataSet, 'DataBase'));
   if Db = nil then
     exit;
-  // if FDataSet.Database = nil then exit;
   GenC.Items.Clear;
 
   Qry := nil;
@@ -155,13 +151,13 @@ begin
   end
 end;
 
-procedure TfAutoUpdateOptionForm.edGenStepKeyPress(Sender: TObject; var Key: Char);
+procedure TFIBAutoUpdateOptionsFrame.edGenStepKeyPress(Sender: TObject; var Key: Char);
 begin
   if not CharInSet(Key, ['0' .. '9', Char(VK_BACK)]) then
     Abort;
 end;
 
-procedure TfAutoUpdateOptionForm.ApplyToDataSet;
+procedure TFIBAutoUpdateOptionsFrame.ApplyToDataSet;
 begin
   SetValueProperty(FDataSet, 'AutoUpdateOptions.CanChangeSQLs', AllowChangeC.Checked);
   SetValueProperty(FDataSet, 'AutoUpdateOptions.AutoReWriteSqls', AutoGenC.Checked);

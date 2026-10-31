@@ -13,7 +13,7 @@
 {  Please see the file License.txt for full license information }
 {***************************************************************}
 {$IFDEF FIB_INTERFACE}
-   procedure  GetFieldDataPointer(Field:TField;RecNumber:integer; var IsString:boolean;var OutRes:Pointer);
+   procedure  GetFieldDataPointer(Field:TField;RecNumber:Integer; var IsString:Boolean;var OutRes:Pointer);
 
 {$ENDIF}
 
@@ -33,7 +33,7 @@ begin
   Result := (Field.DataType = ftBCD) and not ((Field is TFIBBCDField) and TFIBBCDField(Field).HasScaledData);
 end;
 
-procedure TFIBCustomDataSet.GetFieldDataPointer(Field:TField;RecNumber:integer; var  IsString:boolean;var OutRes:Pointer);
+procedure TFIBCustomDataSet.GetFieldDataPointer(Field:TField;RecNumber:Integer; var  IsString:Boolean;var OutRes:Pointer);
 var
    P1:Pointer;
    fi:PFIBFieldDescr;
@@ -57,14 +57,14 @@ begin
   fn:=Field.FieldNo;
 
   if
-  (fn<=0) and (not vCalcFieldsSavedCache
-    or    not GetBit(PSavedRecordData(FRecordsCache.PRecBuffer(RecNumber+1,False))^.rdFlags,7))
+  (fn<=0) and (not FCalcFieldsSavedCache
+    or    not GetBit(PFIBSavedRecordData(FRecordsCache.PRecBuffer(RecNumber+1))^.rdFlags,7))
   then
   begin
 // NeedRecalcFields
-    vInspectRecno:=RecNumber;
+    FInspectRecNo:=RecNumber;
     try
-      vTypeDispositionField:=dfRRecNumber;
+      FTypeDispositionField:=dfRRecNumber;
       IsString:=False;
       if not GetFieldData(Field,PAnsiChar(OutRes)) then // ForceCalculate
        OutRes:=nil
@@ -75,14 +75,14 @@ begin
           OutRes := nil;
       end;
      finally
-      vTypeDispositionField:=dfNormal
+      FTypeDispositionField:=dfNormal
      end;
   end;
 
 
     if fn>0 then
     begin
-      fi:=vFieldDescrList.List.List[fn-1];
+      fi:=FFieldDescrList.List.List[fn-1];
       IsString:=fi^.fdStrIndex>-1;
 
       if  IsString then
@@ -92,20 +92,20 @@ begin
        if PAnsiString(OutRes)^='' then
        begin
        // May be null, may be empty str
-        P1:=FRecordsCache.PRecBuffer(RecNumber+1,False);
-        if PSavedRecordData(P1).rdFields[fn].fdIsNull then
+        P1:=FRecordsCache.PRecBuffer(RecNumber+1);
+        if PFIBSavedRecordData(P1).rdFields[fn].fdIsNull then
          OutRes:=nil;
        end;
       end
       else
       begin
         OutRes:=FRecordsCache.GetNonStringFieldData(RecNumber,fi^.fdDataOfs-DiffSizesRecData,P1);
-        if PSavedRecordData(P1).rdFields[fn].fdIsNull then
+        if PFIBSavedRecordData(P1).rdFields[fn].fdIsNull then
          OutRes:=nil;
       end;
     end
     else
-    if vCalcFieldsSavedCache then
+    if FCalcFieldsSavedCache then
     begin // Calc
      OutRes1:=FRecordsCache.GetNonStringFieldData(RecNumber, FBlockReadSize+Field.Offset,P1);
      if OutRes1<>nil then
@@ -126,8 +126,8 @@ end;
 
 
 function TFIBCustomDataSet.InternalLocate(const KeyFields: string;
-  KeyValues:array of Variant; Options: TExtLocateOptions;FromBegin:boolean = False;
-  LocateKind:TLocateKind = lkStandard; ResyncToCenter:boolean =False
+  KeyValues:array of Variant; Options: TFIBExtLocateOptions;FromBegin:Boolean = False;
+  LocateKind:TFIBLocateKind = lkStandard; ResyncToCenter:Boolean =False
   ): Boolean;
 
 type
@@ -137,19 +137,20 @@ var
   fld_cnt: Integer;
   rc,rc1 :Integer;
   Arrow:TArrow;
-  vIgnoreRecChecked:boolean;
+  IgnoreRecChecked:Boolean;
   RecI: Integer;
-  vSortInfos     : array of TSortFieldInfo;
-  FinishSearch:boolean;
-  NowInFetched:boolean;
+  SortInfos     : array of TFIBSortFieldInfo;
+  FinishSearch:Boolean;
+  NowInFetched:Boolean;
 
   WideValue:WideString;
   WideKey:WideString;
-  vCalcBuffer:PAnsiChar;
+  LocateCalcBuffer:PAnsiChar;
   CodePages: array of Word;
   DateAdjusted: array of Boolean;
   // 1 or -1: the BCD key is above or below the range of the field
   KeyOverflow: array of Integer;
+  SavedCurrentRecord: Integer;
 
 // To compare a string field as Unicode; 0: as bytes
 function LocateCodePage(Field: TField): Word;
@@ -172,9 +173,9 @@ begin
       Result := Word(DefaultSystemCodePage);
 end;
 
-function IsVisibleRecord:boolean;
+function IsVisibleRecord:Boolean;
 var
- vBuff:TRecordBuffer;
+ RecBuffer:TRecordBuffer;
 begin
 
   if drsInMoveRecord in FRunState then
@@ -185,23 +186,23 @@ begin
 
   if Filtered then
   begin
-   vBuff:=AllocRecordBuffer;
+   RecBuffer := AllocRecordBuffer;
    try
     FCurrentRecord:=RecI;
-    ReadRecordCache(RecI, vBuff, False);
-    Result:=IsVisible(vBuff);
+    ReadRecordCache(RecI, RecBuffer, False);
+    Result := IsVisible(RecBuffer);
    finally
-    FreeMem(vBuff);
+    FreeMem(RecBuffer);
    end;
   end
   else
   if FCacheModelOptions.FCacheModelKind=cmkStandard then
   begin
     if UniDirectional then
-     vBuff :=FRecordsCache.PRecBuffer((RecI mod BufferChunks) +1,False)-DiffSizesRecData
+     RecBuffer := FRecordsCache.PRecBuffer((RecI mod BufferChunks) +1)-DiffSizesRecData
     else
-     vBuff :=FRecordsCache.PRecBuffer(RecI+1,False)-DiffSizesRecData;
-    Result:=IsVisibleStat(vBuff);
+     RecBuffer := FRecordsCache.PRecBuffer(RecI+1)-DiffSizesRecData;
+    Result := IsVisibleStat(RecBuffer);
   end
   else
     Result:=True;  
@@ -212,26 +213,26 @@ procedure AdjustOrders(L, R: Integer);
 var
   I, J: Integer;
   P: Integer;
-  T: TSortFieldInfo;
+  T: TFIBSortFieldInfo;
   P1:Pointer;
   v :Variant;
 begin
   repeat
     I := L;
     J := R;
-    P := vSortInfos[(L + R) shr 1].InOrderIndex;
+    P := SortInfos[(L + R) shr 1].InOrderIndex;
     repeat
-      while vSortInfos[I].InOrderIndex< P do
+      while SortInfos[I].InOrderIndex< P do
         Inc(I);
-      while vSortInfos[J].InOrderIndex> P do
+      while SortInfos[J].InOrderIndex> P do
         Dec(J);
       if I <= J then
       begin
         if I<>J then
         begin
-          T := vSortInfos[I];
-          vSortInfos[I] := vSortInfos[J];
-          vSortInfos[J] := T;
+          T := SortInfos[I];
+          SortInfos[I] := SortInfos[J];
+          SortInfos[J] := T;
           P1:=fl.List^[I];
           fl.List^[I]:=fl.List^[J];
           fl.List^[J]:=P1;
@@ -249,26 +250,26 @@ begin
   until I >= R;
 end;
 
-function  InitSortInfos:boolean;
+function  InitSortInfos:Boolean;
 var
-   i:integer;
-   NeedAdjustOrder:boolean;
-   vCallAsSorted:boolean;
+   i:Integer;
+   NeedAdjustOrder:Boolean;
+   CallAsSorted:Boolean;
 begin
-  vCallAsSorted:=eloInSortedDS in Options;
-  if not vCallAsSorted then
+  CallAsSorted := eloInSortedDS in Options;
+  if not CallAsSorted then
   begin
     Result := False;
     Exit;
   end;
     
   NeedAdjustOrder:=False;
-  SetLength(vSortInfos,fld_cnt);
+  SetLength(SortInfos,fld_cnt);
   for i:=0 to fld_cnt-1 do
   begin
-   if IsSortedField(TField(fl.List^[i]),vSortInfos[i]) then
+   if IsSortedField(TField(fl.List^[i]),SortInfos[i]) then
    begin
-    if vSortInfos[i].InOrderIndex<>Succ(i) then
+    if SortInfos[i].InOrderIndex<>Succ(i) then
        NeedAdjustOrder:=True;
    end
    else
@@ -283,9 +284,9 @@ begin
 
 
   for i:=0 to fld_cnt-1 do
-   if (vSortInfos[i].InOrderIndex<>Succ(i)) or
+   if (SortInfos[i].InOrderIndex<>Succ(i)) or
     ((TField(fl.List^[i]).DataType in [ftString,ftWideString,ftGuid]) and
-      not (vCallAsSorted and not (eloCaseInsensitive in Options))
+      not (CallAsSorted and not (eloCaseInsensitive in Options))
     )
    then
    begin
@@ -299,7 +300,7 @@ end;
 procedure  AdjustKeys;
 var
       i: NativeInt;
-      CalcSize:integer;
+      CalcSize:Integer;
       fdt  :TFieldType ;
       CurrencyKey: Currency;
       BcdKey: TBcd;
@@ -430,9 +431,9 @@ begin
      end;
   end;
   if CalcSize>0 then
-   GetMem(vCalcBuffer,CalcSize)
+   GetMem(LocateCalcBuffer,CalcSize)
   else
-   vCalcBuffer:=nil
+   LocateCalcBuffer := nil
 end;
 
 
@@ -449,7 +450,7 @@ begin
      end
      else
      begin
-      FinishSearch:=RecI>vPartition.EndPartRecordNo
+      FinishSearch:=RecI>FPartition.EndPartRecordNo
      end;
    end;
    lkPrior:
@@ -457,37 +458,37 @@ begin
     if FCacheModelOptions.FCacheModelKind=cmkStandard then
      FinishSearch:=RecI<0
     else
-     FinishSearch:=RecI<vPartition.BeginPartRecordNo
+     FinishSearch:=RecI<FPartition.BeginPartRecordNo
    end;
   end;
 end;
 
 var
- StrValue,sKey:Ansistring; // used in CompareValues
+ StrValue,sKey:AnsiString; // used in CompareValues
 
 
 
-function CompareValues:boolean;
+function CompareValues:Boolean;
 var
-  i:integer;
+  i:Integer;
   p:Pointer;
-  vIsString:boolean;
-  L:integer;
+  ValueIsString:Boolean;
+  L:Integer;
   cResult: Integer;
-  InitStrValue:boolean;
+  InitStrValue:Boolean;
   ts:TTimeStamp;
   fi:PFIBFieldDescr;
   dv:Double;
   fn:Integer;
-  vConv: TBcd; // Firebird 4 values converted for comparison
+  ConvBcd: TBcd; // Firebird 4 values converted for comparison
   fdt: TFieldType;
   CodePage: Word;
-  function UDFCompStr(const s:Ansistring):integer;
+  function UDFCompStr(const s:AnsiString):Integer;
   begin
    Result:=CompareFieldValues(TField(fl.List^[i]),KeyValues[i],s )
   end;
 
-  function UDFCompWideStr(const s:Widestring):integer;
+  function UDFCompWideStr(const s:WideString):Integer;
   begin
    Result:=CompareFieldValues(TField(fl.List^[i]),WideKey,s )
   end;
@@ -502,22 +503,22 @@ var
              // ftString here has the system code page
              if eloCaseInsensitive in Options then
               StrValue := AnsiString(AnsiUppercase(string(StrValue)));
-             Arrow:=TArrow(vSortInfos[i].Asc xor  (UDFCompStr(StrValue)>0))
+             Arrow := TArrow(SortInfos[i].Asc xor  (UDFCompStr(StrValue)>0))
            end;
            ftWideString:
            // WideKey and WideValue set by CompareValues
            begin
              if eloCaseInsensitive in Options then
               DoWideUppercase(WideValue);
-              Arrow:=TArrow(vSortInfos[i].Asc xor  (UDFCompWideStr(WideValue)>0))
+              Arrow := TArrow(SortInfos[i].Asc xor  (UDFCompWideStr(WideValue)>0))
            end;
           else
-           Arrow:=TArrow(vSortInfos[i].Asc xor (cResult< 0));
+           Arrow := TArrow(SortInfos[i].Asc xor (cResult< 0));
           end  ;
   end;
 
 
-  function NonStrFieldCompare:boolean;
+  function NonStrFieldCompare:Boolean;
   begin
           // Firebird 4 types are cached in the server format,
           // convert them to the format of the field buffer
@@ -525,24 +526,24 @@ var
             case fi^.fdDataType of
               SQL_INT128, SQL_DEC16, SQL_DEC34:
               begin
-                if not CacheToBcd(fi, p, vConv) then
+                if not CacheToBcd(fi, p, ConvBcd) then
                 begin
                   // NaN, Infinity and values out of TBcd range are never equal
                   cResult := 1;
                   Result := False;
                   Exit;
                 end;
-                p := @vConv;
+                p := @ConvBcd;
               end;
               SQL_TIME_TZ_EX:
               begin
-                PInteger(@vConv)^ := FBTimeTZToMSecs(PISC_TIME_TZ_EX(p)^);
-                p := @vConv;
+                PInteger(@ConvBcd)^ := FBTimeTZToMSecs(PISC_TIME_TZ_EX(p)^);
+                p := @ConvBcd;
               end;
               SQL_TIMESTAMP_TZ_EX:
               begin
-                PDouble(@vConv)^ := FBTimeStampTZToMSecs(PISC_TIMESTAMP_TZ_EX(p)^);
-                p := @vConv;
+                PDouble(@ConvBcd)^ := FBTimeStampTZToMSecs(PISC_TIMESTAMP_TZ_EX(p)^);
+                p := @ConvBcd;
               end;
             end;
           // Non string fields compare
@@ -598,9 +599,9 @@ var
                    SQL_FLOAT:
                      dv:=PSingle(P)^;
                    SQL_LONG :
-                     dv:=PLong(P)^*E10[fi^.fdDataScale];
+                     dv:=PLong(P)^/E10[-fi^.fdDataScale];
                    SQL_SHORT:
-                     dv:=PShort(P)^*E10[fi^.fdDataScale]
+                     dv:=PShort(P)^/E10[-fi^.fdDataScale]
                   else
                    dv:=PDouble(P)^
                   end;
@@ -677,11 +678,11 @@ begin
       while (Result  and (i < fld_cnt)) do
       begin
         InitStrValue:=False;
-        p:=vCalcBuffer;
-        GetFieldDataPointer(TField(fl.List^[i]),RecI,vIsString,p);
+        p := LocateCalcBuffer;
+        GetFieldDataPointer(TField(fl.List^[i]),RecI,ValueIsString,p);
         fn:=TField(fl.List^[i]).FieldNo;
         if fn>=1 then
-         fi:=vFieldDescrList[fn-1]
+         fi:=FFieldDescrList[fn-1]
         else
          fi:=nil;
 
@@ -698,9 +699,9 @@ begin
             Result := False;
             if (eloInSortedDS in Options) then
              if FIsClientSorting then
-              Arrow:=TArrow(vSortInfos[i].Asc)
+              Arrow := TArrow(SortInfos[i].Asc)
              else
-              Arrow:=TArrow(vSortInfos[i].NullsFirst);
+              Arrow := TArrow(SortInfos[i].NullsFirst);
             Exit;
           end;
         end
@@ -711,9 +712,9 @@ begin
             Result := False;
             if (eloInSortedDS in Options) then
              if FIsClientSorting then
-              Arrow:=TArrow(not vSortInfos[i].Asc)
+              Arrow := TArrow(not SortInfos[i].Asc)
              else
-              Arrow:=TArrow(not vSortInfos[i].NullsFirst);
+              Arrow := TArrow(not SortInfos[i].NullsFirst);
             Exit;
           end;
         end;
@@ -735,7 +736,7 @@ begin
 
             if Options-[eloInFetchedRecords]=[] then
             begin
-             if vIsString then
+             if ValueIsString then
              begin
               if poTrimCharFields in Self.Options then
               begin
@@ -769,14 +770,13 @@ begin
             end
           end
           else
-//          case TField(fl.List^[i]).DataType  of
            case fdt  of
 
             ftString:
             begin
              sKey:=AnsiString(TVarData(KeyValues[i]).VString);
              InitStrValue:=True;
-             if vIsString then
+             if ValueIsString then
              begin
               StrValue:=PAnsiString(p)^;
               UniqueString (StrValue);
@@ -787,7 +787,6 @@ begin
                 Dec(L);
                SetLength(StrValue,L)
               end;
-          //      DoTrimRight(StrValue)
              end
              else
              begin
@@ -830,7 +829,7 @@ begin
               if CodePage = 0 then
                 CodePage := FIBCodePageUTF8;
               begin
-               if vIsString then
+               if ValueIsString then
                begin
                 WideValue := DecodeString(PFIBByteString(p)^, CodePage);
                 if poTrimCharFields in Self.Options then
@@ -845,7 +844,6 @@ begin
                   {$ELSE}
                   WideValue := UTF8ToString(PAnsiChar(p));
                   {$ENDIF}
-//                  WideValue:=PWideChar(p);
                   if poTrimCharFields in Self.Options then
                    DoTrimRight(WideValue)
                 end
@@ -911,14 +909,14 @@ begin
   if (LocateKind<>lkStandard) or not (eloInSortedDS in Options) then
     Exit;
   sRecI:=RecI;
-  if IsVisibleRecord and (RecI+1<>vIgnoreLocRecno) then
+  if IsVisibleRecord and (RecI+1<>FIgnoreLocateRecNo) then
    GoodRec:=RecI
   else
    GoodRec:=-1;
   while Result and (RecI>0)  do
   begin
    Dec(RecI);
-   if IsVisibleRecord and (RecI+1<>vIgnoreLocRecno)  then
+   if IsVisibleRecord and (RecI+1<>FIgnoreLocateRecNo)  then
    begin
     Result:=CompareValues;
     if Result then
@@ -938,7 +936,7 @@ begin
    while Result and(RecI<FRecordCount-1) do
    begin
     Inc(RecI);     
-    if IsVisibleRecord and (RecI+1<>vIgnoreLocRecno) then
+    if IsVisibleRecord and (RecI+1<>FIgnoreLocateRecNo) then
     begin
       Result:=CompareValues;
       if Result then
@@ -961,22 +959,26 @@ end;
 begin
   CheckActive;
   Result := False;
-  vCalcBuffer:=nil;  
+  LocateCalcBuffer := nil;
   if IsEmpty then
    Exit;
   rc:=-1;
   rc1:=-1;
   if State in [dsEdit,dsInsert] then
    Post;
+  // the visibility check of a filtered dataset moves FCurrentRecord
+  SavedCurrentRecord := FCurrentRecord;
   NowInFetched:=True;
-  vIgnoreRecChecked  :=False;
+  IgnoreRecChecked := False;
   fl := TFIBList.Create;
   try
     GetDataSetFieldList(Self, fl, KeyFields);
     fld_cnt     := Integer(fl.Count); // the fields of KeyFields
-//    SetLength(wsA,fl.Count);
     if fl.Count=0 then
      Exit;
+    // a value for each key field, as for the variant array of TDataSet.Locate
+    if Length(KeyValues) < fld_cnt then
+      raise EVariantBadIndexError.Create(SVarArrayBounds);
 
 
     Result      := False;
@@ -992,8 +994,8 @@ begin
      if FCacheModelOptions.FCacheModelKind=cmkStandard then
       RecI := 0
      else
-      RecI :=vPartition.BeginPartRecordNo;
-     if RecI+1=vIgnoreLocRecno then
+      RecI :=FPartition.BeginPartRecordNo;
+     if RecI+1=FIgnoreLocateRecNo then
      begin
        Inc(RecI);
        if RecI >= FRecordCount then
@@ -1005,7 +1007,7 @@ begin
      lkNext :
      begin
       RecI :=GetRealRecNo;
-      if RecI+1=vIgnoreLocRecno then
+      if RecI+1=FIgnoreLocateRecNo then
        Inc(RecI);
 
       case FCacheModelOptions.CacheModelKind  of
@@ -1024,7 +1026,7 @@ begin
      lkPrior:
      begin
       RecI :=GetRealRecNo-2;
-      if RecI+1=vIgnoreLocRecno then
+      if RecI+1=FIgnoreLocateRecNo then
        Dec(RecI);
      end;
      lkStandard:RecI :=0;
@@ -1048,13 +1050,13 @@ begin
                     Exit;
         end;
         RecI:=FRecordCount-1;
-        if (RecI+1=vIgnoreLocRecno) then
+        if (RecI+1=FIgnoreLocateRecNo) then
         if RecI=0 then
          Exit 
         else
         begin
           Dec(RecI); 
-          vIgnoreRecChecked:=True
+          IgnoreRecChecked := True
         end;
         Result:=CompareValues;
       end;
@@ -1076,11 +1078,11 @@ begin
       begin
        rc1:=RecI;
        RecI:=0;
-       if (vIgnoreLocRecno=1) then
-        if  not vIgnoreRecChecked  then
+       if (FIgnoreLocateRecNo=1) then
+        if  not IgnoreRecChecked  then
         begin
          Inc(RecI);
-         vIgnoreRecChecked:=True
+         IgnoreRecChecked := True
         end;
         rc:=RecI
       end;
@@ -1092,22 +1094,22 @@ begin
     begin
       if (eloInSortedDS in Options) and NowInFetched then
       begin
-       if rc=vIgnoreLocRecno then
+       if rc=FIgnoreLocateRecNo then
         Inc(rc);
-       if rc1=vIgnoreLocRecno then
+       if rc1=FIgnoreLocateRecNo then
         Dec(rc1);
        if  (rc>rc1) then
         Break;
 
        RecI:=((rc1+rc) div 2);
-       if (RecI+1=vIgnoreLocRecno) then
+       if (RecI+1=FIgnoreLocateRecNo) then
        begin
-         if  vIgnoreRecChecked then
+         if  IgnoreRecChecked then
           Exit
          else
          begin
           Inc(RecI);
-          vIgnoreRecChecked:=True
+          IgnoreRecChecked := True
          end;
        end;
       end;
@@ -1189,7 +1191,7 @@ begin
 
   finally
     fl.Free;
-    FreeMem(vCalcBuffer);
+    FreeMem(LocateCalcBuffer);
     if Result then
     begin
        SetRealRecno(RecI+1,ResyncToCenter);
@@ -1204,9 +1206,11 @@ begin
         SetRealRecno(RecI+2,ResyncToCenter)
        else
         SetRealRecno(RecI+1,ResyncToCenter);
-       DataEvent(deDataSetChange,0);        
+       DataEvent(deDataSetChange,0);
        CursorPosChanged;
-    end;
+    end
+    else
+      FCurrentRecord := SavedCurrentRecord;
   end;
 end;
 {$ENDIF}

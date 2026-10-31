@@ -67,9 +67,9 @@ begin
     try
       if not tr.Active then
         tr.StartTransaction;
-      ApplyUpdToBase;
+      ApplyUpdatesToDatabase;
       tr.CommitRetaining;
-      CommitUpdToCach
+      CommitUpdatesToCache
     except
       if tr.Active then
         tr.RollBack

@@ -16,8 +16,8 @@ type
   TpFIBQueryOption = FIBProps.TFIBQueryOption deprecated 'Use TFIBQueryOption';
   TpFIBQueryOptions = FIBProps.TFIBQueryOptions deprecated 'Use TFIBQueryOptions';
   TpFIBFieldInfo = FIBProps.TFIBFieldInfo deprecated 'Use TFIBFieldInfo';
-  TOnBlobFieldProcessing = FIBProps.TOnBlobFieldProcessing;
-  TKindOnOperation = FIBProps.TKindOnOperation;
+  TOnBlobFieldProcessing = FIBProps.TFIBBlobFieldProcessingEvent;
+  TKindOnOperation = FIBProps.TFIBOperationMoment;
   TFIBSQLTypes = FIBProps.TFIBSQLTypes;
   TFIBExistObject = FIBProps.TFIBExistObject;
   TFIBPrepareOption = FIBProps.TFIBPrepareOption;
@@ -26,38 +26,38 @@ type
   TFIBDataSetOptions = FIBProps.TFIBDataSetOptions;
   TFIBQueryOption = FIBProps.TFIBQueryOption;
   TFIBQueryOptions = FIBProps.TFIBQueryOptions;
-  TDetailCondition = FIBProps.TDetailCondition;
-  TDetailConditions = FIBProps.TDetailConditions;
-  TFieldOriginRule = FIBProps.TFieldOriginRule;
-  TSQLs = FIBProps.TSQLs;
-  TFormatFields = FIBProps.TFormatFields;
-  TWhenGetGenID = FIBProps.TWhenGetGenID;
-  TReturningFields = FIBProps.TReturningFields;
-  TSetReturningFields = FIBProps.TSetReturningFields;
-  TAutoUpdateOptions = FIBProps.TAutoUpdateOptions;
+  TDetailCondition = FIBProps.TFIBDetailCondition;
+  TDetailConditions = FIBProps.TFIBDetailConditions;
+  TFieldOriginRule = FIBProps.TFIBFieldOriginRule;
+  TSQLs = FIBProps.TFIBSQLs;
+  TFormatFields = FIBProps.TFIBFormatFields;
+  TWhenGetGenID = FIBProps.TFIBWhenGetGenID;
+  TReturningFields = FIBProps.TFIBReturningField;
+  TSetReturningFields = FIBProps.TFIBReturningFields;
+  TAutoUpdateOptions = FIBProps.TFIBAutoUpdateOptions;
 {$IFDEF SUPPORT_IB2007}
-  TIBConnectParams = FIBProps.TIBConnectParams;
+  TIBConnectParams = FIBProps.TFIBInterBaseConnectParams;
 {$ENDIF}
-  TUseGeneratorCache = FIBProps.TUseGeneratorCache;
-  TGeneratorParams = FIBProps.TGeneratorParams;
-  TGeneratorsCache = FIBProps.TGeneratorsCache;
-  TConnectParams = FIBProps.TConnectParams;
+  TUseGeneratorCache = FIBProps.TFIBUseGeneratorCache;
+  TGeneratorParams = FIBProps.TFIBGeneratorParams;
+  TGeneratorsCache = FIBProps.TFIBGeneratorsCache;
+  TConnectParams = FIBProps.TFIBConnectParams;
 {$IFDEF CSMonitor}
-  TCSMonitorEnabled = FIBProps.TCSMonitorEnabled;
+  TCSMonitorEnabled = FIBProps.TFIBCSMonitorEnabled;
   EFIBCSMonitorError = FIBProps.EFIBCSMonitorError;
-  TCSMonitorSupport = FIBProps.TCSMonitorSupport;
+  TCSMonitorSupport = FIBProps.TFIBCSMonitorSupport;
 {$ENDIF}
-  TCacheSchemaOptions = FIBProps.TCacheSchemaOptions;
-  TDBParams = FIBProps.TDBParams;
-  TTransactionAction1 = FIBProps.TTransactionAction1;
-  TTPBMode = FIBProps.TTPBMode;
-  TBlobSwapSupport = FIBProps.TBlobSwapSupport;
-  TConditions = FIBProps.TConditions;
-  TCondition = FIBProps.TCondition;
-  TConditionsStateFlag = FIBProps.TConditionsStateFlag;
-  TConditionsState = FIBProps.TConditionsState;
-  TMemoSubtypes = FIBProps.TMemoSubtypes;
-  TExtBoolean = FIBProps.TExtBoolean;
+  TCacheSchemaOptions = FIBProps.TFIBCacheSchemaOptions;
+  TDBParams = FIBProps.TFIBDBParams;
+  TTransactionAction1 = FIBProps.TFIBDefaultTimeoutAction;
+  TTPBMode = FIBProps.TFIBTPBMode;
+  TBlobSwapSupport = FIBProps.TFIBBlobSwapSupport;
+  TConditions = FIBProps.TFIBConditions;
+  TCondition = FIBProps.TFIBCondition;
+  TConditionsStateFlag = FIBProps.TFIBConditionsStateFlag;
+  TConditionsState = FIBProps.TFIBConditionsState;
+  TMemoSubtypes = FIBProps.TFIBMemoSubtypes;
+  TExtBoolean = FIBProps.TFIBExtendedBoolean;
   TFIBFieldInfo = FIBProps.TFIBFieldInfo;
 
 const
@@ -143,10 +143,10 @@ const
   csmeDatabaseDriven = FIBProps.csmeDatabaseDriven;
   csmeTransactionDriven = FIBProps.csmeTransactionDriven;
 {$ENDIF}
-  TARollback1 = FIBProps.TARollback1;
-  TARollbackRetaining1 = FIBProps.TARollbackRetaining1;
-  TACommit1 = FIBProps.TACommit1;
-  TACommitRetaining1 = FIBProps.TACommitRetaining1;
+  TARollback1 = FIBProps.dtaRollback;
+  TARollbackRetaining1 = FIBProps.dtaRollbackRetaining;
+  TACommit1 = FIBProps.dtaCommit;
+  TACommitRetaining1 = FIBProps.dtaCommitRetaining;
   tpbDefault = FIBProps.tpbDefault;
   tpbReadCommitted = FIBProps.tpbReadCommitted;
   tpbRepeatableRead = FIBProps.tpbRepeatableRead;
@@ -182,7 +182,7 @@ var
   DefGoToFirstRecordOnExecute: Boolean absolute FIBProps.DefGoToFirstRecordOnExecute;
   DefQueryOptions: TFIBQueryOptions absolute FIBProps.DefQueryOptions;
   DefPrefixGenName: string absolute FIBProps.DefPrefixGenName;
-  DefSufixGenName: string absolute FIBProps.DefSufixGenName;
+  DefSufixGenName: string absolute FIBProps.DefSuffixGenName;
   DefEmptyStrToNull: Boolean absolute FIBProps.DefEmptyStrToNull;
   FF_UseRuntimeDefaults: Boolean absolute FIBProps.FF_UseRuntimeDefaults;
   RDefDateFormat: string absolute FIBProps.RDefDateFormat;

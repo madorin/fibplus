@@ -38,12 +38,12 @@ uses
 
 type
 
-  TCacheQueries = class(TComponent)
+  TFIBQueryCache = class(TComponent)
   private
     FFIBDataBase: TFIBDataBase;
-    FListUnused: TObjStringList;
+    FListUnused: TFIBObjectStringList;
     FListUsed: TList;
-    vInClear: boolean;
+    FInClear: Boolean;
     procedure Clear;
     procedure ClearUnused;
     function UseQuery(aTransaction: TFIBTransaction; const SQLText: string): TFIBQuery;
@@ -55,12 +55,12 @@ type
     destructor Destroy; override;
   end;
 
-  TCacheList = class(TComponent)
+  TFIBQueryCacheList = class(TComponent)
   private
     FList: TList;
     FLock: TCriticalSection;
-    function FindCacheForDB(aDataBase: TFIBDataBase): TCacheQueries;
-    function GetCacheForDB(aDataBase: TFIBDataBase): TCacheQueries;
+    function FindCacheForDB(aDataBase: TFIBDataBase): TFIBQueryCache;
+    function GetCacheForDB(aDataBase: TFIBDataBase): TFIBQueryCache;
     procedure RemoveDataBase(aDataBase: TFIBDataBase);
   protected
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
@@ -74,47 +74,53 @@ type
   end;
 
 var
-  CacheList: TCacheList;
+  CacheList: TFIBQueryCacheList;
 
-  { TCacheQueries }
+// The text as SQL.Text of the query gives it: CRLF line breaks
+function CacheKey(const SQLText: string): string;
+begin
+  Result := FastTrim(AdjustLineBreaks(SQLText));
+end;
 
-procedure TCacheQueries.Clear;
+  { TFIBQueryCache }
+
+procedure TFIBQueryCache.Clear;
 var
   i: TFIBListIndex;
 begin
   try
-    vInClear := true;
+    FInClear := true;
     for i := 0 to FListUsed.Count - 1 do
       TObject(FListUsed[i]).Free;
   finally
-    vInClear := false;
+    FInClear := false;
   end;
 end;
 
-constructor TCacheQueries.Create(aFIBDataBase: TFIBDataBase);
+constructor TFIBQueryCache.Create(aFIBDataBase: TFIBDataBase);
 begin
   inherited Create(nil);
   FFIBDataBase := aFIBDataBase;
-  FListUnused := TObjStringList.Create(nil, true);
+  FListUnused := TFIBObjectStringList.Create(nil, true);
   FListUsed := TList.Create;
 end;
 
-destructor TCacheQueries.Destroy;
+destructor TFIBQueryCache.Destroy;
 begin
   Clear;
   try
-    vInClear := true;
+    FInClear := true;
     FListUnused.Free;
   finally
-    vInClear := false;
+    FInClear := false;
   end;
   FListUsed.Free;
   inherited;
 end;
 
-procedure TCacheQueries.ClearUnused;
+procedure TFIBQueryCache.ClearUnused;
 var
-  i: integer;
+  i: Integer;
   Query: TObject;
 begin
   for i := FListUnused.Count - 1 downto 0 do
@@ -126,17 +132,17 @@ begin
   end;
 end;
 
-procedure TCacheQueries.Notification(AComponent: TComponent; Operation: TOperation);
+procedure TFIBQueryCache.Notification(AComponent: TComponent; Operation: TOperation);
 var
-  i: integer;
+  i: Integer;
 begin
   if (Operation = opRemove) and (AComponent is TFIBQuery) then
   begin
     // A cached query may be freed by its user, outside of the cache lock.
-    // vInClear is set under the lock too.
+    // FInClear is set under the lock too.
     CacheList.FLock.Acquire;
     try
-      if not vInClear then
+      if not FInClear then
       begin
         FListUsed.Remove(AComponent);
         // By object, not by SQL text: an unused query with the same text
@@ -152,15 +158,15 @@ begin
   inherited;
 end;
 
-procedure TCacheQueries.UnUseQuery(aFIBQuery: TFIBQuery);
+procedure TFIBQueryCache.UnUseQuery(aFIBQuery: TFIBQuery);
 var
-  i: integer;
+  i: Integer;
   Key: string;
 begin
   if FListUsed.Remove(aFIBQuery) < 0 then
     Exit;
 
-  Key := FastTrim(aFIBQuery.SQL.Text);
+  Key := CacheKey(aFIBQuery.SQL.Text);
   // Two queries with the same SQL were in use at the same time, the list
   // keeps one query per SQL text
   if FListUnused.Find(Key, i) then
@@ -169,11 +175,11 @@ begin
     FListUnused.AddObject(Key, aFIBQuery);
 end;
 
-function TCacheQueries.UseQuery(aTransaction: TFIBTransaction; const SQLText: string): TFIBQuery;
+function TFIBQueryCache.UseQuery(aTransaction: TFIBTransaction; const SQLText: string): TFIBQuery;
 var
-  i: integer;
+  i: Integer;
 begin
-  if FListUnused.Find(FastTrim(SQLText), i) then
+  if FListUnused.Find(CacheKey(SQLText), i) then
   begin
     Result := TFIBQuery(FListUnused.Objects[i]);
     if Result.Transaction <> aTransaction then
@@ -195,16 +201,16 @@ begin
   end;
 end;
 
-{ TCacheList }
+{ TFIBQueryCacheList }
 
-constructor TCacheList.Create(AOwner: TComponent);
+constructor TFIBQueryCacheList.Create(AOwner: TComponent);
 begin
   inherited;
   FList := TList.Create;
   FLock := TCriticalSection.Create
 end;
 
-destructor TCacheList.Destroy;
+destructor TFIBQueryCacheList.Destroy;
 var
   i: TFIBListIndex;
 begin
@@ -220,7 +226,7 @@ begin
   end
 end;
 
-function TCacheList.FindCacheForDB(aDataBase: TFIBDataBase): TCacheQueries;
+function TFIBQueryCacheList.FindCacheForDB(aDataBase: TFIBDataBase): TFIBQueryCache;
 var
   i: TFIBListIndex;
 begin
@@ -228,7 +234,7 @@ begin
   try
     for i := 0 to FList.Count - 1 do
     begin
-      Result := TCacheQueries(FList[i]);
+      Result := TFIBQueryCache(FList[i]);
       if Result.FFIBDataBase = aDataBase then
         Exit;
     end;
@@ -238,7 +244,7 @@ begin
   end;
 end;
 
-function TCacheList.GetCacheForDB(aDataBase: TFIBDataBase): TCacheQueries;
+function TFIBQueryCacheList.GetCacheForDB(aDataBase: TFIBDataBase): TFIBQueryCache;
 begin
   FLock.Acquire;
   try
@@ -247,7 +253,7 @@ begin
     begin
       // The cache is freed in Notification when the database is destroyed
       aDataBase.FreeNotification(Self);
-      Result := TCacheQueries.Create(aDataBase);
+      Result := TFIBQueryCache.Create(aDataBase);
       FList.Add(Result);
     end;
   finally
@@ -255,23 +261,23 @@ begin
   end;
 end;
 
-procedure TCacheList.Notification(AComponent: TComponent; Operation: TOperation);
+procedure TFIBQueryCacheList.Notification(AComponent: TComponent; Operation: TOperation);
 begin
   if (Operation = opRemove) and (AComponent is TFIBDataBase) then
     RemoveDataBase(TFIBDataBase(AComponent));
   inherited;
 end;
 
-procedure TCacheList.RemoveDataBase(aDataBase: TFIBDataBase);
+procedure TFIBQueryCacheList.RemoveDataBase(aDataBase: TFIBDataBase);
 var
   i: TFIBListIndex;
 begin
   FLock.Acquire;
   try
     for i := FList.Count - 1 downto 0 do
-      if TCacheQueries(FList[i]).FFIBDataBase = aDataBase then
+      if TFIBQueryCache(FList[i]).FFIBDataBase = aDataBase then
       begin
-        TCacheQueries(FList[i]).Free;
+        TFIBQueryCache(FList[i]).Free;
         FList.Delete(i)
       end;
   finally
@@ -279,9 +285,9 @@ begin
   end
 end;
 
-procedure TCacheList.UnUseQuery(aFIBQuery: TFIBQuery);
+procedure TFIBQueryCacheList.UnUseQuery(aFIBQuery: TFIBQuery);
 var
-  Cache: TCacheQueries;
+  Cache: TFIBQueryCache;
 begin
   if (aFIBQuery = nil) or (aFIBQuery.DataBase = nil) then
     Exit;
@@ -296,7 +302,7 @@ begin
   end;
 end;
 
-function TCacheList.UseQuery(aTransaction: TFIBTransaction; const SQLText: string): TFIBQuery;
+function TFIBQueryCacheList.UseQuery(aTransaction: TFIBTransaction; const SQLText: string): TFIBQuery;
 var
   DB: TFIBDataBase;
 begin
@@ -313,7 +319,7 @@ begin
   Result := UseQuery(DB, aTransaction, SQLText);
 end;
 
-function TCacheList.UseQuery(Database: TFIBDataBase; Transaction: TFIBTransaction; const SQLText: string): TFIBQuery;
+function TFIBQueryCacheList.UseQuery(Database: TFIBDataBase; Transaction: TFIBTransaction; const SQLText: string): TFIBQuery;
 begin
   Result := nil;
   if (Database = nil) or (Transaction = nil) then
@@ -350,13 +356,13 @@ end;
 
 procedure FreeHandleCachedQuery(DB: TFIBDataBase; const SQLText: string);
 var
-  Cache: TCacheQueries;
-  i: integer;
+  Cache: TFIBQueryCache;
+  i: Integer;
 begin
   CacheList.FLock.Acquire;
   try
     Cache := CacheList.FindCacheForDB(DB);
-    if (Cache <> nil) and Cache.FListUnused.Find(FastTrim(SQLText), i) then
+    if (Cache <> nil) and Cache.FListUnused.Find(CacheKey(SQLText), i) then
       TFIBQuery(Cache.FListUnused.Objects[i]).FreeHandle;
   finally
     CacheList.FLock.Release;
@@ -365,7 +371,7 @@ end;
 
 procedure ClearQueryCacheList(DB: TFIBDataBase);
 var
-  Cache: TCacheQueries;
+  Cache: TFIBQueryCache;
 begin
   CacheList.FLock.Acquire;
   try
@@ -379,7 +385,7 @@ end;
 
 initialization
 
-CacheList := TCacheList.Create(nil);
+CacheList := TFIBQueryCacheList.Create(nil);
 
 finalization
 

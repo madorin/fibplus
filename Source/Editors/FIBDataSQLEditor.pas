@@ -31,11 +31,11 @@ uses
   fraDSSQLEdit, uFIBEditorForm;
 
 type
-  TfrmDstSQLedit = class(TFIBEditorCustomForm)
+  TFIBDataSetSQLEditForm = class(TFIBEditorCustomForm)
     Panel1: TPanel;
     btnOK: TBitBtn;
     btnCancel: TBitBtn;
-    fSQLsEdit: TfDSSQLEdit;
+    fSQLsEdit: TFIBDataSetSQLFrame;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
     procedure ReadOptions;
@@ -46,11 +46,9 @@ type
   end;
 
 var
-  frmDstSQLedit: TfrmDstSQLedit;
+  frmDstSQLedit: TFIBDataSetSQLEditForm;
 
-function ShowDSSQLsEdit(aDataSet: TDataSet; var ExitToCodeEditor: integer): boolean;
-function ShowDSSQLEdit(aDataSet: TDataSet; KindSQL: integer; var ExitToCodeEditor: integer): boolean; overload;
-function ShowDSSQLEdit(aDataSet: TDataSet; KindSQL: integer): boolean; overload;
+function ShowDSSQLEdit(aDataSet: TDataSet; KindSQL: Integer; var ExitToCodeEditor: Integer): Boolean;
 
 implementation
 
@@ -62,17 +60,17 @@ uses
 const
   RegFIBSQLEdOptions = 'SQLEditor';
 
-function ShowDSSQLEdit(aDataSet: TDataSet; KindSQL: integer; var ExitToCodeEditor: integer): boolean;
+function ShowDSSQLEdit(aDataSet: TDataSet; KindSQL: Integer; var ExitToCodeEditor: Integer): Boolean;
 var
-  ForceClose: boolean;
-  Modified: boolean;
+  ForceClose: Boolean;
+  Modified: Boolean;
 begin
-  frmDstSQLedit := TfrmDstSQLedit.Create(Application);
+  frmDstSQLedit := TFIBDataSetSQLEditForm.Create(Application);
   with frmDstSQLedit do
   begin
     with fSQLsEdit do
     begin
-      vDataSet := aDataSet;
+      FDataSet := aDataSet;
       PrepareFrame(TComponent(GetObjectProp(aDataSet, 'Database')), TStrings(GetObjectProp(aDataSet, 'SelectSQL')).Text,
         TStrings(GetObjectProp(aDataSet, 'InsertSQL')).Text, TStrings(GetObjectProp(aDataSet, 'UpdateSQL')).Text,
         TStrings(GetObjectProp(aDataSet, 'DeleteSQL')).Text, TStrings(GetObjectProp(aDataSet, 'RefreshSQL')).Text);
@@ -106,7 +104,6 @@ begin
       Modified := TStrings(GetObjectProp(aDataSet, 'SelectSQL')).Text <> fSQLsEdit.SelectSQLEdit.SQLText;
       if Modified then
         AssignStringsToProp(aDataSet, 'SelectSQL', fSQLsEdit.SelectSQLEdit.SQLText);
-      // aDataSet.SelectSQL.Text:=fSQLsEdit.SelectSQLEdit.SQLText;
       if TStrings(GetObjectProp(aDataSet, 'InsertSQL')).Text <> fSQLsEdit.FInsertSQL then
       begin
         AssignStringsToProp(aDataSet, 'InsertSQL', fSQLsEdit.FInsertSQL);
@@ -137,40 +134,28 @@ begin
   end;
 end;
 
-function ShowDSSQLsEdit(aDataSet: TDataSet; var ExitToCodeEditor: integer): boolean;
-begin
-  Result := ShowDSSQLEdit(aDataSet, 0, ExitToCodeEditor);
-end;
-
-function ShowDSSQLEdit(aDataSet: TDataSet; KindSQL: integer): boolean;
-var
-  ExitToCodeEditor: integer;
-begin
-  Result := ShowDSSQLEdit(aDataSet, 0, ExitToCodeEditor);
-end;
-
-procedure TfrmDstSQLedit.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TFIBDataSetSQLEditForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   SaveOptions;
 end;
 
-procedure TfrmDstSQLedit.ReadOptions;
+procedure TFIBDataSetSQLEditForm.ReadOptions;
 
 {$IFNDEF NO_REGISTRY}
 var
-  v: Variant;
+  OriginsValue: Variant;
 {$ENDIF}
 begin
 {$IFNDEF NO_REGISTRY}
-  v := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBSQLEdOptions], ['Origins']);
-  if VarIsArray(v) and Boolean(v[1, 0]) then
-    fSQLsEdit.chFieldOrigin.Checked := v[0, 0];
+  OriginsValue := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBSQLEdOptions], ['Origins']);
+  if VarIsArray(OriginsValue) and Boolean(OriginsValue[1, 0]) then
+    fSQLsEdit.chFieldOrigin.Checked := OriginsValue[0, 0];
   fSQLsEdit.ReadOptions;
 
 {$ENDIF}
 end;
 
-procedure TfrmDstSQLedit.SaveOptions;
+procedure TFIBDataSetSQLEditForm.SaveOptions;
 begin
 {$IFNDEF NO_REGISTRY}
   DefWriteToRegistry(['Software', RegFIBRoot, RegFIBSQLEdOptions], ['Origins'], [fSQLsEdit.chFieldOrigin.Checked]);
@@ -193,19 +178,19 @@ begin
 {$ENDIF}
 end;
 
-procedure TfrmDstSQLedit.SaveFieldsOrigins(aDataSet: TDataSet);
+procedure TFIBDataSetSQLEditForm.SaveFieldsOrigins(aDataSet: TDataSet);
 var
-  i: integer;
-  vConnected: boolean;
+  i: Integer;
+  DatabaseConnected: Boolean;
   ids: IFIBDataSet;
 begin
   with aDataSet do
   begin
     if HasDefaultFields(aDataSet) or (not Active and (FieldCount = 0)) then
       Exit;
-    vConnected := Assigned(GetObjectProp(aDataSet, 'Database')) and
+    DatabaseConnected := Assigned(GetObjectProp(aDataSet, 'Database')) and
       GetPropValue(GetObjectProp(aDataSet, 'Database'), 'Connected');
-    if not vConnected then
+    if not DatabaseConnected then
       Exit;
     if ObjSupports(aDataSet, IFIBDataSet, ids) then
       for i := 0 to Pred(FieldCount) do

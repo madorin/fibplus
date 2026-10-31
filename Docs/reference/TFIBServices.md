@@ -79,21 +79,21 @@ Common base class. It owns the connection to the service manager. It does not st
 |------|------|---------|-------------|
 | `Active` | `Boolean` | `False` | `True` while attached. Setting it calls `Attach` or `Detach`. While the form loads, the value is applied after loading; at design time an error is shown instead of raised. |
 | `ServerName` | `string` | | Server host. Setting a name while `Protocol` is `Local` changes `Protocol` to `TCP`; clearing it changes `Protocol` to `Local`. Raises when the component is attached. |
-| `Protocol` | `TProtocol` | `Local` | `TCP`, `SPX`, `NamedPipe`, or `Local`. Setting `Local` clears `ServerName`. Raises when the component is attached. |
+| `Protocol` | `TFIBProtocol` | `Local` | `TCP`, `SPX`, `NamedPipe`, or `Local`. Setting `Local` clears `ServerName`. Raises when the component is attached. |
 | `LibraryName` | `string` | the default client library | Client library to load. Stored in the form only when changed. Raises when the component is attached. |
 | `Params` | `TStrings` | | Service parameters as `name=value` lines, see [Params](#params). Raises on change when the component is attached. |
 | `LoginPrompt` | `Boolean` | `True` | Ask for the login on `Attach`, see [Login](#login). |
 | `OnAttach` | `TNotifyEvent` | | After a successful `Attach`. |
-| `OnLogin` | `TLoginEvent` | | Called before `Attach` when `LoginPrompt` is `True`. Receives a copy of `Params` that the handler can change. |
+| `OnLogin` | `TFIBServiceLoginEvent` | | Called before `Attach` when `LoginPrompt` is `True`. Receives a copy of `Params` that the handler can change. |
 
-`TLoginEvent` is `procedure(Database: TFIBCustomService; LoginParams: TStrings) of object`.
+`TFIBServiceLoginEvent` is `procedure(Database: TFIBCustomService; LoginParams: TStrings) of object`.
 
 ### Run-time properties
 
 | Name | Type | Description |
 |------|------|-------------|
 | `Handle` | `TISC_SVC_HANDLE` | Native service handle; `nil` when not attached. |
-| `ClientLibrary` | `IIBClientLibrary` | Loaded client library; `nil` until the first call that needs it. |
+| `ClientLibrary` | `IFIBClientLibrary` | Loaded client library; `nil` until the first call that needs it. |
 | `ServiceParamBySPB[Idx]` | `String` | Value of a service parameter by its index in `SPBConstantNames`. Reading returns an empty string when the parameter is missing. Writing an empty string removes it. |
 | `SSPB` | `PAnsiChar` | The service parameter buffer built from `Params`. |
 
@@ -147,7 +147,7 @@ Reads information about the server through service queries.
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `Options` | `TPropertyOptions` | | Which groups `Fetch` reads: `Database`, `License`, `LicenseMask`, `ConfigParameters`, `Version`. |
+| `Options` | `TFIBServerPropertyOptions` | | Which groups `Fetch` reads: `Database`, `License`, `LicenseMask`, `ConfigParameters`, `Version`. |
 
 ### Run-time properties
 
@@ -155,11 +155,11 @@ Filled by the `Fetch...` methods.
 
 | Name | Type | Description |
 |------|------|-------------|
-| `DatabaseInfo` | `TDatabaseInfo` | `NoOfAttachments`, `NoOfDatabases`, and `DbName`, an array of the attached database names. |
-| `LicenseInfo` | `TLicenseInfo` | `Key`, `Id`, and `Desc` arrays, and `LicensedUsers`. |
-| `LicenseMaskInfo` | `TLicenseMaskInfo` | `LicenseMask` and `CapabilityMask`. |
-| `VersionInfo` | `TVersionInfo` | `ServerVersion`, `ServerImplementation`, and `ServiceVersion`. |
-| `ConfigParams` | `TConfigParams` | `BaseLocation`, `LockFileLocation`, `MessageFileLocation`, `SecurityDatabaseLocation`, and `ConfigFileData` with the `ConfigFileKey` and `ConfigFileValue` arrays. |
+| `DatabaseInfo` | `TFIBServerDatabaseInfo` | `NoOfAttachments`, `NoOfDatabases`, and `DbName`, an array of the attached database names. |
+| `LicenseInfo` | `TFIBLicenseInfo` | `Key`, `Id`, and `Desc` arrays, and `LicensedUsers`. |
+| `LicenseMaskInfo` | `TFIBLicenseMaskInfo` | `LicenseMask` and `CapabilityMask`. |
+| `VersionInfo` | `TFIBServerVersionInfo` | `ServerVersion`, `ServerImplementation`, and `ServiceVersion`. |
+| `ConfigParams` | `TFIBConfigParams` | `BaseLocation`, `LockFileLocation`, `MessageFileLocation`, `SecurityDatabaseLocation`, and `ConfigFileData` with the `ConfigFileKey` and `ConfigFileValue` arrays. |
 
 ### Methods
 
@@ -239,7 +239,7 @@ Changes database properties. There is no `ServiceStart` for this class; it raise
 
 | Name | Description |
 |------|-------------|
-| `ShutdownDatabase(Options, Wait)` | Shut the database down. `Options` is a `TShutdownMode`: `Forced`, `DenyTransaction`, or `DenyAttachment`. `Wait` is sent with the shutdown request. |
+| `ShutdownDatabase(Options, Wait)` | Shut the database down. `Options` is a `TFIBShutdownMode`: `Forced`, `DenyTransaction`, or `DenyAttachment`. `Wait` is sent with the shutdown request. |
 | `BringDatabaseOnline` | Bring a shut-down database online. |
 | `ActivateShadow` | Activate the database shadow. |
 | `SetSweepInterval(Value)` | Set the sweep interval. |
@@ -261,7 +261,7 @@ Reads the server log. Call `ServiceStart`, then read the lines.
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `OnTextNotify` | `TServiceGetTextNotify` | | See [TFIBControlAndQueryService](#tfibcontrolandqueryservice). |
+| `OnTextNotify` | `TFIBServiceGetTextEvent` | | See [TFIBControlAndQueryService](#tfibcontrolandqueryservice). |
 
 ## TFIBStatisticalService
 
@@ -276,11 +276,11 @@ Returns database statistics as text.
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | `DatabaseName` | `string` | | Database to analyze. Required; `ServiceStart` raises `feStartParamsError` when empty. |
-| `Options` | `TStatOptions` | | What to report, see below. |
+| `Options` | `TFIBStatisticsOptions` | | What to report, see below. |
 | `TableNames` | `String` | | Table names, sent only when `StatTables` is in `Options`. |
-| `OnTextNotify` | `TServiceGetTextNotify` | | See [TFIBControlAndQueryService](#tfibcontrolandqueryservice). |
+| `OnTextNotify` | `TFIBServiceGetTextEvent` | | See [TFIBControlAndQueryService](#tfibcontrolandqueryservice). |
 
-`TStatOption` values and the server flag each one sets:
+`TFIBStatisticsOption` values and the server flag each one sets:
 
 | Value | Flag |
 |-------|------|
@@ -307,12 +307,12 @@ Backs up a database with the server's backup service.
 | `DatabaseName` | `string` | | Database to back up. Required; `ServiceStart` raises `feStartParamsError` when empty. |
 | `BackupFile` | `TStrings` | | Backup files, one per line. A line is a file name. A line `name=length` also sends a file length. Empty lines are skipped. |
 | `BlockingFactor` | `Integer` | | Blocking factor. Sent only when greater than `0`. |
-| `Options` | `TBackupOptions` | | Backup flags, see below. |
+| `Options` | `TFIBBackupOptions` | | Backup flags, see below. |
 | `ParallelWorkers` | `Integer` | `0` | *Firebird 5+*. Parallel workers for the backup. Sent only when greater than `0`; the server limits it to `MaxParallelWorkers`. |
 | `Verbose` | `Boolean` | `False` | Ask the server to list each step in the output. |
-| `OnTextNotify` | `TServiceGetTextNotify` | | See [TFIBControlAndQueryService](#tfibcontrolandqueryservice). |
+| `OnTextNotify` | `TFIBServiceGetTextEvent` | | See [TFIBControlAndQueryService](#tfibcontrolandqueryservice). |
 
-`TBackupOption` values and the server flag each one sets:
+`TFIBBackupOption` values and the server flag each one sets:
 
 | Value | Flag |
 |-------|------|
@@ -341,12 +341,12 @@ Restores a database from a backup with the server's restore service.
 | `PageSize` | `Integer` | `0` | Page size of the new database. Sent only when greater than `0`; the default `0` keeps the page size of the backup, as gbak without `-page`. |
 | `PageBuffers` | `Integer` | | Page buffers. Sent only when greater than `0`. |
 | `FixCharset` | `string` | | Character set name for `FixFssMetadata` and `FixFssData`. Both flags are sent only when this is not empty. |
-| `Options` | `TRestoreOptions` | `[CreateNewDB]` | Restore flags, see below. |
+| `Options` | `TFIBRestoreOptions` | `[CreateNewDB]` | Restore flags, see below. |
 | `ParallelWorkers` | `Integer` | `0` | *Firebird 5+*. Parallel workers for the restore. Sent only when greater than `0`; the server limits it to `MaxParallelWorkers`. |
 | `Verbose` | `Boolean` | `False` | Ask the server to list each step in the output. |
-| `OnTextNotify` | `TServiceGetTextNotify` | | See [TFIBControlAndQueryService](#tfibcontrolandqueryservice). |
+| `OnTextNotify` | `TFIBServiceGetTextEvent` | | See [TFIBControlAndQueryService](#tfibcontrolandqueryservice). |
 
-`TRestoreOption` values and the server flag each one sets:
+`TFIBRestoreOption` values and the server flag each one sets:
 
 | Value | Flag |
 |-------|------|
@@ -418,12 +418,12 @@ Validates and repairs a database, sweeps it, and lists or resolves limbo transac
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | `DatabaseName` | `string` | | Database to check. Required; `ServiceStart` raises `feStartParamsError` when empty. |
-| `Options` | `TValidateOptions` | | Validation flags, see below. |
+| `Options` | `TFIBValidateOptions` | | Validation flags, see below. |
 | `ParallelWorkers` | `Integer` | `0` | *Firebird 5+*. Parallel workers for the sweep. Sent only when greater than `0` and `SweepDB` is in `Options`; the server limits it to `MaxParallelWorkers`. |
-| `GlobalAction` | `TTransactionGlobalAction` | | How `FixLimboTransactionErrors` treats the listed transactions: `CommitGlobal`, `RollbackGlobal`, `RecoverTwoPhaseGlobal`, or `NoGlobalAction`. |
-| `OnTextNotify` | `TServiceGetTextNotify` | | See [TFIBControlAndQueryService](#tfibcontrolandqueryservice). |
+| `GlobalAction` | `TFIBLimboGlobalAction` | | How `FixLimboTransactionErrors` treats the listed transactions: `CommitGlobal`, `RollbackGlobal`, `RecoverTwoPhaseGlobal`, or `NoGlobalAction`. |
+| `OnTextNotify` | `TFIBServiceGetTextEvent` | | See [TFIBControlAndQueryService](#tfibcontrolandqueryservice). |
 
-`TValidateOption` values and the server flag each one sets:
+`TFIBValidateOption` values and the server flag each one sets:
 
 | Value | Flag |
 |-------|------|
@@ -440,12 +440,12 @@ Validates and repairs a database, sweeps it, and lists or resolves limbo transac
 
 | Name | Type | Description |
 |------|------|-------------|
-| `LimboTransactionInfo[Index]` | `TLimboTransactionInfo` | One limbo transaction. An `Index` out of range raises `EListError`. |
+| `LimboTransactionInfo[Index]` | `TFIBLimboTransactionInfo` | One limbo transaction. An `Index` out of range raises `EListError`. |
 | `LimboTransactionInfoCount` | `Integer` | Number of entries read by `FetchLimboTransactionInfo`. |
 | `FetchLimboTransactionInfo` | method | Read the limbo transactions from the server. When the reply can't be parsed, it raises and the list is left empty. |
 | `FixLimboTransactionErrors` | method | Start a repair of the listed transactions. With `NoGlobalAction`, each entry uses its own `Action`. `CommitGlobal` commits all, `RollbackGlobal` rolls back all, and `RecoverTwoPhaseGlobal` sends them to two-phase recovery (`isc_spb_rpr_recover_two_phase`). |
 
-`TLimboTransactionInfo` fields: `MultiDatabase`, `Id`, `HostSite`, `RemoteSite`, `RemoteDatabasePath`, `State` (`LimboState`, `CommitState`, `RollbackState`, `UnknownState`), `Advise` (`CommitAdvise`, `RollbackAdvise`, `UnknownAdvise`), and `Action` (`CommitAction`, `RollbackAction`). `HostSite`, `RemoteSite`, `RemoteDatabasePath`, `State`, and `Advise` are filled only for multi-database transactions. Without an advice, `Action` is `CommitAction`.
+`TFIBLimboTransactionInfo` fields: `MultiDatabase`, `Id`, `HostSite`, `RemoteSite`, `RemoteDatabasePath`, `State` (`LimboState`, `CommitState`, `RollbackState`, `UnknownState`), `Advise` (`CommitAdvise`, `RollbackAdvise`, `UnknownAdvise`), and `Action` (`CommitAction`, `RollbackAction`). `HostSite`, `RemoteSite`, `RemoteDatabasePath`, `State`, and `Advise` are filled only for multi-database transactions. Without an advice, `Action` is `CommitAction`.
 
 ## TFIBSecurityService
 
@@ -476,7 +476,7 @@ end;
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `SecurityAction` | `TSecurityAction` | | `ActionAddUser`, `ActionDeleteUser`, `ActionModifyUser`, or `ActionDisplayUser`. The methods below set it. Setting `ActionDeleteUser` clears `FirstName`, `MiddleName`, `LastName`, `UserID`, `GroupID`, `Password`, and `SecAdmin`. |
+| `SecurityAction` | `TFIBSecurityAction` | | `ActionAddUser`, `ActionDeleteUser`, `ActionModifyUser`, or `ActionDisplayUser`. The methods below set it. Setting `ActionDeleteUser` clears `FirstName`, `MiddleName`, `LastName`, `UserID`, `GroupID`, `Password`, and `SecAdmin`. |
 | `UserName` | `string` | | User to add, delete, or modify. Required for those actions. A name with a space is rejected when adding. |
 | `SQlRole` | `string` | | SQL role sent with the action. Also the role for `DisplayUsers`. |
 | `FirstName`, `MiddleName`, `LastName` | `string` | | Name parts. |
@@ -495,7 +495,7 @@ Text values are sent in the system code page, which a *Firebird 3+* client libra
 | `DeleteUser` | method | Delete the user `UserName`. |
 | `DisplayUsers` | method | Read all users into `UserInfo`. Uses `SQlRole`. |
 | `DisplayUser(UserName)` | method | Read one user into `UserInfo`. |
-| `UserInfo[Index]` | `TUserInfo` | One user: `UserName`, `FirstName`, `MiddleName`, `LastName`, `GroupID`, `UserID`. An `Index` out of range raises `EListError`. |
+| `UserInfo[Index]` | `TFIBUserInfo` | One user: `UserName`, `FirstName`, `MiddleName`, `LastName`, `GroupID`, `UserID`. An `Index` out of range raises `EListError`. |
 | `UserInfoCount` | `Integer` | Number of users read. |
 
 ## See also

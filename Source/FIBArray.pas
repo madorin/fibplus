@@ -27,11 +27,11 @@ uses
 {$IFDEF SUPPORT_ARRAY_FIELD}
 type
   // Not TISC_ARRAY_BOUND: its 16-bit bounds can't hold every INTEGER bound of the column
-  TArrayBound = record
+  TFIBArrayBound = record
     Lower, Upper: Integer;
   end;
 
-  TArrayBounds = array of TArrayBound;
+  TFIBArrayBounds = array of TFIBArrayBound;
 
   // Array column through slices with an own SDL: full names, not cut like in ISC_ARRAY_DESC
   TFIBArray = class
@@ -48,7 +48,7 @@ type
     // of string elements, as fields get it; -1 (InterBase): not in the SDL
     FElementCharSetID: Integer;
     FElementCodePage: Word;
-    FBounds: TArrayBounds;
+    FBounds: TFIBArrayBounds;
     // SDL up to the bounds: element type and names, the same for every slice
     FSDLHeader: AnsiString;
     FArraySDL: AnsiString;
@@ -57,11 +57,11 @@ type
     function SDLCodePage: Word;
     function SDLName(const Name: string): AnsiString;
     function SDLHeader: AnsiString;
-    function SliceSDL(const Bounds: TArrayBounds): AnsiString;
-    function SliceSize(const Bounds: TArrayBounds): Integer;
+    function SliceSDL(const Bounds: TFIBArrayBounds): AnsiString;
+    function SliceSize(const Bounds: TFIBArrayBounds): Integer;
     function ElementSize: Integer;
     function CharPad: AnsiChar;
-    function ElementBounds(const Indexes: array of Integer): TArrayBounds;
+    function ElementBounds(const Indexes: array of Integer): TFIBArrayBounds;
     function ElementOffset(const Indexes: array of Integer): Integer;
     function ReadElement(P: PAnsiChar): Variant;
     procedure WriteElement(const Value: Variant; P: PAnsiChar);
@@ -79,9 +79,9 @@ type
     // Read for this column on the current connection
     function Matches(Database: TFIBDatabase; const ATableName, AFieldName: string): Boolean;
     // for FIBQuery: the array with the ID in ArrayID
-    function GetArrayValues(ArrayID: TDataBuffer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;
-    function GetElement(ArrayID: TDataBuffer; const Indexes: array of Integer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;
-    procedure SetArrayValue(const Value: Variant; var ArrayID: TDataBuffer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE);
+    function GetArrayValues(ArrayID: TFIBDataBuffer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;
+    function GetElement(ArrayID: TFIBDataBuffer; const Indexes: array of Integer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;
+    procedure SetArrayValue(const Value: Variant; var ArrayID: TFIBDataBuffer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE);
     // Whole array in a buffer of ArraySize bytes, with the layout of the slice calls
     procedure InitBuffer(Buffer: PAnsiChar);
     function BufferToVariant(Buffer: PAnsiChar): Variant;
@@ -104,6 +104,13 @@ type
     property ArraySize: Integer read GetArraySize;
     property Scale: Byte read GetScale;
   end;
+{$ENDIF}
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+{$IFDEF SUPPORT_ARRAY_FIELD}
+  TArrayBound = TFIBArrayBound deprecated 'Use TFIBArrayBound';
+  TArrayBounds = TFIBArrayBounds deprecated 'Use TFIBArrayBounds';
 {$ENDIF}
 
 implementation
@@ -134,13 +141,17 @@ begin
   Result := False;
 end;
 
-function VariantToDecimal(const Value: Variant): TFBDecimal;
+function VariantToDecimal(const Value: Variant): TFIBDecimal;
 var
   C: Currency;
   S: string;
 begin
   case VarType(Value) of
     varShortInt, varByte, varSmallint, varWord, varInteger, varLongWord, varInt64: Result := Int64ToFBDecimal(Value);
+    // all the digits, not through Double
+    varUInt64:
+      if not StrToFBDecimal(VarToStr(Value), Result) then
+        Result := DoubleToFBDecimal(Value);
     varCurrency:
       begin
         C := Value;
@@ -163,7 +174,7 @@ end;
 // Value * 10^-Scale rounded half away from zero
 function VariantToScaled(const Value: Variant; Scale: Integer; out Res: Int64): Boolean;
 var
-  D: TFBDecimal;
+  D: TFIBDecimal;
 begin
   D := FBDecimalRescale(VariantToDecimal(Value), Scale);
   Result := D.Kind = dkFinite;
@@ -362,7 +373,7 @@ begin
     + RelationName + AnsiChar(isc_sdl_field) + AnsiChar(Length(FieldName)) + FieldName;
 end;
 
-function TFIBArray.SliceSDL(const Bounds: TArrayBounds): AnsiString;
+function TFIBArray.SliceSDL(const Bounds: TFIBArrayBounds): AnsiString;
 var
   SDL: AnsiString;
 
@@ -428,7 +439,7 @@ begin
   Result := SDL;
 end;
 
-function TFIBArray.SliceSize(const Bounds: TArrayBounds): Integer;
+function TFIBArray.SliceSize(const Bounds: TFIBArrayBounds): Integer;
 var
   i: NativeInt;
 begin
@@ -453,7 +464,7 @@ begin
     Result := ' ';
 end;
 
-function TFIBArray.ElementBounds(const Indexes: array of Integer): TArrayBounds;
+function TFIBArray.ElementBounds(const Indexes: array of Integer): TFIBArrayBounds;
 var
   i: Integer;
 begin
@@ -609,6 +620,7 @@ end;
 
 procedure TFIBArray.WriteElement(const Value: Variant; P: PAnsiChar);
 var
+  L: Integer;
   S: AnsiString;
   i: Int64;
   TS: TTimeStamp;
@@ -627,6 +639,14 @@ begin
     blr_text, blr_varying:
       begin
         S := EncodeString(VarToStr(Value), FElementCodePage);
+        // blanks beyond the length are dropped, as the server does
+        if Length(S) > FElementLength then
+        begin
+          L := Length(S);
+          while (L > FElementLength) and (S[L] = ' ') do
+            Dec(L);
+          SetLength(S, L);
+        end;
         if Length(S) > FElementLength then
           FIBError(feArrayStringTooLong,
             [FTableName, FFieldName, VarToStr(Value), FElementLength]);
@@ -791,9 +811,9 @@ begin
     TRHandle, @ID, Short(Length(FArraySDL)), PAnsiChar(FArraySDL), 0, nil, ArraySize, Pointer(Buffer)));
 end;
 
-function TFIBArray.GetArrayValues(ArrayID: TDataBuffer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;
+function TFIBArray.GetArrayValues(ArrayID: TFIBDataBuffer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE): Variant;
 var
-  Buffer: TDataBuffer;
+  Buffer: TFIBDataBuffer;
 begin
   Buffer := nil;
   FIBAlloc(Buffer, 0, ArraySize + 1);
@@ -807,12 +827,12 @@ begin
   end;
 end;
 
-function TFIBArray.GetElement(ArrayID: TDataBuffer;
+function TFIBArray.GetElement(ArrayID: TFIBDataBuffer;
   const Indexes: array of Integer; DBHandle: PISC_DB_HANDLE;
   TRHandle: PISC_TR_HANDLE): Variant;
 var
   SDL: AnsiString;
-  Buffer: TDataBuffer;
+  Buffer: TFIBDataBuffer;
 begin
   SDL := SliceSDL(ElementBounds(Indexes));
   Buffer := nil;
@@ -827,9 +847,9 @@ begin
   end;
 end;
 
-procedure TFIBArray.SetArrayValue(const Value: Variant; var ArrayID: TDataBuffer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE);
+procedure TFIBArray.SetArrayValue(const Value: Variant; var ArrayID: TFIBDataBuffer; DBHandle: PISC_DB_HANDLE; TRHandle: PISC_TR_HANDLE);
 var
-  Buffer: TDataBuffer;
+  Buffer: TFIBDataBuffer;
 begin
   Buffer := nil;
   FIBAlloc(Buffer, 0, ArraySize + 1);

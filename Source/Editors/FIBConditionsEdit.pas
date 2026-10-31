@@ -30,15 +30,15 @@ uses
   fraConditionsEdit, uFIBEditorForm;
 
 type
-  TfrmEditCheckStrings = class(TFIBEditorCustomForm)
-    fraEdConditions1: TfraEdConditions;
+  TFIBConditionsForm = class(TFIBEditorCustomForm)
+    fraEdConditions1: TFIBConditionsFrame;
     procedure FormCreate(Sender: TObject);
   private
   public
 
   end;
 
-function EditConditions(Value: TStrings): boolean;
+function EditConditions(Value: TStrings): Boolean;
 
 implementation
 
@@ -47,11 +47,11 @@ uses
 
 {$R *.dfm}
 
-function EditConditions(Value: TStrings): boolean;
+function EditConditions(Value: TStrings): Boolean;
 var
-  frm: TfrmEditCheckStrings;
+  frm: TFIBConditionsForm;
 begin
-  frm := TfrmEditCheckStrings.Create(nil);
+  frm := TFIBConditionsForm.Create(nil);
   with frm do
     try
       fraEdConditions1.PrepareFrame(Value);
@@ -59,18 +59,13 @@ begin
       if Result then
       begin
         fraEdConditions1.ApplyChanges;
-        { Value.Clear;
-          for i:=0 to Pred(ListView1.Items.Count) do
-          begin
-          Value.AddCondition(ListView1.Items[i].Caption,FTexts[i],ListView1.Items[i].Checked)
-          end; }
       end;
     finally
       frm.Free;
     end;
 end;
 
-procedure TfrmEditCheckStrings.FormCreate(Sender: TObject);
+procedure TFIBConditionsForm.FormCreate(Sender: TObject);
 begin
   Caption := FPConditionsCaption;
 end;

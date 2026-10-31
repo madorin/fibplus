@@ -1,4 +1,4 @@
-object fraEdConditions: TfraEdConditions
+object fraEdConditions: TFIBConditionsFrame
   Left = 0
   Top = 0
   Width = 474

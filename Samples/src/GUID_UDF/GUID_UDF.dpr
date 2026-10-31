@@ -13,7 +13,7 @@ library GUID_UDF;
 function CoCreateGuid(out guid: TGUID): HResult; stdcall;
   external 'ole32.dll' name 'CoCreateGuid';
 
-procedure CreateGUID(var i: integer; p: pchar); cdecl; export;
+procedure CreateGUID(var i: Integer; p: PChar); cdecl; export;
 begin
   CoCreateGuid(PGUID(p)^);
 end;

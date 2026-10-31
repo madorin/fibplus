@@ -146,7 +146,7 @@ if not Database.TestConnected then
 
 ```delphi
 procedure TMainForm.DatabaseLostConnect(Database: TFIBDatabase; E: EFIBError;
-  var Actions: TOnLostConnectActions; var DoRaise: Boolean);
+  var Actions: TFIBLostConnectAction; var DoRaise: Boolean);
 begin
   Actions := laWaitRestore;
   DoRaise := False;

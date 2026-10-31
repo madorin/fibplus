@@ -31,7 +31,7 @@ type
     procedure ToolButton1Click(Sender: TObject);
     procedure ToolButton3Click(Sender: TObject);
     procedure ToolButton4Click(Sender: TObject);
-    procedure FIBScripter1BeforeStatementExecute(Sender: TObject; Line, StatementNo: Integer; Desc: TStatementDesc; Statement: TStrings);
+    procedure FIBScripter1BeforeStatementExecute(Sender: TObject; Line, StatementNo: Integer; Desc: TFIBStatementDesc; Statement: TStrings);
     procedure FIBScripter1ExecuteError(Sender: TObject;
       StatementNo, Line: Integer; Statement: TStrings; SQLCode: Integer;
       const Msg: String; var doRollBack, Stop: Boolean);
@@ -39,7 +39,7 @@ type
     procedure ToolButton5Click(Sender: TObject);
     procedure ToolButton6Click(Sender: TObject);
   private
-    procedure SelMemoText(PosBeg, PosEnd: TStmtCoord);
+    procedure SelMemoText(PosBeg, PosEnd: TFIBStatementCoord);
     procedure RefreshTree;
   public
     { Public declarations }
@@ -55,7 +55,7 @@ implementation
 procedure TForm3.RefreshTree;
 var
   i: Integer;
-  stmt: PStatementDesc;
+  stmt: PFIBStatementDesc;
   NodeObjectTypes: array [0 .. 9] of TTreeNode;
 begin
   FIBScripter1.Script := Memo1.Lines;
@@ -122,7 +122,7 @@ begin
 end;
 
 procedure TForm3.FIBScripter1BeforeStatementExecute(Sender: TObject;
-  Line, StatementNo: Integer; Desc: TStatementDesc; Statement: TStrings);
+  Line, StatementNo: Integer; Desc: TFIBStatementDesc; Statement: TStrings);
 begin
   StatusBar1.Panels[0].Text := 'Execute Statement No ' + IntToStr(StatementNo);
   ProgressBar1.Max := FIBScripter1.StatementsCount;
@@ -147,12 +147,12 @@ begin
   if htOnLabel in MyHitTest then
   begin
     if Assigned(TreeView1.Selected) and Assigned(TreeView1.Selected.Data) then
-      with PStatementDesc(TreeView1.Selected.Data)^ do
+      with PFIBStatementDesc(TreeView1.Selected.Data)^ do
         SelMemoText(smdBegin, smdEnd)
   end;
 end;
 
-procedure TForm3.SelMemoText(PosBeg, PosEnd: TStmtCoord);
+procedure TForm3.SelMemoText(PosBeg, PosEnd: TFIBStatementCoord);
 var
   i, SkipChars: Integer;
 begin
@@ -182,7 +182,7 @@ end;
 procedure TForm3.ToolButton6Click(Sender: TObject);
 var
   i: Integer;
-  p: PStatementDesc;
+  p: PFIBStatementDesc;
 begin
   // FIBScripter1.ExecuteFromFile('D:\Data\333.sql')
   FIBScripter1.Script := Memo1.Lines;

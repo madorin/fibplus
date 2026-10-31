@@ -1,4 +1,4 @@
-object frmFields: TfrmFields
+object frmFields: TFIBFieldsInfoForm
   Left = 41
   Top = 183
   Width = 676

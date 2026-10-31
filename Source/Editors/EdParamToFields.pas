@@ -19,7 +19,7 @@ uses
     ;
 
 type
-  TfrmEdParamToFields = class(TFIBEditorCustomForm)
+  TFIBParamsToFieldsForm = class(TFIBEditorCustomForm)
     Memo1: TMemo;
     Panel1: TPanel;
     Button1: TButton;
@@ -44,9 +44,9 @@ type
   end;
 
 var
-  frmEdParamToFields: TfrmEdParamToFields;
+  frmEdParamToFields: TFIBParamsToFieldsForm;
 
-function ShowEdParamToFields(DataSet: TDataSet; CurValues: TStrings): boolean;
+function ShowEdParamToFields(DataSet: TDataSet; CurValues: TStrings): Boolean;
 
 implementation
 
@@ -55,9 +55,9 @@ uses
 
 {$R *.dfm}
 
-function ShowEdParamToFields(DataSet: TDataSet; CurValues: TStrings): boolean;
+function ShowEdParamToFields(DataSet: TDataSet; CurValues: TStrings): Boolean;
 var
-  i: integer;
+  i: Integer;
   ids: IFIBDataSet;
 begin
   if not ObjSupports(DataSet, IFIBDataSet, ids) then
@@ -66,7 +66,7 @@ begin
     Exit;
   end;
 
-  frmEdParamToFields := TfrmEdParamToFields.Create(Application);
+  frmEdParamToFields := TFIBParamsToFieldsForm.Create(Application);
   with frmEdParamToFields do
     try
       Caption := DataSet.Name + ':Params to Fields Links (Values for NewRecord)';
@@ -76,7 +76,6 @@ begin
       for i := 0 to DataSet.FieldCount - 1 do
         lstFields.Items.Add(DataSet.Fields[i].FieldName);
       for i := 0 to ids.ParamCount - 1 do
-        // lstParams.Items.Add(DataSet.Params[i].Name);
         lstParams.Items.Add(ids.ParamName(i));
 
       if lstFields.Items.Count > 0 then
@@ -92,13 +91,13 @@ begin
     end;
 end;
 
-procedure TfrmEdParamToFields.Button3Click(Sender: TObject);
+procedure TFIBParamsToFieldsForm.Button3Click(Sender: TObject);
 begin
   if (lstFields.Items.Count > 0) and (lstParams.Items.Count > 0) then
     Memo1.Lines.Values[lstFields.Items[lstFields.ItemIndex]] := lstParams.Items[lstParams.ItemIndex];
 end;
 
-procedure TfrmEdParamToFields.Button4Click(Sender: TObject);
+procedure TFIBParamsToFieldsForm.Button4Click(Sender: TObject);
 var
   ids: IFIBDataSet;
 begin
@@ -106,7 +105,7 @@ begin
   ids.ParseParamToFieldsLinks(Memo1.Lines);
 end;
 
-procedure TfrmEdParamToFields.Splitter1Moved(Sender: TObject);
+procedure TFIBParamsToFieldsForm.Splitter1Moved(Sender: TObject);
 begin
   Label2.Left := lstFields.Width + 1
 end;

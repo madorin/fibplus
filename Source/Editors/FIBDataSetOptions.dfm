@@ -1,4 +1,4 @@
-object FPDataSetOptionsForm: TFPDataSetOptionsForm
+object FPDataSetOptionsForm: TFIBDataSetOptionsForm
   Left = 278
   Top = 109
   BorderStyle = bsDialog
@@ -220,7 +220,7 @@ object FPDataSetOptionsForm: TFPDataSetOptionsForm
         TabOrder = 4
         OnClick = ch_poTrimCharFieldsClick
       end
-      object ch_psApplyRepositary: TCheckBox
+      object ch_psApplyRepository: TCheckBox
         Tag = 5
         Left = 16
         Top = 96

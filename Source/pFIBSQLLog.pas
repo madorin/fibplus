@@ -10,7 +10,7 @@ type
   TFIBStatisticsParam = FIBSQLLog.TFIBStatisticsParam;
   TFIBStatisticsParams = FIBSQLLog.TFIBStatisticsParams;
   TFIBSQLLogger = FIBSQLLog.TFIBSQLLogger;
-  TSQLLogEvent = FIBSQLLog.TSQLLogEvent;
+  TSQLLogEvent = FIBSQLLog.TFIBSQLLogEvent;
 
 const
   fspExecuteCount = FIBSQLLog.fspExecuteCount;

@@ -27,32 +27,32 @@ uses
 
 type
 
-  TOnApplyUpdateKind = (aukBefore, aukAfter);
+  TFIBApplyUpdateKind = (aukBefore, aukAfter);
 
-  TFIBClientDataSet = class(TClientDataSet, ISQLObject)
+  TFIBClientDataSet = class(TClientDataSet, IFIBParamSource)
   protected
     function ExecuteServerCommand(const Command: string): OleVariant;
     function GetFieldClass(FieldType: TFieldType): TFieldClass; override;
 {$IFNDEF C24}
     procedure DataConvert(Field: TField; Source, Dest: Pointer; ToNative: Boolean); override;
 {$ENDIF}
-    // ISQLObject
-    function ParamCount: integer;
-    function ParamName(ParamIndex: integer): string;
-    function FieldsCount: integer;
-    function FieldExist(const FieldName: string; var FieldIndex: integer): Boolean;
-    function ParamExist(const ParamName: string; var ParamIndex: integer): Boolean;
-    function FieldValue(const FieldName: string; Old: Boolean): variant; overload;
-    function FieldValue(const FieldIndex: integer; Old: Boolean): variant; overload;
-    function ParamValue(const ParamName: string): variant; overload;
-    function ParamValue(const ParamIndex: integer): variant; overload;
-    procedure SetParamValue(const ParamIndex: integer; aValue: variant);
-    function FieldName(FieldIndex: integer): string;
+    // IFIBParamSource
+    function ParamCount: Integer;
+    function ParamName(ParamIndex: Integer): string;
+    function FieldsCount: Integer;
+    function FieldExist(const FieldName: string; var FieldIndex: Integer): Boolean;
+    function ParamExist(const ParamName: string; var ParamIndex: Integer): Boolean;
+    function FieldValue(const FieldName: string; Old: Boolean): Variant; overload;
+    function FieldValue(const FieldIndex: Integer; Old: Boolean): Variant; overload;
+    function ParamValue(const ParamName: string): Variant; overload;
+    function ParamValue(const ParamIndex: Integer): Variant; overload;
+    procedure SetParamValue(const ParamIndex: Integer; aValue: Variant);
+    function FieldName(FieldIndex: Integer): string;
     function IEof: Boolean;
     procedure INext;
     //
   public
-    procedure OpenWP(ParamValues: array of variant);
+    procedure OpenWP(ParamValues: array of Variant);
     procedure Commit;
     procedure RollBack;
     function TransactionIsActive: Boolean;
@@ -78,14 +78,14 @@ type
     function GetAsLargeInt: Largeint; override;
     procedure SetAsLargeInt(Value: Largeint); override;
 {$ENDIF}
-    function GetAsVariant: variant; override;
+    function GetAsVariant: Variant; override;
     procedure SetAsFloat(Value: Double); override;
 
     procedure SetAsExtended(Value: Extended); override;
     procedure SetAsString(const Value: string); override;
     procedure SetAsCurrency(Value: Currency); override;
     procedure SetAsInt64(Value: Int64); virtual;
-    procedure SetVarValue(const Value: variant); override;
+    procedure SetVarValue(const Value: Variant); override;
     procedure GetText(var Text: string; DisplayText: Boolean); override;
   public
     procedure Assign(Source: TPersistent); override;
@@ -100,6 +100,10 @@ type
     procedure UpdateRecord(Source, Delta: TDataSet; BlobsOnly, KeyOnly: Boolean); override;
     function CreateResolver: TCustomResolver; override;
   end;
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TOnApplyUpdateKind = TFIBApplyUpdateKind deprecated 'Use TFIBApplyUpdateKind';
 
 implementation
 
@@ -164,7 +168,7 @@ end;
 // XE3+ converts through the TValueBuffer overload and the field converts the native value itself
 procedure TFIBClientDataSet.DataConvert(Field: TField; Source, Dest: Pointer; ToNative: Boolean);
 var
-  Scale: byte;
+  Scale: Byte;
 begin
   if (Field.DataType <> ftBCD) or (Field.Size = 4) then
     inherited DataConvert(Field, Source, Dest, ToNative)
@@ -177,7 +181,7 @@ begin
 end;
 {$ENDIF}
 
-function TFIBClientDataSet.FieldExist(const FieldName: string; var FieldIndex: integer): Boolean;
+function TFIBClientDataSet.FieldExist(const FieldName: string; var FieldIndex: Integer): Boolean;
 var
   tf: TField;
 begin
@@ -187,17 +191,17 @@ begin
     FieldIndex := tf.Index;
 end;
 
-function TFIBClientDataSet.FieldName(FieldIndex: integer): string;
+function TFIBClientDataSet.FieldName(FieldIndex: Integer): string;
 begin
   Result := Fields[FieldIndex].FieldName;
 end;
 
-function TFIBClientDataSet.FieldsCount: integer;
+function TFIBClientDataSet.FieldsCount: Integer;
 begin
   Result := FieldCount
 end;
 
-function TFIBClientDataSet.FieldValue(const FieldName: string; Old: Boolean): variant;
+function TFIBClientDataSet.FieldValue(const FieldName: string; Old: Boolean): Variant;
 var
   tf: TField;
 begin
@@ -208,7 +212,7 @@ begin
     Result := tf.Value
 end;
 
-function TFIBClientDataSet.FieldValue(const FieldIndex: integer; Old: Boolean): variant;
+function TFIBClientDataSet.FieldValue(const FieldIndex: Integer; Old: Boolean): Variant;
 var
   tf: TField;
 begin
@@ -238,10 +242,10 @@ begin
   Next
 end;
 
-procedure TFIBClientDataSet.OpenWP(ParamValues: array of variant);
+procedure TFIBClientDataSet.OpenWP(ParamValues: array of Variant);
 var
-  i: integer;
-  pc: integer;
+  i: Integer;
+  pc: Integer;
 begin
   // Exec Query with ParamValues
   pc := Params.Count - 1;
@@ -252,12 +256,12 @@ begin
   Open
 end;
 
-function TFIBClientDataSet.ParamCount: integer;
+function TFIBClientDataSet.ParamCount: Integer;
 begin
   Result := Params.Count
 end;
 
-function TFIBClientDataSet.ParamExist(const ParamName: string; var ParamIndex: integer): Boolean;
+function TFIBClientDataSet.ParamExist(const ParamName: string; var ParamIndex: Integer): Boolean;
 var
   par: TParam;
 begin
@@ -267,22 +271,22 @@ begin
     ParamIndex := par.Index
 end;
 
-function TFIBClientDataSet.ParamName(ParamIndex: integer): string;
+function TFIBClientDataSet.ParamName(ParamIndex: Integer): string;
 begin
   Result := Params[ParamIndex].Name;
 end;
 
-function TFIBClientDataSet.ParamValue(const ParamIndex: integer): variant;
+function TFIBClientDataSet.ParamValue(const ParamIndex: Integer): Variant;
 begin
   Result := Params[ParamIndex].Value
 end;
 
-function TFIBClientDataSet.ParamValue(const ParamName: string): variant;
+function TFIBClientDataSet.ParamValue(const ParamName: string): Variant;
 begin
   Result := Params.ParamByName(ParamName).Value
 end;
 
-procedure TFIBClientDataSet.SetParamValue(const ParamIndex: integer; aValue: variant);
+procedure TFIBClientDataSet.SetParamValue(const ParamIndex: Integer; aValue: Variant);
 begin
   Params[ParamIndex].Value := aValue;
 end;
@@ -460,7 +464,7 @@ begin
       Result := '';
 end;
 
-function TFIBClientBCDField.GetAsVariant: variant;
+function TFIBClientBCDField.GetAsVariant: Variant;
 var
   C: Int64;
   CurrencyValue: System.Currency;
@@ -486,7 +490,7 @@ end;
 procedure TFIBClientBCDField.GetText(var Text: string; DisplayText: Boolean);
 var
   Format: TFloatFormat;
-  Digits: integer;
+  Digits: Integer;
   FmtStr: string;
   C: Int64;
 begin
@@ -580,7 +584,7 @@ begin
     SetAsBCD(StrToBcd(Trim(Value)));
 end;
 
-procedure TFIBClientBCDField.SetVarValue(const Value: variant);
+procedure TFIBClientBCDField.SetVarValue(const Value: Variant);
 begin
   case VarType(Value) of
     varEmpty, varNull: Clear;
@@ -614,7 +618,7 @@ function TFIBDataSetProvider.FindRecord(Source, Delta: TDataSet; UpdateMode: TUp
 
   procedure GetFieldList(DataSet: TDataSet; UpdateMode: TUpdateMode; List: TList);
   var
-    i: integer;
+    i: Integer;
   begin
     for i := 0 to DataSet.FieldCount - 1 do
       with DataSet.Fields[i] do
@@ -637,7 +641,7 @@ function TFIBDataSetProvider.FindRecord(Source, Delta: TDataSet; UpdateMode: TUp
 
 var
   i, KeyCount: Integer;
-  KeyValues: variant;
+  KeyValues: Variant;
   Fields: string;
   FieldList: TList;
   IsDelta: LongBool;
@@ -685,7 +689,7 @@ end;
 procedure TFIBDataSetProvider.UpdateRecord(Source, Delta: TDataSet; BlobsOnly, KeyOnly: Boolean);
 var
   Field: TField;
-  i: integer;
+  i: Integer;
   UseUpMode: TUpdateMode;
   BcdValue: TBcd;
 begin
@@ -770,7 +774,7 @@ procedure PutField(Src, Dest: TField); forward;
 
   procedure PutObjectField(Src, Dest: TObjectField);
   var
-    i: integer;
+    i: Integer;
   begin
     if VarIsNull(Src.NewValue) then
       Dest.Clear
@@ -791,7 +795,7 @@ procedure PutField(Src, Dest: TField); forward;
   end;
 
 var
-  i: integer;
+  i: Integer;
   Field: TField;
 begin
   with TUnprotectedUpdateTree(Tree) do

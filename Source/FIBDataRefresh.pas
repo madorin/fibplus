@@ -23,11 +23,11 @@ uses
   SysUtils, Classes, FIBDataSet, DB, FIBQuery, FIBDatabase;
 
 type
-  TChangesCount = packed record
-    cChangesCount: integer; // Commited Changes Count
-    cDeletesCount: integer; // Commited Deletes Count
-    ncChangesCount: integer; // NonCommited Changes Count
-    ncDeletesCount: integer; // NonCommited Deletes Count
+  TFIBChangesCount = packed record
+    cChangesCount: Integer; // Commited Changes Count
+    cDeletesCount: Integer; // Commited Deletes Count
+    ncChangesCount: Integer; // NonCommited Changes Count
+    ncDeletesCount: Integer; // NonCommited Deletes Count
   end;
 
   // For one Table only
@@ -37,13 +37,13 @@ type
     FCommitOrder: Int64; // last commit number
     FCurTransaction: Int64; // For current transaction changes and  RollBack
     FLastTimeReaded: TDateTime;
-    FSQLTextsPrepared: boolean;
-    FExistNonCommitedChanges: boolean;
+    FSQLTextsPrepared: Boolean;
+    FExistNonCommitedChanges: Boolean;
     function GetCurTransaction: Int64;
   private
     // properties
 
-    FReceivedChanges: TChangesCount;
+    FReceivedChanges: TFIBChangesCount;
     FTableName: string;
 
     FQryNonCommitedDelta: TFIBDataSet;
@@ -51,21 +51,21 @@ type
 
     FQryCommitedDelta: TFIBDataSet;
     FQryCommitedDeletes: TFIBDataSet;
-    FBeforeEndTransaction: TEndTrEvent;
-    FAfterEndTransaction: TEndTrEvent;
+    FBeforeEndTransaction: TFIBEndTransactionEvent;
+    FAfterEndTransaction: TFIBEndTransactionEvent;
   private
     FTransaction: TFIBTransaction;
 
     procedure ClearFlags;
     procedure SetCurTransactionID;
-    function GetAllChangesCount: integer;
+    function GetAllChangesCount: Integer;
 
     procedure SetTransaction(const Value: TFIBTransaction);
     procedure AdjustDataSetProperties(ADataSet: TFIBDataSet);
     procedure SetTableName(const Value: string);
     procedure CheckTransaction;
-    procedure DoBeforeEndTransaction(EndingTR: TFIBTransaction; Action: TTransactionAction; Force: boolean);
-    procedure DoAfterEndTransaction(EndingTR: TFIBTransaction; Action: TTransactionAction; Force: boolean);
+    procedure DoBeforeEndTransaction(EndingTR: TFIBTransaction; Action: TFIBTransactionAction; Force: Boolean);
+    procedure DoAfterEndTransaction(EndingTR: TFIBTransaction; Action: TFIBTransactionAction; Force: Boolean);
 
   protected
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
@@ -74,18 +74,18 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-    function IsTransactionCommited(TransID: Int64): boolean;
+    function IsTransactionCommited(TransID: Int64): Boolean;
     procedure ResetStartParams;
     function GetActualCommitNo: Int64;
-    procedure ReceiveDelta(OnlyCurTransactionChanges: boolean = False);
+    procedure ReceiveDelta(OnlyCurTransactionChanges: Boolean = False);
     procedure ApplyDelta(ToDataSet: TFIBDataSet; const KeyFields: string);
-    property ReceivedChanges: TChangesCount read FReceivedChanges;
-    property ChangesCount: integer read GetAllChangesCount;
+    property ReceivedChanges: TFIBChangesCount read FReceivedChanges;
+    property ChangesCount: Integer read GetAllChangesCount;
     property CommitedDelta: TFIBDataSet read FQryCommitedDelta;
     property CommitedDeltaDel: TFIBDataSet read FQryCommitedDeletes;
     property NonCommitedDelta: TFIBDataSet read FQryNonCommitedDelta;
     property NonCommitedDeltaDel: TFIBDataSet read FQryNonCommitedDeletes;
-    property ExistNonCommitedChanges: boolean read FExistNonCommitedChanges;
+    property ExistNonCommitedChanges: Boolean read FExistNonCommitedChanges;
     // Start Params
     property StartCommitNo: Int64 read FCommitOrder write FCommitOrder;
     property CurTransactionID: Int64 read GetCurTransaction;
@@ -93,9 +93,13 @@ type
   published
     property TableName: string read FTableName write SetTableName;
     property Transaction: TFIBTransaction read FTransaction write SetTransaction;
-    property BeforeEndTransaction: TEndTrEvent read FBeforeEndTransaction write FBeforeEndTransaction;
-    property AfterEndTransaction: TEndTrEvent read FAfterEndTransaction write FAfterEndTransaction;
+    property BeforeEndTransaction: TFIBEndTransactionEvent read FBeforeEndTransaction write FBeforeEndTransaction;
+    property AfterEndTransaction: TFIBEndTransactionEvent read FAfterEndTransaction write FAfterEndTransaction;
   end;
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TChangesCount = TFIBChangesCount deprecated 'Use TFIBChangesCount';
 
 implementation
 
@@ -283,7 +287,7 @@ begin
   inherited;
 end;
 
-procedure TFIBTableChangesReader.DoAfterEndTransaction (EndingTR: TFIBTransaction; Action: TTransactionAction; Force: boolean);
+procedure TFIBTableChangesReader.DoAfterEndTransaction (EndingTR: TFIBTransaction; Action: TFIBTransactionAction; Force: Boolean);
 begin
   FLastTimeReaded := 0;
   FCurTransaction := 0;
@@ -292,7 +296,7 @@ begin
     FAfterEndTransaction(EndingTR, Action, Force);
 end;
 
-procedure TFIBTableChangesReader.DoBeforeEndTransaction (EndingTR: TFIBTransaction; Action: TTransactionAction; Force: boolean);
+procedure TFIBTableChangesReader.DoBeforeEndTransaction (EndingTR: TFIBTransaction; Action: TFIBTransactionAction; Force: Boolean);
 begin
   if Action in [TARollback, TARollbackRetaining] then
   begin
@@ -303,7 +307,7 @@ begin
     FBeforeEndTransaction(EndingTR, Action, Force);
 end;
 
-procedure TFIBTableChangesReader.ReceiveDelta(OnlyCurTransactionChanges: boolean = False);
+procedure TFIBTableChangesReader.ReceiveDelta(OnlyCurTransactionChanges: Boolean = False);
 var
   tmpCommitOrder: Int64;
   tmpTime: TDateTime;
@@ -403,7 +407,11 @@ begin
         FTransaction.RemoveEndEvent(DoAfterEndTransaction, tetAfterEndTransaction);
       end;
 
+    if Assigned(FTransaction) then
+      FTransaction.RemoveFreeNotification(Self);
     FTransaction := Value;
+    if Assigned(FTransaction) then
+      FTransaction.FreeNotification(Self);
     if not(csDesigning in ComponentState) then
     begin
       if Assigned(FTransaction) then
@@ -431,7 +439,7 @@ begin
   AdjustDataSetProperties(FQryCommitedDeletes);
 end;
 
-function TFIBTableChangesReader.IsTransactionCommited(TransID: Int64): boolean;
+function TFIBTableChangesReader.IsTransactionCommited(TransID: Int64): Boolean;
 var
   v1: Variant;
 begin
@@ -478,7 +486,7 @@ begin
   end
 end;
 
-function TFIBTableChangesReader.GetAllChangesCount: integer;
+function TFIBTableChangesReader.GetAllChangesCount: Integer;
 begin
   Result := FReceivedChanges.cChangesCount + FReceivedChanges.cDeletesCount +
     FReceivedChanges.ncChangesCount + FReceivedChanges.ncDeletesCount
@@ -515,7 +523,7 @@ begin
   if not FSQLTextsPrepared then
   begin
     BegSQLChanges := 'SELECT * FROM ' + FTableName + ' T' + #13#10'join FIB$TRANSACTIONS TR ON (TR.TRANSACTION_ID=' +
-      'T.FIB$TRANSACTION_ID)';;
+      'T.FIB$TRANSACTION_ID)';
     FQryCommitedDelta.SelectSQL.Text := BegSQLChanges + #13#10'WHERE TR.COMMIT_NO>:FIB$COMMIT_NO';
 
     FQryNonCommitedDelta.SelectSQL.Text := 'SELECT * FROM ' + FTableName +

@@ -23,54 +23,60 @@ uses
   SyncObjs, SysUtils, Classes;
 
 type
-  PMethod = ^TMethod;
+  PFIBMethod = ^TMethod;
 
-  TCallBackList = class(TComponent)
+  TFIBCallbackList = class(TComponent)
   private
     FCallBackList: TList;
     FCS: TCriticalSection;
-    function GetCallBackAddr(Index: integer): PMethod;
-    function GetCount: integer;
+    function GetCallBackAddr(Index: Integer): PFIBMethod;
+    function GetCount: Integer;
   protected
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-    function RegisterCallBack(const Proc: TMethod): integer;
+    function RegisterCallBack(const Proc: TMethod): Integer;
     procedure UnRegisterCallBack(const Proc: TMethod);
     procedure UnRegisterCallBacks(ProcOwner: TObject);
-    procedure Delete(Index: integer);
-    function IndexOfMethod(const Proc: TMethod): integer;
-    property CallBackAddr[Index: integer]: PMethod read GetCallBackAddr;
-    property Count: integer read GetCount;
+    procedure Delete(Index: Integer);
+    function IndexOfMethod(const Proc: TMethod): Integer;
+    property CallBackAddr[Index: Integer]: PFIBMethod read GetCallBackAddr;
+    property Count: Integer read GetCount;
   end;
 
-  TNotifyEventList = class(TCallBackList)
+  TFIBNotifyEventList = class(TFIBCallbackList)
   private
-    function Get(Index: integer): TNotifyEvent;
+    function Get(Index: Integer): TNotifyEvent;
   public
-    function Add(Event: TNotifyEvent): integer;
+    function Add(Event: TNotifyEvent): Integer;
     procedure Remove(Event: TNotifyEvent);
-    property Event[Index: integer]: TNotifyEvent read Get; default;
+    property Event[Index: Integer]: TNotifyEvent read Get; default;
   end;
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  PMethod = PFIBMethod deprecated 'Use PFIBMethod';
+  TCallBackList = TFIBCallbackList deprecated 'Use TFIBCallbackList';
+  TNotifyEventList = TFIBNotifyEventList deprecated 'Use TFIBNotifyEventList';
 
 implementation
 
 uses
   FIBConsts;
 
-{ TCallBackList }
+{ TFIBCallbackList }
 
-constructor TCallBackList.Create(AOwner: TComponent);
+constructor TFIBCallbackList.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FCallBackList := TList.Create;
   FCS := TCriticalSection.Create;
 end;
 
-destructor TCallBackList.Destroy;
+destructor TFIBCallbackList.Destroy;
 var
-  i: integer;
+  i: Integer;
 begin
   for i := 0 to Count - 1 do
     Dispose(FCallBackList[i]);
@@ -79,7 +85,7 @@ begin
   inherited Destroy;
 end;
 
-function TCallBackList.GetCallBackAddr(Index: integer): PMethod;
+function TFIBCallbackList.GetCallBackAddr(Index: Integer): PFIBMethod;
 begin
   if (Index < 0) or (Index >= FCallBackList.Count) then
     Result := nil
@@ -87,9 +93,9 @@ begin
     Result := FCallBackList[Index]
 end;
 
-function TCallBackList.RegisterCallBack(const Proc: TMethod): integer;
+function TFIBCallbackList.RegisterCallBack(const Proc: TMethod): Integer;
 var
-  p: PMethod;
+  p: PFIBMethod;
 begin
   FCS.Acquire;
   try
@@ -108,14 +114,14 @@ begin
   end;
 end;
 
-procedure TCallBackList.UnRegisterCallBack(const Proc: TMethod);
+procedure TFIBCallbackList.UnRegisterCallBack(const Proc: TMethod);
 var
-  i: integer;
+  i: Integer;
 begin
   FCS.Acquire;
   try
     for i := Count - 1 downto 0 do
-      with PMethod(FCallBackList[i])^ do
+      with PFIBMethod(FCallBackList[i])^ do
         if (Code = Proc.Code) and (Data = Proc.Data) then
         begin
           Dispose(FCallBackList[i]);
@@ -127,26 +133,26 @@ begin
   end;
 end;
 
-function TCallBackList.GetCount: integer;
+function TFIBCallbackList.GetCount: Integer;
 begin
   Result := Integer(FCallBackList.Count)
 end;
 
-procedure TCallBackList.Notification(AComponent: TComponent; Operation: TOperation);
+procedure TFIBCallbackList.Notification(AComponent: TComponent; Operation: TOperation);
 begin
   if Operation = opRemove then
     UnRegisterCallBacks(AComponent);
   inherited Notification(AComponent, Operation);
 end;
 
-procedure TCallBackList.UnRegisterCallBacks(ProcOwner: TObject);
+procedure TFIBCallbackList.UnRegisterCallBacks(ProcOwner: TObject);
 var
-  i: integer;
+  i: Integer;
 begin
   FCS.Acquire;
   try
     for i := Count - 1 downto 0 do
-      if TObject(PMethod(FCallBackList[i])^.Data) = ProcOwner then
+      if TObject(PFIBMethod(FCallBackList[i])^.Data) = ProcOwner then
       begin
         Dispose(FCallBackList[i]);
         FCallBackList.Delete(i);
@@ -156,13 +162,13 @@ begin
   end;
 end;
 
-function TCallBackList.IndexOfMethod(const Proc: TMethod): integer;
+function TFIBCallbackList.IndexOfMethod(const Proc: TMethod): Integer;
 var
-  i: integer;
+  i: Integer;
 begin
   Result := -1;
   for i := Count - 1 downto 0 do
-    with PMethod(FCallBackList[i])^ do
+    with PFIBMethod(FCallBackList[i])^ do
       if (Code = Proc.Code) and (Data = Proc.Data) then
       begin
         Result := i;
@@ -170,13 +176,13 @@ begin
       end;
 end;
 
-procedure TCallBackList.Delete(Index: integer);
+procedure TFIBCallbackList.Delete(Index: Integer);
 begin
   FCS.Acquire;
   try
     if (Index >= 0) and (Index < FCallBackList.Count) then
     begin
-      Dispose(PMethod(FCallBackList[Index]));
+      Dispose(PFIBMethod(FCallBackList[Index]));
       FCallBackList.Delete(Index);
     end;
   finally
@@ -184,16 +190,16 @@ begin
   end;
 end;
 
-{ TNotifyEventList }
+{ TFIBNotifyEventList }
 
-function TNotifyEventList.Add(Event: TNotifyEvent): integer;
+function TFIBNotifyEventList.Add(Event: TNotifyEvent): Integer;
 begin
   Result := RegisterCallBack(TMethod(Event));
 end;
 
-function TNotifyEventList.Get(Index: integer): TNotifyEvent;
+function TFIBNotifyEventList.Get(Index: Integer): TNotifyEvent;
 var
-  p: PMethod;
+  p: PFIBMethod;
 begin
   p := CallBackAddr[Index];
   if p <> nil then
@@ -202,7 +208,7 @@ begin
     Result := nil
 end;
 
-procedure TNotifyEventList.Remove(Event: TNotifyEvent);
+procedure TFIBNotifyEventList.Remove(Event: TNotifyEvent);
 begin
   UnRegisterCallBack(TMethod(Event))
 end;

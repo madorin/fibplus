@@ -30,7 +30,7 @@ uses
   uFIBEditorForm, fraConditionsEdit, Variants;
 
 type
-  TfrmEdDataSetInfo = class(TFIBEditorCustomForm)
+  TFIBDataSetInfoForm = class(TFIBEditorCustomForm)
     DataSource1: TDataSource;
     PageControl1: TPageControl;
     TabSheet2: TTabSheet;
@@ -44,7 +44,7 @@ type
     btnSave: TButton;
     TabSheet7: TTabSheet;
     TabSheet8: TTabSheet;
-    fraEdConditions1: TfraEdConditions;
+    fraEdConditions1: TFIBConditionsFrame;
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
@@ -78,7 +78,7 @@ type
     procedure PrepareDatasetProps(var DataSet: TDataSet);
     procedure PrepareComponents(aDatabase: TComponent);
   private
-    FID: integer;
+    FID: Integer;
     FCurCond: TStrings;
     procedure PrepareForm;
   public
@@ -86,7 +86,7 @@ type
   end;
 
 var
-  frmEdDataSetInfo: TfrmEdDataSetInfo;
+  frmEdDataSetInfo: TFIBDataSetInfoForm;
 
 function ChooseDSInfo(ForDataSet: TDataSet): Boolean;
 procedure EditDSInfo(aDatabase: TComponent);
@@ -94,17 +94,9 @@ procedure EditDSInfo(aDatabase: TComponent);
 implementation
 
 uses
-  TypInfo, RTTIRoutines, FIBEditorsConsts, FIBInterfaces, RegFIBEditors
-{$IFDEF USE_SYN_EDIT}
-    SynEdit, SynDBEdit, SynHighlighterSQL
-{$ENDIF}
-    ;
+  TypInfo, RTTIRoutines, FIBEditorsConsts, FIBInterfaces, RegFIBEditors;
 
 {$R *.dfm}
-{$IFDEF USE_SYN_EDIT}
-var
-  SynSQLSyn1: TSynSQLSyn;
-{$ENDIF}
 
 procedure EditDSInfo(aDatabase: TComponent);
 begin
@@ -112,10 +104,9 @@ begin
     Exit;
   if frmEdDataSetInfo = nil then
   begin
-    frmEdDataSetInfo := TfrmEdDataSetInfo.Create(nil);
+    frmEdDataSetInfo := TFIBDataSetInfoForm.Create(nil);
     frmEdDataSetInfo.PrepareForm
   end;
-  // with frmEdDataSetInfo,frmEdDataSetInfo.qryDSInfo do
   with frmEdDataSetInfo do
     try
       PrepareComponents(aDatabase);
@@ -136,27 +127,13 @@ begin
     Exit;
   if frmEdDataSetInfo = nil then
   begin
-    frmEdDataSetInfo := TfrmEdDataSetInfo.Create(nil);
+    frmEdDataSetInfo := TFIBDataSetInfoForm.Create(nil);
     frmEdDataSetInfo.PrepareForm
   end;
   with frmEdDataSetInfo do
     try
       DBCmp := GetObjectProp(ForDataSet, 'Database');
       PrepareComponents(TComponent(DBCmp));
-      { trDSInfo:=
-        TComponentClass(FIBClassesExporter.iGetTransactionClass).Create(frmEdDataSetInfo);
-        SetObjectProp(trDSInfo,'DefaultDataBase',DBCmp);
-
-
-        DataBase         :=ForDataSet.DataBase;
-        trDSInfo.StartTransaction;
-        UpdateTransaction:=trDSInfo;
-        try
-        Prepare;
-        except
-        Update2RepositaryTable(trDSInfo);
-        trDSInfo.CommitRetaining
-        end; }
       qryDSInfo.Open;
       FID := GetPropValue(ForDataSet, 'DataSet_ID', false);
       with qryDSInfo do
@@ -166,7 +143,6 @@ begin
       if Result then
       begin
         SetPropValue(ForDataSet, 'DataSet_ID', qryDSInfo.FieldByName('DS_ID').asInteger);
-        // ListDataSetInfo.ClearDSInfo(ForDataSet);
         if ForDataSet.Active then
         begin
           ForDataSet.Close;
@@ -186,12 +162,11 @@ begin
     end;
 end;
 
-procedure TfrmEdDataSetInfo.PrepareComponents(aDatabase: TComponent);
+procedure TFIBDataSetInfoForm.PrepareComponents(aDatabase: TComponent);
 begin
   Db := aDatabase;
   trDSInfo := expTransactionClass.Create(frmEdDataSetInfo);
   SetObjectProp(trDSInfo, 'DefaultDataBase', aDatabase);
-  // trDSInfo.DefaultDataBase:=aDatabase;
 
   PrepareDatasetProps(qryDSInfo);
   PrepareDatasetProps(qryGenerators);
@@ -226,7 +201,7 @@ begin
   qryDSInfo.Open;
 end;
 
-procedure TfrmEdDataSetInfo.qryDSInfoFilterRecord(DataSet: TDataSet; var Accept: Boolean);
+procedure TFIBDataSetInfoForm.qryDSInfoFilterRecord(DataSet: TDataSet; var Accept: Boolean);
 begin
   Accept := Trim(Edit1.Text) <> '';
   if not Accept then
@@ -235,93 +210,62 @@ begin
   end;
 end;
 
-procedure TfrmEdDataSetInfo.Edit1Change(Sender: TObject);
+procedure TFIBDataSetInfoForm.Edit1Change(Sender: TObject);
 begin
   qryDSInfo.Filtered := Trim(Edit1.Text) <> ''
 end;
 
-procedure TfrmEdDataSetInfo.FormCreate(Sender: TObject);
+procedure TFIBDataSetInfoForm.FormCreate(Sender: TObject);
 begin
   Caption := SEdDataSetInfoCaption;
-  // TabSheet1.Caption := SEdDataSetInfoFields;
   Label1.Caption := SEdDataSetInfoKeyField;
   Label2.Caption := SEdDataSetInfoGenerator;
   GroupBox2.Caption := SEdDataSetInfoFilter;
   Button1.Caption := SOKButton;
   Button2.Caption := SCancelButton;
-{$IFDEF USE_SYN_EDIT}
-  SynSQLSyn1 := TSynSQLSyn.Create(Self);
-  with SynSQLSyn1 do
-  begin
-    DefaultFilter := 'SQL files (*.sql)|*.sql';
-    CommentAttri.Foreground := clBlue;
-    NumberAttri.Foreground := clRed;
-    StringAttri.Background := clInactiveBorder;
-    SQLDialect := sqlInterbase6;
-  end;
-{$ENDIF}
 end;
 
-procedure TfrmEdDataSetInfo.Button1Click(Sender: TObject);
+procedure TFIBDataSetInfoForm.Button1Click(Sender: TObject);
 begin
   qryDSInfoBeforeScroll(qryDSInfo);
   if qryDSInfo.State in [dsEdit, dsInsert] then
     qryDSInfo.Post;
-  // qryDSInfo.UpdateTransaction.CommitRetaining;
 end;
 
-procedure TfrmEdDataSetInfo.Button2Click(Sender: TObject);
+procedure TFIBDataSetInfoForm.Button2Click(Sender: TObject);
 begin
   qryDSInfo.Open;
   qryDSInfo.Locate('DS_ID', FID, []);
 end;
 
-procedure TfrmEdDataSetInfo.btnSaveClick(Sender: TObject);
+procedure TFIBDataSetInfoForm.btnSaveClick(Sender: TObject);
 begin
   if qryDSInfo.State in [dsEdit, dsInsert] then
     qryDSInfo.Post;
 end;
 
-procedure TfrmEdDataSetInfo.qryDSInfoAfterDelete(DataSet: TDataSet);
+procedure TFIBDataSetInfoForm.qryDSInfoAfterDelete(DataSet: TDataSet);
 begin
   btnSave.Enabled := True;
 end;
 
-procedure TfrmEdDataSetInfo.qryDSInfoAfterInsert(DataSet: TDataSet);
+procedure TFIBDataSetInfoForm.qryDSInfoAfterInsert(DataSet: TDataSet);
 begin
   btnSave.Enabled := True;
 end;
 
-{$IFDEF USE_SYN_EDIT}
-type
-  THackDBSynEdit = class(TDBSynEdit);
-{$ENDIF}
-
-procedure TfrmEdDataSetInfo.PrepareForm;
+procedure TFIBDataSetInfoForm.PrepareForm;
 var
-{$IFDEF USE_SYN_EDIT}
-  DBMemo: TDBSynEdit;
-{$ELSE}
   DBMemo: TDBMemo;
-{$ENDIF}
   procedure CreateMemo;
   begin
-{$IFDEF USE_SYN_EDIT}
-    DBMemo := TDBSynEdit.Create(Self);
-{$IFNDEF SYNEDIT_05_2004}
-    DBMemo.OnChange := THackDBSynEdit(DBMemo).NewOnChange;
-{$ENDIF}
-    DBMemo.Highlighter := SynSQLSyn1;
-{$ELSE}
     DBMemo := TDBMemo.Create(Self);
     DBMemo.ScrollBars := ssBoth;
-{$ENDIF}
     DBMemo.DataSource := DataSource1;
     DBMemo.Align := alClient;
   end;
 
 begin
-  // FCurCond:= TConditions.Create(Self);
   FCurCond := TStringList.Create;
   CreateMemo;
   DBMemo.DataField := 'SELECT_SQL';
@@ -345,7 +289,7 @@ begin
 
 end;
 
-procedure TfrmEdDataSetInfo.qryDSInfoAfterScroll(DataSet: TDataSet);
+procedure TFIBDataSetInfoForm.qryDSInfoAfterScroll(DataSet: TDataSet);
 begin
   if Assigned(FCurCond) then
   begin
@@ -354,7 +298,7 @@ begin
   end;
 end;
 
-procedure TfrmEdDataSetInfo.qryDSInfoBeforeScroll(DataSet: TDataSet);
+procedure TFIBDataSetInfoForm.qryDSInfoBeforeScroll(DataSet: TDataSet);
 var
   s: string;
 begin
@@ -370,22 +314,22 @@ begin
   end;
 end;
 
-procedure TfrmEdDataSetInfo.qryDSInfoNewRecord(DataSet: TDataSet);
+procedure TFIBDataSetInfoForm.qryDSInfoNewRecord(DataSet: TDataSet);
 begin
   DataSet.FieldByName('UPDATE_ONLY_MODIFIED_FIELDS').asInteger := 0
 end;
 
-procedure TfrmEdDataSetInfo.Panel2Resize(Sender: TObject);
+procedure TFIBDataSetInfoForm.Panel2Resize(Sender: TObject);
 begin
   DBGrid1.Columns[1].Width := DBGrid1.Width - ScaleToPPI(Self, 90);
 end;
 
-procedure TfrmEdDataSetInfo.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TFIBDataSetInfoForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   FCurCond.Free
 end;
 
-procedure TfrmEdDataSetInfo.PrepareDatasetProps(var DataSet: TDataSet);
+procedure TFIBDataSetInfoForm.PrepareDatasetProps(var DataSet: TDataSet);
 begin
   DataSet := TDataSet(expDatasetClass.Create(frmEdDataSetInfo));
   SetObjectProp(DataSet, 'DataBase', Db);

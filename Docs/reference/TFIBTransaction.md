@@ -48,10 +48,10 @@ Available in the Object Inspector.
 | `DefaultDatabase` | `TFIBDatabase` | | Main database of the transaction. Raises if the transaction is active. |
 | `TRParams` | `TStrings` | lines of `tpbReadCommitted` | Transaction parameters, one per line, exactly as they are sent. See [Transaction parameters](#transaction-parameters) and [Transaction mode](#transaction-mode). Stored in the form only when `TPBMode` is `tpbDefault`. |
 | `Timeout` | `Cardinal` | `0` | Client-side inactivity time in milliseconds. `0` disables it. See [Timeout](#timeout). |
-| `TimeoutAction` | `TTransactionAction` | `TARollback` | How the transaction ends on `Timeout`. Also used when the database disconnects and when the component is destroyed. The design-time default comes from `DefTimeOutAction` in `FIBProps`. See [Types](#types). |
+| `TimeoutAction` | `TFIBTransactionAction` | `TARollback` | How the transaction ends on `Timeout`. Also used when the database disconnects and when the component is destroyed. The design-time default comes from `DefTimeOutAction` in `FIBProps`. See [Types](#types). |
 | `WatchUncommitedUpdates` | `Boolean` | `False` | Track whether the transaction has uncommitted changes, see `HasUncommitedUpdates`. |
-| `CSMonitorSupport` | `TCSMonitorSupport` | | Monitoring support. Only when compiled with `CSMonitor`. |
-| `TPBMode` | `TTPBMode` | `tpbReadCommitted` | Chooses the lines of `TRParams`, see [Transaction mode](#transaction-mode). At design time the initial value of a component dropped on a form comes from `DefTPBMode` in `FIBProps`. |
+| `CSMonitorSupport` | `TFIBCSMonitorSupport` | | Monitoring support. Only when compiled with `CSMonitor`. |
+| `TPBMode` | `TFIBTPBMode` | `tpbReadCommitted` | Chooses the lines of `TRParams`, see [Transaction mode](#transaction-mode). At design time the initial value of a component dropped on a form comes from `DefTPBMode` in `FIBProps`. |
 | `UserKindTransaction` | `string` | `NoUserKind` | Name of a transaction kind, see [Transaction kinds](#transaction-kinds). Stored in the form only when it is not `NoUserKind`. |
 | `About` | `string` | | Library version text. Writing is ignored and the value is not stored. |
 
@@ -158,12 +158,12 @@ Do not change `TRParams` in `BeforeStart` or in `BeforeStartTransaction` of the 
 
 | Type | Values |
 |------|--------|
-| `TTPBMode` | `tpbDefault`, `tpbReadCommitted`, `tpbRepeatableRead`, `tpbReadConsistency` |
-| `TOnSQLExecute` | `procedure(Query: TComponent; SQLType: TFIBSQLTypes) of object` |
-| `TTransactionAction` | `TARollback`, `TARollbackRetaining`, `TACommit`, `TACommitRetaining` |
-| `TTransactionState` | `tsActive`, `tsClosed`, `tsDoRollback`, `tsDoRollbackRetaining`, `tsDoCommit`, `tsDoCommitRetaining`; the `tsDo...` values are set while the transaction is ending |
+| `TFIBTPBMode` | `tpbDefault`, `tpbReadCommitted`, `tpbRepeatableRead`, `tpbReadConsistency` |
+| `TFIBSQLExecuteEvent` | `procedure(Query: TComponent; SQLType: TFIBSQLTypes) of object` |
+| `TFIBTransactionAction` | `TARollback`, `TARollbackRetaining`, `TACommit`, `TACommitRetaining` |
+| `TFIBTransactionState` | `tsActive`, `tsClosed`, `tsDoRollback`, `tsDoRollbackRetaining`, `tsDoCommit`, `tsDoCommitRetaining`; the `tsDo...` values are set while the transaction is ending |
 | `TFIBTransactionEventType` | `tetBeforeStartTransaction`, `tetAfterStartTransaction`, `tetBeforeEndTransaction`, `tetAfterEndTransaction`, `tetBeforeDestroy`; selects the list for `AddEvent` and `AddEndEvent` |
-| `TEndTrEvent` | `procedure(EndingTR: TFIBTransaction; Action: TTransactionAction; Force: Boolean) of object`; `Force` is `True` when the end cannot be refused (timeout, disconnect, destroy) |
+| `TFIBEndTransactionEvent` | `procedure(EndingTR: TFIBTransaction; Action: TFIBTransactionAction; Force: Boolean) of object`; `Force` is `True` when the end cannot be refused (timeout, disconnect, destroy) |
 
 ## Transaction kinds
 
@@ -187,7 +187,7 @@ Setting `UserKindTransaction` at design time, not while the form loads, looks up
 | Name | Type | Description |
 |------|------|-------------|
 | `InTransaction` | `Boolean` | `True` while the transaction has a handle. |
-| `State` | `TTransactionState` | Current state. |
+| `State` | `TFIBTransactionState` | Current state. |
 | `TransactionID` | `Integer` | Server transaction ID; `0` when not started, and while the database is closing or restoring a lost connection. Read from the server on first use. |
 | `HasUncommitedUpdates` | `Boolean` | `True` after a statement changed rows in this transaction. Needs `WatchUncommitedUpdates`. Reset when the transaction ends, including `CommitRetaining` and `RollbackRetaining`. |
 | `Handle` | `TISC_TR_HANDLE` | Native transaction handle. |
@@ -262,7 +262,7 @@ Before the end, the transaction calls the `OnTransactionEnding` hook of every at
 | Name | Description |
 |------|-------------|
 | `AddEvent(Event, EventType)` / `RemoveEvent(Event, EventType)` | Register or remove a `TNotifyEvent` handler. `EventType` is `tetBeforeStartTransaction`, `tetAfterStartTransaction`, or `tetBeforeDestroy`. Other values raise an assertion. |
-| `AddEndEvent(Event, EventType)` / `RemoveEndEvent(Event, EventType)` | Register or remove a `TEndTrEvent` handler. `EventType` is `tetBeforeEndTransaction` or `tetAfterEndTransaction`. |
+| `AddEndEvent(Event, EventType)` / `RemoveEndEvent(Event, EventType)` | Register or remove a `TFIBEndTransactionEvent` handler. `EventType` is `tetBeforeEndTransaction` or `tetAfterEndTransaction`. |
 
 Unlike a published event, these lists take any number of handlers. Components that need to react to a transaction use them.
 

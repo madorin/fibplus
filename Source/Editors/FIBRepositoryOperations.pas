@@ -7,7 +7,7 @@ interface
 uses
   FIBInterfaces;
 
-procedure AdjustFRepositaryTable(DB: IFIBConnect);
+procedure AdjustFieldsRepositoryTable(DB: IFIBConnect);
 procedure CreateErrorRepositoryTable(DB: IFIBConnect);
 procedure CreateDataSetRepositoryTable(DB: IFIBConnect);
 // Length in characters of a column, 0 when it doesn't exist
@@ -70,7 +70,7 @@ begin
   DB.Execute(SQL + 'END');
 end;
 
-procedure AdjustFRepositaryTable(DB: IFIBConnect);
+procedure AdjustFieldsRepositoryTable(DB: IFIBConnect);
 var
   NameLength: Integer;
 begin
@@ -113,7 +113,7 @@ begin
     except
     end;
   end;
-  if DB.QueryValueAsStr(qryExistField, 0, ['FIB$FIELDS_INFO', 'DISPLAY_WIDTH']) = '0' then
+  if DB.QueryValueAsStr(qryExistField, 0, ['FIB$DATASETS_INFO', 'UPDATE_TABLE_NAME']) = '0' then
   begin
     // Adjust2
     try

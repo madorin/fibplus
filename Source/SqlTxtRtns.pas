@@ -24,7 +24,7 @@ uses
 
 type
 
-  TSQLKind = (
+  TFIBSQLStatementKind = (
     skUnknown,
     skSelect,
     skUpdate,
@@ -35,11 +35,10 @@ type
     skExecuteBlock,
     skUpdateOrInsert
   );
-  TParserState = (sNormal, sQuote, sComment, sFBComment, sQuoteSingle);
-  TOnScanSQLText = procedure(Position: integer; var StopScan: boolean) of object;
-  TChars = set of AnsiChar;
+  TFIBSQLScanState = (sNormal, sQuote, sComment, sFBComment, sQuoteSingle);
+  TFIBScanSQLTextEvent = procedure(Position: Integer; var StopScan: Boolean) of object;
 
-  TSQLSection = (
+  TFIBSQLSection = (
     stUnknown,
     stSelect,
     stFields,
@@ -59,175 +58,166 @@ type
     stForUpdate
   );
 
-  TSQLSections = array of TSQLSection;
+  TFIBSQLSections = array of TFIBSQLSection;
 
-  TSQLParser = class
+  TFIBSQLParser = class
   private
-    FState: TParserState;
-    FCurPos: integer;
-    FResultPos: integer;
-    FBracketOpened: integer;
+    FState: TFIBSQLScanState;
+    FResultPos: Integer;
+    FBracketOpened: Integer;
     FSQLText: string;
-    FLen: integer;
-    FReserved: integer;
-    FReserved1: integer;
-    FScanInBrackets: boolean;
-    FFirstPos: integer;
-    FSQLKind: TSQLKind;
-    FCanParamsCheck: boolean;
+    FLen: Integer;
+    FReserved: Integer;
+    FReserved1: Integer;
+    FScanInBrackets: Boolean;
+    FFirstPos: Integer;
+    FSQLKind: TFIBSQLStatementKind;
+    FCanParamsCheck: Boolean;
     FTables: TStrings;
-    FBracketOpenedBeforeScan: integer;
+    FBracketOpenedBeforeScan: Integer;
+    // the main SELECT, after the WITH clause of a CTE
+    FSelectPos: Integer;
   protected
     procedure SetSQLText(const Value: string);
-    function IsClause(Position: integer; const Clause: string): boolean;
-    function GetSQLKind: TSQLKind;
-    procedure IsOrderBegin(Position: integer; var Yes: boolean);
-    procedure IsGroupBegin(Position: integer; var Yes: boolean);
-    procedure IsByBegin(Position: integer; var Yes: boolean);
-    procedure IsHaving(Position: integer; var Yes: boolean);
-    procedure IsMainOrderBegin(Position: integer; var Yes: boolean);
-    procedure IsMainGroupBegin(Position: integer; var Yes: boolean);
-    procedure IsFromBegin(Position: integer; var Yes: boolean);
-    procedure IsWhereBegin(Position: integer; var Yes: boolean);
-    procedure IsWhereEnd(Position: integer; var Yes: boolean);
+    function IsClause(Position: Integer; const Clause: string): Boolean;
+    function GetSQLKind: TFIBSQLStatementKind;
+    procedure IsOrderBegin(Position: Integer; var Yes: Boolean);
+    procedure IsGroupBegin(Position: Integer; var Yes: Boolean);
+    procedure IsByBegin(Position: Integer; var Yes: Boolean);
+    procedure IsHaving(Position: Integer; var Yes: Boolean);
+    procedure IsMainOrderBegin(Position: Integer; var Yes: Boolean);
+    procedure IsMainGroupBegin(Position: Integer; var Yes: Boolean);
+    procedure IsFromBegin(Position: Integer; var Yes: Boolean);
+    procedure IsWhereBegin(Position: Integer; var Yes: Boolean);
+    procedure IsWhereEnd(Position: Integer; var Yes: Boolean);
 
-    procedure IsMainWhereBegin(Position: integer; var Yes: boolean);
-    procedure IsMainFromBegin(Position: integer; var Yes: boolean);
-    procedure IsFromEnd(Position: integer; var Yes: boolean);
-    procedure IsPlanBegin(Position: integer; var Yes: boolean);
-    procedure IsPlanEnd(Position: integer; var Yes: boolean);
-    procedure IsSetBegin(Position: integer; var Yes: boolean);
-    procedure IsIntoBegin(Position: integer; var Yes: boolean);
-    procedure IsUpdateBegin(Position: integer; var Yes: boolean);
+    procedure IsMainFromBegin(Position: Integer; var Yes: Boolean);
+    procedure IsFromEnd(Position: Integer; var Yes: Boolean);
+    procedure IsOrderEnd(Position: Integer; var Yes: Boolean);
+    procedure IsGroupEnd(Position: Integer; var Yes: Boolean);
+    procedure IsMainSelectBegin(Position: Integer; var Yes: Boolean);
+    procedure IsPlanBegin(Position: Integer; var Yes: Boolean);
+    procedure IsPlanEnd(Position: Integer; var Yes: Boolean);
+    procedure IsIntoBegin(Position: Integer; var Yes: Boolean);
 
-    function IsSelect(Position: integer): boolean;
-    function IsUpdate(Position: integer): boolean;
-    function IsDelete(Position: integer): boolean;
-    function IsInsert(Position: integer): boolean;
-    function IsExecute(Position: integer): boolean;
-    function IsExecuteProc(Position: integer): boolean;
-    function IsExecuteBlock(Position: integer): boolean;
+    function IsSelect(Position: Integer): Boolean;
+    function IsUpdate(Position: Integer): Boolean;
+    function IsDelete(Position: Integer): Boolean;
+    function IsInsert(Position: Integer): Boolean;
+    function IsExecute(Position: Integer): Boolean;
+    function IsExecuteProc(Position: Integer): Boolean;
+    function IsExecuteBlock(Position: Integer): Boolean;
 
-    function IsDDL: boolean;
+    function IsDDL: Boolean;
 
   public
     constructor Create; overload;
     constructor Create(const aSQLText: string); overload;
     destructor Destroy; override;
-    procedure FillMainTables(WithSP: boolean = False);
-    procedure ScanText(FromPosition: integer; Proc: TOnScanSQLText);
+    procedure FillMainTables(WithSP: Boolean = False);
+    procedure ScanText(FromPosition: Integer; Proc: TFIBScanSQLTextEvent);
 
-    function PosInSections(Position: integer): TSQLSections; overload;
-    function PosInSections(ScanFrom, Position: integer; var EndScan: integer): TSQLSections; overload;
+    function PosInSections(Position: Integer): TFIBSQLSections; overload;
+    function PosInSections(ScanFrom, Position: Integer; var EndScan: Integer): TFIBSQLSections; overload;
 
-    function DispositionMainFrom: TPosition;
+    function DispositionMainFrom: TFIBPosition;
     function MainFrom: string;
     function ModifiedTables: string;
 
-    function OrderText(var StartPos, EndPos: integer): string;
+    function OrderText(var StartPos, EndPos: Integer): string;
     function OrderClause: string;
     function SetOrderClause(const Value: string): string;
-    function GetOrderInfo(NullsFirstDef: boolean = False): Variant;
-    function GroupByText(var StartPos, EndPos: integer): string;
+    function GetOrderInfo(NullsFirstDef: Boolean = False): Variant;
+    function GroupByText(var StartPos, EndPos: Integer): string;
     function GroupByClause: string;
     function SetGroupClause(const Value: string): string;
 
     function GetFieldsClause: string;
     function SetFieldsClause(const NewFields: string): string;
 
-    function WhereClause(N: integer; var StartPos, EndPos: integer): string;
-    function SetWhereClause(N: integer; const Value: string): string;
+    function WhereClause(N: Integer; var StartPos, EndPos: Integer): string;
+    function SetWhereClause(N: Integer; const Value: string): string;
     function SetMainWhereClause(const Value: string): string;
-    function MainWhereClause(var StartPos, EndPos: integer): string;
-    function WhereCount: integer;
-    function MainWhereIndex: integer;
-    function AddToMainWhere(const NewClause: string; ForceCLRF: boolean = True): string;
+    function MainWhereClause(var StartPos, EndPos: Integer): string;
+    function WhereCount: Integer;
+    function MainWhereIndex: Integer;
+    function AddToMainWhere(const NewClause: string; ForceLineBreak: Boolean = True): string;
 
-    function PlanCount: integer;
-    function PlanText(N: integer; var StartPos, EndPos: integer): string;
+    function PlanText(N: Integer; var StartPos, EndPos: Integer): string;
 
-    function MainPlanIndex: integer;
-    function MainPlanText(var StartPos, EndPos: integer): string;
+    function MainPlanIndex: Integer;
+    function MainPlanText(var StartPos, EndPos: Integer): string;
     function SetMainPlan(const Text: string): string;
     function GetMainPlan: string;
 
     function RecCountSQLText: string;
-    function GetAllTables(WithSP: boolean = False): TStrings;
+    function GetAllTables(WithSP: Boolean = False): TStrings;
 
-    function GetWord(Position: integer; var StartWord: integer; PartOnly: boolean = False): string;
-    function GetPrevWord(CurPosition: integer; var PosPrevWord: integer): string;
+    function GetWord(Position: Integer; var StartWord: Integer; PartOnly: Boolean = False): string;
+    function GetPrevWord(CurPosition: Integer; var PosPrevWord: Integer): string;
   public
     property SQLText: string read FSQLText write SetSQLText;
-    property Len: integer read FLen write FLen;
-    property FirstPos: integer read FFirstPos;
+    property Len: Integer read FLen write FLen;
+    property FirstPos: Integer read FFirstPos;
     property MainPlanClause: string read GetMainPlan;
-    property SQLKind: TSQLKind read FSQLKind;
-    property CanParamsCheck: boolean read FCanParamsCheck;
+    property SQLKind: TFIBSQLStatementKind read FSQLKind;
+    property CanParamsCheck: Boolean read FCanParamsCheck;
   end;
 
 const
   SpaceStr    = '    ';
   ForceNewStr = #13#10 + SpaceStr;
-  QuotMarks   = #39;
 
-function DispositionFrom(const SQLText: string): TPosition;
-procedure AllSQLTables(SQLText: string; aTables: TStrings; WithSP: boolean = False; WithAliases: boolean = False);
-procedure AllTables(const SQLText: string; aTables: TStrings; WithSP: boolean = False; WithAliases: boolean = False);
+function DispositionFrom(const SQLText: string): TFIBPosition;
+procedure AllSQLTables(SQLText: string; aTables: TStrings; WithSP: Boolean = False; WithAliases: Boolean = False);
+procedure AllTables(const SQLText: string; aTables: TStrings; WithSP: Boolean = False; WithAliases: Boolean = False);
 
 function TableByAlias(const SQLText, Alias: string): string;
 function AliasForTable(const SQLText, TableName: string): string;
 
 function FullFieldName(const SQLText, aFieldName: string): string;
-function FieldNameFromSelect(const SQLText, FieldName: string): string;
-function AddToWhereClause(const SQLText, NewClause: string; ForceCLRF: boolean = True): string;
-function GetWhereClause(const SQLText: string; N: integer; var StartPos, EndPos: integer): string;
-function WhereCount(const SQLText: string): integer;
-function MainWhereIndex(const SQLText: string): integer;
+function AddToWhereClause(const SQLText, NewClause: string; ForceLineBreak: Boolean = True): string;
+function GetWhereClause(const SQLText: string; N: Integer; var StartPos, EndPos: Integer): string;
+function WhereCount(const SQLText: string): Integer;
+function MainWhereIndex(const SQLText: string): Integer;
 function MainFrom(const SQLText: string): string;
 function MainWhereClause(const SQLText: string): string;
-function GetOrderInfo(const SQLText: string; NullsFirstDef: boolean = False): Variant;
-function OrderStringTxt(const SQLText: string; var StartPos, EndPos: integer): string;
+function GetOrderInfo(const SQLText: string; NullsFirstDef: Boolean = False): Variant;
+function OrderStringTxt(const SQLText: string; var StartPos, EndPos: Integer): string;
 
 function SetOrderClause(const SQLText, NewClause: string): string;
 procedure SetOrderString(SQLText: TStrings; const OrderTxt: string);
 //
 
-function PrepareConstraint(Src: TStrings): string;
-
 function CountSelect(const SrcSQL: string): string;
 function FieldsClause(const SrcSQL: string): string;
-function SetFirstClause(const SrcSQL: string; FirstCount: integer): string;
-function GetModifyTable(const SQLText: string; WithAlias: boolean = False): string;
-function GetSQLKind(const SQLText: string): TSQLKind;
+function SetFirstClause(const SrcSQL: string; FirstCount: Integer): string;
+function GetModifyTable(const SQLText: string; WithAlias: Boolean = False): string;
+function GetSQLKind(const SQLText: string): TFIBSQLStatementKind;
 //
 
 function GetLinkFieldName(const SQLText, ParamName: string): string;
-function GetFieldByAlias(const SQLText, FieldName: string): string;
-function IsWhereBeginPos(const SQLText: string; Position: integer): boolean;
-function IsWhereEndPos(const SQLText: string; Position: integer): boolean;
-function PosInSections(const SQLText: string; Position: integer): TSQLSections;
+function IsWhereBeginPos(const SQLText: string; Position: Integer): Boolean;
+function IsWhereEndPos(const SQLText: string; Position: Integer): Boolean;
+function PosInSections(const SQLText: string; Position: Integer): TFIBSQLSections;
 
 function InvertOrderClause(const OrderText: string): string;
-function IsEquelSQLNames(const Name1, Name2: string): boolean;
+function IsEqualSQLNames(const Name1, Name2: string): Boolean;
 
-function CutTableName(const SQLString: string; AliasPosition: integer = 0): string;
-function CutAlias(const SQLString: string; AliasPosition: integer = 0): string;
-function PosAlias(const SQLString: string): integer;
+function CutTableName(const SQLString: string; AliasPosition: Integer = 0): string;
+function CutAlias(const SQLString: string; AliasPosition: Integer = 0): string;
+function PosAlias(const SQLString: string): Integer;
 function FieldNameForSQL(const TableAlias, FieldName: string): string;
-function FieldUsedInClause(const TableAlias, FieldName, Clause: string): boolean;
 
 function ChangeToSQLDecimalSeparator(const Source: string): string;
 function SQLStringLiteral(const S: string): string;
 // x'0A1B...', Firebird 2.5+
 function SQLHexLiteral(const Data; Size: Integer): string;
 function FieldValueToStr(Field: TField; Old: Boolean = False): string;
-{ procedure GetExportDataScript(DataSet:TDataSet; const TableName:string;OutPut:TStrings; UseFieldNames:boolean =True;
-  FieldList:string=''; FileName:string =''
-  ); }
 procedure GetExportDataScript(DataSet: TDataSet; const TableName: string;
-  OutPut: TStrings; UseFieldNames: boolean = True; FieldList: string = '');
+  OutPut: TStrings; UseFieldNames: Boolean = True; FieldList: string = '');
 procedure GetExportDataScriptToFile(DataSet: TDataSet; const TableName: string;
-  const FileName: string; UseFieldNames: boolean = True;
+  const FileName: string; UseFieldNames: Boolean = True;
   FieldList: string = '');
 
 function GenerateInsertRow(DataSet: TDataSet; TableName: string; var fNames: string; FieldList: TList = nil): string;
@@ -240,12 +230,21 @@ const
   UnknownStr = 'UNKNOWN';
 
 function ParseMacroString(const MacroString: string; aMacroChar: Char; var DefValue: string): string;
-function PosClause(const Clause, SQLText: string): integer;
+function PosClause(const Clause, SQLText: string): Integer;
 // True when Source has the uppercase Keyword at Position; only 'a'..'z' also match 'A'..'Z'
 function IsKeywordAt(const Keyword, Source: string; Position: Integer): Boolean;
 
 const
   BeginWhere = ' WHERE ';
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TSQLKind = TFIBSQLStatementKind deprecated 'Use TFIBSQLStatementKind';
+  TOnScanSQLText = TFIBScanSQLTextEvent deprecated 'Use TFIBScanSQLTextEvent';
+  TSQLSection = TFIBSQLSection deprecated 'Use TFIBSQLSection';
+  TSQLSections = TFIBSQLSections deprecated 'Use TFIBSQLSections';
+  TSQLParser = TFIBSQLParser deprecated 'Use TFIBSQLParser';
+  TParserState = TFIBSQLScanState deprecated 'Use TFIBSQLScanState';
 
 implementation
 
@@ -269,23 +268,66 @@ begin
   Result := True;
 end;
 
-function InternalIsClause(const EtalonClause: string; const Source: string; Position: integer): boolean;
+function InternalIsClause(const EtalonClause: string; const Source: string; Position: Integer): Boolean;
 // EtalonClause must be in UpperCase
 var
   LenEtalon: Integer;
 begin
-  if (Position > 1) and not CharInSet(Source[Position - 1], CharsBeforeClause) then
+  // a keyword may also touch a bracket, a comma or a comment: "(select", "select*from", "*/select"
+  if (Position > 1) and not CharInSet(Source[Position - 1], CharsBeforeClause + ['(', ',', '/', '*', ';']) then
     Exit(False);
   Result := IsKeywordAt(EtalonClause, Source, Position);
   LenEtalon := Length(EtalonClause);
   if Result and (Length(Source) - Position >= LenEtalon) then
-    Result := CharInSet(Source[Position + LenEtalon], CharsAfterClause)
+    Result := CharInSet(Source[Position + LenEtalon], CharsAfterClause + ['*', ')', ','])
 end;
 
-procedure SkipCommentsAndBlanks(const SQLText: string; Len: integer; var Position: integer);
+function SkipBlanks(const SQLText: string; Position: Integer): Integer;
+begin
+  Result := Position;
+  while (Result <= Length(SQLText)) and CharInSet(SQLText[Result], [' ', #9, #10, #13]) do
+    Inc(Result);
+end;
+
+// ROWS, OFFSET n ROW(S), FETCH FIRST/NEXT, WITH LOCK, RETURNING: clauses after WHERE, GROUP BY, ORDER BY
+function IsTailClauseAt(const SQLText: string; Position: Integer): Boolean;
+var
+  P: Integer;
+begin
+  Result := False;
+  if (Position < 1) or (Position > Length(SQLText)) then
+    Exit;
+  case SQLText[Position] of
+    'R', 'r':
+      Result := InternalIsClause('ROWS', SQLText, Position) or InternalIsClause('RETURNING', SQLText, Position);
+    'O', 'o':
+      if InternalIsClause('OFFSET', SQLText, Position) then
+      begin
+        P := SkipBlanks(SQLText, Position + 6);
+        while (P <= Length(SQLText)) and not CharInSet(SQLText[P], [' ', #9, #10, #13]) do
+          Inc(P);
+        P := SkipBlanks(SQLText, P);
+        Result := InternalIsClause('ROW', SQLText, P) or InternalIsClause('ROWS', SQLText, P);
+      end;
+    'F', 'f':
+      if InternalIsClause('FETCH', SQLText, Position) then
+      begin
+        P := SkipBlanks(SQLText, Position + 5);
+        Result := InternalIsClause('FIRST', SQLText, P) or InternalIsClause('NEXT', SQLText, P);
+      end;
+    'W', 'w':
+      if InternalIsClause('WITH', SQLText, Position) then
+        Result := InternalIsClause('LOCK', SQLText, SkipBlanks(SQLText, Position + 4));
+  end;
+end;
+
+procedure SkipCommentsAndBlanks(const SQLText: string; Len: Integer; var Position: Integer);
+var
+  Start: Integer;
 begin
   while (Position < Len) and CharInSet(SQLText[Position], CharsAfterClause - ['"']) do
   begin
+    Start := Position;
     while (Position <= Len) and CharInSet(SQLText[Position], (CharsAfterClause - ['/', '-', '"'])) do
       Inc(Position);
     if (Position < Len) and (SQLText[Position] = '-') and (SQLText[Position + 1] = '-') then
@@ -300,18 +342,21 @@ begin
         Inc(Position);
       Inc(Position, 2);
     end;
+    // a '-' or '/' that does not start a comment
+    if Position = Start then
+      Break;
   end;
 end;
 
 function ParseMacroString(const MacroString: string; aMacroChar: Char; var DefValue: string): string;
 var
-  PosDef: integer;
+  PosDef: Integer;
 begin
   // For FIBPlus Macro
   PosDef := PosCh('%', MacroString);
   if PosDef = 0 then
   begin
-    if MacroString[1] = aMacroChar then
+    if (MacroString <> '') and (MacroString[1] = aMacroChar) then
       Result := MacroString
     else
       Result := aMacroChar + MacroString;
@@ -325,12 +370,12 @@ begin
   end;
 end;
 
-function PosClause(const Clause, SQLText: string): integer;
+function PosClause(const Clause, SQLText: string): Integer;
 begin
   Result := PosExtCI(Clause, SQLText, CharsBeforeClause, CharsAfterClause, False);
 end;
 
-function IsEquelSQLNames(const Name1, Name2: string): boolean;
+function IsEqualSQLNames(const Name1, Name2: string): Boolean;
 begin
   if (Length(Name1) > 0) and (Length(Name2) > 0) then
   begin
@@ -354,17 +399,15 @@ begin
     Result := True; // Unknown
 end;
 
-function RemoveSP(const FromStr: string; OnlyArguments: boolean = False): string;
+function RemoveSP(const FromStr: string; OnlyArguments: Boolean = False): string;
 var
-  pBrIn, pBrOut: integer;
-  cBrIn, cBrOut: integer;
-  l: integer;
+  pBrIn, pBrOut: Integer;
+  cBrIn, cBrOut: Integer;
 begin
   Result := FromStr;
   pBrIn := PosCh('(', FromStr);
   if pBrIn = 0 then
     Exit;
-  l := Length(FromStr);
   while pBrIn > 0 do
   begin
     pBrOut := pBrIn + 1;
@@ -372,13 +415,13 @@ begin
     cBrOut := 0;
     while (cBrOut < cBrIn) do
     begin
+      if pBrOut > Length(Result) then
+        Exit;
       if Result[pBrOut] = ')' then
         Inc(cBrOut)
       else if Result[pBrOut] = '(' then
         Inc(cBrIn);
       Inc(pBrOut);
-      if pBrOut > l then
-        Exit;
     end;
     if not OnlyArguments then
     begin
@@ -392,52 +435,11 @@ begin
   end;
 end;
 
-(*
-  function  OpenBracketCount(const Txt:Ansistring;Len:integer):integer;
-  var j:integer;
-  State:TParserState;
-  begin
-  result:=0; State:=sNormal;
-  for j := 1 to Len do
-  begin
-  case Txt[j] of
-  '(':if (State=sNormal) then
-  Inc(Result);
-  ')': if (State=sNormal) then
-  Dec(result);
-  '"': case State of
-  sNormal: State:=sQuote;
-  sQuote : State:=sNormal;
-  end;
-  '''':case State of
-  sNormal      : State:=sQuoteSingle;
-  sQuoteSingle : State:=sNormal;
-  end;
-  '*': case State of
-  sNormal:
-  if (j>1) and (Txt[j-1]='/') then
-  State:=sComment;
-  sComment:
-  if (j<len) and (Txt[j+1]='/') then
-  State:=sNormal
-  end;
-  '-': case State of
-  sNormal:
-  if (j>1) and (Txt[j-1]='-') then
-  State:=sFBComment;
-  end;
-  #13,#10:
-  if State=sFBComment then
-  State:=sNormal
-  end;
-  end;
-  end;
-*)
 function RemoveComments(const SQLText: string): string;
 var
-  Len: integer;
-  Position, RLen: integer;
-  State: TParserState;
+  Len: Integer;
+  Position, RLen: Integer;
+  State: TFIBSQLScanState;
 
   procedure WriteResultChar;
   begin
@@ -505,14 +507,16 @@ begin
           begin
             State := sNormal;
             Inc(Position);
+            // the comment separates the tokens around it
+            Inc(RLen);
+            Result[RLen] := ' ';
           end;
         end;
       sFBComment:
-        if (SQLText[Position] = #13) then
+        if CharInSet(SQLText[Position], [#13, #10]) then
         begin
           State := sNormal;
-          if (Position < Len) and (SQLText[Position + 1] = #10) then
-            Inc(Position);
+          WriteResultChar;
         end;
     end;
     Inc(Position);
@@ -522,7 +526,7 @@ end;
 
 function RemoveJoins(const FromStr: string): string;
 var
-  pON, pComa, pJOIN: integer;
+  pON, pComa, pJOIN: Integer;
   tmpStr: string;
 begin
   Result := FromStr;
@@ -535,6 +539,8 @@ begin
   Result := ReplaceCIStr(Result, ' FULL ', ' ', False);
   Result := ReplaceCIStr(Result, ' INNER ', ' ', False);
   Result := ReplaceCIStr(Result, ' OUTER ', ' ', False);
+  Result := ReplaceCIStr(Result, ' CROSS ', ' ', False);
+  Result := ReplaceCIStr(Result, ' NATURAL ', ' ', False);
   Result := ReplaceCIStr(Result, ' JOIN ', ' , ', False);
   pON := PosClause('ON', Result);
   tmpStr := '';
@@ -551,11 +557,11 @@ begin
   end;
 end;
 
-function DispositionFrom(const SQLText: string): TPosition;
+function DispositionFrom(const SQLText: string): TFIBPosition;
 var
-  Parser: TSQLParser;
+  Parser: TFIBSQLParser;
 begin
-  Parser := TSQLParser.Create(SQLText);
+  Parser := TFIBSQLParser.Create(SQLText);
   try
     Result := Parser.DispositionMainFrom;
   finally
@@ -565,9 +571,9 @@ end;
 
 function CountSelect(const SrcSQL: string): string;
 var
-  Parser: TSQLParser;
+  Parser: TFIBSQLParser;
 begin
-  Parser := TSQLParser.Create(SrcSQL);
+  Parser := TFIBSQLParser.Create(SrcSQL);
   try
     Result := Parser.RecCountSQLText;
   finally
@@ -577,9 +583,9 @@ end;
 
 function FieldsClause(const SrcSQL: string): string;
 var
-  Parser: TSQLParser;
+  Parser: TFIBSQLParser;
 begin
-  Parser := TSQLParser.Create(SrcSQL);
+  Parser := TFIBSQLParser.Create(SrcSQL);
   try
     Result := Parser.GetFieldsClause;
   finally
@@ -587,19 +593,19 @@ begin
   end;
 end;
 
-function SetFirstClause(const SrcSQL: string; FirstCount: integer): string;
+function SetFirstClause(const SrcSQL: string; FirstCount: Integer): string;
 var
-  Parser: TSQLParser;
-  pb: integer;
+  Parser: TFIBSQLParser;
+  pb: Integer;
 begin
   // IF FIRST DON'T EXIST
-  Parser := TSQLParser.Create(SrcSQL);
+  Parser := TFIBSQLParser.Create(SrcSQL);
   Result := SrcSQL;
   try
     if Parser.SQLKind = skSelect then
       if PosClause('FIRST', SrcSQL) = 0 then
       begin
-        pb := Parser.FFirstPos + 6;
+        pb := Parser.FSelectPos + 6;
         Insert(' FIRST ' + IntToStr(FirstCount) + ' ', Result, pb)
       end
       else
@@ -611,12 +617,12 @@ begin
   end;
 end;
 
-function GetModifyTable(const SQLText: string; WithAlias: boolean = False): string;
+function GetModifyTable(const SQLText: string; WithAlias: Boolean = False): string;
 var
-  StartCut, EndCut, l: integer;
-  Parser: TSQLParser;
+  StartCut, EndCut, l: Integer;
+  Parser: TFIBSQLParser;
 begin
-  Parser := TSQLParser.Create(SQLText);
+  Parser := TFIBSQLParser.Create(SQLText);
   try
     Result := FastTrim(Parser.ModifiedTables);
     l := Length(Result);
@@ -629,7 +635,9 @@ begin
         EndCut := StartCut + 1;
         while EndCut <= l do
         begin
-          if Result[EndCut] = '"' then
+          if (Result[EndCut] = '"') and (EndCut < l) and (Result[EndCut + 1] = '"') then
+            Inc(EndCut, 2)
+          else if Result[EndCut] = '"' then
           begin
             Dec(EndCut);
             Break
@@ -637,7 +645,7 @@ begin
           else
             Inc(EndCut);
         end;
-        Result := FastCopy(Result, StartCut, EndCut - StartCut + 1);
+        Result := StringReplace(FastCopy(Result, StartCut, EndCut - StartCut + 1), '""', '"', [rfReplaceAll]);
       end
       else
       begin
@@ -661,10 +669,10 @@ begin
   end;
 end;
 
-function PosAlias(const SQLString: string): integer;
+function PosAlias(const SQLString: string): Integer;
 var
-  i: integer;
-  InQuote1, InQuote2: boolean;
+  i: Integer;
+  InQuote1, InQuote2: Boolean;
 begin
   Result := 0;
   InQuote1 := False;
@@ -692,12 +700,6 @@ begin
 
 end;
 
-function FieldUsedInClause(const TableAlias, FieldName, Clause: string): boolean;
-begin
-  { TODO : FieldUsedInClause }
-  Result := False;
-end;
-
 function FieldNameForSQL(const TableAlias, FieldName: string): string;
 begin
   if Length(TableAlias) > 0 then
@@ -706,9 +708,9 @@ begin
     Result := FormatIdentifier(3, FieldName);
 end;
 
-function CutTableName(const SQLString: string; AliasPosition: integer = 0): string;
+function CutTableName(const SQLString: string; AliasPosition: Integer = 0): string;
 var
-  p: integer;
+  p: Integer;
 begin
   if AliasPosition = 0 then
     p := PosAlias(SQLString)
@@ -720,9 +722,9 @@ begin
     Result := Trim(Copy(SQLString, 1, p - 1));
 end;
 
-function CutAlias(const SQLString: string; AliasPosition: integer = 0): string;
+function CutAlias(const SQLString: string; AliasPosition: Integer = 0): string;
 var
-  p: integer;
+  p: Integer;
 begin
   if AliasPosition = 0 then
     p := PosAlias(SQLString)
@@ -741,7 +743,7 @@ end;
 
 procedure RemoveAliases(ListOfTables: TStrings);
 var
-  i: integer;
+  i: Integer;
 begin
   for i := 0 to ListOfTables.Count - 1 do
   begin
@@ -749,11 +751,11 @@ begin
   end
 end;
 
-procedure AllTables(const SQLText: string; aTables: TStrings; WithSP: boolean = False; WithAliases: boolean = False);
+procedure AllTables(const SQLText: string; aTables: TStrings; WithSP: Boolean = False; WithAliases: Boolean = False);
 var
-  Parser: TSQLParser;
+  Parser: TFIBSQLParser;
 begin
-  Parser := TSQLParser.Create(SQLText);
+  Parser := TFIBSQLParser.Create(SQLText);
   with Parser do
     try
       FillMainTables(WithSP);
@@ -765,11 +767,11 @@ begin
     end;
 end;
 
-procedure AllSQLTables(SQLText: string; aTables: TStrings; WithSP: boolean = False; WithAliases: boolean = False);
+procedure AllSQLTables(SQLText: string; aTables: TStrings; WithSP: Boolean = False; WithAliases: Boolean = False);
 var
-  Parser: TSQLParser;
+  Parser: TFIBSQLParser;
 begin
-  Parser := TSQLParser.Create(SQLText);
+  Parser := TFIBSQLParser.Create(SQLText);
   with Parser do
     try
       GetAllTables(WithSP);
@@ -785,7 +787,7 @@ end;
 function AliasForTable(const SQLText, TableName: string): string;
 var
   ts: TStrings;
-  i, p: integer;
+  i, p: Integer;
   tmpStr: string;
 begin
   Result := TableName;
@@ -800,21 +802,13 @@ begin
       else
         tmpStr := Trim(ts[i]);
 
-      if IsEquelSQLNames(tmpStr, TableName) then
-      // if not Found then
+      if IsEqualSQLNames(tmpStr, TableName) then
       begin
         // Is first table including
 
         Result := CutAlias(ts[i], p);
         Exit;
       end
-      { else
-        begin
-        // Is second table including
-        // Table have  2 or more aliases
-        Result:=TableName;
-        Exit;
-        end }
     end;
   finally
     ts.Free
@@ -824,7 +818,7 @@ end;
 function TableByAlias(const SQLText, Alias: string): string;
 var
   ts: TStrings;
-  i, p: integer;
+  i, p: Integer;
   tmpStr: string;
   tmpStr1: string;
 begin
@@ -841,7 +835,7 @@ begin
       else
         tmpStr := Trim(ts[i]);
 
-      if IsEquelSQLNames(tmpStr, Alias) then
+      if IsEqualSQLNames(tmpStr, Alias) then
       begin
         Result := CutTableName(ts[i], p);
         Break;
@@ -849,7 +843,7 @@ begin
       else if Length(tmpStr1) = 0 then
       begin
         tmpStr1 := CutTableName(ts[i], p);
-        if not IsEquelSQLNames(Alias, tmpStr1) then
+        if not IsEqualSQLNames(Alias, tmpStr1) then
           tmpStr1 := '';
       end;
     end;
@@ -862,7 +856,7 @@ end;
 
 function FullFieldName(const SQLText, aFieldName: string): string;
 var
-  p: integer;
+  p: Integer;
   TableName: string;
   FieldName: string;
 begin
@@ -893,57 +887,11 @@ begin
   end;
 end;
 
-function FieldNameFromSelect(const SQLText, FieldName: string): string;
+function MainWhereIndex(const SQLText: string): Integer;
 var
-  p, pb, pe: integer;
+  Parser: TFIBSQLParser;
 begin
-  if Length(FieldName) = 0 then
-    Result := FieldName
-  else if PosCh('.', FieldName) > 0 then
-    Result := FieldName
-  else
-  begin
-    if FieldName[1] = '"' then
-      p := PosInSubstrExt(FieldName, SQLText, 1, Length(SQLText),
-        endLexem + CharsAfterClause + ['.'], endLexem + CharsAfterClause)
-    else
-      p := PosInSubstrCIExt(FieldName, SQLText, 1, Length(SQLText),
-        endLexem + CharsAfterClause + ['.'], endLexem + CharsAfterClause);
-
-    if p > 0 then
-    begin
-      pb := p - 1;
-      while (pb > 0) and CharInSet(SQLText[pb], [' ', #10, #9, #13]) do
-        Dec(pb);
-      if (pb > 0) and (SQLText[pb] = '.') then
-      begin
-        pe := pb - 1;
-        while (pe > 0) and CharInSet(SQLText[pe], [' ', #10, #9, #13]) do
-          Dec(pe);
-        if pe > 0 then
-        begin
-          pb := pe;
-          while (pb > 0) and not CharInSet(SQLText[pb], ['(', ' ', #10, #9, #13]) do
-            Dec(pb);
-          Inc(pb);
-          Result := FastCopy(SQLText, pb, pe - pb + 1) + '.' + FastCopy(SQLText, p, Length(FieldName));
-        end
-        else
-          Result := FastCopy(SQLText, p, Length(FieldName));
-      end
-      else
-        Result := FastCopy(SQLText, p, Length(FieldName));
-    end
-    else
-      Result := FieldName;
-  end;
-end;
-
-function MainWhereIndex(const SQLText: string): integer;
-var
-  Parser: TSQLParser;
-begin
-  Parser := TSQLParser.Create(SQLText);
+  Parser := TFIBSQLParser.Create(SQLText);
   try
     Result := Parser.MainWhereIndex;
   finally
@@ -953,9 +901,9 @@ end;
 
 function MainFrom(const SQLText: string): string;
 var
-  Parser: TSQLParser;
+  Parser: TFIBSQLParser;
 begin
-  Parser := TSQLParser.Create(SQLText);
+  Parser := TFIBSQLParser.Create(SQLText);
   try
     Result := Parser.MainFrom;
   finally
@@ -965,10 +913,10 @@ end;
 
 function MainWhereClause(const SQLText: string): string;
 var
-  Parser: TSQLParser;
-  i, j: integer;
+  Parser: TFIBSQLParser;
+  i, j: Integer;
 begin
-  Parser := TSQLParser.Create(SQLText);
+  Parser := TFIBSQLParser.Create(SQLText);
   try
     Result := Parser.MainWhereClause(i, j);
   finally
@@ -976,11 +924,11 @@ begin
   end;
 end;
 
-function WhereCount(const SQLText: string): integer;
+function WhereCount(const SQLText: string): Integer;
 var
-  Parser: TSQLParser;
+  Parser: TFIBSQLParser;
 begin
-  Parser := TSQLParser.Create(SQLText);
+  Parser := TFIBSQLParser.Create(SQLText);
   try
     Result := Parser.WhereCount;
   finally
@@ -988,11 +936,11 @@ begin
   end;
 end;
 
-function OrderStringTxt(const SQLText: string; var StartPos, EndPos: integer): string;
+function OrderStringTxt(const SQLText: string; var StartPos, EndPos: Integer): string;
 var
-  Parser: TSQLParser;
+  Parser: TFIBSQLParser;
 begin
-  Parser := TSQLParser.Create(SQLText);
+  Parser := TFIBSQLParser.Create(SQLText);
   try
     Result := Parser.OrderText(StartPos, EndPos);
   finally
@@ -1000,11 +948,11 @@ begin
   end
 end;
 
-function GetSQLKind(const SQLText: string): TSQLKind;
+function GetSQLKind(const SQLText: string): TFIBSQLStatementKind;
 var
-  Parser: TSQLParser;
+  Parser: TFIBSQLParser;
 begin
-  Parser := TSQLParser.Create(SQLText);
+  Parser := TFIBSQLParser.Create(SQLText);
   try
     Result := Parser.SQLKind;
   finally
@@ -1012,17 +960,74 @@ begin
   end
 end;
 
-function TSQLParser.GetOrderInfo(NullsFirstDef: boolean = False): Variant;
+type
+  TSQLTextParts = array of string;
+
+// Position of one of Chars outside quotes and parentheses (comments removed before), 0 if none
+function TopLevelPos(const Chars: TSysCharSet; const Text: string; From: Integer = 1): Integer;
 var
-  StartPos, EndPos: integer;
-  vOrderText: string;
-  i, wc, p, l: integer;
+  I, Depth: Integer;
+  Quote: Char;
+begin
+  Result := 0;
+  Depth := 0;
+  Quote := #0;
+  for I := From to Length(Text) do
+    if Quote <> #0 then
+    begin
+      if Text[I] = Quote then
+        Quote := #0;
+    end
+    else
+      case Text[I] of
+        '"', '''':
+          Quote := Text[I];
+        '(':
+          Inc(Depth);
+        ')':
+          Dec(Depth);
+      else
+        if (Depth = 0) and CharInSet(Text[I], Chars) then
+          Exit(I);
+      end;
+end;
+
+// The non-empty trimmed parts of Text between the top-level Delimiter chars
+function SplitTopLevel(const Text: string; Delimiter: Char): TSQLTextParts;
+var
+  Start, P: Integer;
+  Part: string;
+begin
+  SetLength(Result, 0);
+  Start := 1;
+  repeat
+    P := TopLevelPos([AnsiChar(Delimiter)], Text, Start);
+    if P = 0 then
+      Part := Trim(Copy(Text, Start, MaxInt))
+    else
+      Part := Trim(Copy(Text, Start, P - Start));
+    if Part <> '' then
+    begin
+      SetLength(Result, Length(Result) + 1);
+      Result[High(Result)] := Part;
+    end;
+    Start := P + 1;
+  until P = 0;
+end;
+
+function TFIBSQLParser.GetOrderInfo(NullsFirstDef: Boolean = False): Variant;
+var
+  StartPos, EndPos: Integer;
+  OrderClauseText: string;
+  i, wc, p, l: Integer;
   bufStr: string;
   TName, FName: string;
-  wc1: integer;
+  wc1: Integer;
+  Items: TSQLTextParts;
 begin
-  vOrderText := Trim(RemoveComments(OrderText(StartPos, EndPos)));
-  wc := WordCount(vOrderText, [',']);
+  OrderClauseText := Trim(RemoveComments(OrderText(StartPos, EndPos)));
+  Items := SplitTopLevel(OrderClauseText, ',');
+  wc := Length(Items);
   if wc < 1 then
     Result := null
   else
@@ -1030,14 +1035,15 @@ begin
     Result := VarArrayCreate([0, wc - 1, 0, 2], varVariant);
     for i := 1 to wc do
     begin
-      bufStr := FastTrim(ExtractWord(i, vOrderText, [',']));
-      if WordCount(bufStr, ['.']) > 1 then
+      bufStr := Items[i - 1];
+      p := TopLevelPos(['.'], bufStr);
+      if p > 0 then
       begin
-        TName := ExtractWord(1, bufStr, ['.']);
+        TName := FastTrim(Copy(bufStr, 1, p - 1));
         if Length(TName) > 0 then
           if TName[1] <> '"' then
             TName := FastUpperCase(TName);
-        FName := FastTrim(ExtractWord(2, bufStr, ['.']));
+        FName := FastTrim(Copy(bufStr, p + 1, MaxInt));
         if Length(FName) > 0 then
           if FName[1] <> '"' then
             FName := FastUpperCase(FName);
@@ -1064,8 +1070,6 @@ begin
         begin
 
           Result[i - 1, 2] := NullsFirstDef
-
-          // Result[i-1,2]:=False; // NULLS LAST
         end;
 
         p := PosClause('DESC', bufStr);
@@ -1091,11 +1095,11 @@ begin
   end;
 end;
 
-function GetOrderInfo(const SQLText: string; NullsFirstDef: boolean = False): Variant;
+function GetOrderInfo(const SQLText: string; NullsFirstDef: Boolean = False): Variant;
 var
-  Parser: TSQLParser;
+  Parser: TFIBSQLParser;
 begin
-  Parser := TSQLParser.Create(SQLText);
+  Parser := TFIBSQLParser.Create(SQLText);
   try
     Result := Parser.GetOrderInfo(NullsFirstDef);
   finally
@@ -1110,7 +1114,7 @@ end;
 
 function SetOrderClause(const SQLText, NewClause: string): string;
 var
-  StartPos, EndPos: integer;
+  StartPos, EndPos: Integer;
   Old: string;
 begin
   Old := SqlTxtRtns.OrderStringTxt(SQLText, StartPos, EndPos);
@@ -1125,11 +1129,11 @@ begin
     Result := SQLText
 end;
 
-function GetWhereClause(const SQLText: string; N: integer; var StartPos, EndPos: integer): string;
+function GetWhereClause(const SQLText: string; N: Integer; var StartPos, EndPos: Integer): string;
 var
-  Parser: TSQLParser;
+  Parser: TFIBSQLParser;
 begin
-  Parser := TSQLParser.Create(SQLText);
+  Parser := TFIBSQLParser.Create(SQLText);
   try
     Result := Parser.WhereClause(N, StartPos, EndPos);
   finally
@@ -1137,60 +1141,43 @@ begin
   end
 end;
 
-function AddToWhereClause(const SQLText, NewClause: string; ForceCLRF: boolean = True): string;
+function AddToWhereClause(const SQLText, NewClause: string; ForceLineBreak: Boolean = True): string;
 var
-  Parser: TSQLParser;
+  Parser: TFIBSQLParser;
 begin
-  Parser := TSQLParser.Create(SQLText);
+  Parser := TFIBSQLParser.Create(SQLText);
   try
-    Result := Parser.AddToMainWhere(NewClause, ForceCLRF);
+    Result := Parser.AddToMainWhere(NewClause, ForceLineBreak);
   finally
     Parser.Free
   end;
 end;
 
-function PrepareConstraint(Src: TStrings): string;
-var
-  i, pos_no: integer;
-begin
-  Result := FastTrim(Src.Text);
-  pos_no := PosCh('(', Result) + 1;
-  Result := FastCopy(Result, pos_no, Length(Result));
-  pos_no := -1;
-  for i := Length(Result) downto 1 do
-    if Result[i] = ')' then
-    begin
-      pos_no := i;
-      Break;
-    end;
-  SetLength(Result, pos_no - 1);
-  Result := ReplaceStr(FastCopy(Result, pos_no, Length(Result) - pos_no), '"', QuotMarks)
-end;
+{ TFIBSQLParser }
 
-{ TSQLParser }
-
-constructor TSQLParser.Create;
+constructor TFIBSQLParser.Create;
 begin
   FTables := TStringList.Create;
   FFirstPos := 1;
+  FSelectPos := 1;
   inherited Create;
 end;
 
-constructor TSQLParser.Create(const aSQLText: string);
+constructor TFIBSQLParser.Create(const aSQLText: string);
 begin
   Create;
   SQLText := aSQLText;
 end;
 
-destructor TSQLParser.Destroy;
+destructor TFIBSQLParser.Destroy;
 begin
   FTables.Free;
   inherited;
 end;
 
-procedure TSQLParser.IsFromEnd(Position: integer; var Yes: boolean);
+procedure TFIBSQLParser.IsFromEnd(Position: Integer; var Yes: Boolean);
 var
-  p: integer;
+  p: Integer;
 begin
   if FBracketOpenedBeforeScan < FBracketOpened then
   begin
@@ -1223,37 +1210,50 @@ begin
         'W', 'w': // WHERE
           Yes := InternalIsClause('WHERE', SQLText, p + 1);
       end;
+    if not Yes and ((Len - p) > 1) then
+      Yes := IsTailClauseAt(SQLText, p + 1);
   end
 end;
 
-procedure TSQLParser.IsFromBegin(Position: integer; var Yes: boolean);
+procedure TFIBSQLParser.IsOrderEnd(Position: Integer; var Yes: Boolean);
+begin
+  Yes := (FBracketOpenedBeforeScan >= FBracketOpened) and (Position > 1) and
+    CharInSet(SQLText[Position - 1], CharsBeforeClause) and
+    (InternalIsClause('FOR', SQLText, Position) or IsTailClauseAt(SQLText, Position));
+end;
+
+procedure TFIBSQLParser.IsGroupEnd(Position: Integer; var Yes: Boolean);
+begin
+  Yes := (FBracketOpenedBeforeScan >= FBracketOpened) and (Position > 1) and
+    CharInSet(SQLText[Position - 1], CharsBeforeClause) and
+    (InternalIsClause('HAVING', SQLText, Position) or InternalIsClause('PLAN', SQLText, Position) or
+    InternalIsClause('ORDER', SQLText, Position) or InternalIsClause('UNION', SQLText, Position) or
+    InternalIsClause('FOR', SQLText, Position) or IsTailClauseAt(SQLText, Position));
+end;
+
+procedure TFIBSQLParser.IsMainSelectBegin(Position: Integer; var Yes: Boolean);
+begin
+  Yes := (FBracketOpened = 0) and InternalIsClause('SELECT', SQLText, Position);
+end;
+
+procedure TFIBSQLParser.IsFromBegin(Position: Integer; var Yes: Boolean);
 begin
   Yes := InternalIsClause('FROM', SQLText, Position);
 end;
 
-procedure TSQLParser.IsMainFromBegin(Position: integer; var Yes: boolean);
+procedure TFIBSQLParser.IsMainFromBegin(Position: Integer; var Yes: Boolean);
 begin
   Yes := (FBracketOpened = 0);
   if Yes then
     IsFromBegin(Position, Yes);
 end;
 
-procedure TSQLParser.IsSetBegin(Position: integer; var Yes: boolean);
-begin
-  Yes := InternalIsClause('SET', SQLText, Position);
-end;
-
-procedure TSQLParser.IsUpdateBegin(Position: integer; var Yes: boolean);
-begin
-  Yes := IsUpdate(Position);
-end;
-
-procedure TSQLParser.IsIntoBegin(Position: integer; var Yes: boolean);
+procedure TFIBSQLParser.IsIntoBegin(Position: Integer; var Yes: Boolean);
 begin
   Yes := InternalIsClause('INTO', SQLText, Position);
 end;
 
-procedure TSQLParser.IsPlanBegin(Position: integer; var Yes: boolean);
+procedure TFIBSQLParser.IsPlanBegin(Position: Integer; var Yes: Boolean);
 begin
   Yes := InternalIsClause('PLAN', SQLText, Position);
   if Yes and (FReserved > 0) then
@@ -1263,9 +1263,9 @@ begin
   end;
 end;
 
-procedure TSQLParser.IsPlanEnd(Position: integer; var Yes: boolean);
+procedure TFIBSQLParser.IsPlanEnd(Position: Integer; var Yes: Boolean);
 var
-  p: integer;
+  p: Integer;
 begin
   if FBracketOpenedBeforeScan < FBracketOpened then
   begin
@@ -1288,7 +1288,7 @@ begin
   end
 end;
 
-procedure TSQLParser.IsWhereBegin(Position: integer; var Yes: boolean);
+procedure TFIBSQLParser.IsWhereBegin(Position: Integer; var Yes: Boolean);
 begin
   Yes := IsWhereBeginPos(SQLText, Position);
   if Yes and (FReserved > 0) then
@@ -1298,7 +1298,7 @@ begin
   end;
 end;
 
-procedure TSQLParser.IsWhereEnd(Position: integer; var Yes: boolean);
+procedure TFIBSQLParser.IsWhereEnd(Position: Integer; var Yes: Boolean);
 begin
   if FBracketOpenedBeforeScan < FBracketOpened then
   begin
@@ -1308,26 +1308,21 @@ begin
   Yes := IsWhereEndPos(SQLText, Position)
 end;
 
-procedure TSQLParser.IsMainWhereBegin(Position: integer; var Yes: boolean);
-begin
-  Yes := FBracketOpened = 0;
-  if Yes then
-    IsWhereBegin(Position, Yes)
-end;
-
-procedure TSQLParser.ScanText(FromPosition: integer; Proc: TOnScanSQLText);
+procedure TFIBSQLParser.ScanText(FromPosition: Integer; Proc: TFIBScanSQLTextEvent);
 var
-  j: integer;
-  StopScan: boolean;
+  j: Integer;
+  StopScan: Boolean;
 begin
   if not Assigned(Proc) then
     Exit;
   FState := sNormal;
   FResultPos := 0;
+  // a scan from the start is outside any bracket, whatever an earlier scan left
+  if FromPosition <= FFirstPos then
+    FBracketOpened := 0;
   FBracketOpenedBeforeScan := FBracketOpened;
   for j := FromPosition to Len do
   begin
-    FCurPos := j;
     case SQLText[j] of
       '(':
         if not(FState in [sComment, sFBComment, sQuote, sQuoteSingle]) then
@@ -1358,7 +1353,7 @@ begin
           else
             FState := sQuoteSingle;
       '*':
-        if not(FState in [sQuote, sQuoteSingle]) then
+        if not(FState in [sQuote, sQuoteSingle, sFBComment]) then
         begin
           if FState = sComment then
           begin
@@ -1387,8 +1382,18 @@ begin
             end;
           end;
         sFBComment:
-          if FSQLText[j] = #13 then
-            FState := sNormal
+          if CharInSet(FSQLText[j], [#13, #10]) then
+          begin
+            // the line break that ends the comment is a blank before the next clause
+            FState := sNormal;
+            StopScan := False;
+            Proc(j, StopScan);
+            if StopScan then
+            begin
+              FResultPos := j;
+              Break
+            end;
+          end;
       end
     end;
   end;
@@ -1405,7 +1410,7 @@ begin
   FReserved := 0;
 end;
 
-procedure TSQLParser.SetSQLText(const Value: string);
+procedure TFIBSQLParser.SetSQLText(const Value: string);
 begin
   FSQLText := Value;
   FTables.Clear;
@@ -1415,46 +1420,46 @@ begin
   FSQLKind := GetSQLKind;
 end;
 
-procedure TSQLParser.IsOrderBegin(Position: integer; var Yes: boolean);
+procedure TFIBSQLParser.IsOrderBegin(Position: Integer; var Yes: Boolean);
 begin
   Yes := InternalIsClause('ORDER', SQLText, Position);
 end;
 
-procedure TSQLParser.IsMainOrderBegin(Position: integer; var Yes: boolean);
+procedure TFIBSQLParser.IsMainOrderBegin(Position: Integer; var Yes: Boolean);
 begin
   Yes := FBracketOpened = 0;
   if Yes then
     IsOrderBegin(Position, Yes)
 end;
 
-procedure TSQLParser.IsGroupBegin(Position: integer; var Yes: boolean);
+procedure TFIBSQLParser.IsGroupBegin(Position: Integer; var Yes: Boolean);
 begin
   Yes := InternalIsClause('GROUP', SQLText, Position);
 end;
 
-procedure TSQLParser.IsMainGroupBegin(Position: integer; var Yes: boolean);
+procedure TFIBSQLParser.IsMainGroupBegin(Position: Integer; var Yes: Boolean);
 begin
   Yes := FBracketOpened = 0;
   if Yes then
     IsGroupBegin(Position, Yes)
 end;
 
-function TSQLParser.IsClause(Position: integer; const Clause: string): boolean;
+function TFIBSQLParser.IsClause(Position: Integer; const Clause: string): Boolean;
 begin
   Result := InternalIsClause(Clause, SQLText, Position)
 end;
 
-procedure TSQLParser.IsByBegin(Position: integer; var Yes: boolean);
+procedure TFIBSQLParser.IsByBegin(Position: Integer; var Yes: Boolean);
 begin
   Yes := IsClause(Position, 'BY')
 end;
 
-procedure TSQLParser.IsHaving(Position: integer; var Yes: boolean);
+procedure TFIBSQLParser.IsHaving(Position: Integer; var Yes: Boolean);
 begin
   Yes := IsClause(Position, 'HAVING')
 end;
 
-function TSQLParser.DispositionMainFrom: TPosition;
+function TFIBSQLParser.DispositionMainFrom: TFIBPosition;
 begin
   Result.X := 0;
   Result.Y := 0;
@@ -1469,9 +1474,9 @@ begin
     Result.Y := FResultPos;
 end;
 
-function TSQLParser.MainFrom: string;
+function TFIBSQLParser.MainFrom: string;
 var
-  p: TPosition;
+  p: TFIBPosition;
 begin
   p := DispositionMainFrom;
   if p.X > 0 then
@@ -1483,22 +1488,22 @@ begin
     Result := ''
 end;
 
-function TSQLParser.PosInSections(Position: integer): TSQLSections;
+function TFIBSQLParser.PosInSections(Position: Integer): TFIBSQLSections;
 var
-  temp: integer;
+  temp: Integer;
 begin
   Result := PosInSections(1, Position, temp)
 end;
 
-function TSQLParser.PosInSections(ScanFrom, Position: integer; var EndScan: integer): TSQLSections;
+function TFIBSQLParser.PosInSections(ScanFrom, Position: Integer; var EndScan: Integer): TFIBSQLSections;
 var
-  i: integer;
+  i: Integer;
 
-  MayBe1: TSQLSections;
-  vBracketOpenedBeforeScan: integer;
-  b: boolean;
+  MayBe1: TFIBSQLSections;
+  BracketOpenedBeforeScan: Integer;
+  b: Boolean;
 
-  procedure AddArray(NewArray: TSQLSections);
+  procedure AddArray(NewArray: TFIBSQLSections);
   var
     j: NativeInt;
     k: Integer;
@@ -1513,12 +1518,6 @@ var
   end;
 
 begin
-  { TSQLSection = (stUnknown,stSelect, stSelectingFields,
-    stUpdate,stInsert,stDelete,stExecute, stSet,
-    stFrom, stWhere, stGroupBy, stHaving,
-    stUnion,    stPlan, stOrderBy, stForUpdate
-    );
-  }
   FState := sNormal;
   SetLength(MayBe1, 0);
   SetLength(Result, 0);
@@ -1526,10 +1525,10 @@ begin
   if ScanFrom = 1 then
   begin
     FBracketOpened := 0;
-    vBracketOpenedBeforeScan := 0
+    BracketOpenedBeforeScan := 0
   end
   else
-    vBracketOpenedBeforeScan := FBracketOpened;
+    BracketOpenedBeforeScan := FBracketOpened;
 
   i := ScanFrom;
   while i <= Position do
@@ -1555,7 +1554,7 @@ begin
         if not(FState in [sComment, sFBComment, sQuote, sQuoteSingle]) then
         begin
           Dec(FBracketOpened);
-          if FBracketOpened = vBracketOpenedBeforeScan then
+          if FBracketOpened = BracketOpenedBeforeScan then
           begin
             EndScan := i + 1;
             Exit;
@@ -1574,7 +1573,7 @@ begin
           else
             FState := sQuoteSingle;
       '*':
-        if not(FState in [sQuote, sQuoteSingle]) then
+        if not(FState in [sQuote, sQuoteSingle, sFBComment]) then
         begin
           if FState = sComment then
           begin
@@ -1591,8 +1590,12 @@ begin
             FState := sFBComment
         end;
     else
-
-      if IsSelect(i) then
+      if FState <> sNormal then
+      begin
+        if (FState = sFBComment) and CharInSet(SQLText[i], [#13, #10]) then
+          FState := sNormal;
+      end
+      else if IsSelect(i) then
       begin
         SetLength(Result, Length(Result) + 2);
         Result[Length(Result) - 2] := stSelect;
@@ -1686,16 +1689,16 @@ begin
   end;
 end;
 
-function TSQLParser.ModifiedTables: string;
+function TFIBSQLParser.ModifiedTables: string;
 var
-  Start: integer;
-  l: integer;
+  Start: Integer;
+  l: Integer;
   tmpStr: string;
 
   procedure CutTable;
   var
-    p: integer;
-    InQuote: boolean;
+    p: Integer;
+    InQuote: Boolean;
   begin
     l := 0;
     InQuote := False;
@@ -1712,7 +1715,8 @@ var
           begin
             InQuote := not InQuote;
             Inc(l);
-            if not InQuote then
+            // a doubled quote inside the name does not end it
+            if not InQuote and ((p = Len) or (SQLText[p + 1] <> '"')) then
               Break
           end;
         '(':
@@ -1773,7 +1777,6 @@ begin
         end
         else
           Result := 'Unknown';
-        // Result:=MainFrom
       end;
     skUpdateOrInsert:
       begin
@@ -1789,7 +1792,9 @@ begin
   end;
 end;
 
-function TSQLParser.OrderText(var StartPos, EndPos: integer): string;
+function TFIBSQLParser.OrderText(var StartPos, EndPos: Integer): string;
+var
+  byPos: Integer;
 begin
   Result := '';
   StartPos := 0;
@@ -1801,20 +1806,31 @@ begin
   ScanText(FResultPos + 5, IsByBegin);
   if FResultPos = 0 then
     Exit;
-  Result := FastCopy(SQLText, FResultPos + 2, MaxInt);
-  EndPos := Length(SQLText);
+  byPos := FResultPos;
+  // ROWS, OFFSET/FETCH, FOR UPDATE, WITH LOCK follow the ORDER BY list
+  ScanText(byPos + 2, IsOrderEnd);
+  if FResultPos = 0 then
+  begin
+    Result := FastCopy(SQLText, byPos + 2, MaxInt);
+    EndPos := Length(SQLText);
+  end
+  else
+  begin
+    Result := FastCopy(SQLText, byPos + 2, FResultPos - byPos - 2);
+    EndPos := FResultPos - 1;
+  end;
 end;
 
-function TSQLParser.OrderClause: string;
+function TFIBSQLParser.OrderClause: string;
 var
-  StartPos, EndPos: integer;
+  StartPos, EndPos: Integer;
 begin
   Result := OrderText(StartPos, EndPos)
 end;
 
-function TSQLParser.SetOrderClause(const Value: string): string;
+function TFIBSQLParser.SetOrderClause(const Value: string): string;
 var
-  StartPos, EndPos: integer;
+  StartPos, EndPos: Integer;
 begin
   OrderText(StartPos, EndPos);
   if StartPos = 0 then
@@ -1831,13 +1847,16 @@ begin
     else if SQLText[StartPos - 1] <> #10 then
       Result := FastCopy(SQLText, 1, StartPos - 1) + sLineBreak + 'ORDER BY ' + Value
     else
-      Result := FastCopy(SQLText, 1, StartPos - 1) + 'ORDER BY ' + Value
+      Result := FastCopy(SQLText, 1, StartPos - 1) + 'ORDER BY ' + Value;
+    // ROWS, OFFSET/FETCH, FOR UPDATE, WITH LOCK
+    if (EndPos > 0) and (EndPos < Length(SQLText)) then
+      Result := Result + sLineBreak + TrimLeft(FastCopy(SQLText, EndPos + 1, MaxInt));
   end;
 end;
 
-function TSQLParser.GroupByText(var StartPos, EndPos: integer): string;
+function TFIBSQLParser.GroupByText(var StartPos, EndPos: Integer): string;
 var
-  byPos: integer;
+  byPos: Integer;
 begin
   Result := '';
   StartPos := 0;
@@ -1850,12 +1869,7 @@ begin
   if FResultPos = 0 then
     Exit;
   byPos := FResultPos;
-  ScanText(StartPos, IsHaving);
-  if FResultPos = 0 then
-    ScanText(StartPos, IsPlanBegin);
-  if FResultPos = 0 then
-    ScanText(StartPos, IsOrderBegin);
-
+  ScanText(byPos + 2, IsGroupEnd);
   if FResultPos = 0 then
   begin
     Result := FastCopy(SQLText, byPos + 2, MaxInt);
@@ -1868,17 +1882,17 @@ begin
   end;
 end;
 
-function TSQLParser.GroupByClause: string;
+function TFIBSQLParser.GroupByClause: string;
 var
-  StartPos, EndPos: integer;
+  StartPos, EndPos: Integer;
 begin
   Result := GroupByText(StartPos, EndPos);
 end;
 
-function TSQLParser.SetGroupClause(const Value: string): string;
+function TFIBSQLParser.SetGroupClause(const Value: string): string;
 var
-  StartPos, EndPos: integer;
-  StartPosO, EndPosO: integer;
+  StartPos, EndPos: Integer;
+  StartPosO, EndPosO: Integer;
 begin
   GroupByText(StartPos, EndPos);
   if StartPos = 0 then
@@ -1910,21 +1924,26 @@ begin
     if SQLText[StartPos - 1] <> #10 then
       Result := FastCopy(SQLText, 1, StartPos - 1) + sLineBreak + 'GROUP BY ' + Value
     else
-      Result := FastCopy(SQLText, 1, StartPos - 1) + 'GROUP BY ' + Value
+      Result := FastCopy(SQLText, 1, StartPos - 1) + 'GROUP BY ' + Value;
+    // HAVING, PLAN, ORDER BY and the rest after the GROUP BY list
+    if (EndPos > 0) and (EndPos < Length(SQLText)) then
+      Result := Result + sLineBreak + TrimLeft(FastCopy(SQLText, EndPos + 1, MaxInt));
   end;
 end;
 
-function TSQLParser.GetFieldsClause: string;
+function TFIBSQLParser.GetFieldsClause: string;
 var
-  pb: integer;
-  pe: integer;
+  pb: Integer;
+  pe: Integer;
 begin
   if SQLKind <> skSelect then
     Result := ''
   else
   begin
     pe := DispositionMainFrom.X - 1;
-    pb := FFirstPos + 6;
+    if pe < 0 then
+      pe := Length(SQLText);
+    pb := FSelectPos + 6;
     while (pb <= Length(SQLText)) and CharInSet(SQLText[pb], [#13, #10, #9, ' ']) do
       Inc(pb);
     while (pe >= 1) and CharInSet(SQLText[pe], [#13, #10, #9, ' ']) do
@@ -1933,24 +1952,26 @@ begin
   end;
 end;
 
-function TSQLParser.SetFieldsClause(const NewFields: string): string;
+function TFIBSQLParser.SetFieldsClause(const NewFields: string): string;
 var
-  pb: integer;
-  pe: integer;
+  pb: Integer;
+  pe: Integer;
 begin
   if SQLKind <> skSelect then
     Result := SQLText
   else
   begin
     pe := DispositionMainFrom.X;
-    pb := FFirstPos + 5;
+    if pe = 0 then
+      pe := Length(SQLText) + 1;
+    pb := FSelectPos + 5;
     Result := FastCopy(SQLText, 1, pb) + sLineBreak + NewFields + sLineBreak + FastCopy(SQLText, pe, MaxInt);
   end;
 end;
 
-function TSQLParser.WhereClause(N: integer; var StartPos, EndPos: integer): string;
+function TFIBSQLParser.WhereClause(N: Integer; var StartPos, EndPos: Integer): string;
 var
-  StartPos1: integer;
+  StartPos1: Integer;
 begin
   if N < 0 then
   begin
@@ -1960,6 +1981,9 @@ begin
     Exit;
   end;
 
+  Result := '';
+  StartPos := 0;
+  EndPos := 0;
   FReserved := N; // N- number where clause
   FReserved1 := 0;
   ScanText(FFirstPos, IsWhereBegin);
@@ -1971,6 +1995,7 @@ begin
     while (StartPos1 <= Len) and CharInSet(SQLText[StartPos1], (CharsAfterClause - ['(', '/', '-', '"'])) do
       Inc(StartPos1);
     ScanText(StartPos1, IsWhereEnd);
+    FScanInBrackets := False;
     EndPos := FResultPos;
     if EndPos > 0 then
     begin
@@ -1985,9 +2010,9 @@ begin
   end;
 end;
 
-function TSQLParser.SetWhereClause(N: integer; const Value: string): string;
+function TFIBSQLParser.SetWhereClause(N: Integer; const Value: string): string;
 var
-  StartPos, EndPos: integer;
+  StartPos, EndPos: Integer;
 begin
   WhereClause(N, StartPos, EndPos);
   if StartPos = 0 then
@@ -2010,9 +2035,9 @@ begin
   end;
 end;
 
-function TSQLParser.SetMainWhereClause(const Value: string): string;
+function TFIBSQLParser.SetMainWhereClause(const Value: string): string;
 var
-  p: integer;
+  p: Integer;
 begin
   p := MainWhereIndex;
   if p > 0 then
@@ -2021,7 +2046,7 @@ begin
     Result := AddToMainWhere(Value, False);
 end;
 
-function TSQLParser.WhereCount: integer;
+function TFIBSQLParser.WhereCount: Integer;
 begin
   Result := 0;
   FReserved := 0;
@@ -2032,18 +2057,9 @@ begin
   until FResultPos = 0;
 end;
 
-function TSQLParser.PlanCount: integer;
-begin
-  Result := 0;
-  FReserved := 0;
-  repeat
-    ScanText(FResultPos + 5, IsPlanBegin);
-    if FResultPos > 0 then
-      Inc(Result);
-  until FResultPos = 0;
-end;
-
-function TSQLParser.PlanText(N: integer; var StartPos, EndPos: integer): string;
+function TFIBSQLParser.PlanText(N: Integer; var StartPos, EndPos: Integer): string;
+var
+  InBrackets: Boolean;
 begin
   if N < 0 then
   begin
@@ -2053,6 +2069,9 @@ begin
     Exit;
   end;
 
+  Result := '';
+  StartPos := 0;
+  EndPos := 0;
   FReserved1 := 0;
   FResultPos := 0;
   FReserved := N; // N- number plan clause
@@ -2060,13 +2079,18 @@ begin
   if FResultPos > 0 then
   begin
     StartPos := FResultPos + 5;
-    FScanInBrackets := FBracketOpened > 0;
+    InBrackets := FBracketOpened > 0;
+    FScanInBrackets := InBrackets;
     while (StartPos <= Len) and CharInSet(SQLText[StartPos], CharsAfterClause - ['(']) do
       Inc(StartPos);
     ScanText(StartPos, IsPlanEnd);
+    FScanInBrackets := False;
     EndPos := FResultPos;
     if EndPos > 0 then
     begin
+      // the plan is the last text: its closing bracket is the last character
+      if not InBrackets and (EndPos = Len) and not CharInSet(SQLText[Len], CharsAfterClause) then
+        Inc(EndPos);
       Dec(EndPos);
       while (EndPos > 0) and CharInSet(SQLText[EndPos], CharsAfterClause) do
         Dec(EndPos);
@@ -2077,9 +2101,9 @@ begin
   end;
 end;
 
-function TSQLParser.MainPlanIndex: integer;
+function TFIBSQLParser.MainPlanIndex: Integer;
 var
-  p: integer;
+  p: Integer;
 begin
   p := 0;
   Result := -1;
@@ -2100,14 +2124,14 @@ begin
   until FResultPos = 0;
 end;
 
-function TSQLParser.MainPlanText(var StartPos, EndPos: integer): string;
+function TFIBSQLParser.MainPlanText(var StartPos, EndPos: Integer): string;
 begin
   Result := PlanText(MainPlanIndex, StartPos, EndPos)
 end;
 
-function TSQLParser.SetMainPlan(const Text: string): string;
+function TFIBSQLParser.SetMainPlan(const Text: string): string;
 var
-  StartPos, EndPos: integer;
+  StartPos, EndPos: Integer;
 begin
   MainPlanText(StartPos, EndPos);
   if StartPos > 0 then
@@ -2136,16 +2160,16 @@ begin
   end;
 end;
 
-function TSQLParser.GetMainPlan: string;
+function TFIBSQLParser.GetMainPlan: string;
 var
-  StartPos, EndPos: integer;
+  StartPos, EndPos: Integer;
 begin
   Result := MainPlanText(StartPos, EndPos)
 end;
 
-function TSQLParser.MainWhereIndex: integer;
+function TFIBSQLParser.MainWhereIndex: Integer;
 var
-  p: integer;
+  p: Integer;
 begin
   p := 0;
   Result := -1;
@@ -2165,13 +2189,13 @@ begin
   until FResultPos = 0;
 end;
 
-function TSQLParser.AddToMainWhere(const NewClause: string; ForceCLRF: boolean): string;
+function TFIBSQLParser.AddToMainWhere(const NewClause: string; ForceLineBreak: Boolean): string;
 var
-  p: integer;
-  StartPos, EndPos: integer;
+  p: Integer;
+  StartPos, EndPos: Integer;
   Separator: string;
 begin
-  Separator := iifStr(ForceCLRF, ForceNewStr, '');
+  Separator := iifStr(ForceLineBreak, ForceNewStr, '');
   if IsBlank(NewClause) then
   begin
     Result := SQLText;
@@ -2188,69 +2212,70 @@ begin
   else
   begin
     p := DispositionMainFrom.Y;
+    // no FROM: at the end, the server reports the error
+    if p = 0 then
+      p := Length(SQLText);
     Result := FastCopy(SQLText, 1, p) + #13#10 + BeginWhere + Separator + NewClause +
       #13#10 + FastCopy(SQLText, p + 1, MaxInt)
   end
 end;
 
-function TSQLParser.IsSelect(Position: integer): boolean;
+function TFIBSQLParser.IsSelect(Position: Integer): Boolean;
 begin
   Result := InternalIsClause('SELECT', SQLText, Position);
-  if not Result then
-    Result := InternalIsClause('MERGE', SQLText, Position);
 end;
 
-function TSQLParser.IsUpdate(Position: integer): boolean;
+function TFIBSQLParser.IsUpdate(Position: Integer): Boolean;
 begin
   Result := InternalIsClause('UPDATE', SQLText, Position);
 end;
 
-function TSQLParser.IsDelete(Position: integer): boolean;
+function TFIBSQLParser.IsDelete(Position: Integer): Boolean;
 begin
   Result := InternalIsClause('DELETE', SQLText, Position);
 end;
 
-function TSQLParser.IsInsert(Position: integer): boolean;
+function TFIBSQLParser.IsInsert(Position: Integer): Boolean;
 begin
   Result := InternalIsClause('INSERT', SQLText, Position);
 end;
 
-function TSQLParser.IsExecute(Position: integer): boolean;
+function TFIBSQLParser.IsExecute(Position: Integer): Boolean;
 begin
   Result := InternalIsClause('EXECUTE', SQLText, Position);
 end;
 
-function TSQLParser.IsExecuteBlock(Position: integer): boolean;
+function TFIBSQLParser.IsExecuteBlock(Position: Integer): Boolean;
 var
-  vPosition: integer;
+  AfterKeywordPos: Integer;
 begin
   if not IsExecute(Position) then
     Result := False
   else
   begin
-    vPosition := Position + 7;
-    SkipCommentsAndBlanks(SQLText, Len, vPosition);
-    Result := InternalIsClause('BLOCK', SQLText, vPosition);
+    AfterKeywordPos := Position + 7;
+    SkipCommentsAndBlanks(SQLText, Len, AfterKeywordPos);
+    Result := InternalIsClause('BLOCK', SQLText, AfterKeywordPos);
   end;
 end;
 
-function TSQLParser.IsExecuteProc(Position: integer): boolean;
+function TFIBSQLParser.IsExecuteProc(Position: Integer): Boolean;
 var
-  vPosition: integer;
+  AfterKeywordPos: Integer;
 begin
   if not IsExecute(Position) then
     Result := False
   else
   begin
-    vPosition := Position + 7;
-    SkipCommentsAndBlanks(SQLText, Len, vPosition);
-    Result := InternalIsClause('PROCEDURE', SQLText, vPosition);
+    AfterKeywordPos := Position + 7;
+    SkipCommentsAndBlanks(SQLText, Len, AfterKeywordPos);
+    Result := InternalIsClause('PROCEDURE', SQLText, AfterKeywordPos);
   end;
 end;
 
-function TSQLParser.IsDDL: boolean;
+function TFIBSQLParser.IsDDL: Boolean;
 var
-  vPosition: integer;
+  AfterKeywordPos: Integer;
 
 begin
   Result := (Len > 0) and ((FFirstPos = 1) or CharInSet(SQLText[FFirstPos - 1], CharsBeforeClause));
@@ -2284,12 +2309,13 @@ begin
         end;
       'S', 's':
         begin
+          Result := False;
           if InternalIsClause('SET', SQLText, FFirstPos) then
           begin
-            vPosition := FFirstPos + 4;
-            while (vPosition <= Len) and CharInSet(SQLText[vPosition], CharsBeforeClause) do
-              Inc(vPosition);
-            Result := InternalIsClause('GENERATOR', SQLText, vPosition);
+            AfterKeywordPos := FFirstPos + 4;
+            while (AfterKeywordPos <= Len) and CharInSet(SQLText[AfterKeywordPos], CharsBeforeClause) do
+              Inc(AfterKeywordPos);
+            Result := InternalIsClause('GENERATOR', SQLText, AfterKeywordPos);
           end;
         end;
     else
@@ -2297,11 +2323,27 @@ begin
     end;
 end;
 
-function TSQLParser.GetSQLKind: TSQLKind;
+function TFIBSQLParser.GetSQLKind: TFIBSQLStatementKind;
 var
-  j: integer;
+  j: Integer;
+
+  // WITH cte AS (...) SELECT: the SELECT outside the brackets
+  function SelectAfterWith: Boolean;
+  begin
+    FBracketOpened := 0;
+    ScanText(FFirstPos + 4, IsMainSelectBegin);
+    Result := FResultPos > 0;
+    if Result then
+      FSelectPos := FResultPos;
+    FBracketOpened := 0;
+  end;
+
 begin
+  FSelectPos := FFirstPos;
   if IsSelect(FFirstPos) then
+    Result := skSelect
+  else if (FFirstPos < Len) and InternalIsClause('WITH', SQLText, FFirstPos) and
+    SelectAfterWith then
     Result := skSelect
   else if IsUpdate(FFirstPos) then
   begin
@@ -2323,14 +2365,13 @@ begin
     Result := skDDL
   else
     Result := skUnknown;
-  // FCanParamsCheck:=not (Result in [skDDL,skUnknown]);
   FCanParamsCheck := Result <> skDDL;
 end;
 
-function TSQLParser.RecCountSQLText: string;
+function TFIBSQLParser.RecCountSQLText: string;
 var
-  fr: TPosition;
-  StartWhere, EndWhere: integer;
+  fr: TFIBPosition;
+  StartWhere, EndWhere: Integer;
   wh: string;
 begin
   Result := '';
@@ -2339,26 +2380,28 @@ begin
   fr := DispositionMainFrom;
   if fr.X = 0 then
     Exit;
-  Result := 'Select Count(*) ' + FastCopy(SQLText, fr.X, fr.Y - fr.X + 1);
+  // the WITH clause of a CTE stays before the count
+  Result := FastCopy(SQLText, FFirstPos, FSelectPos - FFirstPos) +
+    'Select Count(*) ' + FastCopy(SQLText, fr.X, fr.Y - fr.X + 1);
   wh := MainWhereClause(StartWhere, EndWhere);
   if wh <> '' then
     Result := Result + #13#10 + BeginWhere + wh;
 end;
 
-function TSQLParser.MainWhereClause(var StartPos, EndPos: integer): string;
+function TFIBSQLParser.MainWhereClause(var StartPos, EndPos: Integer): string;
 begin
   FResultPos := 0;
   Result := WhereClause(MainWhereIndex, StartPos, EndPos)
 end;
 
-procedure TSQLParser.FillMainTables(WithSP: boolean = False);
+procedure TFIBSQLParser.FillMainTables(WithSP: Boolean = False);
 var
-  FromPos: TPosition;
+  FromPos: TFIBPosition;
   FromTxt: string;
-  i, p, p1: integer;
+  i, p, p1: Integer;
   tmpStr: string;
-  wc: integer;
-  InQuote: boolean;
+  wc: Integer;
+  InQuote: Boolean;
 begin
   FTables.Clear;
   FromPos := DispositionMainFrom;
@@ -2400,7 +2443,7 @@ begin
         InQuote := not InQuote;
     end;
   end;
-  if tmpStr[p] = ' ' then
+  if (p > 0) and (tmpStr[p] = ' ') then
     Dec(p);
   SetLength(tmpStr, p);
   FromTxt := tmpStr;
@@ -2441,7 +2484,7 @@ begin
   end;
 end;
 
-function TSQLParser.GetAllTables(WithSP: boolean = False): TStrings;
+function TFIBSQLParser.GetAllTables(WithSP: Boolean = False): TStrings;
 begin
   if FTables.Count = 0 then
   begin
@@ -2457,139 +2500,12 @@ begin
   Result := FTables
 end;
 
-function GetFieldByAlias(const SQLText, FieldName: string): string;
-var
-  p: integer;
-  cBracket: integer;
-  Step: Byte;
-  FieldsClauseTxt: string;
-  OnlyNumeric: boolean;
-begin
-  FieldsClauseTxt := FieldsClause(SQLText);
-  p := PosExtCI(FieldName, FieldsClauseTxt, CharsBeforeClause, CharsAfterClause + [',']);
-  if p = 0 then
-    p := PosExtCI('"' + FieldName + '"', FieldsClauseTxt, CharsBeforeClause, CharsAfterClause + [',']);
-
-  Dec(p);
-  if p <= 0 then
-  begin
-    Result := '';
-    Exit;
-  end
-  else if FieldsClauseTxt[p] = '"' then
-    Dec(p);
-
-  while (p > 0) and CharInSet(FieldsClauseTxt[p], CharsAfterClause) do
-    Dec(p);
-
-  if (p = 0) or (FieldsClauseTxt[p] = ',') then
-  begin
-    Result := FieldName;
-    Exit;
-  end;
-  if p > 3 then
-  begin
-    if CharInSet(FieldsClauseTxt[p], ['S', 's']) then
-      if CharInSet(FieldsClauseTxt[p - 1], ['A', 'a']) then
-        if CharInSet(FieldsClauseTxt[p - 2], CharsAfterClause + [')']) then
-          Dec(p, 2);
-  end;
-  while (p > 0) and CharInSet(FieldsClauseTxt[p], CharsAfterClause + [#10]) do
-    Dec(p);
-  if (p = 0) or (FieldsClauseTxt[p] = ',') then
-  begin
-    Result := FieldName;
-    Exit;
-  end;
-  if FieldsClauseTxt[p] <> ')' then
-  begin
-    Result := '';
-    Step := 1;
-    (* Step
-      1 - Fill name and wait '.'
-      2 - wait '.'
-      3 - Skip ' '
-      4 - Fill name and wait ' '
-
-    *)
-
-    while (p > 0) do
-    begin
-      case FieldsClauseTxt[p] of
-        ',': Break;
-        '.':
-          begin
-            if Step in [1, 2] then
-              Step := 3;
-            Result := FieldsClauseTxt[p] + Result;
-          end;
-      else
-        if not CharInSet(FieldsClauseTxt[p], CharsAfterClause) then
-        begin
-          case Step of
-            2: Break;
-            3: Step := 4
-          end;
-          Result := FieldsClauseTxt[p] + Result;
-        end
-        else
-          case Step of
-            1: Step := 2;
-            4: Break
-          end
-      end;
-      Dec(p);
-    end;
-  end
-  else
-  begin
-    cBracket := 1;
-    Result := '';
-    Dec(p);
-    while (cBracket > 0) and (p > 0) do
-    begin
-      if FieldsClauseTxt[p] = '(' then
-        Dec(cBracket)
-      else if FieldsClauseTxt[p] = ')' then
-        Inc(cBracket);
-      if (cBracket > 0) then
-        Result := FieldsClauseTxt[p] + Result;
-      Dec(p);
-    end;
-    while (p > 0) and CharInSet(FieldsClauseTxt[p], CharsAfterClause + [#10]) do
-      Dec(p);
-    while (p > 0) and not CharInSet(FieldsClauseTxt[p], CharsAfterClause + [',']) do
-    begin
-      Result := FieldsClauseTxt[p] + Result;
-      Dec(p);
-    end;
-  end;
-  if SameText(Result, 'OR') or SameText(Result, 'AND') then
-    Result := '';
-
-  if SameText(Result, 'DISTINCT') then
-  begin
-    Result := FieldName;
-    Exit;
-  end;
-  OnlyNumeric := True;
-  for p := 1 to Length(Result) do
-    if not CharInSet(Result[p], ['0' .. '9']) then
-    begin
-      OnlyNumeric := False;
-      Break
-    end;
-  if OnlyNumeric then
-    Result := FieldName;
-
-end;
-
 function GetLinkFieldName(const SQLText, ParamName: string): string;
 var
-  Ind: integer;
+  Ind: Integer;
   wh: string;
-  StartPos, EndPos: integer;
-  c, p: integer;
+  StartPos, EndPos: Integer;
+  c, p: Integer;
 begin
   Result := '';
   c := WhereCount(SQLText);
@@ -2628,16 +2544,16 @@ begin
   end;
 end;
 
-function IsWhereBeginPos(const SQLText: string; Position: integer): boolean;
+function IsWhereBeginPos(const SQLText: string; Position: Integer): Boolean;
 begin
   Result := (Position > 1) and CharInSet(SQLText[Position - 1],
     CharsBeforeClause) and InternalIsClause('WHERE', SQLText, Position);
 end;
 
-function IsWhereEndPos(const SQLText: string; Position: integer): boolean;
+function IsWhereEndPos(const SQLText: string; Position: Integer): Boolean;
 var
-  p: integer;
-  Len: integer;
+  p: Integer;
+  Len: Integer;
 begin
   Len := Length(SQLText);
   p := Position;
@@ -2662,14 +2578,16 @@ begin
         'S', 's': Result := InternalIsClause('START', SQLText, p);
         'U', 'u': Result := InternalIsClause('UNION', SQLText, p);
       end;
+    if not Result then
+      Result := IsTailClauseAt(SQLText, p);
   end
 end;
 
-function PosInSections(const SQLText: string; Position: integer): TSQLSections;
+function PosInSections(const SQLText: string; Position: Integer): TFIBSQLSections;
 var
-  SQLPars: TSQLParser;
+  SQLPars: TFIBSQLParser;
 begin
-  SQLPars := TSQLParser.Create(SQLText);
+  SQLPars := TFIBSQLParser.Create(SQLText);
   try
     Result := SQLPars.PosInSections(Position)
   finally
@@ -2678,195 +2596,75 @@ begin
 end;
 
 function InvertOrderClause(const OrderText: string): string;
+const
+  Blanks = [' ', #9, #10, #13];
 var
-  i: integer;
-  State: Byte;
-  // 0 - increment name ,1 wait ASC or DESC, 2 - wait name, 3,4 - collate
-  // 5 - quoted name,6 - NULLS FIRST
-  CurAsc: boolean;
-  InComment: TParserState;
+  Items: TSQLTextParts;
+  i, P, E, ExprEnd: Integer;
+  Item, Word, Collation, Nulls, Expected: string;
+  Ascending: Boolean;
 begin
   Result := '';
-  if Length(OrderText) = 0 then
-    Exit;
-  i := 1;
-  while (i <= Length(OrderText)) and CharInSet(OrderText[i], [' ', #13, #9, #10]) do
-    Inc(i);
-
-  State := 0;
-  CurAsc := True;
-  InComment := sNormal;
-  while i <= Length(OrderText) do
+  Items := SplitTopLevel(RemoveComments(OrderText), ',');
+  for i := 0 to High(Items) do
   begin
-    if i < Length(OrderText) then
-      case InComment of
-        sNormal:
-          case OrderText[i] of
-            '-':
-              if OrderText[i + 1] = '-' then
-              begin
-                InComment := sFBComment;
-                Inc(i);
-                Continue
-              end;
-            '/':
-              if OrderText[i + 1] = '*' then
-              begin
-                InComment := sComment;
-                Inc(i);
-                Continue
-              end;
-          end;
-        sFBComment:
-          case OrderText[i] of
-            #13, #10:
-              begin
-                InComment := sNormal;
-                Inc(i);
-                while (i < Length(OrderText)) and CharInSet(OrderText[i], [' ', #13, #9, #10]) do
-                  Inc(i);
-                Continue
-              end
-          else
-            Inc(i);
-            Continue
-          end;
-        sComment:
-          case OrderText[i] of
-            '*':
-              if OrderText[i + 1] = '/' then
-              begin
-                Inc(i, 2);
-                while (i < Length(OrderText)) and CharInSet(OrderText[i], [' ', #13, #9, #10]) do
-                  Inc(i);
-                InComment := sNormal;
-              end
-              else
-              begin
-                Inc(i);
-                Continue
-              end;
-          else
-            Inc(i);
-            Continue
-          end;
-      end;
-    case State of
-      0:
-        begin
-          case OrderText[i] of
-            ' ', #13, #9, #10: State := 1;
-            ',':
-              begin
-                if CurAsc then
-                  Result := Result + ' desc,'
-                else
-                  Result := Result + ',';
-                while (i < Length(OrderText)) and CharInSet(OrderText[i + 1], [' ', #13, #9, #10]) do
-                  Inc(i);
-              end;
-            '"':
-              begin
-                Result := Result + '"';
-                State := 5;
-              end
-          else
-            Result := Result + OrderText[i];
-          end;
-          Inc(i);
-        end;
-      1:
-        begin
-          case OrderText[i] of
-            'A', 'a': Inc(i, 2); // ASC
-            'C', 'c': // COLLATE
-              begin
-                Result := Result + OrderText[i - 1] + OrderText[i];
-                State := 3;
-              end;
-            'D', 'd': // DESC
-              begin
-                CurAsc := False;
-                Inc(i, 3);
-              end;
-            'N', 'n': // NULLS FIRST or LAST
-              begin
-                if CurAsc then
-                  Result := Result + ' desc ';
-                Inc(i, 5);
-                while (i < Length(OrderText)) and CharInSet(OrderText[i], [' ', #13, #9, #10]) do
-                  Inc(i);
-                if CharInSet(OrderText[i], ['F', 'f']) then
-                begin
-                  Result := Result + ' NULLS LAST';
-                  Inc(i, 4);
-                end
-                else
-                begin
-                  Result := Result + ' NULLS FIRST';
-                  Inc(i, 3);
-                end;
-                CurAsc := True;
-                State := 6;
-              end;
-            ',':
-              begin
-                if CurAsc then
-                  Result := Result + ' desc,'
-                else
-                  Result := Result + ',';
-                State := 2;
-                CurAsc := True;
-              end;
-          end;
-          Inc(i);
-        end;
-      2:
-        if CharInSet(OrderText[i], [' ', #13, #10, #9]) then
-          Inc(i)
+    // expr [COLLATE name] [ASC[ENDING] | DESC[ENDING]] [NULLS FIRST | LAST]
+    Item := Items[i];
+    ExprEnd := 0;
+    Collation := '';
+    Nulls := '';
+    Expected := '';
+    Ascending := True;
+    P := 1;
+    while P <= Length(Item) do
+    begin
+      E := TopLevelPos(Blanks, Item, P);
+      if E = 0 then
+        E := Length(Item) + 1;
+      Word := Copy(Item, P, E - P);
+      if Expected = 'COLLATE' then
+      begin
+        Collation := Collation + ' ' + Word;
+        Expected := '';
+      end
+      else if Expected = 'NULLS' then
+      begin
+        if SameText(Word, 'FIRST') then
+          Nulls := ' NULLS LAST'
         else
-          State := 0;
-      3:
-        while (i <= Length(OrderText)) do
+          Nulls := ' NULLS FIRST';
+        Expected := '';
+      end
+      else if P > 1 then
+      begin
+        Word := UpperCase(Word);
+        if (Word = 'COLLATE') or (Word = 'NULLS') then
         begin
-          if (OrderText[i] <> ',') then
-            Result := Result + OrderText[i];
-          if CharInSet(OrderText[i], [' ', #13, #10, #9, ',']) then
-          begin
-            if State = 3 then
-            begin
-              State := 4
-            end
-            else
-            begin
-              State := 1;
-              Break;
-            end;
-          end;
-          Inc(i);
-        end;
-      5:
-        begin
-          Result := Result + OrderText[i];
-          if OrderText[i] = '"' then
-            State := 0;
-          Inc(i);
-        end;
-      6:
-        begin
-          if OrderText[i] = ',' then
-          begin
-            Result := Result + ',';
-            while (i < Length(OrderText)) and CharInSet(OrderText[i + 1], [' ', #13, #9, #10]) do
-              Inc(i);
-            State := 0;
-          end;
-          Inc(i);
-        end;
+          if Word = 'COLLATE' then
+            Collation := Copy(Item, P, E - P);
+          Expected := Word;
+        end
+        else if (Word = 'ASC') or (Word = 'ASCENDING') then
+          Ascending := True
+        else if (Word = 'DESC') or (Word = 'DESCENDING') then
+          Ascending := False
+        else
+          Word := '';
+        if (Word <> '') and (ExprEnd = 0) then
+          ExprEnd := P;
+      end;
+      P := SkipBlanks(Item, E);
     end;
+    if ExprEnd > 0 then
+      Item := TrimRight(Copy(Item, 1, ExprEnd - 1));
+    if Collation <> '' then
+      Item := Item + ' ' + Collation;
+    if Ascending then
+      Item := Item + ' desc';
+    if i > 0 then
+      Result := Result + ', ';
+    Result := Result + Item + Nulls;
   end;
-  if CurAsc and (State <> 6) then
-    Result := Result + ' desc';
 end;
 
 function ChangeToSQLDecimalSeparator(const Source: string): string;
@@ -2912,6 +2710,8 @@ function FieldValueToStr(Field: TField; Old: Boolean): string;
 var
   v: Variant;
   Guid: TGUID;
+  P: Pointer;
+  Bytes: RawByteString;
 begin
   if Old then
     v := Field.OldValue
@@ -2924,10 +2724,26 @@ begin
   begin
     case Field.DataType of
       ftBCD, ftFloat, ftFMTBcd: Result := ChangeToSQLDecimalSeparator(VarToStr(v));
+      // quoted ':' : FormatDateTime replaces a bare ':' with the locale time separator
       ftDate: Result := '''' + FormatDateTime('yyyy-mm-dd', VarToDateTime(v)) + '''';
-      ftTime: Result := '''' + FormatDateTime('hh:nn:ss.zzz', VarToDateTime(v)) + '''';
-      ftDateTime: Result := '''' + FormatDateTime('yyyy-mm-dd hh:nn:ss.zzz', VarToDateTime(v)) + '''';
+      ftTime: Result := '''' + FormatDateTime('hh":"nn":"ss.zzz', VarToDateTime(v)) + '''';
+      ftDateTime: Result := '''' + FormatDateTime('yyyy-mm-dd hh":"nn":"ss.zzz', VarToDateTime(v)) + '''';
       ftString, ftWideString, ftMemo, ftWideMemo, ftFmtMemo: Result := SQLStringLiteral(VarToStr(v));
+      ftBlob, ftGraphic, ftTypedBinary, ftBytes, ftVarBytes:
+        if VarIsArray(v) then
+        begin
+          P := VarArrayLock(v);
+          try
+            Result := SQLHexLiteral(P^, VarArrayHighBound(v, 1) - VarArrayLowBound(v, 1) + 1);
+          finally
+            VarArrayUnlock(v);
+          end;
+        end
+        else
+        begin
+          Bytes := RawByteString(v);
+          Result := SQLHexLiteral(PAnsiChar(Bytes)^, Length(Bytes));
+        end;
       ftGuid:
         begin
           // CHAR(16) OCTETS column: the bytes of the TGUID, as a parameter sends them
@@ -2942,9 +2758,9 @@ end;
 
 function GenerateInsertRow(DataSet: TDataSet; TableName: string; var fNames: string; FieldList: TList = nil): string;
 var
-  i, c, l, L1: integer;
+  i, c, l, L1: Integer;
   fValues, fValue: string;
-  fGenerateNames: boolean;
+  fGenerateNames: Boolean;
   fCutFieldName: string;
 begin
   fGenerateNames := fNames = '';
@@ -2970,15 +2786,24 @@ begin
         end;
       end;
       fValue := FieldValueToStr(DataSet.Fields[i]);
-      if Length(fValue) + L1 > l then
+      // the value and the ',' after it
+      if L1 + Length(fValue) + 1 > l then
       begin
-        l := Length(fValue) + L1;
+        l := (L1 + Length(fValue) + 1) * 2;
         SetLength(fValues, l);
       end;
-      Move(fValue[1], fValues[L1 + 1], Length(fValue) * SizeOf(Char));
+      Move(PChar(fValue)^, fValues[L1 + 1], Length(fValue) * SizeOf(Char));
       Inc(L1, Length(fValue) + 1);
       fValues[L1] := ',';
     end;
+  if L1 = 7 then
+  begin
+    // no field to insert
+    if fGenerateNames then
+      fNames := '';
+    Result := 'Insert into ' + TableName + ' default values;';
+    Exit;
+  end;
   fValues[L1] := ')';
   SetLength(fValues, L1);
   if fGenerateNames then
@@ -2987,31 +2812,25 @@ begin
 end;
 
 procedure InternalGetExportDataScript(DataSet: TDataSet;
-  const TableName: string; OutPut: TStrings; UseFieldNames: boolean = True;
+  const TableName: string; OutPut: TStrings; UseFieldNames: Boolean = True;
   FieldList: string = ''; FileName: string = '');
 var
-  ContextCount: integer;
+  ContextCount: Integer;
   Block: TStrings;
-  BlockSize: integer;
+  BlockSize: Integer;
   InsertRow: string;
   fFieldNames: string;
   fl: TList;
-  vForceStrings: boolean;
+  ForceStrings: Boolean;
+  FileStream: TStream;
 
   procedure FlushToFile;
   var
-    Stream: TStream;
+    Text: UTF8String;
   begin
-    if not FileExists(FileName) then
-      Stream := TFileStream.Create(FileName, fmCreate)
-    else
-      Stream := TFileStream.Create(FileName, fmOpenWrite or fmShareDenyNone);
-    try
-      Stream.Seek(0, soFromEnd);
-      OutPut.SaveToStream(Stream);
-    finally
-      Stream.Free;
-    end;
+    Text := UTF8Encode(OutPut.Text);
+    if Length(Text) > 0 then
+      FileStream.WriteBuffer(PAnsiChar(Text)^, Length(Text));
   end;
 
   procedure DoEndBlock;
@@ -3023,88 +2842,102 @@ var
     BlockSize := 0;
     if FileName <> '' then
       FlushToFile;
-    if vForceStrings then
+    if ForceStrings then
       OutPut.Clear
   end;
 
 begin
   if ((OutPut = nil) and (FileName = '')) or (DataSet = nil) or not DataSet.Active then
     Exit;
-  vForceStrings := OutPut = nil;
-  if vForceStrings then
+  ForceStrings := OutPut = nil;
+  FileStream := nil;
+  fl := nil;
+  Block := nil;
+  if ForceStrings then
     OutPut := TStringList.Create;
-  OutPut.Clear;
-  OutPut.Capacity := 100000;
-  OutPut.Add('SET TERM ^ ;');
-  Block := TStringList.Create;
-  if FieldList = '' then
-    fl := nil
-  else
-  begin
-    fl := TList.Create;
-    GetDataSetFieldList(DataSet, fl, FieldList)
-  end;
-  if UseFieldNames then
-    fFieldNames := ''
-  else
-    fFieldNames := ' ';
-  with DataSet do
-    try
+  try
+    if FileName <> '' then
+      FileStream := TFileStream.Create(FileName, fmCreate);
+    OutPut.Clear;
+    OutPut.Capacity := 100000;
+    OutPut.Add('SET TERM ^ ;');
+    Block := TStringList.Create;
+    if FieldList <> '' then
+    begin
+      fl := TList.Create;
+      GetDataSetFieldList(DataSet, fl, FieldList)
+    end;
+    if UseFieldNames then
+      fFieldNames := ''
+    else
+      fFieldNames := ' ';
+    with DataSet do
+    begin
       ContextCount := 0;
       DisableControls;
-      First;
-      while not eof do
-      begin
-        if ContextCount = 0 then
+      try
+        First;
+        while not eof do
         begin
-          Block.Clear;
-          BlockSize := 0;
-          Block.Add('EXECUTE BLOCK AS BEGIN');
-          Inc(BlockSize, Length(Block[0]) + 2);
-        end;
-        InsertRow := GenerateInsertRow(DataSet, TableName, fFieldNames, fl);
-        if BlockSize + Length(InsertRow) + 2 + 4 < High(Word) then
-        begin
-          Inc(BlockSize, Length(InsertRow) + 2);
-          Inc(ContextCount);
-          Block.Add(InsertRow);
-          if ContextCount > 254 then
+          if ContextCount = 0 then
+          begin
+            Block.Clear;
+            BlockSize := 0;
+            Block.Add('EXECUTE BLOCK AS BEGIN');
+            Inc(BlockSize, Length(Block[0]) + 2);
+          end;
+          InsertRow := GenerateInsertRow(DataSet, TableName, fFieldNames, fl);
+          // a row longer than a block gets a block of its own
+          if (ContextCount = 0) or (BlockSize + Length(InsertRow) + 2 + 4 < High(Word)) then
+          begin
+            Inc(BlockSize, Length(InsertRow) + 2);
+            Inc(ContextCount);
+            Block.Add(InsertRow);
+            if ContextCount > 254 then
+              DoEndBlock;
+            Next
+          end
+          else
             DoEndBlock;
-          Next
-        end
-        else
+        end;
+        if Block.Count > 0 then
           DoEndBlock;
+        OutPut.Add('SET TERM ; ^');
+        if FileName <> '' then
+          FlushToFile;
+      finally
+        EnableControls;
       end;
-      if Block.Count > 0 then
-        DoEndBlock;
-    finally
-      EnableControls;
-      if vForceStrings then
-        OutPut.Free
-      else
-        OutPut.Capacity := OutPut.Count;
-      Block.Free
     end;
+  finally
+    FileStream.Free;
+    fl.Free;
+    Block.Free;
+    if ForceStrings then
+      OutPut.Free
+    else
+      OutPut.Capacity := OutPut.Count;
+  end;
 end;
 
 procedure GetExportDataScript(DataSet: TDataSet; const TableName: string;
-  OutPut: TStrings; UseFieldNames: boolean = True; FieldList: string = '');
+  OutPut: TStrings; UseFieldNames: Boolean = True; FieldList: string = '');
 begin
   InternalGetExportDataScript(DataSet, TableName, OutPut, UseFieldNames, FieldList);
 end;
 
 procedure GetExportDataScriptToFile(DataSet: TDataSet; const TableName: string;
-  const FileName: string; UseFieldNames: boolean = True;
+  const FileName: string; UseFieldNames: Boolean = True;
   FieldList: string = '');
 begin
   InternalGetExportDataScript(DataSet, TableName, nil, UseFieldNames, FieldList, FileName);
 end;
 
-function TSQLParser.GetWord(Position: integer; var StartWord: integer; PartOnly: boolean): string;
+function TFIBSQLParser.GetWord(Position: Integer; var StartWord: Integer; PartOnly: Boolean): string;
 var
-  i: integer;
-  StartLine: integer;
-  InQuoted: boolean;
+  i: Integer;
+  StartLine: Integer;
+  InQuoted: Boolean;
 begin
   Result := '';
   StartWord := -1;
@@ -3190,10 +3023,10 @@ begin
   end;
 end;
 
-function TSQLParser.GetPrevWord(CurPosition: integer; var PosPrevWord: integer): string;
+function TFIBSQLParser.GetPrevWord(CurPosition: Integer; var PosPrevWord: Integer): string;
 var
 
-  StartPos: integer;
+  StartPos: Integer;
 begin
   Result := '';
 
@@ -3205,9 +3038,6 @@ begin
   end;
 
   Dec(StartPos);
-  { while FSQLText[startPos] in endLexem+CharsAfterClause-['.','"'] do
-    Dec(startPos);
-  }
   Result := GetWord(StartPos, PosPrevWord, True);
 
 end;

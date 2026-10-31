@@ -131,7 +131,7 @@ The lock lasts until `UpdateTransaction` ends. `Cancel` does not release it, and
 
 | Task | Use |
 |------|-----|
-| Lock the current row from code | `LockRecord`; `LockRecord(False)` returns a `TLockStatus` instead of raising, for example `lsDeadLock` |
+| Lock the current row from code | `LockRecord`; `LockRecord(False)` returns a `TFIBLockStatus` instead of raising, for example `lsDeadLock` |
 | Change the message, or abort or retry the edit | `OnLockError`: `daAbort` ends `Edit` with a silent `EAbort`, `daRetry` tries again |
 | Lock with your own statement | `OnLockSQLText` |
 
@@ -202,7 +202,7 @@ begin
 end;
 ```
 
-`GeneratorStep` is the increment, `1` by default. When you set `UpdateTableName` while `GeneratorName` is empty and `WhenGetGenID` is not `wgNever`, the dataset sets `GeneratorName` to `GEN_` plus the table name plus `_ID`. The prefix and suffix are the variables `DefPrefixGenName` and `DefSufixGenName` in the unit `FIBProps`.
+`GeneratorStep` is the increment, `1` by default. When you set `UpdateTableName` while `GeneratorName` is empty and `WhenGetGenID` is not `wgNever`, the dataset sets `GeneratorName` to `GEN_` plus the table name plus `_ID`. The prefix and suffix are the variables `DefPrefixGenName` and `DefSuffixGenName` in the unit `FIBProps`.
 
 ## Cached updates
 
@@ -223,7 +223,7 @@ end;
 
 Three events control `ApplyUpdates`: `OnUpdateRecord`, `OnUpdateError`, and `AfterUpdateRecord`. `OnUpdateRecord` is called for each pending row before the dataset sends it, so you can send the row yourself. `OnUpdateError` is called when sending raises `EFIBError`, and lets you fail, abort, skip, or retry the row. The actions and their effects are in [Applying cached updates](../reference/TFIBDataSet.md#applying-cached-updates); the event signatures are in [Updates](../reference/TFIBDataSet.md#updates).
 
-A row that `OnUpdateRecord` handled itself keeps its cached status, so it stays pending: the next `ApplyUpdates` calls the handler for it again. Call `CommitUpdToCach` after the transaction commits; it marks all pending rows as applied without sending anything. `UpdatesPending` can be `False` while such rows are still pending.
+A row that `OnUpdateRecord` handled itself keeps its cached status, so it stays pending: the next `ApplyUpdates` calls the handler for it again. Call `CommitUpdatesToCache` after the transaction commits; it marks all pending rows as applied without sending anything. `UpdatesPending` can be `False` while such rows are still pending.
 
 With `AutoCommit` and `CachedUpdates` both on, each `Post` and each `Delete` is applied and committed at once, so changes do not stay in the cache.
 
@@ -441,12 +441,12 @@ Generated SQL and the `PrepareOptions` that read the field definitions (for exam
 The cache is in the unit `FIBDataInfo`:
 
 ```delphi
-ListTableInfo.ClearForTable('CUSTOMER');
-ListTableInfo.ClearForDataBase(Database);
-ListTableInfo.Clear;
+TableInfoCache.ClearForTable('CUSTOMER');
+TableInfoCache.ClearForDataBase(Database);
+TableInfoCache.Clear;
 ```
 
-Clearing does not change datasets that are open. The next use of the table reads it from the server again. Stored procedure parameters have a separate process-wide cache in the same unit, `ListSPInfo`, with `Clear` and `ClearSPInfo(Database)`. It is read again at design time.
+Clearing does not change datasets that are open. The next use of the table reads it from the server again. Stored procedure parameters have a separate process-wide cache in the same unit, `StoredProcInfoCache`, with `Clear` and `ClearSPInfo(Database)`. It is read again at design time.
 
 ### Save the metadata to a file
 

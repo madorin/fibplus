@@ -1,4 +1,4 @@
-object frmEdParamToFields: TfrmEdParamToFields
+object frmEdParamToFields: TFIBParamsToFieldsForm
   Left = 414
   Top = 158
   BorderStyle = bsToolWindow

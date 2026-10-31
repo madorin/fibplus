@@ -24,37 +24,37 @@ uses
 
 type
 
-  TBlockArray = array [0 .. 0] of PByte;
-  PBlockArray = ^TBlockArray;
-  TIntArray = array [1 .. 1] of Integer;
-  PIntArray = ^TIntArray;
+  TFIBBlockArray = array [0 .. 0] of PByte;
+  PFIBBlockArray = ^TFIBBlockArray;
+  TFIBIntegerArray = array [1 .. 1] of Integer;
+  PFIBIntegerArray = ^TFIBIntegerArray;
 
-  TRecordPosition = record
+  TFIBRecordPosition = record
     RecordNo: Integer;
     InternalNo: Integer;
   end;
 
-  PRecordPosition = ^TRecordPosition;
-  TRecPositions = array [1 .. 1] of TRecordPosition;
-  PRecPositions = ^TRecPositions;
+  PFIBRecordPosition = ^TFIBRecordPosition;
+  TFIBRecordPositions = array [1 .. 1] of TFIBRecordPosition;
+  PFIBRecordPositions = ^TFIBRecordPositions;
 
-  TRecordsCache = class
+  TFIBRecordsCache = class
   private
     FMapRecords: TFIBList;
-    FStringData: TStringCollection;
-    FLogStringData: TStringCollection;
+    FStringData: TFIBStringCollection;
+    FLogStringData: TFIBStringCollection;
     FBlocks: TFIBList;
     FChangeLog: TFIBList;
-    FChangesPositions: PRecPositions;
+    FChangesPositions: PFIBRecordPositions;
     FOldBufRecordNumber: Integer;
-    FOldBuffer: TDataBuffer;
+    FOldBuffer: TFIBDataBuffer;
     FBlockSize: Integer;
     FRecordSize: Integer;
     FInOutRecordSize: Integer;
     FRecordCount: Integer;
     FChangesCount: Integer;
-    FStringFieldOffsets: PIntArray;
-    FStringFieldSize: PIntArray;
+    FStringFieldOffsets: PFIBIntegerArray;
+    FStringFieldSize: PFIBIntegerArray;
     FRecInBlock: Integer;
     FStrFieldCount: Integer;
     FSaveChangeLog: Boolean;
@@ -63,38 +63,33 @@ type
     procedure SetChangeLogBlockCount(NewCount: Integer);
     function InternalRecordNo(const RecordNo: Integer): Integer;
     function GetSize: Integer;
-    function GetChangePosition(aRecordNo: Integer; Force: Boolean): PRecordPosition;
-    // procedure   ReadRecordBuffer(RecordNo:integer;var Dest:PChar;Old:boolean);
+    function GetChangePosition(aRecordNo: Integer; Force: Boolean): PFIBRecordPosition;
     function FindChangeRecNo(const ARecno: Integer; var Index: Integer): Boolean;
     procedure InitializeMap;
     function GetChangesBlockCount: Integer;
   public
     constructor Create(aBlockRecCount, aRecordSize, aBlockReadSize, aStrCount: Integer);
     destructor Destroy; override;
-    procedure Assign(SourceCache: TRecordsCache);
+    procedure Assign(SourceCache: TFIBRecordsCache);
     function CreateNewBlock: Integer;
-    function PrepareMemory(RecordNo: Integer): TDataBuffer;
-    function MemoryPrepared(RecordNo: Integer): Boolean;
-    function PRecBuffer(const RecordNo: Integer; Old: Boolean): TDataBuffer;
+    function PrepareMemory(RecordNo: Integer): TFIBDataBuffer;
+    function PRecBuffer(const RecordNo: Integer): TFIBDataBuffer;
     function RecordPosition(const RecordNo: Integer; IsInternalRecno: Boolean = False): Integer;
     function RecordBlock(const RecordNo: Integer; ForceAllocMem: Boolean; IsInternalRecno: Boolean = False): Integer;
     procedure SetStrOffset(Index: Integer; Offset, DataSize: Integer);
-    function Capacity: Integer;
-    procedure ReadRecord(const RecordNo: Integer; var Dest: TDataBuffer);
-    procedure ReadRecordBuffer(RecordNo: Integer; var Dest: TDataBuffer; Old: Boolean);
+    procedure ReadRecord(const RecordNo: Integer; var Dest: TFIBDataBuffer);
+    procedure ReadRecordBuffer(RecordNo: Integer; var Dest: TFIBDataBuffer; Old: Boolean);
     function GetFieldData(RecordNo, FieldOffSet, StrIndex: Integer; var RecordData: Pointer): Pointer;
     function GetStringFieldData(RecordNo, StrIndex: Integer): Pointer;
     function GetNonStringFieldData(RecordNo, FieldOffSet: Integer; var RecordData: Pointer): Pointer;
-    procedure ShiftMapValues(Distance: Integer);
-    procedure WriteRecord(RecordNo: Integer; const Source: TDataBuffer; ForceAllocMem: Boolean);
-    procedure WriteField(RecordNo, FieldOffSet: Integer; const Data: TDataBuffer; SizeData: Integer);
-    procedure SetStringValue(Index, RecordNo: Integer; const Value: FIBByteString);
-    procedure SetStringFromPChar(Index, RecordNo: Integer; const Value: PAnsiChar; Len: Integer; Triming: Boolean);
+    procedure WriteRecord(RecordNo: Integer; const Source: TFIBDataBuffer; ForceAllocMem: Boolean);
+    procedure ClearStringValue(Index, RecordNo: Integer);
+    procedure SetStringFromPChar(Index, RecordNo: Integer; const Value: PAnsiChar; Len: Integer; Trimming: Boolean);
     procedure SaveOldBuffer(RecordNo: Integer);
     procedure ClearOldBuffer;
     procedure SaveToChangeLog(aRecordNo: Integer);
-    function OldBuffer(RecordNo: Integer): TDataBuffer;
-    function pRecBuff(RecordNo: Integer): TDataBuffer;
+    function OldBuffer(RecordNo: Integer): TFIBDataBuffer;
+    function pRecBuff(RecordNo: Integer): TFIBDataBuffer;
     procedure RevertRecord(aRecordNo: Integer);
     procedure ClearLog;
     procedure SwapRecords(OldRecordNo, NewRecordNo: Integer);
@@ -108,26 +103,37 @@ type
     function BookMarkValid(BookMark: Integer): Boolean;
     property ChangesBlockCount: Integer read GetChangesBlockCount write SetChangeLogBlockCount;
   public
-    property RecordSize: Integer read FRecordSize;
     property BlockCount: Integer read GetBlockCount write SetBlockCount;
-    property RecordCount: Integer read FRecordCount;
     property Size: Integer read GetSize;
     property SaveChangeLog: Boolean read FSaveChangeLog write FSaveChangeLog;
   end;
 
-  EMemManagerError = class(Exception);
+  EFIBMemoryManagerError = class(Exception);
 
 const
   MinBlockSize = 1024;
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TBlockArray = TFIBBlockArray deprecated 'Use TFIBBlockArray';
+  PBlockArray = PFIBBlockArray deprecated 'Use PFIBBlockArray';
+  TIntArray = TFIBIntegerArray deprecated 'Use TFIBIntegerArray';
+  PIntArray = PFIBIntegerArray deprecated 'Use PFIBIntegerArray';
+  TRecordPosition = TFIBRecordPosition deprecated 'Use TFIBRecordPosition';
+  PRecordPosition = PFIBRecordPosition deprecated 'Use PFIBRecordPosition';
+  TRecPositions = TFIBRecordPositions deprecated 'Use TFIBRecordPositions';
+  PRecPositions = PFIBRecordPositions deprecated 'Use PFIBRecordPositions';
+  TRecordsCache = TFIBRecordsCache deprecated 'Use TFIBRecordsCache';
+  EMemManagerError = EFIBMemoryManagerError deprecated 'Use EFIBMemoryManagerError';
 
 implementation
 
 uses
   StdFuncs, StrUtil;
 
-{ TRecordsCache }
+{ TFIBRecordsCache }
 
-constructor TRecordsCache.Create(aBlockRecCount, aRecordSize, aBlockReadSize, aStrCount: Integer);
+constructor TFIBRecordsCache.Create(aBlockRecCount, aRecordSize, aBlockReadSize, aStrCount: Integer);
 var
   aBlockSize: Integer;
 begin
@@ -140,14 +146,14 @@ begin
     aBlockSize := MinBlockSize + aRecordSize - (MinBlockSize mod aRecordSize);
 
   if (aBlockSize < FRecordSize) then
-    raise EMemManagerError.Create('Incompatible Sizes');
+    raise EFIBMemoryManagerError.Create('Incompatible Sizes');
   FBlocks := TFIBList.Create;
   FBlockSize := aBlockSize;
   FRecInBlock := FBlockSize div FRecordSize;
   if aStrCount > 0 then
     begin
       FStrFieldCount := aStrCount;
-      FStringData := TStringCollection.Create(aStrCount);
+      FStringData := TFIBStringCollection.Create(aStrCount);
       GetMem(FStringFieldOffsets, aStrCount * SizeOf(Integer));
       GetMem(FStringFieldSize, aStrCount * SizeOf(Integer));
     end;
@@ -157,12 +163,14 @@ begin
     FillChar(FOldBuffer[0], FInOutRecordSize, 1); // NullValues
 end;
 
-destructor TRecordsCache.Destroy;
+destructor TFIBRecordsCache.Destroy;
 var
   i: Integer;
 begin
-  for i := 0 to BlockCount - 1 do
-    FreeMem(FBlocks.List^[i]);
+  // nil when the constructor failed
+  if FBlocks <> nil then
+    for i := 0 to BlockCount - 1 do
+      FreeMem(FBlocks.List^[i]);
   for i := 0 to ChangesBlockCount - 1 do
     FreeMem(FChangeLog.List^[i]);
 
@@ -181,7 +189,7 @@ begin
   inherited;
 end;
 
-procedure TRecordsCache.Assign(SourceCache: TRecordsCache);
+procedure TFIBRecordsCache.Assign(SourceCache: TFIBRecordsCache);
 var
   i, j: Integer;
   ExistingBlockCount: Integer;
@@ -253,7 +261,7 @@ begin
     end;
 
   FChangesCount := SourceCache.FChangesCount;
-  ReallocMem(FChangesPositions, FChangesCount * SizeOf(TRecordPosition));
+  ReallocMem(FChangesPositions, FChangesCount * SizeOf(TFIBRecordPosition));
   for i := 1 to FChangesCount do
     begin
       FChangesPositions^[i].RecordNo := SourceCache.FChangesPositions^[i].RecordNo;
@@ -264,8 +272,8 @@ begin
   ReallocMem(FStringFieldOffsets, FStrFieldCount * SizeOf(Integer));
   ReallocMem(FStringFieldSize, FStrFieldCount * SizeOf(Integer));
 
-  FStringData.Free;
-  FLogStringData.Free;
+  FreeAndNil(FStringData);
+  FreeAndNil(FLogStringData);
   if FStrFieldCount > 0 then
     begin
       for i := 1 to FStrFieldCount do
@@ -273,7 +281,7 @@ begin
           FStringFieldOffsets^[i] := SourceCache.FStringFieldOffsets^[i];
           FStringFieldSize^[i] := SourceCache.FStringFieldSize^[i];
         end;
-      FStringData := TStringCollection.Create(FStrFieldCount);
+      FStringData := TFIBStringCollection.Create(FStrFieldCount);
       FStringData.Capacity := SourceCache.FStringData.Capacity;
       for i := 0 to Pred(SourceCache.FStringData.HighX) do
         for j := 0 to Pred(SourceCache.FStringData.CountY) do
@@ -285,7 +293,7 @@ begin
 
       if Assigned(SourceCache.FLogStringData) then
         begin
-          FLogStringData := TStringCollection.Create(FStrFieldCount);
+          FLogStringData := TFIBStringCollection.Create(FStrFieldCount);
           FLogStringData.Capacity := SourceCache.FLogStringData.Capacity;
           for i := 0 to Pred(SourceCache.FLogStringData.HighX) do
             for j := 0 to Pred(SourceCache.FLogStringData.CountY) do
@@ -308,37 +316,42 @@ begin
   FRecInBlock := SourceCache.FRecInBlock;
   FRecordCount := SourceCache.FRecordCount;
   ReallocMem(FOldBuffer, FInOutRecordSize);
+  if FInOutRecordSize > 0 then
+    Move(SourceCache.FOldBuffer^, FOldBuffer^, FInOutRecordSize);
+  FOldBufRecordNumber := SourceCache.FOldBufRecordNumber;
+  FSaveChangeLog := SourceCache.FSaveChangeLog;
 
+  // the order of a sorted cache and the inserted records
+  if Assigned(SourceCache.FMapRecords) then
+  begin
+    if FMapRecords = nil then
+      FMapRecords := TFIBList.Create;
+    FMapRecords.Assign(SourceCache.FMapRecords);
+  end
+  else
+    FreeAndNil(FMapRecords);
 end;
 
-procedure TRecordsCache.SetBlockCount(NewCount: Integer);
+procedure TFIBRecordsCache.SetBlockCount(NewCount: Integer);
 begin
   if NewCount >= FBlocks.Capacity then
     FBlocks.Capacity := NewCount + 10;
   FBlocks.Count := NewCount
 end;
 
-function TRecordsCache.GetBlockCount: Integer;
+function TFIBRecordsCache.GetBlockCount: Integer;
 begin
   Result := Integer(FBlocks.Count)
 end;
 
-function TRecordsCache.CreateNewBlock: Integer;
+function TFIBRecordsCache.CreateNewBlock: Integer;
 begin
   SetBlockCount(BlockCount + 1);
   FBlocks.List^[BlockCount - 1] := AllocMem(FBlockSize);
   Result := BlockCount;
 end;
 
-function TRecordsCache.MemoryPrepared(RecordNo: Integer): Boolean;
-begin
-  if Assigned(FMapRecords) then
-    Result := (RecordNo < FMapRecords.Count)
-  else
-    Result := RecordNo < FRecordCount;
-end;
-
-function TRecordsCache.PrepareMemory(RecordNo: Integer): TDataBuffer;
+function TFIBRecordsCache.PrepareMemory(RecordNo: Integer): TFIBDataBuffer;
 var
   BlockNo: Integer;
   IRecordNo, i, c: Integer;
@@ -359,10 +372,10 @@ begin
   BlockNo := (IRecordNo - 1) div FRecInBlock;
   if BlockNo = BlockCount then
     CreateNewBlock;
-  Result := TDataBuffer(FBlocks.List^[BlockNo]) + RecordPosition(IRecordNo, True);
+  Result := TFIBDataBuffer(FBlocks.List^[BlockNo]) + RecordPosition(IRecordNo, True);
 end;
 
-function TRecordsCache.RecordPosition(const RecordNo: Integer; IsInternalRecno: Boolean = False): Integer;
+function TFIBRecordsCache.RecordPosition(const RecordNo: Integer; IsInternalRecno: Boolean = False): Integer;
 begin
   if IsInternalRecno then
     Result := ((RecordNo - 1) mod FRecInBlock) * FRecordSize
@@ -370,12 +383,7 @@ begin
     Result := ((InternalRecordNo(RecordNo) - 1) mod FRecInBlock) * FRecordSize
 end;
 
-function TRecordsCache.Capacity: Integer;
-begin
-  Result := (FBlockSize div FRecordSize) * BlockCount;
-end;
-
-function TRecordsCache.RecordBlock(const RecordNo: Integer; ForceAllocMem: Boolean; IsInternalRecno: Boolean = False): Integer;
+function TFIBRecordsCache.RecordBlock(const RecordNo: Integer; ForceAllocMem: Boolean; IsInternalRecno: Boolean = False): Integer;
 begin
   if ForceAllocMem then
     begin
@@ -389,12 +397,12 @@ begin
     Result := (InternalRecordNo(RecordNo) - 1) div FRecInBlock;
 end;
 
-procedure TRecordsCache.ReadRecord(const RecordNo: Integer; var Dest: TDataBuffer);
+procedure TFIBRecordsCache.ReadRecord(const RecordNo: Integer; var Dest: TFIBDataBuffer);
 begin
   ReadRecordBuffer(RecordNo, Dest, False);
 end;
 
-function TRecordsCache.PRecBuffer(const RecordNo: Integer; Old: Boolean): TDataBuffer;
+function TFIBRecordsCache.PRecBuffer(const RecordNo: Integer): TFIBDataBuffer;
 var
   BlockIndex: Integer;
   PosInBlock: Integer;
@@ -402,24 +410,27 @@ var
 begin
   IRecordNo := InternalRecordNo(RecordNo);
   BlockIndex := RecordBlock(IRecordNo, False, True);
-  if BlockIndex >= BlockCount then
-    raise EMemManagerError.Create('Can''t read Buffer.Incorrect RecordNo');
+  // -1 beyond the map
+  if (IRecordNo < 1) or (BlockIndex >= BlockCount) then
+    raise EFIBMemoryManagerError.Create('Can''t read Buffer.Incorrect RecordNo');
   PosInBlock := RecordPosition(IRecordNo, True);
-  Result := TDataBuffer(FBlocks.List^[BlockIndex]) + PosInBlock;
+  Result := TFIBDataBuffer(FBlocks.List^[BlockIndex]) + PosInBlock;
 end;
 
-procedure TRecordsCache.ReadRecordBuffer(RecordNo: Integer; var Dest: TDataBuffer; Old: Boolean);
+procedure TFIBRecordsCache.ReadRecordBuffer(RecordNo: Integer; var Dest: TFIBDataBuffer; Old: Boolean);
 var
   BlockIndex: Integer;
   PosInBlock: Integer;
-  Cache: TDataBuffer;
+  Cache: TFIBDataBuffer;
   i, L: Integer;
   IRecordNo: Integer;
-  p: PRecordPosition;
-  ss: TStringCollection;
+  p: PFIBRecordPosition;
+  ss: TFIBStringCollection;
   ps: PFIBByteString;
 begin
   IRecordNo := InternalRecordNo(RecordNo);
+  if IRecordNo < 1 then
+    raise EFIBMemoryManagerError.Create('Can''t read Buffer.Incorrect RecordNo');
   if Old then
     begin
       p := GetChangePosition(IRecordNo, False);
@@ -432,7 +443,7 @@ begin
       ss := FLogStringData;
       BlockIndex := (IRecordNo - 1) div FRecInBlock;
       if BlockIndex >= ChangesBlockCount then
-        raise EMemManagerError.Create('Can''t read LogBuffer.Incorrect RecordNo');
+        raise EFIBMemoryManagerError.Create('Can''t read LogBuffer.Incorrect RecordNo');
       PosInBlock := ((IRecordNo - 1) mod FRecInBlock) * FRecordSize;
     end
   else
@@ -440,13 +451,13 @@ begin
       ss := FStringData;
       BlockIndex := RecordBlock(IRecordNo, False, True);
       if BlockIndex >= BlockCount then
-        raise EMemManagerError.Create('Can''t read Buffer.Incorrect RecordNo');
+        raise EFIBMemoryManagerError.Create('Can''t read Buffer.Incorrect RecordNo');
       PosInBlock := RecordPosition(IRecordNo, True);
     end;
   if Old then
-    Cache := TDataBuffer(FChangeLog.List^[BlockIndex]) + PosInBlock
+    Cache := TFIBDataBuffer(FChangeLog.List^[BlockIndex]) + PosInBlock
   else
-    Cache := TDataBuffer(FBlocks.List^[BlockIndex]) + PosInBlock;
+    Cache := TFIBDataBuffer(FBlocks.List^[BlockIndex]) + PosInBlock;
   if (FStrFieldCount = 0) then
     Move(Cache^, Dest^, FRecordSize)
   else
@@ -478,11 +489,11 @@ begin
     end;
 end;
 
-procedure TRecordsCache.WriteRecord(RecordNo: Integer; const Source: TDataBuffer; ForceAllocMem: Boolean);
+procedure TFIBRecordsCache.WriteRecord(RecordNo: Integer; const Source: TFIBDataBuffer; ForceAllocMem: Boolean);
 var
   BlockIndex: Integer;
   PosInBlock: Integer;
-  Cache: TDataBuffer;
+  Cache: TFIBDataBuffer;
   L, i: Integer;
   ps: PFIBByteString;
 begin
@@ -490,7 +501,7 @@ begin
   if BlockIndex < BlockCount then
     begin
       PosInBlock := RecordPosition(RecordNo);
-      Cache := TDataBuffer(FBlocks.List^[BlockIndex]) + PosInBlock;
+      Cache := TFIBDataBuffer(FBlocks.List^[BlockIndex]) + PosInBlock;
       if Source = nil then
         FillChar(Cache^, FRecordSize, 0)
       else
@@ -522,10 +533,10 @@ begin
         end;
     end
   else
-    raise EMemManagerError.Create('Can''t write to Buffer.Incorrect RecordNo');
+    raise EFIBMemoryManagerError.Create('Can''t write to Buffer.Incorrect RecordNo');
 end;
 
-function TRecordsCache.InternalRecordNo(const RecordNo: Integer): Integer;
+function TFIBRecordsCache.InternalRecordNo(const RecordNo: Integer): Integer;
 begin
   if Assigned(FMapRecords) then
     if RecordNo <= FMapRecords.Count then
@@ -536,12 +547,12 @@ begin
     Result := RecordNo
 end;
 
-function TRecordsCache.GetSize: Integer;
+function TFIBRecordsCache.GetSize: Integer;
 begin
   Result := BlockCount * FBlockSize;
 end;
 
-procedure TRecordsCache.SetStrOffset(Index, Offset, DataSize: Integer);
+procedure TFIBRecordsCache.SetStrOffset(Index, Offset, DataSize: Integer);
 begin
   if Assigned(FStringFieldOffsets) and Assigned(FStringData) then
     if (Index <= FStringData.HighX) and (Index > 0) then
@@ -551,39 +562,18 @@ begin
       end;
 end;
 
-procedure TRecordsCache.WriteField(RecordNo, FieldOffSet: Integer; const Data: TDataBuffer; SizeData: Integer);
-var
-  BlockIndex: Integer;
-  PosInBlock: Integer;
-  Cache: TDataBuffer;
-begin
-  BlockIndex := RecordBlock(RecordNo, False);
-  if BlockIndex < BlockCount then
-    begin
-      PosInBlock := RecordPosition(RecordNo);
-      Cache := TDataBuffer(FBlocks.List^[BlockIndex]) + PosInBlock + FieldOffSet;
-      if Data = nil then
-        FillChar(Cache^, SizeData, 0)
-      else
-        Move(Data[0], Cache^, SizeData);
-    end
-  else
-    raise EMemManagerError.Create
-    ('Can''t write to Field to Buffer.Incorrect RecordNo');
-end;
-
-function TRecordsCache.GetStringFieldData(RecordNo, StrIndex: Integer): Pointer;
+function TFIBRecordsCache.GetStringFieldData(RecordNo, StrIndex: Integer): Pointer;
 begin
   // used in new Locate
   if Assigned(FMapRecords) then
     RecordNo := InternalRecordNo(RecordNo + 1) - 1;
   if RecordNo > FStringData.Capacity then
-    raise EMemManagerError.Create('Can''t read  FieldData .Incorrect RecordNo');
+    raise EFIBMemoryManagerError.Create('Can''t read  FieldData .Incorrect RecordNo');
   Result := FStringData.PValue[StrIndex, RecordNo];
 
 end;
 
-function TRecordsCache.GetFieldData(RecordNo, FieldOffSet, StrIndex: Integer; var RecordData: Pointer): Pointer;
+function TFIBRecordsCache.GetFieldData(RecordNo, FieldOffSet, StrIndex: Integer; var RecordData: Pointer): Pointer;
 var
   BlockIndex: Integer;
   PosInBlock: Integer;
@@ -594,14 +584,14 @@ begin
     RecordNo := InternalRecordNo(RecordNo);
 
   BlockIndex := (RecordNo - 1) div FRecInBlock;
-  if BlockIndex < FBlocks.Count then
+  if (RecordNo >= 1) and (BlockIndex < FBlocks.Count) then
     begin
       PosInBlock := (RecordNo - 1 - BlockIndex * FRecInBlock) * FRecordSize;
       RecordData := FBlocks.List^[BlockIndex];
       Inc(PByte(RecordData), PosInBlock);
     end
   else
-    raise EMemManagerError.Create('Can''t read  FieldData .Incorrect RecordNo');
+    raise EFIBMemoryManagerError.Create('Can''t read  FieldData .Incorrect RecordNo');
   if (StrIndex = -1) or (FStrFieldCount = 0) then
     begin
       Result := RecordData;
@@ -610,14 +600,14 @@ begin
   else
     begin
       if RecordNo > FStringData.Capacity then
-        raise EMemManagerError.Create
+        raise EFIBMemoryManagerError.Create
         ('Can''t read  FieldData .Incorrect RecordNo');
       Result := FStringData.PValue[StrIndex, RecordNo - 1];
     end;
 
 end;
 
-function TRecordsCache.GetNonStringFieldData(RecordNo, FieldOffSet: Integer; var RecordData: Pointer): Pointer;
+function TFIBRecordsCache.GetNonStringFieldData(RecordNo, FieldOffSet: Integer; var RecordData: Pointer): Pointer;
 var
   BlockIndex: Integer;
   PosInBlock: Integer;
@@ -630,73 +620,41 @@ begin
   BlockIndex := RecordNo div FRecInBlock;
   if BlockIndex < FBlocks.Count then
     begin
-      // PosInBlock:=(RecordNo mod FRecInBlock)*FRecordSize;
       PosInBlock := (RecordNo - BlockIndex * FRecInBlock) * FRecordSize;
 
       RecordData := FBlocks.List^[BlockIndex];
-      Inc(TDataBuffer(RecordData), PosInBlock)
+      Inc(TFIBDataBuffer(RecordData), PosInBlock)
     end
   else
-    raise EMemManagerError.Create
+    raise EFIBMemoryManagerError.Create
     ('Can''t read  FieldData .Incorrect RecordNo'); ;
   Result := RecordData;
-  Inc(TDataBuffer(Result), FieldOffSet);
+  Inc(TFIBDataBuffer(Result), FieldOffSet);
 end;
 
-procedure TRecordsCache.SetStringValue(Index, RecordNo: Integer; const Value: FIBByteString);
+procedure TFIBRecordsCache.ClearStringValue(Index, RecordNo: Integer);
 var
-  i, L: Integer;
   Added: Boolean;
-
 begin
   if Assigned(FStringFieldOffsets) and Assigned(FStringData) then
     begin
-
       if Assigned(FMapRecords) then
         RecordNo := InternalRecordNo(RecordNo + 1) - 1;
       Added := FStringData.CountY <= RecordNo;
       while FStringData.CountY <= RecordNo do
         FStringData.Add;
-
-      L := Length(Value);
-      if L = 0 then
-        begin
-          if not Added then
-            FStringData.SetPCharValue(Index, RecordNo, '', 0)
-            // FStringData.Value[Index,RecordNo]:=''
-        end
-      else if FStringFieldSize^[Index + 1] < L then
-        begin
-          // For char Fields
-          i := FStringFieldSize^[Index + 1];
-          while (i > 0) and (Value[i] <= ' ') do
-            Dec(i);
-          { if i<FStringFieldSize^[Index+1] then
-        begin
-        DoCopy(Value,FStringData.PValue[Index,RecordNo]^,1,i)
-        end
-        else }
-          FStringData.Value[Index, RecordNo] := Value;
-        end
-      else if (Value[L] = ' ') then
-        begin
-          // as TrimRight, on the bytes
-          while (L > 0) and (Value[L] <= ' ') do
-            Dec(L);
-          FStringData.Value[Index, RecordNo] := Copy(Value, 1, L);
-        end
-      else
-        FStringData.Value[Index, RecordNo] := Value
+      if not Added then
+        FStringData.SetPCharValue(Index, RecordNo, '', 0);
     end;
 end;
 
-procedure TRecordsCache.SetStringFromPChar(Index, RecordNo: Integer; const Value: PAnsiChar; Len: Integer; Triming: Boolean);
+procedure TFIBRecordsCache.SetStringFromPChar(Index, RecordNo: Integer; const Value: PAnsiChar; Len: Integer; Trimming: Boolean);
 begin
   if Assigned(FMapRecords) then
     RecordNo := InternalRecordNo(RecordNo + 1) - 1;
   while FStringData.CountY <= RecordNo do
     FStringData.Add;
-  if Triming then
+  if Trimming then
     begin
       if Len < 0 then
         Len := FStringFieldSize^[Index + 1];
@@ -710,7 +668,7 @@ begin
   FStringData.SetPCharValue(Index, RecordNo, Value, Len)
 end;
 
-function TRecordsCache.OldBuffer(RecordNo: Integer): TDataBuffer;
+function TFIBRecordsCache.OldBuffer(RecordNo: Integer): TFIBDataBuffer;
 begin
   if SaveChangeLog then
     begin
@@ -730,7 +688,7 @@ begin
   Result := FOldBuffer
 end;
 
-procedure TRecordsCache.SaveOldBuffer(RecordNo: Integer);
+procedure TFIBRecordsCache.SaveOldBuffer(RecordNo: Integer);
 begin
   if SaveChangeLog then
     SaveToChangeLog(RecordNo)
@@ -744,14 +702,14 @@ begin
     end;
 end;
 
-procedure TRecordsCache.ClearOldBuffer;
+procedure TFIBRecordsCache.ClearOldBuffer;
 begin
   FillChar(FOldBuffer[0], FInOutRecordSize, 1); // NullValues
 end;
 
-procedure TRecordsCache.SaveToChangeLog(aRecordNo: Integer);
+procedure TFIBRecordsCache.SaveToChangeLog(aRecordNo: Integer);
 var
-  p: PRecordPosition;
+  p: PFIBRecordPosition;
   BlockIndex: Integer;
   PosInBlock: Integer;
   ChangeBlockIndex: Integer;
@@ -770,17 +728,16 @@ begin
   ChangeBlockIndex := (p^.InternalNo - 1) div FRecInBlock;
   ChangePosInBlock := ((p^.InternalNo - 1) mod FRecInBlock) * FRecordSize;
 
-  // if ((p^.InternalNo mod FRecInBlock)=1) and (BlockIndex>=ChangesBlockCount) then
   if (ChangeBlockIndex >= ChangesBlockCount) then
     begin
       SetChangeLogBlockCount(ChangesBlockCount + 1);
       FChangeLog.List^[ChangesBlockCount - 1] := AllocMem(FBlockSize);
       if Assigned(FStringData) and not Assigned(FLogStringData) then
-        FLogStringData := TStringCollection.Create(FStrFieldCount);
+        FLogStringData := TFIBStringCollection.Create(FStrFieldCount);
     end;
 
-  Move(TDataBuffer(FBlocks.List^[BlockIndex])[PosInBlock],
-    TDataBuffer(FChangeLog.List^[ChangeBlockIndex])[ChangePosInBlock], FRecordSize);
+  Move(TFIBDataBuffer(FBlocks.List^[BlockIndex])[PosInBlock],
+    TFIBDataBuffer(FChangeLog.List^[ChangeBlockIndex])[ChangePosInBlock], FRecordSize);
   if Assigned(FStringData) then
     begin
       if p^.InternalNo >= FLogStringData.CountY then
@@ -793,14 +750,14 @@ begin
     end;
 end;
 
-procedure TRecordsCache.SetChangeLogBlockCount(NewCount: Integer);
+procedure TFIBRecordsCache.SetChangeLogBlockCount(NewCount: Integer);
 begin
   if FChangeLog = nil then
     FChangeLog := TFIBList.Create;
   FChangeLog.Count := NewCount
 end;
 
-function TRecordsCache.GetChangePosition(aRecordNo: Integer; Force: Boolean): PRecordPosition;
+function TFIBRecordsCache.GetChangePosition(aRecordNo: Integer; Force: Boolean): PFIBRecordPosition;
 var
   i: Integer;
 begin
@@ -811,8 +768,8 @@ begin
   else
     begin
       Inc(FChangesCount);
-      ReallocMem(FChangesPositions, FChangesCount * SizeOf(TRecordPosition));
-      Move(FChangesPositions[i], FChangesPositions[i + 1], SizeOf(TRecordPosition) * (FChangesCount - i));
+      ReallocMem(FChangesPositions, FChangesCount * SizeOf(TFIBRecordPosition));
+      Move(FChangesPositions[i], FChangesPositions[i + 1], SizeOf(TFIBRecordPosition) * (FChangesCount - i));
       with FChangesPositions^[i] do
         begin
           RecordNo := aRecordNo;
@@ -822,7 +779,7 @@ begin
     end;
 end;
 
-procedure TRecordsCache.ClearLog;
+procedure TFIBRecordsCache.ClearLog;
 var
   i: Integer;
 begin
@@ -837,7 +794,7 @@ begin
   FChangesCount := 0
 end;
 
-function TRecordsCache.FindChangeRecNo(const ARecno: Integer; var Index: Integer): Boolean;
+function TFIBRecordsCache.FindChangeRecNo(const ARecno: Integer; var Index: Integer): Boolean;
 var
   L, H, i, c: Integer;
   function Compare(i, I1: Integer): Integer;
@@ -870,15 +827,15 @@ begin
   Index := L;
 end;
 
-procedure TRecordsCache.RevertRecord(aRecordNo: Integer);
+procedure TFIBRecordsCache.RevertRecord(aRecordNo: Integer);
 var
-  Buf: TDataBuffer;
+  Buf: TFIBDataBuffer;
 begin
   Buf := OldBuffer(aRecordNo);
   WriteRecord(aRecordNo, Buf, False)
 end;
 
-function TRecordsCache.pRecBuff(RecordNo: Integer): TDataBuffer;
+function TFIBRecordsCache.pRecBuff(RecordNo: Integer): TFIBDataBuffer;
 var
   BlockIndex: Integer;
   PosInBlock: Integer;
@@ -887,13 +844,13 @@ begin
   if BlockIndex < BlockCount then
     begin
       PosInBlock := RecordPosition(RecordNo);
-      Result := TDataBuffer(FBlocks.List^[BlockIndex]) + PosInBlock;
+      Result := TFIBDataBuffer(FBlocks.List^[BlockIndex]) + PosInBlock;
     end
   else
     Result := nil;
 end;
 
-procedure TRecordsCache.SwapRecords(OldRecordNo, NewRecordNo: Integer);
+procedure TFIBRecordsCache.SwapRecords(OldRecordNo, NewRecordNo: Integer);
 var
   c: Integer;
 begin
@@ -903,7 +860,7 @@ begin
   FMapRecords.List^[NewRecordNo] := Pointer(c);
 end;
 
-procedure TRecordsCache.MoveRecord(OldRecno, NewRecno: Integer);
+procedure TFIBRecordsCache.MoveRecord(OldRecno, NewRecno: Integer);
 var
   Position: Integer;
 begin
@@ -920,7 +877,7 @@ begin
     FMapRecords.Delete(OldRecno + 1)
 end;
 
-procedure TRecordsCache.SaveToStream(Stream: TStream; SeekBegin: Boolean; CacheSize: Integer = 32 * 1024);
+procedure TFIBRecordsCache.SaveToStream(Stream: TStream; SeekBegin: Boolean; CacheSize: Integer = 32 * 1024);
 var
   i, j, L: Integer;
   p: PFIBByteString;
@@ -958,7 +915,6 @@ begin
     begin
       if SeekBegin then
         Seek(0, soFromBeginning);
-      // CacheSize:=0;
       UseCache := CacheSize > 0;
       if UseCache then
         begin
@@ -1031,7 +987,7 @@ begin
     end
 end;
 
-procedure TRecordsCache.LoadFromStream(Stream: TStream; SeekBegin: Boolean);
+procedure TFIBRecordsCache.LoadFromStream(Stream: TStream; SeekBegin: Boolean);
 var
   i, j, L: Integer;
   s: FIBByteString;
@@ -1046,19 +1002,34 @@ begin
   FMapRecords := nil;
   FStringData.Free;
   FStringData := nil;
-  FStringFieldOffsets := nil;
+  ReallocMem(FStringFieldOffsets, 0);
+  ReallocMem(FStringFieldSize, 0);
+  FStrFieldCount := 0;
+  ClearLog;
+  FreeAndNil(FLogStringData);
 
   with Stream do
     begin
       if SeekBegin then
         Seek(0, soFromBeginning);
       ReadBuffer(i, SizeOf(Integer));
-      FBlocks.Count := i;
+      if i < 0 then
+        raise EFIBMemoryManagerError.Create('Can''t load cache: incorrect block count');
       ReadBuffer(FBlockSize, SizeOf(Integer));
       ReadBuffer(FInOutRecordSize, SizeOf(Integer));
       ReadBuffer(FStrFieldCount, SizeOf(Integer));
       ReadBuffer(FSaveChangeLog, SizeOf(Boolean));
       ReadBuffer(FRecordCount, SizeOf(Integer));
+      // the records of the blocks have the size given to the constructor
+      if (FBlockSize < FRecordSize) or (FInOutRecordSize < 0) or (FStrFieldCount < 0) or (FRecordCount < 0) then
+        raise EFIBMemoryManagerError.Create('Can''t load cache: incompatible sizes');
+      FRecInBlock := FBlockSize div FRecordSize;
+      ReallocMem(FOldBuffer, FInOutRecordSize);
+      ClearOldBuffer;
+      FOldBufRecordNumber := -1;
+      FBlocks.Count := i;
+      for i := 0 to BlockCount - 1 do
+        FBlocks.List^[i] := nil;
       for i := 0 to BlockCount - 1 do
         begin
           GetMem(p, FBlockSize);
@@ -1067,7 +1038,7 @@ begin
         end;
       if FStrFieldCount > 0 then
         begin
-          FStringData := TStringCollection.Create(FStrFieldCount);
+          FStringData := TFIBStringCollection.Create(FStrFieldCount);
           GetMem(FStringFieldOffsets, FStrFieldCount * SizeOf(Integer));
           GetMem(FStringFieldSize, FStrFieldCount * SizeOf(Integer));
           for i := 1 to FStrFieldCount do
@@ -1080,8 +1051,11 @@ begin
             for j := 0 to FRecordCount - 1 do
               begin
                 ReadBuffer(L, SizeOf(Integer));
+                if L < 0 then
+                  raise EFIBMemoryManagerError.Create('Can''t load cache: incorrect string length');
                 SetString(s, nil, L);
-                Stream.Read(s[1], L);
+                if L > 0 then
+                  ReadBuffer(s[1], L);
                 if FStringData.CountY <= j then
                   FStringData.Add;
                 FStringData.Value[i, j] := s;
@@ -1090,6 +1064,8 @@ begin
     end;
 
   Stream.ReadBuffer(L, SizeOf(Integer));
+  if L < 0 then
+    raise EFIBMemoryManagerError.Create('Can''t load cache: incorrect record map');
   if L > 0 then
     begin
       FMapRecords := TFIBList.Create;
@@ -1101,7 +1077,7 @@ begin
 
 end;
 
-procedure TRecordsCache.InitializeMap;
+procedure TFIBRecordsCache.InitializeMap;
 var
   i: Integer;
 begin
@@ -1116,22 +1092,7 @@ begin
     end;
 end;
 
-procedure TRecordsCache.ShiftMapValues(Distance: Integer);
-var
-  i: NativeInt;
-begin
-  if not Assigned(FMapRecords) then
-    InitializeMap;
-  if Assigned(FMapRecords) then
-    begin
-      for i := 0 to FMapRecords.Count - 1 do
-        begin
-          FMapRecords.List^[i] := Pointer(Integer(FMapRecords.List^[i]) + Distance);
-        end;
-    end;
-end;
-
-procedure TRecordsCache.Insert(RecordNo: Integer);
+procedure TFIBRecordsCache.Insert(RecordNo: Integer);
 begin
   InitializeMap;
   Inc(FRecordCount);
@@ -1140,7 +1101,7 @@ begin
     FStringData.Add;
 end;
 
-procedure TRecordsCache.CancelInsert(RecordNo: Integer);
+procedure TFIBRecordsCache.CancelInsert(RecordNo: Integer);
 begin
   if Assigned(FMapRecords) then
     begin
@@ -1152,12 +1113,12 @@ begin
     end;
 end;
 
-function TRecordsCache.BookMarkByRecord(RecordNo: Integer): Integer;
+function TFIBRecordsCache.BookMarkByRecord(RecordNo: Integer): Integer;
 begin
   Result := InternalRecordNo(RecordNo + 1)
 end;
 
-function TRecordsCache.RecordByBookMark(BookMark: Integer): Integer;
+function TFIBRecordsCache.RecordByBookMark(BookMark: Integer): Integer;
 begin
   if Assigned(FMapRecords) then
     begin
@@ -1170,7 +1131,7 @@ begin
     Result := BookMark - 1
 end;
 
-function TRecordsCache.BookMarkValid(BookMark: Integer): Boolean;
+function TFIBRecordsCache.BookMarkValid(BookMark: Integer): Boolean;
 begin
   Result := (BookMark > 0);
   if Result then
@@ -1186,7 +1147,7 @@ begin
     end;
 end;
 
-function TRecordsCache.GetChangesBlockCount: Integer;
+function TFIBRecordsCache.GetChangesBlockCount: Integer;
 begin
   if FChangeLog = nil then
     Result := 0

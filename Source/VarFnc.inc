@@ -36,27 +36,23 @@ begin
           else
             Result := -1
       end;
+    // exact for the same type; a Single or a Currency on either side sets the precision
     varSingle:
-      begin
-        if Abs(P^ - TVarData(v).VSingle) < 1E-11 then
-          Result := 0
-        else
-          if P^ > TVarData(v).VSingle then
-            Result := 1
-          else
-            Result := -1
-      end;
+      Result := CompareAsSingles(P^, TVarData(v).VSingle);
     varDouble:
-      begin
-        if Abs(P^ - TVarData(v).VDouble) < 1E-11 then
-          Result := 0
-        else
-          if P^ > TVarData(v).VDouble then
-            Result := 1
-          else
-            Result := -1
-      end;
+{$IFDEF C_SINGLE}
+      Result := -CompareAsSingles(TVarData(v).VDouble, P^);
+{$ELSE}
+{$IFDEF C_CURRENCY}
+      Result := CompareAsCurrencies(P^, TVarData(v).VDouble);
+{$ELSE}
+      Result := CompareNumbers(P^, TVarData(v).VDouble);
+{$ENDIF}
+{$ENDIF}
     varCurrency:
+{$IFDEF C_FLOAT}
+      Result := -CompareAsCurrencies(TVarData(v).VCurrency, P^);
+{$ELSE}
       begin
         if P^ = TVarData(v).VCurrency then
           Result := 0
@@ -66,6 +62,7 @@ begin
           else
             Result := -1
       end;
+{$ENDIF}
     varDate:
       begin
         if P^ = TVarData(v).VDate then

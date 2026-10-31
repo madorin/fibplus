@@ -61,7 +61,7 @@ end;
 procedure TForm1.Button1Click(Sender: TObject);
 var
   // CustNo, QantityPO, EmpNo: Integer;
-  v: Variant;
+  OrderValues: Variant;
 const
   paramSql = 'select ' + '  (select first 1 cust_no from customer), ' +
     '  (select first 1 emp_no from employee), ' +
@@ -69,10 +69,10 @@ const
 begin
   with qryInsertSale do
   begin
-    v := DB.QueryValues(paramSql);
-    ParamByName('PO_NUMBER').AsString := 'V' + '-XX-' + IntToStr(v[2]);
-    ParamByName('CUST_NO').AsInteger := v[0];
-    ParamByName('SALES_REP').AsInteger := v[1];
+    OrderValues := DB.QueryValues(paramSql);
+    ParamByName('PO_NUMBER').AsString := 'V' + '-XX-' + IntToStr(OrderValues[2]);
+    ParamByName('CUST_NO').AsInteger := OrderValues[0];
+    ParamByName('SALES_REP').AsInteger := OrderValues[1];
     ParamByName('QTY_ORDERED').AsInteger := 5;
     ParamByName('QTY_ORDERED').AsInteger := 5;
     ParamByName('TOTAL_VALUE').AsInteger := 2500;

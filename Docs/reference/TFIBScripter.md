@@ -66,7 +66,7 @@ Guides: [Scripting](../guide/scripting.md).
 | `Parse(Terminator)` | Split `Script` into statements and set `Prepared`. The default terminator is `;`; an empty string also means `;`. Raises an `Exception` for an unbalanced `{$ENDIF}`, an invalid `SET TERM`, and an unexpected `{`. A statement that starts with `-`, `/` or a `{` that is not a directive gets the type `sInvalid`; running it raises an `Exception` (a parse error, not passed to `OnExecuteError`). |
 | `ClearPrepared` | Discard the parsed script. |
 | `StatementsCount` | Number of parsed statements. `SET TERM` commands are not counted. |
-| `GetStatement(StmtNo, Text)` | Return a `PStatementDesc` for statement `StmtNo` (1-based) and copy its text to `Text`. Raises when the number does not exist. The pointer refers to the parsed script and is not valid after `ClearPrepared` or another `Parse`. |
+| `GetStatement(StmtNo, Text)` | Return a `PFIBStatementDesc` for statement `StmtNo` (1-based) and copy its text to `Text`. Raises when the number does not exist. The pointer refers to the parsed script and is not valid after `ClearPrepared` or another `Parse`. |
 | `LineCountInCurrentFile` | Number of lines of the file run by the last `ExecuteFromFile`. |
 
 ### Directive names
@@ -80,13 +80,13 @@ Guides: [Scripting](../guide/scripting.md).
 
 | Name | Type | Description |
 |------|------|-------------|
-| `BeforeStatementExecute` | `TOnStatementExecute` | Before a statement runs. Not called for statements skipped by a directive. Set `SkipStatement` to skip the statement. |
-| `AfterStatementExecute` | `TOnStatementExecute` | After a statement that was sent to the server ran without an error. Not called for the commands that the scripter handles itself. |
-| `OnExecuteError` | `TOnSQLScriptExecError` | An `EFIBError` was raised by `CONNECT`, `CREATE DATABASE`, `DROP DATABASE`, `COMMIT`, or a statement sent to the server. See [Error handling](#error-handling). |
+| `BeforeStatementExecute` | `TFIBStatementExecuteEvent` | Before a statement runs. Not called for statements skipped by a directive. Set `SkipStatement` to skip the statement. |
+| `AfterStatementExecute` | `TFIBStatementExecuteEvent` | After a statement that was sent to the server ran without an error. Not called for the commands that the scripter handles itself. |
+| `OnExecuteError` | `TFIBScriptExecErrorEvent` | An `EFIBError` was raised by `CONNECT`, `CREATE DATABASE`, `DROP DATABASE`, `COMMIT`, or a statement sent to the server. See [Error handling](#error-handling). |
 
 ## Statement handling
 
-A statement is handled by the scripter or sent to the server, depending on its first words. The type is in `TStatementDesc.smtType`.
+A statement is handled by the scripter or sent to the server, depending on its first words. The type is in `TFIBStatementDesc.smtType`.
 
 | Statement | Handling |
 |-----------|----------|
@@ -98,7 +98,7 @@ A statement is handled by the scripter or sent to the server, depending on its f
 | `COMMIT`, `ROLLBACK` | Ends the transaction when it is active. |
 | `INPUT 'file'` | Runs the file with `ExecuteFromFile`, the terminator `;` and the `Encoding` given to the running `ExecuteFromFile` (`TEncoding.Default` otherwise); a byte order mark of the file still wins. The encoding detected from the byte order mark of the calling file is not passed on: each file is read on its own. |
 | `DESCRIBE` | Sets the description of a domain, table, view, trigger, field, parameter, procedure, exception, function, UDF, generator, or package with an `UPDATE` of its `RDB$DESCRIPTION` column. Other object types raise an `Exception`. |
-| `BATCH START`, `BATCH EXECUTE` | Collects the statements between them and runs them as a batch. Needs the `SUPPORT_IB2007` compiler define, which is off in `FIB.inc`; without it `BATCH EXECUTE` raises an `Exception`. |
+| `BATCH START`, `BATCH EXECUTE` | Not supported: `BATCH EXECUTE` raises an `Exception`. |
 | `REINSERT` | Takes the text after `REINSERT` and appends it to the previous `INSERT` statement up to its `VALUES`, then runs the result. |
 | `SET TERM` | Changes the terminator. Not executed. See [Terminators](#terminators). |
 | `SET AUTODDL ON \| OFF` | Sets `AutoDDL`. |
@@ -204,14 +204,14 @@ A block runs as one statement: `AfterStatementExecute` and `OnExecuteError` repo
 
 | Name | Description |
 |------|-------------|
-| `TOnStatementExecute` | `procedure(Sender: TObject; Line: Integer; StatementNo: Integer; Desc: TStatementDesc; Statement: TStrings) of object`. `Line` is the 1-based line where the statement starts. |
-| `TOnSQLScriptExecError` | `procedure(Sender: TObject; StatementNo: Integer; Line: Integer; Statement: TStrings; SQLCode: Integer; const Msg: string; var doRollBack: boolean; var Stop: boolean) of object` |
-| `TStatementDesc` | Record: `smdBegin` and `smdEnd` (`TStmtCoord`, first and last character of the text, without the terminator), `smtType` (`TStmtType`), `objType` (`TObjectType`), `objName`, `DirectiveNum`, `DirectiveElse`, `HasReturning` (an `INSERT`, `REINSERT`, `UPDATE`, `DELETE` or `MERGE` with `RETURNING` outside strings and comments). |
-| `TStmtCoord` | Record `X`, `Y`: `X` is the 1-based position in the line, `Y` the 0-based line index. |
-| `TStmtType` | Statement kind: `sUnknown`, `sInvalid`, `sDML`, `sConnect`, `sDisconnect`, `sReconnect`, `sCreateDatabase`, `sDropDatabase`, `sCommit`, `sRollBack`, `sCreate`, `sAlter`, `sRecreate`, `sDrop`, `sSet`, `sSetGenerator`, `sSetStatistics`, `sSetSession`, `sDescribe`, `sDeclare`, `sComment`, `sGrant`, `sRunFromFile`, `sBatchStart`, `sBatchExecute`, `sExecute`, `sInsert`, `sReinsert`, `sDirective`. `sBatch` is a temporary value of the parser. |
-| `TObjectType` | Object named in the statement: `otNone`, `otDatabase`, `otDomain`, `otTable`, `otView`, `otProcedure`, `otTrigger`, `otUDF`, `otException`, `otGenerator`, `otIndex`, `otConstraint`, `otFilter`, `otField`, `otParameter`, `otRole`, `otBlock`, `otUser`, `otPackage`, `otPackageBody`, `otFunction`. |
+| `TFIBStatementExecuteEvent` | `procedure(Sender: TObject; Line: Integer; StatementNo: Integer; Desc: TFIBStatementDesc; Statement: TStrings) of object`. `Line` is the 1-based line where the statement starts. |
+| `TFIBScriptExecErrorEvent` | `procedure(Sender: TObject; StatementNo: Integer; Line: Integer; Statement: TStrings; SQLCode: Integer; const Msg: string; var doRollBack: boolean; var Stop: boolean) of object` |
+| `TFIBStatementDesc` | Record: `smdBegin` and `smdEnd` (`TFIBStatementCoord`, first and last character of the text, without the terminator), `smtType` (`TFIBStatementType`), `objType` (`TFIBScriptObjectType`), `objName`, `DirectiveNum`, `DirectiveElse`, `HasReturning` (an `INSERT`, `REINSERT`, `UPDATE`, `DELETE` or `MERGE` with `RETURNING` outside strings and comments). |
+| `TFIBStatementCoord` | Record `X`, `Y`: `X` is the 1-based position in the line, `Y` the 0-based line index. |
+| `TFIBStatementType` | Statement kind: `sUnknown`, `sInvalid`, `sDML`, `sConnect`, `sDisconnect`, `sReconnect`, `sCreateDatabase`, `sDropDatabase`, `sCommit`, `sRollBack`, `sCreate`, `sAlter`, `sRecreate`, `sDrop`, `sSet`, `sSetGenerator`, `sSetStatistics`, `sSetSession`, `sDescribe`, `sDeclare`, `sComment`, `sGrant`, `sRunFromFile`, `sBatchStart`, `sBatchExecute`, `sExecute`, `sInsert`, `sReinsert`, `sDirective`. `sBatch` is a temporary value of the parser. |
+| `TFIBScriptObjectType` | Object named in the statement: `otNone`, `otDatabase`, `otDomain`, `otTable`, `otView`, `otProcedure`, `otTrigger`, `otUDF`, `otException`, `otGenerator`, `otIndex`, `otConstraint`, `otFilter`, `otField`, `otParameter`, `otRole`, `otBlock`, `otUser`, `otPackage`, `otPackageBody`, `otFunction`. |
 
-`StatementTypeName(tn)` returns a display name for a `TStmtType`. Some names end with a blank, such as `'Create '`, and `sDirective`, `sBatchStart`, and `sBatchExecute` return `'Unknown'`.
+`StatementTypeName(tn)` returns a display name for a `TFIBStatementType`. Some names end with a blank, such as `'Create '`, and `sDirective`, `sBatchStart`, and `sBatchExecute` return `'Unknown'`.
 
 ## See also
 

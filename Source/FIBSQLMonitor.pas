@@ -48,19 +48,19 @@ type
   TFIBTraceFlags = set of TFIBTraceFlag;
 
   { TFIBSQLMonitor }
-  TSQLEvent = procedure(EventText: String; EventTime: TDateTime) of object;
+  TFIBSQLEvent = procedure(EventText: String; EventTime: TDateTime) of object;
 
   TFIBCustomSQLMonitor = class(TComponent)
   private
     FHWnd: HWND;
-    FOnSQLEvent: TSQLEvent;
+    FOnSQLEvent: TFIBSQLEvent;
     FTraceFlags: TFIBTraceFlags;
     FActive: Boolean;
     procedure MonitorWndProc(var Message: TMessage);
     procedure SetActive(const Value: Boolean);
     procedure SetTraceFlags(aTraceFlags: TFIBTraceFlags);
   protected
-    property OnSQL: TSQLEvent read FOnSQLEvent write FOnSQLEvent;
+    property OnSQL: TFIBSQLEvent read FOnSQLEvent write FOnSQLEvent;
     property TraceFlags: TFIBTraceFlags read FTraceFlags write SetTraceFlags;
     property Active: Boolean read FActive write SetActive default true;
   public
@@ -77,13 +77,13 @@ type
     property Active;
   end;
 
-  TSavePointOperation = (soSet, soRollBack, soRelease);
+  TFIBSavePointOperation = (soSet, soRollBack, soRelease);
 
   { TFIBSQLMonitorHook }
   TFIBSQLMonitorHook = class(TObject)
   private
     FActive: Boolean;
-    vEventsCreated: Boolean;
+    FEventsCreated: Boolean;
     procedure CreateEvents;
   protected
     procedure WriteSQLData(const Text: String; DataType: TFIBTraceFlag);
@@ -91,7 +91,7 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure TerminateWriteThread;
-    function SQLString(k: integer): Byte;
+    function SQLString(k: Integer): Byte;
     procedure RegisterMonitor(SQLMonitor: TFIBCustomSQLMonitor);
     procedure UnregisterMonitor(SQLMonitor: TFIBCustomSQLMonitor);
     procedure ReleaseMonitor(Arg: TFIBCustomSQLMonitor);
@@ -102,7 +102,7 @@ type
     procedure DBDisconnect(db: TFIBDatabase); virtual;
     procedure TRStart(tr: TFIBTransaction); virtual;
     procedure TRCommit(tr: TFIBTransaction); virtual;
-    procedure TRSavepoint(tr: TFIBTransaction; const SavePointName: string; Operation: TSavePointOperation); virtual;
+    procedure TRSavepoint(tr: TFIBTransaction; const SavePointName: string; Operation: TFIBSavePointOperation); virtual;
     procedure TRCommitRetaining(tr: TFIBTransaction); virtual;
     procedure TRRollback(tr: TFIBTransaction); virtual;
     procedure TRRollbackRetaining(tr: TFIBTransaction); virtual;
@@ -114,7 +114,7 @@ type
 {$ENDIF}
     procedure SendMisc(Msg: String);
     function GetEnabled: Boolean;
-    function GetMonitorCount: integer;
+    function GetMonitorCount: Integer;
     procedure SetEnabled(const Value: Boolean);
     property Enabled: Boolean read GetEnabled write SetEnabled default true;
   end;
@@ -123,6 +123,13 @@ function MonitorHook: TFIBSQLMonitorHook;
 procedure EnableMonitoring;
 procedure DisableMonitoring;
 function MonitoringEnabled: Boolean;
+{$ENDIF}
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+{$IFNDEF NO_MONITOR}
+  TSQLEvent = TFIBSQLEvent deprecated 'Use TFIBSQLEvent';
+  TSavePointOperation = TFIBSavePointOperation deprecated 'Use TFIBSavePointOperation';
 {$ENDIF}
 
 implementation
@@ -204,7 +211,7 @@ const
     'FIB.SQL.MONITOR.ReadFinishedEvent'
   );
   cMonitorHookSize = 2048;
-  cMaxBufferSize = cMonitorHookSize - (9 * SizeOf(integer)) - SizeOf(TDateTime)
+  cMaxBufferSize = cMonitorHookSize - (9 * SizeOf(Integer)) - SizeOf(TDateTime)
     - 2 * SizeOf(Byte);
   cDefaultTimeout = 1000; // 1 seconds
 
@@ -278,7 +285,14 @@ end;
 
 destructor TFIBCustomSQLMonitor.Destroy;
 begin
-  if not(csDesigning in ComponentState) then
+  // freed after the unit finalization (a form freed by Vcl.Forms) or without shared memory
+  if not(csDesigning in ComponentState) and
+    (bDone or (_MonitorHook = nil) or not _MonitorHook.FEventsCreated) then
+  begin
+    if FHWnd <> 0 then
+      DeallocateHwnd(FHWnd);
+  end
+  else if not(csDesigning in ComponentState) then
   begin
     if (tfQPrepare in TraceFlags) then
       InterlockedDecrement(FQPrepareReaderCount^);
@@ -337,7 +351,9 @@ end;
 
 procedure TFIBCustomSQLMonitor.SetTraceFlags(aTraceFlags: TFIBTraceFlags);
 begin
-  if not(csDesigning in ComponentState) then
+  // the counters are in the shared memory
+  if not(csDesigning in ComponentState) and not bDone and (_MonitorHook <> nil) and
+    _MonitorHook.FEventsCreated then
   begin
     if (tfQPrepare in TraceFlags) and not(tfQPrepare in aTraceFlags) then
       InterlockedDecrement(FQPrepareReaderCount^)
@@ -374,7 +390,7 @@ begin
   inherited Create;
 
   FActive := true;
-  if not vEventsCreated then
+  if not FEventsCreated then
     try
       CreateEvents;
     except
@@ -389,14 +405,14 @@ var
   Sd: TSecurityDescriptor;
   MapError: DWORD;
 
-  function OpenLocalEvent(Idx: integer): THandle;
+  function OpenLocalEvent(Idx: Integer): THandle;
   begin
     Result := OpenEvent(EVENT_ALL_ACCESS, true, PChar(MonitorHookNames[Idx]));
     if Result = 0 then
       FIBError(feCannotCreateSharedResource, [GetLastError]);
   end;
 
-  function CreateLocalEvent(Idx: integer; InitialState: Boolean): THandle;
+  function CreateLocalEvent(Idx: Integer; InitialState: Boolean): THandle;
   begin
     Result := CreateEvent(@Sa, true, InitialState, PChar(MonitorHookNames[Idx]));
     if Result = 0 then
@@ -414,14 +430,10 @@ begin
     0, cMonitorHookSize, PChar(MonitorHookNames[1]));
 
   MapError := GetLastError;
-  if MapError = ERROR_ALREADY_EXISTS then
-  begin
-    FSharedBuffer := OpenFileMapping(FILE_MAP_ALL_ACCESS, false, PChar(MonitorHookNames[1]));
-    if (FSharedBuffer = 0) then
-      FIBError(feCannotCreateSharedResource, [GetLastError]);
-
-  end
-  else
+  // the handle is valid for an existing mapping too
+  if FSharedBuffer = 0 then
+    FIBError(feCannotCreateSharedResource, [MapError]);
+  if MapError <> ERROR_ALREADY_EXISTS then
   begin
     FWriteLock := CreateMutex(@Sa, false, PChar(MonitorHookNames[0]));
     FWriteEvent := CreateLocalEvent(2, false);
@@ -433,15 +445,15 @@ begin
   if FBuffer = nil then
     FIBError(feCannotCreateSharedResource, [GetLastError]);
 
-  FMonitorCount := PInteger(FBuffer + cMonitorHookSize - SizeOf(integer));
-  FReaderCount := PInteger(PAnsiChar(FMonitorCount) - SizeOf(integer));
-  FTraceDataType := PInteger(PAnsiChar(FMonitorCount) - 2 * SizeOf(integer));
-  FBufferSize := PInteger(PAnsiChar(FMonitorCount) - 3 * SizeOf(integer));
-  FQPrepareReaderCount := PInteger(PAnsiChar(FMonitorCount) - 4 * SizeOf(integer));
-  FQExecuteReaderCount := PInteger(PAnsiChar(FMonitorCount) - 5 * SizeOf(integer));
-  FQFetchReaderCount := PInteger(PAnsiChar(FMonitorCount) - 6 * SizeOf(integer));
-  FConnectReaderCount := PInteger(PAnsiChar(FMonitorCount) - 7 * SizeOf(integer));
-  FTransactReaderCount := PInteger(PAnsiChar(FMonitorCount) - 8 * SizeOf(integer));
+  FMonitorCount := PInteger(FBuffer + cMonitorHookSize - SizeOf(Integer));
+  FReaderCount := PInteger(PAnsiChar(FMonitorCount) - SizeOf(Integer));
+  FTraceDataType := PInteger(PAnsiChar(FMonitorCount) - 2 * SizeOf(Integer));
+  FBufferSize := PInteger(PAnsiChar(FMonitorCount) - 3 * SizeOf(Integer));
+  FQPrepareReaderCount := PInteger(PAnsiChar(FMonitorCount) - 4 * SizeOf(Integer));
+  FQExecuteReaderCount := PInteger(PAnsiChar(FMonitorCount) - 5 * SizeOf(Integer));
+  FQFetchReaderCount := PInteger(PAnsiChar(FMonitorCount) - 6 * SizeOf(Integer));
+  FConnectReaderCount := PInteger(PAnsiChar(FMonitorCount) - 7 * SizeOf(Integer));
+  FTransactReaderCount := PInteger(PAnsiChar(FMonitorCount) - 8 * SizeOf(Integer));
   FTimeStamp := PDateTime(PAnsiChar(FTransactReaderCount) - SizeOf(TDateTime));
   FIsUnicodeVersion := PBoolean(PAnsiChar(FTimeStamp) - SizeOf(Byte));
   FReserved := PByte(PAnsiChar(FIsUnicodeVersion) - SizeOf(Byte));
@@ -470,10 +482,10 @@ begin
     FMonitorCount^ := 0;
   if FReaderCount^ < 0 then
     FReaderCount^ := 0;
-  vEventsCreated := true;
+  FEventsCreated := true;
 end;
 
-function TFIBSQLMonitorHook.SQLString(k: integer): Byte;
+function TFIBSQLMonitorHook.SQLString(k: Integer): Byte;
 begin
   Result := 127
 end;
@@ -502,7 +514,7 @@ end;
 
 destructor TFIBSQLMonitorHook.Destroy;
 begin
-  if vEventsCreated then
+  if FEventsCreated then
   begin
     UnmapViewOfFile(FBuffer);
     CloseHandle(FSharedBuffer);
@@ -520,7 +532,7 @@ begin
   Result := FActive;
 end;
 
-function TFIBSQLMonitorHook.GetMonitorCount: integer;
+function TFIBSQLMonitorHook.GetMonitorCount: Integer;
 begin
   if FMonitorCount = nil then
     Result := 0
@@ -530,11 +542,13 @@ end;
 
 procedure TFIBSQLMonitorHook.RegisterMonitor(SQLMonitor: TFIBCustomSQLMonitor);
 begin
-  if not vEventsCreated then
+  if not FEventsCreated then
     try
       CreateEvents;
     except
-      SQLMonitor.Active := false;
+      // no shared memory: the reader would use the nil counters
+      SQLMonitor.FActive := false;
+      Exit;
     end;
   if not Assigned(FFIBReaderThread) then
     FFIBReaderThread := TMonitorReaderThread.Create;
@@ -612,7 +626,7 @@ end;
 procedure TFIBSQLMonitorHook.SQLExecute(qry: TFIBQuery; const AdditionalMessage: string);
 var
   st: string;
-  i: integer;
+  i: Integer;
   Q: TISC_QUAD;
 begin
   if FActive and bEnabledMonitoring and (GetMonitorCount > 0) and (FQExecuteReaderCount^ > 0) then
@@ -661,7 +675,7 @@ end;
 procedure TFIBSQLMonitorHook.SQLFetch(qry: TFIBQuery);
 var
   st: string;
-  i: integer;
+  i: Integer;
 begin
   if FActive and bEnabledMonitoring and (GetMonitorCount > 0) and (FQFetchReaderCount^ > 0) then
   begin
@@ -722,7 +736,7 @@ begin
   end;
 end;
 
-procedure TFIBSQLMonitorHook.TRSavepoint(tr: TFIBTransaction; const SavePointName: string; Operation: TSavePointOperation);
+procedure TFIBSQLMonitorHook.TRSavepoint(tr: TFIBTransaction; const SavePointName: string; Operation: TFIBSavePointOperation);
 var
   st: String;
 begin
@@ -813,9 +827,9 @@ end;
 
 procedure TFIBSQLMonitorHook.WriteSQLData(const Text: String; DataType: TFIBTraceFlag);
 var
-  vText: string;
+  TraceText: string;
 begin
-  if not vEventsCreated then
+  if not FEventsCreated then
     try
       CreateEvents;
     except
@@ -824,8 +838,8 @@ begin
     end;
   if FMonitorCount^ = 0 then
     Exit;
-  vText := CRLF + '[Application: ' + ExtractFileName(ParamStr(0)) + ']' + CRLF + Text; { do not localize }
-  QueueToWriter(TFIBTraceObject.Create(vText, DataType));
+  TraceText := CRLF + '[Application: ' + ExtractFileName(ParamStr(0)) + ']' + CRLF + Text; { do not localize }
+  QueueToWriter(TFIBTraceObject.Create(TraceText, DataType));
 end;
 
 procedure TFIBSQLMonitorHook.TerminateWriteThread;
@@ -961,7 +975,7 @@ end;
 // control characters other than tab, CR and LF are written as #$XX
 function EscapeControlChars(const S: string): string;
 var
-  i, RunStart: integer;
+  i, RunStart: Integer;
 begin
   Result := '';
   RunStart := 1;
@@ -990,7 +1004,7 @@ end;
 procedure TMonitorWriterThread.WriteToBuffer(Trace: TFIBTraceObject);
 var
   Text: UTF8String;
-  Offset, Remaining, ChunkSize: integer;
+  Offset, Remaining, ChunkSize: Integer;
 begin
   Text := UTF8Encode(EscapeControlChars(Trace.FMsg));
   Offset := 1;
@@ -1006,7 +1020,7 @@ begin
         Dec(ChunkSize);
       BeginWrite;
       try
-        FTraceDataType^ := integer(Trace.FDataType);
+        FTraceDataType^ := Integer(Trace.FDataType);
         FTimeStamp^ := Trace.FTimeStamp;
         FIsUnicodeVersion^ := true;
         FBufferSize^ := ChunkSize;
@@ -1103,11 +1117,20 @@ begin
   begin
     ReadSQLData;
     if not IsBlank(st.FMsg) then
-      for i := 0 to FMonitors.Count - 1 do
-      begin
-        FTemp := TFIBTraceObject.Create(st.FMsg, st.FDataType);
-        PostMessage(TFIBCustomSQLMonitor(FMonitors[i]).Handle, WM_FIBSQL_SQL_EVENT, 0, LParam(FTemp));
+    begin
+      // RemoveMonitor changes the list in another thread
+      EnterCriticalSection(CS);
+      try
+        for i := 0 to FMonitors.Count - 1 do
+        begin
+          FTemp := TFIBTraceObject.Create(st.FMsg, st.FDataType);
+          if not PostMessage(TFIBCustomSQLMonitor(FMonitors[i]).Handle, WM_FIBSQL_SQL_EVENT, 0, LParam(FTemp)) then
+            FTemp.Free;
+        end;
+      finally
+        LeaveCriticalSection(CS);
       end;
+    end;
   end;
 end;
 
@@ -1186,8 +1209,14 @@ finalization
 
 {$IFNDEF NO_MONITOR}
 try
+  // a monitor still alive: the reader waits for a trace, the writer wakes it
+  if Assigned(FFIBReaderThread) then
+  begin
+    FFIBReaderThread.Terminate;
+    QueueToWriter(TWakeReadersObject.Create);
+    FreeAndNil(FFIBReaderThread);
+  end;
   bDone := true;
-  FreeAndNil(FFIBReaderThread);
   StopWriterThread(true);
   if Assigned(_MonitorHook) then
     _MonitorHook.Free;

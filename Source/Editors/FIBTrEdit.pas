@@ -29,7 +29,7 @@ uses
   uFIBEditorForm;
 
 type
-  TfrmTransEdit = class(TFIBEditorCustomForm)
+  TFIBTransactionEditForm = class(TFIBEditorCustomForm)
     cmbProps: TComboBox;
     Label1: TLabel;
     memParams: TMemo;
@@ -57,9 +57,9 @@ type
   end;
 
 var
-  frmTransEdit: TfrmTransEdit;
+  frmTransEdit: TFIBTransactionEditForm;
 
-function EditFIBTrParams(Transaction: TComponent): boolean;
+function EditFIBTrParams(Transaction: TComponent): Boolean;
 
 implementation
 
@@ -69,12 +69,12 @@ uses
   Variants,
   TypInfo, RegUtils, FIBProps, FIBEditorsConsts, RTTIRoutines;
 
-function EditFIBTrParams(Transaction: TComponent): boolean;
+function EditFIBTrParams(Transaction: TComponent): Boolean;
 var
-  b: boolean;
+  b: Boolean;
 begin
   if frmTransEdit = nil then
-    frmTransEdit := TfrmTransEdit.Create(nil);
+    frmTransEdit := TFIBTransactionEditForm.Create(nil);
   with frmTransEdit do
     try
       Caption := STransEditCaption + ' :' + Transaction.Name + '.';
@@ -91,7 +91,6 @@ begin
 
         SetEnumProp(Transaction, 'TPBMode', 'tpbDefault');
         AssignStringsToProp(Transaction, 'TRParams', memParams.Text);
-        // Transaction.TRParams.Text:=memParams.Text;
         if b then
           SetPropValue(Transaction, 'Active', 'True');
       end;
@@ -101,24 +100,24 @@ begin
     end;
 end;
 
-procedure TfrmTransEdit.cmbPropsChange(Sender: TObject);
+procedure TFIBTransactionEditForm.cmbPropsChange(Sender: TObject);
 var
-  v: Variant;
-  b: boolean;
+  RegValues: Variant;
+  b: Boolean;
 begin
   memParams.Clear;
 {$IFNDEF NO_REGISTRY}
-  v := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBTrKinds, IntToStr(cmbProps.ItemIndex)], ['Name']);
+  RegValues := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBTrKinds, IntToStr(cmbProps.ItemIndex)], ['Name']);
 
   with memParams.Lines do
   begin
-    b := (VarType(v) <> varBoolean) and (VarToStr(v[0, 0]) = cmbProps.Text);
+    b := (VarType(RegValues) <> varBoolean) and (VarToStr(RegValues[0, 0]) = cmbProps.Text);
     if b then
     begin
-      v := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBTrKinds, IntToStr(cmbProps.ItemIndex)], ['Params']);
-      b := VarIsArray(v) and (VarType(v[1, 0]) = varBoolean) and Boolean(v[1, 0]);
+      RegValues := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBTrKinds, IntToStr(cmbProps.ItemIndex)], ['Params']);
+      b := VarIsArray(RegValues) and (VarType(RegValues[1, 0]) = varBoolean) and Boolean(RegValues[1, 0]);
       if b then
-        Text := VarToStr(v[0, 0])
+        Text := VarToStr(RegValues[0, 0])
     end;
   end;
 {$ELSE}
@@ -131,8 +130,6 @@ begin
           begin
             if Assigned(FTransaction) then
               memParams.Lines.Assign(TStrings(GetObjectProp(FTransaction, 'TRParams')));
-
-            // memParams.Lines.Assign(FTransaction.TRParams);
           end;
         1:
           begin
@@ -164,7 +161,7 @@ begin
       end;
 end;
 
-procedure TfrmTransEdit.FormCreate(Sender: TObject);
+procedure TFIBTransactionEditForm.FormCreate(Sender: TObject);
 begin
   ReadUsersKinds;
   cmbProps.ItemIndex := 0;
@@ -185,7 +182,7 @@ begin
   Button2.Caption := SCancelButton;
 end;
 
-procedure TfrmTransEdit.Button3Click(Sender: TObject);
+procedure TFIBTransactionEditForm.Button3Click(Sender: TObject);
 var
   s: string;
 begin
@@ -198,7 +195,7 @@ begin
       end;
 end;
 
-procedure TfrmTransEdit.Button4Click(Sender: TObject);
+procedure TFIBTransactionEditForm.Button4Click(Sender: TObject);
 
 begin
 {$IFNDEF NO_REGISTRY}
@@ -210,40 +207,39 @@ begin
 {$ENDIF}
 end;
 
-procedure TfrmTransEdit.ReadUsersKinds;
+procedure TFIBTransactionEditForm.ReadUsersKinds;
 var
-  v, v1: Variant;
-  i, KindIndex: integer;
+  RegValues, NameValues: Variant;
+  i, KindIndex: Integer;
 begin
 {$IFNDEF NO_REGISTRY}
-  v := DefAllSubKey(['Software', RegFIBRoot, RegFIBTrKinds]);
-  if (VarType(v) <> varBoolean) then
-    for i := 0 to VarArrayHighBound(v, 1) do
+  RegValues := DefAllSubKey(['Software', RegFIBRoot, RegFIBTrKinds]);
+  if (VarType(RegValues) <> varBoolean) then
+    for i := 0 to VarArrayHighBound(RegValues, 1) do
     begin
       // The key is the combo index; a saved kind replaces the predefined one at that index
-      KindIndex := StrToIntDef(VarToStr(v[i]), 0);
+      KindIndex := StrToIntDef(VarToStr(RegValues[i]), 0);
       if KindIndex <= 0 then
         Continue;
-      v1 := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBTrKinds, IntToStr(KindIndex)], ['Name']);
-      if (VarType(v1) = varBoolean) or (VarToStr(v1[0, 0]) = '') then
+      NameValues := DefReadFromRegistry(['Software', RegFIBRoot, RegFIBTrKinds, IntToStr(KindIndex)], ['Name']);
+      if (VarType(NameValues) = varBoolean) or (VarToStr(NameValues[0, 0]) = '') then
         Continue;
       while cmbProps.Items.Count <= KindIndex do
         cmbProps.Items.Add('');
-      cmbProps.Items[KindIndex] := VarToStr(v1[0, 0]);
+      cmbProps.Items[KindIndex] := VarToStr(NameValues[0, 0]);
     end;
 {$ENDIF}
 end;
 
-procedure TfrmTransEdit.Button5Click(Sender: TObject);
+procedure TFIBTransactionEditForm.Button5Click(Sender: TObject);
 begin
-  //
 {$IFNDEF NO_REGISTRY}
   if SaveDialog1.Execute then
     AltSaveRegKey(SaveDialog1.FileName, ['Software', RegFIBRoot, RegFIBTrKinds])
 {$ENDIF}
 end;
 
-procedure TfrmTransEdit.Button6Click(Sender: TObject);
+procedure TFIBTransactionEditForm.Button6Click(Sender: TObject);
 begin
 {$IFNDEF NO_REGISTRY}
   if OpenDialog1.Execute then

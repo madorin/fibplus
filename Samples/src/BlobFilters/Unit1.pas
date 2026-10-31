@@ -68,7 +68,7 @@ end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  DB.RegisterBlobFilter(-15, PIBBlobFilterProc(@PackBuffer), PIBBlobFilterProc(@UnpackBuffer));
+  DB.RegisterBlobFilter(-15, PFIBBlobFilterProc(@PackBuffer), PFIBBlobFilterProc(@UnpackBuffer));
 
   Caption := 'FIBPlus Example - ' + Application.Title;
   DB.DBName := DemoDB;

@@ -16,13 +16,13 @@ uses
 
 type
 
-  TFIBEventAlerter = class(TSIBEventAlerter)
+  TFIBEventAlerter = class(TFIBCustomEventAlerter)
   private
     FDatabase: TFIBDatabase;
     FAutoRegister: Boolean;
     procedure SetDatabase(const Value: TFIBDatabase);
     procedure SetAutoRegister(const Value: Boolean);
-    function  CanRegisterEvents:boolean;
+    function  CanRegisterEvents:Boolean;
   protected
     function  GetNativeHandle: SIB_DBHandle; override;
     procedure SetNativeHandle(const Value: SIB_DBHandle); override;
@@ -45,8 +45,8 @@ uses
  SysUtils, SIBGlobals;
 
 resourcestring
-  SIB_RS_FIB_SET_NATIVEHANDLE = 'TFIBEventAlerter does not allow you to set the NativeHandle property';
-  SIB_RS_FIB_NO_DATABASE      = 'Cannot register events, no database assigned or database not connected';
+  SFIBEventAlerterSetNativeHandle = 'TFIBEventAlerter does not allow you to set the NativeHandle property';
+  SFIBEventAlerterNoDatabase      = 'Cannot register events, no database assigned or database not connected';
 
 { TFIBEventAlerter }
 
@@ -77,7 +77,7 @@ end;
 
 procedure TFIBEventAlerter.SetNativeHandle(const Value: SIB_DBHandle);
 begin
-  raise ESIBError.Create(SIB_RS_FIB_SET_NATIVEHANDLE);
+  raise EFIBEventAlerterError.Create(SFIBEventAlerterSetNativeHandle);
 end;
 
 destructor TFIBEventAlerter.Destroy;
@@ -103,14 +103,21 @@ begin
       FDatabase.RemoveEvent( BeforeDisconnect, detBeforeDisconnect );
       FClientLibrary:=nil;
     end;
+    if Assigned(FDatabase) then
+      FDatabase.RemoveFreeNotification(Self);
 
     FDatabase := Value;
+    // Notification clears the property when the database is freed first
+    if Assigned(FDatabase) then
+      FDatabase.FreeNotification(Self);
     if Assigned(FDatabase) and not (csDesigning in ComponentState) then
       try
         FDatabase.AddEvent(AfterConnect,detOnConnect);
         FDatabase.AddEvent(BeforeDisconnect,detBeforeDisconnect);
       finally
-        if WasRegistered then  RegisterEvents;
+        // a database connected already does not call AfterConnect
+        if WasRegistered or (FAutoRegister and not (csLoading in ComponentState) and CanRegisterEvents) then
+          RegisterEvents;
       end;
   end;
 end;
@@ -119,13 +126,12 @@ end;
 procedure TFIBEventAlerter.ValidateDatabase(DB: TFIBDatabase);
 begin
   if ((not Assigned(DB)) or (not DB.Connected)) then
-    raise ESIBError.Create(SIB_RS_FIB_NO_DATABASE);
+    raise EFIBEventAlerterError.Create(SFIBEventAlerterNoDatabase);
 end;
 
-function  TFIBEventAlerter.CanRegisterEvents:boolean;
+function  TFIBEventAlerter.CanRegisterEvents:Boolean;
 begin
  Result:=(not (csDesigning in ComponentState)) and
-//       (not (csLoading in ComponentState)) and
         (not Registered) and Assigned(Database) and Database.Connected ;
 end;
 

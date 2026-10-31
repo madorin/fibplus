@@ -1,4 +1,4 @@
-object fDSSQLEdit: TfDSSQLEdit
+object fDSSQLEdit: TFIBDataSetSQLFrame
   Left = 0
   Top = 0
   Width = 698
@@ -16,7 +16,7 @@ object fDSSQLEdit: TfDSSQLEdit
     OnChange = pgCtrlChange
     object shSelect: TTabSheet
       Caption = 'SelectSQL'
-      inline SelectSQLEdit: TfSQLEdit
+      inline SelectSQLEdit: TFIBSQLEditFrame
         Left = 0
         Top = 0
         Width = 690
@@ -330,7 +330,7 @@ object fDSSQLEdit: TfDSSQLEdit
         TabOrder = 0
         OnClick = grSQLKindClick
       end
-      inline ModifySQLEdit: TfSQLEdit
+      inline ModifySQLEdit: TFIBSQLEditFrame
         Left = 0
         Top = 36
         Width = 690

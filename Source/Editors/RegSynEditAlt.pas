@@ -8,8 +8,8 @@ uses
 type
   TFIBSQLSyntaxEditor = class(TMPSyntaxMemo, IFIBSQLTextEditor)
   private
-    function GetReadOnly: boolean;
-    procedure SetReadOnly(Value: boolean);
+    function GetReadOnly: Boolean;
+    procedure SetReadOnly(Value: Boolean);
     function GetLines: TStrings;
     procedure SetLines(Value: TStrings);
     function GetSelStart: Integer;
@@ -17,14 +17,14 @@ type
     function GetSelLength: Integer;
     procedure SetSelLength(Value: Integer);
     procedure SelectAll;
-    function GetModified: boolean;
-    procedure SetModified(Value: boolean);
+    function GetModified: Boolean;
+    procedure SetModified(Value: Boolean);
     function GetCaretX: Integer;
     function GetCaretY: Integer;
     procedure iSetCaretPos(X, Y: Integer);
     procedure ISetProposalItems(ts1, ts2: TStrings);
-    function GetBeforePropCall: TiBeforeProposalCall;
-    procedure SetBeforePropCall(Event: TiBeforeProposalCall);
+    function GetBeforePropCall: TFIBBeforeProposalEvent;
+    procedure SetBeforePropCall(Event: TFIBBeforeProposalEvent);
 
   end;
 
@@ -49,12 +49,12 @@ begin
   Result := Lines
 end;
 
-function TFIBSQLSyntaxEditor.GetModified: boolean;
+function TFIBSQLSyntaxEditor.GetModified: Boolean;
 begin
   Result := Lines.Modified
 end;
 
-function TFIBSQLSyntaxEditor.GetReadOnly: boolean;
+function TFIBSQLSyntaxEditor.GetReadOnly: Boolean;
 begin
   Result := smoReadOnly in Options
 end;
@@ -84,12 +84,12 @@ begin
   Lines.Text := Value.Text
 end;
 
-procedure TFIBSQLSyntaxEditor.SetModified(Value: boolean);
+procedure TFIBSQLSyntaxEditor.SetModified(Value: Boolean);
 begin
   Lines.Modified := Value
 end;
 
-procedure TFIBSQLSyntaxEditor.SetReadOnly(Value: boolean);
+procedure TFIBSQLSyntaxEditor.SetReadOnly(Value: Boolean);
 begin
   if Value then
     Options := Options + [smoReadOnly]
@@ -116,12 +116,12 @@ begin
   SetProposalItems(PI)
 end;
 
-function TFIBSQLSyntaxEditor.GetBeforePropCall: TiBeforeProposalCall;
+function TFIBSQLSyntaxEditor.GetBeforePropCall: TFIBBeforeProposalEvent;
 begin
   Result := BeforeProposalCall
 end;
 
-procedure TFIBSQLSyntaxEditor.SetBeforePropCall(Event: TiBeforeProposalCall);
+procedure TFIBSQLSyntaxEditor.SetBeforePropCall(Event: TFIBBeforeProposalEvent);
 begin
   BeforeProposalCall := Event
 end;

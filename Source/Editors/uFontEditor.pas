@@ -14,7 +14,7 @@ uses
   FIBSyntaxMemo, uFIBEditorForm;
 
 type
-  TfrmFontEditor = class(TFIBEditorCustomForm)
+  TFIBFontEditorForm = class(TFIBEditorCustomForm)
     PageControl1: TPageControl;
     TabSheet1: TTabSheet;
     lstTokens: TListBox;
@@ -51,7 +51,7 @@ type
   end;
 
 var
-  frmFontEditor: TfrmFontEditor;
+  frmFontEditor: TFIBFontEditorForm;
 
 procedure ChangeEditorProps(Editor: TMPCustomSyntaxMemo);
 
@@ -65,9 +65,9 @@ uses
 procedure ChangeEditorProps(Editor: TMPCustomSyntaxMemo);
 var
   Caller: TForm;
-  Form: TfrmFontEditor;
+  Form: TFIBFontEditorForm;
 begin
-  Form := TfrmFontEditor.Create(Application);
+  Form := TFIBFontEditorForm.Create(Application);
   frmFontEditor := Form;
   Form.FEditor := Editor;
   Caller := Screen.ActiveForm;
@@ -86,7 +86,7 @@ begin
   end;
 end;
 
-procedure TfrmFontEditor.lstTokensKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+procedure TFIBFontEditorForm.lstTokensKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
   ShowCurrents
 end;
@@ -94,7 +94,7 @@ end;
 type
   THackWinControl = class(TCustomControl);
 
-procedure TfrmFontEditor.ShowCurrents;
+procedure TFIBFontEditorForm.ShowCurrents;
 var
   CurToken: TToken;
 begin
@@ -138,24 +138,23 @@ begin
       0: edColor.Color := FEditor.Color;
       8:
         begin
-          // edColor.Color:=FEditor.SelectedWordColor;
           edColor.Color := FEditor.SelColor;
         end
     end;
   end
 end;
 
-procedure TfrmFontEditor.lstTokensMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+procedure TFIBFontEditorForm.lstTokensMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
   ShowCurrents
 end;
 
-procedure TfrmFontEditor.chBoldClick(Sender: TObject);
+procedure TFIBFontEditorForm.chBoldClick(Sender: TObject);
 begin
   ChangeFontStyle(Sender)
 end;
 
-procedure TfrmFontEditor.chUseMetaInProposalClick(Sender: TObject);
+procedure TFIBFontEditorForm.chUseMetaInProposalClick(Sender: TObject);
 begin
   if chUseMetaInProposal.Checked then
     FEditor.Tag := 0
@@ -163,7 +162,7 @@ begin
     FEditor.Tag := 1
 end;
 
-procedure TfrmFontEditor.ChangeFontStyle(Sender: TObject);
+procedure TFIBFontEditorForm.ChangeFontStyle(Sender: TObject);
 var
   CurToken: TToken;
 begin
@@ -207,7 +206,7 @@ begin
   end
 end;
 
-procedure TfrmFontEditor.Notification(AComponent: TComponent; Operation: TOperation);
+procedure TFIBFontEditorForm.Notification(AComponent: TComponent; Operation: TOperation);
 begin
 
   inherited;
@@ -218,7 +217,7 @@ begin
   end
 end;
 
-procedure TfrmFontEditor.btnChangeFontClick(Sender: TObject);
+procedure TFIBFontEditorForm.btnChangeFontClick(Sender: TObject);
 begin
   if FontDialog1.Execute then
   begin
@@ -227,7 +226,7 @@ begin
   end;
 end;
 
-procedure TfrmFontEditor.btnChangeColorClick(Sender: TObject);
+procedure TFIBFontEditorForm.btnChangeColorClick(Sender: TObject);
 begin
   ColorDialog1.Color := edColor.Color;
   if ColorDialog1.Execute then
@@ -237,7 +236,7 @@ begin
   end
 end;
 
-procedure TfrmFontEditor.ChangeColor;
+procedure TFIBFontEditorForm.ChangeColor;
 var
   CurToken: TToken;
 begin

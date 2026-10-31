@@ -1,4 +1,4 @@
-object fSQLEdit: TfSQLEdit
+object fSQLEdit: TFIBSQLEditFrame
   Left = 0
   Top = 0
   Width = 777

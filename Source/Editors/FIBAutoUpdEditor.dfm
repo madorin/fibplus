@@ -36,7 +36,7 @@ object FIBAutoUpdateOptionForm: TFIBAutoUpdateOptionForm
     ModalResult = 2
     TabOrder = 1
   end
-  inline fAutoUpdateOptionForm1: TfAutoUpdateOptionForm
+  inline fAutoUpdateOptionForm1: TFIBAutoUpdateOptionsFrame
     Left = 0
     Top = 0
     Width = 374

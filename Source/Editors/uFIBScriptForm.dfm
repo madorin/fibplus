@@ -1,4 +1,4 @@
-object frmScript: TfrmScript
+object frmScript: TFIBScriptForm
   Left = 319
   Top = 178
   Width = 707

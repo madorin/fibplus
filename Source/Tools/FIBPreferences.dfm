@@ -37,7 +37,7 @@ object FIBPreferencesForm: TFIBPreferencesForm
         Top = 485
         Width = 117
         Height = 15
-        Caption = 'Sufix Generator name'
+        Caption = 'Suffix Generator name'
       end
       object DataSetOptionsGroup: TGroupBox
         Left = 6
@@ -246,7 +246,7 @@ object FIBPreferencesForm: TFIBPreferencesForm
           Caption = 'GetOrderInfo'
           TabOrder = 7
         end
-        object chApplyRepositary: TCheckBox
+        object chApplyRepository: TCheckBox
           Left = 10
           Top = 166
           Width = 198

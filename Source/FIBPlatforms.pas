@@ -34,7 +34,7 @@ Classes, SysUtils, Macapi.CoreServices, Macapi.Mach, Macapi.Foundation,
 type
 
   FIBByteString = RawByteString;
-  TDataBuffer = PByte;
+  TFIBDataBuffer = PByte;
   PFIBByteString = ^FIBByteString;
 
   DWORD = LongWord;
@@ -55,7 +55,10 @@ function CurrentThreadID: DWORD;
 
 const
   ZeroData = 0;
-  CLRF = sLineBreak deprecated 'Use sLineBreak';
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TDataBuffer = TFIBDataBuffer deprecated 'Use TFIBDataBuffer';
 
 implementation
 

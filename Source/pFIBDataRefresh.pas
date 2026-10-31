@@ -7,7 +7,7 @@ uses
 
 type
   TpFIBTableChangesReader = TFIBTableChangesReader deprecated 'Use TFIBTableChangesReader';
-  TChangesCount = FIBDataRefresh.TChangesCount;
+  TChangesCount = FIBDataRefresh.TFIBChangesCount;
 
 implementation
 

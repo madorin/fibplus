@@ -42,19 +42,19 @@ type
     FErrorCodes: TFIBErrorCodes;
     FErrorArguments: array of TFIBErrorArguments; // the string arguments of each item of FErrorCodes
     FErrorNumbers: array of TFIBErrorCodes; // the number arguments of each item of FErrorCodes
-    FRaiserName: string; // IMS
+    FRaiserName: string;
     FSQLMessage: string;
     FIBMessage: string;
-    FCustomMessage: string; // IMS
+    FCustomMessage: string;
     FMsg: string;
     FSQLState: FIBByteString;
     SenderObj: TObject;
     procedure ReadStatusVector(Status: PISC_STATUS; CodePage: Word);
-    procedure RebuildMessage; // IMS
-    procedure SetSQLMessage(Value: string); // IMS
-    procedure SetIBMessage(Value: string); // IMS
-    procedure SetCustomMessage(const Value: string); // IMS
-    procedure SetMsg(const Value: string); // IMS
+    procedure RebuildMessage;
+    procedure SetSQLMessage(Value: string);
+    procedure SetIBMessage(Value: string);
+    procedure SetCustomMessage(const Value: string);
+    procedure SetMsg(const Value: string);
   public
     constructor Create(ASQLCode: Long; const aMsg: string; Sender: TObject);
     constructor CreateEx(ASQLCode: Long; const IBMsg, SQLMsg, CstmMsg: string; Sender: TObject);
@@ -68,27 +68,25 @@ type
     // the Index-th number argument of the first status vector item with Code, 0 without one
     function ErrorNumber(Code: Long; Index: Integer = 0): Long;
     function IsStatementTimeout: Boolean;
-    property RaiserName: string read FRaiserName write FRaiserName; // IMS
+    property RaiserName: string read FRaiserName write FRaiserName;
     property SQLState: FIBByteString read FSQLState;
-    // IMS - SQLMessage and IBMessage write permissions
     property SQLMessage: string read FSQLMessage write SetSQLMessage;
     property IBMessage: string read FIBMessage write SetIBMessage;
     property CustomMessage: string read FCustomMessage write SetCustomMessage;
-    // IMS
-    property Msg: string read FMsg write SetMsg; // IMS
+    property Msg: string read FMsg write SetMsg;
   end;
 
   EFIBInterBaseError = class(EFIBError);
   EFIBClientError = class(EFIBError);
 
-  TIBErrorMessage = (
+  TFIBErrorMessageOption = (
     ShowSQLCode,
     ShowIBMessage,
     ShowSQLMessage,
     ShowSQLState,
     ShowRaiserName
   );
-  TIBErrorMessages = set of TIBErrorMessage;
+  TFIBErrorMessageOptions = set of TFIBErrorMessageOption;
 
   TFIBClientError = (
     feUnknownError,
@@ -198,8 +196,8 @@ type
     feFormatVersionNotSupported
   );
 
-  TStatusVector = array [0 .. 19] of ISC_STATUS;
-  PStatusVector = ^TStatusVector;
+  TFIBStatusVector = array [0 .. 19] of ISC_STATUS;
+  PFIBStatusVector = ^TFIBStatusVector;
 
 const
   {$I FIBVersion.inc}
@@ -357,7 +355,6 @@ resourcestring
 
 var
   FIBCS: TCriticalSection;
-  // hFIBTLGlobals: DWord_;
   FIBLoginDialog: TFIBLoginDialogFunc;
 
   (* FIBAlloc acts like Realloc, except that it guarantees that
@@ -368,9 +365,8 @@ function FIBVersionString: string;
 
 // Error message routines.
 procedure FIBError(ErrMess: TFIBClientError; const Args: array of const);
-procedure FIBErrorEx(const ErrMess: string; const Args: array of const);
 
-procedure IBError(ClientLibrary: IIbClientLibrary; Sender: TObject);
+procedure IBError(ClientLibrary: IFIBClientLibrary; Sender: TObject);
 
 procedure RegisterErrorHandler(AErrorHandler: TComponent);
 // With a handler, only that handler is unregistered
@@ -379,9 +375,8 @@ function ErrorHandlerRegistered: Boolean;
 
 // Manage the thread-local status vector
 function StatusVector: PISC_STATUS;
-function StatusVectorArray: PStatusVector;
+function StatusVectorArray: PFIBStatusVector;
 function CheckStatusVector(ErrorCodes: array of ISC_STATUS): Boolean;
-function StatusVectorAsText: string;
 
 // Generate a DPB; DefaultDialect goes in when DBParams has no sql_dialect,
 // AllowVersion2 (the client supports isc_dpb_version2) permits values over 255 bytes
@@ -395,11 +390,18 @@ function DPBConstantName(Code: Integer): string;
 procedure GenerateTPB(sl: TStrings; var TPB: AnsiString; var TPBLength: Short; IsFB21orMore: Boolean;
   NameCodePage: Word = 0);
 // Manage global options
-procedure SetIBErrorMessages(Value: TIBErrorMessages);
-function GetIBErrorMessages: TIBErrorMessages;
+procedure SetIBErrorMessages(Value: TFIBErrorMessageOptions);
+function GetIBErrorMessages: TFIBErrorMessageOptions;
 
 var
-  IBErrorMessages: TIBErrorMessages;
+  IBErrorMessages: TFIBErrorMessageOptions;
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TIBErrorMessage = TFIBErrorMessageOption deprecated 'Use TFIBErrorMessageOption';
+  TIBErrorMessages = TFIBErrorMessageOptions deprecated 'Use TFIBErrorMessageOptions';
+  TStatusVector = TFIBStatusVector deprecated 'Use TFIBStatusVector';
+  PStatusVector = PFIBStatusVector deprecated 'Use PFIBStatusVector';
 
 implementation
 
@@ -411,7 +413,7 @@ var
   TPBConstants: TStringList;
   DPBConstants: TStringList;
 
-threadvar FStatusVector: TStatusVector;
+threadvar FStatusVector: TFIBStatusVector;
 
 procedure FIBAlloc(var p; OldSize, NewSize: NativeInt);
 begin
@@ -456,11 +458,6 @@ end;
 procedure FIBError(ErrMess: TFIBClientError; const Args: array of const);
 begin
   raise EFIBClientError.Create(Ord(ErrMess), Format(FIBErrorMessages[ErrMess], Args), nil);
-end;
-
-procedure FIBErrorEx(const ErrMess: string; const Args: array of const);
-begin
-  raise EFIBClientError.Create(-1, Format(ErrMess, Args), nil);
 end;
 
 (*
@@ -581,21 +578,20 @@ begin
     Result := FIBCodePageSystem;
 end;
 
-procedure IBError(ClientLibrary: IIbClientLibrary; Sender: TObject);
+procedure IBError(ClientLibrary: IFIBClientLibrary; Sender: TObject);
 var
   SQLCode: Long;
-  // vFbSQLState : array[0..FB_sqlstate_bufSize-1] of AnsiChar;
   local_buffer: array [0 .. FIBHugeLocalBufferLength - 1] of AnsiChar;
-  vIBMessage: string;
-  vSQLMessage: string;
+  IBMessageText: string;
+  SQLMessageText: string;
   status_vector: PISC_STATUS;
-  IBErrorMessages: TIBErrorMessages;
+  IBErrorMessages: TFIBErrorMessageOptions;
 
-  vEFIBInterBaseError: EFIBInterBaseError;
-  vRaiseExcept: Boolean;
+  InterBaseError: EFIBInterBaseError;
+  RaiseExcept: Boolean;
   tmpStr: string;
   L: Integer;
-  vSQLState: FIBByteString;
+  ErrorSQLState: FIBByteString;
   CodePage, ItemCodePage: Word;
 begin
   (*
@@ -607,14 +603,10 @@ begin
   status_vector := StatusVector;
   IBErrorMessages := GetIBErrorMessages;
   SQLCode := ClientLibrary.isc_sqlcode(status_vector);
-  // FillChar(vFbSQLState,FB_sqlstate_bufSize,0);
-  vSQLState := ClientLibrary.fb_sqlstate(status_vector);
+  ErrorSQLState := ClientLibrary.fb_sqlstate(status_vector);
   CodePage := StatusVectorCodePage(Sender);
-  vIBMessage := '';
-  vSQLMessage := '';
-  (*
-    * Maybe show the SQL Code
-  *)
+  IBMessageText := '';
+  SQLMessageText := '';
   (*
     * Maybe show the SQL Error message
   *)
@@ -623,24 +615,24 @@ begin
       // SQLCODE is -999..100
       ClientLibrary.isc_sql_interprete(Short(SQLCode), local_buffer, FIBBigLocalBufferLength);
 
-      vSQLMessage := string(local_buffer);
-      vSQLMessage := ReplaceStr(vSQLMessage, '\n', '');
-      if Length(vSQLMessage) > 0 then
+      SQLMessageText := string(local_buffer);
+      SQLMessageText := ReplaceStr(SQLMessageText, '\n', '');
+      if Length(SQLMessageText) > 0 then
         begin
-          if (vSQLMessage[1] >= 'a') and (vSQLMessage[1] <= 'z') then
-            Dec(vSQLMessage[1], 32);
-          if (vSQLMessage[Length(vSQLMessage)] <> '.') then
-            vSQLMessage := vSQLMessage + '.' + sLineBreak;
+          if (SQLMessageText[1] >= 'a') and (SQLMessageText[1] <= 'z') then
+            Dec(SQLMessageText[1], 32);
+          if (SQLMessageText[Length(SQLMessageText)] <> '.') then
+            SQLMessageText := SQLMessageText + '.' + sLineBreak;
         end;
     end;
   (*
     * Maybe show the interbase error messages
   *)
-  vIBMessage := '';
-  if (ShowSQLState in IBErrorMessages) and (Length(vSQLState) > 0) then
-    vIBMessage := 'SQL error state =' + string(vSQLState) + sLineBreak
+  IBMessageText := '';
+  if (ShowSQLState in IBErrorMessages) and (Length(ErrorSQLState) > 0) then
+    IBMessageText := 'SQL error state =' + string(ErrorSQLState) + sLineBreak
   else
-    vIBMessage := '';
+    IBMessageText := '';
   if (ShowIBMessage in IBErrorMessages) then
     begin
       ItemCodePage := StatusItemCodePage(status_vector, CodePage);
@@ -653,10 +645,10 @@ begin
             begin
               if (tmpStr[1] >= 'a') and (tmpStr[1] <= 'z') then
                 Dec(tmpStr[1], 32);
-              vIBMessage := vIBMessage + tmpStr;
-              if (vIBMessage[Length(vIBMessage)] <> '.') then
-                vIBMessage := vIBMessage + '.';
-              vIBMessage := vIBMessage + CRLF;
+              IBMessageText := IBMessageText + tmpStr;
+              if (IBMessageText[Length(IBMessageText)] <> '.') then
+                IBMessageText := IBMessageText + '.';
+              IBMessageText := IBMessageText + CRLF;
             end;
           ItemCodePage := StatusItemCodePage(status_vector, CodePage);
           L := ClientLibrary.fb_Interpret(local_buffer, FIBHugeLocalBufferLength, @status_vector);
@@ -665,21 +657,21 @@ begin
   (*
     * Finally raise the exception
   *)
-  vRaiseExcept := true;
-  vEFIBInterBaseError := EFIBInterBaseError.CreateEx(SQLCode, vIBMessage, vSQLMessage, '', Sender); // '' by IMS
-  vEFIBInterBaseError.FSQLState := vSQLState;
-  vEFIBInterBaseError.ReadStatusVector(StatusVector, CodePage);
+  RaiseExcept := true;
+  InterBaseError := EFIBInterBaseError.CreateEx(SQLCode, IBMessageText, SQLMessageText, '', Sender);
+  InterBaseError.FSQLState := ErrorSQLState;
+  InterBaseError.ReadStatusVector(StatusVector, CodePage);
   try
     if ErrorHandlerRegistered then
-      IBErrorHandler.DoOnErrorEvent(Sender, vEFIBInterBaseError, vRaiseExcept);
+      IBErrorHandler.DoOnErrorEvent(Sender, InterBaseError, RaiseExcept);
   except
-    vEFIBInterBaseError.Free;
+    InterBaseError.Free;
     raise;
   end;
-  if vRaiseExcept then
-    raise vEFIBInterBaseError
+  if RaiseExcept then
+    raise InterBaseError
   else
-    vEFIBInterBaseError.Free;
+    InterBaseError.Free;
 end;
 
 // Return the status vector for the current thread
@@ -688,7 +680,7 @@ begin
   Result := PISC_STATUS(@FStatusVector)
 end;
 
-function StatusVectorArray: PStatusVector;
+function StatusVectorArray: PFIBStatusVector;
 begin
   Result := @FStatusVector;
 end;
@@ -725,35 +717,7 @@ begin
     end;
 end;
 
-function StatusVectorAsText: string;
-var
-  p: PISC_STATUS;
-  function NextP(i: Integer): PISC_STATUS;
-  begin
-    p := PISC_STATUS(PAnsiChar(p) + (i * SizeOf(ISC_STATUS)));
-    Result := p;
-  end;
-
-begin
-  p := StatusVector;
-  Result := '';
-  while (p^ <> 0) do
-    if (p^ = 3) then
-      begin
-        Result := Result + Format('%d %d %d', [p^, NextP(1)^, NextP(1)^]) + CRLF;
-        NextP(1);
-      end
-    else
-      begin
-        Result := Result + Format('%d %d', [p^, NextP(1)^]) + CRLF;
-        NextP(1);
-      end;
-end;
-
-// EFIBError
-
-{ IMS }
-
+// EFIBError\r\n
 procedure EFIBError.RebuildMessage;
 var
   sn: string;
@@ -795,18 +759,16 @@ begin
   RebuildMessage;
 end;
 
-{ /IMS }
-
 constructor EFIBError.Create(ASQLCode: Long; const aMsg: string; Sender: TObject);
 
 begin
   if (Sender <> nil) and (Sender is TComponent) then
     FRaiserName := CmpFullName(TComponent(Sender))
   else
-    FRaiserName := ''; // IMS
+    FRaiserName := '';
 
-  inherited Create(''); // IMS - (sn+aMsg);
-  Msg := aMsg; // IMS
+  inherited Create('');
+  Msg := aMsg;
   FSQLCode := ASQLCode;
   // a client error has no server code, the status vector can hold an old one
   if not (Self is EFIBClientError) then
@@ -861,24 +823,12 @@ begin
     HasErrorCode(isc_att_stmt_timeout) or HasErrorCode(isc_cfg_stmt_timeout));
 end;
 
-// Added CstmMsg by IMS
 constructor EFIBError.CreateEx(ASQLCode: Long; const IBMsg, SQLMsg, CstmMsg: string; Sender: TObject);
-// var sn:string;
 begin
-  { IMS
-    if Length(SQLMsg)>0 then
-    sn:=SQLMsg
-    else
-    sn:='';
-    if Length(IBMsg)>0 then  sn:=sn+IBMsg;
-    // IMS
-    if Length(CstmMsg)>0 then sn:=sn+CstmMsg;
-  }
   FSQLMessage := SQLMsg;
   FIBMessage := IBMsg;
-  // IMS
   FCustomMessage := CstmMsg;
-  Create(ASQLCode, '' { sn - IMS } , Sender);
+  Create(ASQLCode, '', Sender);
 end;
 
 function GetDPBShutParamValue(const ParamString: string): Integer;
@@ -1055,13 +1005,11 @@ begin
 
       if (Pos(DPBPrefix, param_name) = 1) then
         param_name := FastCopy(param_name, Length(DPBPrefix) + 1, MaxInt);
-      // Delete(param_name, 1, Length(DPBPrefix));
       (*
       * We want to translate the parameter name to some integer
       * value. We do this by scanning through a list of known
       * database parameter names (DPBConstantNames, defined above).
     *)
-      // if DPBConstants.Find(param_name,j) then
       j := NonAnsiIndexOf(DPBConstants, param_name);
       if j > -1 then
         DPBVal := Integer(DPBConstants.Objects[j])
@@ -1282,7 +1230,7 @@ begin
     end;
 end;
 
-procedure SetIBErrorMessages(Value: TIBErrorMessages);
+procedure SetIBErrorMessages(Value: TFIBErrorMessageOptions);
 begin
 
   FIBCS.Acquire;
@@ -1294,7 +1242,7 @@ begin
   end;
 end;
 
-function GetIBErrorMessages: TIBErrorMessages;
+function GetIBErrorMessages: TFIBErrorMessageOptions;
 begin
 
   FIBCS.Acquire;
@@ -1341,7 +1289,6 @@ begin
       AddObject('decfloat_traps', TObject(isc_dpb_decfloat_traps));
       AddObject('config', TObject(isc_dpb_config));
       AddObject('parallel_workers', TObject(isc_dpb_parallel_workers));
-      // Sorted:=true;
     end;
 end;
 

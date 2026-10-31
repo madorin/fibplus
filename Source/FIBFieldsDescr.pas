@@ -24,7 +24,7 @@ uses
 
 type
 
-  TAddedTypeFields = (atfStandard, atfGuidField, atfWideStringField);
+  TFIBAddedFieldType = (atfStandard, atfGuidField, atfWideStringField);
 
   TFIBFieldDescr = packed record
     fdDataType: Short;
@@ -35,7 +35,7 @@ type
     fdIsDBKey: Boolean;
     fdIsSeparateString: Boolean;
     fdStrIndex: Integer;
-    fdAddedFields: TAddedTypeFields;
+    fdAddedFields: TFIBAddedFieldType;
     fdSubType: Short;
     fdRelationTable: string;
     fdRelationField: string;
@@ -47,7 +47,7 @@ type
 
   TFIBFieldDescrList = class
   private
-    vFieldInfoList: TList;
+    FFieldInfoList: TList;
     function GetFieldInfo(Index: Integer): PFIBFieldDescr;
     function GetCapacity: Integer;
     procedure SetCapacity(aCapacity: Integer);
@@ -58,14 +58,18 @@ type
     procedure Clear;
     function Add(afdDataType, afdDataScale, afdDataSize: Short;
       afdNullable, afdIsDBKey: Boolean; IsSeparateString: Boolean;
-      aAddedType: TAddedTypeFields): Integer;
+      aAddedType: TFIBAddedFieldType): Integer;
     procedure SaveToStream(Stream: TStream);
     procedure LoadFromStream(Stream: TStream; StreamVersion: Integer);
 
     property FieldInfo[Index: Integer]: PFIBFieldDescr read GetFieldInfo; default;
     property Capacity: Integer read GetCapacity write SetCapacity;
-    property List: TList read vFieldInfoList;
+    property List: TList read FFieldInfoList;
   end;
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TAddedTypeFields = TFIBAddedFieldType deprecated 'Use TFIBAddedFieldType';
 
 implementation
 
@@ -76,7 +80,7 @@ uses
 
 function TFIBFieldDescrList.Add(afdDataType, afdDataScale, afdDataSize: Short;
   afdNullable, afdIsDBKey: Boolean; IsSeparateString: Boolean;
-  aAddedType: TAddedTypeFields): Integer;
+  aAddedType: TFIBAddedFieldType): Integer;
 var
   p: PFIBFieldDescr;
 begin
@@ -91,7 +95,7 @@ begin
     fdIsSeparateString := IsSeparateString;
     fdAddedFields := aAddedType;
   end;
-  Result := Integer(vFieldInfoList.Add(p))
+  Result := Integer(FFieldInfoList.Add(p))
 end;
 
 procedure TFIBFieldDescrList.Assign(Source: TFIBFieldDescrList);
@@ -102,12 +106,12 @@ begin
   if Source = Self then
     exit;
   Clear;
-  vFieldInfoList.Capacity := Source.vFieldInfoList.Capacity;
-  for i := 0 to Source.vFieldInfoList.Count - 1 do
-    with PFIBFieldDescr(Source.vFieldInfoList[i])^ do
+  FFieldInfoList.Capacity := Source.FFieldInfoList.Capacity;
+  for i := 0 to Source.FFieldInfoList.Count - 1 do
+    with PFIBFieldDescr(Source.FFieldInfoList[i])^ do
     begin
       Add(fdDataType, fdDataScale, fdDataSize, fdNullable, fdIsDBKey, fdIsSeparateString, fdAddedFields);
-      Dest := vFieldInfoList[i];
+      Dest := FFieldInfoList[i];
       Dest^.fdDataOfs := fdDataOfs;
       Dest^.fdStrIndex := fdStrIndex;
       Dest^.fdSubType := fdSubType;
@@ -121,35 +125,35 @@ procedure TFIBFieldDescrList.Clear;
 var
   i: TFIBListIndex;
 begin
-  for i := 0 to vFieldInfoList.Count - 1 do
+  for i := 0 to FFieldInfoList.Count - 1 do
   begin
-    Finalize(PFIBFieldDescr(vFieldInfoList[i])^);
-    FreeMem(vFieldInfoList[i], SizeOf(TFIBFieldDescr));
+    Finalize(PFIBFieldDescr(FFieldInfoList[i])^);
+    FreeMem(FFieldInfoList[i], SizeOf(TFIBFieldDescr));
   end;
-  vFieldInfoList.Clear;
+  FFieldInfoList.Clear;
 end;
 
 constructor TFIBFieldDescrList.Create;
 begin
   inherited Create;
-  vFieldInfoList := TList.Create;
+  FFieldInfoList := TList.Create;
 end;
 
 destructor TFIBFieldDescrList.Destroy;
 begin
   Clear;
-  vFieldInfoList.Free;
+  FFieldInfoList.Free;
   inherited;
 end;
 
 function TFIBFieldDescrList.GetCapacity: Integer;
 begin
-  Result := Integer(vFieldInfoList.Capacity)
+  Result := Integer(FFieldInfoList.Capacity)
 end;
 
 function TFIBFieldDescrList.GetFieldInfo(Index: Integer): PFIBFieldDescr;
 begin
-  Result := PFIBFieldDescr(vFieldInfoList.List[Index])
+  Result := PFIBFieldDescr(FFieldInfoList.List[Index])
 end;
 
 procedure TFIBFieldDescrList.LoadFromStream(Stream: TStream; StreamVersion: Integer);
@@ -195,20 +199,20 @@ procedure TFIBFieldDescrList.SaveToStream(Stream: TStream);
 var
   i, FieldCount: Integer;
 begin
-  FieldCount := Integer(vFieldInfoList.Count); // field descriptors, 4 bytes in the stream
+  FieldCount := Integer(FFieldInfoList.Count); // field descriptors, 4 bytes in the stream
   Stream.WriteBuffer(FieldCount, SizeOf(FieldCount));
   for i := 0 to FieldCount - 1 do
   begin
-    Stream.WriteBuffer(PFIBFieldDescr(vFieldInfoList[i])^, SizeOf(TFIBFieldDescr) - SizeOf(Pstring) * 3);
-    WriteUTF8StrToStream(PFIBFieldDescr(vFieldInfoList[i])^.fdRelationTable, Stream);
-    WriteUTF8StrToStream(PFIBFieldDescr(vFieldInfoList[i])^.fdRelationField, Stream);
-    WriteUTF8StrToStream(PFIBFieldDescr(vFieldInfoList[i])^.fdTableAlias, Stream);
+    Stream.WriteBuffer(PFIBFieldDescr(FFieldInfoList[i])^, SizeOf(TFIBFieldDescr) - SizeOf(Pstring) * 3);
+    WriteUTF8StrToStream(PFIBFieldDescr(FFieldInfoList[i])^.fdRelationTable, Stream);
+    WriteUTF8StrToStream(PFIBFieldDescr(FFieldInfoList[i])^.fdRelationField, Stream);
+    WriteUTF8StrToStream(PFIBFieldDescr(FFieldInfoList[i])^.fdTableAlias, Stream);
   end;
 end;
 
 procedure TFIBFieldDescrList.SetCapacity(aCapacity: Integer);
 begin
-  vFieldInfoList.Capacity := aCapacity
+  FFieldInfoList.Capacity := aCapacity
 end;
 
 end.

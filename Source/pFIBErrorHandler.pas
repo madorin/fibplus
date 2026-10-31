@@ -7,11 +7,11 @@ uses
 
 type
   TpFibErrorHandler = TFIBErrorHandler deprecated 'Use TFIBErrorHandler';
-  TOptionErrorHandler = FIBErrorHandler.TOptionErrorHandler;
-  TKindIBError = FIBErrorHandler.TKindIBError;
-  TOnFIBErrorEvent = FIBErrorHandler.TOnFIBErrorEvent;
-  TOptionsErrorHandler = FIBErrorHandler.TOptionsErrorHandler;
-  TErrorLexems = FIBErrorHandler.TErrorLexems;
+  TOptionErrorHandler = FIBErrorHandler.TFIBErrorHandlerOption;
+  TKindIBError = FIBErrorHandler.TFIBErrorKind;
+  TOnFIBErrorEvent = FIBErrorHandler.TFIBErrorEvent;
+  TOptionsErrorHandler = FIBErrorHandler.TFIBErrorHandlerOptions;
+  TErrorLexems = FIBErrorHandler.TFIBErrorLexemes;
 
 const
   oeException = FIBErrorHandler.oeException;

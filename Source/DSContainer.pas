@@ -24,7 +24,7 @@ uses
 
 type
 
-  TKindDataSetEvent = (
+  TFIBDataSetEventKind = (
     deBeforeOpen,
     deAfterOpen,
     deBeforeClose,
@@ -47,29 +47,29 @@ type
     deAfterRefresh
   );
 
-  TKindDataSetError = (deOnEditError, deOnPostError, deOnDeleteError);
+  TFIBDataSetErrorKind = (deOnEditError, deOnPostError, deOnDeleteError);
 
-  TOnApplyDefaultValue = procedure(DataSet: TDataSet; Field: TField; var Applied: Boolean) of object;
-  TOnApplyFieldRepository = procedure(DataSet: TDataSet; Field: TField; FieldInfo: TFIBFieldInfo) of object;
+  TFIBApplyDefaultValueEvent = procedure(DataSet: TDataSet; Field: TField; var Applied: Boolean) of object;
+  TFIBApplyFieldRepositoryEvent = procedure(DataSet: TDataSet; Field: TField; FieldInfo: TFIBFieldInfo) of object;
 
-  TOnDataSetEvent = procedure(DataSet: TDataSet; Event: TKindDataSetEvent) of object;
-  TOnDataSetError = procedure(DataSet: TDataSet; Event: TKindDataSetError; E: EDatabaseError; var Action: TDataAction) of object;
+  TFIBDataSetEvent = procedure(DataSet: TDataSet; Event: TFIBDataSetEventKind) of object;
+  TFIBDataSetErrorEvent = procedure(DataSet: TDataSet; Event: TFIBDataSetErrorKind; E: EDatabaseError; var Action: TDataAction) of object;
 
-  TOnCompareFieldValues = function(Field: TField; const S1, S2: variant; var Compared: Boolean): Integer of object;
+  TFIBCompareFieldValuesEvent = function(Field: TField; const S1, S2: Variant; var Compared: Boolean): Integer of object;
   TDataSetsContainer = class;
 
   TDataSetsContainer = class(TComponent)
   private
     FActive: Boolean;
     FMasterContainer: TDataSetsContainer;
-    FOnDataSetEvent: TOnDataSetEvent;
-    FOnApplyDefaultValue: TOnApplyDefaultValue;
-    FOnApplyFieldRepository: TOnApplyFieldRepository;
-    FOnDataSetError: TOnDataSetError;
-    FOnCompareFieldValues: TOnCompareFieldValues;
-    FOnReadBlobField: TOnBlobFieldProcessing;
-    FOnWriteBlobField: TOnBlobFieldProcessing;
-    vDataSetsList: TList;
+    FOnDataSetEvent: TFIBDataSetEvent;
+    FOnApplyDefaultValue: TFIBApplyDefaultValueEvent;
+    FOnApplyFieldRepository: TFIBApplyFieldRepositoryEvent;
+    FOnDataSetError: TFIBDataSetErrorEvent;
+    FOnCompareFieldValues: TFIBCompareFieldValuesEvent;
+    FOnReadBlobField: TFIBBlobFieldProcessingEvent;
+    FOnWriteBlobField: TFIBBlobFieldProcessingEvent;
+    FDataSetsList: TList;
     FIsGlobalContainer: Boolean;
     procedure SetMasterContainer(Value: TDataSetsContainer);
     procedure CheckCircularMaster(Value: TDataSetsContainer);
@@ -81,29 +81,39 @@ type
     destructor Destroy; override;
     procedure AddDataSet(Value: TDataSet);
     procedure RemoveDataSet(Value: TDataSet);
-    procedure DataSetEvent(DataSet: TDataSet; Event: TKindDataSetEvent);
+    procedure DataSetEvent(DataSet: TDataSet; Event: TFIBDataSetEventKind);
     procedure DoOnApplyDefaultValue(DataSet: TDataSet; Field: TField; var Applied: Boolean);
     procedure DoOnApplyFieldRepository(DataSet: TDataSet; Field: TField; FieldInfo: TFIBFieldInfo);
-    procedure DataSetError(DataSet: TDataSet; Event: TKindDataSetError; E: EDatabaseError; var Action: TDataAction);
-    function DataSetCompareFieldValues(DataSet: TDataSet; Field: TField; const S1, S2: variant; var Res: Integer): Boolean;
+    procedure DataSetError(DataSet: TDataSet; Event: TFIBDataSetErrorKind; E: EDatabaseError; var Action: TDataAction);
+    function DataSetCompareFieldValues(DataSet: TDataSet; Field: TField; const S1, S2: Variant; var Res: Integer): Boolean;
     procedure DoOnReadBlobField(Field: TBlobField; BlobSize: Integer; Progress: Integer; var Stop: Boolean);
     procedure DoOnWriteBlobField(Field: TBlobField; BlobSize: Integer; Progress: Integer; var Stop: Boolean);
     function DataSetCount: Integer;
     function DataSet(Index: Integer): TDataSet;
   published
     property Active: Boolean read FActive write FActive default true;
-    property OnDataSetEvent: TOnDataSetEvent read FOnDataSetEvent write FOnDataSetEvent;
-    property OnDataSetError: TOnDataSetError read FOnDataSetError write FOnDataSetError;
-    property OnApplyDefaultValue: TOnApplyDefaultValue read FOnApplyDefaultValue write FOnApplyDefaultValue;
-    property OnApplyFieldRepository: TOnApplyFieldRepository read FOnApplyFieldRepository write FOnApplyFieldRepository;
+    property OnDataSetEvent: TFIBDataSetEvent read FOnDataSetEvent write FOnDataSetEvent;
+    property OnDataSetError: TFIBDataSetErrorEvent read FOnDataSetError write FOnDataSetError;
+    property OnApplyDefaultValue: TFIBApplyDefaultValueEvent read FOnApplyDefaultValue write FOnApplyDefaultValue;
+    property OnApplyFieldRepository: TFIBApplyFieldRepositoryEvent read FOnApplyFieldRepository write FOnApplyFieldRepository;
     property MasterContainer: TDataSetsContainer read FMasterContainer write SetMasterContainer;
-    property OnCompareFieldValues: TOnCompareFieldValues read FOnCompareFieldValues write FOnCompareFieldValues;
+    property OnCompareFieldValues: TFIBCompareFieldValuesEvent read FOnCompareFieldValues write FOnCompareFieldValues;
     property IsGlobalContainer: Boolean read FIsGlobalContainer write SetIsGlobalContainer default false;
-    property OnReadBlobField: TOnBlobFieldProcessing read FOnReadBlobField write FOnReadBlobField;
-    property OnWriteBlobField: TOnBlobFieldProcessing read FOnWriteBlobField write FOnWriteBlobField;
+    property OnReadBlobField: TFIBBlobFieldProcessingEvent read FOnReadBlobField write FOnReadBlobField;
+    property OnWriteBlobField: TFIBBlobFieldProcessingEvent read FOnWriteBlobField write FOnWriteBlobField;
   end;
 
 function GlobalContainer: TDataSetsContainer;
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TKindDataSetEvent = TFIBDataSetEventKind deprecated 'Use TFIBDataSetEventKind';
+  TKindDataSetError = TFIBDataSetErrorKind deprecated 'Use TFIBDataSetErrorKind';
+  TOnApplyDefaultValue = TFIBApplyDefaultValueEvent deprecated 'Use TFIBApplyDefaultValueEvent';
+  TOnApplyFieldRepository = TFIBApplyFieldRepositoryEvent deprecated 'Use TFIBApplyFieldRepositoryEvent';
+  TOnDataSetEvent = TFIBDataSetEvent deprecated 'Use TFIBDataSetEvent';
+  TOnDataSetError = TFIBDataSetErrorEvent deprecated 'Use TFIBDataSetErrorEvent';
+  TOnCompareFieldValues = TFIBCompareFieldValuesEvent deprecated 'Use TFIBCompareFieldValuesEvent';
 
 implementation
 
@@ -113,24 +123,26 @@ uses
 {$ENDIF}
   StrUtil, FIBConsts;
 
-threadvar vGlobalContainer: TDataSetsContainer;
+threadvar CurrentGlobalContainer: TDataSetsContainer;
 
 function GlobalContainer: TDataSetsContainer;
 begin
-  Result := vGlobalContainer
+  Result := CurrentGlobalContainer
 end;
 
 constructor TDataSetsContainer.Create(AOwner: TComponent); // override;
 begin
   inherited Create(AOwner);
   FActive := true;
-  vDataSetsList := TList.Create;
+  FDataSetsList := TList.Create;
 end;
 
 destructor TDataSetsContainer.Destroy; // override;
 begin
+  if CurrentGlobalContainer = Self then
+    CurrentGlobalContainer := nil;
   inherited Destroy;
-  vDataSetsList.Free;
+  FDataSetsList.Free;
 end;
 
 procedure TDataSetsContainer.Notification(AComponent: TComponent; Operation: TOperation); // override;
@@ -138,14 +150,14 @@ begin
   if (Operation = opRemove) then
     begin
       if AComponent <> FMasterContainer then
-        vDataSetsList.Remove(AComponent);
+        FDataSetsList.Remove(AComponent);
       if AComponent = FMasterContainer then
         FMasterContainer := nil;
     end;
   inherited Notification(AComponent, Operation)
 end;
 
-procedure TDataSetsContainer.DataSetEvent(DataSet: TDataSet; Event: TKindDataSetEvent);
+procedure TDataSetsContainer.DataSetEvent(DataSet: TDataSet; Event: TFIBDataSetEventKind);
 begin
   if Assigned(FMasterContainer) then
     FMasterContainer.DataSetEvent(DataSet, Event);
@@ -167,7 +179,7 @@ begin
     end;
 end;
 
-procedure TDataSetsContainer.DataSetError(DataSet: TDataSet; Event: TKindDataSetError; E: EDatabaseError; var Action: TDataAction);
+procedure TDataSetsContainer.DataSetError(DataSet: TDataSet; Event: TFIBDataSetErrorKind; E: EDatabaseError; var Action: TDataAction);
 begin
   if Assigned(FMasterContainer) then
     FMasterContainer.DataSetError(DataSet, Event, E, Action);
@@ -213,8 +225,8 @@ procedure TDataSetsContainer.AddDataSet(Value: TDataSet);
 begin
   if Value <> nil then
     begin
-      if vDataSetsList.IndexOf(Value) = -1 then
-        vDataSetsList.Add(Value);
+      if FDataSetsList.IndexOf(Value) = -1 then
+        FDataSetsList.Add(Value);
       if MasterContainer <> nil then
         MasterContainer.AddDataSet(Value);
       Value.FreeNotification(Self)
@@ -223,31 +235,30 @@ end;
 
 procedure TDataSetsContainer.RemoveDataSet(Value: TDataSet);
 begin
-  if vDataSetsList.IndexOf(Value) <> -1 then
-    vDataSetsList.Remove(Value);
+  if FDataSetsList.IndexOf(Value) <> -1 then
+    FDataSetsList.Remove(Value);
   if MasterContainer <> nil then
     MasterContainer.RemoveDataSet(Value);
 end;
 
 function TDataSetsContainer.DataSetCount: Integer;
 begin
-  Result := Integer(vDataSetsList.Count)
+  Result := Integer(FDataSetsList.Count)
 end;
 
 function TDataSetsContainer.DataSet(Index: Integer): TDataSet;
 begin
-  if (Index < vDataSetsList.Count) and (Index > -1) then
-    Result := TDataSet(vDataSetsList[Index])
+  if (Index < FDataSetsList.Count) and (Index > -1) then
+    Result := TDataSet(FDataSetsList[Index])
   else
     Result := nil
 end;
 
-function TDataSetsContainer.DataSetCompareFieldValues(DataSet: TDataSet; Field: TField; const S1, S2: variant; var Res: Integer): Boolean;
+function TDataSetsContainer.DataSetCompareFieldValues(DataSet: TDataSet; Field: TField; const S1, S2: Variant; var Res: Integer): Boolean;
 begin
+  Result := False;
   if Assigned(FOnCompareFieldValues) then
-    Res := FOnCompareFieldValues(Field, S1, S2, Result)
-  else
-    Result := false;
+    Res := FOnCompareFieldValues(Field, S1, S2, Result);
 end;
 
 procedure TDataSetsContainer.SetIsGlobalContainer(const Value: Boolean);
@@ -257,12 +268,12 @@ begin
     begin
       if Value then
         begin
-          if Assigned(vGlobalContainer) and (vGlobalContainer <> Self) then
-            vGlobalContainer.FIsGlobalContainer := false;
-          vGlobalContainer := Self
+          if Assigned(CurrentGlobalContainer) and (CurrentGlobalContainer <> Self) then
+            CurrentGlobalContainer.FIsGlobalContainer := false;
+          CurrentGlobalContainer := Self
         end
-      else if not Value and (vGlobalContainer = Self) then
-        vGlobalContainer := nil
+      else if not Value and (CurrentGlobalContainer = Self) then
+        CurrentGlobalContainer := nil
     end;
 end;
 
@@ -291,6 +302,6 @@ end;
 
 initialization
 
-vGlobalContainer := nil;
+CurrentGlobalContainer := nil;
 
 end.

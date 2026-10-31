@@ -35,13 +35,13 @@ type
 
 {$M-}
 
-  IIBClientLibrary = interface
+  IFIBClientLibrary = interface
     ['{8C184844-EB77-495F-81F5-AE3246958695}']
     function GetLibName: string;
     function GetIBClientVersion: Integer; deprecated;
     function GetIBClientMinorVersion: Integer; deprecated;
     function GetVersion: TFIBVersion;
-    function GetBusy: boolean;
+    function GetBusy: Boolean;
     function isc_attach_database(status_vector: PISC_STATUS;
       db_name_length: Short; db_name: PAnsiChar; db_handle: PISC_DB_HANDLE;
       parm_buffer_length: Short; parm_buffer: PAnsiChar): ISC_STATUS;
@@ -195,7 +195,7 @@ type
 
     function isc_prepare_transaction(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS;
 
-    function BLOB_put(isc_arg1: Ansichar; isc_arg2: PBSTREAM): Int;
+    function BLOB_put(isc_arg1: AnsiChar; isc_arg2: PBSTREAM): Int;
     function BLOB_get(isc_arg1: PBSTREAM): Int;
 
     // IB2007
@@ -235,20 +235,20 @@ type
 
     procedure FreeIBLibrary;
     procedure LoadIBLibrary;
-    function LibraryLoaded: boolean;
+    function LibraryLoaded: Boolean;
     function LibraryFilePath: string;
     // 6.3 on every Firebird client, use Version; functions: properties can't be deprecated
     function ClientMinorVersion: Integer; deprecated;
     function ClientVersion: Integer; deprecated;
     property LibraryName: string read GetLibName;
     property Version: TFIBVersion read GetVersion;
-    property Busy: boolean read GetBusy;
+    property Busy: Boolean read GetBusy;
   end;
 {$M+}
 
-  EAPICallException = Exception;
+  EFIBAPICallException = Exception;
 
-  TIBClientLibrary = class(TInterfacedObject, IIBClientLibrary)
+  TFIBClientLibrary = class(TInterfacedObject, IFIBClientLibrary)
   private
     FLibraryHandle: THandle;
     FLibraryName: string;
@@ -343,16 +343,19 @@ type
     Ffb_database_crypt_callback: Tfb_database_crypt_callback;
     FVersion: TFIBVersion;
   private
-    FBusy: boolean;
+    // calls in progress, of all threads
+    FBusyCount: Integer;
 
+    procedure BeginCall;
+    procedure EndCall;
     function GetLibName: string;
-    // the next four are deprecated in IIBClientLibrary
+    // the next four are deprecated in IFIBClientLibrary
     function GetIBClientVersion: Integer;
     function GetIBClientMinorVersion: Integer;
     function ClientMinorVersion: Integer;
     function ClientVersion: Integer;
     function GetVersion: TFIBVersion;
-    function GetBusy: boolean;
+    function GetBusy: Boolean;
     function isc_attach_database(status_vector: PISC_STATUS;
       db_name_length: Short; db_name: PAnsiChar; db_handle: PISC_DB_HANDLE;
       parm_buffer_length: Short; parm_buffer: PAnsiChar): ISC_STATUS;
@@ -505,7 +508,7 @@ type
 
     function isc_prepare_transaction(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS;
 
-    function BLOB_put(isc_arg1: Ansichar; isc_arg2: PBSTREAM): Int;
+    function BLOB_put(isc_arg1: AnsiChar; isc_arg2: PBSTREAM): Int;
     function BLOB_get(isc_arg1: PBSTREAM): Int;
 
     // Service manager functions
@@ -549,7 +552,7 @@ type
     destructor Destroy; override;
     procedure LoadIBLibrary;
     procedure FreeIBLibrary;
-    function LibraryLoaded: boolean;
+    function LibraryLoaded: Boolean;
     function LibraryFilePath: string;
   end;
 
@@ -567,12 +570,12 @@ type
   public
     constructor Create(Sender: TObject; OnRequest: TFIBCryptKeyRequestEvent);
     destructor Destroy; override;
-    function Activate(const ClientLibrary: IIBClientLibrary; StatusVector: PISC_STATUS): ISC_STATUS;
-    procedure Deactivate(const ClientLibrary: IIBClientLibrary);
+    function Activate(const ClientLibrary: IFIBClientLibrary; StatusVector: PISC_STATUS): ISC_STATUS;
+    procedure Deactivate(const ClientLibrary: IFIBClientLibrary);
     procedure RaiseRequestError;
   end;
 
-function GetClientLibrary(const aLibName: string): IIBClientLibrary;
+function GetClientLibrary(const aLibName: string): IFIBClientLibrary;
 
 {$IFNDEF C22}
 // System.Reset8087CW of Delphi XE and later
@@ -586,36 +589,44 @@ const
 {$ENDIF}
 
 const
-  describe_bind_info: array [0 .. 11] of Ansichar = (
-    Ansichar(isc_info_sql_bind),
-    Ansichar(isc_info_sql_describe_vars),
-    Ansichar(isc_info_sql_sqlda_seq),
-    Ansichar(isc_info_sql_type),
-    Ansichar(isc_info_sql_sub_type),
-    Ansichar(isc_info_sql_scale),
-    Ansichar(isc_info_sql_length),
-    Ansichar(isc_info_sql_field),
-    Ansichar(isc_info_sql_relation),
-    Ansichar(isc_info_sql_owner),
-    Ansichar(isc_info_sql_alias),
-    Ansichar(isc_info_sql_describe_end)
+  describe_bind_info: array [0 .. 11] of AnsiChar = (
+    AnsiChar(isc_info_sql_bind),
+    AnsiChar(isc_info_sql_describe_vars),
+    AnsiChar(isc_info_sql_sqlda_seq),
+    AnsiChar(isc_info_sql_type),
+    AnsiChar(isc_info_sql_sub_type),
+    AnsiChar(isc_info_sql_scale),
+    AnsiChar(isc_info_sql_length),
+    AnsiChar(isc_info_sql_field),
+    AnsiChar(isc_info_sql_relation),
+    AnsiChar(isc_info_sql_owner),
+    AnsiChar(isc_info_sql_alias),
+    AnsiChar(isc_info_sql_describe_end)
   );
 
-  describe_select_info: array [0 .. 12] of Ansichar = (
-    Ansichar(isc_info_sql_select),
-    Ansichar(isc_info_sql_describe_vars),
-    Ansichar(isc_info_sql_sqlda_seq),
-    Ansichar(isc_info_sql_type),
-    Ansichar(isc_info_sql_sub_type),
-    Ansichar(isc_info_sql_scale),
-    Ansichar(isc_info_sql_length),
-    Ansichar(isc_info_sql_field),
-    Ansichar(isc_info_sql_relation),
-    Ansichar(isc_info_sql_owner),
-    Ansichar(isc_info_sql_alias),
-    Ansichar(frb_info_sql_relation_alias),
-    Ansichar(isc_info_sql_describe_end)
+  describe_select_info: array [0 .. 12] of AnsiChar = (
+    AnsiChar(isc_info_sql_select),
+    AnsiChar(isc_info_sql_describe_vars),
+    AnsiChar(isc_info_sql_sqlda_seq),
+    AnsiChar(isc_info_sql_type),
+    AnsiChar(isc_info_sql_sub_type),
+    AnsiChar(isc_info_sql_scale),
+    AnsiChar(isc_info_sql_length),
+    AnsiChar(isc_info_sql_field),
+    AnsiChar(isc_info_sql_relation),
+    AnsiChar(isc_info_sql_owner),
+    AnsiChar(isc_info_sql_alias),
+    AnsiChar(frb_info_sql_relation_alias),
+    AnsiChar(isc_info_sql_describe_end)
   );
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+{$IFDEF WINDOWS}
+  IIBClientLibrary = IFIBClientLibrary deprecated 'Use IFIBClientLibrary';
+  TIBClientLibrary = TFIBClientLibrary deprecated 'Use TFIBClientLibrary';
+  EAPICallException = EFIBAPICallException deprecated 'Use EFIBAPICallException';
+{$ENDIF}
 
 implementation
 
@@ -623,29 +634,34 @@ uses
   FIBConsts;
 
 var
-  vClientLibs: TInterfaceList;
+  ClientLibraries: TInterfaceList;
 
 var
-  vLibAccess: TCriticalSection;
+  ClientLibrariesLock: TCriticalSection;
 
-function GetClientLibrary(const aLibName: string): IIBClientLibrary;
+function GetClientLibrary(const aLibName: string): IFIBClientLibrary;
 var
   I: Integer;
 begin
-  vLibAccess.Acquire;
+  ClientLibrariesLock.Acquire;
   try
-    for I := 0 to vClientLibs.Count - 1 do
-      if IIBClientLibrary(vClientLibs[I]).LibraryName = aLibName then
+    for I := 0 to ClientLibraries.Count - 1 do
+{$IFDEF WINDOWS}
+      // Windows file names ignore the case
+      if SameText(IFIBClientLibrary(ClientLibraries[I]).LibraryName, aLibName) then
+{$ELSE}
+      if IFIBClientLibrary(ClientLibraries[I]).LibraryName = aLibName then
+{$ENDIF}
       begin
-        Result := IIBClientLibrary(vClientLibs[I]);
+        Result := IFIBClientLibrary(ClientLibraries[I]);
         if not Result.LibraryLoaded then
           Result.LoadIBLibrary;
         Exit;
       end;
-    Result := TIBClientLibrary.Create(aLibName);
-    vClientLibs.Add(Result)
+    Result := TFIBClientLibrary.Create(aLibName);
+    ClientLibraries.Add(Result)
   finally
-    vLibAccess.Release
+    ClientLibrariesLock.Release
   end;
 end;
 
@@ -656,45 +672,45 @@ begin
 end;
 {$ENDIF}
 
-{ TIBClientLibrary }
+{ TFIBClientLibrary }
 
-function TIBClientLibrary.BLOB_get(isc_arg1: PBSTREAM): Int;
+function TFIBClientLibrary.BLOB_get(isc_arg1: PBSTREAM): Int;
 begin
   if Assigned(FBLOB_get) then
     Result := FBLOB_get(isc_arg1)
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['BLOB_get', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['BLOB_get', FLibraryName]));
 end;
 
-function TIBClientLibrary.BLOB_put(isc_arg1: Ansichar; isc_arg2: PBSTREAM): Int;
+function TFIBClientLibrary.BLOB_put(isc_arg1: AnsiChar; isc_arg2: PBSTREAM): Int;
 begin
   if Assigned(FBLOB_put) then
     Result := FBLOB_put(isc_arg1, isc_arg2)
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['BLOB_put', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['BLOB_put', FLibraryName]));
 end;
 
-function TIBClientLibrary.GetIBClientVersion: Integer;
+function TFIBClientLibrary.GetIBClientVersion: Integer;
 begin
   Result := FIBClientVersion
 end;
 
-function TIBClientLibrary.GetIBClientMinorVersion: Integer;
+function TFIBClientLibrary.GetIBClientMinorVersion: Integer;
 begin
   Result := FIBClientMinorVersion
 end;
 
-function TIBClientLibrary.ClientMinorVersion: Integer;
+function TFIBClientLibrary.ClientMinorVersion: Integer;
 begin
   Result := FIBClientMinorVersion
 end;
 
-function TIBClientLibrary.ClientVersion: Integer;
+function TFIBClientLibrary.ClientVersion: Integer;
 begin
   Result := FIBClientVersion
 end;
 
-function TIBClientLibrary.GetVersion: TFIBVersion;
+function TFIBClientLibrary.GetVersion: TFIBVersion;
 begin
   Result := FVersion;
 end;
@@ -749,12 +765,12 @@ begin
   Result.Build := Api[3];
 end;
 
-function TIBClientLibrary.GetLibName: string;
+function TFIBClientLibrary.GetLibName: string;
 begin
   Result := FLibraryName
 end;
 
-function TIBClientLibrary.isc_array_get_slice(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_array_get_slice(status_vector: PISC_STATUS;
   db_handle: PISC_DB_HANDLE; trans_handle: PISC_TR_HANDLE; array_id: PISC_QUAD;
   descriptor: PISC_ARRAY_DESC; dest_array: PVoid; slice_length: PISC_LONG)
   : ISC_STATUS;
@@ -763,30 +779,30 @@ begin
     Result := Fisc_array_get_slice(status_vector, db_handle, trans_handle,
       array_id, descriptor, dest_array, slice_length)
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_array_get_slice', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_array_get_slice', FLibraryName]));
 end;
 
-function TIBClientLibrary.isc_array_lookup_bounds(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_array_lookup_bounds(status_vector: PISC_STATUS;
   db_handle: PISC_DB_HANDLE; trans_handle: PISC_TR_HANDLE;
   table_name, column_name: PAnsiChar; descriptor: PISC_ARRAY_DESC): ISC_STATUS;
 begin
   if Assigned(Fisc_array_lookup_bounds) then
     Result := Fisc_array_lookup_bounds(status_vector, db_handle, trans_handle, table_name, column_name, descriptor)
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_array_lookup_bounds', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_array_lookup_bounds', FLibraryName]));
 end;
 
-function TIBClientLibrary.isc_array_lookup_desc(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_array_lookup_desc(status_vector: PISC_STATUS;
   db_handle: PISC_DB_HANDLE; trans_handle: PISC_TR_HANDLE;
   table_name, column_name: PAnsiChar; descriptor: PISC_ARRAY_DESC): ISC_STATUS;
 begin
   if Assigned(Fisc_array_lookup_desc) then
     Result := Fisc_array_lookup_desc(status_vector, db_handle, trans_handle, table_name, column_name, descriptor)
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_array_lookup_desc', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_array_lookup_desc', FLibraryName]));
 end;
 
-function TIBClientLibrary.isc_array_put_slice(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_array_put_slice(status_vector: PISC_STATUS;
   db_handle: PISC_DB_HANDLE; trans_handle: PISC_TR_HANDLE; array_id: PISC_QUAD;
   descriptor: PISC_ARRAY_DESC; source_array: PVoid; slice_length: PISC_LONG)
   : ISC_STATUS;
@@ -795,10 +811,10 @@ begin
     Result := Fisc_array_put_slice(status_vector, db_handle, trans_handle,
       array_id, descriptor, source_array, slice_length)
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_array_put_slice', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_array_put_slice', FLibraryName]));
 end;
 
-function TIBClientLibrary.isc_get_slice(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_get_slice(status_vector: PISC_STATUS;
   db_handle: PISC_DB_HANDLE; trans_handle: PISC_TR_HANDLE; array_id: PISC_QUAD;
   sdl_length: Short; sdl: PAnsiChar; param_length: Short; param: PISC_LONG;
   slice_length: ISC_LONG; slice: PVoid; return_length: PISC_LONG): ISC_STATUS;
@@ -807,10 +823,10 @@ begin
     Result := Fisc_get_slice(status_vector, db_handle, trans_handle, array_id,
       sdl_length, sdl, param_length, param, slice_length, slice, return_length)
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_get_slice', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_get_slice', FLibraryName]));
 end;
 
-function TIBClientLibrary.isc_put_slice(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_put_slice(status_vector: PISC_STATUS;
   db_handle: PISC_DB_HANDLE; trans_handle: PISC_TR_HANDLE; array_id: PISC_QUAD;
   sdl_length: Short; sdl: PAnsiChar; param_length: Short; param: PISC_LONG;
   slice_length: ISC_LONG; slice: PVoid): ISC_STATUS;
@@ -819,10 +835,10 @@ begin
     Result := Fisc_put_slice(status_vector, db_handle, trans_handle, array_id,
       sdl_length, sdl, param_length, param, slice_length, slice)
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_put_slice', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_put_slice', FLibraryName]));
 end;
 
-function TIBClientLibrary.isc_array_set_desc(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_array_set_desc(status_vector: PISC_STATUS;
   table_name, column_name: PAnsiChar; sql_dtype, sql_length, sql_dimensions
   : PShort; descriptor: PISC_ARRAY_DESC): ISC_STATUS;
 begin
@@ -830,512 +846,512 @@ begin
     Result := Fisc_array_set_desc(status_vector, table_name, column_name,
       sql_dtype, sql_length, sql_dimensions, descriptor)
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_array_set_desc', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_array_set_desc', FLibraryName]));
 end;
 
-function TIBClientLibrary.isc_attach_database(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_attach_database(status_vector: PISC_STATUS;
   db_name_length: Short; db_name: PAnsiChar; db_handle: PISC_DB_HANDLE;
   parm_buffer_length: Short; parm_buffer: PAnsiChar): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_attach_database(status_vector, db_name_length, db_name, db_handle, parm_buffer_length, parm_buffer)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_blob_info(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_blob_info(status_vector: PISC_STATUS;
   blob_handle: PISC_BLOB_HANDLE; item_list_buffer_length: Short;
   item_list_buffer: PAnsiChar; result_buffer_length: Short;
   result_buffer: PAnsiChar): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_blob_info(status_vector, blob_handle,
       item_list_buffer_length, item_list_buffer, result_buffer_length, result_buffer)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_blob_lookup_desc(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_blob_lookup_desc(status_vector: PISC_STATUS;
   db_handle: PISC_DB_HANDLE; trans_handle: PISC_TR_HANDLE;
   table_name, column_name: PAnsiChar; descriptor: PISC_BLOB_DESC;
   global: PUChar): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_blob_lookup_desc(status_vector, db_handle, trans_handle, table_name, column_name, descriptor, global)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_blob_set_desc(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_blob_set_desc(status_vector: PISC_STATUS;
   table_name, column_name: PAnsiChar; subtype, charset, segment_size: Short;
   descriptor: PISC_BLOB_DESC): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_blob_set_desc(status_vector, table_name, column_name, subtype, charset, segment_size, descriptor)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_cancel_blob(status_vector: PISC_STATUS; blob_handle: PISC_BLOB_HANDLE): ISC_STATUS;
+function TFIBClientLibrary.isc_cancel_blob(status_vector: PISC_STATUS; blob_handle: PISC_BLOB_HANDLE): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_cancel_blob(status_vector, blob_handle)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_cancel_events(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; event_id: PISC_LONG): ISC_STATUS;
+function TFIBClientLibrary.isc_cancel_events(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; event_id: PISC_LONG): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_cancel_events(status_vector, db_handle, event_id)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_que_events(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_que_events(status_vector: PISC_STATUS;
   db_handle: PISC_DB_HANDLE; event_id: PISC_LONG; length: Short;
   event_buffer: PAnsiChar; event_function: TISC_CALLBACK;
   event_function_arg: PVoid): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_que_events(status_vector, db_handle, event_id, length,
       event_buffer, event_function, event_function_arg)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_wait_for_event(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_wait_for_event(status_vector: PISC_STATUS;
   db_handle: PISC_DB_HANDLE; length: Short;
   event_buffer, result_buffer: PAnsiChar): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_wait_for_event(status_vector, db_handle, length, event_buffer, result_buffer)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_close_blob(status_vector: PISC_STATUS; blob_handle: PISC_BLOB_HANDLE): ISC_STATUS;
+function TFIBClientLibrary.isc_close_blob(status_vector: PISC_STATUS; blob_handle: PISC_BLOB_HANDLE): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_close_blob(status_vector, blob_handle)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_commit_retaining(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS;
+function TFIBClientLibrary.isc_commit_retaining(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS;
 begin
   if Assigned(Fisc_commit_retaining) then
     try
-      FBusy := True;
+      BeginCall;
       Result := Fisc_commit_retaining(status_vector, tran_handle)
     finally
-      FBusy := False;
+      EndCall;
     end
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_commit_retaining', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_commit_retaining', FLibraryName]));
 end;
 
-function TIBClientLibrary.isc_commit_transaction(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS;
+function TFIBClientLibrary.isc_commit_transaction(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_commit_transaction(status_vector, tran_handle)
   finally
-    FBusy := False;
+    EndCall;
   end
 
 end;
 
-function TIBClientLibrary.isc_transaction_info(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_transaction_info(status_vector: PISC_STATUS;
   tran_handle: PISC_TR_HANDLE; item_list_buffer_length: Short;
   item_list_buffer: PAnsiChar; result_buffer_length: Short;
   result_buffer: PAnsiChar): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_transaction_info(status_vector, tran_handle,
       item_list_buffer_length, item_list_buffer, result_buffer_length, result_buffer)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_create_blob2(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_create_blob2(status_vector: PISC_STATUS;
   db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
   blob_handle: PISC_BLOB_HANDLE; blob_id: PISC_QUAD; bpb_length: Short;
   bpb_address: PAnsiChar): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
 
     Result := Fisc_create_blob2(status_vector, db_handle, tran_handle, blob_handle, blob_id, bpb_length, bpb_address)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_database_info(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_database_info(status_vector: PISC_STATUS;
   db_handle: PISC_DB_HANDLE; item_list_buffer_length: Short;
   item_list_buffer: PAnsiChar; result_buffer_length: Short;
   result_buffer: PAnsiChar): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_database_info(status_vector, db_handle,
       item_list_buffer_length, item_list_buffer, result_buffer_length, result_buffer)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-procedure TIBClientLibrary.isc_decode_date(ib_date: PISC_QUAD; tm_date: PCTimeStructure);
+procedure TFIBClientLibrary.isc_decode_date(ib_date: PISC_QUAD; tm_date: PCTimeStructure);
 begin
-  FBusy := True;
+  BeginCall;
   try
     if Assigned(Fisc_decode_date) then
       Fisc_decode_date(ib_date, tm_date)
     else
-      raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_decode_date', FLibraryName]));
+      raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_decode_date', FLibraryName]));
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-procedure TIBClientLibrary.isc_encode_date(tm_date: PCTimeStructure; ib_date: PISC_QUAD);
+procedure TFIBClientLibrary.isc_encode_date(tm_date: PCTimeStructure; ib_date: PISC_QUAD);
 begin
-  FBusy := True;
+  BeginCall;
   try
     if Assigned(Fisc_encode_date) then
       Fisc_encode_date(tm_date, ib_date)
     else
-      raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_encode_date', FLibraryName]));
+      raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_encode_date', FLibraryName]));
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-procedure TIBClientLibrary.isc_encode_sql_date(tm_date: PCTimeStructure; ib_date: PISC_DATE);
+procedure TFIBClientLibrary.isc_encode_sql_date(tm_date: PCTimeStructure; ib_date: PISC_DATE);
 begin
-  FBusy := True;
+  BeginCall;
   try
     if Assigned(Fisc_encode_sql_date) then
       Fisc_encode_sql_date(tm_date, ib_date)
     else
-      raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_encode_sql_date', FLibraryName]));
+      raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_encode_sql_date', FLibraryName]));
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-procedure TIBClientLibrary.isc_encode_sql_time(tm_date: PCTimeStructure; ib_time: PISC_TIME);
+procedure TFIBClientLibrary.isc_encode_sql_time(tm_date: PCTimeStructure; ib_time: PISC_TIME);
 begin
-  FBusy := True;
+  BeginCall;
   try
     if Assigned(Fisc_encode_sql_time) then
       Fisc_encode_sql_time(tm_date, ib_time)
     else
-      raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_encode_sql_time', FLibraryName]));
+      raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_encode_sql_time', FLibraryName]));
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-procedure TIBClientLibrary.isc_encode_timestamp(tm_date: PCTimeStructure; ib_timestamp: PISC_TIMESTAMP);
+procedure TFIBClientLibrary.isc_encode_timestamp(tm_date: PCTimeStructure; ib_timestamp: PISC_TIMESTAMP);
 begin
-  FBusy := True;
+  BeginCall;
   try
     if Assigned(Fisc_encode_timestamp) then
       Fisc_encode_timestamp(tm_date, ib_timestamp)
     else
-      raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_encode_timestamp', FLibraryName]));
+      raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_encode_timestamp', FLibraryName]));
   finally
-    FBusy := False;
+    EndCall;
   end
 
 end;
 
-procedure TIBClientLibrary.isc_decode_sql_date(ib_date: PISC_DATE; tm_date: PCTimeStructure);
+procedure TFIBClientLibrary.isc_decode_sql_date(ib_date: PISC_DATE; tm_date: PCTimeStructure);
 begin
-  FBusy := True;
+  BeginCall;
   try
     if Assigned(Fisc_decode_sql_date) then
       Fisc_decode_sql_date(ib_date, tm_date)
     else
-      raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_decode_sql_date', FLibraryName]));
+      raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_decode_sql_date', FLibraryName]));
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-procedure TIBClientLibrary.isc_decode_sql_time(ib_time: PISC_TIME; tm_date: PCTimeStructure);
+procedure TFIBClientLibrary.isc_decode_sql_time(ib_time: PISC_TIME; tm_date: PCTimeStructure);
 begin
-  FBusy := True;
+  BeginCall;
   try
     if Assigned(Fisc_decode_sql_time) then
       Fisc_decode_sql_time(ib_time, tm_date)
     else
-      raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_decode_sql_time', FLibraryName]));
+      raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_decode_sql_time', FLibraryName]));
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-procedure TIBClientLibrary.isc_decode_timestamp(ib_timestamp: PISC_TIMESTAMP; tm_date: PCTimeStructure);
+procedure TFIBClientLibrary.isc_decode_timestamp(ib_timestamp: PISC_TIMESTAMP; tm_date: PCTimeStructure);
 begin
-  FBusy := True;
+  BeginCall;
   try
     if Assigned(Fisc_decode_timestamp) then
       Fisc_decode_timestamp(ib_timestamp, tm_date)
     else
-      raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_decode_timestamp', FLibraryName]));
+      raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_decode_timestamp', FLibraryName]));
   finally
-    FBusy := False;
+    EndCall;
   end
 
 end;
 
-function TIBClientLibrary.isc_add_user(status_vector: PISC_STATUS; user_sec_data: PUserSecData): ISC_STATUS;
+function TFIBClientLibrary.isc_add_user(status_vector: PISC_STATUS; user_sec_data: PUserSecData): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_add_user(status_vector, user_sec_data)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_delete_user(status_vector: PISC_STATUS; user_sec_data: PUserSecData): ISC_STATUS;
+function TFIBClientLibrary.isc_delete_user(status_vector: PISC_STATUS; user_sec_data: PUserSecData): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_delete_user(status_vector, user_sec_data)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_modify_user(status_vector: PISC_STATUS; user_sec_data: PUserSecData): ISC_STATUS;
+function TFIBClientLibrary.isc_modify_user(status_vector: PISC_STATUS; user_sec_data: PUserSecData): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_modify_user(status_vector, user_sec_data)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_detach_database(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE): ISC_STATUS;
+function TFIBClientLibrary.isc_detach_database(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_detach_database(status_vector, db_handle)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_drop_database(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE): ISC_STATUS;
+function TFIBClientLibrary.isc_drop_database(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_drop_database(status_vector, db_handle)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_dsql_alloc_statement2(const status_vector
+function TFIBClientLibrary.isc_dsql_alloc_statement2(const status_vector
   : PISC_STATUS; db_handle: PISC_DB_HANDLE; stmt_handle: PISC_STMT_HANDLE)
   : ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_dsql_alloc_statement2(status_vector, db_handle, stmt_handle)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
 // IB2007
-function TIBClientLibrary.isc_dsql_batch_execute(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_dsql_batch_execute(status_vector: PISC_STATUS;
   tran_handle: PISC_TR_HANDLE; stmt_handle: PISC_STMT_HANDLE; dialect: UShort;
   insqlda: PXSQLDA; no_of_rows: UShort; batch_vars: PPXSQLVAR;
   rows_affected: PULong): ISC_STATUS;
 begin
   if Assigned(Fisc_dsql_batch_execute) then
     try
-      FBusy := True;
+      BeginCall;
       Result := Fisc_dsql_batch_execute(status_vector, tran_handle, stmt_handle,
         dialect, insqlda, no_of_rows, batch_vars, rows_affected)
     finally
-      FBusy := False;
+      EndCall;
     end
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_dsql_batch_execute', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_dsql_batch_execute', FLibraryName]));
 end;
 
-function TIBClientLibrary.isc_dsql_batch_execute_immed(status_vector
+function TFIBClientLibrary.isc_dsql_batch_execute_immed(status_vector
   : PISC_STATUS; db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
   dialect: UShort; no_of_sql: ULong; statement: PPAnsiChar;
   rows_affected: PULong): ISC_STATUS;
 begin
   if Assigned(Fisc_dsql_batch_execute_immed) then
     try
-      FBusy := True;
+      BeginCall;
       Result := Fisc_dsql_batch_execute_immed(status_vector, db_handle,
         tran_handle, dialect, no_of_sql, statement, rows_affected)
     finally
-      FBusy := False;
+      EndCall;
     end
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_dsql_batch_execute_immed', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_dsql_batch_execute_immed', FLibraryName]));
 end;
 // End //IB2007
 
-function TIBClientLibrary.isc_dsql_describe(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_dsql_describe(status_vector: PISC_STATUS;
   stmt_handle: PISC_STMT_HANDLE; dialect: UShort; xsqlda: PXSQLDA): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_dsql_describe(status_vector, stmt_handle, dialect, xsqlda)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_dsql_describe_bind(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_dsql_describe_bind(status_vector: PISC_STATUS;
   stmt_handle: PISC_STMT_HANDLE; dialect: UShort; xsqlda: PXSQLDA): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_dsql_describe_bind(status_vector, stmt_handle, dialect, xsqlda)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_dsql_execute(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_dsql_execute(status_vector: PISC_STATUS;
   tran_handle: PISC_TR_HANDLE; stmt_handle: PISC_STMT_HANDLE; dialect: UShort;
   xsqlda: PXSQLDA): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_dsql_execute(status_vector, tran_handle, stmt_handle, dialect, xsqlda)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_dsql_execute_immediate(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_dsql_execute_immediate(status_vector: PISC_STATUS;
   db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE; length: UShort;
   statement: PAnsiChar; dialect: UShort; xsqlda: PXSQLDA): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_dsql_execute_immediate(status_vector, db_handle, tran_handle, length, statement, dialect, xsqlda)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_dsql_exec_immed2(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_dsql_exec_immed2(status_vector: PISC_STATUS;
   db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE; length: UShort;
   statement: PAnsiChar; dialect: UShort; in_xsqlda, out_xsqlda: PXSQLDA)
   : ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_dsql_exec_immed2(status_vector, db_handle, tran_handle,
       length, statement, dialect, in_xsqlda, out_xsqlda)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_dsql_execute2(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_dsql_execute2(status_vector: PISC_STATUS;
   tran_handle: PISC_TR_HANDLE; stmt_handle: PISC_STMT_HANDLE; dialect: UShort;
   in_xsqlda, out_xsqlda: PXSQLDA): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_dsql_execute2(status_vector, tran_handle, stmt_handle, dialect, in_xsqlda, out_xsqlda)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_dsql_fetch(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_dsql_fetch(status_vector: PISC_STATUS;
   stmt_handle: PISC_STMT_HANDLE; dialect: UShort; xsqlda: PXSQLDA): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_dsql_fetch(status_vector, stmt_handle, dialect, xsqlda);
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_dsql_free_statement(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; options: UShort): ISC_STATUS;
+function TFIBClientLibrary.isc_dsql_free_statement(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; options: UShort): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_dsql_free_statement(status_vector, stmt_handle, options)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_dsql_prepare(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_dsql_prepare(status_vector: PISC_STATUS;
   tran_handle: PISC_TR_HANDLE; stmt_handle: PISC_STMT_HANDLE; length: UShort;
   statement: PAnsiChar; dialect: UShort; xsqlda: PXSQLDA): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_dsql_prepare(status_vector, tran_handle, stmt_handle, length, statement, dialect, xsqlda)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_dsql_set_cursor_name(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_dsql_set_cursor_name(status_vector: PISC_STATUS;
   stmt_handle: PISC_STMT_HANDLE; cursor_name: PAnsiChar; _type: UShort)
   : ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_dsql_set_cursor_name(status_vector, stmt_handle, cursor_name, _type)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_dsql_sql_info(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_dsql_sql_info(status_vector: PISC_STATUS;
   stmt_handle: PISC_STMT_HANDLE; item_length: Short; items: PAnsiChar;
   buffer_length: Short; buffer: PAnsiChar): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_dsql_sql_info(status_vector, stmt_handle, item_length, items, buffer_length, buffer)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
@@ -1345,336 +1361,334 @@ type
     Event8, Event9, Event10, Event11, Event12, Event13, Event14,
     Event15: PAnsiChar): ISC_LONG; cdecl;
 
-function TIBClientLibrary.isc_event_block(event_buffer, result_buffer
+function TFIBClientLibrary.isc_event_block(event_buffer, result_buffer
   : PPAnsiChar; id_count: UShort; event_list: array of PAnsiChar): ISC_LONG;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Tsib_event_block(Fisc_event_block)(event_buffer, result_buffer,
       id_count, event_list[0], event_list[1], event_list[2], event_list[3],
       event_list[4], event_list[5], event_list[6], event_list[7], event_list[8],
       event_list[9], event_list[10], event_list[11], event_list[12], event_list[13], event_list[14])
   finally
-    FBusy := False;
+    EndCall;
   end
 
 end;
 
-procedure TIBClientLibrary.isc_event_counts(event_counts: PUISC_LONG; buffer_length: Short; event_buffer, result_buffer: PAnsiChar);
+procedure TFIBClientLibrary.isc_event_counts(event_counts: PUISC_LONG; buffer_length: Short; event_buffer, result_buffer: PAnsiChar);
 begin
-  FBusy := True;
+  BeginCall;
   try
     Fisc_event_counts(event_counts, buffer_length, event_buffer, result_buffer)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_free(isc_arg1: PAnsiChar): ISC_LONG;
+function TFIBClientLibrary.isc_free(isc_arg1: PAnsiChar): ISC_LONG;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_free(isc_arg1)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_get_client_major_version: Integer;
+function TFIBClientLibrary.isc_get_client_major_version: Integer;
 begin
   if Assigned(Fisc_get_client_major_version) then
     try
-      FBusy := True;
+      BeginCall;
       Result := Fisc_get_client_major_version
     finally
-      FBusy := False;
+      EndCall;
     end
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_get_client_major_version', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_get_client_major_version', FLibraryName]));
 end;
 
-function TIBClientLibrary.isc_get_client_minor_version: Integer;
+function TFIBClientLibrary.isc_get_client_minor_version: Integer;
 begin
   if Assigned(Fisc_get_client_minor_version) then
     try
-      FBusy := True;
+      BeginCall;
       Result := Fisc_get_client_minor_version
     finally
-      FBusy := False;
+      EndCall;
     end
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_get_client_minor_version', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_get_client_minor_version', FLibraryName]));
 end;
 
-procedure TIBClientLibrary.isc_get_client_version(buffer: PAnsiChar);
+procedure TFIBClientLibrary.isc_get_client_version(buffer: PAnsiChar);
 begin
 
   if Assigned(Fisc_get_client_version) then
     try
-      FBusy := True;
+      BeginCall;
       Fisc_get_client_version(buffer)
     finally
-      FBusy := False;
+      EndCall;
     end
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_get_client_version', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_get_client_version', FLibraryName]));
 end;
 
-function TIBClientLibrary.isc_get_segment(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_get_segment(status_vector: PISC_STATUS;
   blob_handle: PISC_BLOB_HANDLE; actual_seg_length: PUShort;
   seg_buffer_length: UShort; seg_buffer: PAnsiChar): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_get_segment(status_vector, blob_handle, actual_seg_length, seg_buffer_length, seg_buffer)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_put_segment(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_put_segment(status_vector: PISC_STATUS;
   blob_handle: PISC_BLOB_HANDLE; seg_buffer_len: UShort; seg_buffer: PAnsiChar)
   : ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_put_segment(status_vector, blob_handle, seg_buffer_len, seg_buffer)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_interprete(buffer: PAnsiChar; status_vector: PPISC_STATUS): ISC_LONG;
+function TFIBClientLibrary.isc_interprete(buffer: PAnsiChar; status_vector: PPISC_STATUS): ISC_LONG;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_interprete(buffer, status_vector)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.fb_Interpret(buffer: PAnsiChar; BufLen: ULong; status_vector: PPISC_STATUS): ISC_LONG;
+function TFIBClientLibrary.fb_Interpret(buffer: PAnsiChar; BufLen: ULong; status_vector: PPISC_STATUS): ISC_LONG;
 begin
   if not Assigned(Ffb_interpret) then
     Result := isc_interprete(buffer, status_vector)
   else
   begin
-    FBusy := True;
+    BeginCall;
     try
       Result := Ffb_interpret(buffer, BufLen, status_vector)
     finally
-      FBusy := False;
+      EndCall;
     end
   end
 end;
 
-function TIBClientLibrary.isc_open_blob2(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_open_blob2(status_vector: PISC_STATUS;
   db_handle: PISC_DB_HANDLE; tran_handle: PISC_TR_HANDLE;
   blob_handle: PISC_BLOB_HANDLE; blob_id: PISC_QUAD; bpb_length: Short;
   bpb_buffer: PAnsiChar): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_open_blob2(status_vector, db_handle, tran_handle, blob_handle, blob_id, bpb_length, bpb_buffer)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_prepare_transaction(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS;
+function TFIBClientLibrary.isc_prepare_transaction(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_prepare_transaction(status_vector, tran_handle)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_prepare_transaction2(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_prepare_transaction2(status_vector: PISC_STATUS;
   tran_handle: PISC_TR_HANDLE; msg_length: Short; msg: PAnsiChar): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_prepare_transaction2(status_vector, tran_handle, msg_length, msg)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_rollback_retaining(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS;
+function TFIBClientLibrary.isc_rollback_retaining(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS;
 begin
   if Assigned(Fisc_rollback_retaining) then
     try
-      FBusy := True;
+      BeginCall;
       Result := Fisc_rollback_retaining(status_vector, tran_handle)
     finally
-      FBusy := False;
+      EndCall;
     end
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_rollback_retaining', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_rollback_retaining', FLibraryName]));
 end;
 
-function TIBClientLibrary.isc_rollback_transaction(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS;
+function TFIBClientLibrary.isc_rollback_transaction(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_rollback_transaction(status_vector, tran_handle)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
 
 // Services
 
-function TIBClientLibrary.isc_service_attach(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_service_attach(status_vector: PISC_STATUS;
   isc_arg2: UShort; isc_arg3: PAnsiChar; service_handle: PISC_SVC_HANDLE;
   isc_arg5: UShort; isc_arg6: PAnsiChar): ISC_STATUS;
 begin
   if Assigned(Fisc_service_attach) then
     try
-      FBusy := True;
+      BeginCall;
       Result := Fisc_service_attach(status_vector, isc_arg2, isc_arg3, service_handle, isc_arg5, isc_arg6)
     finally
-      FBusy := False;
+      EndCall;
     end
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_service_attach', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_service_attach', FLibraryName]));
 end;
 
-function TIBClientLibrary.isc_service_detach(status_vector: PISC_STATUS; service_handle: PISC_SVC_HANDLE): ISC_STATUS;
+function TFIBClientLibrary.isc_service_detach(status_vector: PISC_STATUS; service_handle: PISC_SVC_HANDLE): ISC_STATUS;
 begin
   if Assigned(Fisc_service_detach) then
     try
-      FBusy := True;
+      BeginCall;
       Result := Fisc_service_detach(status_vector, service_handle)
     finally
-      FBusy := False;
+      EndCall;
     end
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_service_detach', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_service_detach', FLibraryName]));
 end;
 
-function TIBClientLibrary.isc_service_query(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_service_query(status_vector: PISC_STATUS;
   service_handle, recv_handle: PISC_SVC_HANDLE; isc_arg4: UShort;
   isc_arg5: PAnsiChar; isc_arg6: UShort; isc_arg7: PAnsiChar; isc_arg8: UShort;
   isc_arg9: PAnsiChar): ISC_STATUS;
 begin
   if Assigned(Fisc_service_query) then
     try
-      FBusy := True;
+      BeginCall;
       Result := Fisc_service_query(status_vector, service_handle, recv_handle,
         isc_arg4, isc_arg5, isc_arg6, isc_arg7, isc_arg8, isc_arg9)
     finally
-      FBusy := False;
+      EndCall;
     end
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_service_query', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_service_query', FLibraryName]));
 end;
 
-function TIBClientLibrary.isc_service_start(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_service_start(status_vector: PISC_STATUS;
   service_handle, recv_handle: PISC_SVC_HANDLE; isc_arg4: UShort;
   isc_arg5: PAnsiChar): ISC_STATUS;
 begin
   if Assigned(Fisc_service_start) then
     try
-      FBusy := True;
+      BeginCall;
       Result := Fisc_service_start(status_vector, service_handle, recv_handle, isc_arg4, isc_arg5)
     finally
-      FBusy := False;
+      EndCall;
     end
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_service_start', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_service_start', FLibraryName]));
 end;
 
-procedure TIBClientLibrary.isc_sql_interprete(sqlcode: Short; buffer: PAnsiChar; buffer_length: Short);
+procedure TFIBClientLibrary.isc_sql_interprete(sqlcode: Short; buffer: PAnsiChar; buffer_length: Short);
 begin
-  FBusy := True;
+  BeginCall;
   try
     Fisc_sql_interprete(sqlcode, buffer, buffer_length)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_sqlcode(status_vector: PISC_STATUS): ISC_LONG;
+function TFIBClientLibrary.isc_sqlcode(status_vector: PISC_STATUS): ISC_LONG;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_sqlcode(status_vector)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-// procedure TIBClientLibrary.fb_sqlstate(buffer: PAnsiChar; const user_status: PISC_STATUS);
-
-function TIBClientLibrary.fb_sqlstate(user_status: PISC_STATUS): FIBByteString;
+function TFIBClientLibrary.fb_sqlstate(user_status: PISC_STATUS): FIBByteString;
 var
-  buffer: array [0 .. FB_sqlstate_bufSize - 1] of Ansichar;
+  buffer: array [0 .. FB_sqlstate_bufSize - 1] of AnsiChar;
 begin
   if Assigned(Ffb_sqlstate) then
     try
-      FBusy := True;
+      BeginCall;
       FillChar(buffer, FB_sqlstate_bufSize, 0);
       Ffb_sqlstate(@buffer, user_status);
       Result := buffer
     finally
-      FBusy := False;
+      EndCall;
     end;
 end;
 
-function TIBClientLibrary.isc_start_multiple(status_vector: PISC_STATUS;
+function TFIBClientLibrary.isc_start_multiple(status_vector: PISC_STATUS;
   tran_handle: PISC_TR_HANDLE; db_handle_count: Short;
   teb_vector_address: PISC_TEB): ISC_STATUS;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_start_multiple(status_vector, tran_handle, db_handle_count, teb_vector_address)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_vax_integer(buffer: PAnsiChar; length: Short): ISC_LONG;
+function TFIBClientLibrary.isc_vax_integer(buffer: PAnsiChar; length: Short): ISC_LONG;
 begin
-  FBusy := True;
+  BeginCall;
   try
     Result := Fisc_vax_integer(buffer, length)
   finally
-    FBusy := False;
+    EndCall;
   end
 end;
 
-function TIBClientLibrary.isc_portable_integer(buffer: PAnsiChar; length: Short): ISC_INT64;
+function TFIBClientLibrary.isc_portable_integer(buffer: PAnsiChar; length: Short): ISC_INT64;
 begin
   if Assigned(Fisc_portable_integer) then
     try
-      FBusy := True;
+      BeginCall;
       Result := Fisc_portable_integer(buffer, length);
     finally
-      FBusy := False;
+      EndCall;
     end
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['isc_portable_integer', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['isc_portable_integer', FLibraryName]));
 end;
 
-constructor TIBClientLibrary.Create(const aLibName: string);
+constructor TFIBClientLibrary.Create(const aLibName: string);
 begin
   inherited Create;
   FLibraryName := aLibName;
   LoadIBLibrary;
 end;
 
-destructor TIBClientLibrary.Destroy;
+destructor TFIBClientLibrary.Destroy;
 begin
   FreeIBLibrary;
   inherited Destroy
 end;
 
-procedure TIBClientLibrary.LoadIBLibrary;
+procedure TFIBClientLibrary.LoadIBLibrary;
 
   function TryGetProcAddr(ProcName: String): Pointer;
   begin
@@ -1690,7 +1704,7 @@ procedure TIBClientLibrary.LoadIBLibrary;
   end;
 
 var
-  VersionBuffer: array [0 .. 255] of Ansichar;
+  VersionBuffer: array [0 .. 255] of AnsiChar;
 begin
   FLibraryHandle := LoadLibrary(PChar(FLibraryName));
 {$IFDEF WINDOWS}
@@ -1814,7 +1828,7 @@ begin
   Reset8087CW;
 end;
 
-procedure TIBClientLibrary.FreeIBLibrary;
+procedure TFIBClientLibrary.FreeIBLibrary;
 begin
   // Firebird client must stop its own threads before being unloaded
   if Assigned(Ffb_shutdown) and LibraryLoaded then
@@ -1828,44 +1842,62 @@ begin
   end;
 end;
 
-function TIBClientLibrary.LibraryLoaded: boolean;
+function TFIBClientLibrary.LibraryLoaded: Boolean;
 begin
   Result := FLibraryHandle > HINSTANCE_ERROR;
 end;
 
-function TIBClientLibrary.fb_cancel_operation(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; option: UShort): ISC_STATUS;
+function TFIBClientLibrary.fb_cancel_operation(status_vector: PISC_STATUS; db_handle: PISC_DB_HANDLE; option: UShort): ISC_STATUS;
 begin
   if Assigned(Ffb_cancel_operation) then
     Result := Ffb_cancel_operation(status_vector, db_handle, option)
   else
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['fb_cancel_operation', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['fb_cancel_operation', FLibraryName]));
 end;
 
-function TIBClientLibrary.fb_dsql_set_timeout(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; timeout: Cardinal): ISC_STATUS;
+function TFIBClientLibrary.fb_dsql_set_timeout(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; timeout: Cardinal): ISC_STATUS;
 begin
   if not Assigned(Ffb_dsql_set_timeout) then
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['fb_dsql_set_timeout', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['fb_dsql_set_timeout', FLibraryName]));
   Result := Ffb_dsql_set_timeout(status_vector, stmt_handle, timeout);
 end;
 
-function TIBClientLibrary.HasStatementTimeout: Boolean;
+function TFIBClientLibrary.HasStatementTimeout: Boolean;
 begin
   Result := Assigned(Ffb_dsql_set_timeout);
 end;
 
-function TIBClientLibrary.fb_database_crypt_callback(StatusVector: PISC_STATUS; Callback: Pointer): ISC_STATUS;
+function TFIBClientLibrary.fb_database_crypt_callback(StatusVector: PISC_STATUS; Callback: Pointer): ISC_STATUS;
 begin
   if not Assigned(Ffb_database_crypt_callback) then
-    raise EAPICallException.Create(Format(SCantFindApiProc, ['fb_database_crypt_callback', FLibraryName]));
+    raise EFIBAPICallException.Create(Format(SCantFindApiProc, ['fb_database_crypt_callback', FLibraryName]));
   Result := Ffb_database_crypt_callback(StatusVector, Callback);
 end;
 
-function TIBClientLibrary.GetBusy: boolean;
+function TFIBClientLibrary.GetBusy: Boolean;
 begin
-  Result := FBusy
+  Result := FBusyCount > 0
 end;
 
-function TIBClientLibrary.LibraryFilePath: string;
+procedure TFIBClientLibrary.BeginCall;
+begin
+{$IFDEF WINDOWS}
+  InterlockedIncrement(FBusyCount);
+{$ELSE}
+  TInterlocked.Increment(FBusyCount);
+{$ENDIF}
+end;
+
+procedure TFIBClientLibrary.EndCall;
+begin
+{$IFDEF WINDOWS}
+  InterlockedDecrement(FBusyCount);
+{$ELSE}
+  TInterlocked.Decrement(FBusyCount);
+{$ENDIF}
+end;
+
+function TFIBClientLibrary.LibraryFilePath: string;
 var
   buffer: array [0 .. 1024] of Char;
 begin
@@ -1918,7 +1950,7 @@ begin
     FOnRequest(FSender, RequestData, Key);
     // A truncated key would fail with a misleading error
     if Cardinal(length(Key)) > BufferLength then
-      raise EAPICallException.Create(Format(SCryptKeyTooLong, [length(Key), BufferLength]));
+      raise EFIBAPICallException.Create(Format(SCryptKeyTooLong, [length(Key), BufferLength]));
     if Key <> '' then
       Move(Pointer(Key)^, buffer^, length(Key));
     Result := Cardinal(length(Key));
@@ -1929,13 +1961,13 @@ begin
   end;
 end;
 
-function TFIBCryptKeyCallback.Activate(const ClientLibrary: IIBClientLibrary; StatusVector: PISC_STATUS): ISC_STATUS;
+function TFIBCryptKeyCallback.Activate(const ClientLibrary: IFIBClientLibrary; StatusVector: PISC_STATUS): ISC_STATUS;
 begin
   FreeAndNil(FRequestError);
   Result := ClientLibrary.fb_database_crypt_callback(StatusVector, Self);
 end;
 
-procedure TFIBCryptKeyCallback.Deactivate(const ClientLibrary: IIBClientLibrary);
+procedure TFIBCryptKeyCallback.Deactivate(const ClientLibrary: IFIBClientLibrary);
 var
   Status: array [0 .. 19] of ISC_STATUS;
 begin
@@ -1957,12 +1989,12 @@ end;
 
 initialization
 
-vClientLibs := TInterfaceList.Create;
-vLibAccess := TCriticalSection.Create;
+ClientLibraries := TInterfaceList.Create;
+ClientLibrariesLock := TCriticalSection.Create;
 
 finalization
 
-vClientLibs.Free;
-FreeAndNil(vLibAccess);
+ClientLibraries.Free;
+FreeAndNil(ClientLibrariesLock);
 
 end.

@@ -28,7 +28,7 @@ Guides: [Datasets and caching](../guide/datasets-and-caching.md).
 
 ## Run-time properties
 
-`TFIBClientDataSet` adds none. It implements the `ISQLObject` interface of the library (`FIBInterfaces`), so another FIBPlus object can take parameter values from it, as it does from a dataset. The interface methods are protected.
+`TFIBClientDataSet` adds none. It implements the `IFIBParamSource` interface of the library (`FIBInterfaces`), so another FIBPlus object can take parameter values from it, as it does from a dataset. The interface methods are protected.
 
 ## Methods
 

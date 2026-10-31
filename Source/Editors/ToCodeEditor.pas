@@ -22,7 +22,7 @@ uses
   Classes, ToolsAPI, IStreams;
 
 type
-  TStringsModuleCreator = class(TInterfacedObject, IOTACreator,
+  TFIBStringsModuleCreator = class(TInterfacedObject, IOTACreator,
     IOTAModuleCreator)
   private
     FFileName: string;
@@ -51,7 +51,7 @@ type
     procedure FormCreated(const FormEditor: IOTAFormEditor);
   end;
 
-  TOTAFile = class(TInterfacedObject, IOTAFile)
+  TFIBOTAFile = class(TInterfacedObject, IOTAFile)
   private
     FSource: string;
     FAge: TDateTime;
@@ -84,33 +84,33 @@ uses
   ToCodeEditorIntfs;
 
 type
-  TToCodeEditor = class(TComponent, IStringsToCodeEditor)
+  TFIBToCodeEditor = class(TComponent, IFIBStringsToCodeEditor)
   private
     function ICreatePropInCode(Component: TComponent; const PropName: string; PropValue: TStrings; aModified: Boolean): Boolean;
   end;
 
-  { TOTAFile }
+  { TFIBOTAFile }
 
-constructor TOTAFile.Create(const ASource: string; AAge: TDateTime);
+constructor TFIBOTAFile.Create(const ASource: string; AAge: TDateTime);
 begin
   inherited Create;
   FSource := ASource;
   FAge := AAge;
 end;
 
-function TOTAFile.GetAge: TDateTime;
+function TFIBOTAFile.GetAge: TDateTime;
 begin
   Result := FAge;
 end;
 
-function TOTAFile.GetSource: string;
+function TFIBOTAFile.GetSource: string;
 begin
   Result := FSource;
 end;
 
-{ TStringsModuleCreator }
+{ TFIBStringsModuleCreator }
 
-constructor TStringsModuleCreator.Create(const FileName: string; Stream: TStringStream; Age: TDateTime);
+constructor TFIBStringsModuleCreator.Create(const FileName: string; Stream: TStringStream; Age: TDateTime);
 begin
   inherited Create;
   FFileName := FileName;
@@ -118,88 +118,88 @@ begin
   FAge := Age;
 end;
 
-destructor TStringsModuleCreator.Destroy;
+destructor TFIBStringsModuleCreator.Destroy;
 begin
   FStream.Free;
   inherited;
 end;
 
-procedure TStringsModuleCreator.FormCreated(const FormEditor: IOTAFormEditor);
+procedure TFIBStringsModuleCreator.FormCreated(const FormEditor: IOTAFormEditor);
 begin
   { Nothing to do }
 end;
 
-function TStringsModuleCreator.GetAncestorName: string;
+function TFIBStringsModuleCreator.GetAncestorName: string;
 begin
   Result := '';
 end;
 
-function TStringsModuleCreator.GetCreatorType: string;
+function TFIBStringsModuleCreator.GetCreatorType: string;
 begin
   Result := sText;
 end;
 
-function TStringsModuleCreator.GetExisting: Boolean;
+function TFIBStringsModuleCreator.GetExisting: Boolean;
 begin
   Result := False;
 end;
 
-function TStringsModuleCreator.GetFileSystem: string;
+function TFIBStringsModuleCreator.GetFileSystem: string;
 begin
   Result := sTStringsFileSystem;
 end;
 
-function TStringsModuleCreator.GetFormName: string;
+function TFIBStringsModuleCreator.GetFormName: string;
 begin
   Result := '';
 end;
 
-function TStringsModuleCreator.GetImplFileName: string;
+function TFIBStringsModuleCreator.GetImplFileName: string;
 begin
   Result := FFileName;
 end;
 
-function TStringsModuleCreator.GetIntfFileName: string;
+function TFIBStringsModuleCreator.GetIntfFileName: string;
 begin
   Result := '';
 end;
 
-function TStringsModuleCreator.GetMainForm: Boolean;
+function TFIBStringsModuleCreator.GetMainForm: Boolean;
 begin
   Result := False;
 end;
 
-function TStringsModuleCreator.GetOwner: IOTAModule;
+function TFIBStringsModuleCreator.GetOwner: IOTAModule;
 begin
   Result := nil;
 end;
 
-function TStringsModuleCreator.GetShowForm: Boolean;
+function TFIBStringsModuleCreator.GetShowForm: Boolean;
 begin
   Result := False;
 end;
 
-function TStringsModuleCreator.GetShowSource: Boolean;
+function TFIBStringsModuleCreator.GetShowSource: Boolean;
 begin
   Result := True;
 end;
 
-function TStringsModuleCreator.GetUnnamed: Boolean;
+function TFIBStringsModuleCreator.GetUnnamed: Boolean;
 begin
   Result := False;
 end;
 
-function TStringsModuleCreator.NewFormFile(const FormIdent, AncestorIdent: string): IOTAFile;
+function TFIBStringsModuleCreator.NewFormFile(const FormIdent, AncestorIdent: string): IOTAFile;
 begin
   Result := nil;
 end;
 
-function TStringsModuleCreator.NewImplSource(const ModuleIdent, FormIdent, AncestorIdent: string): IOTAFile;
+function TFIBStringsModuleCreator.NewImplSource(const ModuleIdent, FormIdent, AncestorIdent: string): IOTAFile;
 begin
-  Result := TOTAFile.Create(FStream.DataString, FAge);
+  Result := TFIBOTAFile.Create(FStream.DataString, FAge);
 end;
 
-function TStringsModuleCreator.NewIntfSource(const ModuleIdent, FormIdent, AncestorIdent: string): IOTAFile;
+function TFIBStringsModuleCreator.NewIntfSource(const ModuleIdent, FormIdent, AncestorIdent: string): IOTAFile;
 begin
   Result := nil;
 end;
@@ -214,7 +214,11 @@ begin
   if Supports(FindRootDesigner(Component), IDesigner, Designer) and
     (Designer.GetDesignerExtension <> '') then
     Extension := Designer.GetDesignerExtension;
-  Result := Extension + DotSep + Component.Owner.Name + DotSep + Component.Name + DotSep + PropName;
+  if Component.Owner <> nil then
+    Result := Extension + DotSep + Component.Owner.Name
+  else
+    Result := Extension + DotSep;
+  Result := Result + DotSep + Component.Name + DotSep + PropName;
 end;
 
 function FindPropInCode(Component: TComponent; const PropName: string): Boolean;
@@ -332,17 +336,17 @@ begin
   // this used to be done in LibMain's TLibrary.Create but now its done here
   // the unregister is done over in ComponentDesigner's finalization
   StFilSys.Register;
-  Stream := TStringStream.Create('');
 
   if not Assigned(PropValue) then
     TObject(PropValue) := GetObjectProp(Component, pName, TStrings);
   if not Assigned(PropValue) then
     Exit;
 
+  Stream := TStringStream.Create('');
   PropValue.SaveToStream(Stream);
   Stream.Position := 0;
   Age := Now;
-  Module := ModuleServices.CreateModule(TStringsModuleCreator.Create(Ident, Stream, Age));
+  Module := ModuleServices.CreateModule(TFIBStringsModuleCreator.Create(Ident, Stream, Age));
   if Module <> nil then
   begin
     with StringsFileSystem.GetTStringsProperty(Ident, Component, pName) do
@@ -356,33 +360,61 @@ begin
   end;
 end;
 
-procedure SetSQLPropertiesHighlights;
 const
   SQLProps = ';selectsql;insertsql;deletesql;refreshsql;updatesql;';
+
+var
+  SQLPropsAdded: Boolean = False;
+  ToCodeEditorInstance: TFIBToCodeEditor;
+
+procedure SetSQLPropertiesHighlights;
 begin
   if Assigned(BorlandIDEServices) then
     with (BorlandIDEServices as IOTAEditorServices).GetEditOptionsForFile
       ('*.SQL') do
     begin
       if Pos(SQLProps, Extensions) = 0 then
-        Extensions := Extensions + SQLProps
+      begin
+        Extensions := Extensions + SQLProps;
+        SQLPropsAdded := True;
+      end;
     end;
 end;
 
-{ TToCodeEditor }
+procedure ResetSQLPropertiesHighlights;
+var
+  P: Integer;
+begin
+  if SQLPropsAdded and Assigned(BorlandIDEServices) then
+    with (BorlandIDEServices as IOTAEditorServices).GetEditOptionsForFile
+      ('*.SQL') do
+    begin
+      P := Pos(SQLProps, Extensions);
+      if P > 0 then
+        Extensions := Copy(Extensions, 1, P - 1) + Copy(Extensions, P + Length(SQLProps), MaxInt);
+    end;
+end;
 
-function TToCodeEditor.ICreatePropInCode(Component: TComponent; const PropName: string; PropValue: TStrings; aModified: Boolean): Boolean;
+{ TFIBToCodeEditor }
+
+function TFIBToCodeEditor.ICreatePropInCode(Component: TComponent; const PropName: string; PropValue: TStrings; aModified: Boolean): Boolean;
 begin
   Result := CreatePropInCode(Component, PropName, PropValue, aModified)
 end;
 
 initialization
 
-StringsToCodeEditor := TToCodeEditor.Create(nil);
+ToCodeEditorInstance := TFIBToCodeEditor.Create(nil);
+StringsToCodeEditor := ToCodeEditorInstance;
 SetSQLPropertiesHighlights;
 
 finalization
 
-StringsToCodeEditor := nil
+StringsToCodeEditor := nil;
+FreeAndNil(ToCodeEditorInstance);
+try
+  ResetSQLPropertiesHighlights;
+except
+end;
 
 end.

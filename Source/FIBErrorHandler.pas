@@ -25,8 +25,8 @@ uses
 
 type
 
-  TOptionErrorHandler = (oeException, oeForeignKey, oeLostConnect, oeCheck, oeUniqueViolation);
-  TKindIBError = (
+  TFIBErrorHandlerOption = (oeException, oeForeignKey, oeLostConnect, oeCheck, oeUniqueViolation);
+  TFIBErrorKind = (
     keNoError,
     keException,
     keForeignKey,
@@ -39,20 +39,20 @@ type
     keCancelled
   );
 
-  TOnFIBErrorEvent = procedure(Sender: TObject; ErrorValue: EFIBError; KindIBError: TKindIBError; var DoRaise: boolean) of object;
+  TFIBErrorEvent = procedure(Sender: TObject; ErrorValue: EFIBError; KindIBError: TFIBErrorKind; var DoRaise: Boolean) of object;
 
-  TOptionsErrorHandler = set of TOptionErrorHandler;
+  TFIBErrorHandlerOptions = set of TFIBErrorHandlerOption;
 
-  TErrorLexems = class(TPersistent)
+  TFIBErrorLexemes = class(TPersistent)
   private
     FConstraint: string;
     FIndex: string;
     FException: string;
     FAt: string;
-    function StoredConstraintProp: boolean;
-    function StoredIndexProp: boolean;
-    function StoredExceptionProp: boolean;
-    function StoredAtProp: boolean;
+    function StoredConstraintProp: Boolean;
+    function StoredIndexProp: Boolean;
+    function StoredExceptionProp: Boolean;
+    function StoredAtProp: Boolean;
   public
     constructor Create;
     procedure Assign(Source: TPersistent); override;
@@ -70,15 +70,15 @@ type
       THandledError = class
       public
         ThreadID: Cardinal;
-        Kind: TKindIBError;
+        Kind: TFIBErrorKind;
         ConstraintName: string;
         ExceptionName: string;
         ExceptionNumber: Integer;
       end;
   private
-    FOnFIBErrorEvent: TOnFIBErrorEvent;
-    FOptions: TOptionsErrorHandler;
-    FErrorLexems: TErrorLexems;
+    FOnFIBErrorEvent: TFIBErrorEvent;
+    FOptions: TFIBErrorHandlerOptions;
+    FErrorLexems: TFIBErrorLexemes;
     FHandledErrors: TObjectList; // THandledError per thread, under FHandledErrorsLock
     FHandledErrorsLock: TCriticalSection;
     FNoHandledError: THandledError;
@@ -89,30 +89,38 @@ type
     function GetConstraintName: string;
     function GetExceptionName: string;
     function GetExceptionNumber: Integer;
-    function GetLastError: TKindIBError;
+    function GetLastError: TFIBErrorKind;
     function GetTr(Sender: TObject): TFIBTransaction;
     function MessageConstraintName(const Msg: string): string;
     function RepositoryMessage(Sender: TObject; const ConstraintName: string): string;
-    procedure SetErrorLexems(const Value: TErrorLexems);
+    procedure SetErrorLexems(const Value: TFIBErrorLexemes);
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure DoOnErrorEvent(Sender: TObject; ErrorValue: EFIBError; var DoRaise: Boolean); dynamic; // for internal use
-    procedure DoOnLostConnect(DataBase: TFIBDatabase; ErrorValue: EFIBError; var DoRaise: boolean);
+    procedure DoOnLostConnect(DataBase: TFIBDatabase; ErrorValue: EFIBError; var DoRaise: Boolean);
     // The error last handled in the calling thread
     property ExceptionNumber: Integer read GetExceptionNumber;
-    property LastError: TKindIBError read GetLastError;
+    property LastError: TFIBErrorKind read GetLastError;
     property ConstraintName: string read GetConstraintName;
     property ExceptionName: string read GetExceptionName;
   published
-    property OnFIBErrorEvent: TOnFIBErrorEvent read FOnFIBErrorEvent write FOnFIBErrorEvent;
-    property Options: TOptionsErrorHandler read FOptions write FOptions default [oeException, oeLostConnect];
-    property ErrorLexems: TErrorLexems read FErrorLexems write SetErrorLexems;
+    property OnFIBErrorEvent: TFIBErrorEvent read FOnFIBErrorEvent write FOnFIBErrorEvent;
+    property Options: TFIBErrorHandlerOptions read FOptions write FOptions default [oeException, oeLostConnect];
+    property ErrorLexems: TFIBErrorLexemes read FErrorLexems write SetErrorLexems;
   end;
 
-function IsConnectionLost(const IBErrorCode: integer): boolean;
+function IsConnectionLost(const IBErrorCode: Integer): Boolean;
 // The database of the object that raised an error, nil when unknown
 function FindDatabaseForObject(Sender: TObject): TFIBDatabase;
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TOptionErrorHandler = TFIBErrorHandlerOption deprecated 'Use TFIBErrorHandlerOption';
+  TOptionsErrorHandler = TFIBErrorHandlerOptions deprecated 'Use TFIBErrorHandlerOptions';
+  TKindIBError = TFIBErrorKind deprecated 'Use TFIBErrorKind';
+  TOnFIBErrorEvent = TFIBErrorEvent deprecated 'Use TFIBErrorEvent';
+  TErrorLexems = TFIBErrorLexemes deprecated 'Use TFIBErrorLexemes';
 
 implementation
 
@@ -135,7 +143,7 @@ begin
   FNoHandledError.ExceptionNumber := -1;
   RegisterErrorHandler(Self);
   Options := [oeException, oeLostConnect];
-  FErrorLexems := TErrorLexems.Create;
+  FErrorLexems := TFIBErrorLexemes.Create;
 end;
 
 destructor TFIBErrorHandler.Destroy;
@@ -194,12 +202,12 @@ begin
   Result := CurrentHandledError(False).ExceptionNumber;
 end;
 
-function TFIBErrorHandler.GetLastError: TKindIBError;
+function TFIBErrorHandler.GetLastError: TFIBErrorKind;
 begin
   Result := CurrentHandledError(False).Kind;
 end;
 
-function IsConnectionLost(const IBErrorCode: integer): boolean;
+function IsConnectionLost(const IBErrorCode: Integer): Boolean;
 begin
   case IBErrorCode of
     isc_shutdown, isc_network_error, isc_lost_db_connection,
@@ -321,9 +329,9 @@ end;
 procedure TFIBErrorHandler.DefaultOnError(Sender: TObject; ErrorValue: EFIBError; HandledError: THandledError;
   var DoRaise: Boolean);
 var
-  p: integer;
+  p: Integer;
   RepositoryText, AtLexem, LowerMessage, ServerName: string;
-  vDB: THackDatabase;
+  ErrorDatabase: THackDatabase;
   LostCode: ISC_STATUS;
 begin
   HandledError.ConstraintName := '';
@@ -356,11 +364,11 @@ begin
           HandledError.Kind := keException;
           if oeException in Options then
           begin
-            // the lexem is followed by one separator
-            p := Pos(ErrorLexems.FException, AnsiLowerCase(Message));
+            // the lexem is followed by one separator; the lexem is editable, so any case
+            p := Pos(AnsiLowerCase(ErrorLexems.FException), AnsiLowerCase(Message));
             if p > 0 then
               Message := FastCopy(Message, p + Length(ErrorLexems.FException) + 1, MaxInt);
-            p := Pos(ErrorLexems.FException, AnsiLowerCase(Message));
+            p := Pos(AnsiLowerCase(ErrorLexems.FException), AnsiLowerCase(Message));
             if p > 0 then
               Message := FastCopy(Message, p + Length(ErrorLexems.FException) + 1, MaxInt);
             // the number and the name come from the status vector, the message lines are only cut off
@@ -369,10 +377,10 @@ begin
               (Trim(FastCopy(Message, 1, p - 1)) = IntToStr(ErrorNumber(isc_except))) then
             begin
               HandledError.ExceptionNumber := ErrorNumber(isc_except);
-              Message := TrimCLRF(FastCopy(Message, p + 1, MaxInt));
+              Message := TrimCRLF(FastCopy(Message, p + 1, MaxInt));
               HandledError.ExceptionName := 'Unknown';
-              vDB := THackDatabase(FindDatabaseForObject(Sender));
-              if (vDB = nil) or vDB.IsFirebirdConnect and (vDB.ServerMajorVersion >= 2) then
+              ErrorDatabase := THackDatabase(FindDatabaseForObject(Sender));
+              if (ErrorDatabase = nil) or ErrorDatabase.IsFirebirdConnect and (ErrorDatabase.ServerMajorVersion >= 2) then
               begin
                 ServerName := ExceptionNameArgument(ErrorValue);
                 if ServerName <> '' then
@@ -391,7 +399,7 @@ begin
                   // the stack trace is the last status item, its frames are split by a bare LF
                   if ErrorLexems.FAt <> '' then
                   begin
-                    AtLexem := CRLF + ErrorLexems.FAt + ' ';
+                    AtLexem := CRLF + AnsiLowerCase(ErrorLexems.FAt) + ' ';
                     LowerMessage := AnsiLowerCase(Message);
                     p := Length(LowerMessage) - Length(AtLexem) + 1;
                     while (p > 0) and
@@ -444,23 +452,22 @@ begin
             HandledError.Kind := keCancelled;
           Exit;
         end;
-        vDB := THackDatabase(FindDatabaseForObject(Sender));
+        ErrorDatabase := THackDatabase(FindDatabaseForObject(Sender));
         if IsConnectionLost(IBErrorCode) or ((SQLCode = sqlcode_902) and (IBErrorCode = isc_network_error)) then
           LostCode := IBErrorCode
         else
-          LostCode := HiddenLostConnection(vDB);
+          LostCode := HiddenLostConnection(ErrorDatabase);
         if LostCode <> 0 then
         begin
           HandledError.Kind := keLostConnect;
           // raised while closing this lost connection
-          if (vDB <> nil) and (drsInCloseLostConnect in vDB.FDatabaseRunState) then
+          if (ErrorDatabase <> nil) and (drsInCloseLostConnect in ErrorDatabase.FDatabaseRunState) then
             Exit;
-          // if (IBErrorCode=isc_shutdown) or (IBErrorCode=isc_att_shutdown) and (FindDatabaseForObject(Sender)<>nil) then
-          if (LostCode = isc_shutdown) and (vDB <> nil) and vDB.Connected then
-            vDB.InternalClose(True, True);
+          if (LostCode = isc_shutdown) and (ErrorDatabase <> nil) and ErrorDatabase.Connected then
+            ErrorDatabase.InternalClose(True, True);
 
           if oeLostConnect in Options then
-            DoOnLostConnect(vDB, ErrorValue, DoRaise);
+            DoOnLostConnect(ErrorDatabase, ErrorValue, DoRaise);
         end
       end
     end;
@@ -522,7 +529,7 @@ begin
     if Quoted then
       Continue;
     LowerToken := AnsiLowerCase(Token);
-    if (LowerToken = FErrorLexems.FConstraint) or (LowerToken = FErrorLexems.FIndex) then
+    if (LowerToken = AnsiLowerCase(FErrorLexems.FConstraint)) or (LowerToken = AnsiLowerCase(FErrorLexems.FIndex)) then
     begin
       if NextMessageToken(Msg, Position, Token, Quoted) then
       begin
@@ -563,7 +570,7 @@ begin
   InRepositoryLookup := True;
   try
     try
-      Result := ListErrorMessages.ErrorMessage(DB, Tr, ConstraintName);
+      Result := ErrorMessageCache.ErrorMessage(DB, Tr, ConstraintName);
     except
       Result := '';
     end;
@@ -572,13 +579,13 @@ begin
   end;
 end;
 
-procedure TFIBErrorHandler.DoOnLostConnect(DataBase: TFIBDatabase; ErrorValue: EFIBError; var DoRaise: boolean);
+procedure TFIBErrorHandler.DoOnLostConnect(DataBase: TFIBDatabase; ErrorValue: EFIBError; var DoRaise: Boolean);
 var
   i: TFIBListIndex;
-  Actions: TOnLostConnectActions;
+  Actions: TFIBLostConnectAction;
   Databases: TList;
   LostDatabase: THackDatabase;
-  Listed: boolean;
+  Listed: Boolean;
 begin
   if DataBase <> nil then
   begin
@@ -618,9 +625,9 @@ end;
 
 procedure TFIBErrorHandler.DoOnErrorEvent(Sender: TObject; ErrorValue: EFIBError; var DoRaise: Boolean);
 var
-  vDB: TFIBDatabase;
+  ErrorDatabase: TFIBDatabase;
   HandledError: THandledError;
-  Kind: TKindIBError;
+  Kind: TFIBErrorKind;
 begin
   // an error of the repository lookup goes back to RepositoryMessage untouched
   if InRepositoryLookup then
@@ -634,16 +641,16 @@ begin
     FOnFIBErrorEvent(Sender, ErrorValue, Kind, DoRaise);
     if (Kind = keLostConnect) and (not DoRaise) then
     begin
-      vDB := THackDatabase(FindDatabaseForObject(Sender));
-      if not(Assigned(vDB) and vDB.InRestoreConnect) then
+      ErrorDatabase := THackDatabase(FindDatabaseForObject(Sender));
+      if not(Assigned(ErrorDatabase) and ErrorDatabase.InRestoreConnect) then
         Abort;
     end;
   end;
 end;
 
-{ TErrorLexems }
+{ TFIBErrorLexemes }
 
-constructor TErrorLexems.Create;
+constructor TFIBErrorLexemes.Create;
 begin
   FConstraint := 'constraint';
   FIndex := 'index';
@@ -651,40 +658,40 @@ begin
   FAt := 'at'
 end;
 
-function TErrorLexems.StoredAtProp: boolean;
+function TFIBErrorLexemes.StoredAtProp: Boolean;
 begin
   Result := FAt <> 'at';
 end;
 
-function TErrorLexems.StoredConstraintProp: boolean;
+function TFIBErrorLexemes.StoredConstraintProp: Boolean;
 begin
   Result := FConstraint <> 'constraint';
 end;
 
-function TErrorLexems.StoredExceptionProp: boolean;
+function TFIBErrorLexemes.StoredExceptionProp: Boolean;
 begin
   Result := FException <> 'exception';
 end;
 
-function TErrorLexems.StoredIndexProp: boolean;
+function TFIBErrorLexemes.StoredIndexProp: Boolean;
 begin
   Result := FIndex <> 'index';
 end;
 
-procedure TErrorLexems.Assign(Source: TPersistent);
+procedure TFIBErrorLexemes.Assign(Source: TPersistent);
 begin
-  if Source is TErrorLexems then
+  if Source is TFIBErrorLexemes then
   begin
-    FConstraint := TErrorLexems(Source).FConstraint;
-    FIndex := TErrorLexems(Source).FIndex;
-    FException := TErrorLexems(Source).FException;
-    FAt := TErrorLexems(Source).FAt;
+    FConstraint := TFIBErrorLexemes(Source).FConstraint;
+    FIndex := TFIBErrorLexemes(Source).FIndex;
+    FException := TFIBErrorLexemes(Source).FException;
+    FAt := TFIBErrorLexemes(Source).FAt;
   end
   else
     inherited Assign(Source);
 end;
 
-procedure TFIBErrorHandler.SetErrorLexems(const Value: TErrorLexems);
+procedure TFIBErrorHandler.SetErrorLexems(const Value: TFIBErrorLexemes);
 begin
   FErrorLexems.Assign(Value);
 end;

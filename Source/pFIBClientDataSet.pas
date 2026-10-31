@@ -9,7 +9,7 @@ type
   TpFIBClientDataSet = FIBClientDataSet.TFIBClientDataSet deprecated 'Use TFIBClientDataSet';
   TpFIBClientBCDField = FIBClientDataSet.TFIBClientBCDField deprecated 'Use TFIBClientBCDField';
   TpFIBDataSetProvider = FIBClientDataSet.TFIBDataSetProvider deprecated 'Use TFIBDataSetProvider';
-  TOnApplyUpdateKind = FIBClientDataSet.TOnApplyUpdateKind;
+  TOnApplyUpdateKind = FIBClientDataSet.TFIBApplyUpdateKind;
 
 const
   aukBefore = FIBClientDataSet.aukBefore;

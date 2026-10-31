@@ -23,7 +23,7 @@ The next sample waits 10 seconds between attempts to restore a lost connection.
 
 ```delphi
 procedure TMainForm.DatabaseLostConnect(Database: TFIBDatabase; E: EFIBError;
-  var Actions: TOnLostConnectActions; var DoRaise: Boolean);
+  var Actions: TFIBLostConnectAction; var DoRaise: Boolean);
 begin
   Actions := laWaitRestore;
   DoRaise := False;
@@ -49,9 +49,9 @@ Available in the Object Inspector. When the component is dropped on a form at de
 |------|------|---------|-------------|
 | `AutoReconnect` | `Boolean` | `False` | When a component needs the connection and it is closed, connect again. The `UseLoginPrompt` value is ignored for this and restored afterwards. With an empty `ConnectParams.Password` there is one attempt, with the login dialog. With a password the first attempt has no dialog; if it fails, a second attempt is made with the dialog. The error of the last attempt is raised. |
 | `Connected` | `Boolean` | | Opens or closes the connection. While the form loads, the value is kept and applied after loading. |
-| `ConnectParams` | `TConnectParams` | | Typed access to common `DBParams` entries, see [ConnectParams](#connectparams). |
+| `ConnectParams` | `TFIBConnectParams` | | Typed access to common `DBParams` entries, see [ConnectParams](#connectparams). |
 | `DBName` | `string` | | Database name as passed to the client library, for example `server:C:\Data\Sales.fdb`. When the value changes, it raises while connected at run time; at design time it closes the connection. `DatabaseName` is the same property under another name. |
-| `DBParams` | `TDBParams` | | Database parameters, one `Name=Value` per line, see [DBParams](#dbparams). Changing them at run time while connected raises. |
+| `DBParams` | `TFIBDBParams` | | Database parameters, one `Name=Value` per line, see [DBParams](#dbparams). Changing them at run time while connected raises. |
 | `LibraryName` | `string` | `fbclient.dll` (`libfbclient.dylib` on macOS) | Client library to load. Raises while connected. Stored in the form only when it differs from the default. On Windows, `fbclient.dll` without a path falls back to `gds32.dll` when it cannot be loaded. |
 | `LibraryName64` | `string` | | Client library for 64-bit Windows. Used instead of `LibraryName` when it is not empty. *Delphi XE2+* |
 | `OnCryptKeyRequest` | `TFIBCryptKeyRequestEvent` | | Called during connect when the server asks for a key of an encrypted database. `Key` starts as `CryptKey`. Runs in the connecting thread, inside the global connect lock. |
@@ -83,7 +83,7 @@ Available in the Object Inspector. When the component is dropped on a form at de
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `DesignDBOptions` | `TDesignDBOptions` | `[ddoStoreConnected]` | See [Types](#types). |
+| `DesignDBOptions` | `TFIBDesignDBOptions` | `[ddoStoreConnected]` | See [Types](#types). |
 | `MemoSubtypes` | `string` | | BLOB subtypes, separated by `;`, that a dataset treats as text (memo) fields besides subtype `1`. A value of `1`, a value outside the `SMALLINT` range and text that is not a number are ignored. |
 | `UseRepositories` | `TFIBUseRepositories` | `[urFieldsInfo, urDataSetInfo, urErrorMessagesInfo]` | Which repository tables FIBPlus reads, see [Types](#types). |
 
@@ -91,24 +91,24 @@ Available in the Object Inspector. When the component is dropped on a form at de
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `BlobSwapSupport` | `TBlobSwapSupport` | | Stores BLOB values in files and reads them from there. Not used at design time. Properties: `Active` (`False`); `AutoValidateSwap` (`False`): on connect, when swapping is active and the swap directory exists, starts a thread that validates the swap files; `SwapDir` (`{APP_PATH}`, the application directory); `MinBlobSizeToSwap` (`0`); `Tables`: limits swapping to the listed tables, all tables when empty. At run time `SwapDirectory` gives the resolved directory with a trailing backslash, or an empty string when `Active` is `False`. |
-| `SQLLogger` | `ISQLLogger` | | Component that receives a log of connects, statements, and session commands. |
+| `BlobSwapSupport` | `TFIBBlobSwapSupport` | | Stores BLOB values in files and reads them from there. Not used at design time. Properties: `Active` (`False`); `AutoValidateSwap` (`False`): on connect, when swapping is active and the swap directory exists, starts a thread that validates the swap files; `SwapDir` (`{APP_PATH}`, the application directory); `MinBlobSizeToSwap` (`0`); `Tables`: limits swapping to the listed tables, all tables when empty. At run time `SwapDirectory` gives the resolved directory with a trailing backslash, or an empty string when `Active` is `False`. |
+| `SQLLogger` | `IFIBSQLLogger` | | Component that receives a log of connects, statements, and session commands. |
 | `UseBlrToTextFilter` | `Boolean` | `False` | Open BLOBs of subtypes `2` to `8` with a BLR-to-text filter. |
 
 ### Client and IDE hooks
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `CSMonitorSupport` | `TCSMonitorSupport` | | Monitoring text for statements. Only when compiled with `CSMonitor`. |
-| `DoChangeScreenCursor` | `TDoChangeScreenCursor` | | Called by datasets to change the screen cursor while they run SQL; allows replacing the cursor handling. *Delphi XE2+* |
-| `GeneratorsCache` | `TGeneratorsCache` | | Client-side cache of generator values, used by `Gen_Id` when `Step` is `1`. Properties: `CacheFileName`, `DefaultStep` (`50`), `GeneratorList`, `UseGeneratorCache` (`No`, `forAll`, `forGeneratorList`). Methods: `AddGenerator(GenName, Limit)` adds an entry to the list unless it exists; `RemoveGenerator(GenName)` removes one. |
+| `CSMonitorSupport` | `TFIBCSMonitorSupport` | | Monitoring text for statements. Only when compiled with `CSMonitor`. |
+| `DoChangeScreenCursor` | `TFIBChangeScreenCursorEvent` | | Called by datasets to change the screen cursor while they run SQL; allows replacing the cursor handling. *Delphi XE2+* |
+| `GeneratorsCache` | `TFIBGeneratorsCache` | | Client-side cache of generator values, used by `Gen_Id` when `Step` is `1`. Properties: `CacheFileName`, `DefaultStep` (`50`), `GeneratorList`, `UseGeneratorCache` (`No`, `forAll`, `forGeneratorList`). Methods: `AddGenerator(GenName, Limit)` adds an entry to the list unless it exists; `RemoveGenerator(GenName)` removes one. |
 
 ### Aliases, schema cache, and lost connection
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | `AliasName` | `string` | | Name of a connection alias. Setting a non-empty name reads the alias, see [Aliases](#aliases). Raises while connected, except while the form loads. |
-| `CacheSchemaOptions` | `TCacheSchemaOptions` | | Loading and saving of the schema cache file, see [Schema cache](#schema-cache). Assigning a value in code copies its values into the existing object. |
+| `CacheSchemaOptions` | `TFIBCacheSchemaOptions` | | Loading and saving of the schema cache file, see [Schema cache](#schema-cache). Assigning a value in code copies its values into the existing object. |
 | `SaveAliasParamsAfterConnect` | `Boolean` | `True` | After a successful `Open`, write the connection parameters to the alias, if `AliasName` is not empty. |
 | `WaitForRestoreConnect` | `Cardinal` | `30000` | Interval in milliseconds of the timer that tries to restore a lost connection, see [Lost connection](#lost-connection). The timer is created when the first wait starts. `0` turns the restore timer off and stops a wait in progress. Forms saved by versions before 7.9.1 without a value set in the Object Inspector store `WaitForRestoreConnect = 0`, which keeps the timer off; remove the line to use the default. |
 | `About` | `string` | | Library version text. Read-only in effect: writing is ignored and the value is not stored. |
@@ -121,15 +121,15 @@ Events are listed in [Events](#events).
 
 | Type | Values |
 |------|--------|
-| `TDesignDBOptions` | Set of `ddoIsDefaultDatabase` (this database is the default for components created at design time; only one database can have it), `ddoStoreConnected` (store `Connected = True` in the form), `ddoNotSavePassword` (leave the password out of `DBParams` when the form is saved). |
+| `TFIBDesignDBOptions` | Set of `ddoIsDefaultDatabase` (this database is the default for components created at design time; only one database can have it), `ddoStoreConnected` (store `Connected = True` in the form), `ddoNotSavePassword` (leave the password out of `DBParams` when the form is saved). |
 | `TFIBUseRepositories` | Set of `urFieldsInfo` (`FIB$FIELDS_INFO`), `urDataSetInfo` (`FIB$DATASETS_INFO`), `urErrorMessagesInfo` (`FIB$ERROR_MESSAGES`). |
-| `TFBContextSpace` | `csSystem`, `csSession`, `csTransaction`: the `SYSTEM`, `USER_SESSION`, and `USER_TRANSACTION` namespaces. |
+| `TFIBContextSpace` | `csSystem`, `csSession`, `csTransaction`: the `SYSTEM`, `USER_SESSION`, and `USER_TRANSACTION` namespaces. |
 | `TFIBDatabaseEventType` | `detOnConnect`, `detBeforeDisconnect`, `detBeforeDestroy`: the lists used by `AddEvent` and `RemoveEvent`. |
-| `TActionOnIdle` | `aiCloseConnect`, `aiKeepLiveConnect`: the answer of `OnIdleConnect`. |
-| `TIBCharSets` | `set of Byte` of character set IDs. |
-| `TOnLostConnectActions` | `laTerminateApp`, `laCloseConnect`, `laIgnore`, `laWaitRestore`: what to do about a lost connection, see [Lost connection](#lost-connection). |
+| `TFIBIdleAction` | `aiCloseConnect`, `aiKeepLiveConnect`: the answer of `OnIdleConnect`. |
+| `TFIBCharSetIDs` | `set of Byte` of character set IDs. |
+| `TFIBLostConnectAction` | `laTerminateApp`, `laCloseConnect`, `laIgnore`, `laWaitRestore`: what to do about a lost connection, see [Lost connection](#lost-connection). |
 | `TFIBLoginEvent` | `procedure(Database: TFIBDatabase; LoginParams: TStrings; var DoConnect: Boolean) of object` |
-| `TFIBLostConnectEvent` | `procedure(Database: TFIBDatabase; E: EFIBError; var Actions: TOnLostConnectActions; var DoRaise: Boolean) of object` |
+| `TFIBLostConnectEvent` | `procedure(Database: TFIBDatabase; E: EFIBError; var Actions: TFIBLostConnectAction; var DoRaise: Boolean) of object` |
 | `TFIBRestoreConnectEvent` | `procedure(Database: TFIBDatabase) of object` |
 | `TFIBAcceptCacheSchemaEvent` | `procedure(const ObjName: string; var Accept: Boolean) of object`. Was `TpFIBAcceptCacheSchema`. |
 
@@ -146,7 +146,7 @@ Events are listed in [Events](#events).
 | `RoleName` | `string` | | SQL role (`sql_role_name`). |
 | `UserName` | `string` | | User name (`user_name`). |
 | `WireCompression` | `Boolean` | `False` | *Firebird 3+*. Writes `WireCompression` as `config=WireCompression=true` in `DBParams`, or removes it. |
-| `IB2007` | `TIBConnectParams` | | InterBase 2007 options (`InstanceName`). Only when compiled with `SUPPORT_IB2007`. |
+| `IB2007` | `TFIBInterBaseConnectParams` | | InterBase 2007 options (`InstanceName`). Only when compiled with `SUPPORT_IB2007`. |
 
 ## DBParams
 
@@ -237,7 +237,7 @@ Each timer tick calls `RestoreConnect`: it stops the timer, sets `Connected` to 
 | `AttachmentID` | `Int64` | Attachment ID on the server; `0` when not connected. |
 | `Busy` | `Boolean` | `True` while the client library runs a call. |
 | `Capabilities` | `TFIBDatabaseCapabilities` | See [Capabilities](#capabilities). |
-| `ClientLibrary` | `IIbClientLibrary` | The loaded client library. `ClientLibrary.Version` gives product and version as a `TFIBVersion` record. |
+| `ClientLibrary` | `IFIBClientLibrary` | The loaded client library. `ClientLibrary.Version` gives product and version as a `TFIBVersion` record. |
 | `ConnectionSerial` | `Integer` | Number of the connection, unique in the process; kept after `Close`. |
 | `FIBBaseCount`, `FIBBases[Index]` | `Integer`, `TFIBBase` | Queries and datasets (`TFIBBase` objects) attached to this database. |
 | `FIBDataSets[Index]` | `TDataSet` | Dataset that uses this database, by index. Each dataset is counted once. |
@@ -295,7 +295,7 @@ Write-ahead log values (`LogFile`, `CurLogFileName`, `CurLogPartitionOffset`, `N
 
 | Name | Type | Description |
 |------|------|-------------|
-| `SQLStatisticsMaker` | `ISQLStatMaker` | Component that collects statement statistics. |
+| `SQLStatisticsMaker` | `IFIBSQLStatisticsMaker` | Component that collects statement statistics. |
 
 ## Methods
 
@@ -332,7 +332,7 @@ Write-ahead log values (`LogFile`, `CurLogFileName`, `CurLogPartitionOffset`, `N
 |------|-------------|
 | `CloseDataSets` | Close every `TFIBDataSet` that uses this database. |
 | `FIBDataSetsCount`, `FIBQueryCount` | Number of entries of `FIBDataSets` and `FIBQueries`. |
-| `ApplyUpdates(DataSets)` | Apply cached updates of several datasets in one transaction. Each dataset must be a `TFIBCustomDataSet` that uses this database and the same update transaction (`TFIBCustomDataSet.UpdateTransaction`), else an error is raised. An empty array does nothing. The method calls `ApplyUpdToBase` of each dataset, then commits the update transaction (`CommitRetaining` when its `TimeoutAction` is `TACommitRetaining`, else `Commit`), then calls `CommitUpdToCach` on the datasets that are open. |
+| `ApplyUpdates(DataSets)` | Apply cached updates of several datasets in one transaction. Each dataset must be a `TFIBCustomDataSet` that uses this database and the same update transaction (`TFIBCustomDataSet.UpdateTransaction`), else an error is raised. An empty array does nothing. The method calls `ApplyUpdatesToDatabase` of each dataset, then commits the update transaction (`CommitRetaining` when its `TimeoutAction` is `TACommitRetaining`, else `Commit`), then calls `CommitUpdatesToCache` on the datasets that are open. |
 
 ### Metadata
 

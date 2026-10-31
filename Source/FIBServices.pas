@@ -62,16 +62,16 @@ const
 
 {$IFDEF INC_SERVICE_SUPPORT}
 type
-  TProtocol = (TCP, SPX, NamedPipe, Local);
-  TOutputBufferOption = (ByLine, ByChunk);
+  TFIBProtocol = (TCP, SPX, NamedPipe, Local);
+  TFIBOutputBufferOption = (ByLine, ByChunk);
 
   TFIBCustomService = class;
 
-  TLoginEvent = procedure(Database: TFIBCustomService; LoginParams: TStrings) of object;
+  TFIBServiceLoginEvent = procedure(Database: TFIBCustomService; LoginParams: TStrings) of object;
 
   TFIBCustomService = class(TComponent)
   private
-    FClientLibrary: IIBClientLibrary;
+    FClientLibrary: IFIBClientLibrary;
     FLibraryName: string;
     procedure LoadLibrary;
   private
@@ -79,8 +79,7 @@ type
     FParamsChanged: Boolean;
     FSPB, FQuerySPB: PAnsiChar;
     FSPBLength, FQuerySPBLength: Integer;
-    // FTraceFlags: TTraceFlags;
-    FOnLogin: TLoginEvent;
+    FOnLogin: TFIBServiceLoginEvent;
     FLoginPrompt: Boolean;
     FBufferSize: Integer;
     FOutputBuffer: PAnsiChar;
@@ -89,17 +88,16 @@ type
     FHandle: TISC_SVC_HANDLE;
     FStreamedActive: Boolean;
     FOnAttach: TNotifyEvent;
-    FOutputBufferOption: TOutputBufferOption;
-    FProtocol: TProtocol;
+    FOutputBufferOption: TFIBOutputBufferOption;
+    FProtocol: TFIBProtocol;
     FParams: TStrings;
-    // FGDSLibrary : IGDSLibrary;
     function GetActive: Boolean;
     function GetServiceParamBySPB(const Idx: Integer): String;
     procedure SetActive(const Value: Boolean);
     procedure SetBufferSize(const Value: Integer);
     procedure SetParams(const Value: TStrings);
     procedure SetServerName(const Value: string);
-    procedure SetProtocol(const Value: TProtocol);
+    procedure SetProtocol(const Value: TFIBProtocol);
     procedure SetServiceParamBySPB(const Idx: Integer; const Value: String);
     function IndexOfSPBConst(st: String): Integer;
     procedure ParamsChange(Sender: TObject);
@@ -116,8 +114,9 @@ type
     function Login: Boolean;
     procedure CheckActive;
     procedure CheckInactive;
+    procedure RaiseServiceError;
     property OutputBuffer: PAnsiChar read FOutputBuffer;
-    property OutputBufferOption: TOutputBufferOption read FOutputBufferOption write FOutputBufferOption;
+    property OutputBufferOption: TFIBOutputBufferOption read FOutputBufferOption write FOutputBufferOption;
     property BufferSize: Integer read FBufferSize write SetBufferSize default DefaultBufferSize;
     procedure InternalServiceQuery;
     property ServiceQueryParams: AnsiString read FQueryParams write FQueryParams;
@@ -129,21 +128,20 @@ type
     procedure Detach;
     property Handle: TISC_SVC_HANDLE read FHandle;
     property ServiceParamBySPB[const Idx: Integer]: String read GetServiceParamBySPB write SetServiceParamBySPB;
-    property ClientLibrary: IIBClientLibrary read FClientLibrary;
+    property ClientLibrary: IFIBClientLibrary read FClientLibrary;
     property SSPB: PAnsiChar read FSPB;
   published
     property Active: Boolean read GetActive write SetActive default False;
     property ServerName: string read FServerName write SetServerName;
     property LibraryName: string read FLibraryName write SetLibraryName stored StoredLibraryName;
-    property Protocol: TProtocol read FProtocol write SetProtocol default Local;
+    property Protocol: TFIBProtocol read FProtocol write SetProtocol default Local;
     property Params: TStrings read FParams write SetParams;
     property LoginPrompt: Boolean read FLoginPrompt write FLoginPrompt default True;
-    // property TraceFlags: TTraceFlags read FTraceFlags write FTraceFlags;
     property OnAttach: TNotifyEvent read FOnAttach write FOnAttach;
-    property OnLogin: TLoginEvent read FOnLogin write FOnLogin;
+    property OnLogin: TFIBServiceLoginEvent read FOnLogin write FOnLogin;
   end;
 
-  TDatabaseInfo = class
+  TFIBServerDatabaseInfo = class
   public
     NoOfAttachments: Integer;
     NoOfDatabases: Integer;
@@ -151,7 +149,7 @@ type
     destructor Destroy; override;
   end;
 
-  TLicenseInfo = class
+  TFIBLicenseInfo = class
   public
     Key: array of string;
     Id: array of string;
@@ -160,22 +158,22 @@ type
     destructor Destroy; override;
   end;
 
-  TLicenseMaskInfo = class
+  TFIBLicenseMaskInfo = class
   public
     LicenseMask: Integer;
     CapabilityMask: Integer;
   end;
 
-  TConfigFileData = class
+  TFIBConfigFileData = class
   public
     ConfigFileValue: array of Integer;
     ConfigFileKey: array of Integer;
     destructor Destroy; override;
   end;
 
-  TConfigParams = class
+  TFIBConfigParams = class
   public
-    ConfigFileData: TConfigFileData;
+    ConfigFileData: TFIBConfigFileData;
     ConfigFileParams: array of string;
     BaseLocation: string;
     LockFileLocation: string;
@@ -185,24 +183,24 @@ type
     destructor Destroy; override;
   end;
 
-  TVersionInfo = class
+  TFIBServerVersionInfo = class
   public
     ServerVersion: String;
     ServerImplementation: string;
     ServiceVersion: Integer;
   end;
 
-  TPropertyOption = (Database, License, LicenseMask, ConfigParameters, Version);
-  TPropertyOptions = set of TPropertyOption;
+  TFIBServerPropertyOption = (Database, License, LicenseMask, ConfigParameters, Version);
+  TFIBServerPropertyOptions = set of TFIBServerPropertyOption;
 
   TFIBServerProperties = class(TFIBCustomService)
   private
-    FOptions: TPropertyOptions;
-    FDatabaseInfo: TDatabaseInfo;
-    FLicenseInfo: TLicenseInfo;
-    FLicenseMaskInfo: TLicenseMaskInfo;
-    FVersionInfo: TVersionInfo;
-    FConfigParams: TConfigParams;
+    FOptions: TFIBServerPropertyOptions;
+    FDatabaseInfo: TFIBServerDatabaseInfo;
+    FLicenseInfo: TFIBLicenseInfo;
+    FLicenseMaskInfo: TFIBLicenseMaskInfo;
+    FVersionInfo: TFIBServerVersionInfo;
+    FConfigParams: TFIBConfigParams;
     procedure ParseConfigFileData(var RunLen: Integer);
   public
     constructor Create(AOwner: TComponent); override;
@@ -213,13 +211,13 @@ type
     procedure FetchLicenseMaskInfo;
     procedure FetchConfigParams;
     procedure FetchVersionInfo;
-    property DatabaseInfo: TDatabaseInfo read FDatabaseInfo;
-    property LicenseInfo: TLicenseInfo read FLicenseInfo;
-    property LicenseMaskInfo: TLicenseMaskInfo read FLicenseMaskInfo;
-    property VersionInfo: TVersionInfo read FVersionInfo;
-    property ConfigParams: TConfigParams read FConfigParams;
+    property DatabaseInfo: TFIBServerDatabaseInfo read FDatabaseInfo;
+    property LicenseInfo: TFIBLicenseInfo read FLicenseInfo;
+    property LicenseMaskInfo: TFIBLicenseMaskInfo read FLicenseMaskInfo;
+    property VersionInfo: TFIBServerVersionInfo read FVersionInfo;
+    property ConfigParams: TFIBConfigParams read FConfigParams;
   published
-    property Options: TPropertyOptions read FOptions write FOptions;
+    property Options: TFIBServerPropertyOptions read FOptions write FOptions;
   end;
 
   TFIBControlService = class(TFIBCustomService)
@@ -241,7 +239,7 @@ type
     property IsServiceRunning: Boolean read GetIsServiceRunning;
   end;
 
-  TServiceGetTextNotify = procedure(Sender: TObject; const Text: string) of object;
+  TFIBServiceGetTextEvent = procedure(Sender: TObject; const Text: string) of object;
 
   TFIBControlAndQueryService = class(TFIBControlService)
   private
@@ -249,11 +247,11 @@ type
     // bytes of a character cut at the end of the last chunk
     FChunkTail: FIBByteString;
     FAction: Integer;
-    FOnTextNotify: TServiceGetTextNotify;
+    FOnTextNotify: TFIBServiceGetTextEvent;
     procedure SetAction(Value: Integer);
   protected
     property Action: Integer read FAction write SetAction;
-    property OnTextNotify: TServiceGetTextNotify read FOnTextNotify write FOnTextNotify;
+    property OnTextNotify: TFIBServiceGetTextEvent read FOnTextNotify write FOnTextNotify;
   public
     function GetNextLine: String;
     function GetNextChunk: String;
@@ -264,7 +262,7 @@ type
     property BufferSize;
   end;
 
-  TShutdownMode = (Forced, DenyTransaction, DenyAttachment);
+  TFIBShutdownMode = (Forced, DenyTransaction, DenyAttachment);
 
   TFIBConfigService = class(TFIBControlService)
   private
@@ -274,7 +272,7 @@ type
 
   public
     procedure ServiceStart; override;
-    procedure ShutdownDatabase(Options: TShutdownMode; Wait: Integer);
+    procedure ShutdownDatabase(Options: TFIBShutdownMode; Wait: Integer);
     procedure SetSweepInterval(Value: Integer);
     procedure SetDBSqlDialect(Value: Integer);
     procedure SetPageBuffers(Value: Integer);
@@ -297,7 +295,7 @@ type
     property OnTextNotify;
   end;
 
-  TStatOption = (
+  TFIBStatisticsOption = (
     DataPages,
     DbLog,
     HeaderPages,
@@ -306,12 +304,12 @@ type
     RecordVersions,
     StatTables
   );
-  TStatOptions = set of TStatOption;
+  TFIBStatisticsOptions = set of TFIBStatisticsOption;
 
   TFIBStatisticalService = class(TFIBControlAndQueryService)
   private
     FDatabaseName: string;
-    FOptions: TStatOptions;
+    FOptions: TFIBStatisticsOptions;
     FTableNames: String;
     procedure SetDatabaseName(const Value: string);
   protected
@@ -319,7 +317,7 @@ type
   public
   published
     property DatabaseName: string read FDatabaseName write SetDatabaseName;
-    property Options: TStatOptions read FOptions write FOptions;
+    property Options: TFIBStatisticsOptions read FOptions write FOptions;
     property TableNames: String read FTableNames write FTableNames;
     property OnTextNotify;
   end;
@@ -336,7 +334,7 @@ type
     property OnTextNotify;
   end;
 
-  TBackupOption = (
+  TFIBBackupOption = (
     IgnoreChecksums,
     IgnoreLimbo,
     MetadataOnly,
@@ -345,12 +343,12 @@ type
     NonTransportable,
     ConvertExtTables
   );
-  TBackupOptions = set of TBackupOption;
+  TFIBBackupOptions = set of TFIBBackupOption;
 
   TFIBBackupService = class(TFIBBackupRestoreService)
   private
     FDatabaseName: string;
-    FOptions: TBackupOptions;
+    FOptions: TFIBBackupOptions;
     FBackupFile: TStrings;
     FBlockingFactor: Integer;
     procedure SetBackupFile(const Value: TStrings);
@@ -365,10 +363,10 @@ type
     property BackupFile: TStrings read FBackupFile write SetBackupFile;
     property BlockingFactor: Integer read FBlockingFactor write FBlockingFactor;
     property DatabaseName: string read FDatabaseName write FDatabaseName;
-    property Options: TBackupOptions read FOptions write FOptions;
+    property Options: TFIBBackupOptions read FOptions write FOptions;
   end;
 
-  TRestoreOption = (
+  TFIBRestoreOption = (
     DeactivateIndexes,
     NoShadow,
     NoValidityCheck,
@@ -382,13 +380,13 @@ type
     FixFssData
   );
 
-  TRestoreOptions = set of TRestoreOption;
+  TFIBRestoreOptions = set of TFIBRestoreOption;
 
   TFIBRestoreService = class(TFIBBackupRestoreService)
   private
     FDatabaseName: TStrings;
     FBackupFile: TStrings;
-    FOptions: TRestoreOptions;
+    FOptions: TFIBRestoreOptions;
     FPageSize: Integer;
     FPageBuffers: Integer;
     FFixCharset: string;
@@ -406,7 +404,7 @@ type
     property PageSize: Integer read FPageSize write FPageSize default 0;
     property PageBuffers: Integer read FPageBuffers write FPageBuffers;
     property FixCharset: string read FFixCharset write FFixCharset;
-    property Options: TRestoreOptions read FOptions write FOptions default [CreateNewDB];
+    property Options: TFIBRestoreOptions read FOptions write FOptions default [CreateNewDB];
   end;
 
   // Firebird 2.5 and later
@@ -442,7 +440,7 @@ type
     property DatabaseName: String read FDatabaseName write FDatabaseName;
   end;
 
-  TValidateOption = (
+  TFIBValidateOption = (
     LimboTransactions,
     CheckDB,
     IgnoreChecksum,
@@ -452,35 +450,35 @@ type
     ValidateDB,
     ValidateFull
   );
-  TValidateOptions = set of TValidateOption;
+  TFIBValidateOptions = set of TFIBValidateOption;
 
-  TTransactionGlobalAction = (CommitGlobal, RollbackGlobal, RecoverTwoPhaseGlobal, NoGlobalAction);
-  TTransactionState = (LimboState, CommitState, RollbackState, UnknownState);
-  TTransactionAdvise = (CommitAdvise, RollbackAdvise, UnknownAdvise);
-  TServiceTransactionAction = (CommitAction, RollbackAction);
+  TFIBLimboGlobalAction = (CommitGlobal, RollbackGlobal, RecoverTwoPhaseGlobal, NoGlobalAction);
+  TFIBLimboTransactionState = (LimboState, CommitState, RollbackState, UnknownState);
+  TFIBLimboTransactionAdvise = (CommitAdvise, RollbackAdvise, UnknownAdvise);
+  TFIBLimboTransactionAction = (CommitAction, RollbackAction);
 
-  TLimboTransactionInfo = class
+  TFIBLimboTransactionInfo = class
   public
     MultiDatabase: Boolean;
     Id: Integer;
     HostSite: String;
     RemoteSite: String;
     RemoteDatabasePath: String;
-    State: TTransactionState;
-    Advise: TTransactionAdvise;
-    Action: TServiceTransactionAction;
+    State: TFIBLimboTransactionState;
+    Advise: TFIBLimboTransactionAdvise;
+    Action: TFIBLimboTransactionAction;
   end;
 
   TFIBValidationService = class(TFIBControlAndQueryService)
   private
     FDatabaseName: string;
-    FOptions: TValidateOptions;
+    FOptions: TFIBValidateOptions;
     FParallelWorkers: Integer;
-    FLimboTransactionInfo: array of TLimboTransactionInfo;
-    FGlobalAction: TTransactionGlobalAction;
+    FLimboTransactionInfo: array of TFIBLimboTransactionInfo;
+    FGlobalAction: TFIBLimboGlobalAction;
     procedure SetDatabaseName(const Value: string);
     procedure ClearLimboTransactionInfo;
-    function GetLimboTransactionInfo(Index: Integer): TLimboTransactionInfo;
+    function GetLimboTransactionInfo(Index: Integer): TFIBLimboTransactionInfo;
     function GetLimboTransactionInfoCount: Integer;
 
   protected
@@ -490,18 +488,18 @@ type
     destructor Destroy; override;
     procedure FetchLimboTransactionInfo;
     procedure FixLimboTransactionErrors;
-    property LimboTransactionInfo[Index: Integer]: TLimboTransactionInfo read GetLimboTransactionInfo;
+    property LimboTransactionInfo[Index: Integer]: TFIBLimboTransactionInfo read GetLimboTransactionInfo;
     property LimboTransactionInfoCount: Integer read GetLimboTransactionInfoCount;
 
   published
     property DatabaseName: string read FDatabaseName write SetDatabaseName;
-    property Options: TValidateOptions read FOptions write FOptions;
+    property Options: TFIBValidateOptions read FOptions write FOptions;
     property ParallelWorkers: Integer read FParallelWorkers write FParallelWorkers default 0;
-    property GlobalAction: TTransactionGlobalAction read FGlobalAction write FGlobalAction;
+    property GlobalAction: TFIBLimboGlobalAction read FGlobalAction write FGlobalAction;
     property OnTextNotify;
   end;
 
-  TUserInfo = class
+  TFIBUserInfo = class
   public
     UserName: string;
     FirstName: string;
@@ -511,8 +509,8 @@ type
     UserID: Integer;
   end;
 
-  TSecurityAction = (ActionAddUser, ActionDeleteUser, ActionModifyUser, ActionDisplayUser);
-  TSecurityModifyParam = (
+  TFIBSecurityAction = (ActionAddUser, ActionDeleteUser, ActionModifyUser, ActionDisplayUser);
+  TFIBSecurityModifyParam = (
     ModifyFirstName,
     ModifyMiddleName,
     ModifyLastName,
@@ -521,7 +519,7 @@ type
     ModifyPassword,
     ModifySecAdmin
   );
-  TSecurityModifyParams = set of TSecurityModifyParam;
+  TFIBSecurityModifyParams = set of TFIBSecurityModifyParam;
 
   TFIBSecurityService = class(TFIBControlAndQueryService)
   private
@@ -534,11 +532,11 @@ type
     FSQLRole: string;
     FLastName: string;
     FMiddleName: string;
-    FUserInfo: array of TUserInfo;
-    FSecurityAction: TSecurityAction;
-    FModifyParams: TSecurityModifyParams;
+    FUserInfo: array of TFIBUserInfo;
+    FSecurityAction: TFIBSecurityAction;
+    FModifyParams: TFIBSecurityModifyParams;
     procedure ClearParams;
-    procedure SetSecurityAction(Value: TSecurityAction);
+    procedure SetSecurityAction(Value: TFIBSecurityAction);
     procedure SetFirstName(Value: String);
     procedure SetMiddleName(Value: String);
     procedure SetLastName(Value: String);
@@ -548,7 +546,7 @@ type
     procedure SetSecAdmin(Value: Boolean);
     procedure FetchUserInfo;
     procedure ClearUserInfo;
-    function GetUserInfo(Index: Integer): TUserInfo;
+    function GetUserInfo(Index: Integer): TFIBUserInfo;
     function GetUserInfoCount: Integer;
 
   protected
@@ -562,11 +560,11 @@ type
     procedure DeleteUser;
     procedure ModifyUser;
     procedure ServiceStart; override;
-    property UserInfo[Index: Integer]: TUserInfo read GetUserInfo;
+    property UserInfo[Index: Integer]: TFIBUserInfo read GetUserInfo;
     property UserInfoCount: Integer read GetUserInfoCount;
 
   published
-    property SecurityAction: TSecurityAction read FSecurityAction write SetSecurityAction;
+    property SecurityAction: TFIBSecurityAction read FSecurityAction write SetSecurityAction;
     property SQlRole: string read FSQLRole write FSQLRole;
     property UserName: string read FUserName write FUserName;
     property FirstName: string read FFirstName write SetFirstName;
@@ -578,6 +576,41 @@ type
     property SecAdmin: Boolean read FSecAdmin write SetSecAdmin default False;
   end;
 
+{$ENDIF}
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+{$IFDEF INC_SERVICE_SUPPORT}
+  TProtocol = TFIBProtocol deprecated 'Use TFIBProtocol';
+  TOutputBufferOption = TFIBOutputBufferOption deprecated 'Use TFIBOutputBufferOption';
+  TLoginEvent = TFIBServiceLoginEvent deprecated 'Use TFIBServiceLoginEvent';
+  TDatabaseInfo = TFIBServerDatabaseInfo deprecated 'Use TFIBServerDatabaseInfo';
+  TLicenseInfo = TFIBLicenseInfo deprecated 'Use TFIBLicenseInfo';
+  TLicenseMaskInfo = TFIBLicenseMaskInfo deprecated 'Use TFIBLicenseMaskInfo';
+  TConfigFileData = TFIBConfigFileData deprecated 'Use TFIBConfigFileData';
+  TConfigParams = TFIBConfigParams deprecated 'Use TFIBConfigParams';
+  TVersionInfo = TFIBServerVersionInfo deprecated 'Use TFIBServerVersionInfo';
+  TPropertyOption = TFIBServerPropertyOption deprecated 'Use TFIBServerPropertyOption';
+  TPropertyOptions = TFIBServerPropertyOptions deprecated 'Use TFIBServerPropertyOptions';
+  TServiceGetTextNotify = TFIBServiceGetTextEvent deprecated 'Use TFIBServiceGetTextEvent';
+  TShutdownMode = TFIBShutdownMode deprecated 'Use TFIBShutdownMode';
+  TStatOption = TFIBStatisticsOption deprecated 'Use TFIBStatisticsOption';
+  TStatOptions = TFIBStatisticsOptions deprecated 'Use TFIBStatisticsOptions';
+  TBackupOption = TFIBBackupOption deprecated 'Use TFIBBackupOption';
+  TBackupOptions = TFIBBackupOptions deprecated 'Use TFIBBackupOptions';
+  TRestoreOption = TFIBRestoreOption deprecated 'Use TFIBRestoreOption';
+  TRestoreOptions = TFIBRestoreOptions deprecated 'Use TFIBRestoreOptions';
+  TValidateOption = TFIBValidateOption deprecated 'Use TFIBValidateOption';
+  TValidateOptions = TFIBValidateOptions deprecated 'Use TFIBValidateOptions';
+  TTransactionGlobalAction = TFIBLimboGlobalAction deprecated 'Use TFIBLimboGlobalAction';
+  TTransactionAdvise = TFIBLimboTransactionAdvise deprecated 'Use TFIBLimboTransactionAdvise';
+  TServiceTransactionAction = TFIBLimboTransactionAction deprecated 'Use TFIBLimboTransactionAction';
+  TLimboTransactionInfo = TFIBLimboTransactionInfo deprecated 'Use TFIBLimboTransactionInfo';
+  TUserInfo = TFIBUserInfo deprecated 'Use TFIBUserInfo';
+  TSecurityAction = TFIBSecurityAction deprecated 'Use TFIBSecurityAction';
+  TSecurityModifyParam = TFIBSecurityModifyParam deprecated 'Use TFIBSecurityModifyParam';
+  TSecurityModifyParams = TFIBSecurityModifyParams deprecated 'Use TFIBSecurityModifyParams';
+  TTransactionState = TFIBLimboTransactionState deprecated 'Use TFIBLimboTransactionState';
 {$ENDIF}
 
 implementation
@@ -699,10 +732,6 @@ begin
     IndexOfRole := IndexOfSPBConst(SPBConstantNames[isc_spb_sql_role_name]);
     if IndexOfRole <> -1 then
       RoleName := Copy(Params[IndexOfRole], Pos('=', Params[IndexOfRole]) + 1, Length(Params[IndexOfRole]));
-    // if Assigned(LoginDialogExProc) then
-    // result := LoginDialogExProc(serverName, Username, Password, false)
-    // else
-    // Result := false;
     if not Assigned(FIBLoginDialog) then
       result := False
     else
@@ -745,8 +774,6 @@ constructor TFIBCustomService.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FLibraryName := CLIENT_DLL;
-  // FGDSLibrary := GetGDSLibrary;
-  // FGDSLibrary.CheckIBLoaded;
   FIBLoaded := True;
   FProtocol := local;
   FParams := TStringList.Create;
@@ -755,23 +782,21 @@ begin
   TStringList(FParams).OnChanging := ParamsChanging;
   FBufferSize := DefaultBufferSize;
   FLoginPrompt := True;
-  // FTraceFlags := [];
-  // FGDSLibrary := GetGDSLibrary;
 end;
 
 destructor TFIBCustomService.Destroy;
 begin
-  if FIBLoaded and Assigned(FClientLibrary) then
-  begin
-    if FHandle <> nil then
+  if FIBLoaded and Assigned(FClientLibrary) and (FHandle <> nil) then
+    try
       Detach;
-    FreeMem(FSPB);
-    FSPB := nil;
-  end;
+    except
+      // Detach releases the handle also on an error, the rest is freed below
+    end;
+  FreeMem(FSPB);
+  FSPB := nil;
   FreeMem(FOutputBuffer);
   FParams.Free;
   FClientLibrary := nil;
-  // FGDSLibrary := nil;
   inherited Destroy;
 end;
 
@@ -789,6 +814,22 @@ begin
 {$IFNDEF NO_MONITOR}
   MonitorHook.ServiceDetach(Self);
 {$ENDIF}
+end;
+
+// Raises the error of the last call of the service API. The service is detached
+// first, a handle cleared without isc_service_detach keeps the attachment on the server.
+procedure TFIBCustomService.RaiseServiceError;
+var
+  DetachStatus: array [0 .. 19] of ISC_STATUS;
+begin
+  try
+    IBError(FClientLibrary, Self);
+  except
+    if FHandle <> nil then
+      FClientLibrary.isc_service_detach(@DetachStatus[0], @FHandle);
+    FHandle := nil;
+    raise;
+  end;
 end;
 
 procedure TFIBCustomService.LoadLibrary;
@@ -845,10 +886,7 @@ begin
     if Call(FClientLibrary.isc_service_query(StatusVector, @FHandle, nil, 0, nil,
       ServiceBufferLength(FQuerySPBLength, 'QueryParams'), FQuerySPB, Word(OutputLength), FOutputBuffer),
       False) > 0 then
-    begin
-      FHandle := nil;
-      IBError(FClientLibrary, Self);
-    end;
+      RaiseServiceError;
   finally
     FreeMem(FQuerySPB);
     FQuerySPB := nil;
@@ -899,7 +937,7 @@ begin
   end;
 end;
 
-procedure TFIBCustomService.SetProtocol(const Value: TProtocol);
+procedure TFIBCustomService.SetProtocol(const Value: TFIBProtocol);
 begin
   if FProtocol <> Value then
   begin
@@ -1076,11 +1114,11 @@ end;
 constructor TFIBServerProperties.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
-  FDatabaseInfo := TDatabaseInfo.Create;
-  FLicenseInfo := TLicenseInfo.Create;
-  FLicenseMaskInfo := TLicenseMaskInfo.Create;
-  FVersionInfo := TVersionInfo.Create;
-  FConfigParams := TConfigParams.Create;
+  FDatabaseInfo := TFIBServerDatabaseInfo.Create;
+  FLicenseInfo := TFIBLicenseInfo.Create;
+  FLicenseMaskInfo := TFIBLicenseMaskInfo.Create;
+  FVersionInfo := TFIBServerVersionInfo.Create;
+  FConfigParams := TFIBConfigParams.Create;
 end;
 
 destructor TFIBServerProperties.Destroy;
@@ -1376,6 +1414,7 @@ end;
 
 procedure TFIBControlService.InternalServiceStart;
 begin
+  CheckActive;
   FStartSPBLength := Length(FStartParams);
   if FStartSPBLength = 0 then
     FIBError(feStartParamsError, [nil]);
@@ -1385,10 +1424,7 @@ begin
     LoadLibrary;
     if Call(FClientLibrary.isc_service_start(StatusVector, @FHandle, nil,
       ServiceBufferLength(FStartSPBLength, 'StartParams'), FStartSPB), False) > 0 then
-    begin
-      FHandle := nil;
-      IBError(FClientLibrary, Self);
-    end;
+      RaiseServiceError;
   finally
     FreeMem(FStartSPB);
     FStartSPB := nil;
@@ -1495,7 +1531,7 @@ begin
   InternalServiceStart;
 end;
 
-procedure TFIBConfigService.ShutdownDatabase(Options: TShutdownMode; Wait: Integer);
+procedure TFIBConfigService.ShutdownDatabase(Options: TFIBShutdownMode; Wait: Integer);
 begin
   ServiceStartParams := AnsiChar(isc_action_svc_properties);
   ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
@@ -1680,10 +1716,8 @@ begin
   if (FDatabaseName = '') or (FBackupFile = '') then
     FIBError(feStartParamsError, [nil]);
   Action := isc_action_svc_nbak;
-  ServiceStartParams := Char(isc_action_svc_nbak);
+  ServiceStartParams := AnsiChar(isc_action_svc_nbak);
   ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
-  // ServiceStartAddParam(0, SPBConstantValues[isc_spb_options]);
-
   ServiceStartAddParam(FBackupFile, isc_spb_nbk_file);
   ServiceStartAddParam(FLevel, isc_spb_nbk_level);
 end;
@@ -1728,7 +1762,7 @@ begin
   if (FDatabaseName = '') or (FBackupFiles.Count = 0) then
     FIBError(feStartParamsError, [nil]);
   Action := isc_action_svc_nrest;
-  ServiceStartParams := Char(isc_action_svc_nrest);
+  ServiceStartParams := AnsiChar(isc_action_svc_nrest);
   ServiceStartAddParam(FDatabaseName, SPBConstantValues[isc_spb_dbname]);
   for i := 0 to FBackupFiles.Count - 1 do
   begin
@@ -1795,7 +1829,7 @@ begin
     begin
       if (i >= Length(FLimboTransactionInfo)) then
         SetLength(FLimboTransactionInfo, i + 10);
-      FLimboTransactionInfo[i] := TLimboTransactionInfo.Create;
+      FLimboTransactionInfo[i] := TFIBLimboTransactionInfo.Create;
       with FLimboTransactionInfo[i] do
       begin
         if (OutputBuffer[RunLen] = AnsiChar(isc_spb_single_tra_id)) then
@@ -1803,11 +1837,6 @@ begin
           Inc(RunLen);
           MultiDatabase := False;
           Id := ParseInteger(RunLen);
-
-          { HostSite := ParseString(RunLen);
-            if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_tra_state)) then
-            FIBError(feOutputParsingError, [nil]); }
-
         end
         else
         begin
@@ -1886,7 +1915,7 @@ begin
   InternalServiceStart;
 end;
 
-function TFIBValidationService.GetLimboTransactionInfo(Index: Integer): TLimboTransactionInfo;
+function TFIBValidationService.GetLimboTransactionInfo(Index: Integer): TFIBLimboTransactionInfo;
 begin
   if (Index < 0) or (Index > High(FLimboTransactionInfo)) then
     raise EListError.CreateFmt(SListIndexError, [Index]);
@@ -1981,7 +2010,7 @@ begin
       if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_sec_username)) then
         FIBError(feOutputParsingError, [nil]);
       Inc(RunLen);
-      FUserInfo[i] := TUserInfo.Create;
+      FUserInfo[i] := TFIBUserInfo.Create;
       FUserInfo[i].UserName := ParseString(RunLen);
       if (OutputBuffer[RunLen] <> AnsiChar(isc_spb_sec_firstname)) then
         FIBError(feOutputParsingError, [nil]);
@@ -2014,7 +2043,7 @@ begin
   SetLength(FUserInfo, i);
 end;
 
-function TFIBSecurityService.GetUserInfo(Index: Integer): TUserInfo;
+function TFIBSecurityService.GetUserInfo(Index: Integer): TFIBUserInfo;
 begin
   if (Index < 0) or (Index > High(FUserInfo)) then
     raise EListError.CreateFmt(SListIndexError, [Index]);
@@ -2062,7 +2091,7 @@ begin
   ServiceStart;
 end;
 
-procedure TFIBSecurityService.SetSecurityAction(Value: TSecurityAction);
+procedure TFIBSecurityService.SetSecurityAction(Value: TFIBSecurityAction);
 begin
   FSecurityAction := Value;
   if Value = ActionDeleteUser then
@@ -2316,17 +2345,17 @@ begin
   ServiceStartParams := AnsiChar(isc_action_svc_get_ib_log);
 end;
 
-{ TDatabaseInfo }
+{ TFIBServerDatabaseInfo }
 
-destructor TDatabaseInfo.Destroy;
+destructor TFIBServerDatabaseInfo.Destroy;
 begin
   DbName := nil;
   inherited Destroy;
 end;
 
-{ TLicenseInfo }
+{ TFIBLicenseInfo }
 
-destructor TLicenseInfo.Destroy;
+destructor TFIBLicenseInfo.Destroy;
 begin
   Key := nil;
   Id := nil;
@@ -2334,30 +2363,28 @@ begin
   inherited Destroy;
 end;
 
-{ TConfigFileData }
+{ TFIBConfigFileData }
 
-destructor TConfigFileData.Destroy;
+destructor TFIBConfigFileData.Destroy;
 begin
   ConfigFileValue := nil;
   ConfigFileKey := nil;
   inherited Destroy;
 end;
 
-{ TConfigParams }
+{ TFIBConfigParams }
 
-constructor TConfigParams.Create;
+constructor TFIBConfigParams.Create;
 begin
-  ConfigFileData := TConfigFileData.Create;
+  ConfigFileData := TFIBConfigFileData.Create;
 end;
 
-destructor TConfigParams.Destroy;
+destructor TFIBConfigParams.Destroy;
 begin
   ConfigFileData.Free;
   ConfigFileParams := nil;
   inherited Destroy;
 end;
-
-{$ENDIF}
 
 function TFIBControlAndQueryService.GetNextBuf: AnsiString;
 var
@@ -2372,7 +2399,6 @@ begin
   InternalServiceQuery;
   if (OutputBuffer[0] <> AnsiChar(isc_info_svc_to_eof)) then
     FIBError(feOutputParsingError, [nil]);
-  // LoadLibrary;
   // unsigned: isc_vax_integer extends the sign of the 2 bytes
   ALength := Word(ClientLibrary.isc_vax_integer(OutputBuffer + 1, 2));
   if (OutputBuffer[3 + ALength] = AnsiChar(isc_info_truncated)) then
@@ -2389,5 +2415,7 @@ begin
     FChunkTail := '';
   end;
 end;
+
+{$ENDIF}
 
 end.

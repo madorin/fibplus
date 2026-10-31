@@ -1,4 +1,4 @@
-object frmTransEdit: TfrmTransEdit
+object frmTransEdit: TFIBTransactionEditForm
   Left = 486
   Top = 315
   BorderStyle = bsDialog

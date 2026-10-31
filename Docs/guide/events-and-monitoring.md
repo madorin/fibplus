@@ -37,7 +37,7 @@ SET TERM ; ^
 
 ### Listen for an event
 
-The unit is `FIBEventAlerter` (the base class `TSIBEventAlerter` is in `SIBEABase`). The sample uses a `TFIBEventAlerter` named `EventAlerter` and a `TFIBDatabase` named `Database`.
+The unit is `FIBEventAlerter` (the base class `TFIBCustomEventAlerter` is in `SIBEABase`). The sample uses a `TFIBEventAlerter` named `EventAlerter` and a `TFIBDatabase` named `Database`.
 
 ```delphi
 procedure TMainForm.FormCreate(Sender: TObject);
@@ -54,7 +54,7 @@ begin
 end;
 ```
 
-With `AutoRegister` set, the alerter registers its events after the database connects. Without it, call `RegisterEvents` yourself while the database is connected. In both cases the alerter cancels a registration before the database disconnects, so after a reconnect the events are not registered unless `AutoRegister` is set, and a call to `UnRegisterEvents` after the disconnect raises `ESIBError`.
+With `AutoRegister` set, the alerter registers its events after the database connects. Without it, call `RegisterEvents` yourself while the database is connected. In both cases the alerter cancels a registration before the database disconnects, so after a reconnect the events are not registered unless `AutoRegister` is set, and a call to `UnRegisterEvents` after the disconnect raises `EFIBEventAlerterError`.
 
 | Member | Description |
 |--------|-------------|
@@ -70,8 +70,8 @@ With `AutoRegister` set, the alerter registers its events after the database con
 ### Rules for event names
 
 - The list is sorted and ignores duplicates.
-- An empty name is removed and raises `ESIBError`.
-- A name of 128 characters or more raises `ESIBError`. The longest valid name has 127 characters.
+- An empty name is removed and raises `EFIBEventAlerterError`.
+- A name of 128 characters or more raises `EFIBEventAlerterError`. The longest valid name has 127 characters.
 - The library registers up to 15 names per block and starts one thread for each block.
 - Changing `Events` while registered cancels the registration and registers the new list.
 
@@ -85,16 +85,16 @@ The first notification after a registration only initializes the event buffers. 
 
 ### Errors and pitfalls
 
-- `RegisterEvents` raises `ESIBError` when the events are already registered, and when no database is assigned or the database is not connected.
-- `UnRegisterEvents` raises `ESIBError` when the events are not registered. Setting `Registered := False` ignores that error.
-- `RegisterEvents` queues the first events in the calling thread, so an error of the server (an invalid database handle, an events port that can't be reached) raises `ESIBError` from `RegisterEvents` or `Registered := True`, and nothing stays registered. With `AutoRegister` the error raises from `Database.Open` after the connect is complete (the other connect handlers, the components and the schema cache have run), and the database stays connected. Changing `Events` or `Database` of a registered alerter registers again and can raise the same error.
+- `RegisterEvents` raises `EFIBEventAlerterError` when the events are already registered, and when no database is assigned or the database is not connected.
+- `UnRegisterEvents` raises `EFIBEventAlerterError` when the events are not registered. Setting `Registered := False` ignores that error.
+- `RegisterEvents` queues the first events in the calling thread, so an error of the server (an invalid database handle, an events port that can't be reached) raises `EFIBEventAlerterError` from `RegisterEvents` or `Registered := True`, and nothing stays registered. With `AutoRegister` the error raises from `Database.Open` after the connect is complete (the other connect handlers, the components and the schema cache have run), and the database stays connected. Changing `Events` or `Database` of a registered alerter registers again and can raise the same error.
 - When a running event thread fails, the alerter cancels all registrations and calls `OnError`, in the main thread when `VCLSynchronize` is `True`. `Registered` is already `False` in the handler: call `RegisterEvents` there to register again (`UnRegisterEvents` raises "Events not registered"). Without a handler the error goes to `Classes.ApplicationHandleException` in the main thread (`Application.OnException` or the error dialog); with `VCLSynchronize = False`, or in a program without an application object, it is shown with `SysUtils.ShowException` in the event thread, so an application whose main thread does not process messages does not block the event thread.
 
 ## Error handling
 
 Without an error handler, a server error raises `EFIBError` in the calling code. When a `TFIBErrorHandler` exists, the library passes every server error to it first. The handler:
 
-1. sets `LastError` (a `TKindIBError`) and extracts details, depending on `Options`;
+1. sets `LastError` (a `TFIBErrorKind`) and extracts details, depending on `Options`;
 2. calls `OnFIBErrorEvent`, where you can change the message or suppress the exception;
 3. lets the library raise the exception when `DoRaise` is still `True`.
 
@@ -117,7 +117,7 @@ The unit is `FIBErrorHandler`. Drop one `TFIBErrorHandler` on a data module or t
 
 ### Options
 
-`Options` is a set of `TOptionErrorHandler`. The default is `[oeException, oeLostConnect]`.
+`Options` is a set of `TFIBErrorHandlerOption`. The default is `[oeException, oeLostConnect]`.
 
 | Value | Effect |
 |-------|--------|
@@ -135,7 +135,7 @@ The sample uses a `TFIBErrorHandler` named `ErrorHandler`.
 
 ```delphi
 procedure TMainForm.ErrorHandlerFIBErrorEvent(Sender: TObject; ErrorValue: EFIBError;
-  KindIBError: TKindIBError; var DoRaise: Boolean);
+  KindIBError: TFIBErrorKind; var DoRaise: Boolean);
 begin
   case KindIBError of
     keException:
@@ -174,7 +174,7 @@ VALUES ('UNQ_CUSTOMER_NAME', 'A customer with this name already exists.');
 
 The lookup needs the table to exist and `urErrorMessagesInfo` to be in `TFIBDatabase.UseRepositories` (it is by default). `CONSTRAINT_NAME` must be the name as the server reports it, in the same case (upper case for a name created without quotes). Without a row for the constraint, a foreign key violation keeps its message; a unique or check violation gets the server message only. If the lookup itself fails, for example without an active transaction, the error is handled as if there were no row.
 
-The messages, and the constraints without a row, are cached in the application for each database. The cache is checked against the `FIB$VERSION` column once per database: at the first lookup and after `LoadSchemaFromFile`. A row added or changed later is used after `ListErrorMessages.Clear` (unit `FIBDataInfo`) or a restart of the application.
+The messages, and the constraints without a row, are cached in the application for each database. The cache is checked against the `FIB$VERSION` column once per database: at the first lookup and after `LoadSchemaFromFile`. A row added or changed later is used after `ErrorMessageCache.Clear` (unit `FIBDataInfo`) or a restart of the application.
 
 ### Lost connection
 
@@ -191,7 +191,7 @@ The timer interval is `WaitForRestoreConnect`, `30000` ms by default. With `0`, 
 
 ```delphi
 procedure TMainForm.DatabaseLostConnect(ADatabase: TFIBDatabase; E: EFIBError;
-  var Actions: TOnLostConnectActions; var DoRaise: Boolean);
+  var Actions: TFIBLostConnectAction; var DoRaise: Boolean);
 begin
   Actions := laWaitRestore;
 end;
@@ -319,7 +319,7 @@ Each entry contains the application identifier, the component name, the operatio
 | `SaveLog` | Append the collected entries to the file and clear the list. |
 | `OnLogEvent` | Called for each entry before it is stored. Set `WriteToLog` to `False` to skip it. |
 
-`lfService` and `lfMisc` exist in the `TLogFlag` type, but the library does not write entries of these kinds.
+`lfService` and `lfMisc` exist in the `TFIBLogFlag` type, but the library does not write entries of these kinds.
 
 Without `ForceSaveLog`, entries stay in memory until you call `SaveLog`. They are lost when the component is destroyed without a call. At design time, nothing is logged.
 
@@ -327,7 +327,7 @@ Filter entries in `OnLogEvent`:
 
 ```delphi
 procedure TMainForm.LoggerLogEvent(const ObjectName, Operation, EventText: string;
-  DataType: TLogFlag; cApplication: string; EventTime: TDateTime; var WriteToLog: Boolean);
+  DataType: TFIBLogFlag; cApplication: string; EventTime: TDateTime; var WriteToLog: Boolean);
 begin
   WriteToLog := Pos('AUDIT', EventText) > 0;
 end;

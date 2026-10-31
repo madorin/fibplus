@@ -154,7 +154,7 @@ Set `UseExecBlockForDML` to `True`, or put `{$EXECUTE_BLOCK ON}` in the script, 
 var
   I: Integer;
   Text: TStrings;
-  Desc: PStatementDesc;
+  Desc: PFIBStatementDesc;
 begin
   Text := TStringList.Create;
   try

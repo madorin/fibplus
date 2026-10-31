@@ -29,13 +29,13 @@ Guides: [Datasets and caching](../guide/datasets-and-caching.md).
 |------|------|---------|-------------|
 | `DataSet` | `TFIBCustomDataSet` | | Dataset that runs the object. Assigning it registers the object with the dataset and copies `Database` and `Transaction` from the dataset when they are not set. |
 | `KindUpdate` | `TUpdateKind` | `ukModify` | Operation the object belongs to: `ukModify`, `ukInsert`, or `ukDelete`. |
-| `ExecuteOrder` | `TFIBOrderExecUO` | `oeBeforeDefault` | Whether the object runs before or after the dataset's own statement, see [Types](#types). |
+| `ExecuteOrder` | `TFIBUpdateObjectExecuteOrder` | `oeBeforeDefault` | Whether the object runs before or after the dataset's own statement, see [Types](#types). |
 | `OrderInList` | `Integer` | | Position among the objects of the same `KindUpdate`. Objects with a lower value run first. |
 | `Active` | `Boolean` | `True` | When `False`, the dataset skips the object. |
 
 ## Types
 
-`TFIBOrderExecUO` is the position of the object relative to the dataset's own statement:
+`TFIBUpdateObjectExecuteOrder` is the position of the object relative to the dataset's own statement:
 
 | Value | Meaning |
 |-------|---------|

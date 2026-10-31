@@ -1,4 +1,4 @@
-object frmEdDataSetInfo: TfrmEdDataSetInfo
+object frmEdDataSetInfo: TFIBDataSetInfoForm
   Left = 898
   Top = 488
   BorderIcons = [biSystemMenu, biMaximize]
@@ -170,7 +170,7 @@ object frmEdDataSetInfo: TfrmEdDataSetInfo
       ExplicitTop = 0
       ExplicitWidth = 0
       ExplicitHeight = 0
-      inline fraEdConditions1: TfraEdConditions
+      inline fraEdConditions1: TFIBConditionsFrame
         Left = 0
         Top = 0
         Width = 354

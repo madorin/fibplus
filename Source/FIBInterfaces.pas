@@ -31,49 +31,46 @@ const
 
 type
 
-  ISQLObject = interface
+  IFIBParamSource = interface
     ['{DEA9627C-E35F-40A2-A2F6-3959782CE4AD}']
-    function ParamCount: integer;
-    function ParamName(ParamIndex: integer): string;
-    function FieldsCount: integer;
-    function FieldExist(const FieldName: string; var FieldIndex: integer): boolean;
-    function ParamExist(const ParamName: string; var ParamIndex: integer): boolean;
-    function FieldValue(const FieldName: string; Old: boolean): variant; overload;
-    function FieldValue(const FieldIndex: integer; Old: boolean): variant; overload;
-    function ParamValue(const ParamName: string): variant; overload;
-    function ParamValue(const ParamIndex: integer): variant; overload;
-    procedure SetParamValue(const ParamIndex: integer; aValue: variant);
-    function FieldName(FieldIndex: integer): string;
-    function IEof: boolean;
+    function ParamCount: Integer;
+    function ParamName(ParamIndex: Integer): string;
+    function FieldsCount: Integer;
+    function FieldExist(const FieldName: string; var FieldIndex: Integer): Boolean;
+    function ParamExist(const ParamName: string; var ParamIndex: Integer): Boolean;
+    function FieldValue(const FieldName: string; Old: Boolean): Variant; overload;
+    function FieldValue(const FieldIndex: Integer; Old: Boolean): Variant; overload;
+    function ParamValue(const ParamName: string): Variant; overload;
+    function ParamValue(const ParamIndex: Integer): Variant; overload;
+    procedure SetParamValue(const ParamIndex: Integer; aValue: Variant);
+    function FieldName(FieldIndex: Integer): string;
+    function IEof: Boolean;
     procedure INext;
   end;
 
 type
-  ISQLStatMaker = interface
+  IFIBSQLStatisticsMaker = interface
     ['{39477B70-12C9-4F70-993E-0E1067A8D649}']
     // For Statistics
     function FixStartTime(const ObjName, VarName: string): Cardinal;
-    function FixEndTime(const ObjName, VarName: string): integer;
-    function GetVarInt(const ObjName, VarName: string): integer;
+    function FixEndTime(const ObjName, VarName: string): Integer;
+    function GetVarInt(const ObjName, VarName: string): Integer;
     function GetVarStr(const ObjName, VarName: string): string;
-    function IncCounter(const ObjName, VarName: string): integer;
-    procedure SetNull(const ObjName, VarName: string);
+    function IncCounter(const ObjName, VarName: string): Integer;
     procedure SetStringValue(const ObjName, VarName, Value: string);
-    function AddIntValue(const ObjName, VarName: string; Value: integer): integer;
-    procedure SetIntValue(const ObjName, VarName: string; Value: integer);
+    function AddIntValue(const ObjName, VarName: string; Value: Integer): Integer;
+    procedure SetIntValue(const ObjName, VarName: string; Value: Integer);
     //
-    procedure AddToStrings(const ObjName, VarName, Value: string);
-    procedure ClearStrings(const ObjName, VarName: string);
     function GetVarStrings(const ObjName, VarName: string): TStrings;
     procedure Clear;
 
-    procedure SetActiveStatistics(const Value: boolean);
-    function GetActiveStatistics: boolean;
+    procedure SetActiveStatistics(const Value: Boolean);
+    function GetActiveStatistics: Boolean;
 
-    property ActiveStatistics: boolean read GetActiveStatistics write SetActiveStatistics;
+    property ActiveStatistics: Boolean read GetActiveStatistics write SetActiveStatistics;
   end;
 
-  TLogFlag = (
+  TFIBLogFlag = (
     lfQPrepare,
     lfQExecute,
     lfQFetch,
@@ -82,39 +79,39 @@ type
     lfService,
     lfMisc
   );
-  TLogFlags = set of TLogFlag;
+  TFIBLogFlags = set of TFIBLogFlag;
 
-  ISQLLogger = interface
+  IFIBSQLLogger = interface
     ['{2CB9280F-2324-40CD-BFB4-42C0FD36107F}']
-    procedure SetActiveLogging(const Value: boolean);
-    function GetActiveLogging: boolean;
-    function GetLogFlags: TLogFlags;
+    procedure SetActiveLogging(const Value: Boolean);
+    function GetActiveLogging: Boolean;
+    function GetLogFlags: TFIBLogFlags;
     function GetInstance: TObject;
-    procedure SetLogFlags(Value: TLogFlags);
+    procedure SetLogFlags(Value: TFIBLogFlags);
     procedure SetDatabase(aDatabase: TObject);
-    procedure WriteData(const ObjectName, OperationName, EventText: string; DataType: TLogFlag);
-    property ActiveLogging: boolean read GetActiveLogging write SetActiveLogging;
-    property LogFlags: TLogFlags read GetLogFlags write SetLogFlags;
+    procedure WriteData(const ObjectName, OperationName, EventText: string; DataType: TFIBLogFlag);
+    property ActiveLogging: Boolean read GetActiveLogging write SetActiveLogging;
+    property LogFlags: TFIBLogFlags read GetLogFlags write SetLogFlags;
   end;
 
   IFIBStringer = interface
     ['{6756F6D0-3E0B-4035-81A6-6D2B579312D3}']
     // StrUtil
-    function FormatIdentifier(Dialect: integer; const Value: string): string;
-    function PosCh(aCh: Char; const s: string): integer;
-    function PosCh1(aCh: Char; const s: string; StartPos: integer): integer;
-    function PosCI(const Substr, Str: string): integer;
-    function EmptyStrings(SL: TStrings): boolean;
-    function EquelStrings(const s, s1: string; CaseSensitive: boolean): boolean;
+    function FormatIdentifier(Dialect: Integer; const Value: string): string;
+    function PosCh(aCh: Char; const s: string): Integer;
+    function PosCh1(aCh: Char; const s: string; StartPos: Integer): Integer;
+    function PosCI(const Substr, Str: string): Integer;
+    function EmptyStrings(SL: TStrings): Boolean;
+    function EqualStrings(const s, s1: string; CaseSensitive: Boolean): Boolean;
     procedure DeleteEmptyStr(Src: TStrings); //
-    function PosInRight(const Substr, Str: string; BeginPos: integer): integer;
+    function PosInRight(const Substr, Str: string; BeginPos: Integer): Integer;
     function LastChar(const Str: string): Char;
-    function ExtractWord(Num: integer; const Str: string; const WordDelims: TCharSet): string;
-    function WordCount(const s: string; const WordDelims: TCharSet): integer;
+    function ExtractWord(Num: Integer; const Str: string; const WordDelims: TFIBAnsiCharSet): string;
+    function WordCount(const s: string; const WordDelims: TFIBAnsiCharSet): Integer;
     // SqlTxtRtns
     function TableByAlias(const SQLText, Alias: string): string;
-    procedure DispositionFromClause(const SQLText: string; var X, Y: integer);
-    procedure AllTables(const SQLText: string; aTables: TStrings; WithSP: boolean = False; WithAliases: boolean = False);
+    procedure DispositionFromClause(const SQLText: string; var X, Y: Integer);
+    procedure AllTables(const SQLText: string; aTables: TStrings; WithSP: Boolean = False; WithAliases: Boolean = False);
     function AliasForTable(const SQLText, TableName: string): string;
     function SetOrderClause(const SQLText, Order: string): string;
     function AddToMainWhereClause(const SQLText, Condition: string): string;
@@ -123,49 +120,49 @@ type
   IFIBMetaDataExtractor = interface
     ['{0F691E74-EAA3-431E-B33F-01CA62275E33}']
     function DBPrimaryKeys(const TableName: string; Transaction: TObject): string;
-    function IsCalculatedField(const TableName, FieldName: string; Transaction: TObject): boolean;
-    function ObjectDDLTxt(Transaction: TObject; ObjectType: integer; const ObjectName: string; ForceLoad: boolean = True): string;
+    function IsCalculatedField(const TableName, FieldName: string; Transaction: TObject): Boolean;
+    function ObjectDDLTxt(Transaction: TObject; ObjectType: Integer; const ObjectName: string; ForceLoad: Boolean = True): string;
     function ObjectListFields(const ObjectName: string; var DDL: string;
-      ForceLoad: boolean = True; IncludeOBJName: boolean = False): string;
-    function GetTablesCount: integer;
-    function GetProceduresCount: integer;
-    function GetViewsCount: integer;
-    function GetUDFSCount: integer;
+      ForceLoad: Boolean = True; IncludeOBJName: Boolean = False): string;
+    function GetTablesCount: Integer;
+    function GetProceduresCount: Integer;
+    function GetViewsCount: Integer;
+    function GetUDFSCount: Integer;
 
-    function GetExceptionsCount: integer;
-    function GetGeneratorsCount: integer;
-    function GetDomainsCount: integer;
+    function GetExceptionsCount: Integer;
+    function GetGeneratorsCount: Integer;
+    function GetDomainsCount: Integer;
     ///
-    function GetTableName(Index: integer): string;
-    function GetViewName(Index: integer): string;
-    function GetProcedureName(Index: integer): string;
-    function GetUDFName(Index: integer): string;
-    function GetGeneratorName(Index: integer): string;
+    function GetTableName(Index: Integer): string;
+    function GetViewName(Index: Integer): string;
+    function GetProcedureName(Index: Integer): string;
+    function GetUDFName(Index: Integer): string;
+    function GetGeneratorName(Index: Integer): string;
 
     ///
     procedure SetDatabase(Database: TObject);
     procedure LoadObjectNames;
-    function GetNamesLoaded: boolean;
+    function GetNamesLoaded: Boolean;
 
-    property TablesCount: integer read GetTablesCount;
-    property TableName[Index: integer]: string read GetTableName;
+    property TablesCount: Integer read GetTablesCount;
+    property TableName[Index: Integer]: string read GetTableName;
 
-    property ViewsCount: integer read GetViewsCount;
-    property ViewName[Index: integer]: string read GetViewName;
+    property ViewsCount: Integer read GetViewsCount;
+    property ViewName[Index: Integer]: string read GetViewName;
 
-    property ProceduresCount: integer read GetProceduresCount;
-    property ProcedureName[Index: integer]: string read GetProcedureName;
+    property ProceduresCount: Integer read GetProceduresCount;
+    property ProcedureName[Index: Integer]: string read GetProcedureName;
 
-    property UDFSCount: integer read GetUDFSCount;
-    property UDFName[Index: integer]: string read GetUDFName;
+    property UDFSCount: Integer read GetUDFSCount;
+    property UDFName[Index: Integer]: string read GetUDFName;
 
-    property GeneratorsCount: integer read GetGeneratorsCount;
-    property GeneratorsName[Index: integer]: string read GetGeneratorName;
+    property GeneratorsCount: Integer read GetGeneratorsCount;
+    property GeneratorsName[Index: Integer]: string read GetGeneratorName;
 
-    property ExceptionsCount: integer read GetExceptionsCount;
-    property DomainsCount: integer read GetDomainsCount;
+    property ExceptionsCount: Integer read GetExceptionsCount;
+    property DomainsCount: Integer read GetDomainsCount;
 
-    property NamesLoaded: boolean read GetNamesLoaded;
+    property NamesLoaded: Boolean read GetNamesLoaded;
   end;
 
   IFIBObject = interface
@@ -176,10 +173,10 @@ type
     function GetDatabaseName: string;
     procedure SetDatabaseName(const Value: string);
     procedure SaveAlias;
-    function QueryValueAsStr(const aSQL: string; FieldNo: integer; ParamValues: array of variant): string;
-    function Execute(const SQL: string): boolean;
+    function QueryValueAsStr(const aSQL: string; FieldNo: Integer; ParamValues: array of Variant): string;
+    function Execute(const SQL: string): Boolean;
     procedure Commit;
-    function IsFirebirdConnect: boolean;
+    function IsFirebirdConnect: Boolean;
     property DBName: string read GetDatabaseName write SetDatabaseName;
   end;
 
@@ -195,23 +192,23 @@ type
   IFIBSQLObject = interface(IFIBObject)
     ['{D9361B56-E2FC-4F01-B477-CC655C86C63B}']
     procedure Prepare;
-    function ParamCount: integer;
-    function ParamName(ParamIndex: integer): string;
-    function ParamExist(const ParamName: string; var ParamIndex: integer): boolean;
-    function ParamValue(const ParamName: string): variant; overload;
-    function ParamValue(const ParamIndex: integer): variant; overload;
+    function ParamCount: Integer;
+    function ParamName(ParamIndex: Integer): string;
+    function ParamExist(const ParamName: string; var ParamIndex: Integer): Boolean;
+    function ParamValue(const ParamName: string): Variant; overload;
+    function ParamValue(const ParamIndex: Integer): Variant; overload;
     function DefMacroValue(const MacroName: string): string;
-    procedure SetParamValue(const ParamIndex: integer; aValue: variant); overload;
-    procedure SetParamValues(const ParamValues: array of variant); overload;
-    procedure SetParamValues(const ParamNames: string; ParamValues: array of variant); overload;
+    procedure SetParamValue(const ParamIndex: Integer; aValue: Variant); overload;
+    procedure SetParamValues(const ParamValues: array of Variant); overload;
+    procedure SetParamValues(const ParamNames: string; ParamValues: array of Variant); overload;
 
-    function FieldsCount: integer;
-    function FieldExist(const FieldName: string; var FieldIndex: integer): boolean;
+    function FieldsCount: Integer;
+    function FieldExist(const FieldName: string; var FieldIndex: Integer): Boolean;
 
-    function FieldValue(const FieldName: string; Old: boolean): variant; overload;
-    function FieldValue(const FieldIndex: integer; Old: boolean): variant; overload;
-    function FieldName(FieldIndex: integer): string;
-    function IEof: boolean;
+    function FieldValue(const FieldName: string; Old: Boolean): Variant; overload;
+    function FieldValue(const FieldIndex: Integer; Old: Boolean): Variant; overload;
+    function FieldName(FieldIndex: Integer): string;
+    function IEof: Boolean;
     procedure INext;
     function TableAliasForField(const aFieldName: string): string;
   end;
@@ -228,16 +225,16 @@ type
   IFIBQuery = interface(IFIBSQLObject)
     ['{CA17BA7E-D4BC-4D8C-9D42-E818C6B32324}']
     procedure CheckValidStatement; // raise error if statement is invalid.
-    procedure AddCondition(const Name, Condition: string; Enabled: boolean);
+    procedure AddCondition(const Name, Condition: string; Enabled: Boolean);
     function GetPlan: string;
     procedure ExecQuery;
     procedure Close;
     property Plan: string read GetPlan;
   end;
 
-  TOnScriptStatementExec = procedure(Line: integer; StatementNo: integer) of object;
+  TFIBScriptStatementExecEvent = procedure(Line: Integer; StatementNo: Integer) of object;
 
-  TiSQLSection = (
+  TFIBInterfaceSQLSection = (
     stUnknown,
     stSelect,
     stFields,
@@ -257,27 +254,26 @@ type
     stForUpdate
   );
 
-  TiSQLSections = array of TiSQLSection;
+  TFIBInterfaceSQLSections = array of TFIBInterfaceSQLSection;
 
   IFIBScripter = interface
     ['{246837E8-1E9D-4FB9-94FE-03DBA2B555E3}']
-    procedure SetOnStatExec(CallBack: TOnScriptStatementExec);
+    procedure SetOnStatExec(CallBack: TFIBScriptStatementExecEvent);
     procedure Parse(Terminator: string = ';');
-    procedure ExecuteScript(FromStmt: integer = 1);
+    procedure ExecuteScript(FromStmt: Integer = 1);
     procedure ExecuteFromFile(const FileName: string; Terminator: string = ';');
-    function StatementsCount: integer;
+    function StatementsCount: Integer;
   end;
 
-  ISQLParser = interface
+  IFIBSQLParser = interface
     ['{B9A9DA9B-C258-4653-BE89-CE0C25930A88}']
     procedure SetSQLText(const Value: string);
-    function iPosInSections(Position: integer): TiSQLSections;
-    function SectionInArray(Section: TiSQLSection; ArrS: TiSQLSections): boolean;
-    function GetWord(Position: integer; var StartWord: integer; PartOnly: boolean = False): string;
-    function GetPrevWord(CurPosition: integer; var PosPrevWord: integer): string;
-    function GetAllTables(WithSP: boolean = False): TStrings;
-    function CutAlias(const SQLString: string; AliasPosition: integer = 0): string;
-    function CutTableName(const SQLString: string; AliasPosition: integer = 0): string;
+    function iPosInSections(Position: Integer): TFIBInterfaceSQLSections;
+    function GetWord(Position: Integer; var StartWord: Integer; PartOnly: Boolean = False): string;
+    function GetPrevWord(CurPosition: Integer; var PosPrevWord: Integer): string;
+    function GetAllTables(WithSP: Boolean = False): TStrings;
+    function CutAlias(const SQLString: string; AliasPosition: Integer = 0): string;
+    function CutTableName(const SQLString: string; AliasPosition: Integer = 0): string;
     function AliasForTable(const SQLText, TableName: string): string;
     function TableByAlias(const SQLText, Alias: string): string;
   end;
@@ -286,7 +282,7 @@ type
     ['{AFC7CF1A-EAA5-4584-B47D-BDAD337B4EEC}']
     function iGetStringer: IFIBStringer;
     function iGetMetaExtractor: IFIBMetaDataExtractor;
-    function iGetSQLParser: ISQLParser;
+    function iGetSQLParser: IFIBSQLParser;
   end;
 
 var
@@ -298,6 +294,18 @@ var
   expServicesClass: TComponentClass;
   expDeltaReceiverClass: TComponentClass;
   expScripter: TComponentClass;
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  ISQLObject = IFIBParamSource deprecated 'Use IFIBParamSource';
+  ISQLStatMaker = IFIBSQLStatisticsMaker deprecated 'Use IFIBSQLStatisticsMaker';
+  ISQLLogger = IFIBSQLLogger deprecated 'Use IFIBSQLLogger';
+  ISQLParser = IFIBSQLParser deprecated 'Use IFIBSQLParser';
+  TLogFlag = TFIBLogFlag deprecated 'Use TFIBLogFlag';
+  TLogFlags = TFIBLogFlags deprecated 'Use TFIBLogFlags';
+  TOnScriptStatementExec = TFIBScriptStatementExecEvent deprecated 'Use TFIBScriptStatementExecEvent';
+  TiSQLSection = TFIBInterfaceSQLSection deprecated 'Use TFIBInterfaceSQLSection';
+  TiSQLSections = TFIBInterfaceSQLSections deprecated 'Use TFIBInterfaceSQLSections';
 
 implementation
 

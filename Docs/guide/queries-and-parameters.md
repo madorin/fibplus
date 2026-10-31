@@ -111,7 +111,7 @@ end;
 
 ### Parameters from another object
 
-`ExecWPS` takes the parameter values from an object that implements `ISQLObject`, such as another query or a dataset. A parameter is filled from the source column with the same name, or, if there is none, from the source parameter with the same name. With `AllRecords` set to `True` (the default), it runs the statement once for every remaining row of the source and moves the source to the next row each time.
+`ExecWPS` takes the parameter values from an object that implements `IFIBParamSource`, such as another query or a dataset. A parameter is filled from the source column with the same name, or, if there is none, from the source parameter with the same name. With `AllRecords` set to `True` (the default), it runs the statement once for every remaining row of the source and moves the source to the next row each time.
 
 ```delphi
 // SourceQuery is an open SELECT; Query is an INSERT with the same column names as parameters
@@ -263,7 +263,7 @@ The raw file methods write and read a binary file with the column data. `BatchOu
 `beFail` (the default) raises the error again, `beAbort` ends silently with `EAbort`, `beRetry` runs the row again, and `beIgnore` goes to the next row. Without an `OnBatchError` handler the error is raised. `BatchOutput` does not call `OnBatchError`: its errors are raised.
 
 ```delphi
-procedure TMainForm.QueryBatchError(E: EFIBError; var BatchErrorAction: TBatchErrorAction);
+procedure TMainForm.QueryBatchError(E: EFIBError; var BatchErrorAction: TFIBBatchErrorAction);
 begin
   Memo1.Lines.Add(E.Message);
   BatchErrorAction := beIgnore;

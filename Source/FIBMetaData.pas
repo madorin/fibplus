@@ -32,7 +32,7 @@ const
 type
 
   // Metadata Object Identifiers
-  TDBObjectType = (
+  TFIBDBObjectType = (
     otDomain,
     otTable,
     otView,
@@ -46,10 +46,10 @@ type
     otPackage,
     otDatabase
   );
-  TDBObjectTypes = set of TDBObjectType;
+  TFIBDBObjectTypes = set of TFIBDBObjectType;
 
   // SubObjects
-  TTableChildType = (
+  TFIBTableChildType = (
     soTableFields,
     soPrimaryKey,
     soForeignKey,
@@ -59,23 +59,23 @@ type
     soCheckConstr,
     soTableGrants
   );
-  TTableChildTypes = set of TTableChildType;
+  TFIBTableChildTypes = set of TFIBTableChildType;
 
-  TViewChildType = (soViewFields, soViewTriggers, soViewGrants);
-  TViewChildTypes = set of TViewChildType;
+  TFIBViewChildType = (soViewFields, soViewTriggers, soViewGrants);
+  TFIBViewChildTypes = set of TFIBViewChildType;
 
-  TProcedureChild = (soProcFieldIn, soProcFieldOut, soProcGrants);
-  TProcedureChilds = set of TProcedureChild;
+  TFIBProcedureChild = (soProcFieldIn, soProcFieldOut, soProcGrants);
+  TFIBProcedureChildren = set of TFIBProcedureChild;
 
-  TUDFChild = (soUDFField);
-  TUDFChilds = set of TUDFChild;
+  TFIBUDFChild = (soUDFField);
+  TFIBUDFChildren = set of TFIBUDFChild;
 
-  TPackageChild = (soPackageProcedures, soPackageFunctions);
+  TFIBPackageChild = (soPackageProcedures, soPackageFunctions);
 
-  TRoleChild = (soRoleGrants);
+  TFIBRoleChild = (soRoleGrants);
 
-  TTriggerType = (ttBefore, ttAfter, ttON);
-  TTriggerAction = (
+  TFIBTriggerType = (ttBefore, ttAfter, ttON);
+  TFIBTriggerAction = (
     taInsert,
     taUpdate,
     taDelete,
@@ -85,10 +85,10 @@ type
     taTransactionCommit,
     taTransactionRollback
   );
-  TTriggerActions = set of TTriggerAction;
+  TFIBTriggerActions = set of TFIBTriggerAction;
 
-  TIndexOrder = (IoDescending, IoAscending);
-  TForeignKeyRule = (fkrRestrict, fkrCascade, fkrSetNull, fkrSetDefault);
+  TFIBIndexOrder = (IoDescending, IoAscending);
+  TFIBForeignKeyRule = (fkrRestrict, fkrCascade, fkrSetNull, fkrSetDefault);
 
   TFIBFieldType = (
     fftUnKnown,
@@ -114,67 +114,68 @@ type
     fftTimestampTZ
   );
 
-  TPrivilege = (
+  TFIBPrivilege = (
     goSelect,
     goInsert,
     goUpdate,
     goDelete,
     goReferences,
     goExecuteProc,
-    goRole
+    goRole,
+    goUsage
   );
-  TPrivileges = set of TPrivilege;
+  TFIBPrivileges = set of TFIBPrivilege;
 
-  TNotifyLoadMetaData = procedure(Sender: TObject; const Message: string; var Stop: boolean) of object;
+  TFIBLoadMetaDataEvent = procedure(Sender: TObject; const Message: string; var Stop: Boolean) of object;
 
-  TDDLTextOption = (dtoUseCreateDB, dtoUseSetClientLib, dtoUseSetTerm, dtoDecodeDomains, dtoIncludeGrants,
+  TFIBDDLTextOption = (dtoUseCreateDB, dtoUseSetClientLib, dtoUseSetTerm, dtoDecodeDomains, dtoIncludeGrants,
     dtoIncludeComments);
-  TDDLTextOptions = set of TDDLTextOption;
+  TFIBDDLTextOptions = set of TFIBDDLTextOption;
 
 const
   DefObjects = [otDomain, otTable, otView, otProcedure, otGenerator,
     otException, otUDF, otRole, otDBTrigger, otStoredFunctions, otPackage];
-  DefTableChilds = [soTableFields, soPrimaryKey, soForeignKey, soTableTriggers,
+  DefTableChildTypes = [soTableFields, soPrimaryKey, soForeignKey, soTableTriggers,
     soUniqueConstr, soIndex, soCheckConstr];
-  DefViewChilds = [soViewFields, soViewTriggers];
+  DefViewChildTypes = [soViewFields, soViewTriggers];
   DefDDLTextOptions = [dtoUseCreateDB, dtoUseSetTerm, dtoIncludeComments];
   DefSchemaExtractDDLTextOptions = [dtoIncludeComments];
 
 type
-  TCustomMetaObject = class;
-  TMetaObjectClass = class of TCustomMetaObject;
+  TFIBCustomMetaObject = class;
+  TFIBMetaObjectClass = class of TFIBCustomMetaObject;
 
-  TMetaDomain = class;
-  TMetaTable = class;
-  TMetaDataBase = class;
+  TFIBMetaDomain = class;
+  TFIBMetaTable = class;
+  TFIBMetaDatabase = class;
 
-  TMetaDataItem = record
+  TFIBMetaDataItem = record
     Childs: TList;
-    ClassID: TMetaObjectClass;
+    ClassID: TFIBMetaObjectClass;
   end;
 
-  TCustomMetaObject = class(TObject)
+  TFIBCustomMetaObject = class(TObject)
   private
     FName: string;
     FFormatName: string;
     FDescription: string;
-    FOwner: TCustomMetaObject;
-    FItems: array of TMetaDataItem;
+    FOwner: TFIBCustomMetaObject;
+    FItems: array of TFIBMetaDataItem;
     FItemsCount: Integer;
-    FLoaded: boolean;
-    function GetChildObject(const ClassIndex, Index: Integer): TCustomMetaObject;
-    function GetChildObjectByName(const ClassIndex: Integer; const ObjectName: string): TCustomMetaObject;
+    FLoaded: Boolean;
+    function GetChildObject(const ClassIndex, Index: Integer): TFIBCustomMetaObject;
+    function GetChildObjectByName(const ClassIndex: Integer; const ObjectName: string): TFIBCustomMetaObject;
     function GetChildsCount(const ClassIndex: Integer): Integer;
     procedure ClearChilds(const ClassIndex: Integer);
     function GetAsDDL: string;
-    procedure AddClass(ClassID: TMetaObjectClass);
+    procedure AddClass(ClassID: TFIBMetaObjectClass);
 
     function GenerateChildDDL(Stream: TStringStream; ChildType: Integer): Integer;
     procedure GenerateChildCommentDDL(Stream: TStringStream; ChildType: Integer);
     function GetAsObjectDDL: string;
     procedure SetName(const Value: string);
-    function GetItems(const Index: Integer): TMetaDataItem;
-    function GetMetaDataBase: TMetaDataBase;
+    function GetItems(const Index: Integer): TFIBMetaDataItem;
+    function GetMetaDataBase: TFIBMetaDatabase;
   protected
     procedure LoadDescription(Query: TFIBQuery);
     procedure WriteCommentDDL(Stream: TStringStream; const Target, Text: string);
@@ -184,13 +185,13 @@ type
     function CommentTarget: string; virtual;
     // COMMENT ON for the object and its sub-objects
     procedure GenerateCommentDDL(Stream: TStringStream); virtual;
-    property MetaDataBase: TMetaDataBase read GetMetaDataBase;
+    property MetaDataBase: TFIBMetaDatabase read GetMetaDataBase;
   public
-    constructor Create(AOwner: TCustomMetaObject; aName: string = ''); virtual;
+    constructor Create(AOwner: TFIBCustomMetaObject; aName: string = ''); virtual;
     destructor Destroy; override;
     procedure Clear;
     class function ClassIndex: Integer; virtual;
-    class function IsSubObject: boolean; virtual;
+    class function IsSubObject: Boolean; virtual;
 
     procedure GenerateDDLText(Stream: TStringStream); virtual;
     property Name: string read FName write SetName;
@@ -198,10 +199,10 @@ type
     property AsDDL: string read GetAsDDL;
     property AsObjectDDL: string read GetAsObjectDDL;
     property ItemsCount: Integer read FItemsCount;
-    property Items[const Index: Integer]: TMetaDataItem read GetItems;
-    property Parent: TCustomMetaObject read FOwner;
+    property Items[const Index: Integer]: TFIBMetaDataItem read GetItems;
+    property Parent: TFIBCustomMetaObject read FOwner;
     property FormatName: string read FFormatName;
-    property Loaded: boolean read FLoaded;
+    property Loaded: Boolean read FLoaded;
   end;
 
   (* GRANT{
@@ -231,42 +232,50 @@ type
     [WITH GRANT OPTION]
     <role_granted> = rolename [, rolename ...]
   *)
-  TCustomMetaGrant = class(TCustomMetaObject)
+  TFIBCustomMetaGrant = class(TFIBCustomMetaObject)
   private
     FObjectName: string;
-    FPrivileges: array of TPrivileges;
+    // RDB$OBJECT_TYPE of the object
+    FObjectType: Integer;
+    FPrivileges: array of TFIBPrivileges;
     FFields: array of string;
-    FWithGrantOption: array of boolean;
+    FWithGrantOption: array of Boolean;
     FUserList: array of string;
     procedure SetSize(Size: Integer);
     function GetSize: Integer;
-    procedure LoadFromDataBase(QGrants: TFIBQuery; const Name: string; Pack: boolean = True);
+    procedure LoadFromDataBase(QGrants: TFIBQuery; const Name: string; Pack: Boolean = True);
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
     property Count: Integer read GetSize;
   end;
 
-  TMetaViewGrant = class(TCustomMetaGrant)
+  TFIBMetaViewGrant = class(TFIBCustomMetaGrant)
   public
     class function ClassIndex: Integer; override;
   end;
 
-  TMetaTableGrant = class(TCustomMetaGrant)
+  TFIBMetaTableGrant = class(TFIBCustomMetaGrant)
   public
     class function ClassIndex: Integer; override;
   end;
 
-  TMetaProcGrant = class(TCustomMetaGrant)
+  TFIBMetaProcedureGrant = class(TFIBCustomMetaGrant)
   public
     class function ClassIndex: Integer; override;
   end;
 
-  TMetaRoleGrant = class(TCustomMetaGrant)
+  TFIBMetaRoleGrant = class(TFIBCustomMetaGrant)
   public
     class function ClassIndex: Integer; override;
   end;
 
-  TMetaGenerator = class(TCustomMetaObject)
+  // Grants of a generator or an exception, their only children
+  TFIBObjectGrant = class(TFIBCustomMetaGrant)
+  public
+    class function ClassIndex: Integer; override;
+  end;
+
+  TFIBMetaGenerator = class(TFIBCustomMetaObject)
   private
     FValue: Int64;
     FOptionsLoaded: Boolean;
@@ -277,51 +286,52 @@ type
     procedure GenerateObjectDDL(Stream: TStringStream); override;
     function CommentKeyword: string; override;
   public
+    constructor Create(AOwner: TFIBCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
     property Value: Int64 read FValue;
     property InitialValue: Int64 read FInitialValue;
     property Increment: Integer read FIncrement;
   end;
 
-  TArrBounds = record
+  TFIBMetaArrayBounds = record
     LOWER_BOUND: Integer;
     UPPER_BOUND: Integer;
   end;
 
-  TFieldDimensions = array of TArrBounds;
+  TFIBFieldDimensions = array of TFIBMetaArrayBounds;
 
-  TCustomMetaField = class(TCustomMetaObject)
+  TFIBCustomMetaField = class(TFIBCustomMetaObject)
   private
     FScale: Word;
-    FLength: Smallint;
-    FPrecision: Smallint;
+    FLength: SmallInt;
+    FPrecision: SmallInt;
     FFieldType: TFIBFieldType;
     FCharSet: string;
-    FSegmentLength: Smallint;
-    FSubType: Smallint;
-    FBytesPerCharacter: Smallint;
-    FIsArray: boolean;
-    FDimensions: TFieldDimensions;
+    FSegmentLength: SmallInt;
+    FSubType: SmallInt;
+    FBytesPerCharacter: SmallInt;
+    FIsArray: Boolean;
+    FDimensions: TFIBFieldDimensions;
     FIdentity: Integer;
     procedure LoadFromDataBase(QField, QCharset: TFIBQuery); virtual;
-    property SegmentLength: Smallint read FSegmentLength;
+    property SegmentLength: SmallInt read FSegmentLength;
     function GetShortFieldType: string;
     function GetDimensionStr: string;
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
-    class function IsSubObject: boolean; override;
+    class function IsSubObject: Boolean; override;
     property Scale: Word read FScale;
-    property Length: Smallint read FLength;
-    property Precision: Smallint read FPrecision;
+    property Length: SmallInt read FLength;
+    property Precision: SmallInt read FPrecision;
     property FieldType: TFIBFieldType read FFieldType;
     property CharSet: string read FCharSet;
-    property SubType: Smallint read FSubType;
-    property BytesPerCharacter: Smallint read FBytesPerCharacter;
+    property SubType: SmallInt read FSubType;
+    property BytesPerCharacter: SmallInt read FBytesPerCharacter;
     property ShortFieldType: string read GetShortFieldType;
   end;
 
-  TMetaField = class(TCustomMetaField)
+  TFIBMetaField = class(TFIBCustomMetaField)
   private
     procedure LoadFromDataBase(QField, QCharset: TFIBQuery); override;
   protected
@@ -333,16 +343,16 @@ type
     property SegmentLength;
   end;
 
-  TMetaProcField = class(TMetaField)
+  TFIBMetaProcedureField = class(TFIBMetaField)
   private
     FDomain: string;
-    FMechanizm: Smallint;
-    FUseDomain: boolean;
-    FUseRelation: boolean;
+    FMechanizm: SmallInt;
+    FUseDomain: Boolean;
+    FUseRelation: Boolean;
     FRelationObject: string;
     FRelationField: string;
     FDefaultValue: string;
-    procedure DoLoadFromQuery(QField, QCharset: TFIBQuery; CanUseParamDomain, CanUseProcParamRelation: boolean);
+    procedure DoLoadFromQuery(QField, QCharset: TFIBQuery; CanUseParamDomain, CanUseProcParamRelation: Boolean);
     // BaseType: a TYPE OF COLUMN parameter as its type, for a routine made before the tables
     procedure WriteDeclaration(Stream: TStringStream; BaseType: Boolean);
   protected
@@ -350,20 +360,20 @@ type
     function CommentKeyword: string; override;
   end;
 
-  TMetaProcInField = class(TMetaProcField)
+  TFIBMetaProcedureInField = class(TFIBMetaProcedureField)
   public
     class function ClassIndex: Integer; override;
   end;
 
-  TMetaProcOutField = class(TMetaProcField)
+  TFIBMetaProcedureOutField = class(TFIBMetaProcedureField)
   public
     class function ClassIndex: Integer; override;
   end;
 
-  TMetaTableField = class(TMetaField)
+  TFIBMetaTableField = class(TFIBMetaField)
   private
     FDefaultValue: string;
-    FNotNull: boolean;
+    FNotNull: Boolean;
     FDomain: Integer;
     FDomainName: string;
     FComputedSource: string;
@@ -372,40 +382,40 @@ type
     FIdentityStart: Int64;
     FIdentityIncrement: Integer;
     procedure LoadFromDataBase(Q: TFIBQuery; C: TFIBQuery); override;
-    function GetDomain: TMetaDomain;
+    function GetDomain: TFIBMetaDomain;
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
     property DefaultValue: string read FDefaultValue;
-    property NotNull: boolean read FNotNull;
-    property Domain: TMetaDomain read GetDomain;
+    property NotNull: Boolean read FNotNull;
+    property Domain: TFIBMetaDomain read GetDomain;
     property ComputedSource: string read FComputedSource;
     property Collation: string read FCollation;
   end;
 
-  TMetaDomain = class(TMetaTableField)
+  TFIBMetaDomain = class(TFIBMetaTableField)
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
     function CommentKeyword: string; override;
     function CommentTarget: string; override;
   public
     class function ClassIndex: Integer; override;
-    class function IsSubObject: boolean; override;
+    class function IsSubObject: Boolean; override;
   end;
 
-  TMetaConstraint = class(TCustomMetaObject)
+  TFIBMetaConstraint = class(TFIBCustomMetaObject)
   private
     FFields: array of Integer;
-    function GetFields(const Index: Integer): TMetaTableField;
+    function GetFields(const Index: Integer): TFIBMetaTableField;
     function GetFieldsCount: Integer;
   public
-    class function IsSubObject: boolean; override;
-    property Fields[const Index: Integer]: TMetaTableField read GetFields;
+    class function IsSubObject: Boolean; override;
+    property Fields[const Index: Integer]: TFIBMetaTableField read GetFields;
     property FieldsCount: Integer read GetFieldsCount;
   end;
 
-  TMetaPrimaryKey = class(TMetaConstraint)
+  TFIBMetaPrimaryKey = class(TFIBMetaConstraint)
   private
     procedure LoadFromDataBase(Q: TFIBQuery);
   protected
@@ -414,34 +424,34 @@ type
     class function ClassIndex: Integer; override;
   end;
 
-  TMetaUniqueConstraint = class(TMetaConstraint)
+  TFIBMetaUniqueConstraint = class(TFIBMetaConstraint)
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
   end;
 
-  TMetaForeignKey = class(TMetaConstraint)
+  TFIBMetaForeignKey = class(TFIBMetaConstraint)
   private
     FForTable: Integer;
     FForFields: array of Integer;
-    FOnDelete: TForeignKeyRule;
-    FOnUpdate: TForeignKeyRule;
-    function GetForFields(const Index: Integer): TMetaTableField;
+    FOnDelete: TFIBForeignKeyRule;
+    FOnUpdate: TFIBForeignKeyRule;
+    function GetForFields(const Index: Integer): TFIBMetaTableField;
     function GetForFieldsCount: Integer;
-    function GetForTable: TMetaTable;
+    function GetForTable: TFIBMetaTable;
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
-    property ForTable: TMetaTable read GetForTable;
-    property ForFields[const Index: Integer]: TMetaTableField read GetForFields;
+    property ForTable: TFIBMetaTable read GetForTable;
+    property ForFields[const Index: Integer]: TFIBMetaTableField read GetForFields;
     property ForFieldsCount: Integer read GetForFieldsCount;
-    property OnDelete: TForeignKeyRule read FOnDelete;
-    property OnUpdate: TForeignKeyRule read FOnUpdate;
+    property OnDelete: TFIBForeignKeyRule read FOnDelete;
+    property OnUpdate: TFIBForeignKeyRule read FOnUpdate;
   end;
 
-  TMetaCheckConstraint = class(TCustomMetaObject)
+  TFIBMetaCheckConstraint = class(TFIBCustomMetaObject)
   private
     FConstraint: string;
   protected
@@ -451,11 +461,11 @@ type
     property Constraint: string read FConstraint;
   end;
 
-  TMetaIndex = class(TMetaConstraint)
+  TFIBMetaIndex = class(TFIBMetaConstraint)
   private
-    FUnique: boolean;
-    FActive: boolean;
-    FOrder: TIndexOrder;
+    FUnique: Boolean;
+    FActive: Boolean;
+    FOrder: TFIBIndexOrder;
     FExpression: string;
     FCondition: string;
   protected
@@ -463,25 +473,29 @@ type
     function CommentKeyword: string; override;
   public
     class function ClassIndex: Integer; override;
-    property Unique: boolean read FUnique;
-    property Active: boolean read FActive;
-    property Order: TIndexOrder read FOrder;
+    property Unique: Boolean read FUnique;
+    property Active: Boolean read FActive;
+    property Order: TFIBIndexOrder read FOrder;
     // COMPUTED BY expression, in parentheses
     property Expression: string read FExpression;
     // WHERE clause of a partial index
     property Condition: string read FCondition;
   end;
 
-  TCustomMetaTrigger = class(TCustomMetaObject)
+  TFIBCustomMetaTrigger = class(TFIBCustomMetaObject)
   private
-    FPrefix: TTriggerType;
-    FSuffix: TTriggerActions;
-    FPosition: Smallint;
-    FActive: boolean;
+    FPrefix: TFIBTriggerType;
+    FSuffix: TFIBTriggerActions;
+    FPosition: SmallInt;
+    FActive: Boolean;
     FSource: string;
     FTriggerType: Int64;
-    class function DecodePrefix(Value: Int64): TTriggerType;
-    class function DecodeSuffixes(Value: Int64): TTriggerActions;
+    FEngine: string;
+    FEntryPoint: string;
+    FSQLSecurity: Integer;
+    procedure WriteBody(Stream: TStringStream);
+    class function DecodePrefix(Value: Int64): TFIBTriggerType;
+    class function DecodeSuffixes(Value: Int64): TFIBTriggerActions;
     function IsDDLTrigger: Boolean;
     function DDLEventsText: string;
     procedure WriteHeaderDDL(Stream: TStringStream);
@@ -492,128 +506,135 @@ type
     procedure SaveAlterDDL(Stream: TStringStream);
     function CommentKeyword: string; override;
   public
-    class function IsSubObject: boolean; override;
-    property Prefix: TTriggerType read FPrefix;
-    property Suffix: TTriggerActions read FSuffix;
-    property Position: Smallint read FPosition;
-    property Active: boolean read FActive;
+    class function IsSubObject: Boolean; override;
+    property Prefix: TFIBTriggerType read FPrefix;
+    property Suffix: TFIBTriggerActions read FSuffix;
+    property Position: SmallInt read FPosition;
+    property Active: Boolean read FActive;
     property Source: string read FSource;
     // RDB$TRIGGER_TYPE, also of the DDL triggers
     property TriggerType: Int64 read FTriggerType;
+    // ENGINE of a UDR trigger, empty for a PSQL one
+    property Engine: string read FEngine;
+    property EntryPoint: string read FEntryPoint;
+    // -1 not set, 0 INVOKER, 1 DEFINER
+    property SQLSecurity: Integer read FSQLSecurity;
   end;
 
-  TMetaTableTrigger = class(TCustomMetaTrigger)
+  TFIBMetaTableTrigger = class(TFIBCustomMetaTrigger)
   public
     class function ClassIndex: Integer; override;
   end;
 
-  TMetaViewTrigger = class(TCustomMetaTrigger)
+  TFIBMetaViewTrigger = class(TFIBCustomMetaTrigger)
   public
     class function ClassIndex: Integer; override;
   end;
 
-  TMetaDBTrigger = class(TCustomMetaTrigger)
+  TFIBMetaDBTrigger = class(TFIBCustomMetaTrigger)
   public
     class function ClassIndex: Integer; override;
-    class function IsSubObject: boolean; override;
+    class function IsSubObject: Boolean; override;
   end;
 
-  TMetaTable = class(TCustomMetaObject)
+  TFIBMetaTable = class(TFIBCustomMetaObject)
   private
     FRelationType: Integer;
-    function GetFields(const Index: Integer): TMetaTableField;
+    FSQLSecurity: Integer;
+    function GetFields(const Index: Integer): TFIBMetaTableField;
     function GetFieldsCount: Integer;
     procedure LoadFromDataBase(QNames, QFields: TFIBQuery; QCharset: TFIBQuery;
       QPrimary, QIndex, QForeign, QCheck, QTrigger: TFIBQuery;
-      ChildTypes: TTableChildTypes);
+      ChildTypes: TFIBTableChildTypes);
 
     function FindFieldIndex(const Name: string): Integer;
-    function GetUniques(const Index: Integer): TMetaUniqueConstraint;
+    function GetUniques(const Index: Integer): TFIBMetaUniqueConstraint;
     function GetUniquesCount: Integer;
-    function GetPrimaryKey: TMetaPrimaryKey;
-    function GetPrimaryKeyExist: boolean;
-    function GetIndices(const Index: Integer): TMetaIndex;
+    function GetPrimaryKey: TFIBMetaPrimaryKey;
+    function GetPrimaryKeyExist: Boolean;
+    function GetIndices(const Index: Integer): TFIBMetaIndex;
     function GetIndicesCount: Integer;
-    function GetForeign(const Index: Integer): TMetaForeignKey;
+    function GetForeign(const Index: Integer): TFIBMetaForeignKey;
     function GetForeignCount: Integer;
-    function GetChecks(const Index: Integer): TMetaCheckConstraint;
+    function GetChecks(const Index: Integer): TFIBMetaCheckConstraint;
     function GetChecksCount: Integer;
-    function GetTriggers(const Index: Integer): TCustomMetaTrigger;
+    function GetTriggers(const Index: Integer): TFIBCustomMetaTrigger;
     function GetTriggersCount: Integer;
-    function GetGrants(const Index: Integer): TCustomMetaGrant;
-    function GetGrantsCount: Integer;
 
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
     function CommentKeyword: string; override;
     procedure GenerateCommentDDL(Stream: TStringStream); override;
   public
-    constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
+    constructor Create(AOwner: TFIBCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
 
-    function FindFieldName(const Name: string): TMetaTableField;
+    function FindFieldName(const Name: string): TFIBMetaTableField;
     procedure GenerateDDLText(Stream: TStringStream); override;
 
-    property Fields[const Index: Integer]: TMetaTableField read GetFields;
+    property Fields[const Index: Integer]: TFIBMetaTableField read GetFields;
     property FieldsCount: Integer read GetFieldsCount;
 
-    property PrimaryKey: TMetaPrimaryKey read GetPrimaryKey;
-    property PrimaryKeyExist: boolean read GetPrimaryKeyExist;
+    property PrimaryKey: TFIBMetaPrimaryKey read GetPrimaryKey;
+    property PrimaryKeyExist: Boolean read GetPrimaryKeyExist;
 
-    property Uniques[const Index: Integer]: TMetaUniqueConstraint read GetUniques;
+    property Uniques[const Index: Integer]: TFIBMetaUniqueConstraint read GetUniques;
     property UniquesCount: Integer read GetUniquesCount;
 
-    property Indices[const Index: Integer]: TMetaIndex read GetIndices;
+    property Indices[const Index: Integer]: TFIBMetaIndex read GetIndices;
     property IndicesCount: Integer read GetIndicesCount;
 
-    property Foreign[const Index: Integer]: TMetaForeignKey read GetForeign;
+    property Foreign[const Index: Integer]: TFIBMetaForeignKey read GetForeign;
     property ForeignCount: Integer read GetForeignCount;
 
-    property Checks[const Index: Integer]: TMetaCheckConstraint read GetChecks;
+    property Checks[const Index: Integer]: TFIBMetaCheckConstraint read GetChecks;
     property ChecksCount: Integer read GetChecksCount;
 
-    property Triggers[const Index: Integer]: TCustomMetaTrigger read GetTriggers;
+    property Triggers[const Index: Integer]: TFIBCustomMetaTrigger read GetTriggers;
     property TriggersCount: Integer read GetTriggersCount;
+    // -1 not set, 0 INVOKER, 1 DEFINER
+    property SQLSecurity: Integer read FSQLSecurity;
   end;
 
-  TMetaView = class(TCustomMetaObject)
+  TFIBMetaView = class(TFIBCustomMetaObject)
   private
     FSource: string;
-    function GetFields(const Index: Integer): TMetaField;
+    function GetFields(const Index: Integer): TFIBMetaField;
     function GetFieldsCount: Integer;
-    function GetTriggers(const Index: Integer): TCustomMetaTrigger;
+    function GetTriggers(const Index: Integer): TFIBCustomMetaTrigger;
     function GetTriggersCount: Integer;
-    function GetGrants(const Index: Integer): TCustomMetaGrant;
-    function GetGrantsCount: Integer;
 
-    procedure LoadFromDataBase(QName, QFields, QTriggers: TFIBQuery; QCharset: TFIBQuery; ChildTypes: TViewChildTypes);
+    procedure LoadFromDataBase(QName, QFields, QTriggers: TFIBQuery; QCharset: TFIBQuery; ChildTypes: TFIBViewChildTypes);
 
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
     function CommentKeyword: string; override;
     procedure GenerateCommentDDL(Stream: TStringStream); override;
   public
-    constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
+    constructor Create(AOwner: TFIBCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
     procedure GenerateDDLText(Stream: TStringStream); override;
     property Source: string read FSource;
-    property Fields[const Index: Integer]: TMetaField read GetFields;
+    property Fields[const Index: Integer]: TFIBMetaField read GetFields;
     property FieldsCount: Integer read GetFieldsCount;
-    property Triggers[const Index: Integer]: TCustomMetaTrigger read GetTriggers;
+    property Triggers[const Index: Integer]: TFIBCustomMetaTrigger read GetTriggers;
     property TriggersCount: Integer read GetTriggersCount;
   end;
 
-  TMetaProcedure = class(TCustomMetaObject)
+  TFIBMetaProcedure = class(TFIBCustomMetaObject)
   private
     FSource: string;
     FPackageName: string;
-    procedure LoadFromDataBase(QNames, QFields: TFIBQuery; QCharset: TFIBQuery; CanUseParamDomain, CanUseProcParamRelation: boolean);
-    function GetInputFields(const Index: Integer): TMetaProcInField;
+    FEngine: string;
+    FEntryPoint: string;
+    FSQLSecurity: Integer;
+    // AS and the source, or EXTERNAL NAME and ENGINE
+    procedure WriteBody(Stream: TStringStream);
+    procedure LoadFromDataBase(QNames, QFields: TFIBQuery; QCharset: TFIBQuery; CanUseParamDomain, CanUseProcParamRelation: Boolean);
+    function GetInputFields(const Index: Integer): TFIBMetaProcedureInField;
     function GetInputFieldsCount: Integer;
-    function GetOutputFields(const Index: Integer): TMetaProcOutField;
+    function GetOutputFields(const Index: Integer): TFIBMetaProcedureOutField;
     function GetOutputFieldsCount: Integer;
-    function GetGrants(const Index: Integer): TCustomMetaGrant;
-    function GetGrantsCount: Integer;
 
     procedure InternalSaveToDDL(Stream: TStringStream; Operation: string; BaseTypes: Boolean = False);
     procedure SaveToPostDDL(Stream: TStringStream);
@@ -625,27 +646,37 @@ type
     procedure GenerateCommentDDL(Stream: TStringStream); override;
 
   public
-    constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
+    constructor Create(AOwner: TFIBCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
     property Source: string read FSource;
-    property InputFields[const Index: Integer]: TMetaProcInField read GetInputFields;
+    property InputFields[const Index: Integer]: TFIBMetaProcedureInField read GetInputFields;
     property InputFieldsCount: Integer read GetInputFieldsCount;
 
-    property OutputFields[const Index: Integer]: TMetaProcOutField read GetOutputFields;
+    property OutputFields[const Index: Integer]: TFIBMetaProcedureOutField read GetOutputFields;
     property OutputFieldsCount: Integer read GetOutputFieldsCount;
     property PackageName: string read FPackageName;
+    // ENGINE of a UDR procedure, empty for a PSQL one
+    property Engine: string read FEngine;
+    property EntryPoint: string read FEntryPoint;
+    // -1 not set, 0 INVOKER, 1 DEFINER
+    property SQLSecurity: Integer read FSQLSecurity;
   end;
 
-  TMetaStoredFunc = class(TCustomMetaObject)
+  TFIBMetaStoredFunction = class(TFIBCustomMetaObject)
   private
     FPackageName: string;
     FSource: string;
-    function GetInputFields(const Index: Integer): TMetaProcInField;
+    FEngine: string;
+    FEntryPoint: string;
+    FDeterministic: Boolean;
+    FSQLSecurity: Integer;
+    procedure WriteBody(Stream: TStringStream);
+    function GetInputFields(const Index: Integer): TFIBMetaProcedureInField;
     function GetInputFieldsCount: Integer;
 
     procedure LoadFromDataBase(QNames, QReturn, QInputs, QCharset: TFIBQuery);
     procedure InternalSaveToDDL(Stream: TStringStream; Operation: string; BaseTypes: Boolean = False);
-    function GetReturn: TMetaProcOutField;
+    function GetReturn: TFIBMetaProcedureOutField;
   protected
     procedure SaveEmptyDDL(Stream: TStringStream);
     procedure SaveAlterDDL(Stream: TStringStream);
@@ -654,17 +685,23 @@ type
     function CommentTarget: string; override;
     procedure GenerateCommentDDL(Stream: TStringStream); override;
   public
-    constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
+    constructor Create(AOwner: TFIBCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
     property Source: string read FSource;
-    property InputFields[const Index: Integer]: TMetaProcInField read GetInputFields;
+    property InputFields[const Index: Integer]: TFIBMetaProcedureInField read GetInputFields;
     property InputFieldsCount: Integer read GetInputFieldsCount;
     property PackageName: string read FPackageName;
-    property Return: TMetaProcOutField read GetReturn;
+    property Return: TFIBMetaProcedureOutField read GetReturn;
+    // ENGINE of a UDR function, empty for a PSQL one
+    property Engine: string read FEngine;
+    property EntryPoint: string read FEntryPoint;
+    property Deterministic: Boolean read FDeterministic;
+    // -1 not set, 0 INVOKER, 1 DEFINER
+    property SQLSecurity: Integer read FSQLSecurity;
   end;
 
   // Routines of a package: their DDL is the package source, AsDDL has only their comments
-  TMetaPackageProcedure = class(TMetaProcedure)
+  TFIBMetaPackageProcedure = class(TFIBMetaProcedure)
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
@@ -673,7 +710,7 @@ type
     procedure GenerateDDLText(Stream: TStringStream); override;
   end;
 
-  TMetaPackageFunction = class(TMetaStoredFunc)
+  TFIBMetaPackageFunction = class(TFIBMetaStoredFunction)
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
@@ -682,33 +719,41 @@ type
     procedure GenerateDDLText(Stream: TStringStream); override;
   end;
 
-  TMetaPackage = class(TCustomMetaObject)
+  TFIBMetaPackage = class(TFIBCustomMetaObject)
   private
     FSpec: string;
     FBody: string;
+    FSQLSecurity: Integer;
     procedure LoadFromDataBase(QNames, QCharset: TFIBQuery);
+    // A TYPE OF COLUMN parameter: the header is made before the tables with the base types
+    function UsesColumnTypes: Boolean;
+    // SQL SECURITY before AS
+    function HeaderOptions: string;
     procedure SaveSpecDDL(Stream: TStringStream);
+    procedure SaveHeaderAlterDDL(Stream: TStringStream);
     procedure SaveBodyDDL(Stream: TStringStream);
-    function GetProcedures(const Index: Integer): TMetaPackageProcedure;
+    function GetProcedures(const Index: Integer): TFIBMetaPackageProcedure;
     function GetProceduresCount: Integer;
-    function GetFunctions(const Index: Integer): TMetaPackageFunction;
+    function GetFunctions(const Index: Integer): TFIBMetaPackageFunction;
     function GetFunctionsCount: Integer;
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
     function CommentKeyword: string; override;
     procedure GenerateCommentDDL(Stream: TStringStream); override;
   public
-    constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
+    constructor Create(AOwner: TFIBCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
     property SpecSource: string read FSpec;
     property BodySource: string read FBody;
-    property Procedures[const Index: Integer]: TMetaPackageProcedure read GetProcedures;
+    property Procedures[const Index: Integer]: TFIBMetaPackageProcedure read GetProcedures;
     property ProceduresCount: Integer read GetProceduresCount;
-    property Functions[const Index: Integer]: TMetaPackageFunction read GetFunctions;
+    property Functions[const Index: Integer]: TFIBMetaPackageFunction read GetFunctions;
     property FunctionsCount: Integer read GetFunctionsCount;
+    // -1 not set, 0 INVOKER, 1 DEFINER
+    property SQLSecurity: Integer read FSQLSecurity;
   end;
 
-  TMetaException = class(TCustomMetaObject)
+  TFIBMetaException = class(TFIBCustomMetaObject)
   private
     FMessage: string;
     FNumber: Integer;
@@ -717,62 +762,61 @@ type
     procedure GenerateObjectDDL(Stream: TStringStream); override;
     function CommentKeyword: string; override;
   public
+    constructor Create(AOwner: TFIBCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
     property Message: string read FMessage;
     property Number: Integer read FNumber;
   end;
 
-  TMetaUDFField = class(TCustomMetaField)
+  TFIBMetaUDFField = class(TFIBCustomMetaField)
   private
-    FPosition: Smallint;
-    FMechanism: Smallint;
+    FPosition: SmallInt;
+    FMechanism: SmallInt;
     procedure LoadFromDataBase(QField, QCharset: TFIBQuery); override;
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
   public
     class function ClassIndex: Integer; override;
-    property Position: Smallint read FPosition;
-    property Mechanism: Smallint read FMechanism;
+    property Position: SmallInt read FPosition;
+    property Mechanism: SmallInt read FMechanism;
   end;
 
-  TMetaUDF = class(TCustomMetaObject)
+  TFIBMetaUDF = class(TFIBCustomMetaObject)
   private
     FModule: string;
     FEntry: string;
-    FReturn: Smallint;
+    FReturn: SmallInt;
     procedure LoadFromDataBase(QNames, QFields: TFIBQuery; QCharset: TFIBQuery);
-    function GetFields(const Index: Integer): TMetaUDFField;
+    function GetFields(const Index: Integer): TFIBMetaUDFField;
     function GetFieldsCount: Integer;
   protected
     procedure GenerateObjectDDL(Stream: TStringStream); override;
     function CommentKeyword: string; override;
   public
-    constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
+    constructor Create(AOwner: TFIBCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
     property Module: string read FModule;
     property Entry: string read FEntry;
-    property Return: Smallint read FReturn;
-    property Fields[const Index: Integer]: TMetaUDFField read GetFields;
+    property Return: SmallInt read FReturn;
+    property Fields[const Index: Integer]: TFIBMetaUDFField read GetFields;
     property FieldsCount: Integer read GetFieldsCount;
   end;
 
-  TMetaRole = class(TCustomMetaObject)
+  TFIBMetaRole = class(TFIBCustomMetaObject)
   private
     FOwner: string;
   protected
     procedure LoadFromDataBase(QName: TFIBQuery);
     procedure GenerateObjectDDL(Stream: TStringStream); override;
     function CommentKeyword: string; override;
-    function GetGrants(const Index: Integer): TCustomMetaGrant;
-    function GetGrantsCount: Integer;
 
   public
-    constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
+    constructor Create(AOwner: TFIBCustomMetaObject; aName: string = ''); override;
     class function ClassIndex: Integer; override;
     property Owner: string read FOwner;
   end;
 
-  TMetaDataBase = class(TCustomMetaObject)
+  TFIBMetaDatabase = class(TFIBCustomMetaObject)
   private
     FInternalTransaction: TFIBTransaction;
   private
@@ -781,18 +825,24 @@ type
     FPageSize: Integer;
     FDefaultCharset: string;
     FConnectCharset: string;
+    FUserName: string;
     FClientLib: string;
 
-    FProcParamDomainSupports: boolean;
-    FProcParamRelationSupports: boolean;
-    FIdentityFieldsSupports: boolean;
-    FStoredFunctionsSupports: boolean;
-    FPackagesSupports: boolean;
-    FTabRelTypeSupports: boolean;
+    FProcParamDomainSupports: Boolean;
+    FProcParamRelationSupports: Boolean;
+    FIdentityFieldsSupports: Boolean;
+    FStoredFunctionsSupports: Boolean;
+    FPackagesSupports: Boolean;
+    FTabRelTypeSupports: Boolean;
     FCommentsSupports: Boolean;
     // START WITH and INCREMENT BY of a sequence or an identity column
     FSequenceOptionsSupports: Boolean;
     FPartialIndicesSupports: Boolean;
+    // ENGINE and EXTERNAL NAME of the routines and triggers
+    FExternalRoutinesSupports: Boolean;
+    FSQLSecuritySupports: Boolean;
+    // DEFAULT SQL SECURITY of the database: -1 not set, 0 INVOKER, 1 DEFINER
+    FDefaultSQLSecurity: Integer;
     // Firebird 3 and later limit a string literal to 64 KB, not the statement
     FLongStatementsSupports: Boolean;
     // Of the SQL text, for the byte length of a COMMENT ON
@@ -800,200 +850,266 @@ type
 
     FSQLDialect: Integer;
     //
-    FLoadObjects: TDBObjectTypes;
-    FLoadTableChilds: TTableChildTypes;
-    FLoadViewChilds: TViewChildTypes;
-    FSysInfos: boolean;
+    FLoadObjects: TFIBDBObjectTypes;
+    FLoadTableChilds: TFIBTableChildTypes;
+    FLoadViewChilds: TFIBViewChildTypes;
+    FSysInfos: Boolean;
 
     // Flags
-    FNamesLoaded: boolean;
-    FDDLTextOptions: TDDLTextOptions;
-    FOnLoadMetaData: TNotifyLoadMetaData;
+    FNamesLoaded: Boolean;
+    FDDLTextOptions: TFIBDDLTextOptions;
+    FOnLoadMetaData: TFIBLoadMetaDataEvent;
 
-    function GetGenerators(const Index: Integer): TMetaGenerator;
+    function GetGenerators(const Index: Integer): TFIBMetaGenerator;
     function GetGeneratorsCount: Integer;
-    function GetTables(const Index: Integer): TMetaTable;
+    function GetTables(const Index: Integer): TFIBMetaTable;
     function GetTablesCount: Integer;
     function FindTableIndex(const TableName: string): Integer;
     function FindDomainIndex(const DomainName: string): Integer;
-    function GetViews(const Index: Integer): TMetaView;
+    function GetViews(const Index: Integer): TFIBMetaView;
     function GetViewsCount: Integer;
-    function GetDomains(const Index: Integer): TMetaDomain;
+    function GetDomains(const Index: Integer): TFIBMetaDomain;
     function GetDomainsCount: Integer;
-    function GetProcedures(const Index: Integer): TMetaProcedure;
+    function GetProcedures(const Index: Integer): TFIBMetaProcedure;
     function GetProceduresCount: Integer;
     function GetFunctionsCount: Integer;
-    function GetFunctions(const Index: Integer): TMetaStoredFunc;
+    function GetFunctions(const Index: Integer): TFIBMetaStoredFunction;
 
-    function GetExceptions(const Index: Integer): TMetaException;
+    function GetExceptions(const Index: Integer): TFIBMetaException;
     function GetExceptionsCount: Integer;
-    function GetUDFS(const Index: Integer): TMetaUDF;
+    function GetUDFS(const Index: Integer): TFIBMetaUDF;
     function GetUDFSCount: Integer;
-    function GetRoles(const Index: Integer): TMetaRole;
+    function GetRoles(const Index: Integer): TFIBMetaRole;
     function GetRolesCount: Integer;
     function GetPackageCount: Integer;
-    function GetPackages(const Index: Integer): TMetaPackage;
+    function GetPackages(const Index: Integer): TFIBMetaPackage;
     procedure DetectServerFeatures;
-    procedure SetOptionalColumns(Query: TFIBQuery; ObjectType: TDBObjectType);
+    procedure SetOptionalColumns(Query: TFIBQuery; ObjectType: TFIBDBObjectType);
     function ProcFieldsSQL: string;
     function UDFFieldsSQL: string;
-    function CommentsIncluded(Options: TDDLTextOptions): Boolean;
+    function CommentsIncluded(Options: TFIBDDLTextOptions): Boolean;
     function CommentFits(const Statement, Text: string): Boolean;
   public
-    constructor Create(AOwner: TCustomMetaObject; aName: string = ''); override;
+    constructor Create(AOwner: TFIBCustomMetaObject; aName: string = ''); override;
     destructor Destroy; override;
     class function ClassIndex: Integer; override;
 
     procedure Clear;
-    procedure LoadFromDataBase(DB: TFIBDatabase; OnlyNames: boolean = False);
+    procedure LoadFromDataBase(DB: TFIBDatabase; OnlyNames: Boolean = False);
 
     procedure GenerateDDLText(Stream: TStringStream); override;
-    procedure ExtGenerateDDLText(Stream: TStringStream; Options: TDDLTextOptions = DefDDLTextOptions);
+    procedure ExtGenerateDDLText(Stream: TStringStream; Options: TFIBDDLTextOptions = DefDDLTextOptions);
 
-    function GetDBObject(DB: TFIBDatabase; ObjectType: TDBObjectType;
-      const ObjectName: string; ForceLoad: boolean = True): TCustomMetaObject;
+    function GetDBObject(DB: TFIBDatabase; ObjectType: TFIBDBObjectType;
+      const ObjectName: string; ForceLoad: Boolean = True): TFIBCustomMetaObject;
 
-    property Generators[const Index: Integer]: TMetaGenerator read GetGenerators;
+    property Generators[const Index: Integer]: TFIBMetaGenerator read GetGenerators;
     property GeneratorsCount: Integer read GetGeneratorsCount;
 
-    property Tables[const Index: Integer]: TMetaTable read GetTables;
+    property Tables[const Index: Integer]: TFIBMetaTable read GetTables;
     property TablesCount: Integer read GetTablesCount;
 
-    property Packages[const Index: Integer]: TMetaPackage read GetPackages;
+    property Packages[const Index: Integer]: TFIBMetaPackage read GetPackages;
     property PackageCount: Integer read GetPackageCount;
 
-    property Views[const Index: Integer]: TMetaView read GetViews;
+    property Views[const Index: Integer]: TFIBMetaView read GetViews;
     property ViewsCount: Integer read GetViewsCount;
 
-    property Domains[const Index: Integer]: TMetaDomain read GetDomains;
+    property Domains[const Index: Integer]: TFIBMetaDomain read GetDomains;
     property DomainsCount: Integer read GetDomainsCount;
 
-    property Procedures[const Index: Integer]: TMetaProcedure read GetProcedures;
+    property Procedures[const Index: Integer]: TFIBMetaProcedure read GetProcedures;
     property ProceduresCount: Integer read GetProceduresCount;
 
-    property Exceptions[const Index: Integer]: TMetaException read GetExceptions;
+    property Exceptions[const Index: Integer]: TFIBMetaException read GetExceptions;
     property ExceptionsCount: Integer read GetExceptionsCount;
 
-    property UDFS[const Index: Integer]: TMetaUDF read GetUDFS;
+    property UDFS[const Index: Integer]: TFIBMetaUDF read GetUDFS;
     property UDFSCount: Integer read GetUDFSCount;
 
-    property Roles[const Index: Integer]: TMetaRole read GetRoles;
+    property Roles[const Index: Integer]: TFIBMetaRole read GetRoles;
     property RolesCount: Integer read GetRolesCount;
 
-    property SysInfo: boolean read FSysInfos write FSysInfos;
-    property ViewInfo: TViewChildTypes read FLoadViewChilds write FLoadViewChilds default DefViewChilds;
-    property DBObjects: TDBObjectTypes read FLoadObjects write FLoadObjects default DefObjects;
-    property TableInfo: TTableChildTypes read FLoadTableChilds write FLoadTableChilds default DefTableChilds;
+    property SysInfo: Boolean read FSysInfos write FSysInfos;
+    property ViewInfo: TFIBViewChildTypes read FLoadViewChilds write FLoadViewChilds default DefViewChildTypes;
+    property DBObjects: TFIBDBObjectTypes read FLoadObjects write FLoadObjects default DefObjects;
+    property TableInfo: TFIBTableChildTypes read FLoadTableChilds write FLoadTableChilds default DefTableChildTypes;
 
-    property DDLTextOptions: TDDLTextOptions read FDDLTextOptions write FDDLTextOptions;
-    property OnLoadMetaData: TNotifyLoadMetaData read FOnLoadMetaData write FOnLoadMetaData;
+    property DDLTextOptions: TFIBDDLTextOptions read FDDLTextOptions write FDDLTextOptions;
+    property OnLoadMetaData: TFIBLoadMetaDataEvent read FOnLoadMetaData write FOnLoadMetaData;
   end;
 
   TFIBDBSchemaExtract = class;
 
-  TLoadOptions = class(TPersistent)
+  TFIBMetaLoadOptions = class(TPersistent)
   private
-    FLoadObjects: TDBObjectTypes;
-    FLoadTableChilds: TTableChildTypes;
-    FLoadViewChilds: TViewChildTypes;
-    FIncSysInfo: boolean;
+    FLoadObjects: TFIBDBObjectTypes;
+    FLoadTableChilds: TFIBTableChildTypes;
+    FLoadViewChilds: TFIBViewChildTypes;
+    FIncSysInfo: Boolean;
   public
     constructor Create;
   published
-    property SysInfo: boolean read FIncSysInfo write FIncSysInfo default False;
-    property ViewInfo: TViewChildTypes read FLoadViewChilds write FLoadViewChilds default DefViewChilds;
-    property DBObjects: TDBObjectTypes read FLoadObjects write FLoadObjects default DefObjects;
-    property TableInfo: TTableChildTypes read FLoadTableChilds write FLoadTableChilds default DefTableChilds;
+    property SysInfo: Boolean read FIncSysInfo write FIncSysInfo default False;
+    property ViewInfo: TFIBViewChildTypes read FLoadViewChilds write FLoadViewChilds default DefViewChildTypes;
+    property DBObjects: TFIBDBObjectTypes read FLoadObjects write FLoadObjects default DefObjects;
+    property TableInfo: TFIBTableChildTypes read FLoadTableChilds write FLoadTableChilds default DefTableChildTypes;
   end;
 
   TFIBDBSchemaExtract = class(TComponent)
 
   protected
     FDatabase: TFIBDatabase;
-    FOnLoadMetaData: TNotifyLoadMetaData;
-    FLoadOptions: TLoadOptions;
-    FMetaDatabase: TMetaDataBase;
-    FFullLoaded: boolean;
+    FOnLoadMetaData: TFIBLoadMetaDataEvent;
+    FLoadOptions: TFIBMetaLoadOptions;
+    FMetaDatabase: TFIBMetaDatabase;
+    FFullLoaded: Boolean;
   protected
-    function GetDomains(const Index: Integer): TMetaDomain;
+    function GetDomains(const Index: Integer): TFIBMetaDomain;
     function GetDomainsCount: Integer;
-    function GetExceptions(const Index: Integer): TMetaException;
+    function GetExceptions(const Index: Integer): TFIBMetaException;
     function GetExceptionsCount: Integer;
-    function GetGenerators(const Index: Integer): TMetaGenerator;
+    function GetGenerators(const Index: Integer): TFIBMetaGenerator;
     function GetGeneratorsCount: Integer;
-    function GetProcedures(const Index: Integer): TMetaProcedure;
+    function GetProcedures(const Index: Integer): TFIBMetaProcedure;
     function GetProceduresCount: Integer;
-    function GetFunctions(const Index: Integer): TMetaStoredFunc;
+    function GetFunctions(const Index: Integer): TFIBMetaStoredFunction;
     function GetFunctionsCount: Integer;
 
-    function GetTables(const Index: Integer): TMetaTable;
+    function GetTables(const Index: Integer): TFIBMetaTable;
     function GetTablesCount: Integer;
-    function GetUDFS(const Index: Integer): TMetaUDF;
+    function GetUDFS(const Index: Integer): TFIBMetaUDF;
     function GetUDFSCount: Integer;
-    function GetViews(const Index: Integer): TMetaView;
+    function GetViews(const Index: Integer): TFIBMetaView;
     function GetViewsCount: Integer;
     procedure SetDatabase(const Value: TFIBDatabase);
-    procedure SetLoadOptions(const Value: TLoadOptions);
-    function GetNamesLoaded: boolean;
+    procedure SetLoadOptions(const Value: TFIBMetaLoadOptions);
+    function GetNamesLoaded: Boolean;
   private
     function GetPackageCount: Integer;
-    function GetPackages(const Index: Integer): TMetaPackage;
-    function GetDDLTextOptions: TDDLTextOptions;
-    procedure SetDDLTextOptions(const Value: TDDLTextOptions);
+    function GetPackages(const Index: Integer): TFIBMetaPackage;
+    function GetDDLTextOptions: TFIBDDLTextOptions;
+    procedure SetDDLTextOptions(const Value: TFIBDDLTextOptions);
   protected
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
-    procedure DoOnLoadMetaData(Sender: TObject; const Message: string; var Stop: boolean);
+    procedure DoOnLoadMetaData(Sender: TObject; const Message: string; var Stop: Boolean);
   published
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-    procedure LoadMetaData(OnlyNames: boolean = False);
+    procedure LoadMetaData(OnlyNames: Boolean = False);
     procedure LoadObjectNames;
     function GetDDLText: string;
-    function GetMetaDataBase: TMetaDataBase;
+    function GetMetaDataBase: TFIBMetaDatabase;
 
     procedure Clear;
 
-    function ObjectByName(ObjectType: TDBObjectType; const ObjectName: string; ForceLoad: boolean = True): TCustomMetaObject;
-    function GetObjectDDL(ObjectType: TDBObjectType; const ObjectName: string; ForceLoad: boolean = True): string;
+    function ObjectByName(ObjectType: TFIBDBObjectType; const ObjectName: string; ForceLoad: Boolean = True): TFIBCustomMetaObject;
+    function GetObjectDDL(ObjectType: TFIBDBObjectType; const ObjectName: string; ForceLoad: Boolean = True): string;
 
-    property Generators[const Index: Integer]: TMetaGenerator read GetGenerators;
+    property Generators[const Index: Integer]: TFIBMetaGenerator read GetGenerators;
     property GeneratorsCount: Integer read GetGeneratorsCount;
 
-    property Tables[const Index: Integer]: TMetaTable read GetTables;
+    property Tables[const Index: Integer]: TFIBMetaTable read GetTables;
     property TablesCount: Integer read GetTablesCount;
 
-    property Packages[const Index: Integer]: TMetaPackage read GetPackages;
+    property Packages[const Index: Integer]: TFIBMetaPackage read GetPackages;
     property PackagesCount: Integer read GetPackageCount;
 
-    property Views[const Index: Integer]: TMetaView read GetViews;
+    property Views[const Index: Integer]: TFIBMetaView read GetViews;
     property ViewsCount: Integer read GetViewsCount;
 
-    property Domains[const Index: Integer]: TMetaDomain read GetDomains;
+    property Domains[const Index: Integer]: TFIBMetaDomain read GetDomains;
     property DomainsCount: Integer read GetDomainsCount;
 
-    property Procedures[const Index: Integer]: TMetaProcedure read GetProcedures;
+    property Procedures[const Index: Integer]: TFIBMetaProcedure read GetProcedures;
     property ProceduresCount: Integer read GetProceduresCount;
 
-    property Functions[const Index: Integer]: TMetaStoredFunc read GetFunctions;
+    property Functions[const Index: Integer]: TFIBMetaStoredFunction read GetFunctions;
     property FunctionsCount: Integer read GetFunctionsCount;
 
-    property Exceptions[const Index: Integer]: TMetaException read GetExceptions;
+    property Exceptions[const Index: Integer]: TFIBMetaException read GetExceptions;
     property ExceptionsCount: Integer read GetExceptionsCount;
 
-    property UDFS[const Index: Integer]: TMetaUDF read GetUDFS;
+    property UDFS[const Index: Integer]: TFIBMetaUDF read GetUDFS;
     property UDFSCount: Integer read GetUDFSCount;
-    property MetaDataLoaded: boolean read FFullLoaded;
-    property NamesLoaded: boolean read GetNamesLoaded;
+    property MetaDataLoaded: Boolean read FFullLoaded;
+    property NamesLoaded: Boolean read GetNamesLoaded;
   published
     property Database: TFIBDatabase read FDatabase write SetDatabase;
-    property DDLTextOptions: TDDLTextOptions read GetDDLTextOptions write SetDDLTextOptions
+    property DDLTextOptions: TFIBDDLTextOptions read GetDDLTextOptions write SetDDLTextOptions
       default DefSchemaExtractDDLTextOptions;
-    property LoadOptions: TLoadOptions read FLoadOptions write SetLoadOptions;
-    property OnLoadMetaData: TNotifyLoadMetaData read FOnLoadMetaData write FOnLoadMetaData;
+    property LoadOptions: TFIBMetaLoadOptions read FLoadOptions write SetLoadOptions;
+    property OnLoadMetaData: TFIBLoadMetaDataEvent read FOnLoadMetaData write FOnLoadMetaData;
   end;
 
 procedure FullExtractDDL(DB: TFIBDatabase; Dest: TStrings);
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TDBObjectType = TFIBDBObjectType deprecated 'Use TFIBDBObjectType';
+  TDBObjectTypes = TFIBDBObjectTypes deprecated 'Use TFIBDBObjectTypes';
+  TTableChildType = TFIBTableChildType deprecated 'Use TFIBTableChildType';
+  TTableChildTypes = TFIBTableChildTypes deprecated 'Use TFIBTableChildTypes';
+  TViewChildType = TFIBViewChildType deprecated 'Use TFIBViewChildType';
+  TViewChildTypes = TFIBViewChildTypes deprecated 'Use TFIBViewChildTypes';
+  TProcedureChild = TFIBProcedureChild deprecated 'Use TFIBProcedureChild';
+  TProcedureChilds = TFIBProcedureChildren deprecated 'Use TFIBProcedureChildren';
+  TUDFChild = TFIBUDFChild deprecated 'Use TFIBUDFChild';
+  TUDFChilds = TFIBUDFChildren deprecated 'Use TFIBUDFChildren';
+  TPackageChild = TFIBPackageChild deprecated 'Use TFIBPackageChild';
+  TRoleChild = TFIBRoleChild deprecated 'Use TFIBRoleChild';
+  TTriggerType = TFIBTriggerType deprecated 'Use TFIBTriggerType';
+  TTriggerAction = TFIBTriggerAction deprecated 'Use TFIBTriggerAction';
+  TTriggerActions = TFIBTriggerActions deprecated 'Use TFIBTriggerActions';
+  TIndexOrder = TFIBIndexOrder deprecated 'Use TFIBIndexOrder';
+  TForeignKeyRule = TFIBForeignKeyRule deprecated 'Use TFIBForeignKeyRule';
+  TPrivilege = TFIBPrivilege deprecated 'Use TFIBPrivilege';
+  TPrivileges = TFIBPrivileges deprecated 'Use TFIBPrivileges';
+  TNotifyLoadMetaData = TFIBLoadMetaDataEvent deprecated 'Use TFIBLoadMetaDataEvent';
+  TDDLTextOption = TFIBDDLTextOption deprecated 'Use TFIBDDLTextOption';
+  TDDLTextOptions = TFIBDDLTextOptions deprecated 'Use TFIBDDLTextOptions';
+  TCustomMetaObject = TFIBCustomMetaObject deprecated 'Use TFIBCustomMetaObject';
+  TMetaObjectClass = TFIBMetaObjectClass deprecated 'Use TFIBMetaObjectClass';
+  TMetaDataItem = TFIBMetaDataItem deprecated 'Use TFIBMetaDataItem';
+  TCustomMetaGrant = TFIBCustomMetaGrant deprecated 'Use TFIBCustomMetaGrant';
+  TMetaViewGrant = TFIBMetaViewGrant deprecated 'Use TFIBMetaViewGrant';
+  TMetaTableGrant = TFIBMetaTableGrant deprecated 'Use TFIBMetaTableGrant';
+  TMetaProcGrant = TFIBMetaProcedureGrant deprecated 'Use TFIBMetaProcedureGrant';
+  TMetaRoleGrant = TFIBMetaRoleGrant deprecated 'Use TFIBMetaRoleGrant';
+  TMetaGenerator = TFIBMetaGenerator deprecated 'Use TFIBMetaGenerator';
+  TArrBounds = TFIBMetaArrayBounds deprecated 'Use TFIBMetaArrayBounds';
+  TFieldDimensions = TFIBFieldDimensions deprecated 'Use TFIBFieldDimensions';
+  TCustomMetaField = TFIBCustomMetaField deprecated 'Use TFIBCustomMetaField';
+  TMetaField = TFIBMetaField deprecated 'Use TFIBMetaField';
+  TMetaProcField = TFIBMetaProcedureField deprecated 'Use TFIBMetaProcedureField';
+  TMetaProcInField = TFIBMetaProcedureInField deprecated 'Use TFIBMetaProcedureInField';
+  TMetaProcOutField = TFIBMetaProcedureOutField deprecated 'Use TFIBMetaProcedureOutField';
+  TMetaTableField = TFIBMetaTableField deprecated 'Use TFIBMetaTableField';
+  TMetaDomain = TFIBMetaDomain deprecated 'Use TFIBMetaDomain';
+  TMetaConstraint = TFIBMetaConstraint deprecated 'Use TFIBMetaConstraint';
+  TMetaPrimaryKey = TFIBMetaPrimaryKey deprecated 'Use TFIBMetaPrimaryKey';
+  TMetaUniqueConstraint = TFIBMetaUniqueConstraint deprecated 'Use TFIBMetaUniqueConstraint';
+  TMetaForeignKey = TFIBMetaForeignKey deprecated 'Use TFIBMetaForeignKey';
+  TMetaCheckConstraint = TFIBMetaCheckConstraint deprecated 'Use TFIBMetaCheckConstraint';
+  TMetaIndex = TFIBMetaIndex deprecated 'Use TFIBMetaIndex';
+  TCustomMetaTrigger = TFIBCustomMetaTrigger deprecated 'Use TFIBCustomMetaTrigger';
+  TMetaTableTrigger = TFIBMetaTableTrigger deprecated 'Use TFIBMetaTableTrigger';
+  TMetaViewTrigger = TFIBMetaViewTrigger deprecated 'Use TFIBMetaViewTrigger';
+  TMetaDBTrigger = TFIBMetaDBTrigger deprecated 'Use TFIBMetaDBTrigger';
+  TMetaTable = TFIBMetaTable deprecated 'Use TFIBMetaTable';
+  TMetaView = TFIBMetaView deprecated 'Use TFIBMetaView';
+  TMetaProcedure = TFIBMetaProcedure deprecated 'Use TFIBMetaProcedure';
+  TMetaStoredFunc = TFIBMetaStoredFunction deprecated 'Use TFIBMetaStoredFunction';
+  TMetaPackageProcedure = TFIBMetaPackageProcedure deprecated 'Use TFIBMetaPackageProcedure';
+  TMetaPackageFunction = TFIBMetaPackageFunction deprecated 'Use TFIBMetaPackageFunction';
+  TMetaPackage = TFIBMetaPackage deprecated 'Use TFIBMetaPackage';
+  TMetaException = TFIBMetaException deprecated 'Use TFIBMetaException';
+  TMetaUDFField = TFIBMetaUDFField deprecated 'Use TFIBMetaUDFField';
+  TMetaUDF = TFIBMetaUDF deprecated 'Use TFIBMetaUDF';
+  TMetaRole = TFIBMetaRole deprecated 'Use TFIBMetaRole';
+  TMetaDataBase = TFIBMetaDatabase deprecated 'Use TFIBMetaDatabase';
+  TLoadOptions = TFIBMetaLoadOptions deprecated 'Use TFIBMetaLoadOptions';
 
 implementation
 
@@ -1002,9 +1118,9 @@ uses
 
 procedure FullExtractDDL(DB: TFIBDatabase; Dest: TStrings);
 var
-  Extractor: TMetaDataBase;
+  Extractor: TFIBMetaDatabase;
 begin
-  Extractor := TMetaDataBase.Create(nil, '');
+  Extractor := TFIBMetaDatabase.Create(nil, '');
   try
     Extractor.LoadFromDataBase(DB);
     Dest.Text := Extractor.AsDDL
@@ -1045,16 +1161,60 @@ end;
 
 function SavedMetaObjectName(const MetaObjectName: string): string;
 begin
+  // An unquoted name is taken as it is, in its case
   if (Length(MetaObjectName) > 0) and (MetaObjectName[1] = '"') then
-    Result := FastCopy(MetaObjectName, 2, Length(MetaObjectName) - 2)
+    Result := UnquoteIdentifier(MetaObjectName)
   else
     Result := MetaObjectName
 end;
 
-const
-  TriggerPrefixes: array [TTriggerType] of string = ('BEFORE', 'AFTER', 'ON');
+function ReadOptionalString(Query: TFIBQuery; const FieldName: string): string;
+var
+  Field: TFIBXSQLVAR;
+begin
+  Field := Query.FindField(FieldName);
+  if Field = nil then
+    Result := ''
+  else
+    Result := Trim(Field.AsString);
+end;
 
-  TriggerSuffixes: array [TTriggerAction] of string = (
+// RDB$SQL_SECURITY: -1 not set, 0 INVOKER, 1 DEFINER
+function ReadSQLSecurity(Query: TFIBQuery): Integer;
+var
+  Field: TFIBXSQLVAR;
+begin
+  Field := Query.FindField('RDB$SQL_SECURITY');
+  if (Field = nil) or Field.IsNull then
+    Result := -1
+  else if Field.AsBoolean then
+    Result := 1
+  else
+    Result := 0;
+end;
+
+function SQLSecurityClause(Value: Integer): string;
+begin
+  case Value of
+    0: Result := 'SQL SECURITY INVOKER';
+    1: Result := 'SQL SECURITY DEFINER';
+  else
+    Result := '';
+  end;
+end;
+
+// Of a UDR routine or trigger; Body is the AS text of an engine that has one
+function ExternalClause(const Engine, EntryPoint, Body: string): string;
+begin
+  Result := 'EXTERNAL NAME ' + QuotedStr(EntryPoint) + sLineBreak + 'ENGINE ' + FormatIdentifier(3, Engine);
+  if Body <> '' then
+    Result := Result + sLineBreak + 'AS ' + QuotedStr(Body);
+end;
+
+const
+  TriggerPrefixes: array [TFIBTriggerType] of string = ('BEFORE', 'AFTER', 'ON');
+
+  TriggerSuffixes: array [TFIBTriggerAction] of string = (
     'INSERT',
     'UPDATE',
     'DELETE',
@@ -1090,6 +1250,7 @@ const
   );
 
   QRYDB_INFO = 'SELECT RDB$CHARACTER_SET_NAME, RDB$DESCRIPTION FROM RDB$DATABASE';
+  QRYDBSQLSecurity = 'SELECT RDB$SQL_SECURITY FROM RDB$DATABASE';
 
   // One row: 1 when the system column of a feature exists, else 0
   QRY_SERVER_FEATURES = 'SELECT ' +
@@ -1111,7 +1272,11 @@ const
     '(SELECT COUNT(*) FROM RDB$RELATION_FIELDS WHERE RDB$RELATION_NAME = ''RDB$GENERATORS'' AND ' +
     'RDB$FIELD_NAME = ''RDB$GENERATOR_INCREMENT'') AS SEQUENCE_OPTIONS, ' +
     '(SELECT COUNT(*) FROM RDB$RELATION_FIELDS WHERE RDB$RELATION_NAME = ''RDB$INDICES'' AND ' +
-    'RDB$FIELD_NAME = ''RDB$CONDITION_SOURCE'') AS PARTIAL_INDICES ' +
+    'RDB$FIELD_NAME = ''RDB$CONDITION_SOURCE'') AS PARTIAL_INDICES, ' +
+    '(SELECT COUNT(*) FROM RDB$RELATION_FIELDS WHERE RDB$RELATION_NAME = ''RDB$PROCEDURES'' AND ' +
+    'RDB$FIELD_NAME = ''RDB$ENGINE_NAME'') AS EXTERNAL_ROUTINES, ' +
+    '(SELECT COUNT(*) FROM RDB$RELATION_FIELDS WHERE RDB$RELATION_NAME = ''RDB$PROCEDURES'' AND ' +
+    'RDB$FIELD_NAME = ''RDB$SQL_SECURITY'') AS SQL_SECURITY ' +
     'FROM RDB$DATABASE';
 
   // Optional columns, filled by the server features
@@ -1123,6 +1288,10 @@ const
   SequenceOptionsColumns = ', RDB$INITIAL_VALUE, RDB$GENERATOR_INCREMENT';
   IndexConditionMacro = '@@CONDITION@';
   IndexConditionColumn = ', IDX.RDB$CONDITION_SOURCE';
+  // Firebird 3 and later: UDR routines and triggers; Firebird 4 and later: SQL SECURITY
+  RoutineOptionsMacro = '@@ROUTINE_OPTIONS@';
+  ExternalColumns = ', RDB$ENGINE_NAME, RDB$ENTRYPOINT';
+  SQLSecurityColumn = ', RDB$SQL_SECURITY';
 
   // The collation of a column: its own, else the one of its implicit domain
   CollationColumns = ', RFR.RDB$COLLATION_ID AS COLUMN_COLLATION_ID, FLD.RDB$COLLATION_ID AS DOMAIN_COLLATION_ID, ' +
@@ -1131,7 +1300,6 @@ const
     '(SELECT CO.RDB$COLLATION_NAME FROM RDB$COLLATIONS CO WHERE CO.RDB$CHARACTER_SET_ID = FLD.RDB$CHARACTER_SET_ID ' +
     'AND CO.RDB$COLLATION_ID = FLD.RDB$COLLATION_ID) AS DOMAIN_COLLATION ';
 
-  // FB3^^^^
   QRYGenerators = 'SELECT RDB$GENERATOR_NAME ' + DescriptionMacro + ' ' + SequenceOptionsMacro +
     ' FROM RDB$GENERATORS GEN WHERE ' +
     '(NOT GEN.RDB$GENERATOR_NAME STARTING WITH ''RDB$'') AND ' +
@@ -1145,7 +1313,8 @@ const
     '(REL.RDB$SECURITY_CLASS STARTING WITH ''SQL$'') ' +
     'ORDER BY REL.RDB$RELATION_NAME';
 
-  QRYTablesRel = 'SELECT REL.RDB$RELATION_NAME, REL.RDB$RELATION_TYPE, REL.RDB$DESCRIPTION FROM RDB$RELATIONS REL WHERE ' +
+  QRYTablesRel = 'SELECT REL.RDB$RELATION_NAME, REL.RDB$RELATION_TYPE, REL.RDB$DESCRIPTION ' + RoutineOptionsMacro +
+    ' FROM RDB$RELATIONS REL WHERE ' +
     '(REL.RDB$SYSTEM_FLAG <> 1 OR REL.RDB$SYSTEM_FLAG IS NULL) AND ' +
     '(NOT REL.RDB$FLAGS IS NULL) AND ' +
     '(REL.RDB$VIEW_BLR IS NULL) AND ' +
@@ -1155,7 +1324,8 @@ const
   QRYSysTables = 'SELECT REL.RDB$RELATION_NAME, REL.RDB$DESCRIPTION FROM RDB$RELATIONS REL ' +
     'WHERE REL.RDB$VIEW_BLR IS NULL ORDER BY REL.RDB$RELATION_NAME';
 
-  QRYSysTablesRel = 'SELECT REL.RDB$RELATION_NAME, REL.RDB$RELATION_TYPE, REL.RDB$DESCRIPTION FROM RDB$RELATIONS REL ' +
+  QRYSysTablesRel = 'SELECT REL.RDB$RELATION_NAME, REL.RDB$RELATION_TYPE, REL.RDB$DESCRIPTION ' + RoutineOptionsMacro +
+    ' FROM RDB$RELATIONS REL ' +
     'WHERE REL.RDB$VIEW_BLR IS NULL ORDER BY REL.RDB$RELATION_NAME';
 
   QRYTableFields = 'SELECT FLD.RDB$FIELD_TYPE, FLD.RDB$FIELD_SCALE, ' +
@@ -1234,21 +1404,21 @@ const
     '(C.RDB$TRIGGER_TYPE = 1) ' + 'AND (A.RDB$RELATION_NAME = ?RN)';
 
   QRYTrigger = 'SELECT T.RDB$TRIGGER_NAME, T.RDB$TRIGGER_SOURCE, T.RDB$TRIGGER_SEQUENCE, ' +
-    'T.RDB$TRIGGER_TYPE, T.RDB$TRIGGER_INACTIVE, T.RDB$SYSTEM_FLAG, T.RDB$DESCRIPTION ' +
+    'T.RDB$TRIGGER_TYPE, T.RDB$TRIGGER_INACTIVE, T.RDB$SYSTEM_FLAG, T.RDB$DESCRIPTION ' + RoutineOptionsMacro + ' ' +
     'from RDB$TRIGGERS T left join RDB$CHECK_CONSTRAINTS C ON C.RDB$TRIGGER_NAME = ' +
     'T.RDB$TRIGGER_NAME where ((T.RDB$SYSTEM_FLAG = 0) or (T.RDB$SYSTEM_FLAG is null)) ' +
     'and (c.rdb$trigger_name is null) and (T.RDB$RELATION_NAME = ?RN) ' +
     'order by T.RDB$TRIGGER_NAME';
 
   QRYDBTriggers = 'SELECT T.RDB$TRIGGER_NAME, T.RDB$TRIGGER_SOURCE, T.RDB$TRIGGER_SEQUENCE, ' +
-    'T.RDB$TRIGGER_TYPE, T.RDB$TRIGGER_INACTIVE, T.RDB$SYSTEM_FLAG, T.RDB$DESCRIPTION ' +
+    'T.RDB$TRIGGER_TYPE, T.RDB$TRIGGER_INACTIVE, T.RDB$SYSTEM_FLAG, T.RDB$DESCRIPTION ' + RoutineOptionsMacro + ' ' +
     'from RDB$TRIGGERS T left join RDB$CHECK_CONSTRAINTS C ON C.RDB$TRIGGER_NAME = ' +
     'T.RDB$TRIGGER_NAME where ((T.RDB$SYSTEM_FLAG = 0) or (T.RDB$SYSTEM_FLAG is null)) ' +
     'and (c.rdb$trigger_name is null) and (T.RDB$RELATION_NAME  IS NULL) ' +
     'order by T.RDB$TRIGGER_NAME';
 
   QRYSysTrigger = 'SELECT T.RDB$TRIGGER_NAME, T.RDB$TRIGGER_SOURCE, T.RDB$TRIGGER_SEQUENCE, ' +
-    'T.RDB$TRIGGER_TYPE, T.RDB$TRIGGER_INACTIVE, T.RDB$SYSTEM_FLAG, T.RDB$DESCRIPTION ' +
+    'T.RDB$TRIGGER_TYPE, T.RDB$TRIGGER_INACTIVE, T.RDB$SYSTEM_FLAG, T.RDB$DESCRIPTION ' + RoutineOptionsMacro + ' ' +
     'FROM RDB$TRIGGERS T LEFT JOIN RDB$CHECK_CONSTRAINTS C ON C.RDB$TRIGGER_NAME = ' +
     'T.RDB$TRIGGER_NAME WHERE (T.RDB$RELATION_NAME = ?RN) ORDER BY T.RDB$TRIGGER_NAME';
 
@@ -1259,7 +1429,7 @@ const
     '(REL.RDB$SECURITY_CLASS STARTING WITH ''SQL$'') ' +
     'ORDER BY REL.RDB$RELATION_ID';
 
-  // The column order is read by TMetaTableField.LoadFromDataBase
+  // The column order is read by TFIBMetaTableField.LoadFromDataBase
   QRYSysDomains = 'select RDB$FIELD_TYPE, RDB$FIELD_SCALE, RDB$FIELD_LENGTH, ' +
     'RDB$FIELD_PRECISION, RDB$CHARACTER_SET_ID, RDB$FIELD_SUB_TYPE, ' +
     'RDB$FIELD_NAME, RDB$SEGMENT_LENGTH, RDB$NULL_FLAG, RDB$DEFAULT_SOURCE, RDB$COMPUTED_SOURCE, ' +
@@ -1276,7 +1446,8 @@ const
     'NOT (RDB$FIELD_NAME STARTING WITH ''SEC$'') AND ' +
     '(RDB$SYSTEM_FLAG IS NULL OR RDB$SYSTEM_FLAG = 0)';
 
-  QRYProcedures = 'SELECT RDB$PROCEDURE_NAME, RDB$PROCEDURE_SOURCE, RDB$DESCRIPTION ' + PackageNameMacro +
+  QRYProcedures = 'SELECT RDB$PROCEDURE_NAME, RDB$PROCEDURE_SOURCE, RDB$DESCRIPTION ' + PackageNameMacro + ' ' +
+    RoutineOptionsMacro +
     ' FROM RDB$PROCEDURES ORDER BY RDB$PROCEDURE_NAME';
 
   QRYPackageProcedures = 'SELECT RDB$PROCEDURE_NAME, RDB$PROCEDURE_SOURCE, RDB$DESCRIPTION, RDB$PACKAGE_NAME ' +
@@ -1349,17 +1520,19 @@ const
   // Firebird 3 and later
   QRYUDFsFB3 = 'SELECT RDB$FUNCTION_NAME, RDB$MODULE_NAME, RDB$ENTRYPOINT, RDB$RETURN_ARGUMENT, RDB$DESCRIPTION ' +
     'FROM RDB$FUNCTIONS WHERE (RDB$SYSTEM_FLAG IS NULL OR RDB$SYSTEM_FLAG = 0) AND RDB$FUNCTION_SOURCE IS NULL ' +
-    'AND RDB$PACKAGE_NAME IS NULL ORDER BY RDB$FUNCTION_NAME';
+    'AND RDB$ENGINE_NAME IS NULL AND RDB$PACKAGE_NAME IS NULL ORDER BY RDB$FUNCTION_NAME';
 
-  // The packaged functions have no source either, they are loaded with their package
+  // PSQL and UDR functions; the packaged ones are loaded with their package
   QRYStoredFuncsFB3 = 'SELECT RDB$FUNCTION_NAME, RDB$FUNCTION_SOURCE, RDB$RETURN_ARGUMENT, RDB$PACKAGE_NAME, ' +
-    'RDB$DESCRIPTION FROM RDB$FUNCTIONS WHERE (RDB$SYSTEM_FLAG IS NULL OR RDB$SYSTEM_FLAG = 0) AND ' +
-    'RDB$FUNCTION_SOURCE IS NOT NULL AND RDB$PACKAGE_NAME IS NULL ORDER BY RDB$FUNCTION_NAME';
+    'RDB$DESCRIPTION, RDB$DETERMINISTIC_FLAG ' + RoutineOptionsMacro + ' FROM RDB$FUNCTIONS ' +
+    'WHERE (RDB$SYSTEM_FLAG IS NULL OR RDB$SYSTEM_FLAG = 0) AND ' +
+    '(RDB$FUNCTION_SOURCE IS NOT NULL OR RDB$ENGINE_NAME IS NOT NULL) AND RDB$PACKAGE_NAME IS NULL ' +
+    'ORDER BY RDB$FUNCTION_NAME';
 
   QRYPackageFunctions = 'SELECT RDB$FUNCTION_NAME, RDB$FUNCTION_SOURCE, RDB$RETURN_ARGUMENT, RDB$PACKAGE_NAME, ' +
     'RDB$DESCRIPTION FROM RDB$FUNCTIONS WHERE RDB$PACKAGE_NAME = ?PN ORDER BY RDB$FUNCTION_NAME';
 
-  // The column order is read by TMetaProcField.DoLoadFromQuery; PN is '' outside a package
+  // The column order is read by TFIBMetaProcedureField.DoLoadFromQuery; PN is '' outside a package
   QRYStoredFuncFieldsFB3Base = 'SELECT F.RDB$FIELD_TYPE, F.RDB$FIELD_SCALE, F.RDB$FIELD_LENGTH, ' +
     'F.RDB$FIELD_PRECISION, F.RDB$CHARACTER_SET_ID, F.RDB$FIELD_SUB_TYPE, PP.RDB$ARGUMENT_NAME, ' +
     'F.RDB$SEGMENT_LENGTH, PP.RDB$ARGUMENT_MECHANISM, PP.RDB$FIELD_SOURCE, PP.RDB$DEFAULT_SOURCE, ' +
@@ -1376,9 +1549,7 @@ const
     'ORDER BY PP.RDB$ARGUMENT_POSITION';
 
   QRYPackages = 'SELECT RDB$PACKAGE_NAME, RDB$PACKAGE_HEADER_SOURCE, RDB$PACKAGE_BODY_SOURCE, RDB$DESCRIPTION ' +
-    'FROM RDB$PACKAGES WHERE (RDB$SYSTEM_FLAG IS NULL OR RDB$SYSTEM_FLAG = 0)';
-
-  // ^^^^^FB3
+    RoutineOptionsMacro + ' FROM RDB$PACKAGES WHERE (RDB$SYSTEM_FLAG IS NULL OR RDB$SYSTEM_FLAG = 0)';
 
   QRYRoles = 'SELECT RDB$ROLE_NAME, RDB$OWNER_NAME ' + DescriptionMacro + ' FROM RDB$ROLES';
 
@@ -1387,10 +1558,19 @@ const
     'P.RDB$OBJECT_TYPE, ' + 'T1.RDB$TYPE_NAME USERTYPE ' +
     'from RDB$USER_PRIVILEGES P ' +
     'JOIN RDB$TYPES T1 ON (P.RDB$USER_TYPE= T1.RDB$TYPE and T1.RDB$FIELD_NAME=''RDB$OBJECT_TYPE'' )' +
-    'WHERE RDB$RELATION_NAME=?RN ' + 'AND RDB$USER<>''SYSDBA'' ORDER BY 1';
-  { TCustomMetaObject }
+    'WHERE P.RDB$RELATION_NAME = ?RN AND P.RDB$OBJECT_TYPE = ?OT ' + 'AND RDB$USER<>''SYSDBA'' ORDER BY 1';
 
-constructor TCustomMetaObject.Create(AOwner: TCustomMetaObject; aName: string = '');
+  // RDB$OBJECT_TYPE of the objects with grants
+  GrantOnRelation = 0;
+  GrantOnProcedure = 5;
+  GrantOnException = 7;
+  GrantOnRole = 13;
+  GrantOnGenerator = 14;
+  GrantOnFunction = 15;
+  GrantOnPackage = 18;
+  { TFIBCustomMetaObject }
+
+constructor TFIBCustomMetaObject.Create(AOwner: TFIBCustomMetaObject; aName: string = '');
 begin
   inherited Create;
   Name := aName;
@@ -1399,7 +1579,7 @@ begin
     FOwner.FItems[ClassIndex].Childs.Add(Self)
 end;
 
-destructor TCustomMetaObject.Destroy;
+destructor TFIBCustomMetaObject.Destroy;
 var
   I: Integer;
 begin
@@ -1412,7 +1592,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TCustomMetaObject.Clear;
+procedure TFIBCustomMetaObject.Clear;
 var
   I: Integer;
 begin
@@ -1421,7 +1601,7 @@ begin
   FLoaded := False
 end;
 
-procedure TCustomMetaObject.ClearChilds(const ClassIndex: Integer);
+procedure TFIBCustomMetaObject.ClearChilds(const ClassIndex: Integer);
 var
   Childs: TList;
   I: TFIBListIndex;
@@ -1432,10 +1612,10 @@ begin
   Childs.Clear;
 end;
 
-function TCustomMetaObject.GetAsDDL: string;
+function TFIBCustomMetaObject.GetAsDDL: string;
 var
   Stream: TStringStream;
-  DataBase: TMetaDataBase;
+  DataBase: TFIBMetaDatabase;
 begin
   DataBase := MetaDataBase;
   Stream := TStringStream.Create('', TEncoding.Unicode);
@@ -1449,20 +1629,20 @@ begin
   end;
 end;
 
-function TCustomMetaObject.GetMetaDataBase: TMetaDataBase;
+function TFIBCustomMetaObject.GetMetaDataBase: TFIBMetaDatabase;
 var
-  Root: TCustomMetaObject;
+  Root: TFIBCustomMetaObject;
 begin
   Root := Self;
   while Root.FOwner <> nil do
     Root := Root.FOwner;
-  if Root is TMetaDataBase then
-    Result := TMetaDataBase(Root)
+  if Root is TFIBMetaDatabase then
+    Result := TFIBMetaDatabase(Root)
   else
     Result := nil;
 end;
 
-procedure TCustomMetaObject.LoadDescription(Query: TFIBQuery);
+procedure TFIBCustomMetaObject.LoadDescription(Query: TFIBQuery);
 var
   Field: TFIBXSQLVAR;
 begin
@@ -1473,20 +1653,20 @@ begin
     FDescription := '';
 end;
 
-function TCustomMetaObject.CommentKeyword: string;
+function TFIBCustomMetaObject.CommentKeyword: string;
 begin
   Result := '';
 end;
 
-function TCustomMetaObject.CommentTarget: string;
+function TFIBCustomMetaObject.CommentTarget: string;
 begin
   Result := FormatName;
 end;
 
-procedure TCustomMetaObject.WriteCommentDDL(Stream: TStringStream; const Target, Text: string);
+procedure TFIBCustomMetaObject.WriteCommentDDL(Stream: TStringStream; const Target, Text: string);
 var
   Statement: string;
-  DataBase: TMetaDataBase;
+  DataBase: TFIBMetaDatabase;
 begin
   Statement := 'COMMENT ON ' + Target + ' IS ' + QuotedStr(Text);
   DataBase := MetaDataBase;
@@ -1498,13 +1678,13 @@ begin
       ' is longer than a string literal */' + sLineBreak);
 end;
 
-procedure TCustomMetaObject.GenerateCommentDDL(Stream: TStringStream);
+procedure TFIBCustomMetaObject.GenerateCommentDDL(Stream: TStringStream);
 begin
   if (FDescription <> '') and (CommentKeyword <> '') then
     WriteCommentDDL(Stream, CommentKeyword + ' ' + CommentTarget, FDescription);
 end;
 
-procedure TCustomMetaObject.GenerateChildCommentDDL(Stream: TStringStream; ChildType: Integer);
+procedure TFIBCustomMetaObject.GenerateChildCommentDDL(Stream: TStringStream; ChildType: Integer);
 var
   I: Integer;
 begin
@@ -1512,18 +1692,18 @@ begin
     GetChildObject(ChildType, I).GenerateCommentDDL(Stream);
 end;
 
-function TCustomMetaObject.GetChildObject(const ClassIndex, Index: Integer): TCustomMetaObject;
+function TFIBCustomMetaObject.GetChildObject(const ClassIndex, Index: Integer): TFIBCustomMetaObject;
 var
   FChilds: TList;
 begin
   Result := nil;
   FChilds := FItems[ClassIndex].Childs;
   if (FChilds.Count > 0) and (Index >= 0) and (Index < FChilds.Count) then
-    Result := TCustomMetaObject(FChilds.Items[Index]);
+    Result := TFIBCustomMetaObject(FChilds.Items[Index]);
 
 end;
 
-procedure TCustomMetaObject.AddClass(ClassID: TMetaObjectClass);
+procedure TFIBCustomMetaObject.AddClass(ClassID: TFIBMetaObjectClass);
 begin
   SetLength(FItems, FItemsCount + 1);
   FItems[FItemsCount].Childs := TList.Create;
@@ -1531,7 +1711,7 @@ begin
   Inc(FItemsCount);
 end;
 
-function TCustomMetaObject.GenerateChildDDL(Stream: TStringStream; ChildType: Integer): Integer;
+function TFIBCustomMetaObject.GenerateChildDDL(Stream: TStringStream; ChildType: Integer): Integer;
 var
   I: Integer;
 begin
@@ -1544,23 +1724,23 @@ begin
   end;
 end;
 
-procedure TCustomMetaObject.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBCustomMetaObject.GenerateObjectDDL(Stream: TStringStream);
 begin
 end;
 
-function TCustomMetaObject.GetItems(const Index: Integer): TMetaDataItem;
+function TFIBCustomMetaObject.GetItems(const Index: Integer): TFIBMetaDataItem;
 begin
   Assert((Index >= 0) and (FItemsCount > 0) and (Index < FItemsCount));
   Result := FItems[Index];
 end;
 
-procedure TCustomMetaObject.GenerateDDLText(Stream: TStringStream);
+procedure TFIBCustomMetaObject.GenerateDDLText(Stream: TStringStream);
 begin
   GenerateObjectDDL(Stream);
   Stream.WriteString(DefTerminator + sLineBreak)
 end;
 
-function TCustomMetaObject.GetAsObjectDDL: string;
+function TFIBCustomMetaObject.GetAsObjectDDL: string;
 var
   Stream: TStringStream;
 begin
@@ -1573,7 +1753,7 @@ begin
   end;
 end;
 
-function TCustomMetaObject.GetChildsCount(const ClassIndex: Integer): Integer;
+function TFIBCustomMetaObject.GetChildsCount(const ClassIndex: Integer): Integer;
 begin
   if FItems[ClassIndex].Childs = nil then
     Result := 0
@@ -1581,13 +1761,13 @@ begin
     Result := Integer(FItems[ClassIndex].Childs.Count); // the objects of one class in the database
 end;
 
-procedure TCustomMetaObject.SetName(const Value: string);
+procedure TFIBCustomMetaObject.SetName(const Value: string);
 begin
   FName := Value;
   FFormatName := FormatIdentifier(3, FName);
 end;
 
-function TCustomMetaObject.GetChildObjectByName(const ClassIndex: Integer; const ObjectName: string): TCustomMetaObject;
+function TFIBCustomMetaObject.GetChildObjectByName(const ClassIndex: Integer; const ObjectName: string): TFIBCustomMetaObject;
 var
   FChilds: TList;
   I: TFIBListIndex;
@@ -1599,27 +1779,33 @@ begin
   FChilds := FItems[ClassIndex].Childs;
   for I := FChilds.Count - 1 downto 0 do
   begin
-    if TCustomMetaObject(FChilds.Items[I]).FName = ObjectName then
+    if TFIBCustomMetaObject(FChilds.Items[I]).FName = ObjectName then
     begin
-      Result := TCustomMetaObject(FChilds.Items[I]);
+      Result := TFIBCustomMetaObject(FChilds.Items[I]);
       Exit;
     end;
   end;
 end;
 
-class function TCustomMetaObject.ClassIndex: Integer;
+class function TFIBCustomMetaObject.ClassIndex: Integer;
 begin
   Result := -1
 end;
 
-class function TCustomMetaObject.IsSubObject: boolean;
+class function TFIBCustomMetaObject.IsSubObject: Boolean;
 begin
   Result := False
 end;
 
-{ TMetaGenerator }
+{ TFIBMetaGenerator }
 
-procedure TMetaGenerator.LoadFromDataBase(QName: TFIBQuery);
+constructor TFIBMetaGenerator.Create(AOwner: TFIBCustomMetaObject; aName: string = '');
+begin
+  inherited Create(AOwner, aName);
+  AddClass(TFIBCustomMetaGrant);
+end;
+
+procedure TFIBMetaGenerator.LoadFromDataBase(QName: TFIBQuery);
 var
   Query: TFIBQuery;
 begin
@@ -1642,7 +1828,7 @@ begin
   FLoaded := True
 end;
 
-procedure TMetaGenerator.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaGenerator.GenerateObjectDDL(Stream: TStringStream);
 begin
   Stream.WriteString('CREATE GENERATOR ' + FormatName);
   // Always START WITH: its default is 0 in Firebird 3, 1 in Firebird 4 and later
@@ -1655,32 +1841,33 @@ begin
   Stream.WriteString(Format(';%sSET GENERATOR %s TO %d', [sLineBreak, FormatName, FValue]));
 end;
 
-function TMetaGenerator.CommentKeyword: string;
+function TFIBMetaGenerator.CommentKeyword: string;
 begin
   Result := 'GENERATOR';
 end;
 
-class function TMetaGenerator.ClassIndex: Integer;
+class function TFIBMetaGenerator.ClassIndex: Integer;
 begin
   Result := Ord(otGenerator)
 end;
 
-{ TMetaTable }
+{ TFIBMetaTable }
 
-constructor TMetaTable.Create(AOwner: TCustomMetaObject; aName: string = '');
+constructor TFIBMetaTable.Create(AOwner: TFIBCustomMetaObject; aName: string = '');
 begin
   inherited Create(AOwner, aName);
-  AddClass(TMetaTableField);
-  AddClass(TMetaPrimaryKey);
-  AddClass(TMetaForeignKey);
-  AddClass(TCustomMetaTrigger);
-  AddClass(TMetaUniqueConstraint);
-  AddClass(TMetaIndex);
-  AddClass(TMetaCheckConstraint);
-  AddClass(TCustomMetaGrant)
+  AddClass(TFIBMetaTableField);
+  AddClass(TFIBMetaPrimaryKey);
+  AddClass(TFIBMetaForeignKey);
+  AddClass(TFIBCustomMetaTrigger);
+  AddClass(TFIBMetaUniqueConstraint);
+  AddClass(TFIBMetaIndex);
+  AddClass(TFIBMetaCheckConstraint);
+  AddClass(TFIBCustomMetaGrant);
+  FSQLSecurity := -1;
 end;
 
-function TMetaTable.FindFieldName(const Name: string): TMetaTableField;
+function TFIBMetaTable.FindFieldName(const Name: string): TFIBMetaTableField;
 var
   I: Integer;
 begin
@@ -1693,42 +1880,42 @@ begin
     end;
 end;
 
-function TMetaTable.GetFields(const Index: Integer): TMetaTableField;
+function TFIBMetaTable.GetFields(const Index: Integer): TFIBMetaTableField;
 begin
-  Result := TMetaTableField(GetChildObject(Ord(soTableFields), Index))
+  Result := TFIBMetaTableField(GetChildObject(Ord(soTableFields), Index))
 end;
 
-function TMetaTable.GetFieldsCount: Integer;
+function TFIBMetaTable.GetFieldsCount: Integer;
 begin
   Result := GetChildsCount(Ord(soTableFields));
 end;
 
-function TMetaTable.GetPrimaryKey: TMetaPrimaryKey;
+function TFIBMetaTable.GetPrimaryKey: TFIBMetaPrimaryKey;
 begin
   if FItems[Ord(soPrimaryKey)].Childs.Count > 0 then
-    Result := TMetaPrimaryKey(GetChildObject(Ord(soPrimaryKey), 0))
+    Result := TFIBMetaPrimaryKey(GetChildObject(Ord(soPrimaryKey), 0))
   else
     Result := nil
 end;
 
-function TMetaTable.GetPrimaryKeyExist: boolean;
+function TFIBMetaTable.GetPrimaryKeyExist: Boolean;
 begin
   Result := FItems[Ord(soPrimaryKey)].Childs.Count > 0;
 end;
 
-function TMetaTable.GetUniques(const Index: Integer): TMetaUniqueConstraint;
+function TFIBMetaTable.GetUniques(const Index: Integer): TFIBMetaUniqueConstraint;
 begin
-  Result := TMetaUniqueConstraint(GetChildObject(Ord(soUniqueConstr), Index))
+  Result := TFIBMetaUniqueConstraint(GetChildObject(Ord(soUniqueConstr), Index))
 end;
 
-function TMetaTable.GetUniquesCount: Integer;
+function TFIBMetaTable.GetUniquesCount: Integer;
 begin
   Result := GetChildsCount(Ord(soUniqueConstr));
 end;
 
-procedure TMetaTable.LoadFromDataBase(QNames, QFields: TFIBQuery;
+procedure TFIBMetaTable.LoadFromDataBase(QNames, QFields: TFIBQuery;
   QCharset: TFIBQuery; QPrimary, QIndex, QForeign, QCheck, QTrigger: TFIBQuery;
-  ChildTypes: TTableChildTypes);
+  ChildTypes: TFIBTableChildTypes);
 var
   CurName: string;
   RelationType, ConditionField: TFIBXSQLVAR;
@@ -1739,6 +1926,7 @@ begin
   RelationType := QNames.FindField('RDB$RELATION_TYPE');
   if RelationType <> nil then
     FRelationType := RelationType.AsInteger;
+  FSQLSecurity := ReadSQLSecurity(QNames);
 
   if soTableFields in ChildTypes then
   begin
@@ -1746,7 +1934,7 @@ begin
     QFields.ExecQuery;
     while not QFields.Eof do
     begin
-      with TMetaTableField.Create(Self) do
+      with TFIBMetaTableField.Create(Self) do
         LoadFromDataBase(QFields, QCharset);
       QFields.Next;
     end;
@@ -1759,7 +1947,7 @@ begin
       QPrimary.Params[0].AsString := 'PRIMARY KEY';
       QPrimary.ExecQuery;
       if not QPrimary.Eof then
-        TMetaPrimaryKey.Create(Self).LoadFromDataBase(QPrimary);
+        TFIBMetaPrimaryKey.Create(Self).LoadFromDataBase(QPrimary);
     end;
 
     // INDICES
@@ -1771,7 +1959,7 @@ begin
       while not QIndex.Eof do
       begin
         if CurName <> QIndex.Fields[0].AsString then
-          with TMetaIndex.Create(Self) do
+          with TFIBMetaIndex.Create(Self) do
           begin
             Name := QIndex.Fields[0].AsString;
             FExpression := Trim(QIndex.FieldByName('RDB$EXPRESSION_SOURCE').AsString);
@@ -1814,7 +2002,7 @@ begin
       while not QPrimary.Eof do
       begin
         if CurName <> QPrimary.Fields[0].AsString then
-          with TMetaUniqueConstraint.Create(Self) do
+          with TFIBMetaUniqueConstraint.Create(Self) do
           begin
             SetLength(FFields, 1);
             Name := QPrimary.Fields[0].AsString;
@@ -1840,7 +2028,7 @@ begin
     QCheck.Params[0].AsString := FName;
     QCheck.ExecQuery;
     while not QCheck.Eof do
-      with TMetaCheckConstraint.Create(Self) do
+      with TFIBMetaCheckConstraint.Create(Self) do
       begin
         Name := QCheck.Fields[0].AsString;
         FConstraint := QCheck.Fields[1].AsString;
@@ -1852,18 +2040,18 @@ begin
   // TRIGGER
   if soTableTriggers in ChildTypes then
   begin
-    QTrigger.Params[0].AsString := FName;
+    QTrigger.ParamByName('RN').AsString := FName;
     QTrigger.ExecQuery;
     while not QTrigger.Eof do
     begin
-      TMetaTableTrigger.Create(Self).LoadFromDataBase(QTrigger);
+      TFIBMetaTableTrigger.Create(Self).LoadFromDataBase(QTrigger);
       QTrigger.Next;
     end;
   end;
   FLoaded := True
 end;
 
-procedure TMetaTable.GenerateDDLText(Stream: TStringStream);
+procedure TFIBMetaTable.GenerateDDLText(Stream: TStringStream);
 begin
   inherited GenerateDDLText(Stream);
   GenerateChildDDL(Stream, Ord(soPrimaryKey));
@@ -1880,12 +2068,12 @@ begin
     Stream.WriteString(sLineBreak);
 end;
 
-function TMetaTable.CommentKeyword: string;
+function TFIBMetaTable.CommentKeyword: string;
 begin
   Result := 'TABLE';
 end;
 
-procedure TMetaTable.GenerateCommentDDL(Stream: TStringStream);
+procedure TFIBMetaTable.GenerateCommentDDL(Stream: TStringStream);
 begin
   inherited GenerateCommentDDL(Stream);
   GenerateChildCommentDDL(Stream, Ord(soTableFields));
@@ -1893,27 +2081,27 @@ begin
   GenerateChildCommentDDL(Stream, Ord(soTableTriggers));
 end;
 
-function TMetaTable.GetIndices(const Index: Integer): TMetaIndex;
+function TFIBMetaTable.GetIndices(const Index: Integer): TFIBMetaIndex;
 begin
-  Result := TMetaIndex(GetChildObject(Ord(soIndex), Index))
+  Result := TFIBMetaIndex(GetChildObject(Ord(soIndex), Index))
 end;
 
-function TMetaTable.GetIndicesCount: Integer;
+function TFIBMetaTable.GetIndicesCount: Integer;
 begin
   Result := GetChildsCount(Ord(soIndex));
 end;
 
-function TMetaTable.GetForeign(const Index: Integer): TMetaForeignKey;
+function TFIBMetaTable.GetForeign(const Index: Integer): TFIBMetaForeignKey;
 begin
-  Result := TMetaForeignKey(GetChildObject(Ord(soForeignKey), Index))
+  Result := TFIBMetaForeignKey(GetChildObject(Ord(soForeignKey), Index))
 end;
 
-function TMetaTable.GetForeignCount: Integer;
+function TFIBMetaTable.GetForeignCount: Integer;
 begin
   Result := GetChildsCount(Ord(soForeignKey));
 end;
 
-function TMetaTable.FindFieldIndex(const Name: string): Integer;
+function TFIBMetaTable.FindFieldIndex(const Name: string): Integer;
 begin
   for Result := 0 to FieldsCount - 1 do
   begin
@@ -1923,27 +2111,27 @@ begin
   raise Exception.CreateFmt('Field %s not found', [Name]);
 end;
 
-function TMetaTable.GetChecks(const Index: Integer): TMetaCheckConstraint;
+function TFIBMetaTable.GetChecks(const Index: Integer): TFIBMetaCheckConstraint;
 begin
-  Result := TMetaCheckConstraint(GetChildObject(Ord(soCheckConstr), Index));
+  Result := TFIBMetaCheckConstraint(GetChildObject(Ord(soCheckConstr), Index));
 end;
 
-function TMetaTable.GetChecksCount: Integer;
+function TFIBMetaTable.GetChecksCount: Integer;
 begin
   Result := GetChildsCount(Ord(soCheckConstr));
 end;
 
-function TMetaTable.GetTriggers(const Index: Integer): TCustomMetaTrigger;
+function TFIBMetaTable.GetTriggers(const Index: Integer): TFIBCustomMetaTrigger;
 begin
-  Result := TCustomMetaTrigger(GetChildObject(Ord(soTableTriggers), Index));
+  Result := TFIBCustomMetaTrigger(GetChildObject(Ord(soTableTriggers), Index));
 end;
 
-function TMetaTable.GetTriggersCount: Integer;
+function TFIBMetaTable.GetTriggersCount: Integer;
 begin
   Result := GetChildsCount(Ord(soTableTriggers));
 end;
 
-procedure TMetaTable.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaTable.GenerateObjectDDL(Stream: TStringStream);
 var
   I: Integer;
 begin
@@ -1966,30 +2154,22 @@ begin
     4: Stream.WriteString(sLineBreak + 'ON COMMIT PRESERVE ROWS ');
     5: Stream.WriteString(sLineBreak + 'ON COMMIT DELETE ROWS ');
   end;
+  if FSQLSecurity >= 0 then
+    Stream.WriteString(sLineBreak + SQLSecurityClause(FSQLSecurity));
 end;
 
-function TMetaTable.GetGrants(const Index: Integer): TCustomMetaGrant;
-begin
-  Result := TCustomMetaGrant(GetChildObject(Ord(soTableGrants), Index));
-end;
-
-function TMetaTable.GetGrantsCount: Integer;
-begin
-  Result := GetChildsCount(Ord(soTableGrants));
-end;
-
-class function TMetaTable.ClassIndex: Integer;
+class function TFIBMetaTable.ClassIndex: Integer;
 begin
   Result := Ord(otTable)
 end;
 
-{ TCustomMetaField }
+{ TFIBCustomMetaField }
 
-procedure TCustomMetaField.LoadFromDataBase(QField, QCharset: TFIBQuery);
+procedure TFIBCustomMetaField.LoadFromDataBase(QField, QCharset: TFIBQuery);
 var
   Identity: TFIBXSQLVAR;
 
-  procedure GetCharsetInfo(const Id: Integer; var CharSet: string; var Count: Smallint);
+  procedure GetCharsetInfo(const Id: Integer; var CharSet: string; var Count: SmallInt);
   begin
     if not QCharset.Open or (QCharset.Params[0].AsInteger <> Id) then
     begin
@@ -2047,12 +2227,13 @@ begin
       blr_sql_time_tz, blr_ex_time_tz: FFieldType := fftTimeTZ;
       blr_timestamp_tz, blr_ex_timestamp_tz: FFieldType := fftTimestampTZ;
     end;
-  if (FFieldType in [fftChar, fftVarchar, fftCstring]) and not QField.Fields[4].IsNull then
+  FSubType := QField.Fields[5].AsShort;
+  if ((FFieldType in [fftChar, fftVarchar, fftCstring]) or (FFieldType = fftBlob) and (FSubType = 1)) and
+    not QField.Fields[4].IsNull then
     GetCharsetInfo(QField.Fields[4].AsInteger, FCharSet, FBytesPerCharacter)
   else
     FBytesPerCharacter := 1;
 
-  FSubType := QField.Fields[5].AsShort;
   Identity := QField.FindField('RDB$IDENTITY_TYPE');
   if (Identity = nil) or Identity.IsNull then
     FIdentity := -1
@@ -2062,12 +2243,12 @@ begin
   FLoaded := True
 end;
 
-class function TCustomMetaField.IsSubObject: boolean;
+class function TFIBCustomMetaField.IsSubObject: Boolean;
 begin
   Result := True
 end;
 
-function TCustomMetaField.GetDimensionStr: string;
+function TFIBCustomMetaField.GetDimensionStr: string;
 var
   J: NativeInt;
 begin
@@ -2077,12 +2258,12 @@ begin
   Result[System.Length(Result)] := ']'
 end;
 
-procedure TCustomMetaField.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBCustomMetaField.GenerateObjectDDL(Stream: TStringStream);
 begin
   case FFieldType of
     fftNumeric:
       begin
-        Stream.WriteString(Format('%s(%d,%d)', [FieldTypes[FFieldType], FPrecision, FScale]));
+        Stream.WriteString(GetShortFieldType);
         if FIsArray then
           Stream.WriteString(' ' + GetDimensionStr);
 
@@ -2098,7 +2279,11 @@ begin
           Stream.WriteString(' CHARACTER SET ' + FCharSet);
       end;
     fftBlob:
-      Stream.WriteString(Format('%s SUB_TYPE %d SEGMENT SIZE %d', [FieldTypes[FFieldType], FSubType, FSegmentLength]));
+      begin
+        Stream.WriteString(Format('%s SUB_TYPE %d SEGMENT SIZE %d', [FieldTypes[FFieldType], FSubType, FSegmentLength]));
+        if FCharSet <> '' then
+          Stream.WriteString(' CHARACTER SET ' + FCharSet);
+      end;
     fftDecFloat:
       begin
         Stream.WriteString(GetShortFieldType);
@@ -2113,11 +2298,16 @@ begin
   end;
 end;
 
-function TCustomMetaField.GetShortFieldType: string;
+function TFIBCustomMetaField.GetShortFieldType: string;
 begin
   case FFieldType of
     fftChar .. fftCstring: Result := Format('%s(%d)', [FieldTypes[FFieldType], FLength div FBytesPerCharacter]);
-    fftNumeric: Result := Format('%s(%d,%d)', [FieldTypes[FFieldType], FPrecision, FScale]);
+    fftNumeric:
+      // DECIMAL(1..4, s) is stored as INTEGER, NUMERIC(1..4, s) as SMALLINT
+      if FSubType = 2 then
+        Result := Format('DECIMAL(%d,%d)', [FPrecision, FScale])
+      else
+        Result := Format('%s(%d,%d)', [FieldTypes[FFieldType], FPrecision, FScale]);
     fftDecFloat:
       if FLength = 8 then
         Result := FieldTypes[FFieldType] + '(16)'
@@ -2128,9 +2318,9 @@ begin
   end;
 end;
 
-{ TMetaDataBase }
+{ TFIBMetaDatabase }
 
-constructor TMetaDataBase.Create(AOwner: TCustomMetaObject; aName: string = '');
+constructor TFIBMetaDatabase.Create(AOwner: TFIBCustomMetaObject; aName: string = '');
 begin
   inherited Create(nil);
   FInternalTransaction := TFIBTransaction.Create(nil);
@@ -2140,31 +2330,32 @@ begin
   FInternalTransaction.TRParams.Add('nowait');
   FInternalTransaction.TRParams.Add('concurrency');
 
-  AddClass(TMetaDomain);
-  AddClass(TMetaTable);
-  AddClass(TMetaView);
-  AddClass(TMetaProcedure);
-  AddClass(TMetaGenerator);
-  AddClass(TMetaException);
-  AddClass(TMetaUDF);
-  AddClass(TMetaRole);
-  AddClass(TCustomMetaTrigger);
-  AddClass(TMetaStoredFunc);
-  AddClass(TMetaPackage);
+  AddClass(TFIBMetaDomain);
+  AddClass(TFIBMetaTable);
+  AddClass(TFIBMetaView);
+  AddClass(TFIBMetaProcedure);
+  AddClass(TFIBMetaGenerator);
+  AddClass(TFIBMetaException);
+  AddClass(TFIBMetaUDF);
+  AddClass(TFIBMetaRole);
+  AddClass(TFIBCustomMetaTrigger);
+  AddClass(TFIBMetaStoredFunction);
+  AddClass(TFIBMetaPackage);
 
   FLoadObjects := DefObjects;
-  FLoadTableChilds := DefTableChilds;
-  FLoadViewChilds := DefViewChilds;
+  FLoadTableChilds := DefTableChildTypes;
+  FLoadViewChilds := DefViewChildTypes;
   FDDLTextOptions := DefDDLTextOptions;
+  FDefaultSQLSecurity := -1;
 end;
 
-destructor TMetaDataBase.Destroy;
+destructor TFIBMetaDatabase.Destroy;
 begin
   FInternalTransaction.Free;
   inherited Destroy;
 end;
 
-procedure TMetaDataBase.LoadFromDataBase(DB: TFIBDatabase; OnlyNames: boolean = False);
+procedure TFIBMetaDatabase.LoadFromDataBase(DB: TFIBDatabase; OnlyNames: Boolean = False);
 var
   I: Integer;
   ConStr, Str: string;
@@ -2172,9 +2363,20 @@ var
   QNames, QFields, QFuncReturn, QFuncInputs, QPrimary: TFIBQuery;
   QIndex, QForeign, QCheck, QTrigger: TFIBQuery;
   QGrants: TFIBQuery;
-  Stop: boolean;
+  Stop: Boolean;
   Transaction: TFIBTransaction;
-  CurObject: TCustomMetaObject;
+  CurObject: TFIBCustomMetaObject;
+
+  procedure LoadGrants(Owner: TFIBCustomMetaObject; GrantClass: TFIBMetaObjectClass; ObjectType: Integer);
+  begin
+    QGrants.ParamByName('RN').AsString := Owner.Name;
+    QGrants.ParamByName('OT').AsInteger := ObjectType;
+    QGrants.ExecQuery;
+    if not QGrants.Eof then
+      TFIBCustomMetaGrant(GrantClass.Create(Owner)).LoadFromDataBase(QGrants, Owner.Name);
+    QGrants.Close;
+  end;
+
 begin
   // Also the objects of the types not loaded now, left by GetDBObject
   Clear;
@@ -2223,11 +2425,21 @@ begin
       QNames.Close;
       FSQLDialect := Transaction.DefaultDatabase.SQLDialect;
       FConnectCharset := Transaction.DefaultDatabase.ConnectParams.CharSet;
+      FUserName := Transaction.DefaultDatabase.ConnectParams.UserName;
       FClientLib := Transaction.DefaultDatabase.LibraryName;
 
       DetectServerFeatures;
       if FPartialIndicesSupports then
         QIndex.ParamByName('CONDITION').AsString := IndexConditionColumn;
+      SetOptionalColumns(QTrigger, otDBTrigger);
+      FDefaultSQLSecurity := -1;
+      if FSQLSecuritySupports then
+      begin
+        QNames.SQL.Text := QRYDBSQLSecurity;
+        QNames.ExecQuery;
+        FDefaultSQLSecurity := ReadSQLSecurity(QNames);
+        QNames.Close;
+      end;
 
       // DOMAINS
       if otDomain in FLoadObjects then
@@ -2245,7 +2457,7 @@ begin
             if Stop then
               Exit
           end;
-          with TMetaDomain.Create(Self, QNames.FieldByName('RDB$FIELD_NAME').AsString) do
+          with TFIBMetaDomain.Create(Self, QNames.FieldByName('RDB$FIELD_NAME').AsString) do
             if not OnlyNames then
               LoadFromDataBase(QNames, QCharset);
           QNames.Next;
@@ -2267,9 +2479,12 @@ begin
             if Stop then
               Exit
           end;
-          with TMetaGenerator.Create(Self, QNames.Fields[0].AsString) do
-            if not OnlyNames then
-              LoadFromDataBase(QNames);
+          CurObject := TFIBMetaGenerator.Create(Self, QNames.Fields[0].AsString);
+          if not OnlyNames then
+          begin
+            TFIBMetaGenerator(CurObject).LoadFromDataBase(QNames);
+            LoadGrants(CurObject, TFIBObjectGrant, GrantOnGenerator);
+          end;
           QNames.Next;
         end;
         QNames.Close;
@@ -2278,6 +2493,7 @@ begin
       if (otStoredFunctions in FLoadObjects) and FStoredFunctionsSupports then
       begin
         QNames.SQL.Text := QRYStoredFuncsFB3;
+        SetOptionalColumns(QNames, otStoredFunctions);
         QNames.ExecQuery;
 
         while not QNames.Eof do
@@ -2289,9 +2505,12 @@ begin
               Exit
           end;
 
-          with TMetaStoredFunc.Create(Self, QNames.Fields[0].AsString) do
-            if not OnlyNames then
-              LoadFromDataBase(QNames, QFuncReturn, QFuncInputs, QCharset);
+          CurObject := TFIBMetaStoredFunction.Create(Self, QNames.Fields[0].AsString);
+          if not OnlyNames then
+          begin
+            TFIBMetaStoredFunction(CurObject).LoadFromDataBase(QNames, QFuncReturn, QFuncInputs, QCharset);
+            LoadGrants(CurObject, TFIBMetaProcedureGrant, GrantOnFunction);
+          end;
           QNames.Next;
         end;
         QNames.Close;
@@ -2316,7 +2535,7 @@ begin
               Exit
           end;
 
-          with TMetaUDF.Create(Self, QNames.Fields[0].AsString) do
+          with TFIBMetaUDF.Create(Self, QNames.Fields[0].AsString) do
             if not OnlyNames then
               LoadFromDataBase(QNames, QFields, QCharset);
           QNames.Next;
@@ -2342,6 +2561,7 @@ begin
           else
             QNames.SQL.Text := QRYTables;
         end;
+        SetOptionalColumns(QNames, otTable);
         QNames.ExecQuery;
         if FIdentityFieldsSupports then
           QFields.SQL.Text := QRYTableFieldsFB3
@@ -2356,21 +2576,17 @@ begin
             if Stop then
               Exit
           end;
-          CurObject := TMetaTable.Create(Self, QNames.Fields[0].AsString);
-          with TMetaTable(CurObject) do
+          CurObject := TFIBMetaTable.Create(Self, QNames.Fields[0].AsString);
+          with TFIBMetaTable(CurObject) do
             if not OnlyNames then
               LoadFromDataBase(QNames, QFields, QCharset, QPrimary, QIndex,
                 QForeign, QCheck, QTrigger, FLoadTableChilds);
 
-          QGrants.Params[0].AsString := QNames.Fields[0].AsString;
-          QGrants.ExecQuery;
-          if not QGrants.Eof then
-            TMetaTableGrant.Create(CurObject).LoadFromDataBase(QGrants, QNames.Fields[0].AsString);
+          LoadGrants(CurObject, TFIBMetaTableGrant, GrantOnRelation);
           QNames.Next;
         end;
         QNames.Close;
         // FOREIGN
-        // if not  OnlyNames then
         if [soForeignKey, soTableFields] <= FLoadTableChilds then
         begin
           for I := 0 to TablesCount - 1 do
@@ -2388,13 +2604,13 @@ begin
             begin
               if ConStr <> Trim(QForeign.Fields[0].AsString) then // new
               begin
-                with TMetaForeignKey.Create(Tables[I]) do
+                with TFIBMetaForeignKey.Create(Tables[I]) do
                 begin
                   Name := QForeign.Fields[0].AsString;
+                  ConStr := FName;
                   if not OnlyNames then
                   begin
                     FLoaded := True;
-                    ConStr := FName;
                     FForTable := FindTableIndex(Trim(QForeign.Fields[3].AsString));
                     SetLength(FFields, 1);
                     FFields[0] := Tables[I].FindFieldIndex
@@ -2425,7 +2641,7 @@ begin
                   end;
                 end;
               end
-              else
+              else if not OnlyNames then
                 with Tables[I].Foreign[Tables[I].ForeignCount - 1] do
                 begin
                   SetLength(FFields, Length(FFields) + 1);
@@ -2454,16 +2670,12 @@ begin
               Exit
           end;
 
-          CurObject := TMetaView.Create(Self, QNames.Fields[0].AsString);
-          // if not  OnlyNames then
+          CurObject := TFIBMetaView.Create(Self, QNames.Fields[0].AsString);
           begin
-            with TMetaView(CurObject) do
+            with TFIBMetaView(CurObject) do
               LoadFromDataBase(QNames, QFields, QTrigger, QCharset, FLoadViewChilds);
 
-            QGrants.Params[0].AsString := QNames.Fields[0].AsString;
-            QGrants.ExecQuery;
-            if not QGrants.Eof then
-              TMetaViewGrant.Create(CurObject).LoadFromDataBase(QGrants, QNames.Fields[0].AsString);
+            LoadGrants(CurObject, TFIBMetaViewGrant, GrantOnRelation);
           end;
           QNames.Next;
         end;
@@ -2490,16 +2702,13 @@ begin
               Exit
           end;
 
-          CurObject := TMetaProcedure.Create(Self, QNames.Fields[0].AsString);
+          CurObject := TFIBMetaProcedure.Create(Self, QNames.Fields[0].AsString);
           if not OnlyNames then
           begin
-            with TMetaProcedure(CurObject) do
+            with TFIBMetaProcedure(CurObject) do
               LoadFromDataBase(QNames, QFields, QCharset, FProcParamDomainSupports, FProcParamRelationSupports);
 
-            QGrants.Params[0].AsString := QNames.Fields[0].AsString;
-            QGrants.ExecQuery;
-            if not QGrants.Eof then
-              TMetaProcGrant.Create(CurObject).LoadFromDataBase(QGrants, QNames.Fields[0].AsString);
+            LoadGrants(CurObject, TFIBMetaProcedureGrant, GrantOnProcedure);
           end;
           QNames.Next;
         end;
@@ -2523,9 +2732,12 @@ begin
             if Stop then
               Exit
           end;
-          with TMetaException.Create(Self, QNames.Fields[0].AsString) do
-            if not OnlyNames then
-              LoadFromDataBase(QNames);
+          CurObject := TFIBMetaException.Create(Self, QNames.Fields[0].AsString);
+          if not OnlyNames then
+          begin
+            TFIBMetaException(CurObject).LoadFromDataBase(QNames);
+            LoadGrants(CurObject, TFIBObjectGrant, GrantOnException);
+          end;
           QNames.Next;
         end;
         QNames.Close;
@@ -2535,6 +2747,7 @@ begin
       if otDBTrigger in FLoadObjects then
       begin
         QNames.SQL.Text := QRYDBTriggers;
+        SetOptionalColumns(QNames, otDBTrigger);
         QNames.ExecQuery;
         while not QNames.Eof do
         begin
@@ -2545,7 +2758,7 @@ begin
               Exit
           end;
 
-          with TMetaDBTrigger.Create(Self, QNames.Fields[0].AsString) do
+          with TFIBMetaDBTrigger.Create(Self, QNames.Fields[0].AsString) do
             if not OnlyNames then
               LoadFromDataBase(QNames);
           QNames.Next;
@@ -2556,6 +2769,7 @@ begin
       if FPackagesSupports and (otPackage in FLoadObjects) then
       begin
         QNames.SQL.Text := QRYPackages;
+        SetOptionalColumns(QNames, otPackage);
         QNames.ExecQuery;
         while not QNames.Eof do
         begin
@@ -2566,9 +2780,12 @@ begin
               Exit
           end;
 
-          with TMetaPackage.Create(Self, QNames.Fields[0].AsString) do
-            if not OnlyNames then
-              LoadFromDataBase(QNames, QCharset);
+          CurObject := TFIBMetaPackage.Create(Self, QNames.Fields[0].AsString);
+          if not OnlyNames then
+          begin
+            TFIBMetaPackage(CurObject).LoadFromDataBase(QNames, QCharset);
+            LoadGrants(CurObject, TFIBMetaProcedureGrant, GrantOnPackage);
+          end;
           QNames.Next;
         end;
         QNames.Close;
@@ -2591,13 +2808,9 @@ begin
           if FSysInfos or (Copy(QNames.Fields[0].AsString, 1, 4) <> 'RDB$') then
           begin
 
-            CurObject := TMetaRole.Create(Self);
-            TMetaRole(CurObject).LoadFromDataBase(QNames);
-
-            QGrants.Params[0].AsString := QNames.Fields[0].AsString;
-            QGrants.ExecQuery;
-            if not QGrants.Eof then
-              TMetaRoleGrant.Create(CurObject).LoadFromDataBase(QGrants, QNames.Fields[0].AsString);
+            CurObject := TFIBMetaRole.Create(Self);
+            TFIBMetaRole(CurObject).LoadFromDataBase(QNames);
+            LoadGrants(CurObject, TFIBMetaRoleGrant, GrantOnRole);
           end;
           QNames.Next;
         end;
@@ -2624,7 +2837,7 @@ begin
   end
 end;
 
-procedure TMetaDataBase.ExtGenerateDDLText(Stream: TStringStream; Options: TDDLTextOptions = DefDDLTextOptions);
+procedure TFIBMetaDatabase.ExtGenerateDDLText(Stream: TStringStream; Options: TFIBDDLTextOptions = DefDDLTextOptions);
 var
   I: Integer;
 
@@ -2632,7 +2845,7 @@ var
   // Kind= 0 - standard, =1 -FakeViewTrigger,=2 Alter - View Trigger
   var
     I, J: Integer;
-    Parent: TCustomMetaObject;
+    Parent: TFIBCustomMetaObject;
     HeaderWritten: Boolean;
   begin
     HeaderWritten := False;
@@ -2641,6 +2854,9 @@ var
       Parent := GetChildObject(ParentType, I);
       for J := 0 to Parent.GetChildsCount(ChildType) - 1 do
       begin
+        // A foreign key of a load of the names only
+        if not Parent.GetChildObject(ChildType, J).Loaded then
+          Continue;
         if not HeaderWritten then
         begin
           Stream.WriteString(sLineBreak + Format('/* %s */', [Comment]) + sLineBreak);
@@ -2649,8 +2865,8 @@ var
         Stream.WriteString(sLineBreak);
         case Kind of
           0: Parent.GetChildObject(ChildType, J).GenerateObjectDDL(Stream);
-          1: TCustomMetaTrigger(Parent.GetChildObject(ChildType, J)).SaveFakeDDL(Stream);
-          2: TCustomMetaTrigger(Parent.GetChildObject(ChildType, J)).SaveAlterDDL(Stream);
+          1: TFIBCustomMetaTrigger(Parent.GetChildObject(ChildType, J)).SaveFakeDDL(Stream);
+          2: TFIBCustomMetaTrigger(Parent.GetChildObject(ChildType, J)).SaveAlterDDL(Stream);
         end;
         Stream.WriteString(Separator + sLineBreak);
       end;
@@ -2659,8 +2875,8 @@ var
 
   procedure SaveMainObjects(Comment: string; ObjType: Integer; Separator: Char = DefTerminator);
   var
-    I: Integer;
-    CurObj: TCustomMetaObject;
+    I, Count: Integer;
+    CurObj: TFIBCustomMetaObject;
   begin
     if FItems[ObjType].Childs.Count > 0 then
     begin
@@ -2672,24 +2888,29 @@ var
         Stream.WriteString(sLineBreak);
       end;
 
+      Count := 0;
       for I := 0 to GetChildsCount(ObjType) - 1 do
       begin
         CurObj := GetChildObject(ObjType, I);
         if not CurObj.Loaded then
-          CurObj := GetDBObject(FInternalTransaction.DefaultDatabase, TDBObjectType(ObjType), CurObj.FName);
-        if I = 0 then
+          CurObj := GetDBObject(FInternalTransaction.DefaultDatabase, TFIBDBObjectType(ObjType), CurObj.FName);
+        // Dropped since the names were loaded
+        if (CurObj = nil) or not CurObj.Loaded then
+          Continue;
+        Inc(Count);
+        if Count = 1 then
           Stream.WriteString(sLineBreak)
         else
         begin
           Stream.WriteString(sLineBreak + sLineBreak);
         end;
         // Only the object; its constraints, triggers and bodies follow in their own sections
-        if CurObj is TMetaProcedure then
-          TMetaProcedure(CurObj).SaveToPostDDL(Stream)
-        else if CurObj is TMetaPackage then
-          TMetaPackage(CurObj).SaveSpecDDL(Stream)
-        else if CurObj is TMetaStoredFunc then
-          TMetaStoredFunc(CurObj).SaveEmptyDDL(Stream)
+        if CurObj is TFIBMetaProcedure then
+          TFIBMetaProcedure(CurObj).SaveToPostDDL(Stream)
+        else if CurObj is TFIBMetaPackage then
+          TFIBMetaPackage(CurObj).SaveSpecDDL(Stream)
+        else if CurObj is TFIBMetaStoredFunction then
+          TFIBMetaStoredFunction(CurObj).SaveEmptyDDL(Stream)
         else
           CurObj.GenerateObjectDDL(Stream);
         Stream.WriteString(Separator);
@@ -2709,11 +2930,11 @@ var
   procedure SaveComments;
   const
     // The order of the script
-    CommentedObjects: array [0 .. 10] of TDBObjectType = (otRole, otUDF, otDomain, otGenerator, otException,
+    CommentedObjects: array [0 .. 10] of TFIBDBObjectType = (otRole, otUDF, otDomain, otGenerator, otException,
       otProcedure, otStoredFunctions, otPackage, otTable, otView, otDBTrigger);
   var
     Comments: TStringStream;
-    ObjType: TDBObjectType;
+    ObjType: TFIBDBObjectType;
     I: Integer;
   begin
     Comments := TStringStream.Create('', TEncoding.Unicode);
@@ -2732,94 +2953,88 @@ var
   end;
 
   procedure SaveGrants;
-  var
-    I: Integer;
-    TabNode: TMetaTable;
-    ViewNode: TMetaView;
-    ProcNode: TMetaProcedure;
-    RoleNode: TMetaRole;
+
+    // Optional: the section is written only when an object has grants
+    procedure SaveObjectGrants(const Comment: string; ObjType: TFIBDBObjectType; GrantIndex: Integer;
+      Optional: Boolean = False);
+    var
+      I: Integer;
+      Node: TFIBCustomMetaObject;
+      HeaderWritten: Boolean;
+    begin
+      HeaderWritten := False;
+      for I := 0 to GetChildsCount(Ord(ObjType)) - 1 do
+      begin
+        Node := GetChildObject(Ord(ObjType), I);
+        if (Node.ItemsCount <= GrantIndex) or (Node.GetChildsCount(GrantIndex) = 0) then
+          Continue;
+        if not HeaderWritten then
+        begin
+          Stream.WriteString(sLineBreak + sLineBreak + Format('/*%s*/', [Comment]) + sLineBreak + sLineBreak);
+          HeaderWritten := True;
+        end;
+        Node.GetChildObject(GrantIndex, 0).GenerateObjectDDL(Stream);
+      end;
+      if not HeaderWritten and not Optional then
+        Stream.WriteString(sLineBreak + sLineBreak + Format('/*%s*/', [Comment]) + sLineBreak + sLineBreak);
+      if HeaderWritten or not Optional then
+        Stream.WriteString('COMMIT WORK;');
+    end;
+
   begin
     Stream.WriteString(sLineBreak + sLineBreak);
-
     Stream.WriteString('/*GRANTS*/');
-    Stream.WriteString(sLineBreak);
-    Stream.WriteString('/*GRANTS ON TABLES*/');
-    Stream.WriteString(sLineBreak);
-    Stream.WriteString(sLineBreak);
-    for I := 0 to TablesCount - 1 do
-    begin
-      TabNode := Tables[I];
-      if TabNode.GetGrantsCount > 0 then
-        TabNode.GetGrants(0).GenerateObjectDDL(Stream)
-    end;
-    Stream.WriteString('COMMIT WORK;');
-
-    Stream.WriteString(sLineBreak + sLineBreak);
-    Stream.WriteString('/*GRANTS ON VIEWS*/');
-    Stream.WriteString(sLineBreak + sLineBreak);
-    for I := 0 to ViewsCount - 1 do
-    begin
-      ViewNode := Views[I];
-      if ViewNode.GetGrantsCount > 0 then
-        ViewNode.GetGrants(0).GenerateObjectDDL(Stream)
-    end;
-    Stream.WriteString('COMMIT WORK;');
-
-    Stream.WriteString(sLineBreak + sLineBreak);
-    Stream.WriteString('/*GRANTS ON PROCEDURES*/');
-    Stream.WriteString(sLineBreak + sLineBreak);
-    for I := 0 to ProceduresCount - 1 do
-    begin
-      ProcNode := Procedures[I];
-      if ProcNode.GetGrantsCount > 0 then
-        ProcNode.GetGrants(0).GenerateObjectDDL(Stream)
-    end;
-    Stream.WriteString('COMMIT WORK;');
-
-    Stream.WriteString(sLineBreak + sLineBreak);
-    Stream.WriteString('/*GRANTS ROLES*/');
-    Stream.WriteString(sLineBreak + sLineBreak);
-    for I := 0 to RolesCount - 1 do
-    begin
-      RoleNode := Roles[I];
-      if RoleNode.GetGrantsCount > 0 then
-        RoleNode.GetGrants(0).GenerateObjectDDL(Stream)
-    end;
-    Stream.WriteString('COMMIT WORK;');
-
+    SaveObjectGrants('GRANTS ON TABLES', otTable, Ord(soTableGrants));
+    SaveObjectGrants('GRANTS ON VIEWS', otView, Ord(soViewGrants));
+    SaveObjectGrants('GRANTS ON PROCEDURES', otProcedure, Ord(soProcGrants));
+    SaveObjectGrants('GRANTS ON FUNCTIONS', otStoredFunctions, Ord(soProcGrants), True);
+    SaveObjectGrants('GRANTS ON PACKAGES', otPackage, Ord(soProcGrants), True);
+    SaveObjectGrants('GRANTS ON SEQUENCES', otGenerator, TFIBObjectGrant.ClassIndex, True);
+    SaveObjectGrants('GRANTS ON EXCEPTIONS', otException, TFIBObjectGrant.ClassIndex, True);
+    SaveObjectGrants('GRANTS ROLES', otRole, Ord(soRoleGrants));
   end;
 
 var
-  vProcTerminator: Char;
+  CurrentTerminator: Char;
+  UserClause: string;
 begin
 
   Stream.WriteString('SET SQL DIALECT ' + IntToStr(FSQLDialect) + ';' + sLineBreak);
-  Stream.WriteString('SET NAMES ' + FConnectCharset + ';' + sLineBreak);
+  if FConnectCharset <> '' then
+    Stream.WriteString('SET NAMES ' + FConnectCharset + ';' + sLineBreak);
   if dtoUseSetClientLib in Options then
     Stream.WriteString('SET CLIENTLIB ''' + FClientLib + ''';' + sLineBreak + sLineBreak);
 
+  // The user of the connection, never a password
+  if FUserName <> '' then
+    UserClause := ' USER ' + QuotedStr(FUserName)
+  else
+    UserClause := '';
   if dtoUseCreateDB in Options then
   begin
-    Stream.WriteString('CREATE DATABASE ''' + FName + '''' + sLineBreak +
-      'USER ''SYSDBA'' PASSWORD ''masterkey''' + sLineBreak + 'PAGE_SIZE ' + IntToStr(FPageSize) + sLineBreak);
+    Stream.WriteString('CREATE DATABASE ''' + FName + '''' + UserClause + sLineBreak +
+      'PAGE_SIZE ' + IntToStr(FPageSize));
     if Length(FDefaultCharset) > 0 then
-      Stream.WriteString('DEFAULT CHARACTER SET ' + FDefaultCharset + DefTerminator + sLineBreak);
+      Stream.WriteString(sLineBreak + 'DEFAULT CHARACTER SET ' + FDefaultCharset);
+    Stream.WriteString(DefTerminator + sLineBreak);
   end
   else
-    Stream.WriteString('CONNECT ''' + FName + ''' USER ''SYSDBA'' PASSWORD ''masterkey'';' + sLineBreak);
+    Stream.WriteString('CONNECT ''' + FName + '''' + UserClause + ';' + sLineBreak);
+  if FDefaultSQLSecurity >= 0 then
+    Stream.WriteString('ALTER DATABASE SET DEFAULT ' + SQLSecurityClause(FDefaultSQLSecurity) + ';' + sLineBreak);
 
   if dtoUseSetTerm in Options then
-    vProcTerminator := ProcTerminator
+    CurrentTerminator := ProcTerminator
   else
-    vProcTerminator := DefTerminator;
+    CurrentTerminator := DefTerminator;
   SaveMainObjects('ROLES', Ord(otRole));
   SaveMainObjects('FUNCTIONS', Ord(otUDF));
   SaveMainObjects('DOMAINS', Ord(otDomain));
   SaveMainObjects('GENERATORS', Ord(otGenerator));
-  SaveMainObjects('EXEPTIONS', Ord(otException));
-  SaveMainObjects('PROCEDURES', Ord(otProcedure), vProcTerminator);
-  SaveMainObjects('FUNCTIONS', Ord(otStoredFunctions), vProcTerminator);
-  SaveMainObjects('PACKAGES', Ord(otPackage), vProcTerminator);
+  SaveMainObjects('EXCEPTIONS', Ord(otException));
+  SaveMainObjects('PROCEDURES', Ord(otProcedure), CurrentTerminator);
+  SaveMainObjects('FUNCTIONS', Ord(otStoredFunctions), CurrentTerminator);
+  SaveMainObjects('PACKAGES', Ord(otPackage), CurrentTerminator);
   SaveMainObjects('TABLES', Ord(otTable));
   SaveMainObjects('VIEWS', Ord(otView));
   SaveChilds('UNIQUE', Ord(otTable), Ord(soUniqueConstr));
@@ -2829,18 +3044,20 @@ begin
   SaveChilds('CHECKS', Ord(otTable), Ord(soCheckConstr));
   if dtoUseSetTerm in Options then
     Stream.WriteString(sLineBreak + 'SET TERM ^;' + sLineBreak);
-  SaveChilds('TRIGGERS (Views)', Ord(otView), Ord(soViewTriggers), vProcTerminator, 1);
-  SaveChilds('TRIGGERS', Ord(otTable), Ord(soTableTriggers), vProcTerminator);
-  SaveChilds('TRIGGERS (Views)', Ord(otView), Ord(soViewTriggers), vProcTerminator, 2);
+  SaveChilds('TRIGGERS (Views)', Ord(otView), Ord(soViewTriggers), CurrentTerminator, 1);
+  SaveChilds('TRIGGERS', Ord(otTable), Ord(soTableTriggers), CurrentTerminator);
+  SaveChilds('TRIGGERS (Views)', Ord(otView), Ord(soViewTriggers), CurrentTerminator, 2);
 
   if ProceduresCount > 0 then
   begin
     Stream.WriteString(sLineBreak + '/* PROCEDURES */');
     for I := 0 to ProceduresCount - 1 do
     begin
+      if not Procedures[I].Loaded then
+        Continue;
       Stream.WriteString(sLineBreak + sLineBreak);
       Procedures[I].SaveToAlterDDL(Stream);
-      Stream.WriteString(vProcTerminator + sLineBreak);
+      Stream.WriteString(CurrentTerminator + sLineBreak);
     end;
   end;
 
@@ -2849,9 +3066,16 @@ begin
     Stream.WriteString(sLineBreak + '/* PACKAGES */');
     for I := 0 to PackageCount - 1 do
     begin
+      if not Packages[I].Loaded then
+        Continue;
       Stream.WriteString(sLineBreak + sLineBreak);
+      if Packages[I].UsesColumnTypes then
+      begin
+        Packages[I].SaveHeaderAlterDDL(Stream);
+        Stream.WriteString(CurrentTerminator + sLineBreak + sLineBreak);
+      end;
       Packages[I].SaveBodyDDL(Stream);
-      Stream.WriteString(vProcTerminator + sLineBreak);
+      Stream.WriteString(CurrentTerminator + sLineBreak);
     end;
   end;
 
@@ -2860,16 +3084,18 @@ begin
     Stream.WriteString(sLineBreak + '/* FUNCTIONS */');
     for I := 0 to GetFunctionsCount - 1 do
     begin
+      if not GetFunctions(I).Loaded then
+        Continue;
       Stream.WriteString(sLineBreak + sLineBreak);
       GetFunctions(I).SaveAlterDDL(Stream);
-      Stream.WriteString(vProcTerminator + sLineBreak);
+      Stream.WriteString(CurrentTerminator + sLineBreak);
     end;
   end;
 
   if dtoUseSetTerm in Options then
     Stream.WriteString('SET TERM ;^' + sLineBreak + sLineBreak);
   // Last: a DDL trigger fires on the statements after it
-  SaveMainObjects('DB TRIGGERS', Ord(otDBTrigger), vProcTerminator);
+  SaveMainObjects('DB TRIGGERS', Ord(otDBTrigger), CurrentTerminator);
   if CommentsIncluded(Options) then
     SaveComments;
   Stream.WriteString('COMMIT WORK;');
@@ -2878,27 +3104,27 @@ begin
     SaveGrants
 end;
 
-function TMetaDataBase.GetGenerators(const Index: Integer): TMetaGenerator;
+function TFIBMetaDatabase.GetGenerators(const Index: Integer): TFIBMetaGenerator;
 begin
-  Result := TMetaGenerator(GetChildObject(Ord(otGenerator), Index));
+  Result := TFIBMetaGenerator(GetChildObject(Ord(otGenerator), Index));
 end;
 
-function TMetaDataBase.GetGeneratorsCount: Integer;
+function TFIBMetaDatabase.GetGeneratorsCount: Integer;
 begin
   Result := GetChildsCount(Ord(otGenerator))
 end;
 
-function TMetaDataBase.GetTables(const Index: Integer): TMetaTable;
+function TFIBMetaDatabase.GetTables(const Index: Integer): TFIBMetaTable;
 begin
-  Result := TMetaTable(GetChildObject(Ord(otTable), Index));
+  Result := TFIBMetaTable(GetChildObject(Ord(otTable), Index));
 end;
 
-function TMetaDataBase.GetTablesCount: Integer;
+function TFIBMetaDatabase.GetTablesCount: Integer;
 begin
   Result := GetChildsCount(Ord(otTable))
 end;
 
-function TMetaDataBase.FindTableIndex(const TableName: string): Integer;
+function TFIBMetaDatabase.FindTableIndex(const TableName: string): Integer;
 var
   I: Integer;
 begin
@@ -2911,7 +3137,7 @@ begin
     end
 end;
 
-function TMetaDataBase.FindDomainIndex(const DomainName: string): Integer;
+function TFIBMetaDatabase.FindDomainIndex(const DomainName: string): Integer;
 var
   I: Integer;
 begin
@@ -2924,94 +3150,94 @@ begin
     end
 end;
 
-function TMetaDataBase.GetViews(const Index: Integer): TMetaView;
+function TFIBMetaDatabase.GetViews(const Index: Integer): TFIBMetaView;
 begin
-  Result := TMetaView(GetChildObject(Ord(otView), Index));
+  Result := TFIBMetaView(GetChildObject(Ord(otView), Index));
 end;
 
-function TMetaDataBase.GetViewsCount: Integer;
+function TFIBMetaDatabase.GetViewsCount: Integer;
 begin
   Result := GetChildsCount(Ord(otView))
 end;
 
-function TMetaDataBase.GetDomains(const Index: Integer): TMetaDomain;
+function TFIBMetaDatabase.GetDomains(const Index: Integer): TFIBMetaDomain;
 begin
 
-  Result := TMetaDomain(GetChildObject(Ord(otDomain), Index));
+  Result := TFIBMetaDomain(GetChildObject(Ord(otDomain), Index));
 end;
 
-function TMetaDataBase.GetDomainsCount: Integer;
+function TFIBMetaDatabase.GetDomainsCount: Integer;
 begin
   Result := GetChildsCount(Ord(otDomain))
 end;
 
-function TMetaDataBase.GetPackageCount: Integer;
+function TFIBMetaDatabase.GetPackageCount: Integer;
 begin
   Result := GetChildsCount(Ord(otPackage))
 end;
 
-function TMetaDataBase.GetPackages(const Index: Integer): TMetaPackage;
+function TFIBMetaDatabase.GetPackages(const Index: Integer): TFIBMetaPackage;
 begin
-  Result := TMetaPackage(GetChildObject(Ord(otPackage), Index));
+  Result := TFIBMetaPackage(GetChildObject(Ord(otPackage), Index));
 end;
 
-function TMetaDataBase.GetProcedures(const Index: Integer): TMetaProcedure;
+function TFIBMetaDatabase.GetProcedures(const Index: Integer): TFIBMetaProcedure;
 begin
-  Result := TMetaProcedure(GetChildObject(Ord(otProcedure), Index));
+  Result := TFIBMetaProcedure(GetChildObject(Ord(otProcedure), Index));
 end;
 
-function TMetaDataBase.GetProceduresCount: Integer;
+function TFIBMetaDatabase.GetProceduresCount: Integer;
 begin
   Result := GetChildsCount(Ord(otProcedure))
 end;
 
-function TMetaDataBase.GetFunctionsCount: Integer;
+function TFIBMetaDatabase.GetFunctionsCount: Integer;
 begin
   Result := GetChildsCount(Ord(otStoredFunctions))
 end;
 
-function TMetaDataBase.GetFunctions(const Index: Integer): TMetaStoredFunc;
+function TFIBMetaDatabase.GetFunctions(const Index: Integer): TFIBMetaStoredFunction;
 begin
-  Result := TMetaStoredFunc(GetChildObject(Ord(otStoredFunctions), Index));
+  Result := TFIBMetaStoredFunction(GetChildObject(Ord(otStoredFunctions), Index));
 end;
 
-function TMetaDataBase.GetExceptions(const Index: Integer): TMetaException;
+function TFIBMetaDatabase.GetExceptions(const Index: Integer): TFIBMetaException;
 begin
-  Result := TMetaException(GetChildObject(Ord(otException), Index));
+  Result := TFIBMetaException(GetChildObject(Ord(otException), Index));
 end;
 
-function TMetaDataBase.GetExceptionsCount: Integer;
+function TFIBMetaDatabase.GetExceptionsCount: Integer;
 begin
   Result := GetChildsCount(Ord(otException))
 end;
 
-function TMetaDataBase.GetUDFS(const Index: Integer): TMetaUDF;
+function TFIBMetaDatabase.GetUDFS(const Index: Integer): TFIBMetaUDF;
 begin
-  Result := TMetaUDF(GetChildObject(Ord(otUDF), Index));
+  Result := TFIBMetaUDF(GetChildObject(Ord(otUDF), Index));
 end;
 
-function TMetaDataBase.GetUDFSCount: Integer;
+function TFIBMetaDatabase.GetUDFSCount: Integer;
 begin
   Result := GetChildsCount(Ord(otUDF))
 end;
 
-function TMetaDataBase.GetRoles(const Index: Integer): TMetaRole;
+function TFIBMetaDatabase.GetRoles(const Index: Integer): TFIBMetaRole;
 begin
-  Result := TMetaRole(GetChildObject(Ord(otRole), Index));
+  Result := TFIBMetaRole(GetChildObject(Ord(otRole), Index));
 end;
 
-function TMetaDataBase.GetRolesCount: Integer;
+function TFIBMetaDatabase.GetRolesCount: Integer;
 begin
   Result := GetChildsCount(Ord(otRole))
 end;
 
-procedure TMetaDataBase.Clear;
+procedure TFIBMetaDatabase.Clear;
 begin
   inherited Clear;
   FNamesLoaded := False;
 end;
 
-procedure TMetaDataBase.DetectServerFeatures;
+procedure TFIBMetaDatabase.DetectServerFeatures;
 var
   Query: TFIBQuery;
 begin
@@ -3027,6 +3253,8 @@ begin
     FCommentsSupports := Query.FieldByName('COMMENTS').AsInteger > 0;
     FSequenceOptionsSupports := Query.FieldByName('SEQUENCE_OPTIONS').AsInteger > 0;
     FPartialIndicesSupports := Query.FieldByName('PARTIAL_INDICES').AsInteger > 0;
+    FExternalRoutinesSupports := Query.FieldByName('EXTERNAL_ROUTINES').AsInteger > 0;
+    FSQLSecuritySupports := Query.FieldByName('SQL_SECURITY').AsInteger > 0;
   finally
     Query.Free;
   end;
@@ -3035,7 +3263,10 @@ begin
   FCodePage := FInternalTransaction.DefaultDatabase.Capabilities.CodePage;
 end;
 
-procedure TMetaDataBase.SetOptionalColumns(Query: TFIBQuery; ObjectType: TDBObjectType);
+procedure TFIBMetaDatabase.SetOptionalColumns(Query: TFIBQuery; ObjectType: TFIBDBObjectType);
+var
+  RoutineOptions: string;
+  Macro: TFIBXSQLVAR;
 begin
   case ObjectType of
     otGenerator, otRole:
@@ -3049,9 +3280,21 @@ begin
       if FPackagesSupports then
         Query.ParamByName('PACK_NAME').AsString := PackageNameColumn;
   end;
+  RoutineOptions := '';
+  case ObjectType of
+    otProcedure, otStoredFunctions, otDBTrigger:
+      if FExternalRoutinesSupports then
+        RoutineOptions := ExternalColumns;
+  end;
+  if FSQLSecuritySupports and (ObjectType in [otTable, otProcedure, otStoredFunctions, otDBTrigger, otPackage]) then
+    RoutineOptions := RoutineOptions + SQLSecurityColumn;
+  // Also when empty: a reused query keeps the value of its previous SQL
+  Macro := Query.FindParam('ROUTINE_OPTIONS');
+  if Macro <> nil then
+    Macro.AsString := RoutineOptions;
 end;
 
-function TMetaDataBase.ProcFieldsSQL: string;
+function TFIBMetaDatabase.ProcFieldsSQL: string;
 begin
   if not FProcParamDomainSupports then
     Result := QRYProcFields
@@ -3064,7 +3307,7 @@ begin
   Result := Result + ProcFieldsOrder;
 end;
 
-function TMetaDataBase.UDFFieldsSQL: string;
+function TFIBMetaDatabase.UDFFieldsSQL: string;
 begin
   Result := QRYUDFFields;
   if FPackagesSupports then
@@ -3072,12 +3315,12 @@ begin
   Result := Result + UDFFieldsOrder;
 end;
 
-function TMetaDataBase.CommentsIncluded(Options: TDDLTextOptions): Boolean;
+function TFIBMetaDatabase.CommentsIncluded(Options: TFIBDDLTextOptions): Boolean;
 begin
   Result := (dtoIncludeComments in Options) and FCommentsSupports;
 end;
 
-function TMetaDataBase.CommentFits(const Statement, Text: string): Boolean;
+function TFIBMetaDatabase.CommentFits(const Statement, Text: string): Boolean;
 const
   // Bytes in the charset of the connection
   MaxLiteralLength = 65535;
@@ -3089,13 +3332,8 @@ begin
     Result := EncodedLength(Statement, FCodePage) <= MaxStatementLength;
 end;
 
-procedure TMetaDataBase.GenerateDDLText(Stream: TStringStream);
+procedure TFIBMetaDatabase.GenerateDDLText(Stream: TStringStream);
 begin
-  { if not FLoaded then
-    begin
-    Clear;
-    LoadFromDatabase(FInternalTransaction.DefaultDatabase);
-    end; }
   ExtGenerateDDLText(Stream, FDDLTextOptions)
 end;
 
@@ -3103,7 +3341,7 @@ end;
   otException, otUDF, otRole,otDBTrigger,motGrants) }
 
 const
-  QRY_NAMES: array [TDBObjectType] of string = (
+  QRY_NAMES: array [TFIBDBObjectType] of string = (
     QRYDomains,
     QRYTables,
     QRYViews,
@@ -3118,7 +3356,7 @@ const
     'DB_DUMM'
   );
 
-  QRY_NAMES_Where: array [TDBObjectType] of string = (
+  QRY_NAMES_Where: array [TFIBDBObjectType] of string = (
     'RDB$FIELD_NAME=:N',
     'REL.RDB$RELATION_NAME=:N',
     'REL.RDB$RELATION_NAME=:N',
@@ -3133,29 +3371,29 @@ const
     'DB_DUMM'
   );
 
-  MetaNodeClasses: array [TDBObjectType] of TMetaObjectClass = (
-    TMetaDomain,
-    TMetaTable,
-    TMetaView,
-    TMetaProcedure,
-    TMetaGenerator,
-    TMetaException,
-    TMetaUDF,
-    TMetaRole,
-    TMetaDBTrigger,
-    TMetaStoredFunc,
-    TMetaPackage,
-    TMetaDataBase
+  MetaNodeClasses: array [TFIBDBObjectType] of TFIBMetaObjectClass = (
+    TFIBMetaDomain,
+    TFIBMetaTable,
+    TFIBMetaView,
+    TFIBMetaProcedure,
+    TFIBMetaGenerator,
+    TFIBMetaException,
+    TFIBMetaUDF,
+    TFIBMetaRole,
+    TFIBMetaDBTrigger,
+    TFIBMetaStoredFunction,
+    TFIBMetaPackage,
+    TFIBMetaDatabase
   );
 
-function TMetaDataBase.GetDBObject(DB: TFIBDatabase; ObjectType: TDBObjectType;
-  const ObjectName: string; ForceLoad: boolean): TCustomMetaObject;
+function TFIBMetaDatabase.GetDBObject(DB: TFIBDatabase; ObjectType: TFIBDBObjectType;
+  const ObjectName: string; ForceLoad: Boolean): TFIBCustomMetaObject;
 var
   SavedName: string;
   QNames, QFields, QFuncInputs, QCharset: TFIBQuery;
   QPrimary: TFIBQuery;
   QIndex, QForeign, QCheck, QTrigger: TFIBQuery;
-  ClassOfNode: TMetaObjectClass;
+  ClassOfNode: TFIBMetaObjectClass;
 begin
   if ObjectType = otDatabase then
   begin
@@ -3164,7 +3402,6 @@ begin
   end;
   SavedName := SavedMetaObjectName(ObjectName);
   Result := GetChildObjectByName(Ord(ObjectType), SavedName);
-  // if (Result=nil) and ForceLoad then
   if ForceLoad or (Result <> nil) and (not Result.Loaded) then
   begin
     if (Result <> nil) and Result.Loaded then
@@ -3198,7 +3435,7 @@ begin
         QNames.MainWhereClause := QNames.MainWhereClause + ' and RDB$PACKAGE_NAME IS NULL';
       // A PSQL function of Firebird 3 and later is not an external one
       if FStoredFunctionsSupports and (ObjectType = otUDF) then
-        QNames.MainWhereClause := QNames.MainWhereClause + ' and RDB$FUNCTION_SOURCE IS NULL';
+        QNames.MainWhereClause := QNames.MainWhereClause + ' and RDB$FUNCTION_SOURCE IS NULL and RDB$ENGINE_NAME IS NULL';
       SetOptionalColumns(QNames, ObjectType);
       QNames.ParamByName('N').AsString := SavedName;
 
@@ -3213,7 +3450,7 @@ begin
           Result := ClassOfNode.Create(Self);
 
         case ObjectType of
-          otDomain: TMetaDomain(Result).LoadFromDataBase(QNames, QCharset);
+          otDomain: TFIBMetaDomain(Result).LoadFromDataBase(QNames, QCharset);
           otTable:
             begin
               if FIdentityFieldsSupports then
@@ -3227,39 +3464,41 @@ begin
               QForeign := CreateQuery(QRYForeign, FInternalTransaction);
               QCheck := CreateQuery(QRYCheck, FInternalTransaction);
               QTrigger := CreateQuery(QRYTrigger, FInternalTransaction);
-              TMetaTable(Result).LoadFromDataBase(QNames, QFields, QCharset,
+              SetOptionalColumns(QTrigger, otDBTrigger);
+              TFIBMetaTable(Result).LoadFromDataBase(QNames, QFields, QCharset,
                 QPrimary, QIndex, QForeign, QCheck, QTrigger, [soTableFields, soTableFields, soPrimaryKey, soForeignKey,
                 soTableTriggers, soUniqueConstr, soIndex, soCheckConstr])
             end;
 
-          otGenerator: TMetaGenerator(Result).LoadFromDataBase(QNames);
+          otGenerator: TFIBMetaGenerator(Result).LoadFromDataBase(QNames);
           otUDF:
             begin
               QFields := CreateQuery(UDFFieldsSQL, FInternalTransaction);
-              TMetaUDF(Result).LoadFromDataBase(QNames, QFields, QCharset);
+              TFIBMetaUDF(Result).LoadFromDataBase(QNames, QFields, QCharset);
             end;
           otView:
             begin
               QFields := CreateQuery(QRYTableFields, FInternalTransaction);
               QTrigger := CreateQuery(QRYTrigger, FInternalTransaction);
-              TMetaView(Result).LoadFromDataBase(QNames, QFields, QTrigger, QCharset, [soViewFields, soViewTriggers])
+              SetOptionalColumns(QTrigger, otDBTrigger);
+              TFIBMetaView(Result).LoadFromDataBase(QNames, QFields, QTrigger, QCharset, [soViewFields, soViewTriggers])
             end;
           otProcedure:
             begin
               QFields := CreateQuery(ProcFieldsSQL, FInternalTransaction);
-              TMetaProcedure(Result).LoadFromDataBase(QNames, QFields, QCharset,
+              TFIBMetaProcedure(Result).LoadFromDataBase(QNames, QFields, QCharset,
                 FProcParamDomainSupports, FProcParamRelationSupports)
             end;
-          otException: TMetaException(Result).LoadFromDataBase(QNames);
-          otRole: TMetaRole(Result).LoadFromDataBase(QNames);
-          otDBTrigger: TCustomMetaTrigger(Result).LoadFromDataBase(QNames);
+          otException: TFIBMetaException(Result).LoadFromDataBase(QNames);
+          otRole: TFIBMetaRole(Result).LoadFromDataBase(QNames);
+          otDBTrigger: TFIBCustomMetaTrigger(Result).LoadFromDataBase(QNames);
           otStoredFunctions:
             begin
               QFields := CreateQuery(QRYStoredFuncFieldsFB3Out, FInternalTransaction);
               QFuncInputs := CreateQuery(QRYStoredFuncFieldsFB3In, FInternalTransaction);
-              TMetaStoredFunc(Result).LoadFromDataBase(QNames, QFields, QFuncInputs, QCharset);
+              TFIBMetaStoredFunction(Result).LoadFromDataBase(QNames, QFields, QFuncInputs, QCharset);
             end;
-          otPackage: TMetaPackage(Result).LoadFromDataBase(QNames, QCharset);
+          otPackage: TFIBMetaPackage(Result).LoadFromDataBase(QNames, QCharset);
         end;
       end
     finally
@@ -3278,45 +3517,45 @@ begin
   end;
 end;
 
-class function TMetaDataBase.ClassIndex: Integer;
+class function TFIBMetaDatabase.ClassIndex: Integer;
 begin
   Result := Ord(otDatabase);
 end;
 
-{ TMetaConstraint }
+{ TFIBMetaConstraint }
 
-function TMetaConstraint.GetFields(const Index: Integer): TMetaTableField;
+function TFIBMetaConstraint.GetFields(const Index: Integer): TFIBMetaTableField;
 begin
   Assert((Index >= 0) and (Index < FieldsCount), IntToStr(Index) + ' ' + ClassName);
-  Result := TMetaTable(FOwner).Fields[FFields[Index]];
+  Result := TFIBMetaTable(FOwner).Fields[FFields[Index]];
 end;
 
-function TMetaConstraint.GetFieldsCount: Integer;
+function TFIBMetaConstraint.GetFieldsCount: Integer;
 begin
   Result := Integer(Length(FFields));
 end;
 
-class function TMetaConstraint.IsSubObject: boolean;
+class function TFIBMetaConstraint.IsSubObject: Boolean;
 begin
   Result := True
 end;
 
-{ TMetaUniqueConstraint }
+{ TFIBMetaUniqueConstraint }
 
-class function TMetaUniqueConstraint.ClassIndex: Integer;
+class function TFIBMetaUniqueConstraint.ClassIndex: Integer;
 begin
   Result := Ord(soUniqueConstr)
 end;
 
-procedure TMetaUniqueConstraint.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaUniqueConstraint.GenerateObjectDDL(Stream: TStringStream);
 var
   I: Integer;
 begin
   if Copy(FName, 1, 6) = 'INTEG_' then
-    Stream.WriteString(Format('ALTER TABLE %s ADD UNIQUE (', [TMetaTable(FOwner).FormatName]))
+    Stream.WriteString(Format('ALTER TABLE %s ADD UNIQUE (', [TFIBMetaTable(FOwner).FormatName]))
   else
     Stream.WriteString(Format('ALTER TABLE %s ADD CONSTRAINT %s UNIQUE (',
-      [TMetaTable(FOwner).FormatName, FormatName]));
+      [TFIBMetaTable(FOwner).FormatName, FormatName]));
   for I := 0 to FieldsCount - 1 do
   begin
     Stream.WriteString(Fields[I].FormatName);
@@ -3326,9 +3565,9 @@ begin
   Stream.WriteString(')');
 end;
 
-{ TMetaPrimaryKey }
+{ TFIBMetaPrimaryKey }
 
-procedure TMetaPrimaryKey.LoadFromDataBase(Q: TFIBQuery);
+procedure TFIBMetaPrimaryKey.LoadFromDataBase(Q: TFIBQuery);
 var
   I: Integer;
 begin
@@ -3337,7 +3576,7 @@ begin
   SetLength(FFields, 10000);
   while not Q.Eof do
   begin
-    FFields[I] := TMetaTable(FOwner).FindFieldIndex(Trim(Q.Fields[1].AsString));
+    FFields[I] := TFIBMetaTable(FOwner).FindFieldIndex(Trim(Q.Fields[1].AsString));
     Inc(I);
     Q.Next
   end;
@@ -3345,15 +3584,15 @@ begin
   FLoaded := True
 end;
 
-procedure TMetaPrimaryKey.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaPrimaryKey.GenerateObjectDDL(Stream: TStringStream);
 var
   I: Integer;
 begin
   if Copy(FName, 0, 6) = 'INTEG_' then
-    Stream.WriteString(Format('ALTER TABLE %s ADD PRIMARY KEY (', [TMetaTable(FOwner).FormatName]))
+    Stream.WriteString(Format('ALTER TABLE %s ADD PRIMARY KEY (', [TFIBMetaTable(FOwner).FormatName]))
   else
     Stream.WriteString(Format('ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (',
-      [TMetaTable(FOwner).FormatName, FormatName]));
+      [TFIBMetaTable(FOwner).FormatName, FormatName]));
   for I := 0 to FieldsCount - 1 do
   begin
     Stream.WriteString(Fields[I].FormatName);
@@ -3363,24 +3602,24 @@ begin
   Stream.WriteString(')');
 end;
 
-class function TMetaPrimaryKey.ClassIndex: Integer;
+class function TFIBMetaPrimaryKey.ClassIndex: Integer;
 begin
   Result := Ord(soPrimaryKey)
 end;
 
-{ TMetaIndex }
+{ TFIBMetaIndex }
 
-class function TMetaIndex.ClassIndex: Integer;
+class function TFIBMetaIndex.ClassIndex: Integer;
 begin
   Result := Ord(soIndex)
 end;
 
-function TMetaIndex.CommentKeyword: string;
+function TFIBMetaIndex.CommentKeyword: string;
 begin
   Result := 'INDEX';
 end;
 
-procedure TMetaIndex.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaIndex.GenerateObjectDDL(Stream: TStringStream);
 var
   I: Integer;
   Unique, Order: string;
@@ -3390,7 +3629,7 @@ begin
   if FOrder = IoDescending then
     Order := ' DESCENDING';
 
-  Stream.WriteString(Format('CREATE%s%s INDEX %s ON %s ', [Unique, Order, FormatName, TMetaTable(FOwner).FormatName]));
+  Stream.WriteString(Format('CREATE%s%s INDEX %s ON %s ', [Unique, Order, FormatName, TFIBMetaTable(FOwner).FormatName]));
 
   if FExpression <> '' then
     Stream.WriteString('COMPUTED BY ' + FExpression)
@@ -3411,33 +3650,33 @@ begin
     Stream.WriteString(Format('%s%sALTER INDEX %s INACTIVE', [DefTerminator, sLineBreak, FormatName]));
 end;
 
-{ TMetaForeignKey }
+{ TFIBMetaForeignKey }
 
-function TMetaForeignKey.GetForFields(const Index: Integer): TMetaTableField;
+function TFIBMetaForeignKey.GetForFields(const Index: Integer): TFIBMetaTableField;
 begin
   Assert((Index >= 0) and (Index < ForFieldsCount));
   Result := ForTable.Fields[FForFields[Index]];
 end;
 
-function TMetaForeignKey.GetForFieldsCount: Integer;
+function TFIBMetaForeignKey.GetForFieldsCount: Integer;
 begin
   Result := Integer(Length(FForFields));
 end;
 
-function TMetaForeignKey.GetForTable: TMetaTable;
+function TFIBMetaForeignKey.GetForTable: TFIBMetaTable;
 begin
   Result := MetaDataBase.Tables[FForTable];
 end;
 
-procedure TMetaForeignKey.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaForeignKey.GenerateObjectDDL(Stream: TStringStream);
 var
   I: Integer;
 begin
   if Copy(FName, 0, 6) = 'INTEG_' then
-    Stream.WriteString(Format('ALTER TABLE %s ADD FOREIGN KEY (', [TMetaTable(FOwner).FormatName]))
+    Stream.WriteString(Format('ALTER TABLE %s ADD FOREIGN KEY (', [TFIBMetaTable(FOwner).FormatName]))
   else
     Stream.WriteString(Format('ALTER TABLE %s ADD CONSTRAINT %s ' + sLineBreak +
-      ' FOREIGN KEY (', [TMetaTable(FOwner).FormatName, FormatName]));
+      ' FOREIGN KEY (', [TFIBMetaTable(FOwner).FormatName, FormatName]));
 
   for I := 0 to FieldsCount - 1 do
   begin
@@ -3465,28 +3704,30 @@ begin
     fkrSetNull: Stream.WriteString(' ON UPDATE SET NULL');
     fkrSetDefault: Stream.WriteString(' ON UPDATE SET DEFAULT');
   end;
-
-  // Stream.WriteString(NewLine);
 end;
 
-class function TMetaForeignKey.ClassIndex: Integer;
+class function TFIBMetaForeignKey.ClassIndex: Integer;
 begin
   Result := Ord(soForeignKey)
 end;
 
-{ TMetaCheckConstraint }
+{ TFIBMetaCheckConstraint }
 
-class function TMetaCheckConstraint.ClassIndex: Integer;
+class function TFIBMetaCheckConstraint.ClassIndex: Integer;
 begin
   Result := Ord(soCheckConstr)
 end;
 
-procedure TMetaCheckConstraint.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaCheckConstraint.GenerateObjectDDL(Stream: TStringStream);
 begin
-  Stream.WriteString(Format('ALTER TABLE %s ADD %s', [TMetaTable(FOwner).FormatName, FConstraint]));
+  if Copy(FName, 1, 6) = 'INTEG_' then
+    Stream.WriteString(Format('ALTER TABLE %s ADD %s', [TFIBMetaTable(FOwner).FormatName, FConstraint]))
+  else
+    Stream.WriteString(Format('ALTER TABLE %s ADD CONSTRAINT %s %s', [TFIBMetaTable(FOwner).FormatName, FormatName,
+      FConstraint]));
 end;
 
-{ TCustomMetaTrigger }
+{ TFIBCustomMetaTrigger }
 
 const
   TriggerKindShift = 13;
@@ -3546,40 +3787,40 @@ const
     'DROP MAPPING'
   );
 
-class function TCustomMetaTrigger.DecodePrefix(Value: Int64): TTriggerType;
+class function TFIBCustomMetaTrigger.DecodePrefix(Value: Int64): TFIBTriggerType;
 begin
   case Integer((Value shr TriggerKindShift) and 3) of
     TriggerKindDB: Result := ttON;
-    TriggerKindDDL: Result := TTriggerType(Value and 1);
+    TriggerKindDDL: Result := TFIBTriggerType(Value and 1);
   else
-    Result := TTriggerType((Value + 1) and 1);
+    Result := TFIBTriggerType((Value + 1) and 1);
   end;
 end;
 
-class function TCustomMetaTrigger.DecodeSuffixes(Value: Int64): TTriggerActions;
+class function TFIBCustomMetaTrigger.DecodeSuffixes(Value: Int64): TFIBTriggerActions;
 var
   V, Slot: Integer;
 begin
   Result := [];
   case Integer((Value shr TriggerKindShift) and 3) of
-    TriggerKindDB: Include(Result, TTriggerAction(Ord(taConnect) + (Value and $FF)));
+    TriggerKindDB: Include(Result, TFIBTriggerAction(Ord(taConnect) + (Value and $FF)));
     TriggerKindDDL: ;
   else
     for Slot := 1 to 3 do
     begin
       V := ((Value + 1) shr (Slot * 2 - 1)) and 3;
       if V > 0 then
-        Include(Result, TTriggerAction(V - 1));
+        Include(Result, TFIBTriggerAction(V - 1));
     end;
   end;
 end;
 
-function TCustomMetaTrigger.IsDDLTrigger: Boolean;
+function TFIBCustomMetaTrigger.IsDDLTrigger: Boolean;
 begin
   Result := (FTriggerType shr TriggerKindShift) and 3 = TriggerKindDDL;
 end;
 
-function TCustomMetaTrigger.DDLEventsText: string;
+function TFIBCustomMetaTrigger.DDLEventsText: string;
 var
   Bit: Integer;
 begin
@@ -3598,7 +3839,7 @@ begin
   end;
 end;
 
-procedure TCustomMetaTrigger.LoadFromDataBase(Q: TFIBQuery);
+procedure TFIBCustomMetaTrigger.LoadFromDataBase(Q: TFIBQuery);
 begin
   Name := Q.Fields[0].AsString;
   FSource := Q.Fields[1].AsString;
@@ -3608,19 +3849,34 @@ begin
   FPrefix := DecodePrefix(FTriggerType);
   FSuffix := DecodeSuffixes(FTriggerType);
   FActive := Q.Fields[4].AsInteger = 0;
+  FEngine := ReadOptionalString(Q, 'RDB$ENGINE_NAME');
+  FEntryPoint := ReadOptionalString(Q, 'RDB$ENTRYPOINT');
+  FSQLSecurity := ReadSQLSecurity(Q);
   LoadDescription(Q);
   FLoaded := True
 end;
 
-function TCustomMetaTrigger.CommentKeyword: string;
+procedure TFIBCustomMetaTrigger.WriteBody(Stream: TStringStream);
+begin
+  if FEngine <> '' then
+    Stream.WriteString(sLineBreak + ExternalClause(FEngine, FEntryPoint, FSource))
+  else
+  begin
+    if FSQLSecurity >= 0 then
+      Stream.WriteString(sLineBreak + SQLSecurityClause(FSQLSecurity));
+    Stream.WriteString(sLineBreak + FSource);
+  end;
+end;
+
+function TFIBCustomMetaTrigger.CommentKeyword: string;
 begin
   Result := 'TRIGGER';
 end;
 
-procedure TCustomMetaTrigger.WriteHeaderDDL(Stream: TStringStream);
+procedure TFIBCustomMetaTrigger.WriteHeaderDDL(Stream: TStringStream);
 var
-  Count: Smallint;
-  Suf: TTriggerAction;
+  Count: SmallInt;
+  Suf: TFIBTriggerAction;
 begin
   if (FPrefix = ttON) or IsDDLTrigger then
     Stream.WriteString(Format('CREATE TRIGGER %s%s', [FormatName, sLineBreak]))
@@ -3650,118 +3906,125 @@ begin
   Stream.WriteString(' POSITION ' + IntToStr(FPosition));
 end;
 
-procedure TCustomMetaTrigger.SaveFakeDDL(Stream: TStringStream);
+procedure TFIBCustomMetaTrigger.SaveFakeDDL(Stream: TStringStream);
 begin
   // For Updateble View
   WriteHeaderDDL(Stream);
   Stream.WriteString(sLineBreak + 'AS BEGIN POST_EVENT ''FAKE''; END');
 end;
 
-procedure TCustomMetaTrigger.SaveAlterDDL(Stream: TStringStream);
+procedure TFIBCustomMetaTrigger.SaveAlterDDL(Stream: TStringStream);
 begin
   Stream.WriteString(Format('ALTER TRIGGER %s%s', [FormatName, sLineBreak]));
   if FActive then
     Stream.WriteString('ACTIVE')
   else
     Stream.WriteString('INACTIVE');
-  Stream.WriteString(sLineBreak + FSource);
+  WriteBody(Stream);
 end;
 
-class function TCustomMetaTrigger.IsSubObject: boolean;
+class function TFIBCustomMetaTrigger.IsSubObject: Boolean;
 begin
   Result := True
 end;
 
-procedure TCustomMetaTrigger.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBCustomMetaTrigger.GenerateObjectDDL(Stream: TStringStream);
 begin
   WriteHeaderDDL(Stream);
-  Stream.WriteString(sLineBreak + FSource);
+  WriteBody(Stream);
 end;
 
-{ TMetaTableGrant }
+{ TFIBMetaTableGrant }
 
-class function TMetaTableGrant.ClassIndex: Integer;
+class function TFIBMetaTableGrant.ClassIndex: Integer;
 begin
   Result := Ord(soTableGrants)
 end;
 
-{ TMetaProcGrant }
+{ TFIBMetaProcedureGrant }
 
-class function TMetaProcGrant.ClassIndex: Integer;
+class function TFIBMetaProcedureGrant.ClassIndex: Integer;
 begin
   Result := Ord(soProcGrants)
 end;
 
-{ TMetaViewGrant }
+{ TFIBMetaViewGrant }
 
-class function TMetaViewGrant.ClassIndex: Integer;
+class function TFIBMetaViewGrant.ClassIndex: Integer;
 begin
   Result := Ord(soViewGrants)
 end;
 
-{ TMetaTableTrigger }
+{ TFIBMetaTableTrigger }
 
-class function TMetaTableTrigger.ClassIndex: Integer;
+class function TFIBMetaTableTrigger.ClassIndex: Integer;
 begin
   Result := Ord(soTableTriggers)
 end;
 
-{ TMetaViewTrigger }
+{ TFIBMetaViewTrigger }
 
-class function TMetaViewTrigger.ClassIndex: Integer;
+class function TFIBMetaViewTrigger.ClassIndex: Integer;
 begin
   Result := Ord(soViewTriggers)
 end;
 
-{ TMetaDBTrigger }
+{ TFIBMetaDBTrigger }
 
-class function TMetaDBTrigger.ClassIndex: Integer;
+class function TFIBMetaDBTrigger.ClassIndex: Integer;
 begin
   Result := Ord(otDBTrigger)
 end;
 
-class function TMetaDBTrigger.IsSubObject: boolean;
+class function TFIBMetaDBTrigger.IsSubObject: Boolean;
 begin
   Result := False
 end;
-{ TMetaRoleGrant }
+{ TFIBMetaRoleGrant }
 
-class function TMetaRoleGrant.ClassIndex: Integer;
+class function TFIBMetaRoleGrant.ClassIndex: Integer;
 begin
   Result := Ord(soRoleGrants)
 end;
 
-{ TMetaView }
+{ TFIBObjectGrant }
 
-constructor TMetaView.Create(AOwner: TCustomMetaObject; aName: string = '');
+class function TFIBObjectGrant.ClassIndex: Integer;
+begin
+  Result := 0;
+end;
+
+{ TFIBMetaView }
+
+constructor TFIBMetaView.Create(AOwner: TFIBCustomMetaObject; aName: string = '');
 begin
   inherited Create(AOwner, aName);
-  AddClass(TMetaField);
-  AddClass(TCustomMetaTrigger);
-  AddClass(TCustomMetaGrant);
+  AddClass(TFIBMetaField);
+  AddClass(TFIBCustomMetaTrigger);
+  AddClass(TFIBCustomMetaGrant);
 end;
 
-function TMetaView.GetFields(const Index: Integer): TMetaField;
+function TFIBMetaView.GetFields(const Index: Integer): TFIBMetaField;
 begin
-  Result := TMetaField(GetChildObject(Ord(soViewFields), Index))
+  Result := TFIBMetaField(GetChildObject(Ord(soViewFields), Index))
 end;
 
-function TMetaView.GetFieldsCount: Integer;
+function TFIBMetaView.GetFieldsCount: Integer;
 begin
   Result := GetChildsCount(Ord(soViewFields));
 end;
 
-function TMetaView.GetTriggers(const Index: Integer): TCustomMetaTrigger;
+function TFIBMetaView.GetTriggers(const Index: Integer): TFIBCustomMetaTrigger;
 begin
-  Result := TCustomMetaTrigger(GetChildObject(Ord(soViewTriggers), Index))
+  Result := TFIBCustomMetaTrigger(GetChildObject(Ord(soViewTriggers), Index))
 end;
 
-function TMetaView.GetTriggersCount: Integer;
+function TFIBMetaView.GetTriggersCount: Integer;
 begin
   Result := GetChildsCount(Ord(soViewTriggers));
 end;
 
-procedure TMetaView.LoadFromDataBase(QName, QFields, QTriggers: TFIBQuery; QCharset: TFIBQuery; ChildTypes: TViewChildTypes);
+procedure TFIBMetaView.LoadFromDataBase(QName, QFields, QTriggers: TFIBQuery; QCharset: TFIBQuery; ChildTypes: TFIBViewChildTypes);
 begin
   Name := QName.Fields[0].AsString;
   FSource := Trim(QName.Fields[1].AsString);
@@ -3774,7 +4037,7 @@ begin
     QFields.ExecQuery;
     while not QFields.Eof do
     begin
-      TMetaField.Create(Self).LoadFromDataBase(QFields, QCharset);
+      TFIBMetaField.Create(Self).LoadFromDataBase(QFields, QCharset);
       QFields.Next;
     end;
     QFields.Close
@@ -3783,24 +4046,24 @@ begin
   // TRIGGER
   if soViewTriggers in ChildTypes then
   begin
-    QTriggers.Params[0].AsString := FName;
+    QTriggers.ParamByName('RN').AsString := FName;
     QTriggers.ExecQuery;
     while not QTriggers.Eof do
     begin
-      TMetaViewTrigger.Create(Self).LoadFromDataBase(QTriggers);
+      TFIBMetaViewTrigger.Create(Self).LoadFromDataBase(QTriggers);
       QTriggers.Next;
     end;
   end;
   FLoaded := True
 end;
 
-procedure TMetaView.GenerateDDLText(Stream: TStringStream);
+procedure TFIBMetaView.GenerateDDLText(Stream: TStringStream);
 begin
   inherited GenerateDDLText(Stream);
   GenerateChildDDL(Stream, Ord(soViewTriggers));
 end;
 
-procedure TMetaView.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaView.GenerateObjectDDL(Stream: TStringStream);
 var
   I: Integer;
 begin
@@ -3815,95 +4078,88 @@ begin
   Stream.WriteString(Source);
 end;
 
-function TMetaView.GetGrants(const Index: Integer): TCustomMetaGrant;
-begin
-  Result := TCustomMetaGrant(GetChildObject(Ord(soViewGrants), Index));
-end;
-
-function TMetaView.GetGrantsCount: Integer;
-begin
-  Result := GetChildsCount(Ord(soViewGrants));
-end;
-
-class function TMetaView.ClassIndex: Integer;
+class function TFIBMetaView.ClassIndex: Integer;
 begin
   Result := Ord(otView)
 end;
 
-function TMetaView.CommentKeyword: string;
+function TFIBMetaView.CommentKeyword: string;
 begin
   Result := 'VIEW';
 end;
 
-procedure TMetaView.GenerateCommentDDL(Stream: TStringStream);
+procedure TFIBMetaView.GenerateCommentDDL(Stream: TStringStream);
 begin
   inherited GenerateCommentDDL(Stream);
   GenerateChildCommentDDL(Stream, Ord(soViewFields));
   GenerateChildCommentDDL(Stream, Ord(soViewTriggers));
 end;
 
-procedure TMetaDomain.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaDomain.GenerateObjectDDL(Stream: TStringStream);
 begin
-  // Stream.WriteString(Format('CREATE DOMAIN %s AS ', [FormatName]));
   Stream.WriteString('CREATE DOMAIN ');
   inherited GenerateObjectDDL(Stream);
 
 end;
 
-class function TMetaDomain.ClassIndex: Integer;
+class function TFIBMetaDomain.ClassIndex: Integer;
 begin
   Result := Ord(otDomain)
 end;
 
-class function TMetaDomain.IsSubObject: boolean;
+class function TFIBMetaDomain.IsSubObject: Boolean;
 begin
   Result := False
 end;
 
-function TMetaDomain.CommentKeyword: string;
+function TFIBMetaDomain.CommentKeyword: string;
 begin
   Result := 'DOMAIN';
 end;
 
-function TMetaDomain.CommentTarget: string;
+function TFIBMetaDomain.CommentTarget: string;
 begin
   Result := FormatName;
 end;
-{ TMetaProcedure }
+{ TFIBMetaProcedure }
 
-constructor TMetaProcedure.Create(AOwner: TCustomMetaObject; aName: string = '');
+constructor TFIBMetaProcedure.Create(AOwner: TFIBCustomMetaObject; aName: string = '');
 begin
   inherited Create(AOwner, aName);
-  AddClass(TMetaProcInField); // in
-  AddClass(TMetaProcOutField); // out
-  AddClass(TCustomMetaGrant); // grant
+  AddClass(TFIBMetaProcedureInField); // in
+  AddClass(TFIBMetaProcedureOutField); // out
+  AddClass(TFIBCustomMetaGrant); // grant
+  FSQLSecurity := -1;
 end;
 
-function TMetaProcedure.GetInputFields(const Index: Integer): TMetaProcInField;
+function TFIBMetaProcedure.GetInputFields(const Index: Integer): TFIBMetaProcedureInField;
 begin
-  Result := TMetaProcInField(GetChildObject(Ord(soProcFieldIn), Index))
+  Result := TFIBMetaProcedureInField(GetChildObject(Ord(soProcFieldIn), Index))
 end;
 
-function TMetaProcedure.GetInputFieldsCount: Integer;
+function TFIBMetaProcedure.GetInputFieldsCount: Integer;
 begin
   Result := GetChildsCount(Ord(soProcFieldIn));
 end;
 
-function TMetaProcedure.GetOutputFields(const Index: Integer): TMetaProcOutField;
+function TFIBMetaProcedure.GetOutputFields(const Index: Integer): TFIBMetaProcedureOutField;
 begin
-  Result := TMetaProcOutField(GetChildObject(Ord(soProcFieldOut), Index))
+  Result := TFIBMetaProcedureOutField(GetChildObject(Ord(soProcFieldOut), Index))
 end;
 
-function TMetaProcedure.GetOutputFieldsCount: Integer;
+function TFIBMetaProcedure.GetOutputFieldsCount: Integer;
 begin
   Result := GetChildsCount(Ord(soProcFieldOut));
 end;
 
-procedure TMetaProcedure.InternalSaveToDDL(Stream: TStringStream; Operation: string; BaseTypes: Boolean = False);
+procedure TFIBMetaProcedure.InternalSaveToDDL(Stream: TStringStream; Operation: string; BaseTypes: Boolean = False);
 var
   I: Integer;
 begin
-  Stream.WriteString(Format('%s PROCEDURE %s', [Operation, FormatName]));
+  // No operation in a package header
+  if Operation <> '' then
+    Stream.WriteString(Operation + ' ');
+  Stream.WriteString('PROCEDURE ' + FormatName);
   if InputFieldsCount > 0 then
   begin
     Stream.WriteString(' (');
@@ -3931,8 +4187,8 @@ begin
   end;
 end;
 
-procedure TMetaProcedure.LoadFromDataBase(QNames, QFields: TFIBQuery;
-  QCharset: TFIBQuery; CanUseParamDomain, CanUseProcParamRelation: boolean);
+procedure TFIBMetaProcedure.LoadFromDataBase(QNames, QFields: TFIBQuery;
+  QCharset: TFIBQuery; CanUseParamDomain, CanUseProcParamRelation: Boolean);
 var
   Field, PackageParam: TFIBXSQLVAR;
 begin
@@ -3941,6 +4197,9 @@ begin
   Field := QNames.FindField('RDB$PACKAGE_NAME');
   if Field <> nil then
     FPackageName := Field.AsString;
+  FEngine := ReadOptionalString(QNames, 'RDB$ENGINE_NAME');
+  FEntryPoint := ReadOptionalString(QNames, 'RDB$ENTRYPOINT');
+  FSQLSecurity := ReadSQLSecurity(QNames);
   LoadDescription(QNames);
 
   QFields.Params[0].AsString := FName;
@@ -3953,7 +4212,7 @@ begin
   QFields.ExecQuery;
   while not QFields.Eof do
   begin
-    TMetaProcInField.Create(Self).DoLoadFromQuery(QFields, QCharset, CanUseParamDomain, CanUseProcParamRelation);
+    TFIBMetaProcedureInField.Create(Self).DoLoadFromQuery(QFields, QCharset, CanUseParamDomain, CanUseProcParamRelation);
     QFields.Next;
   end;
   QFields.Close;
@@ -3963,7 +4222,7 @@ begin
   QFields.ExecQuery;
   while not QFields.Eof do
   begin
-    TMetaProcOutField.Create(Self).DoLoadFromQuery(QFields, QCharset, CanUseParamDomain, CanUseProcParamRelation);
+    TFIBMetaProcedureOutField.Create(Self).DoLoadFromQuery(QFields, QCharset, CanUseParamDomain, CanUseProcParamRelation);
     QFields.Next;
   end;
   QFields.Close;
@@ -3971,18 +4230,36 @@ begin
 
 end;
 
-procedure TMetaProcedure.SaveToAlterDDL(Stream: TStringStream);
+procedure TFIBMetaProcedure.WriteBody(Stream: TStringStream);
 begin
-  InternalSaveToDDL(Stream, 'ALTER');
-  // Firebird 2.5 keeps the spaces after AS in the source, not a line break
-  Stream.WriteString(sLineBreak + 'AS' + sLineBreak);
-  Stream.WriteString(FSource);
+  if FEngine <> '' then
+    Stream.WriteString(sLineBreak + ExternalClause(FEngine, FEntryPoint, FSource))
+  else
+  begin
+    if FSQLSecurity >= 0 then
+      Stream.WriteString(sLineBreak + SQLSecurityClause(FSQLSecurity));
+    // Firebird 2.5 keeps the spaces after AS in the source, not a line break
+    Stream.WriteString(sLineBreak + 'AS' + sLineBreak);
+    Stream.WriteString(FSource);
+  end;
 end;
 
-procedure TMetaProcedure.SaveToPostDDL(Stream: TStringStream);
+procedure TFIBMetaProcedure.SaveToAlterDDL(Stream: TStringStream);
+begin
+  InternalSaveToDDL(Stream, 'ALTER');
+  WriteBody(Stream);
+end;
+
+procedure TFIBMetaProcedure.SaveToPostDDL(Stream: TStringStream);
 begin
   // Before the tables: a TYPE OF COLUMN parameter is written as its type
   InternalSaveToDDL(Stream, 'CREATE', True);
+  // A UDR procedure has no PSQL dependencies
+  if FEngine <> '' then
+  begin
+    WriteBody(Stream);
+    Exit;
+  end;
   Stream.WriteString(sLineBreak + 'AS' + sLineBreak + 'BEGIN' + sLineBreak);
   // SUSPEND needs output parameters in Firebird 3 and later
   if OutputFieldsCount > 0 then
@@ -3992,48 +4269,43 @@ begin
   Stream.WriteString(sLineBreak + 'END');
 end;
 
-procedure TMetaProcedure.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaProcedure.GenerateObjectDDL(Stream: TStringStream);
 begin
   InternalSaveToDDL(Stream, 'CREATE');
-  Stream.WriteString(sLineBreak + 'AS' + sLineBreak);
-  Stream.WriteString(FSource);
+  WriteBody(Stream);
 end;
 
-function TMetaProcedure.GetGrants(const Index: Integer): TCustomMetaGrant;
-begin
-  Result := TCustomMetaGrant(GetChildObject(Ord(soProcGrants), Index));
-end;
-
-function TMetaProcedure.GetGrantsCount: Integer;
-begin
-  Result := GetChildsCount(Ord(soProcGrants));
-end;
-
-class function TMetaProcedure.ClassIndex: Integer;
+class function TFIBMetaProcedure.ClassIndex: Integer;
 begin
   Result := Ord(otProcedure)
 end;
 
-function TMetaProcedure.CommentKeyword: string;
+function TFIBMetaProcedure.CommentKeyword: string;
 begin
   Result := 'PROCEDURE';
 end;
 
-function TMetaProcedure.CommentTarget: string;
+function TFIBMetaProcedure.CommentTarget: string;
 begin
   Result := RoutineName(FPackageName, FormatName);
 end;
 
-procedure TMetaProcedure.GenerateCommentDDL(Stream: TStringStream);
+procedure TFIBMetaProcedure.GenerateCommentDDL(Stream: TStringStream);
 begin
   inherited GenerateCommentDDL(Stream);
   GenerateChildCommentDDL(Stream, Ord(soProcFieldIn));
   GenerateChildCommentDDL(Stream, Ord(soProcFieldOut));
 end;
 
-{ TMetaException }
+{ TFIBMetaException }
 
-procedure TMetaException.LoadFromDataBase(QName: TFIBQuery);
+constructor TFIBMetaException.Create(AOwner: TFIBCustomMetaObject; aName: string = '');
+begin
+  inherited Create(AOwner, aName);
+  AddClass(TFIBCustomMetaGrant);
+end;
+
+procedure TFIBMetaException.LoadFromDataBase(QName: TFIBQuery);
 var
   MessageField: TFIBXSQLVAR;
   Bytes: AnsiString;
@@ -4058,30 +4330,30 @@ begin
   FLoaded := True
 end;
 
-procedure TMetaException.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaException.GenerateObjectDDL(Stream: TStringStream);
 begin
   Stream.WriteString('CREATE EXCEPTION ' + FormatName + ' ' + QuotedStr(FMessage));
 end;
 
-function TMetaException.CommentKeyword: string;
+function TFIBMetaException.CommentKeyword: string;
 begin
   Result := 'EXCEPTION';
 end;
 
-class function TMetaException.ClassIndex: Integer;
+class function TFIBMetaException.ClassIndex: Integer;
 begin
   Result := Ord(otException)
 end;
 
-{ TMetaUDF }
+{ TFIBMetaUDF }
 
-constructor TMetaUDF.Create(AOwner: TCustomMetaObject; aName: string = '');
+constructor TFIBMetaUDF.Create(AOwner: TFIBCustomMetaObject; aName: string = '');
 begin
   inherited Create(AOwner, aName);
-  AddClass(TMetaUDFField);
+  AddClass(TFIBMetaUDFField);
 end;
 
-procedure TMetaUDF.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaUDF.GenerateObjectDDL(Stream: TStringStream);
 var
   I, C: Integer;
 begin
@@ -4123,7 +4395,7 @@ begin
   Stream.WriteString(Format('%s  ENTRY_POINT ''%s'' MODULE_NAME ''%s''', [sLineBreak, FEntry, FModule]));
 end;
 
-procedure TMetaUDF.LoadFromDataBase(QNames, QFields: TFIBQuery; QCharset: TFIBQuery);
+procedure TFIBMetaUDF.LoadFromDataBase(QNames, QFields: TFIBQuery; QCharset: TFIBQuery);
 begin
   Name := QNames.Fields[0].AsString;
   FModule := QNames.Fields[1].AsString;
@@ -4135,36 +4407,36 @@ begin
   QFields.ExecQuery;
   while not QFields.Eof do
   begin
-    TMetaUDFField.Create(Self).LoadFromDataBase(QFields, QCharset);
+    TFIBMetaUDFField.Create(Self).LoadFromDataBase(QFields, QCharset);
     QFields.Next;
   end;
   QFields.Close;
   FLoaded := True
 end;
 
-function TMetaUDF.GetFields(const Index: Integer): TMetaUDFField;
+function TFIBMetaUDF.GetFields(const Index: Integer): TFIBMetaUDFField;
 begin
-  Result := TMetaUDFField(GetChildObject(Ord(soUDFField), Index))
+  Result := TFIBMetaUDFField(GetChildObject(Ord(soUDFField), Index))
 end;
 
-function TMetaUDF.GetFieldsCount: Integer;
+function TFIBMetaUDF.GetFieldsCount: Integer;
 begin
   Result := GetChildsCount(Ord(soUDFField));
 end;
 
-class function TMetaUDF.ClassIndex: Integer;
+class function TFIBMetaUDF.ClassIndex: Integer;
 begin
   Result := Ord(otUDF)
 end;
 
-function TMetaUDF.CommentKeyword: string;
+function TFIBMetaUDF.CommentKeyword: string;
 begin
   Result := 'EXTERNAL FUNCTION';
 end;
 
-{ TMetaTableField }
+{ TFIBMetaTableField }
 
-function TMetaTableField.GetDomain: TMetaDomain;
+function TFIBMetaTableField.GetDomain: TFIBMetaDomain;
 begin
   if FDomain >= 0 then
     Result := MetaDataBase.Domains[FDomain]
@@ -4172,7 +4444,7 @@ begin
     Result := nil;
 end;
 
-procedure TMetaTableField.LoadFromDataBase(Q: TFIBQuery; C: TFIBQuery);
+procedure TFIBMetaTableField.LoadFromDataBase(Q: TFIBQuery; C: TFIBQuery);
 var
   QDims: TFIBQuery;
   J: Integer;
@@ -4186,7 +4458,7 @@ begin
   if (ColumnCollationID = nil) or ColumnCollationID.IsNull then
   begin
     if (DomainCollationID <> nil) and (DomainCollationID.AsInteger <> 0) and
-      ((Self is TMetaDomain) or (Copy(Q.Fields[10].AsString, 1, 4) = 'RDB$')) then
+      ((Self is TFIBMetaDomain) or (Copy(Q.Fields[10].AsString, 1, 4) = 'RDB$')) then
       FCollation := Trim(Q.FieldByName('DOMAIN_COLLATION').AsString);
   end
   else if Copy(Q.Fields[10].AsString, 1, 4) = 'RDB$' then
@@ -4215,7 +4487,7 @@ begin
     FDefaultValue := '';
 
   FDomain := -1;
-  if not(Self is TMetaDomain) then
+  if not(Self is TFIBMetaDomain) then
   begin
     if not(Q.Fields[10].IsNull or (Copy(Q.Fields[10].AsString, 1, 4) = 'RDB$')) then
     begin
@@ -4237,7 +4509,7 @@ begin
   begin
     QDims := CreateQuery(QRYFieldDimensions, Q.Transaction);
     try
-      if not(Self is TMetaDomain) then
+      if not(Self is TFIBMetaDomain) then
         QDims.Params[0].AsString := Q.Fields[10].AsString
       else
         QDims.Params[0].AsString := FName;
@@ -4259,7 +4531,7 @@ begin
   FLoaded := True
 end;
 
-procedure TMetaTableField.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaTableField.GenerateObjectDDL(Stream: TStringStream);
 var
   Collation: string;
 begin
@@ -4304,48 +4576,48 @@ begin
   end;
 end;
 
-class function TMetaTableField.ClassIndex: Integer;
+class function TFIBMetaTableField.ClassIndex: Integer;
 begin
   Result := Ord(soTableFields)
 end;
 
-{ TMetaField }
+{ TFIBMetaField }
 
-procedure TMetaField.LoadFromDataBase(QField, QCharset: TFIBQuery);
+procedure TFIBMetaField.LoadFromDataBase(QField, QCharset: TFIBQuery);
 begin
   inherited LoadFromDataBase(QField, QCharset);
   Name := QField.Fields[6].AsString;
   FSegmentLength := QField.Fields[7].AsShort;
 end;
 
-procedure TMetaField.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaField.GenerateObjectDDL(Stream: TStringStream);
 begin
-  if Self is TMetaDomain then
+  if Self is TFIBMetaDomain then
     Stream.WriteString(FormatName + ' AS ')
   else if FormatName <> '' then
     Stream.WriteString(FormatName + ' ');
   inherited GenerateObjectDDL(Stream);
 end;
 
-class function TMetaField.ClassIndex: Integer;
+class function TFIBMetaField.ClassIndex: Integer;
 begin
   Result := Ord(soViewFields)
 end;
 
-function TMetaField.CommentKeyword: string;
+function TFIBMetaField.CommentKeyword: string;
 begin
   Result := 'COLUMN';
 end;
 
-function TMetaField.CommentTarget: string;
+function TFIBMetaField.CommentTarget: string;
 begin
   // The owner gives its package, if any
   Result := FOwner.CommentTarget + '.' + FormatName;
 end;
 
-{ TMetaUDFField }
+{ TFIBMetaUDFField }
 
-procedure TMetaUDFField.LoadFromDataBase(QField, QCharset: TFIBQuery);
+procedure TFIBMetaUDFField.LoadFromDataBase(QField, QCharset: TFIBQuery);
 begin
   inherited LoadFromDataBase(QField, QCharset);
   FPosition := QField.Fields[6].AsShort;
@@ -4354,7 +4626,7 @@ begin
   FLoaded := True
 end;
 
-procedure TMetaUDFField.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaUDFField.GenerateObjectDDL(Stream: TStringStream);
 begin
   if FFieldType = fftBlob then
     Stream.WriteString('BLOB')
@@ -4368,14 +4640,14 @@ begin
   end;
 end;
 
-class function TMetaUDFField.ClassIndex: Integer;
+class function TFIBMetaUDFField.ClassIndex: Integer;
 begin
   Result := Ord(soUDFField)
 end;
 
-{ TMetaRole }
+{ TFIBMetaRole }
 
-procedure TMetaRole.LoadFromDataBase(QName: TFIBQuery);
+procedure TFIBMetaRole.LoadFromDataBase(QName: TFIBQuery);
 begin
   Name := QName.Fields[0].AsString;
   FOwner := QName.Fields[1].AsString;
@@ -4383,41 +4655,31 @@ begin
   FLoaded := True
 end;
 
-function TMetaRole.CommentKeyword: string;
+function TFIBMetaRole.CommentKeyword: string;
 begin
   Result := 'ROLE';
 end;
 
-procedure TMetaRole.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaRole.GenerateObjectDDL(Stream: TStringStream);
 begin
   Stream.WriteString(Format('CREATE ROLE %s /* By user %s */', [FormatName, Trim(FOwner)]));
 end;
 
-function TMetaRole.GetGrants(const Index: Integer): TCustomMetaGrant;
-begin
-  Result := TCustomMetaGrant(GetChildObject(Ord(soRoleGrants), Index));
-end;
-
-function TMetaRole.GetGrantsCount: Integer;
-begin
-  Result := GetChildsCount(Ord(soRoleGrants));
-end;
-
-constructor TMetaRole.Create(AOwner: TCustomMetaObject; aName: string = '');
+constructor TFIBMetaRole.Create(AOwner: TFIBCustomMetaObject; aName: string = '');
 begin
   inherited Create(AOwner, aName);
-  AddClass(TCustomMetaGrant)
+  AddClass(TFIBCustomMetaGrant)
 
 end;
 
-class function TMetaRole.ClassIndex: Integer;
+class function TFIBMetaRole.ClassIndex: Integer;
 begin
   Result := Ord(otRole)
 end;
 
-{ TMetaProcField }
+{ TFIBMetaProcedureField }
 
-procedure TMetaProcField.DoLoadFromQuery(QField: TFIBQuery; QCharset: TFIBQuery; CanUseParamDomain, CanUseProcParamRelation: boolean);
+procedure TFIBMetaProcedureField.DoLoadFromQuery(QField: TFIBQuery; QCharset: TFIBQuery; CanUseParamDomain, CanUseProcParamRelation: Boolean);
 var
   Check_PREFIX: string;
   DomainDefault: TFIBXSQLVAR;
@@ -4450,7 +4712,7 @@ begin
   FLoaded := True
 end;
 
-procedure TMetaProcField.WriteDeclaration(Stream: TStringStream; BaseType: Boolean);
+procedure TFIBMetaProcedureField.WriteDeclaration(Stream: TStringStream; BaseType: Boolean);
 begin
   // TYPE OF COLUMN has the domain of the column as field source
   if FUseRelation and not BaseType then
@@ -4475,15 +4737,15 @@ begin
     Stream.WriteString(' ' + FDefaultValue);
 end;
 
-procedure TMetaProcField.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaProcedureField.GenerateObjectDDL(Stream: TStringStream);
 begin
   WriteDeclaration(Stream, False);
 end;
 
-function TMetaProcField.CommentKeyword: string;
+function TFIBMetaProcedureField.CommentKeyword: string;
 begin
   // Firebird 3 needs the routine kind when a procedure and a function have the same name
-  if FOwner is TMetaStoredFunc then
+  if FOwner is TFIBMetaStoredFunction then
     Result := 'FUNCTION PARAMETER'
   else if (MetaDataBase <> nil) and MetaDataBase.FStoredFunctionsSupports then
     Result := 'PROCEDURE PARAMETER'
@@ -4491,20 +4753,20 @@ begin
     Result := 'PARAMETER';
 end;
 
-{ TMetaProcInField }
+{ TFIBMetaProcedureInField }
 
-class function TMetaProcInField.ClassIndex: Integer;
+class function TFIBMetaProcedureInField.ClassIndex: Integer;
 begin
   Result := Ord(soProcFieldIn)
 end;
-{ TMetaProcOutField }
+{ TFIBMetaProcedureOutField }
 
-class function TMetaProcOutField.ClassIndex: Integer;
+class function TFIBMetaProcedureOutField.ClassIndex: Integer;
 begin
   Result := Ord(soProcFieldOut)
 end;
 
-{ TCustomMetaGrant }
+{ TFIBCustomMetaGrant }
 
 type
   TDynStrArray = array of string;
@@ -4520,7 +4782,7 @@ begin
 end;
 
 type
-  TDynArray1 = array of boolean;
+  TDynArray1 = array of Boolean;
 
 procedure DeleteIndexArr1(Index: Integer; var BooleanArray: TDynArray1);
 var
@@ -4536,7 +4798,7 @@ begin
   end;
 end;
 
-procedure TCustomMetaGrant.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBCustomMetaGrant.GenerateObjectDDL(Stream: TStringStream);
 var
   I: Integer;
   L: Integer;
@@ -4549,11 +4811,27 @@ begin
     begin
       Stream.WriteString('GRANT ' + FormatIdentifier(3, FObjectName) + ' TO ');
       Stream.WriteString(sLineBreak + '  ' + FUserList[I]);
+      if FWithGrantOption[I] then
+        Stream.WriteString(' WITH ADMIN OPTION');
     end
-    else if FPrivileges[I] = [goExecuteProc] then
+    else if (FPrivileges[I] = [goExecuteProc]) or (FPrivileges[I] = [goUsage]) then
     begin
-      Stream.WriteString('GRANT EXECUTE ON PROCEDURE ' + FormatIdentifier(3, FObjectName) + ' TO');
+      if goUsage in FPrivileges[I] then
+        Stream.WriteString('GRANT USAGE ON ')
+      else
+        Stream.WriteString('GRANT EXECUTE ON ');
+      case FObjectType of
+        GrantOnFunction: Stream.WriteString('FUNCTION ');
+        GrantOnPackage: Stream.WriteString('PACKAGE ');
+        GrantOnGenerator: Stream.WriteString('SEQUENCE ');
+        GrantOnException: Stream.WriteString('EXCEPTION ');
+      else
+        Stream.WriteString('PROCEDURE ');
+      end;
+      Stream.WriteString(FormatIdentifier(3, FObjectName) + ' TO');
       Stream.WriteString(sLineBreak + '  ' + FUserList[I]);
+      if FWithGrantOption[I] then
+        Stream.WriteString(' WITH GRANT OPTION');
     end
     else
     begin
@@ -4600,12 +4878,12 @@ begin
   end;
 end;
 
-function TCustomMetaGrant.GetSize: Integer;
+function TFIBCustomMetaGrant.GetSize: Integer;
 begin
   Result := Integer(Length(FUserList)) // grants of one object
 end;
 
-procedure TCustomMetaGrant.LoadFromDataBase(QGrants: TFIBQuery; const Name: string; Pack: boolean = True);
+procedure TFIBCustomMetaGrant.LoadFromDataBase(QGrants: TFIBQuery; const Name: string; Pack: Boolean = True);
 var
   I, L, J: Integer;
   s: string;
@@ -4613,6 +4891,7 @@ var
 
 begin
   FObjectName := Name;
+  FObjectType := QGrants.Fields[5].AsInteger;
   I := 0;
   L := 0;
   CurUser := '';
@@ -4624,7 +4903,7 @@ begin
       L := 1000;
       SetSize(L);
     end;
-    if I > L then
+    if I >= L then
     begin
       Inc(L, 200);
       SetSize(L);
@@ -4635,8 +4914,11 @@ begin
     if CurUser <> 'PUBLIC' then
       CurUser := FormatIdentifier(3, CurUser);
     s := QGrants.Fields[6].AsString;
+    // A function grantee is of the type UDF
+    if s = 'UDF' then
+      s := 'FUNCTION';
     if (s <> 'USER') and (s <> 'ROLE') then
-      CurUser := QGrants.Fields[6].AsString + ' ' + CurUser;
+      CurUser := s + ' ' + CurUser;
     FUserList[I] := CurUser;
     // goSelect,goInsert,goUpdate,goDelete,goReference,goExecuteProc,goRole
     case QGrants.Fields[1].AsString[1] of
@@ -4647,8 +4929,7 @@ begin
       'S': FPrivileges[I] := FPrivileges[I] + [goSelect];
       'U': FPrivileges[I] := FPrivileges[I] + [goUpdate];
       'X': FPrivileges[I] := FPrivileges[I] + [goExecuteProc];
-    else
-      // FPrivileges[i]:=FPrivileges[i]+[goRole];
+      'G': FPrivileges[I] := FPrivileges[I] + [goUsage];
     end;
     FWithGrantOption[I] := QGrants.Fields[2].asBoolean;
     FFields[I] := FormatIdentifier(3, QGrants.Fields[3].AsString);
@@ -4675,7 +4956,6 @@ begin
       for J := I - 1 downto 0 do
         if Length(FUserList[I]) < 1024 then
           if (FPrivileges[I] = FPrivileges[J]) and (FWithGrantOption[I] = FWithGrantOption[J])
-          // and (FFields[i]=FFields[j])
             and (FUserList[J] = FUserList[I]) and (Length(FFields[J]) > 0) and (Length(FFields[I]) > 0) then
           begin
             // Pack  by Fields
@@ -4713,7 +4993,7 @@ begin
   FLoaded := True
 end;
 
-procedure TCustomMetaGrant.SetSize(Size: Integer);
+procedure TFIBCustomMetaGrant.SetSize(Size: Integer);
 begin
   SetLength(FPrivileges, Size);
   SetLength(FWithGrantOption, Size);
@@ -4731,18 +5011,18 @@ end;
 constructor TFIBDBSchemaExtract.Create(AOwner: TComponent);
 begin
   inherited;
-  FMetaDatabase := TMetaDataBase.Create(nil);
+  FMetaDatabase := TFIBMetaDatabase.Create(nil);
   FMetaDatabase.OnLoadMetaData := DoOnLoadMetaData;
   FMetaDatabase.DDLTextOptions := DefSchemaExtractDDLTextOptions;
-  FLoadOptions := TLoadOptions.Create;
+  FLoadOptions := TFIBMetaLoadOptions.Create;
 end;
 
-function TFIBDBSchemaExtract.GetDDLTextOptions: TDDLTextOptions;
+function TFIBDBSchemaExtract.GetDDLTextOptions: TFIBDDLTextOptions;
 begin
   Result := FMetaDatabase.DDLTextOptions;
 end;
 
-procedure TFIBDBSchemaExtract.SetDDLTextOptions(const Value: TDDLTextOptions);
+procedure TFIBDBSchemaExtract.SetDDLTextOptions(const Value: TFIBDDLTextOptions);
 begin
   FMetaDatabase.DDLTextOptions := Value;
 end;
@@ -4754,19 +5034,19 @@ begin
   inherited;
 end;
 
-procedure TFIBDBSchemaExtract.SetLoadOptions(const Value: TLoadOptions);
+procedure TFIBDBSchemaExtract.SetLoadOptions(const Value: TFIBMetaLoadOptions);
 begin
   FLoadOptions.Assign(Value);
 end;
 
-function TFIBDBSchemaExtract.ObjectByName(ObjectType: TDBObjectType; const ObjectName: string; ForceLoad: boolean): TCustomMetaObject;
+function TFIBDBSchemaExtract.ObjectByName(ObjectType: TFIBDBObjectType; const ObjectName: string; ForceLoad: Boolean): TFIBCustomMetaObject;
 begin
   Result := FMetaDatabase.GetDBObject(Database, ObjectType, ObjectName, ForceLoad)
 end;
 
-function TFIBDBSchemaExtract.GetObjectDDL(ObjectType: TDBObjectType; const ObjectName: string; ForceLoad: boolean = True): string;
+function TFIBDBSchemaExtract.GetObjectDDL(ObjectType: TFIBDBObjectType; const ObjectName: string; ForceLoad: Boolean = True): string;
 var
-  N: TCustomMetaObject;
+  N: TFIBCustomMetaObject;
 begin
   N := FMetaDatabase.GetDBObject(Database, ObjectType, ObjectName, ForceLoad);
   if Assigned(N) then
@@ -4775,7 +5055,7 @@ begin
     Result := ''
 end;
 
-procedure TFIBDBSchemaExtract.DoOnLoadMetaData(Sender: TObject; const Message: string; var Stop: boolean);
+procedure TFIBDBSchemaExtract.DoOnLoadMetaData(Sender: TObject; const Message: string; var Stop: Boolean);
 begin
   if Assigned(FOnLoadMetaData) then
     FOnLoadMetaData(Sender, Message, Stop)
@@ -4791,7 +5071,7 @@ begin
   Result := FMetaDatabase.AsDDL;
 end;
 
-function TFIBDBSchemaExtract.GetDomains(const Index: Integer): TMetaDomain;
+function TFIBDBSchemaExtract.GetDomains(const Index: Integer): TFIBMetaDomain;
 begin
   Result := FMetaDatabase.GetDomains(Index)
 end;
@@ -4801,7 +5081,7 @@ begin
   Result := FMetaDatabase.GetDomainsCount
 end;
 
-function TFIBDBSchemaExtract.GetExceptions(const Index: Integer): TMetaException;
+function TFIBDBSchemaExtract.GetExceptions(const Index: Integer): TFIBMetaException;
 begin
   Result := FMetaDatabase.GetExceptions(Index)
 end;
@@ -4811,7 +5091,7 @@ begin
   Result := FMetaDatabase.GetExceptionsCount
 end;
 
-function TFIBDBSchemaExtract.GetGenerators(const Index: Integer): TMetaGenerator;
+function TFIBDBSchemaExtract.GetGenerators(const Index: Integer): TFIBMetaGenerator;
 begin
   Result := FMetaDatabase.GetGenerators(Index)
 end;
@@ -4826,12 +5106,12 @@ begin
   Result := FMetaDatabase.GetPackageCount
 end;
 
-function TFIBDBSchemaExtract.GetPackages(const Index: Integer): TMetaPackage;
+function TFIBDBSchemaExtract.GetPackages(const Index: Integer): TFIBMetaPackage;
 begin
   Result := FMetaDatabase.GetPackages(Index)
 end;
 
-function TFIBDBSchemaExtract.GetProcedures(const Index: Integer): TMetaProcedure;
+function TFIBDBSchemaExtract.GetProcedures(const Index: Integer): TFIBMetaProcedure;
 begin
   Result := FMetaDatabase.GetProcedures(Index)
 end;
@@ -4841,7 +5121,7 @@ begin
   Result := FMetaDatabase.GetProceduresCount
 end;
 
-function TFIBDBSchemaExtract.GetFunctions(const Index: Integer): TMetaStoredFunc;
+function TFIBDBSchemaExtract.GetFunctions(const Index: Integer): TFIBMetaStoredFunction;
 begin
   Result := FMetaDatabase.GetFunctions(Index)
 end;
@@ -4851,7 +5131,7 @@ begin
   Result := FMetaDatabase.GetFunctionsCount
 end;
 
-function TFIBDBSchemaExtract.GetTables(const Index: Integer): TMetaTable;
+function TFIBDBSchemaExtract.GetTables(const Index: Integer): TFIBMetaTable;
 begin
   Result := FMetaDatabase.GetTables(Index)
 end;
@@ -4861,7 +5141,7 @@ begin
   Result := FMetaDatabase.GetTablesCount
 end;
 
-function TFIBDBSchemaExtract.GetUDFS(const Index: Integer): TMetaUDF;
+function TFIBDBSchemaExtract.GetUDFS(const Index: Integer): TFIBMetaUDF;
 begin
   Result := FMetaDatabase.GetUDFS(Index)
 end;
@@ -4871,7 +5151,7 @@ begin
   Result := FMetaDatabase.GetUDFSCount
 end;
 
-function TFIBDBSchemaExtract.GetViews(const Index: Integer): TMetaView;
+function TFIBDBSchemaExtract.GetViews(const Index: Integer): TFIBMetaView;
 begin
   Result := FMetaDatabase.GetViews(Index)
 end;
@@ -4886,7 +5166,7 @@ begin
   LoadMetaData(True)
 end;
 
-procedure TFIBDBSchemaExtract.LoadMetaData(OnlyNames: boolean = False);
+procedure TFIBDBSchemaExtract.LoadMetaData(OnlyNames: Boolean = False);
 begin
   if Assigned(FDatabase) then
   begin
@@ -4902,7 +5182,7 @@ begin
     FIBError(feCantLoadMetadata, [CmpFullName(Self)]);
 end;
 
-function TFIBDBSchemaExtract.GetMetaDataBase: TMetaDataBase;
+function TFIBDBSchemaExtract.GetMetaDataBase: TFIBMetaDatabase;
 begin
   Result := FMetaDatabase
 end;
@@ -4930,67 +5210,69 @@ end;
 
 { TMDLoadOptions }
 
-constructor TLoadOptions.Create;
+constructor TFIBMetaLoadOptions.Create;
 begin
   inherited Create;
 
   FLoadObjects := DefObjects;
-  FLoadTableChilds := DefTableChilds;
-  FLoadViewChilds := DefViewChilds;
+  FLoadTableChilds := DefTableChildTypes;
+  FLoadViewChilds := DefViewChildTypes;
 
 end;
 
-function TFIBDBSchemaExtract.GetNamesLoaded: boolean;
+function TFIBDBSchemaExtract.GetNamesLoaded: Boolean;
 begin
   Result := FMetaDatabase.FNamesLoaded
 end;
 
-{ TMetaStoredFunc }
+{ TFIBMetaStoredFunction }
 
-class function TMetaStoredFunc.ClassIndex: Integer;
+class function TFIBMetaStoredFunction.ClassIndex: Integer;
 begin
   Result := Ord(otStoredFunctions)
 end;
 
-constructor TMetaStoredFunc.Create(AOwner: TCustomMetaObject; aName: string);
+constructor TFIBMetaStoredFunction.Create(AOwner: TFIBCustomMetaObject; aName: string);
 begin
   inherited Create(AOwner, aName);
-  AddClass(TMetaProcInField); // in
-  AddClass(TMetaProcOutField); // out
-  AddClass(TCustomMetaGrant); // grant
+  AddClass(TFIBMetaProcedureInField); // in
+  AddClass(TFIBMetaProcedureOutField); // out
+  AddClass(TFIBCustomMetaGrant); // grant
+  FSQLSecurity := -1;
 end;
 
-procedure TMetaStoredFunc.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaStoredFunction.GenerateObjectDDL(Stream: TStringStream);
 begin
   InternalSaveToDDL(Stream, 'CREATE');
-  Stream.WriteString(sLineBreak + 'AS' + sLineBreak);
-  Stream.WriteString(FSource);
+  WriteBody(Stream);
 end;
 
-function TMetaStoredFunc.GetInputFields(const Index: Integer): TMetaProcInField;
+function TFIBMetaStoredFunction.GetInputFields(const Index: Integer): TFIBMetaProcedureInField;
 begin
-  Result := TMetaProcInField(GetChildObject(Ord(soProcFieldIn), Index))
+  Result := TFIBMetaProcedureInField(GetChildObject(Ord(soProcFieldIn), Index))
 end;
 
-function TMetaStoredFunc.GetInputFieldsCount: Integer;
+function TFIBMetaStoredFunction.GetInputFieldsCount: Integer;
 begin
   Result := GetChildsCount(Ord(soProcFieldIn));
 end;
 
-function TMetaStoredFunc.GetReturn: TMetaProcOutField;
+function TFIBMetaStoredFunction.GetReturn: TFIBMetaProcedureOutField;
 begin
   if FItems[Ord(soProcFieldOut)].Childs.Count > 0 then
-    Result := TMetaProcOutField(GetChildObject(Ord(soProcFieldOut), 0))
+    Result := TFIBMetaProcedureOutField(GetChildObject(Ord(soProcFieldOut), 0))
   else
     Result := nil
 end;
 
-procedure TMetaStoredFunc.InternalSaveToDDL(Stream: TStringStream; Operation: string; BaseTypes: Boolean = False);
+procedure TFIBMetaStoredFunction.InternalSaveToDDL(Stream: TStringStream; Operation: string; BaseTypes: Boolean = False);
 var
   I: Integer;
-  // Return:TMetaProcOutField;
 begin
-  Stream.WriteString(Format('%s FUNCTION %s', [Operation, FormatName]));
+  // No operation in a package header
+  if Operation <> '' then
+    Stream.WriteString(Operation + ' ');
+  Stream.WriteString('FUNCTION ' + FormatName);
 
   if InputFieldsCount > 0 then
   begin
@@ -5015,16 +5297,29 @@ begin
   end;
 
   Stream.WriteString(Format('%sRETURNS ', [sLineBreak]));
-  // Return:=TMetaProcOutField(GetChildObject(Ord(soProcFieldOut), 0));
   if Return <> nil then
     Return.WriteDeclaration(Stream, BaseTypes);
+  if FDeterministic then
+    Stream.WriteString(' DETERMINISTIC');
+end;
 
+procedure TFIBMetaStoredFunction.WriteBody(Stream: TStringStream);
+begin
+  if FEngine <> '' then
+    Stream.WriteString(sLineBreak + ExternalClause(FEngine, FEntryPoint, FSource))
+  else
+  begin
+    if FSQLSecurity >= 0 then
+      Stream.WriteString(sLineBreak + SQLSecurityClause(FSQLSecurity));
+    Stream.WriteString(sLineBreak + 'AS' + sLineBreak);
+    Stream.WriteString(FSource);
+  end;
 end;
 
 type
-  TMetaProcFieldClass = class of TMetaProcField;
+  TMetaProcFieldClass = class of TFIBMetaProcedureField;
 
-procedure TMetaStoredFunc.LoadFromDataBase(QNames, QReturn, QInputs, QCharset: TFIBQuery);
+procedure TFIBMetaStoredFunction.LoadFromDataBase(QNames, QReturn, QInputs, QCharset: TFIBQuery);
 
   procedure LoadFields(Query: TFIBQuery; FieldClass: TMetaProcFieldClass);
   begin
@@ -5033,7 +5328,7 @@ procedure TMetaStoredFunc.LoadFromDataBase(QNames, QReturn, QInputs, QCharset: T
     Query.ExecQuery;
     while not Query.Eof do
     begin
-      TMetaProcField(FieldClass.Create(Self)).DoLoadFromQuery(Query, QCharset, True, True);
+      TFIBMetaProcedureField(FieldClass.Create(Self)).DoLoadFromQuery(Query, QCharset, True, True);
       Query.Next;
     end;
     Query.Close;
@@ -5043,123 +5338,139 @@ begin
   Name := QNames.Fields[0].AsString;
   FSource := QNames.Fields[1].AsString;
   FPackageName := QNames.Fields[3].AsString;
+  FEngine := ReadOptionalString(QNames, 'RDB$ENGINE_NAME');
+  FEntryPoint := ReadOptionalString(QNames, 'RDB$ENTRYPOINT');
+  FDeterministic := ReadOptionalString(QNames, 'RDB$DETERMINISTIC_FLAG') = '1';
+  FSQLSecurity := ReadSQLSecurity(QNames);
   LoadDescription(QNames);
-  LoadFields(QReturn, TMetaProcOutField);
-  LoadFields(QInputs, TMetaProcInField);
+  LoadFields(QReturn, TFIBMetaProcedureOutField);
+  LoadFields(QInputs, TFIBMetaProcedureInField);
   FLoaded := True
 end;
 
-function TMetaStoredFunc.CommentKeyword: string;
+function TFIBMetaStoredFunction.CommentKeyword: string;
 begin
   Result := 'FUNCTION';
 end;
 
-function TMetaStoredFunc.CommentTarget: string;
+function TFIBMetaStoredFunction.CommentTarget: string;
 begin
   Result := RoutineName(FPackageName, FormatName);
 end;
 
-procedure TMetaStoredFunc.GenerateCommentDDL(Stream: TStringStream);
+procedure TFIBMetaStoredFunction.GenerateCommentDDL(Stream: TStringStream);
 begin
   inherited GenerateCommentDDL(Stream);
   // The return value has no name and no COMMENT ON
   GenerateChildCommentDDL(Stream, Ord(soProcFieldIn));
 end;
 
-procedure TMetaStoredFunc.SaveEmptyDDL(Stream: TStringStream);
+procedure TFIBMetaStoredFunction.SaveEmptyDDL(Stream: TStringStream);
 begin
   InternalSaveToDDL(Stream, 'CREATE', True);
-  Stream.WriteString(sLineBreak + 'AS' + sLineBreak + 'BEGIN' + sLineBreak + 'END');
+  // A UDR function has no PSQL dependencies
+  if FEngine <> '' then
+    WriteBody(Stream)
+  else
+    Stream.WriteString(sLineBreak + 'AS' + sLineBreak + 'BEGIN' + sLineBreak + 'END');
 end;
 
-procedure TMetaStoredFunc.SaveAlterDDL(Stream: TStringStream);
+procedure TFIBMetaStoredFunction.SaveAlterDDL(Stream: TStringStream);
 begin
   InternalSaveToDDL(Stream, 'ALTER');
-  Stream.WriteString(sLineBreak + 'AS' + sLineBreak);
-  Stream.WriteString(FSource);
-
+  WriteBody(Stream);
 end;
 
-class function TMetaPackageProcedure.ClassIndex: Integer;
+class function TFIBMetaPackageProcedure.ClassIndex: Integer;
 begin
   Result := Ord(soPackageProcedures)
 end;
 
-class function TMetaPackageProcedure.IsSubObject: Boolean;
+class function TFIBMetaPackageProcedure.IsSubObject: Boolean;
 begin
   Result := True
 end;
 
-procedure TMetaPackageProcedure.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaPackageProcedure.GenerateObjectDDL(Stream: TStringStream);
 begin
 end;
 
-procedure TMetaPackageProcedure.GenerateDDLText(Stream: TStringStream);
+procedure TFIBMetaPackageProcedure.GenerateDDLText(Stream: TStringStream);
 begin
 end;
 
-class function TMetaPackageFunction.ClassIndex: Integer;
+class function TFIBMetaPackageFunction.ClassIndex: Integer;
 begin
   Result := Ord(soPackageFunctions)
 end;
 
-class function TMetaPackageFunction.IsSubObject: Boolean;
+class function TFIBMetaPackageFunction.IsSubObject: Boolean;
 begin
   Result := True
 end;
 
-procedure TMetaPackageFunction.GenerateObjectDDL(Stream: TStringStream);
+procedure TFIBMetaPackageFunction.GenerateObjectDDL(Stream: TStringStream);
 begin
 end;
 
-procedure TMetaPackageFunction.GenerateDDLText(Stream: TStringStream);
+procedure TFIBMetaPackageFunction.GenerateDDLText(Stream: TStringStream);
 begin
 end;
 
-{ TMetaPackage }
+{ TFIBMetaPackage }
 
-constructor TMetaPackage.Create(AOwner: TCustomMetaObject; aName: string = '');
+constructor TFIBMetaPackage.Create(AOwner: TFIBCustomMetaObject; aName: string = '');
 begin
   inherited Create(AOwner, aName);
-  AddClass(TMetaPackageProcedure);
-  AddClass(TMetaPackageFunction);
+  AddClass(TFIBMetaPackageProcedure);
+  AddClass(TFIBMetaPackageFunction);
+  AddClass(TFIBCustomMetaGrant);
+  FSQLSecurity := -1;
 end;
 
-class function TMetaPackage.ClassIndex: Integer;
+class function TFIBMetaPackage.ClassIndex: Integer;
 begin
   Result := Ord(otPackage)
 end;
 
-function TMetaPackage.GetProcedures(const Index: Integer): TMetaPackageProcedure;
+function TFIBMetaPackage.GetProcedures(const Index: Integer): TFIBMetaPackageProcedure;
 begin
-  Result := TMetaPackageProcedure(GetChildObject(Ord(soPackageProcedures), Index));
+  Result := TFIBMetaPackageProcedure(GetChildObject(Ord(soPackageProcedures), Index));
 end;
 
-function TMetaPackage.GetProceduresCount: Integer;
+function TFIBMetaPackage.GetProceduresCount: Integer;
 begin
   Result := GetChildsCount(Ord(soPackageProcedures));
 end;
 
-function TMetaPackage.GetFunctions(const Index: Integer): TMetaPackageFunction;
+function TFIBMetaPackage.GetFunctions(const Index: Integer): TFIBMetaPackageFunction;
 begin
-  Result := TMetaPackageFunction(GetChildObject(Ord(soPackageFunctions), Index));
+  Result := TFIBMetaPackageFunction(GetChildObject(Ord(soPackageFunctions), Index));
 end;
 
-function TMetaPackage.GetFunctionsCount: Integer;
+function TFIBMetaPackage.GetFunctionsCount: Integer;
 begin
   Result := GetChildsCount(Ord(soPackageFunctions));
 end;
 
-procedure TMetaPackage.GenerateCommentDDL(Stream: TStringStream);
+procedure TFIBMetaPackage.GenerateCommentDDL(Stream: TStringStream);
 begin
   inherited GenerateCommentDDL(Stream);
   GenerateChildCommentDDL(Stream, Ord(soPackageProcedures));
   GenerateChildCommentDDL(Stream, Ord(soPackageFunctions));
 end;
 
-procedure TMetaPackage.GenerateObjectDDL(Stream: TStringStream);
+function TFIBMetaPackage.HeaderOptions: string;
 begin
-  Stream.WriteString(Format('CREATE PACKAGE %s AS ' + sLineBreak, [FormatName]));
+  if FSQLSecurity >= 0 then
+    Result := ' ' + SQLSecurityClause(FSQLSecurity)
+  else
+    Result := '';
+end;
+
+procedure TFIBMetaPackage.GenerateObjectDDL(Stream: TStringStream);
+begin
+  Stream.WriteString(Format('CREATE PACKAGE %s%s AS ' + sLineBreak, [FormatName, HeaderOptions]));
   Stream.WriteString(FSpec);
   Stream.WriteString(DefTerminator);
   Stream.WriteString(sLineBreak + sLineBreak);
@@ -5167,14 +5478,15 @@ begin
   Stream.WriteString(FBody);
 end;
 
-procedure TMetaPackage.LoadFromDataBase(QNames, QCharset: TFIBQuery);
+procedure TFIBMetaPackage.LoadFromDataBase(QNames, QCharset: TFIBQuery);
 var
-  DataBase: TMetaDataBase;
+  DataBase: TFIBMetaDatabase;
   QRoutines, QProcFields, QFuncReturn, QFuncInputs: TFIBQuery;
 begin
   Name := QNames.Fields[0].AsString;
   FSpec := QNames.Fields[1].AsString;
   FBody := QNames.Fields[2].AsString;
+  FSQLSecurity := ReadSQLSecurity(QNames);
   LoadDescription(QNames);
 
   DataBase := MetaDataBase;
@@ -5189,7 +5501,7 @@ begin
     QRoutines.ExecQuery;
     while not QRoutines.Eof do
     begin
-      TMetaPackageProcedure.Create(Self).LoadFromDataBase(QRoutines, QProcFields, QCharset,
+      TFIBMetaPackageProcedure.Create(Self).LoadFromDataBase(QRoutines, QProcFields, QCharset,
         DataBase.FProcParamDomainSupports, DataBase.FProcParamRelationSupports);
       QRoutines.Next;
     end;
@@ -5202,7 +5514,7 @@ begin
     QRoutines.ExecQuery;
     while not QRoutines.Eof do
     begin
-      TMetaPackageFunction.Create(Self).LoadFromDataBase(QRoutines, QFuncReturn, QFuncInputs, QCharset);
+      TFIBMetaPackageFunction.Create(Self).LoadFromDataBase(QRoutines, QFuncReturn, QFuncInputs, QCharset);
       QRoutines.Next;
     end;
     QRoutines.Close;
@@ -5215,20 +5527,72 @@ begin
   FLoaded := True;
 end;
 
-function TMetaPackage.CommentKeyword: string;
+function TFIBMetaPackage.CommentKeyword: string;
 begin
   Result := 'PACKAGE';
 end;
 
-procedure TMetaPackage.SaveBodyDDL(Stream: TStringStream);
+procedure TFIBMetaPackage.SaveBodyDDL(Stream: TStringStream);
 begin
   Stream.WriteString(Format('RECREATE PACKAGE BODY %s AS ' + sLineBreak, [FormatName]));
   Stream.WriteString(FBody);
 end;
 
-procedure TMetaPackage.SaveSpecDDL(Stream: TStringStream);
+function TFIBMetaPackage.UsesColumnTypes: Boolean;
+var
+  I, J: Integer;
 begin
-  Stream.WriteString(Format('CREATE PACKAGE %s AS ' + sLineBreak, [FormatName]));
+  Result := True;
+  for I := 0 to ProceduresCount - 1 do
+  begin
+    for J := 0 to Procedures[I].InputFieldsCount - 1 do
+      if Procedures[I].InputFields[J].FUseRelation then
+        Exit;
+    for J := 0 to Procedures[I].OutputFieldsCount - 1 do
+      if Procedures[I].OutputFields[J].FUseRelation then
+        Exit;
+  end;
+  for I := 0 to FunctionsCount - 1 do
+  begin
+    for J := 0 to Functions[I].InputFieldsCount - 1 do
+      if Functions[I].InputFields[J].FUseRelation then
+        Exit;
+    if (Functions[I].Return <> nil) and Functions[I].Return.FUseRelation then
+      Exit;
+  end;
+  Result := False;
+end;
+
+procedure TFIBMetaPackage.SaveSpecDDL(Stream: TStringStream);
+var
+  I: Integer;
+begin
+  Stream.WriteString(Format('CREATE PACKAGE %s%s AS ' + sLineBreak, [FormatName, HeaderOptions]));
+  if not UsesColumnTypes then
+  begin
+    Stream.WriteString(FSpec);
+    Exit;
+  end;
+  // The tables do not exist yet; SaveHeaderAlterDDL writes the header later
+  Stream.WriteString('BEGIN');
+  for I := 0 to ProceduresCount - 1 do
+  begin
+    Stream.WriteString(sLineBreak + '  ');
+    Procedures[I].InternalSaveToDDL(Stream, '', True);
+    Stream.WriteString(DefTerminator);
+  end;
+  for I := 0 to FunctionsCount - 1 do
+  begin
+    Stream.WriteString(sLineBreak + '  ');
+    Functions[I].InternalSaveToDDL(Stream, '', True);
+    Stream.WriteString(DefTerminator);
+  end;
+  Stream.WriteString(sLineBreak + 'END');
+end;
+
+procedure TFIBMetaPackage.SaveHeaderAlterDDL(Stream: TStringStream);
+begin
+  Stream.WriteString(Format('ALTER PACKAGE %s%s AS ' + sLineBreak, [FormatName, HeaderOptions]));
   Stream.WriteString(FSpec);
 end;
 

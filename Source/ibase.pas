@@ -115,7 +115,7 @@ type
   TISC_TIME_TZ_EX = record
     utc_time: ISC_TIME;
     time_zone: Word;
-    ext_offset: Smallint;
+    ext_offset: SmallInt;
   end;
 
   PISC_TIME_TZ_EX = ^TISC_TIME_TZ_EX;
@@ -130,7 +130,7 @@ type
   TISC_TIMESTAMP_TZ_EX = record
     utc_timestamp: TISC_TIMESTAMP;
     time_zone: Word;
-    ext_offset: Smallint;
+    ext_offset: SmallInt;
   end;
 
   PISC_TIMESTAMP_TZ_EX = ^TISC_TIMESTAMP_TZ_EX;
@@ -240,7 +240,7 @@ type
     sqlscale: short;                                          // scale factor
     sqlsubtype: short;                                        // datatype subtype - BLOBs & text types only
     sqllen: short;                                            // length of data area
-    sqldata: TDataBuffer;                                     // address of data
+    sqldata: TFIBDataBuffer;                                     // address of data
     sqlind: PShort;                                           // address of indicator variable
     sqlname_length: short;                                    // length of sqlname field
     sqlname: array [0 .. LENGTH_METANAMES - 1] of AnsiChar;   // name of field, name length + space for NULL
@@ -368,10 +368,6 @@ type
     statement: PAnsiChar; dialect: UShort; xsqlda: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_fetch = function(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; dialect: UShort;
     xsqlda: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
-(*$IFDEF SCROLLABLE_CURSORS*)
-  Tisc_dsql_fetch2 = function(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE; dialect: UShort; xsqlda: PXSQLDA; isc_arg5: UShort;
-    isc_arg6: Long): ISC_STATUS; {$I FIBMacroComp.inc}
-(*$ENDIF*)
   Tisc_dsql_finish = function(db_handle: PISC_DB_HANDLE): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_free_statement = function(status_vector: PISC_STATUS; stmt_handle: PISC_STMT_HANDLE;
     options: UShort): ISC_STATUS; {$I FIBMacroComp.inc}
@@ -540,10 +536,6 @@ type
     isc_arg12: UShort; isc_arg13: PAnsiChar; isc_arg14: UShort; isc_arg15: UShort; isc_arg16: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_fetch_m = function(status_vector: PISC_STATUS; statement_handle: PISC_STMT_HANDLE; isc_arg3: UShort; isc_arg4: PAnsiChar;
     isc_arg5: UShort; isc_arg6: UShort; isc_arg7: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
-(*$IFDEF SCROLLABLE_CURSORS*)
-  Tisc_dsql_fetch2_m = function(status_vector: PISC_STATUS; statement_handle: PISC_STMT_HANDLE; isc_arg3: UShort; isc_arg4: PAnsiChar;
-    isc_arg5: UShort; isc_arg6: UShort; isc_arg7: PAnsiChar; isc_arg8: UShort; isc_arg9: Long): ISC_STATUS; {$I FIBMacroComp.inc}
-(*$ENDIF*)
   Tisc_dsql_insert_m = function(status_vector: PISC_STATUS; statement_handle: PISC_STMT_HANDLE; isc_arg3: UShort; isc_arg4: PAnsiChar;
     isc_arg5: UShort; isc_arg6: UShort; isc_arg7: PAnsiChar): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_dsql_prepare_m = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; statement_handle: PISC_STMT_HANDLE;
@@ -565,10 +557,6 @@ type
     isc_arg4: UShort; isc_arg5: PAnsiChar; isc_arg6: UShort; isc_arg7: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_embed_dsql_fetch = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar; isc_arg3: UShort;
     isc_arg4: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
-(*$IFDEF SCROLLABLE_CURSORS*)
-  Tisc_embed_dsql_fetch2 = function(status_vector: PISC_STATUS; isc_arg2: PAnsiChar; isc_arg3: UShort; isc_arg4: PXSQLDA; isc_arg5: UShort;
-    isc_arg6: Long): ISC_STATUS; {$I FIBMacroComp.inc}
-(*$ENDIF*)
   Tisc_embed_dsql_open = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; isc_arg3: PAnsiChar; isc_arg4: UShort;
     isc_arg5: PXSQLDA): ISC_STATUS; {$I FIBMacroComp.inc}
   Tisc_embed_dsql_open2 = function(status_vector: PISC_STATUS; tran_handle: PISC_TR_HANDLE; isc_arg3: PAnsiChar; isc_arg4: UShort;
@@ -2110,9 +2098,6 @@ const
 // XSQLDA_LENGTH is defined in C as a macro, but in Pascal we must define it as a function
 function XSQLDA_LENGTH(n: Long): Long;
 
-procedure add_spb_length(var p: PAnsiChar; length: Integer);
-procedure add_spb_numeric(var p: PAnsiChar; data: Integer);
-
 implementation
 
 uses
@@ -2123,37 +2108,6 @@ function XSQLDA_LENGTH(n: Long): Long;
   XSQLDA_LENGTH(n)	(sizeof (XSQLDA) + (n-1) * sizeof (XSQLVAR)) *)
 begin
   result := SizeOf(TXSQLDA) + ((n - 1) * SizeOf(TXSQLVAR));
-end;
-// Service manager functions
-
-procedure add_spb_length(var p: PAnsiChar; length: Integer);
-(*
-  #define ADD_SPB_LENGTH(p, length)	{*(p)++ = (length); \
-  *(p)++ = (length) >> 8;}
-*)
-begin
-  p^ := AnsiChar(length);
-  Inc(p);
-  p^ := AnsiChar(length shr 8);
-  Inc(p);
-end;
-
-procedure add_spb_numeric(var p: PAnsiChar; data: Integer);
-(*
-  #define ADD_SPB_NUMERIC(p, data)	{*(p)++ = (data); \
-  *(p)++ = (data) >> 8; \
-  *(p)++ = (data) >> 16; \
-  *(p)++ = (data) >> 24;}
-*)
-begin
-  p^ := AnsiChar(data);
-  Inc(p);
-  p^ := AnsiChar(data shr 8);
-  Inc(p);
-  p^ := AnsiChar(data shr 16);
-  Inc(p);
-  p^ := AnsiChar(data shr 24);
-  Inc(p);
 end;
 
 end.

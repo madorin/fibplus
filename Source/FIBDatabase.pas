@@ -36,42 +36,42 @@ type
   TFIBDatabase = class;
   TFIBTransaction = class;
   TFIBBase = class;
-  TDesignDBOption = (ddoIsDefaultDatabase, ddoStoreConnected, ddoNotSavePassword);
-  TDesignDBOptions = set of TDesignDBOption;
+  TFIBDesignDBOption = (ddoIsDefaultDatabase, ddoStoreConnected, ddoNotSavePassword);
+  TFIBDesignDBOptions = set of TFIBDesignDBOption;
 
   TFIBDatabaseEventType = (detOnConnect, detBeforeDisconnect, detBeforeDestroy);
   TFIBUseRepository = (urFieldsInfo, urDataSetInfo, urErrorMessagesInfo);
   TFIBUseRepositories = set of TFIBUseRepository;
-  TFBContextSpace = (csSystem, csSession, csTransaction);
-  TDatabaseRunStateValues = (drsInCloseLostConnect, drsInRestoreLostConnect, drsInClose);
-  TDatabaseRunState = set of TDatabaseRunStateValues;
-  TBeforeSaveBlobToSwap = procedure(const TableName, FieldName: string;
-  { const } RecordKeyValues: array of variant; Stream: TStream;
+  TFIBContextSpace = (csSystem, csSession, csTransaction);
+  TFIBDatabaseRunStateValue = (drsInCloseLostConnect, drsInRestoreLostConnect, drsInClose);
+  TFIBDatabaseRunState = set of TFIBDatabaseRunStateValue;
+  TFIBBeforeSaveBlobToSwapEvent = procedure(const TableName, FieldName: string;
+  { const } RecordKeyValues: array of Variant; Stream: TStream;
     var FileName: string; var CanSave: Boolean) of object;
 
-  TAfterSaveLoadBlobSwap = procedure(const TableName, FieldName: string;
-  { const } RecordKeyValues: array of variant; const FileName: string)
+  TFIBAfterSaveLoadBlobSwapEvent = procedure(const TableName, FieldName: string;
+  { const } RecordKeyValues: array of Variant; const FileName: string)
   of object;
 
-  TBeforeLoadBlobFromSwap = procedure(const TableName, FieldName: string;
-  { const } RecordKeyValues: array of variant; var FileName: string;
+  TFIBBeforeLoadBlobFromSwapEvent = procedure(const TableName, FieldName: string;
+  { const } RecordKeyValues: array of Variant; var FileName: string;
     var CanLoad: Boolean) of object;
 
-  TActionOnIdle = (aiCloseConnect, aiKeepLiveConnect);
-  TOnIdleConnect = procedure(Sender: TFIBDatabase; IdleTicks: Cardinal; var Action: TActionOnIdle) of object;
+  TFIBIdleAction = (aiCloseConnect, aiKeepLiveConnect);
+  TFIBIdleConnectEvent = procedure(Sender: TFIBDatabase; IdleTicks: Cardinal; var Action: TFIBIdleAction) of object;
 
   TFIBLoginEvent = procedure(Database: TFIBDatabase; LoginParams: TStrings; var DoConnect: Boolean) of object;
   TFIBAcceptCacheSchemaEvent = procedure(const ObjName: string; var Accept: Boolean) of object;
 
-  TOnLostConnectActions = (laTerminateApp, laCloseConnect, laIgnore, laWaitRestore);
+  TFIBLostConnectAction = (laTerminateApp, laCloseConnect, laIgnore, laWaitRestore);
   TFIBLostConnectEvent = procedure(Database: TFIBDatabase; E: EFIBError;
-    var Actions: TOnLostConnectActions; var DoRaise: Boolean) of object;
+    var Actions: TFIBLostConnectAction; var DoRaise: Boolean) of object;
   TFIBRestoreConnectEvent = procedure(Database: TFIBDatabase) of object;
 
-  TTransactionAction = (TARollback, TARollbackRetaining, TACommit, TACommitRetaining);
-  TEndTrEvent = procedure(EndingTR: TFIBTransaction; Action: TTransactionAction; Force: Boolean) of object;
+  TFIBTransactionAction = (TARollback, TARollbackRetaining, TACommit, TACommitRetaining);
+  TFIBEndTransactionEvent = procedure(EndingTR: TFIBTransaction; Action: TFIBTransactionAction; Force: Boolean) of object;
 
-  TIBCharSets = set of Byte;
+  TFIBCharSetIDs = set of Byte;
 
   // What the connection supports and how it is set up; Close keeps the code pages (open datasets)
   TFIBDatabaseCapabilities = class
@@ -85,7 +85,7 @@ type
     FBlobsConverted: Boolean;
     // values in the column charset: NONE, Firebird 1.x not Unicode
     FCharSetPerColumn: Boolean;
-    FUnicodeCharSets: TIBCharSets;
+    FUnicodeCharSets: TFIBCharSetIDs;
     FCodePage: Word;
     FMetadataCodePage: Word;
     FTPBCodePage: Word;
@@ -154,32 +154,32 @@ type
 // TFIBDatabase
 
 {$IFDEF C23}
-  TDoChangeScreenCursor = procedure(NewCursor: Integer; var OldCursor: Integer) of object;
+  TFIBChangeScreenCursorEvent = procedure(NewCursor: Integer; var OldCursor: Integer) of object;
 {$ENDIF}
 
-  TFIBDatabase = class(TComponent, IIbClientLibrary, IFIBConnect)
+  TFIBDatabase = class(TComponent, IFIBClientLibrary, IFIBConnect)
   private
-    FSQLLogger: ISQLLogger;
-    FSQLStatMaker: ISQLStatMaker;
+    FSQLLogger: IFIBSQLLogger;
+    FSQLStatMaker: IFIBSQLStatisticsMaker;
     FUseRepositories: TFIBUseRepositories;
     FLibraryName: string;
     FUseBlrToTextFilter: Boolean;
     FClientLibLoaded: Boolean;
-    FBlobSwapSupport: TBlobSwapSupport;
-    FBeforeSaveBlobToSwap: TBeforeSaveBlobToSwap;
-    FAfterSaveBlobToSwap: TAfterSaveLoadBlobSwap;
-    FAfterLoadBlobFromSwap: TAfterSaveLoadBlobSwap;
-    FBeforeLoadBlobFromSwap: TBeforeLoadBlobFromSwap;
-    FOnIdleConnect: TOnIdleConnect;
+    FBlobSwapSupport: TFIBBlobSwapSupport;
+    FBeforeSaveBlobToSwap: TFIBBeforeSaveBlobToSwapEvent;
+    FAfterSaveBlobToSwap: TFIBAfterSaveLoadBlobSwapEvent;
+    FAfterLoadBlobFromSwap: TFIBAfterSaveLoadBlobSwapEvent;
+    FBeforeLoadBlobFromSwap: TFIBBeforeLoadBlobFromSwapEvent;
+    FOnIdleConnect: TFIBIdleConnectEvent;
     FAutoReconnect: Boolean;
-    FGenerators: TGeneratorsCache;
-    FMemoSubtypes: TMemoSubtypes;
+    FGenerators: TFIBGeneratorsCache;
+    FMemoSubtypes: TFIBMemoSubtypes;
     FCryptKey: FIBByteString;
     FOnCryptKeyRequest: TFIBCryptKeyRequestEvent;
     FCryptKeyCallback: TFIBCryptKeyCallback;
 {$IFDEF C23}
     FLibraryName64: string;
-    FDoChangeScreenCursor: TDoChangeScreenCursor;
+    FDoChangeScreenCursor: TFIBChangeScreenCursorEvent;
 {$ENDIF}
     FRestoreConnectTimer: TFIBTimer;
     FWaitForRestoreConnect: Cardinal;
@@ -191,13 +191,13 @@ type
     FAfterRestoreConnect: TFIBRestoreConnectEvent;
     FBeforeStartTransaction: TNotifyEvent;
     FAfterStartTransaction: TNotifyEvent;
-    FBeforeEndTransaction: TEndTrEvent;
-    FAfterEndTransaction: TEndTrEvent;
-    FCacheSchemaOptions: TCacheSchemaOptions;
+    FBeforeEndTransaction: TFIBEndTransactionEvent;
+    FAfterEndTransaction: TFIBEndTransactionEvent;
+    FCacheSchemaOptions: TFIBCacheSchemaOptions;
     FOnAcceptCacheSchema: TFIBAcceptCacheSchemaEvent;
     procedure SetAliasName(const Value: string);
     procedure SetWaitForRestoreConnect(Value: Cardinal);
-    procedure SetCacheSchemaOptions(Value: TCacheSchemaOptions);
+    procedure SetCacheSchemaOptions(Value: TFIBCacheSchemaOptions);
     function GetFIBDataSet(Index: Integer): TDataSet;
     function GetFIBQuery(Index: Integer): TComponent;
     function GetFIBVersion: string;
@@ -208,7 +208,7 @@ type
 
     function GetMemoSubtypes: string;
     procedure SetMemoSubtypes(const Value: string);
-    procedure SetGenerators(Value: TGeneratorsCache);
+    procedure SetGenerators(Value: TFIBGeneratorsCache);
 
     procedure SetLibraryName(const LibName: string);
 
@@ -217,17 +217,17 @@ type
     function StoredLibraryName64: Boolean;
 {$ENDIF}
     procedure LoadLibrary;
-    procedure SetBlobSwapSupport(const Value: TBlobSwapSupport);
-    procedure SetSQLLogger(const Value: ISQLLogger);
-    procedure SetSQLStatMaker(const Value: ISQLStatMaker);
+    procedure SetBlobSwapSupport(const Value: TFIBBlobSwapSupport);
+    procedure SetSQLLogger(const Value: IFIBSQLLogger);
+    procedure SetSQLStatMaker(const Value: IFIBSQLStatisticsMaker);
 
     function GetBusy: Boolean;
   protected
-    FClientLibrary: IIbClientLibrary;
+    FClientLibrary: IFIBClientLibrary;
     FFIBBases: TList; // TFIBBases attached.
     FTransactions: TList; // TFIBTransactions attached.
     FDBName: string; // DB's name
-    FDBParams: TDBParams; // "Pretty" Parameters to database
+    FDBParams: TFIBDBParams; // "Pretty" Parameters to database
     FDBParamsChanged: Boolean; // Flag to determine if DPB must be regenerated
     FDPB: PAnsiChar; // Parameters to DB as passed to IB.
     FDPBLength: Short; // Length of parameter buffer
@@ -257,29 +257,31 @@ type
     FSQLDialect: Integer;
     FUpperOldNames: Boolean;
     // compatibility with IB4..5 field names conventions
-    FConnectParams: TConnectParams;
-    FDesignDBOptions: TDesignDBOptions;
+    FConnectParams: TFIBConnectParams;
+    FDesignDBOptions: TFIBDesignDBOptions;
     FBeforeDisconnect: TNotifyEvent;
     FAfterDisconnect: TNotifyEvent;
     FDifferenceTime: Double;
     FSynchronizeTime: Boolean;
     FInternalTransaction: TFIBTransaction;
 
-    FAfterConnectEvents: TNotifyEventList;
+    FAfterConnectEvents: TFIBNotifyEventList;
     FAfterConnectError: TObject;
-    FBeforeDisconnectEvents: TNotifyEventList;
-    FBeforeDestroyEvents: TNotifyEventList;
+    FBeforeDisconnectEvents: TFIBNotifyEventList;
+    FBeforeDestroyEvents: TFIBNotifyEventList;
 
     FAttachmentID: Int64;
     FConnectionSerial: Integer;
-    FBlobFilters: TIBBlobFilters;
+    FBlobFilters: TFIBBlobFilters;
     FDBFileName: string;
     FConnectType: Byte;
     FNeedUnicodeFieldsTranslation: Boolean;
     FIsUnicodeConnect: Boolean;
     FIsNoneConnect: Boolean;
-    FDatabaseRunState: TDatabaseRunState;
+    FDatabaseRunState: TFIBDatabaseRunState;
     FLastActiveTime: Cardinal;
+    FIdleTimeout: Cardinal;
+    FKeepAliveTime: Cardinal;
     FStreammedConnectFail: Boolean;
     procedure DBParamsChange(Sender: TObject);
     procedure DBParamsChanging(Sender: TObject);
@@ -301,13 +303,13 @@ type
     procedure SetDBParamByDPB(const Idx: Integer; Value: string);
     procedure SetDBParamByName(const ParName, Value: string);
     procedure SetConfigParam(const Name: string; const Value: string);
-    procedure SetDBParams(Value: TDBParams);
+    procedure SetDBParams(Value: TFIBDBParams);
     procedure SetDefaultTransaction(Value: TFIBTransaction);
     procedure SetDefaultUpdateTransaction(Value: TFIBTransaction);
     procedure CreateTimeoutTimer;
     procedure SetHandle(Value: TISC_DB_HANDLE);
     procedure SetTimeout(Value: Cardinal);
-    procedure SetDesignDBOptions(Value: TDesignDBOptions);
+    procedure SetDesignDBOptions(Value: TFIBDesignDBOptions);
     procedure TimeoutConnection(Sender: TObject);
     // Database Info procedures -- Advanced stuff (translated from isc_database_info)
     function GetAllocation: Long; // isc_info_allocation
@@ -419,8 +421,8 @@ type
     function GetStoreConnected: Boolean;
 {$IFDEF     CSMonitor}
   private
-    FCSMonitorSupport: TCSMonitorSupport;
-    procedure SetCSMonitorSupport(Value: TCSMonitorSupport);
+    FCSMonitorSupport: TFIBCSMonitorSupport;
+    procedure SetCSMonitorSupport(Value: TFIBCSMonitorSupport);
 {$ENDIF}
   protected
     FIsFireBirdConnect: Boolean;
@@ -434,11 +436,6 @@ type
     procedure DoBeforeDisconnect;
     procedure DoAfterDisconnect;
 
-{$IFDEF USE_DEPRECATE_METHODS1}
-    procedure RemoveDataSet(Idx: Integer); deprecated;
-    procedure RemoveDataSets; deprecated;
-    function AddDataSet(ds: TFIBBase): Integer; deprecated;
-{$ENDIF}
     procedure RemoveFIBBase(Idx: Integer);
     procedure RemoveFIBBases;
     function AddFIBBase(ds: TFIBBase): Integer;
@@ -448,9 +445,9 @@ type
     function AddTransaction(TR: TFIBTransaction): Integer;
     procedure IBFilterBuffer(var BlobBuffer: PAnsiChar; var BlobSize: LongInt; BlobSubType: Integer; ForEncode: Boolean);
     procedure CloseLostConnect;
-    procedure DoOnLostConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TOnLostConnectActions;
+    procedure DoOnLostConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TFIBLostConnectAction;
       var DoRaise: Boolean); dynamic;
-    procedure DoOnErrorRestoreConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TOnLostConnectActions); dynamic;
+    procedure DoOnErrorRestoreConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TFIBLostConnectAction); dynamic;
     procedure DoAfterRestoreConnect; dynamic;
     function GetAfterConnect: TNotifyEvent;
     procedure SetAfterConnect(Method: TNotifyEvent);
@@ -462,7 +459,7 @@ type
     procedure AddEvent(Event: TNotifyEvent; EventType: TFIBDatabaseEventType);
     procedure RemoveEvent(Event: TNotifyEvent; EventType: TFIBDatabaseEventType);
 
-    procedure RegisterBlobFilter(BlobSubType: Integer; EncodeProc, DecodeProc: PIBBlobFilterProc);
+    procedure RegisterBlobFilter(BlobSubType: Integer; EncodeProc, DecodeProc: PFIBBlobFilterProc);
     procedure RemoveBlobFilter(BlobSubType: Integer);
   public
     constructor Create(AOwner: TComponent); override;
@@ -487,7 +484,7 @@ type
     function ReadParamsFromAlias: Boolean; dynamic;
     // IFIBObject
     procedure SaveAlias; virtual;
-    function ExTestConnected(Actions: TOnLostConnectActions): Boolean;
+    function ExTestConnected(Actions: TFIBLostConnectAction): Boolean;
     procedure WaitRestoreConnect;
     procedure StopWaitRestoreConnect;
     procedure RestoreConnect(Sender: TObject);
@@ -527,8 +524,8 @@ type
     function NeedUnicodeFieldTranslation(FieldCharacterSet: Integer): Boolean;
     function IsKOI8Connect: Boolean; deprecated;
     { FB2 features }
-    function GetContextVariable(ContextSpace: TFBContextSpace; const VarName: string; aTransaction: TFIBTransaction = nil): variant;
-    procedure SetContextVariable(ContextSpace: TFBContextSpace; const VarName, VarValue: string; aTransaction: TFIBTransaction = nil);
+    function GetContextVariable(ContextSpace: TFIBContextSpace; const VarName: string; aTransaction: TFIBTransaction = nil): Variant;
+    procedure SetContextVariable(ContextSpace: TFIBContextSpace; const VarName, VarValue: string; aTransaction: TFIBTransaction = nil);
 
     function CanCancelOperationFB21: Boolean;
     procedure CancelOperationFB21(ConnectForCancel: TFIBDatabase = nil);
@@ -537,7 +534,7 @@ type
     procedure EnableCancelOperations;
     procedure DisableCancelOperations;
     //
-    function UnicodeCharSets: TIBCharSets;
+    function UnicodeCharSets: TFIBCharSetIDs;
     function UTF8CharSetID: Integer;
     function BytesInUnicodeChar(CharSetId: Integer): Byte;
     function ReturnDeclaredFieldSize: Boolean;
@@ -545,10 +542,6 @@ type
     function IsMemoSubtype(aSubtype: SmallInt): Boolean;
     function LibraryFilePath: string;
 
-{$IFDEF USE_DEPRECATE_METHODS1}
-    property DataSetCount: Integer read GetFIBBasesCount; // deprecated;
-    property DataSets[Index: Integer]: TFIBBase read GetFIBBase; // deprecated;
-{$ENDIF}
     property FIBBaseCount: Integer read GetFIBBasesCount;
     property FIBBases[Index: Integer]: TFIBBase read GetFIBBase;
 
@@ -677,36 +670,36 @@ type
 
     procedure CreateGUIDDomain;
     function InternalQueryValue(const aSQL: string; FieldNo: Integer;
-      ParamValues: array of variant; aTransaction: TFIBTransaction;
-      aCacheQuery: Boolean): variant;
+      ParamValues: array of Variant; aTransaction: TFIBTransaction;
+      aCacheQuery: Boolean): Variant;
     function QueryValue(const aSQL: string; FieldNo: Integer;
       aTransaction: TFIBTransaction = nil; aCacheQuery: Boolean = True)
-    : variant; overload;
+    : Variant; overload;
     function QueryValue(const aSQL: string; FieldNo: Integer;
-      ParamValues: array of variant; aTransaction: TFIBTransaction = nil;
-      aCacheQuery: Boolean = True): variant; overload;
+      ParamValues: array of Variant; aTransaction: TFIBTransaction = nil;
+      aCacheQuery: Boolean = True): Variant; overload;
 
-    function QueryValues(const aSQL: string; aTransaction: TFIBTransaction = nil; aCacheQuery: Boolean = True): variant; overload;
-    function QueryValues(const aSQL: string; ParamValues: array of variant;
+    function QueryValues(const aSQL: string; aTransaction: TFIBTransaction = nil; aCacheQuery: Boolean = True): Variant; overload;
+    function QueryValues(const aSQL: string; ParamValues: array of Variant;
       aTransaction: TFIBTransaction = nil; aCacheQuery: Boolean = True)
-    : variant; overload;
+    : Variant; overload;
 
     function QueryValueAsStr(const aSQL: string; FieldNo: Integer): string; overload;
-    function QueryValueAsStr(const aSQL: string; FieldNo: Integer; ParamValues: array of variant): string; overload;
+    function QueryValueAsStr(const aSQL: string; FieldNo: Integer; ParamValues: array of Variant): string; overload;
 
     procedure ClearQueryCacheList;
 
     function EasyFormatsStr: Boolean;
     property StoreConnected: Boolean read GetStoreConnected;
-    property ClientLibrary: IIbClientLibrary read FClientLibrary implements IIbClientLibrary;
-    property SQLStatisticsMaker: ISQLStatMaker read FSQLStatMaker write SetSQLStatMaker;
+    property ClientLibrary: IFIBClientLibrary read FClientLibrary implements IFIBClientLibrary;
+    property SQLStatisticsMaker: IFIBSQLStatisticsMaker read FSQLStatMaker write SetSQLStatMaker;
 
   published
     property AutoReconnect: Boolean read FAutoReconnect write FAutoReconnect default False;
     property Connected: Boolean read GetConnected write SetConnected stored GetStoreConnected;
-    property BlobSwapSupport: TBlobSwapSupport read FBlobSwapSupport write SetBlobSwapSupport;
+    property BlobSwapSupport: TFIBBlobSwapSupport read FBlobSwapSupport write SetBlobSwapSupport;
     property DBName: string read GetDatabaseName write SetDatabaseName;
-    property DBParams: TDBParams read FDBParams write SetDBParams;
+    property DBParams: TFIBDBParams read FDBParams write SetDBParams;
     property DefaultTransaction: TFIBTransaction read FDefaultTransaction write SetDefaultTransaction;
     property DefaultUpdateTransaction: TFIBTransaction read FDefaultUpdateTransaction write SetDefaultUpdateTransaction;
 
@@ -723,17 +716,17 @@ type
 
     property BeforeDisconnect: TNotifyEvent read FBeforeDisconnect write FBeforeDisconnect;
     property AfterDisconnect: TNotifyEvent read FAfterDisconnect write FAfterDisconnect;
-    property ConnectParams: TConnectParams read FConnectParams write FConnectParams stored False;
+    property ConnectParams: TFIBConnectParams read FConnectParams write FConnectParams stored False;
     property Session: TFIBSession read FSession write SetSession;
     property SynchronizeTime: Boolean read FSynchronizeTime write FSynchronizeTime default True;
 
-    property DesignDBOptions: TDesignDBOptions read FDesignDBOptions write SetDesignDBOptions default [ddoStoreConnected];
+    property DesignDBOptions: TFIBDesignDBOptions read FDesignDBOptions write SetDesignDBOptions default [ddoStoreConnected];
     property OnConnect: TNotifyEvent read FOnConnect write FOnConnect stored False; // obsolete
-    property BeforeSaveBlobToSwap: TBeforeSaveBlobToSwap read FBeforeSaveBlobToSwap write FBeforeSaveBlobToSwap;
-    property AfterSaveBlobToSwap: TAfterSaveLoadBlobSwap read FAfterSaveBlobToSwap write FAfterSaveBlobToSwap;
-    property AfterLoadBlobFromSwap: TAfterSaveLoadBlobSwap read FAfterLoadBlobFromSwap write FAfterLoadBlobFromSwap;
-    property BeforeLoadBlobFromSwap: TBeforeLoadBlobFromSwap read FBeforeLoadBlobFromSwap write FBeforeLoadBlobFromSwap;
-    property OnIdleConnect: TOnIdleConnect read FOnIdleConnect write FOnIdleConnect;
+    property BeforeSaveBlobToSwap: TFIBBeforeSaveBlobToSwapEvent read FBeforeSaveBlobToSwap write FBeforeSaveBlobToSwap;
+    property AfterSaveBlobToSwap: TFIBAfterSaveLoadBlobSwapEvent read FAfterSaveBlobToSwap write FAfterSaveBlobToSwap;
+    property AfterLoadBlobFromSwap: TFIBAfterSaveLoadBlobSwapEvent read FAfterLoadBlobFromSwap write FAfterLoadBlobFromSwap;
+    property BeforeLoadBlobFromSwap: TFIBBeforeLoadBlobFromSwapEvent read FBeforeLoadBlobFromSwap write FBeforeLoadBlobFromSwap;
+    property OnIdleConnect: TFIBIdleConnectEvent read FOnIdleConnect write FOnIdleConnect;
     // Called in the connecting thread, inside the global connect lock; Key starts as CryptKey
     property OnCryptKeyRequest: TFIBCryptKeyRequestEvent read FOnCryptKeyRequest write FOnCryptKeyRequest;
     property UseRepositories: TFIBUseRepositories read FUseRepositories
@@ -744,18 +737,18 @@ type
 {$IFDEF C23}
     property LibraryName64: string read FLibraryName64 write FLibraryName64 stored StoredLibraryName64;
 {$ENDIF}
-    property SQLLogger: ISQLLogger read FSQLLogger write SetSQLLogger;
+    property SQLLogger: IFIBSQLLogger read FSQLLogger write SetSQLLogger;
     property UseBlrToTextFilter: Boolean read FUseBlrToTextFilter write FUseBlrToTextFilter default False;
-    property GeneratorsCache: TGeneratorsCache read FGenerators write SetGenerators;
+    property GeneratorsCache: TFIBGeneratorsCache read FGenerators write SetGenerators;
 {$IFDEF CSMonitor}
-    property CSMonitorSupport: TCSMonitorSupport read FCSMonitorSupport write SetCSMonitorSupport;
+    property CSMonitorSupport: TFIBCSMonitorSupport read FCSMonitorSupport write SetCSMonitorSupport;
 {$ENDIF}
 {$IFDEF C23}
-    property DoChangeScreenCursor: TDoChangeScreenCursor read FDoChangeScreenCursor write FDoChangeScreenCursor;
+    property DoChangeScreenCursor: TFIBChangeScreenCursorEvent read FDoChangeScreenCursor write FDoChangeScreenCursor;
 {$ENDIF}
   published
     property MemoSubtypes: string read GetMemoSubtypes write SetMemoSubtypes;
-    property CacheSchemaOptions: TCacheSchemaOptions read FCacheSchemaOptions write SetCacheSchemaOptions;
+    property CacheSchemaOptions: TFIBCacheSchemaOptions read FCacheSchemaOptions write SetCacheSchemaOptions;
     property AliasName: string read FAliasName write SetAliasName;
     property WaitForRestoreConnect: Cardinal read FWaitForRestoreConnect write SetWaitForRestoreConnect default 30000;
     property SaveAliasParamsAfterConnect: Boolean read FSaveAliasParamsAfterConnect write FSaveAliasParamsAfterConnect default True;
@@ -766,8 +759,8 @@ type
     property AfterRestoreConnect: TFIBRestoreConnectEvent read FAfterRestoreConnect write FAfterRestoreConnect;
     property BeforeStartTransaction: TNotifyEvent read FBeforeStartTransaction write FBeforeStartTransaction;
     property AfterStartTransaction: TNotifyEvent read FAfterStartTransaction write FAfterStartTransaction;
-    property BeforeEndTransaction: TEndTrEvent read FBeforeEndTransaction write FBeforeEndTransaction;
-    property AfterEndTransaction: TEndTrEvent read FAfterEndTransaction write FAfterEndTransaction;
+    property BeforeEndTransaction: TFIBEndTransactionEvent read FBeforeEndTransaction write FBeforeEndTransaction;
+    property AfterEndTransaction: TFIBEndTransactionEvent read FAfterEndTransaction write FAfterEndTransaction;
     property About: string read GetFIBVersion write SetFIBVersion stored False;
     property OnLogin: TFIBLoginEvent read FBeforeConnect write FBeforeConnect stored False; // obsolete
     property OnAcceptCacheSchema: TFIBAcceptCacheSchemaEvent read FOnAcceptCacheSchema write FOnAcceptCacheSchema;
@@ -775,10 +768,10 @@ type
 
   // TFIBTransaction
 
-  TTransactionState = (tsActive, tsClosed, tsDoRollback, tsDoRollbackRetaining, tsDoCommit, tsDoCommitRetaining);
+  TFIBTransactionState = (tsActive, tsClosed, tsDoRollback, tsDoRollbackRetaining, tsDoCommit, tsDoCommitRetaining);
 
-  TTransactionRunState = (trsInLoaded);
-  TTransactionRunStates = set of TTransactionRunState;
+  TFIBTransactionRunStateValue = (trsInLoaded);
+  TFIBTransactionRunState = set of TFIBTransactionRunStateValue;
 
   TFIBTransactionEventType = (
     tetBeforeStartTransaction,
@@ -788,24 +781,24 @@ type
     tetBeforeDestroy
   );
 
-  TOnSQLExecute = procedure(Query: TComponent; SQLType: TFIBSQLTypes) of object;
+  TFIBSQLExecuteEvent = procedure(Query: TComponent; SQLType: TFIBSQLTypes) of object;
 
   TFIBTransaction = class(TComponent, IFIBTransaction)
   private
-    FTPBMode: TTPBMode;
+    FTPBMode: TFIBTPBMode;
     FWritingPreset: Boolean;
     FReadConsistencyParams: Boolean;
     FInternal: Boolean;
     FBeforeStart: TNotifyEvent;
     FAfterStart: TNotifyEvent;
-    FBeforeEnd: TEndTrEvent;
-    FAfterEnd: TEndTrEvent;
-    FBeforeSQLExecute: TOnSQLExecute;
-    FAfterSQLExecute: TOnSQLExecute;
-    FAfterFirstFetch: TOnSQLExecute;
+    FBeforeEnd: TFIBEndTransactionEvent;
+    FAfterEnd: TFIBEndTransactionEvent;
+    FBeforeSQLExecute: TFIBSQLExecuteEvent;
+    FAfterSQLExecute: TFIBSQLExecuteEvent;
+    FAfterFirstFetch: TFIBSQLExecuteEvent;
     FUserKindTransaction: string;
     function EndPreset: Boolean;
-    procedure SetTPBMode(Value: TTPBMode);
+    procedure SetTPBMode(Value: TFIBTPBMode);
     procedure SetInternal(Value: Boolean);
     function StoreTRParams: Boolean;
     function StoreUserKindTransaction: Boolean;
@@ -830,29 +823,29 @@ type
     FTPBLength: Short; // Length of parameter buffer
     FTPBCodePage: Word; // Code page of the names in FTPB
     FTimer: TFIBTimer; // Timer for timing out transactions.
-    FTimeoutAction: TTransactionAction; // Rollback or commit at end of timeout?
+    FTimeoutAction: TFIBTransactionAction; // Rollback or commit at end of timeout?
     FTRParams: TStrings; // Parameters to Transactions.
     FTRParamsChanged: Boolean;
-    FState: TTransactionState;
+    FState: TFIBTransactionState;
     FTransactionID: Integer;
-    FBeforeDestroyEvents: TNotifyEventList;
-    FBeforeStartTransactionEvents: TNotifyEventList;
-    FAfterStartTransactionEvents: TNotifyEventList;
+    FBeforeDestroyEvents: TFIBNotifyEventList;
+    FBeforeStartTransactionEvents: TFIBNotifyEventList;
+    FAfterStartTransactionEvents: TFIBNotifyEventList;
 
-    FBeforeEndTransactionEvents: TCallBackList;
-    FAfterEndTransactionEvents: TCallBackList;
+    FBeforeEndTransactionEvents: TFIBCallbackList;
+    FAfterEndTransactionEvents: TFIBCallbackList;
     FDatabaseTRParams: array of string;
     FDatabaseTPBs: array of AnsiString;
-    FTransactionRunStates: TTransactionRunStates;
+    FTransactionRunStates: TFIBTransactionRunState;
     FHasUncommitedUpdates: Boolean;
     FWatchUpdates: Boolean;
 {$IFDEF CSMonitor}
-    FCSMonitorSupport: TCSMonitorSupport;
-    procedure SetCSMonitorSupport(Value: TCSMonitorSupport);
+    FCSMonitorSupport: TFIBCSMonitorSupport;
+    procedure SetCSMonitorSupport(Value: TFIBCSMonitorSupport);
 {$ENDIF}
     function GetTransactionID: Integer;
     function DoStoreActive: Boolean;
-    procedure EndTransaction(Action: TTransactionAction; Force: Boolean); virtual;
+    procedure EndTransaction(Action: TFIBTransactionAction; Force: Boolean); virtual;
     // End the transaction using specified method...
     function GetDatabase(Index: Integer): TFIBDatabase;
     // Get the indexed database
@@ -873,11 +866,6 @@ type
     procedure TRParamsChange(Sender: TObject);
     procedure TRParamsChanging(Sender: TObject);
     procedure RemoveDatabases;
-{$IFDEF USE_DEPRECATE_METHODS1}
-    procedure RemoveDataSet(Idx: Integer); deprecated;
-    procedure RemoveDataSets; deprecated;
-    function AddDataSet(ds: TFIBBase): Integer; deprecated;
-{$ENDIF}
     procedure RemoveFIBBase(Idx: Integer);
     procedure RemoveFIBBases;
     function AddFIBBase(ds: TFIBBase): Integer;
@@ -894,10 +882,10 @@ type
     procedure AddEvent(Event: TNotifyEvent; EventType: TFIBTransactionEventType);
     procedure RemoveEvent(Event: TNotifyEvent; EventType: TFIBTransactionEventType);
 
-    procedure AddEndEvent(Event: TEndTrEvent; EventType: TFIBTransactionEventType);
-    procedure RemoveEndEvent(Event: TEndTrEvent; EventType: TFIBTransactionEventType);
+    procedure AddEndEvent(Event: TFIBEndTransactionEvent; EventType: TFIBTransactionEventType);
+    procedure RemoveEndEvent(Event: TFIBEndTransactionEvent; EventType: TFIBTransactionEventType);
 
-    procedure DoOnSQLExec(Query: TComponent; Kind: TKindOnOperation); virtual;
+    procedure DoOnSQLExec(Query: TComponent; Kind: TFIBOperationMoment); virtual;
 
     function AddDatabase(db: TFIBDatabase): Integer; overload;
     function AddDatabase(db: TFIBDatabase; const aTRParams: string): Integer; overload;
@@ -930,19 +918,13 @@ type
     property Internal: Boolean read FInternal write SetInternal;
     property DatabaseCount: Integer read GetDatabaseCount;
     property Databases[Index: Integer]: TFIBDatabase read GetDatabase;
-{$IFDEF USE_DEPRECATE_METHODS1}
-    property DataSetCount: Integer read GetFIBBasesCount; // deprecated;
-    property DataSets[Index: Integer]: TFIBBase read GetFIBBase; // deprecated;
-{$ENDIF}
     property FIBBaseCount: Integer read GetFIBBasesCount;
     property FIBBases[Index: Integer]: TFIBBase read GetFIBBase;
 
     property Handle: TISC_TR_HANDLE read FHandle write SetHandle;
     property HandleIsShared: Boolean read FHandleIsShared;
     property InTransaction: Boolean read GetInTransaction;
-    // property TPB: PChar read FTPB;
-    // property TPBLength: Short read FTPBLength;
-    property State: TTransactionState read FState;
+    property State: TFIBTransactionState read FState;
     property TransactionID: Integer read GetTransactionID;
     property HasUncommitedUpdates: Boolean read FHasUncommitedUpdates;
 
@@ -950,25 +932,25 @@ type
     property Active: Boolean read GetInTransaction write SetActive stored DoStoreActive;
     property DefaultDatabase: TFIBDatabase read FDefaultDatabase write SetDefaultDatabase;
     property Timeout: Cardinal read GetTimeout write SetTimeout default 0;
-    property TimeoutAction: TTransactionAction read FTimeoutAction write FTimeoutAction default TARollback;
+    property TimeoutAction: TFIBTransactionAction read FTimeoutAction write FTimeoutAction default TARollback;
     property TRParams: TStrings read FTRParams write SetTRParams stored StoreTRParams;
     // Events
     property OnTimeout: TNotifyEvent read FOnTimeout write FOnTimeout;
     property WatchUncommitedUpdates: Boolean read FWatchUpdates write FWatchUpdates default False;
 {$IFDEF CSMonitor}
-    property CSMonitorSupport: TCSMonitorSupport read FCSMonitorSupport write SetCSMonitorSupport;
+    property CSMonitorSupport: TFIBCSMonitorSupport read FCSMonitorSupport write SetCSMonitorSupport;
 {$ENDIF}
     property BeforeStart: TNotifyEvent read FBeforeStart write FBeforeStart;
     property AfterStart: TNotifyEvent read FAfterStart write FAfterStart;
-    property BeforeEnd: TEndTrEvent read FBeforeEnd write FBeforeEnd;
-    property AfterEnd: TEndTrEvent read FAfterEnd write FAfterEnd;
+    property BeforeEnd: TFIBEndTransactionEvent read FBeforeEnd write FBeforeEnd;
+    property AfterEnd: TFIBEndTransactionEvent read FAfterEnd write FAfterEnd;
     // A preset writes its lines into TRParams; any change of TRParams makes it tpbDefault
-    property TPBMode: TTPBMode read FTPBMode write SetTPBMode default tpbReadCommitted;
+    property TPBMode: TFIBTPBMode read FTPBMode write SetTPBMode default tpbReadCommitted;
     property UserKindTransaction: string read FUserKindTransaction write SetUserKindTransaction stored StoreUserKindTransaction;
     property About: string read GetFIBVersion write SetFIBVersion stored False;
-    property AfterSQLExecute: TOnSQLExecute read FAfterSQLExecute write FAfterSQLExecute;
-    property BeforeSQLExecute: TOnSQLExecute read FBeforeSQLExecute write FBeforeSQLExecute;
-    property AfterFirstFetch: TOnSQLExecute read FAfterFirstFetch write FAfterFirstFetch;
+    property AfterSQLExecute: TFIBSQLExecuteEvent read FAfterSQLExecute write FAfterSQLExecute;
+    property BeforeSQLExecute: TFIBSQLExecuteEvent read FBeforeSQLExecute write FBeforeSQLExecute;
+    property AfterFirstFetch: TFIBSQLExecuteEvent read FAfterFirstFetch write FAfterFirstFetch;
   end;
 
   // TFIBBase
@@ -1035,14 +1017,12 @@ procedure IBFilterBuffer(Database: TFIBDatabase; var BlobBuffer: PAnsiChar;
 
 function ExistBlobFilter(Database: TFIBDatabase; BlobSubType: Integer): Boolean;
 
-function GetConnectedDataBase(const DBName: string): TFIBDatabase;
-procedure CloseAllDatabases;
 procedure CloseDesignTimeDatabases;
 procedure WriteDBParamsToAlias(Database: TFIBDatabase);
 // A transaction of the library itself: read committed, nowait, no database events
 function CreateInternalTransaction(Database: TFIBDatabase; ReadOnly: Boolean; AOwner: TComponent = nil): TFIBTransaction;
 
-procedure AssignSQLObjectParams(Dest: ISQLObject; ParamSources: array of ISQLObject);
+procedure AssignSQLObjectParams(Dest: IFIBParamSource; ParamSources: array of IFIBParamSource);
 
 const
   OCTETS_CHARSET_ID      = 1;
@@ -1054,6 +1034,30 @@ var
   DefDataBase: TFIBDatabase;
   DatabaseList: TThreadList;
   FIBHideGrantError: Boolean = False;
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TDesignDBOption = TFIBDesignDBOption deprecated 'Use TFIBDesignDBOption';
+  TDesignDBOptions = TFIBDesignDBOptions deprecated 'Use TFIBDesignDBOptions';
+  TFBContextSpace = TFIBContextSpace deprecated 'Use TFIBContextSpace';
+  TDatabaseRunStateValues = TFIBDatabaseRunStateValue deprecated 'Use TFIBDatabaseRunStateValue';
+  TDatabaseRunState = TFIBDatabaseRunState deprecated 'Use TFIBDatabaseRunState';
+  TBeforeSaveBlobToSwap = TFIBBeforeSaveBlobToSwapEvent deprecated 'Use TFIBBeforeSaveBlobToSwapEvent';
+  TAfterSaveLoadBlobSwap = TFIBAfterSaveLoadBlobSwapEvent deprecated 'Use TFIBAfterSaveLoadBlobSwapEvent';
+  TBeforeLoadBlobFromSwap = TFIBBeforeLoadBlobFromSwapEvent deprecated 'Use TFIBBeforeLoadBlobFromSwapEvent';
+  TActionOnIdle = TFIBIdleAction deprecated 'Use TFIBIdleAction';
+  TOnIdleConnect = TFIBIdleConnectEvent deprecated 'Use TFIBIdleConnectEvent';
+  TOnLostConnectActions = TFIBLostConnectAction deprecated 'Use TFIBLostConnectAction';
+  TTransactionAction = TFIBTransactionAction deprecated 'Use TFIBTransactionAction';
+  TEndTrEvent = TFIBEndTransactionEvent deprecated 'Use TFIBEndTransactionEvent';
+  TIBCharSets = TFIBCharSetIDs deprecated 'Use TFIBCharSetIDs';
+{$IFDEF C23}
+  TDoChangeScreenCursor = TFIBChangeScreenCursorEvent deprecated 'Use TFIBChangeScreenCursorEvent';
+{$ENDIF}
+  TTransactionRunState = TFIBTransactionRunStateValue deprecated 'Use TFIBTransactionRunStateValue';
+  TTransactionRunStates = TFIBTransactionRunState deprecated 'Use TFIBTransactionRunState';
+  TOnSQLExecute = TFIBSQLExecuteEvent deprecated 'Use TFIBSQLExecuteEvent';
+  TTransactionState = TFIBTransactionState deprecated 'Use TFIBTransactionState';
 
 implementation
 
@@ -1092,21 +1096,34 @@ type
   end;
 
 var
-  vConnectCS: TCriticalSection;
+  ConnectLock: TCriticalSection;
   LastConnectionSerial: Integer = 0;
+
+type
+  TFIBMethodArray = array of TMethod;
+
+// a copy for the calls: a handler can unregister itself or free a registered component
+function CopyEventList(List: TFIBCallbackList): TFIBMethodArray;
+var
+  i: Integer;
+begin
+  SetLength(Result, List.Count);
+  for i := 0 to High(Result) do
+    Result[i] := List.CallBackAddr[i]^;
+end;
 
 function NextConnectionSerial: Integer;
 begin
-  vConnectCS.Acquire;
+  ConnectLock.Acquire;
   try
     Inc(LastConnectionSerial);
     Result := LastConnectionSerial;
   finally
-    vConnectCS.Release;
+    ConnectLock.Release;
   end;
 end;
 
-procedure AssignSQLObjectParams(Dest: ISQLObject; ParamSources: array of ISQLObject);
+procedure AssignSQLObjectParams(Dest: IFIBParamSource; ParamSources: array of IFIBParamSource);
 var
   i: Integer;
   j: NativeInt;
@@ -1139,40 +1156,6 @@ begin
             begin
               Dest.SetParamValue(i, ParamSources[j].ParamValue(k))
             end;
-    end;
-end;
-
-function GetConnectedDataBase(const DBName: string): TFIBDatabase;
-var
-  i: TFIBListIndex;
-begin
-  Result := nil;
-  with DatabaseList.LockList do
-    try
-      for i := 0 to Count - 1 do
-        if (TFIBDatabase(Items[i]).DBName = DBName) and (TFIBDatabase(Items[i]).Connected) then
-          begin
-            Result := TFIBDatabase(Items[i]);
-            Break;
-          end;
-    finally
-      DatabaseList.UnLockList
-    end;
-end;
-
-procedure CloseAllDatabases;
-var
-  i: TFIBListIndex;
-begin
-  with DatabaseList.LockList do
-    try
-      for i := 0 to Count - 1 do
-        begin
-          if TFIBDatabase(Items[i]).Connected then
-            TFIBDatabase(Items[i]).ForceClose
-        end;
-    finally
-      DatabaseList.UnLockList
     end;
 end;
 
@@ -1413,18 +1396,18 @@ end;
 
 procedure SaveSchemaToFile(const FileName: string);
 begin
-  ListTableInfo.SaveToFile(FileName);
-  ListDataSetInfo.SaveToFile(ChangeFileExt(FileName, '.dt'));
-  ListErrorMessages.SaveToFile(ChangeFileExt(FileName, '.err'));
+  TableInfoCache.SaveToFile(FileName);
+  DataSetInfoCache.SaveToFile(ChangeFileExt(FileName, '.dt'));
+  ErrorMessageCache.SaveToFile(ChangeFileExt(FileName, '.err'));
 end;
 
 function LoadSchemaFromFile(const FileName: string; const NeedValidate: Boolean = True; db: TFIBDatabase = nil): Boolean;
 begin
-  Result := ListTableInfo.LoadFromFile(FileName, db);
-  ListTableInfo.NeedValidate := NeedValidate;
-  ListDataSetInfo.LoadFromFile(ChangeFileExt(FileName, '.dt'));
-  ListDataSetInfo.NeedValidate := NeedValidate;
-  ListErrorMessages.LoadFromFile(ChangeFileExt(FileName, '.err'));
+  Result := TableInfoCache.LoadFromFile(FileName, db);
+  TableInfoCache.NeedValidate := NeedValidate;
+  DataSetInfoCache.LoadFromFile(ChangeFileExt(FileName, '.dt'));
+  DataSetInfoCache.NeedValidate := NeedValidate;
+  ErrorMessageCache.LoadFromFile(ChangeFileExt(FileName, '.err'));
 end;
 
 { TFIBDatabaseCapabilities }
@@ -1639,20 +1622,20 @@ begin
   FLibraryName := CLIENT_DLL;
   FFIBBases := TList.Create;
   FTransactions := TList.Create;
-  FDBParams := TDBParams.Create(Self);
+  FDBParams := TFIBDBParams.Create(Self);
   FDBParamsChanged := True;
   TStringList(FDBParams).OnChange := DBParamsChange;
   TStringList(FDBParams).OnChanging := DBParamsChanging;
 
 {$IFDEF CSMonitor}
-  FCSMonitorSupport := TCSMonitorSupport.Create(Self);
+  FCSMonitorSupport := TFIBCSMonitorSupport.Create(Self);
 {$ENDIF}
-  FConnectParams := TConnectParams.Create(Self);
+  FConnectParams := TFIBConnectParams.Create(Self);
   FCapabilities := TFIBDatabaseCapabilities.Create;
   FSession := TFIBSession.Create(Self);
   FSaveAliasParamsAfterConnect := True;
   FWaitForRestoreConnect := 30000;
-  FCacheSchemaOptions := TCacheSchemaOptions.Create;
+  FCacheSchemaOptions := TFIBCacheSchemaOptions.Create;
 
   if (csDesigning in ComponentState) and not CmpInLoadedState(Self) then
     begin
@@ -1685,17 +1668,16 @@ begin
       Text := 'write' + #13#10 + 'isc_tpb_nowait' + #13#10 + 'read_committed' + #13#10 + 'rec_version' + #13#10;
     end;
   DatabaseList.Add(Self);
-  FAfterConnectEvents := TNotifyEventList.Create(Self);
-  FBeforeDisconnectEvents := TNotifyEventList.Create(Self);
-  FBeforeDestroyEvents := TNotifyEventList.Create(Self);
+  FAfterConnectEvents := TFIBNotifyEventList.Create(Self);
+  FBeforeDisconnectEvents := TFIBNotifyEventList.Create(Self);
+  FBeforeDestroyEvents := TFIBNotifyEventList.Create(Self);
 
   FAttachmentID := 0;
-  // FBlobFilters     :=TIBBlobFilters.Create;
   FUseRepositories := [urFieldsInfo, urDataSetInfo, urErrorMessagesInfo];
-  FBlobSwapSupport := TBlobSwapSupport.Create;
+  FBlobSwapSupport := TFIBBlobSwapSupport.Create;
 
-  FGenerators := TGeneratorsCache.Create(Self);
-  FMemoSubtypes := TMemoSubtypes.Create;
+  FGenerators := TFIBGeneratorsCache.Create(Self);
+  FMemoSubtypes := TFIBMemoSubtypes.Create;
 end;
 
 destructor TFIBDatabase.Destroy;
@@ -1709,7 +1691,6 @@ begin
 {$ENDIF}
   if Assigned(FTimer) then
     SetTimeout(0);
-  // FTimer.Enabled:=False;
 
   if Assigned(DatabaseList) then
     DatabaseList.Remove(Self);
@@ -1753,6 +1734,7 @@ begin
   FReadIdxCount.Free;
   FReadSeqCount.Free;
   FUpdateCount.Free;
+  FActiveTransactions.Free;
   FConnectParams.Free;
   FCapabilities.Free;
   FSession.Free;
@@ -1779,8 +1761,6 @@ begin
       FClientLibLoaded := False;
       // the DPB version depends on the client
       FDBParamsChanged := True;
-      { if Length(FLibraryName)>0 then
-      LoadLibrary }
     end;
 end;
 
@@ -1796,7 +1776,7 @@ begin
   Result := FLibraryName <> CLIENT_DLL
 end;
 
-procedure TFIBDatabase.SetGenerators(Value: TGeneratorsCache);
+procedure TFIBDatabase.SetGenerators(Value: TFIBGeneratorsCache);
 begin
   FGenerators.Assign(Value)
 end;
@@ -1808,7 +1788,6 @@ end;
 
 procedure TFIBDatabase.SetMemoSubtypes(const Value: string);
 begin
-  // FMemoSubtypes.Assign(Value);
   FMemoSubtypes.Subtypes := Value
 end;
 
@@ -1830,7 +1809,7 @@ begin
     Result := FLibraryName
 end;
 
-procedure TFIBDatabase.SetDesignDBOptions(Value: TDesignDBOptions);
+procedure TFIBDatabase.SetDesignDBOptions(Value: TFIBDesignDBOptions);
 begin
   FDesignDBOptions := Value;
   if ddoIsDefaultDatabase in FDesignDBOptions then
@@ -1854,13 +1833,9 @@ function TFIBDatabase.Call(ErrCode: ISC_STATUS; RaiseError: Boolean): ISC_STATUS
 begin
   Reset8087CW;
   Result := ErrCode;
-  // FCanTimeout := False;
-  if Assigned(FTimer) and FTimer.Enabled then
-    begin
-      FTimer.Enabled := False;
-      FTimer.Enabled := True;
-      FLastActiveTime := FIBGetTickCount;
-    end;
+  // the idle timer checks this time: restarting it from another thread would leak it
+  if Assigned(FTimer) then
+    FLastActiveTime := FIBGetTickCount;
   if RaiseError and (ErrCode > 0) then
     IBError(Self, Self);
 end;
@@ -1912,23 +1887,16 @@ begin
     FIBError(feDatabaseNameMissing, [nil]);
 end;
 
-{$IFDEF USE_DEPRECATE_METHODS1}
-function TFIBDatabase.AddDataSet(ds: TFIBBase): Integer;
-begin
-  Result := AddFIBBase(ds);
-end;
-{$ENDIF}
-
 function TFIBDatabase.AddFIBBase(ds: TFIBBase): Integer;
 begin
   Result := FIBBaseCount;
   FFIBBases.Add(ds)
 end;
 
-procedure TFIBDatabase.RegisterBlobFilter(BlobSubType: Integer; EncodeProc, DecodeProc: PIBBlobFilterProc);
+procedure TFIBDatabase.RegisterBlobFilter(BlobSubType: Integer; EncodeProc, DecodeProc: PFIBBlobFilterProc);
 begin
   if not Assigned(FBlobFilters) then
-    FBlobFilters := TIBBlobFilters.Create;
+    FBlobFilters := TFIBBlobFilters.Create;
 
   FBlobFilters.RegisterBlobFilter(BlobSubType, EncodeProc, DecodeProc);
 end;
@@ -2045,7 +2013,7 @@ begin
     begin
       if LoadSchemaFromFile(FCacheSchemaOptions.LocalCacheFile, True, Self) then
       begin
-        ListTableInfo.ValidateSchema(Self, FOnAcceptCacheSchema);
+        TableInfoCache.ValidateSchema(Self, FOnAcceptCacheSchema);
         SaveSchemaToFile(FCacheSchemaOptions.LocalCacheFile);
       end
     end
@@ -2057,14 +2025,14 @@ begin
     SaveAlias;
 end;
 
-procedure TFIBDatabase.SetCacheSchemaOptions(Value: TCacheSchemaOptions);
+procedure TFIBDatabase.SetCacheSchemaOptions(Value: TFIBCacheSchemaOptions);
 begin
   FCacheSchemaOptions.Assign(Value);
 end;
 
 // Lost Connection works
 
-function TFIBDatabase.ExTestConnected(Actions: TOnLostConnectActions): Boolean;
+function TFIBDatabase.ExTestConnected(Actions: TFIBLostConnectAction): Boolean;
 var
   DoRaise: Boolean;
 begin
@@ -2086,7 +2054,7 @@ begin
   end;
 end;
 
-procedure TFIBDatabase.DoOnLostConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TOnLostConnectActions; var DoRaise: Boolean);
+procedure TFIBDatabase.DoOnLostConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TFIBLostConnectAction; var DoRaise: Boolean);
 begin
   if Assigned(FOnLostConnect) then
     FOnLostConnect(Self, E, Actions, DoRaise);
@@ -2095,7 +2063,6 @@ begin
     CloseLostConnect;
     if CallTerminateProcs then
       TerminateApplication;
-    // PostQuitMessage(0); //  Application.Terminate
   end;
   if Actions in [laCloseConnect, laWaitRestore] then
     CloseLostConnect;
@@ -2103,7 +2070,7 @@ begin
     WaitRestoreConnect;
 end;
 
-procedure TFIBDatabase.DoOnErrorRestoreConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TOnLostConnectActions);
+procedure TFIBDatabase.DoOnErrorRestoreConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TFIBLostConnectAction);
 var
   DoRaise: Boolean;
 begin
@@ -2119,6 +2086,9 @@ begin
 end;
 
 procedure TFIBDatabase.CloseLostConnect;
+var
+  LostHandle: TISC_DB_HANDLE;
+  Status: TFIBStatusVector;
 begin
   // closed already or being closed
   if not Connected or (drsInCloseLostConnect in FDatabaseRunState) then
@@ -2126,8 +2096,13 @@ begin
   Include(FDatabaseRunState, drsInCloseLostConnect);
   try
     // Let's avoid of calls IB Api
+    LostHandle := FHandle;
     FHandle := nil;
     AbandonServerHandles;
+    // releases the client attachment, own status vector: no error handler
+    if not FHandleIsShared then
+      FClientLibrary.isc_detach_database(PISC_STATUS(@Status), @LostHandle);
+    FHandleIsShared := False;
   finally
     Exclude(FDatabaseRunState, drsInCloseLostConnect);
   end;
@@ -2135,7 +2110,7 @@ end;
 
 procedure TFIBDatabase.RestoreConnect(Sender: TObject);
 var
-  Actions: TOnLostConnectActions;
+  Actions: TFIBLostConnectAction;
   Restored: Boolean;
 begin
   if Connected then
@@ -2273,8 +2248,6 @@ begin
         Params[0].asString := UpperCase(TableName)
       else
         Params[0].asString := TableName;
-
-      // Params[0].asString:=FormatIdentifier(SQLDialect, TableName);
       ExecQuery;
       while not Eof do
       begin
@@ -2334,14 +2307,14 @@ begin
   TR.EnsureInTransaction;
   for i := 0 to High(DataSets) do
     if DataSets[i] is TFIBCustomDataSet then
-      TFIBCustomDataSet(DataSets[i]).ApplyUpdToBase;
+      TFIBCustomDataSet(DataSets[i]).ApplyUpdatesToDatabase;
   if TR.TimeoutAction = TACommitRetaining then
     TR.CommitRetaining
   else
     TR.Commit;
   for i := 0 to High(DataSets) do
     if (DataSets[i] is TFIBCustomDataSet) and (DataSets[i].Active) then
-      TFIBCustomDataSet(DataSets[i]).CommitUpdToCach;
+      TFIBCustomDataSet(DataSets[i]).CommitUpdatesToCache;
 end;
 
 function TFIBDatabase.GetFIBVersion: string;
@@ -2396,6 +2369,7 @@ end;
 procedure TFIBDatabase.DoBeforeDisconnect;
 var
   i: Integer;
+  Handlers: TFIBMethodArray;
 begin
   try
     if Assigned(FBeforeDisconnect) then
@@ -2408,11 +2382,10 @@ begin
         raise Exception.Create(Format(SFIBErrorBeforeDisconnect, [CmpFullName(Self), E.Message]))
   end;
 
-  with FBeforeDisconnectEvents do
-    for i := 0 to Pred(Count) do
-      begin
-        FBeforeDisconnectEvents.Event[i](Self)
-      end;
+  Handlers := CopyEventList(FBeforeDisconnectEvents);
+  for i := 0 to High(Handlers) do
+    if FBeforeDisconnectEvents.IndexOfMethod(Handlers[i]) >= 0 then
+      TNotifyEvent(Handlers[i])(Self);
 end;
 
 procedure TFIBDatabase.DoAfterDisconnect;
@@ -2445,7 +2418,7 @@ end;
 
 procedure TFIBDatabase.DropAttachment;
 var
-  Status: TStatusVector;
+  Status: TFIBStatusVector;
 begin
   // own status vector: the one being raised must stay intact
   if not FHandleIsShared then
@@ -2458,13 +2431,14 @@ end;
 procedure TFIBDatabase.DoOnConnect;
 var
   i: Integer;
-  vMajorVersion: Integer;
+  MajorVersion: Integer;
+  Handlers: TFIBMethodArray;
 begin
-  vMajorVersion := ServerMajorVersion;
+  MajorVersion := ServerMajorVersion;
   if not FIsFireBirdConnect then
-    FIsIB2007Connect := vMajorVersion >= 8;
+    FIsIB2007Connect := MajorVersion >= 8;
 
-  if not FIsFireBirdConnect or (vMajorVersion < 2) then
+  if not FIsFireBirdConnect or (MajorVersion < 2) then
     begin
       FIsUnicodeConnect := (FConnectParams.CharSet = 'UNICODE_FSS') or (FConnectParams.CharSet = 'UTF8');
       FIsNoneConnect := (FConnectParams.CharSet = 'NONE') or (FConnectParams.CharSet = '');
@@ -2480,7 +2454,7 @@ begin
       FIsNoneConnect := FCapabilities.AttachmentCharSetID = 0;
       FNeedUnicodeFieldsTranslation := FIsUnicodeConnect or FIsNoneConnect;
 
-      FIsFB21OrMore := (vMajorVersion > 2) or ((vMajorVersion = 2) and (GetServerMinorVersion >= 1));
+      FIsFB21OrMore := (MajorVersion > 2) or ((MajorVersion = 2) and (GetServerMinorVersion >= 1));
       FUTF8Metadata := ReadUTF8Metadata;
       FNeedUTFDecodeDDL := FNeedUnicodeFieldsTranslation and FUTF8Metadata;
     end;
@@ -2491,21 +2465,28 @@ begin
       (Length(FBlobSwapSupport.SwapDirectory) > 0) then
       ValidateBlobCacheDirectory(Self);
 
+  // Open raises the first error once the connect is complete
   if Assigned(FOnConnect) then
-    FOnConnect(Self);
-  with FAfterConnectEvents do
-    for i := 0 to Pred(Count) do
-      begin
-        if not Connected then
-          Break;
-        // Open raises the first error once the connect is complete
-        try
-          FAfterConnectEvents.Event[i](Self);
-        except
-          if FAfterConnectError = nil then
-            FAfterConnectError := AcquireExceptionObject;
-        end;
+    try
+      FOnConnect(Self);
+    except
+      if FAfterConnectError = nil then
+        FAfterConnectError := AcquireExceptionObject;
+    end;
+  Handlers := CopyEventList(FAfterConnectEvents);
+  for i := 0 to High(Handlers) do
+    begin
+      if not Connected then
+        Break;
+      if FAfterConnectEvents.IndexOfMethod(Handlers[i]) < 0 then
+        Continue;
+      try
+        TNotifyEvent(Handlers[i])(Self);
+      except
+        if FAfterConnectError = nil then
+          FAfterConnectError := AcquireExceptionObject;
       end;
+    end;
 end;
 
 function TFIBDatabase.AddTransaction(TR: TFIBTransaction): Integer;
@@ -2677,7 +2658,7 @@ end;
 function TFIBDatabase.GetTimeout: Cardinal;
 begin
   if Assigned(FTimer) then
-    Result := FTimer.Interval
+    Result := FIdleTimeout
   else
     Result := 0;
 end;
@@ -2744,7 +2725,7 @@ end;
 procedure TFIBDatabase.InternalClose(Force: Boolean; DBinShutDown: Boolean);
 var
   i: Integer;
-  OldRunState: TDatabaseRunState;
+  OldRunState: TFIBDatabaseRunState;
 begin
   if not Connected then
     Exit;
@@ -2869,7 +2850,7 @@ begin
 end;
 
 {$IFDEF CSMonitor}
-procedure TFIBDatabase.SetCSMonitorSupport(Value: TCSMonitorSupport);
+procedure TFIBDatabase.SetCSMonitorSupport(Value: TFIBCSMonitorSupport);
 begin
   FCSMonitorSupport.Assign(Value)
 end;
@@ -3049,7 +3030,6 @@ begin
     FBeforeConnect(Self, DBParams, DoConnect);
   if not DoConnect then
     Exit;
-  // isc_res:=0;
   (*
     * Check that the database is *not* active, and that it
     * has a database name
@@ -3057,24 +3037,23 @@ begin
   FServerMajorVersion := -1;
   FServerMinorVersion := -1;
   FServerBuild := -1;
-  vConnectCS.Acquire;
-  // EnterCriticalSection(vConnectCS);
+  CheckInactive;
+  FAttachmentID := 0;
+  CheckDatabaseName;
+  LoadLibrary;
+  for i := 0 to FIBBaseCount - 1 do
+    begin
+      if FFIBBases[i] <> nil then
+        FIBBases[i].FOnDatabaseConnecting;
+    end;
+  (*
+    * Use the canned login prompt if requested, outside the lock: it
+    * waits for the user.
+  *)
+  if FUseLoginPrompt and not Login then
+    FIBError(feOperationCancelled, [nil]);
+  ConnectLock.Acquire;
   try
-    CheckInactive;
-    FAttachmentID := 0;
-    CheckDatabaseName;
-    LoadLibrary;
-    (*
-      * Use the canned login prompt if requested.
-    *)
-    for i := 0 to FIBBaseCount - 1 do
-      begin
-        if FFIBBases[i] <> nil then
-          FIBBases[i].FOnDatabaseConnecting;
-      end;
-
-    if FUseLoginPrompt and not Login then
-      FIBError(feOperationCancelled, [nil]);
     (*
       * Generate a new DPB if necessary
     *)
@@ -3118,8 +3097,7 @@ begin
         FCryptKeyCallback.Deactivate(FClientLibrary);
     end;
   finally
-    vConnectCS.Release
-    // LeaveCriticalSection(vConnectCS);
+    ConnectLock.Release
   end;
 
   if isc_res > 0 then
@@ -3208,13 +3186,6 @@ begin
       ('SELECT CAST(''NOW'' AS TIMESTAMP) from RDB$DATABASE', 0)
 end;
 
-{$IFDEF USE_DEPRECATE_METHODS1}
-procedure TFIBDatabase.RemoveDataSet(Idx: Integer);
-begin
-  RemoveFIBBase(Idx);
-end;
-{$ENDIF}
-
 procedure TFIBDatabase.RemoveFIBBase(Idx: Integer);
 var
   ds: TFIBBase;
@@ -3234,13 +3205,6 @@ begin
         FFIBBases.Delete(Idx);
     end;
 end;
-{$IFDEF USE_DEPRECATE_METHODS1}
-procedure TFIBDatabase.RemoveDataSets;
-begin
-  RemoveFIBBases
-end;
-{$ENDIF}
-
 procedure TFIBDatabase.RemoveFIBBases;
 var
   i: Integer;
@@ -3362,7 +3326,7 @@ begin
     DBParams[ParamIdx] := 'config=' + Name + '=' + Value;
 end;
 
-procedure TFIBDatabase.SetDBParams(Value: TDBParams);
+procedure TFIBDatabase.SetDBParams(Value: TFIBDBParams);
 begin
   FDBParams.Assign(Value);
 end;
@@ -3420,7 +3384,14 @@ begin
   else if (Value > 0) then
     begin
       CreateTimeoutTimer;
-      FTimer.Interval := Value;
+      FIdleTimeout := Value;
+      // four checks per timeout: the connection closes at most a quarter late
+      if Value >= 4 then
+        FTimer.Interval := Value div 4
+      else
+        FTimer.Interval := Value;
+      FLastActiveTime := FIBGetTickCount;
+      FKeepAliveTime := FLastActiveTime - Value;
       if not(csDesigning in ComponentState) then
         FTimer.Enabled := True;
     end;
@@ -3455,7 +3426,7 @@ end;
 *)
 function TFIBDatabase.PingAttachment: ISC_STATUS;
 var
-  Status: TStatusVector;
+  Status: TFIBStatusVector;
   DBInfoCommand: AnsiChar;
   local_buffer: array [0 .. 31] of AnsiChar;
 begin
@@ -3482,16 +3453,24 @@ end;
 
 procedure TFIBDatabase.TimeoutConnection(Sender: TObject);
 var
-  ai: TActionOnIdle;
+  ai: TFIBIdleAction;
+  Ticks: Cardinal;
 begin
   if Connected then
     begin
+      Ticks := FIBGetTickCount;
+      // a kept connection waits a whole timeout for the next question
+      if (Ticks - FLastActiveTime < FIdleTimeout) or (Ticks - FKeepAliveTime < FIdleTimeout) then
+        Exit;
       if Assigned(FOnIdleConnect) then
         begin
           ai := aiCloseConnect;
-          FOnIdleConnect(Self, FIBGetTickCount - FLastActiveTime, ai);
+          FOnIdleConnect(Self, Ticks - FLastActiveTime, ai);
           if ai = aiKeepLiveConnect then
-            Exit;
+            begin
+              FKeepAliveTime := Ticks;
+              Exit;
+            end;
         end;
       ForceClose;
       if Assigned(FOnTimeout) then
@@ -3621,8 +3600,8 @@ begin
     Result := FCapabilities.AttachmentCharSetID in [63, 64]; // KOI8R, KOI8U
 end;
 
-function TFIBDatabase.GetContextVariable(ContextSpace: TFBContextSpace;
-  const VarName: string; aTransaction: TFIBTransaction = nil): variant;
+function TFIBDatabase.GetContextVariable(ContextSpace: TFIBContextSpace;
+  const VarName: string; aTransaction: TFIBTransaction = nil): Variant;
 var
   NameSpace: string;
 begin
@@ -3643,7 +3622,7 @@ begin
     FIBError(feFB2feature, ['"rdb$get_context"']);
 end;
 
-procedure TFIBDatabase.SetContextVariable(ContextSpace: TFBContextSpace;
+procedure TFIBDatabase.SetContextVariable(ContextSpace: TFIBContextSpace;
   const VarName, VarValue: string; aTransaction: TFIBTransaction = nil);
 var
   NameSpace: string;
@@ -3720,14 +3699,16 @@ end;
 procedure TFIBDatabase.RaiseCancelOperations;
 begin
   CheckActive;
+  // Busy is for the whole client library: nothing to cancel when another database runs the call
   if Busy then
-    Call(FClientLibrary.fb_cancel_operation(StatusVector, @FHandle, fb_cancel_raise), True);
+    if (Call(FClientLibrary.fb_cancel_operation(StatusVector, @FHandle, fb_cancel_raise), False) > 0) and
+      (StatusVectorArray[1] <> isc_nothing_to_cancel) then
+      IBError(Self, Self);
 end;
 
-function TFIBDatabase.UnicodeCharSets: TIBCharSets;
+function TFIBDatabase.UnicodeCharSets: TFIBCharSetIDs;
 begin
   Result := [3]; // UNICODE_FSS
-  // Include(Result,4)    // UTF8
   if Connected then
     if FIsFireBirdConnect then
       Include(Result, 4) // UTF8
@@ -3843,7 +3824,7 @@ end;
 function TFIBDatabase.GetActiveTransactions: TStringList;
 // isc_info_active_transactions
 var
-  local_buffer: array [0 .. FIBBigLocalBufferLength - 1] of AnsiChar;
+  local_buffer: array [0 .. FIBHugeLocalBufferLength - 1] of AnsiChar;
   DBInfoCommand: AnsiChar;
   i: Integer;
   L: Integer;
@@ -3856,15 +3837,18 @@ begin
 
   DBInfoCommand := AnsiChar(frb_info_active_transactions);
   Call(FClientLibrary.isc_database_info(StatusVector, @FHandle, 1,
-    @DBInfoCommand, FIBLocalBufferLength, local_buffer), True);
+    @DBInfoCommand, FIBHugeLocalBufferLength, local_buffer), True);
   i := 0;
 
-  while local_buffer[i] = AnsiChar(frb_info_active_transactions) do
+  // one item per transaction, the length is 8 for a 64 bit number
+  while (i + 3 <= High(local_buffer)) and (local_buffer[i] = AnsiChar(frb_info_active_transactions)) do
     begin
+      L := FClientLibrary.isc_vax_integer(@local_buffer[i + 1], 2);
       Inc(i, 3);
-      L := FClientLibrary.isc_vax_integer(@local_buffer[i], 4);
-      Result.Add(IntToStr(L));
-      Inc(i, 4);
+      if i + L > Length(local_buffer) then
+        Break;
+      Result.Add(IntToStr(FClientLibrary.isc_portable_integer(@local_buffer[i], L)));
+      Inc(i, L);
     end;
 end;
 
@@ -4165,6 +4149,9 @@ begin
   // Each pair consists of:
   // 1. 2 bytes specifying the table ID.
   // 2. 4 bytes listing the number of operations (e.g., inserts) done on that table.
+  // isc_info_truncated instead of the item: no counts
+  if local_buffer[0] <> _DBInfoCommand then
+    Exit;
   qtd_tables := FClientLibrary.isc_vax_integer(@local_buffer[1], 2) div 6;
   for i := 0 to qtd_tables - 1 do
     begin
@@ -4195,6 +4182,8 @@ begin
       // Each pair consists of:
       // 1. 2 bytes specifying the table ID.
       // 2. 4 bytes listing the number of operations (e.g., inserts) done on that table.
+      if local_buffer[0] <> _DBInfoCommand then
+        Continue;
       qtd_tables := FClientLibrary.isc_vax_integer(@local_buffer[1], 2) div 6;
       for i := 0 to qtd_tables - 1 do
         begin
@@ -4247,11 +4236,11 @@ end;
 
 function TFIBDatabase.GetTableOperationInfo(const TableName: string; FromStrs: TStrings): Integer;
 var
-  vTableID: Integer;
+  RelationID: Integer;
   tmpstr: string;
 begin
-  vTableID := ListTableInfo.GetTableInfo(Self, TableName, False).TableID[Self];
-  tmpstr := FromStrs.Values[IntToStr(vTableID)];
+  RelationID := TableInfoCache.GetTableInfo(Self, TableName, False).TableID[Self];
+  tmpstr := FromStrs.Values[IntToStr(RelationID)];
   if Length(tmpstr) > 0 then
     Result := StrToInt(tmpstr)
   else
@@ -4503,7 +4492,7 @@ end;
 
 function TFIBDatabase.QueryValueAsStr(const aSQL: string; FieldNo: Integer): string;
 var
-  v: variant;
+  v: Variant;
 begin
   v := QueryValue(aSQL, FieldNo, nil, True);
   if VarIsNull(v) then
@@ -4512,9 +4501,9 @@ begin
     Result := VarAsType(v, varString)
 end;
 
-function TFIBDatabase.QueryValueAsStr(const aSQL: string; FieldNo: Integer; ParamValues: array of variant): string;
+function TFIBDatabase.QueryValueAsStr(const aSQL: string; FieldNo: Integer; ParamValues: array of Variant): string;
 var
-  v: variant;
+  v: Variant;
 begin
   v := QueryValue(aSQL, FieldNo, ParamValues, nil, True);
   if VarIsNull(v) then
@@ -4524,8 +4513,8 @@ begin
 end;
 
 function TFIBDatabase.InternalQueryValue(const aSQL: string; FieldNo: Integer;
-  ParamValues: array of variant; aTransaction: TFIBTransaction;
-  aCacheQuery: Boolean): variant;
+  ParamValues: array of Variant; aTransaction: TFIBTransaction;
+  aCacheQuery: Boolean): Variant;
 var
   Query: TFIBQuery;
   Tr: TFIBTransaction;
@@ -4590,26 +4579,26 @@ begin
 end;
 
 function TFIBDatabase.QueryValue(const aSQL: string; FieldNo: Integer;
-  aTransaction: TFIBTransaction = nil; aCacheQuery: Boolean = True): variant;
+  aTransaction: TFIBTransaction = nil; aCacheQuery: Boolean = True): Variant;
 begin
   Result := InternalQueryValue(aSQL, FieldNo, [], aTransaction, aCacheQuery);
 end;
 
 function TFIBDatabase.QueryValue(const aSQL: string; FieldNo: Integer;
-  ParamValues: array of variant; aTransaction: TFIBTransaction = nil;
-  aCacheQuery: Boolean = True): variant;
+  ParamValues: array of Variant; aTransaction: TFIBTransaction = nil;
+  aCacheQuery: Boolean = True): Variant;
 begin
   Result := InternalQueryValue(aSQL, FieldNo, ParamValues, aTransaction, aCacheQuery);
 end;
 
-function TFIBDatabase.QueryValues(const aSQL: string; aTransaction: TFIBTransaction = nil; aCacheQuery: Boolean = True): variant;
+function TFIBDatabase.QueryValues(const aSQL: string; aTransaction: TFIBTransaction = nil; aCacheQuery: Boolean = True): Variant;
 begin
   Result := InternalQueryValue(aSQL, -1, [], aTransaction, aCacheQuery);
 end;
 
 function TFIBDatabase.QueryValues(const aSQL: string;
-  ParamValues: array of variant; aTransaction: TFIBTransaction = nil;
-  aCacheQuery: Boolean = True): variant;
+  ParamValues: array of Variant; aTransaction: TFIBTransaction = nil;
+  aCacheQuery: Boolean = True): Variant;
 begin
   Result := InternalQueryValue(aSQL, -1, ParamValues, aTransaction, aCacheQuery);
 end;
@@ -4688,7 +4677,7 @@ begin
     end;
 end;
 
-procedure TFIBDatabase.SetBlobSwapSupport(const Value: TBlobSwapSupport);
+procedure TFIBDatabase.SetBlobSwapSupport(const Value: TFIBBlobSwapSupport);
 begin
   FBlobSwapSupport.Assign(Value);
 end;
@@ -4698,9 +4687,9 @@ begin
   FSession.Assign(Value);
 end;
 
-procedure TFIBDatabase.SetSQLLogger(const Value: ISQLLogger);
+procedure TFIBDatabase.SetSQLLogger(const Value: IFIBSQLLogger);
 var
-  OldLogger: ISQLLogger;
+  OldLogger: IFIBSQLLogger;
 begin
   if FSQLLogger = Value then
     Exit;
@@ -4722,7 +4711,7 @@ begin
   FSQLLogger := Value;
 end;
 
-procedure TFIBDatabase.SetSQLStatMaker(const Value: ISQLStatMaker);
+procedure TFIBDatabase.SetSQLStatMaker(const Value: IFIBSQLStatisticsMaker);
 begin
   FSQLStatMaker := Value;
 end;
@@ -4732,7 +4721,7 @@ var
   i: IUnknown;
 begin
   if Operation = opRemove then
-    if Supports(AComponent, ISQLLogger, i) then
+    if Supports(AComponent, IFIBSQLLogger, i) then
       begin
         if i = FSQLLogger then
           FSQLLogger := nil;
@@ -4754,7 +4743,7 @@ constructor TFIBTransaction.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 {$IFDEF CSMonitor}
-  FCSMonitorSupport := TCSMonitorSupport.Create(Self);
+  FCSMonitorSupport := TFIBCSMonitorSupport.Create(Self);
 {$ENDIF}
   FDatabases := TList.Create;
   FFIBBases := TList.Create;
@@ -4766,17 +4755,17 @@ begin
   FState := tsClosed;
   if (csDesigning in ComponentState) and not CmpInLoadedState(Self) then
     begin
-      FTimeoutAction := TTransactionAction(DefTimeOutAction);
+      FTimeoutAction := TFIBTransactionAction(DefTimeOutAction);
       DefaultDatabase := DefDataBase;
     end
   else if DefTimeOut > 0 then
     Timeout := Cardinal(DefTimeOut);
-  FBeforeDestroyEvents := TNotifyEventList.Create(Self);
-  FBeforeStartTransactionEvents := TNotifyEventList.Create(Self);
-  FAfterStartTransactionEvents := TNotifyEventList.Create(Self);
+  FBeforeDestroyEvents := TFIBNotifyEventList.Create(Self);
+  FBeforeStartTransactionEvents := TFIBNotifyEventList.Create(Self);
+  FAfterStartTransactionEvents := TFIBNotifyEventList.Create(Self);
 
-  FBeforeEndTransactionEvents := TCallBackList.Create(Self); ;
-  FAfterEndTransactionEvents := TCallBackList.Create(Self); ;
+  FBeforeEndTransactionEvents := TFIBCallbackList.Create(Self); ;
+  FAfterEndTransactionEvents := TFIBCallbackList.Create(Self); ;
   FUserKindTransaction := 'NoUserKind';
   if (csDesigning in ComponentState) and ((Owner <> nil) and not(csLoading in Owner.ComponentState)) then
     TPBMode := DefTPBMode
@@ -4804,7 +4793,7 @@ begin
   FInternal := Value;
 end;
 
-procedure TFIBTransaction.SetTPBMode(Value: TTPBMode);
+procedure TFIBTransaction.SetTPBMode(Value: TFIBTPBMode);
 begin
   if Value = FTPBMode then
     Exit;
@@ -4950,7 +4939,7 @@ begin
 end;
 
 {$IFDEF CSMonitor}
-procedure TFIBTransaction.SetCSMonitorSupport(Value: TCSMonitorSupport);
+procedure TFIBTransaction.SetCSMonitorSupport(Value: TFIBCSMonitorSupport);
 begin
   FCSMonitorSupport.Assign(Value)
 end;
@@ -4987,7 +4976,7 @@ begin
     Databases[i].Call(ErrCode, False); // For reset timer
 
   if (Result > 0) and RaiseError then
-    IBError(IIbClientLibrary(Databases[0]), Self);
+    IBError(IFIBClientLibrary(Databases[0]), Self);
 end;
 
 procedure TFIBTransaction.CheckDatabasesInList;
@@ -5018,7 +5007,7 @@ begin
   end;
 end;
 
-procedure TFIBTransaction.AddEndEvent(Event: TEndTrEvent; EventType: TFIBTransactionEventType);
+procedure TFIBTransaction.AddEndEvent(Event: TFIBEndTransactionEvent; EventType: TFIBTransactionEventType);
 begin
   case EventType of
     tetBeforeEndTransaction: FBeforeEndTransactionEvents.RegisterCallBack(TMethod(Event));
@@ -5028,7 +5017,7 @@ begin
   end;
 end;
 
-procedure TFIBTransaction.RemoveEndEvent(Event: TEndTrEvent; EventType: TFIBTransactionEventType);
+procedure TFIBTransaction.RemoveEndEvent(Event: TFIBEndTransactionEvent; EventType: TFIBTransactionEventType);
 begin
   case EventType of
     tetBeforeEndTransaction: FBeforeEndTransactionEvents.UnRegisterCallBack(TMethod(Event));
@@ -5093,7 +5082,7 @@ begin
         begin
           if (FDatabases.Count > 0) and (TFIBDatabase(FDatabases[0]).LibraryName <> db.LibraryName) then
             if not(csLoading in ComponentState) then
-              raise EAPICallException.CreateFmt(STransactionForOtherLibrary, [CmpFullName(Self)])
+              raise EFIBAPICallException.CreateFmt(STransactionForOtherLibrary, [CmpFullName(Self)])
             else
               begin
                 Result := -1;
@@ -5114,13 +5103,6 @@ begin
   if Result >= 0 then
     FDatabaseTRParams[Result] := aTRParams
 end;
-
-{$IFDEF USE_DEPRECATE_METHODS1}
-function TFIBTransaction.AddDataSet(ds: TFIBBase): Integer;
-begin
-  Result := AddFIBBase(ds);
-end;
-{$ENDIF}
 
 function TFIBTransaction.AddFIBBase(ds: TFIBBase): Integer;
 begin
@@ -5147,10 +5129,21 @@ end;
   * EndTransaction -
   *  End a transaction ...
 *)
-procedure TFIBTransaction.EndTransaction(Action: TTransactionAction; Force: Boolean);
+procedure TFIBTransaction.EndTransaction(Action: TFIBTransactionAction; Force: Boolean);
 var
   Status: ISC_STATUS;
   S: string;
+
+  procedure CallEndEvents(List: TFIBCallbackList);
+  var
+    i: Integer;
+    Handlers: TFIBMethodArray;
+  begin
+    Handlers := CopyEventList(List);
+    for i := 0 to High(Handlers) do
+      if List.IndexOfMethod(Handlers[i]) >= 0 then
+        TFIBEndTransactionEvent(Handlers[i])(Self, Action, Force);
+  end;
 
   procedure DoBefore;
   var
@@ -5158,8 +5151,7 @@ var
   begin
     for i := FIBBaseCount - 1 downto 0 do
       FIBBases[i].FOnTransactionEnding;
-    for i := 0 to FBeforeEndTransactionEvents.Count - 1 do
-      TEndTrEvent(FBeforeEndTransactionEvents.CallBackAddr[i]^)(Self, Action, Force);
+    CallEndEvents(FBeforeEndTransactionEvents);
   end;
 
   procedure DoAfter;
@@ -5168,8 +5160,7 @@ var
   begin
     for i := FIBBaseCount - 1 downto 0 do
       FIBBases[i].FOnTransactionEnded;
-    for i := 0 to FAfterEndTransactionEvents.Count - 1 do
-      TEndTrEvent(FAfterEndTransactionEvents.CallBackAddr[i]^)(Self, Action, Force);
+    CallEndEvents(FAfterEndTransactionEvents);
 
     FHasUncommitedUpdates := False
   end;
@@ -5193,49 +5184,58 @@ begin
         IntToStr(TransactionID) + ') ', 'TransactionParams:'#13#10 + TRParams.Text, lfTransact);
     end;
 
-  case Action of
-    TARollback, TACommit:
-      begin
-        if (HandleIsShared) and (Action <> FTimeoutAction) and (not Force) then
-          FIBError(feCantEndSharedTransaction, [nil]);
-        if Action = TARollback then
-          FState := tsDoRollback
-        else
-          FState := tsDoCommit;
-        DoBefore;
-        if HandleIsShared then
-          begin
-            FHandle := nil;
-            FHandleIsShared := False;
-            Status := 0;
-          end
-        else if (Action = TARollback) then
-          Status := Call(IIbClientLibrary(MainDatabase).isc_rollback_transaction(StatusVector, @FHandle), False)
-        else
-          Status := Call(IIbClientLibrary(MainDatabase).isc_commit_transaction(StatusVector, @FHandle), False);
-        if ((Force) and (Status > 0)) then
-          Status := Call(IIbClientLibrary(MainDatabase).isc_rollback_transaction(StatusVector, @FHandle), False);
-        if Force then
-          FHandle := nil
-        else if (Status > 0) then
-          IBError(MainDatabase, Self);
-        DoAfter;
-
-      end;
-    TACommitRetaining:
-      begin
-        FState := tsDoCommitRetaining;
-        DoBefore;
-        Call(IIbClientLibrary(MainDatabase).isc_commit_retaining(StatusVector, @FHandle), True);
-        DoAfter;
-      end;
-    TARollbackRetaining:
-      begin
-        FState := tsDoRollbackRetaining;
-        DoBefore;
-        Call(IIbClientLibrary(MainDatabase).isc_rollback_retaining(StatusVector, @FHandle), True);
-        DoAfter;
-      end;
+  try
+    case Action of
+      TARollback, TACommit:
+        begin
+          if (HandleIsShared) and (Action <> FTimeoutAction) and (not Force) then
+            FIBError(feCantEndSharedTransaction, [nil]);
+          if Action = TARollback then
+            FState := tsDoRollback
+          else
+            FState := tsDoCommit;
+          DoBefore;
+          if HandleIsShared then
+            begin
+              FHandle := nil;
+              FHandleIsShared := False;
+              Status := 0;
+            end
+          else if (Action = TARollback) then
+            Status := Call(IFIBClientLibrary(MainDatabase).isc_rollback_transaction(StatusVector, @FHandle), False)
+          else
+            Status := Call(IFIBClientLibrary(MainDatabase).isc_commit_transaction(StatusVector, @FHandle), False);
+          if ((Force) and (Status > 0)) then
+            Status := Call(IFIBClientLibrary(MainDatabase).isc_rollback_transaction(StatusVector, @FHandle), False);
+          if Force then
+            FHandle := nil
+          else if (Status > 0) then
+            IBError(MainDatabase, Self);
+          DoAfter;
+        end;
+      TACommitRetaining:
+        begin
+          FState := tsDoCommitRetaining;
+          DoBefore;
+          Call(IFIBClientLibrary(MainDatabase).isc_commit_retaining(StatusVector, @FHandle), True);
+          DoAfter;
+        end;
+      TARollbackRetaining:
+        begin
+          FState := tsDoRollbackRetaining;
+          DoBefore;
+          Call(IFIBClientLibrary(MainDatabase).isc_rollback_retaining(StatusVector, @FHandle), True);
+          DoAfter;
+        end;
+    end;
+  except
+    // a failed end leaves the transaction in its real state
+    if InTransaction then
+      FState := tsActive
+    else
+      FState := tsClosed;
+    FTransactionID := 0;
+    raise;
   end;
 {$IFNDEF NO_MONITOR}
   if MonitoringEnabled then
@@ -5403,13 +5403,6 @@ begin
   AddDatabase(dbNew)
 end;
 
-{$IFDEF USE_DEPRECATE_METHODS1}
-procedure TFIBTransaction.RemoveDataSet(Idx: Integer);
-begin
-  RemoveFIBBase(Idx);
-end;
-{$ENDIF}
-
 procedure TFIBTransaction.RemoveFIBBase(Idx: Integer);
 var
   ds: TFIBBase;
@@ -5429,19 +5422,12 @@ begin
         FFIBBases.Delete(Idx);
     end;
 end;
-{$IFDEF USE_DEPRECATE_METHODS1}
-procedure TFIBTransaction.RemoveDataSets;
-begin
-  RemoveFIBBases
-end;
-{$ENDIF}
 
 procedure TFIBTransaction.RemoveFIBBases;
 var
   i: Integer;
 begin
   for i := FIBBaseCount - 1 downto 0 do
-    // if FFIBBases[i] <> nil then
     RemoveFIBBase(i);
 end;
 
@@ -5491,9 +5477,6 @@ end;
 
 procedure TFIBTransaction.SetTimeout(Value: Cardinal);
 begin
-  { if Value < 0 then
-    FIBError(feTimeoutNegative, [nil])
-    else }
   if (Value = 0) then
     begin
       if Assigned(FTimer) then
@@ -5525,11 +5508,11 @@ var
   pteb: PISC_TEB_ARRAY;
   TPB: AnsiString;
   i: Integer;
-  vTRParams1: TStrings;
+  TempTRParams: TStrings;
   DatabaseParams: TStrings;
   ReadConsistency: Boolean;
-  vTPBLength: Short;
-  vIsFB21orMore: Boolean;
+  DatabaseTPBLength: Short;
+  ServerIsFB21OrMore: Boolean;
 begin
   (*
     * Check that we're not already in a transaction.
@@ -5545,13 +5528,13 @@ begin
       if not Databases[i].Connected then
         FIBError(feDatabaseClosed, [CmpFullName(Databases[i])]);
     end;
-  vIsFB21orMore := MainDatabase.FIsFB21OrMore;
+  ServerIsFB21OrMore := MainDatabase.FIsFB21OrMore;
   (*
     * Make sure that a current TPB is generated.
   *)
   if FTRParamsChanged or (FTPBCodePage <> MainDatabase.Capabilities.TPBCodePage) then
     begin
-      GenerateTPB(FTRParams, TPB, FTPBLength, vIsFB21orMore, MainDatabase.Capabilities.TPBCodePage);
+      GenerateTPB(FTRParams, TPB, FTPBLength, ServerIsFB21OrMore, MainDatabase.Capabilities.TPBCodePage);
       FIBAlloc(FTPB, 0, FTPBLength);
       Move(TPB[1], FTPB[0], FTPBLength);
       FReadConsistencyParams := HasParamsLine(FTRParams, 'read_consistency');
@@ -5560,7 +5543,7 @@ begin
       FTRParamsChanged := False;
     end;
   GetMem(pteb, DatabaseCount * SizeOf(TISC_TEB));
-  vTRParams1 := nil;
+  TempTRParams := nil;
   try
     for i := 0 to DatabaseCount - 1 do
       begin
@@ -5577,20 +5560,20 @@ begin
               DatabaseParams := FTRParams
             else
             begin
-              if vTRParams1 = nil then
-                vTRParams1 := TStringList.Create;
-              vTRParams1.Text := FDatabaseTRParams[i];
-              DatabaseParams := vTRParams1;
+              if TempTRParams = nil then
+                TempTRParams := TStringList.Create;
+              TempTRParams.Text := FDatabaseTRParams[i];
+              DatabaseParams := TempTRParams;
             end;
             ReadConsistency := HasParamsLine(DatabaseParams, 'read_consistency');
 
             SetLength(FDatabaseTPBs, i + 1);
-            GenerateTPB(DatabaseParams, FDatabaseTPBs[i], vTPBLength, vIsFB21orMore,
+            GenerateTPB(DatabaseParams, FDatabaseTPBs[i], DatabaseTPBLength, ServerIsFB21OrMore,
               Databases[i].Capabilities.TPBCodePage);
             if Length(FDatabaseTPBs[i]) > 0 then
               begin
                 pteb^[i].tpb_address := @FDatabaseTPBs[i][1];
-                pteb^[i].tpb_length := vTPBLength;
+                pteb^[i].tpb_length := DatabaseTPBLength;
               end
             else
               begin
@@ -5613,7 +5596,7 @@ begin
         for i := Pred(FBeforeStartTransactionEvents.Count) downto 0 do
           FBeforeStartTransactionEvents.Event[i](Self);
 
-        if (Call(IIbClientLibrary(MainDatabase).isc_start_multiple(StatusVector,
+        if (Call(IFIBClientLibrary(MainDatabase).isc_start_multiple(StatusVector,
           @FHandle, Short(DatabaseCount), PISC_TEB(pteb)), False) > 0)
 
         then
@@ -5633,7 +5616,7 @@ begin
         MonitorHook.TRStart(Self);
 {$ENDIF}
   finally
-    vTRParams1.Free;
+    TempTRParams.Free;
     FIBAlloc(pteb, 0, 0);
   end;
 
@@ -5652,12 +5635,12 @@ end;
 
 procedure TFIBTransaction.ExecSQLImmediate(const SQLText: WideString);
 var
-  vSQLText: AnsiString;
+  EncodedSQL: AnsiString;
 begin
   EnsureInTransaction;
-  vSQLText := EncodeString(SQLText, MainDatabase.Capabilities.CodePage);
+  EncodedSQL := EncodeString(SQLText, MainDatabase.Capabilities.CodePage);
   Call(MainDatabase.ClientLibrary.isc_dsql_execute_immediate(StatusVector,
-    @MainDatabase.Handle, @FHandle, 0, PAnsiChar(vSQLText), Word(MainDatabase.SQLDialect), nil), True);
+    @MainDatabase.Handle, @FHandle, 0, PAnsiChar(EncodedSQL), Word(MainDatabase.SQLDialect), nil), True);
 end;
 
 procedure TFIBTransaction.SetSavePoint(const SavePointName: string);
@@ -5738,7 +5721,7 @@ begin
     end;
 
   tra_items := AnsiChar(isc_info_tra_id);
-  Call(IIbClientLibrary(MainDatabase).isc_transaction_info(StatusVector,
+  Call(IFIBClientLibrary(MainDatabase).isc_transaction_info(StatusVector,
     @FHandle, SizeOf(tra_items), @tra_items, SizeOf(tra_info), tra_info), True);
   Result := PInteger(tra_info + 3)^;
   FTransactionID := Result
@@ -5766,9 +5749,9 @@ begin
   Result := HasParamsLine(FTRParams, 'read');
 end;
 
-procedure TFIBTransaction.DoOnSQLExec(Query: TComponent; Kind: TKindOnOperation);
+procedure TFIBTransaction.DoOnSQLExec(Query: TComponent; Kind: TFIBOperationMoment);
 var
-  ar: TAllRowsAffected;
+  ar: TFIBRowsAffected;
 begin
   if FWatchUpdates and not FHasUncommitedUpdates and (Query is TFIBQuery) then
     with TFIBQuery(Query) do
@@ -5926,7 +5909,6 @@ begin
   FDatabase := Value;
   if (FDatabase <> nil) then
     begin
-      // FClientLibrary:=FDatabase.ClientLibrary;
       FIndexInDatabase := FDatabase.AddFIBBase(Self);
       if (FTransaction = nil) and Assigned(Owner) and not CmpInLoadedState(TComponent(Owner)) then
         Transaction := FDatabase.DefaultTransaction;
@@ -5970,13 +5952,13 @@ end;
 
 initialization
 
-vConnectCS := TCriticalSection.Create;
+ConnectLock := TCriticalSection.Create;
 DefDataBase := nil;
 DatabaseList := TThreadList.Create;
 
 finalization
 
 CleanDatabaseList;
-vConnectCS.Free;
+ConnectLock.Free;
 
 end.

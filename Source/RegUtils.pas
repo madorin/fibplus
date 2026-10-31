@@ -35,9 +35,6 @@ function DefReadFromRegistry(const OtherKeys, ParamNames: array of string): Vari
 function AllSubKey(aRootKey: HKEY; const ForPath: array of string): Variant;
 function DefAllSubKey(const ForPath: array of string): Variant;
 
-function SaveRegKey(const FileName: String; const ForKey: array of string): Boolean;
-function LoadRegKey(const FileName: String; const ForKey: array of string): Boolean;
-
 function AltSaveRegKey(const FileName: String; const ForKey: array of string): Boolean;
 function AltLoadRegKey(const FileName: String; const ForKey: array of string): Boolean;
 function GetKeyForParValue(const aRootKey, ParName, ParValue: string): string;
@@ -47,7 +44,7 @@ implementation
 
 {$IFNDEF NO_REGISTRY}
 uses
-  IniFiles {,StrUtil};
+  IniFiles;
 
 { HKEY  VALUES :
   HKEY_CURRENT_USER // Default
@@ -73,6 +70,7 @@ var
 begin
   with RegObj do
     try
+      CloseKey;
       RootKey := aRootKey;
       for Key in OtherKeys do
         OpenKey(Key, True);
@@ -96,15 +94,15 @@ end;
 
 function ReadFromRegistry(aRootKey: HKEY; const OtherKeys, ParamNames: array of string): Variant;
 var
-  i, cPar: integer;
+  i, cPar: Integer;
   Key: string;
   t: TRegDataType;
 begin
 
-  // RegObj:=TRegistry.Create;
   with RegObj do
     try
       Result := false;
+      CloseKey;
       RootKey := aRootKey;
       for Key in OtherKeys do
         if not OpenKey(Key, False) then
@@ -142,7 +140,7 @@ end;
 
 function AllSubKey(aRootKey: HKEY; const ForPath: array of string): Variant;
 var
-  i: integer;
+  i: Integer;
   Key: string;
   SubKeys: TStrings;
 begin
@@ -151,6 +149,7 @@ begin
   with RegObj do
     try
       Result := false;
+      CloseKey;
       RootKey := aRootKey;
       for Key in ForPath do
         if not OpenKey(Key, False) then
@@ -172,53 +171,17 @@ begin
   Result := AllSubKey(HKEY_CURRENT_USER, ForPath)
 end;
 
-function SaveRegKey(const FileName: String; const ForKey: array of string): Boolean;
-var
-  Key: string;
-  s: string;
-begin
-  with RegObj do
-    try
-      RootKey := HKEY_CURRENT_USER;
-      s := '';
-      if FileExists(FileName) then
-        DeleteFile(FileName);
-      for Key in ForKey do
-        s := s + '\' + Key;
-      Result := SaveKey(s, FileName);
-    finally
-      CloseKey;
-    end;
-end;
-
-function LoadRegKey(const FileName: String; const ForKey: array of string): Boolean;
-var
-  Key: string;
-  s: string;
-begin
-  with RegObj do
-    try
-      RootKey := HKEY_CURRENT_USER;
-      s := '';
-      for Key in ForKey do
-        s := s + '\' + Key;
-      Result := ReplaceKey(s, FileName, '');
-    finally
-      CloseKey;
-    end;
-end;
-
 function AltSaveRegKey(const FileName: String; const ForKey: array of string): Boolean;
 var
-  v: Variant;
-  i, c: integer;
+  SubKeys: Variant;
+  i, c: Integer;
   Key: string;
   Ini: TIniFile;
   PathKey: string;
   pv: string;
 begin
-  v := DefAllSubKey(ForKey);
-  if VarType(v) = varBoolean then
+  SubKeys := DefAllSubKey(ForKey);
+  if VarType(SubKeys) = varBoolean then
     Result := false
   else
     with RegObj do
@@ -231,33 +194,34 @@ begin
         DeleteFile(FileName);
       Ini := TIniFile.Create(FileName);
       try
-        c := VarArrayHighBound(v, 1);
+        c := VarArrayHighBound(SubKeys, 1);
         for i := 0 to c do
         begin
-          if OpenKey(PathKey + '\' + v[i], false) then
+          if OpenKey(PathKey + '\' + SubKeys[i], false) then
           begin
-            Ini.WriteString(v[i], 'Name', ReadString('Name'));
+            Ini.WriteString(SubKeys[i], 'Name', ReadString('Name'));
             pv := StringReplace(ReadString('Params'), #13#10, '#', [rfReplaceAll]);
-            Ini.WriteString(v[i], 'Params', pv);
+            Ini.WriteString(SubKeys[i], 'Params', pv);
           end;
         end;
         Result := true;
       finally
-        Ini.Free
+        Ini.Free;
+        CloseKey;
       end;
     end;
 end;
 
 function AltLoadRegKey(const FileName: String; const ForKey: array of string): Boolean;
 var
-  v: Variant;
-  i, c: integer;
+  SubKeys: Variant;
+  i, c: Integer;
   Key: string;
   Ini: TIniFile;
   PathKey: string;
   ts: TStrings;
 begin
-  v := DefAllSubKey(ForKey);
+  SubKeys := DefAllSubKey(ForKey);
   with RegObj do
   begin
     PathKey := '';
@@ -266,12 +230,12 @@ begin
     Ini := TIniFile.Create(FileName);
     ts := TStringList.Create;
     try
-      if VarType(v) <> varBoolean then
+      if VarType(SubKeys) <> varBoolean then
       begin
-        c := VarArrayHighBound(v, 1);
+        c := VarArrayHighBound(SubKeys, 1);
         for i := 0 to c do
-          if OpenKey(PathKey + '\' + v[i], false) then
-            DeleteKey(PathKey + '\' + v[i]);
+          if OpenKey(PathKey + '\' + SubKeys[i], false) then
+            DeleteKey(PathKey + '\' + SubKeys[i]);
       end;
       Ini.ReadSections(ts);
       c := ts.Count - 1;
@@ -292,24 +256,24 @@ end;
 
 function GetKeyForParValue(const aRootKey, ParName, ParValue: string): string;
 var
-  v: Variant;
-  i, c: integer;
+  SubKeys: Variant;
+  i, c: Integer;
   pv: string;
 begin
   Result := '';
-  v := DefAllSubKey(aRootKey);
-  if VarType(v) = varBoolean then
+  SubKeys := DefAllSubKey(aRootKey);
+  if VarType(SubKeys) = varBoolean then
     Exit;
-  c := VarArrayHighBound(v, 1);
+  c := VarArrayHighBound(SubKeys, 1);
   with RegObj do
     try
       for i := 0 to c do
-        if OpenKey(aRootKey + '\' + v[i], false) then
+        if OpenKey(aRootKey + '\' + SubKeys[i], false) then
         begin
           pv := ReadString(ParName);
           if pv = ParValue then
           begin
-            Result := v[i];
+            Result := SubKeys[i];
             Exit;
           end;
           CloseKey

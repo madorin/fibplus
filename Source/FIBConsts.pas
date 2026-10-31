@@ -32,7 +32,6 @@ resourcestring
   SEdDeadLockMess      = 'Deadlock detected';
   SEdNotExistRecord    = 'Record does not exist';
   SEdMultiplyRecord    = 'Attempt to edit multiple records';
-  SEdUnknownError      = 'Unknown error';
   SCantSort            = 'Can''t sort. Invalid parameter: Fields[';
   SCantGetInfo         = 'Can''t get info for ';
   SDataBaseNotAssigned = 'Database is not assigned';
@@ -76,16 +75,11 @@ resourcestring
   SFIBErrorIncludeDBLoginDialog         = 'Please, add FIBLoginDlg into USES statement of your project.';
   SFIBErrorCircularLinks                = 'Circular link is not allowed.';
   SFIBErrorParamNotExist                = 'Parameter "%s" does not exist in %s';
-  SFIBErrorWideStringValueTooLong       = '%s. Value for WideString Parameter "%s" too long';
-  SFIBParamsCountNotEquelValuesCount    = '%s. Parameters count is not equal to the count of parameter values';
+  SFIBParamsCountNotEqualValuesCount    = '%s. Parameters count is not equal to the count of parameter values';
   SFIBErrorEOFInComments                = 'EOF in comment detected';
   SFIBErrorEOFInString                  = 'EOF in string detected';
   SFIBErrorEOFInMacro                   = 'EOF in macro detected';
   SFIBErrorParamNameExpected            = 'Parameter name expected';
-  SFIBErrorInvalidComp                  = 'Invalid comp value';
-  SFIBErrorNotifyEvent                  = 'Unable to add NotifyEvent';
-  SFIBErrorNotifyEventIndexOut          = 'EventList: Index out of range';
-  SFIBErrorNotifyEventInvalid           = 'EventList: Invalid typecast';
   SFIBErrorHandlerExists                = 'Instance of TFIBErrorHandler already exists';
   SFIBErrorUnableStreamLoad             = '%s: unable to load from stream';
   SFIBErrorAbortUpdates                 = 'User abort apply updates for %s %s';
@@ -94,14 +88,9 @@ resourcestring
   SFIBErrorGenerationError              = '%s: unable to generate %s because fields for "%s" do not exist in dataset.';
   SFIBErrorExecuteBlockField            = '%s: field %s cannot be written as a literal, UseExecuteBlock does not support array and binary BLOB fields.';
   SFIBErrorExecuteBlockRowSize          = '%s: the statement of a record (%d bytes) does not fit in an EXECUTE BLOCK of 64K, UseExecuteBlock cannot apply it.';
-  reVarNotArray                         = 'Variant is not an array.';
-  reVarArrayBounds                      = 'Variant array index out of bounds.';
-  reVarArrayCreate                      = 'Unable to create variant array.';
-  SFIBStatNoSave                        = 'Unable to save statistics. Table "FIB$APP_STATISIC" does not exist.';
+  SFIBStatNoSave                        = 'Unable to save statistics. Table "FIB$APP_STATISTICS" does not exist.';
   SFIBStatNoSaveAppID                   = 'Unable to save statistics. ApplicationID is unknown.';
   SCompDatabaseNotConnected             = 'Database component is not set properly or not connected';
-  SEInvalidCharsetData                  = 'Invalid data charset  %s. Need charset %s';
-  SErrorInProc                          = 'Error in %s procedure %s ';
 
 implementation
 

@@ -1,4 +1,4 @@
-object DBEditForm: TDBEditForm
+object DBEditForm: TFIBDatabaseEditForm
   Left = 279
   Top = 199
   BorderStyle = bsDialog
@@ -222,6 +222,7 @@ object DBEditForm: TDBEditForm
       Top = 45
       Width = 118
       Height = 21
+      PasswordChar = '*'
       TabOrder = 1
       OnChange = PasswordEChange
     end

@@ -17,24 +17,24 @@ unit FIBToolsConsts;
 interface
 
 resourcestring
-  FPTPrefCaption     = 'FIBPlus Preferences';
-  FPTGeneratorPref   = 'Prefix Generator name';
-  FPTGeneratorSuf    = 'Sufix Generator name';
-  FPTCharSet         = 'C&harSet';
-  FPTSQLDialect      = 'S&QL Dialect';
-  FPTStoreConnected  = 'Store Connected';
-  FPTSyncTime        = 'Synchronize Time ';
-  FPTUpperOldNames   = 'Upper Old Names';
-  FPTUseLoginPrompt  = 'Use Login Prompt';
-  FPTTimeoutAction   = 'Timeout action';
-  FPTTimeout         = 'Timeout';
-  FPTGotoFirstRecord = 'Go to First Record';
-  FPTCheckParam      = 'Check parameters';
-  FPTAutoStartTrans  = 'Autostart transaction';
-  FPTAutoCommitTrans = 'Autocommit transaction';
+  SPreferencesCaption               = 'FIBPlus Preferences';
+  SPreferencesGeneratorPrefix       = 'Prefix Generator name';
+  SPreferencesGeneratorSuffix       = 'Suffix Generator name';
+  SPreferencesCharSet               = 'C&harSet';
+  SPreferencesSQLDialect            = 'S&QL Dialect';
+  SPreferencesStoreConnected        = 'Store Connected';
+  SPreferencesSyncTime              = 'Synchronize Time ';
+  SPreferencesUpperOldNames         = 'Upper Old Names';
+  SPreferencesUseLoginPrompt        = 'Use Login Prompt';
+  SPreferencesTimeoutAction         = 'Timeout action';
+  SPreferencesTimeout               = 'Timeout';
+  SPreferencesGotoFirstRecord       = 'Go to First Record';
+  SPreferencesCheckParams           = 'Check parameters';
+  SPreferencesAutoStartTransaction  = 'Autostart transaction';
+  SPreferencesAutoCommitTransaction = 'Autocommit transaction';
 
-  FPTCloseDesignConnections = 'Close design-time connections before the program runs';
-  FPTInvalidTimeout         = 'The timeout must be a whole number, 0 or greater';
+  SPreferencesCloseDesignConnections = 'Close design-time connections before the program runs';
+  SPreferencesInvalidTimeout         = 'The timeout must be a whole number, 0 or greater';
 
   SOKButton     = '&OK';
   SCancelButton = '&Cancel';

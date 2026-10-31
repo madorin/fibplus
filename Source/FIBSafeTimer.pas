@@ -73,47 +73,57 @@ type
   TSyncThread = class(TThread)
   protected
     FTimer: TFIBCustomTimer;
+{$IFDEF WINDOWS}
+    FHandle: NativeUInt;
+{$ENDIF}
     procedure Execute; override;
     procedure DoOnTimer;
   end;
 
 {$IFDEF WINDOWS}
+// the event runs without the list lock: it can synchronize, show a dialog or create timers
 procedure TimerProc(Wnd: HWND; Msg: UINT; idEvent: NativeUInt; Time: DWORD); stdcall;
 var
   I: Integer;
   Timer: TFIBCustomTimer;
   List: TList;
   st: TSyncThread;
+  Event: TNotifyEvent;
+  Synchronizing: Boolean;
 begin
   if TimerList = nil then
     Exit;
-  I := 0;
+  Timer := nil;
+  Event := nil;
+  Synchronizing := False;
   List := TimerList.LockList;
   try
-    while I < List.Count do
-    begin
-      Timer := List.Items[I];
-      if (Timer <> nil) and (idEvent = Timer.FHandle) and (Assigned(Timer.FOnTimer)) then
+    for I := 0 to List.Count - 1 do
+      if (List.Items[I] <> nil) and (TFIBCustomTimer(List.Items[I]).FHandle = idEvent) then
       begin
-        if not Timer.FSynchronizing or (CurrentThreadID = MainThreadID) then
-          Timer.FOnTimer(Timer)
-        else
-        begin
-          st := TSyncThread.Create(True);
-          try
-            st.FTimer := Timer;
-            st.Synchronize(st.DoOnTimer);
-          finally
-            st.Free
-          end;
-        end;
-        Exit;
+        Timer := List.Items[I];
+        Event := Timer.FOnTimer;
+        Synchronizing := Timer.FSynchronizing;
+        Break;
       end;
-      Inc(I);
-    end;
   finally
     TimerList.UnlockList
-  end
+  end;
+  if not Assigned(Event) then
+    Exit;
+  if not Synchronizing or (CurrentThreadID = MainThreadID) then
+    Event(Timer)
+  else
+  begin
+    st := TSyncThread.Create(True);
+    try
+      st.FTimer := Timer;
+      st.FHandle := idEvent;
+      st.Synchronize(st.DoOnTimer);
+    finally
+      st.Free
+    end;
+  end;
 end;
 {$ENDIF}
 {$IFDEF MACOS}
@@ -223,9 +233,7 @@ end;
 constructor TFIBCustomTimer.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
-
-  // TThread.CurrentThread.ThreadID;
-  FInterval := 1000; { }
+  FInterval := 1000;
   FSynchronizing := True;
   if TimerList <> nil then
     TimerList.Add(Self);
@@ -278,9 +286,30 @@ end;
 { TSyncThread }
 
 procedure TSyncThread.DoOnTimer;
+{$IFDEF WINDOWS}
+var
+  Event: TNotifyEvent;
+  List: TList;
+{$ENDIF}
 begin
+{$IFDEF WINDOWS}
+  // the main thread may have freed or stopped the timer while the call waited
+  Event := nil;
+  if TimerList = nil then
+    Exit;
+  List := TimerList.LockList;
+  try
+    if (List.IndexOf(FTimer) >= 0) and (FTimer.FHandle = FHandle) then
+      Event := FTimer.FOnTimer;
+  finally
+    TimerList.UnlockList
+  end;
+  if Assigned(Event) then
+    Event(FTimer)
+{$ELSE}
   if Assigned(FTimer.OnTimer) then
     FTimer.OnTimer(FTimer)
+{$ENDIF}
 end;
 
 procedure TSyncThread.Execute;

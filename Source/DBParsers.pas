@@ -24,15 +24,15 @@ uses
 
 type
 
-  TStrToDateFmt = function(const ADate, Fmt: string): TDateTime;
-  TMatchesMask = function(const S1, Mask: string): Boolean;
+  TFIBStrToDateFunc = function(const ADate, Fmt: string): TDateTime;
+  TFIBMatchesMaskFunc = function(const S1, Mask: string): Boolean;
 
-  TExpressionParser = class(TExprParser)
+  TFIBExpressionParser = class(TExprParser)
   private
     FExpressionText: string;
     FDataSet: TDataSet;
-    FStrToDateFmt: TStrToDateFmt;
-    FMatchesMask: TMatchesMask;
+    FStrToDateFmt: TFIBStrToDateFunc;
+    FMatchesMask: TFIBMatchesMaskFunc;
     FFilteredFields: TStringList;
     function FieldByName(const FieldName: string): TField;
     function VarResult: Boolean;
@@ -40,26 +40,32 @@ type
     constructor Create(DataSet: TDataSet; const Text: string;
       Options: TFilterOptions; ParserOptions: TParserOptions;
       const FieldName: string; DepFields: TBits; FieldMap: TFieldMap;
-      aStrToDateFmt: TStrToDateFmt = nil; aMatchesMask: TMatchesMask = nil);
+      aStrToDateFmt: TFIBStrToDateFunc = nil; aMatchesMask: TFIBMatchesMaskFunc = nil);
     destructor Destroy; override;
     procedure ResetFields;
     function BooleanResult: Boolean;
-    property StrToDateFmt: TStrToDateFmt read FStrToDateFmt write FStrToDateFmt;
-    property MatchesMask: TMatchesMask read FMatchesMask write FMatchesMask;
+    property StrToDateFmt: TFIBStrToDateFunc read FStrToDateFmt write FStrToDateFmt;
+    property MatchesMask: TFIBMatchesMaskFunc read FMatchesMask write FMatchesMask;
     property ExpressionText: string read FExpressionText;
   end;
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TStrToDateFmt = TFIBStrToDateFunc deprecated 'Use TFIBStrToDateFunc';
+  TMatchesMask = TFIBMatchesMaskFunc deprecated 'Use TFIBMatchesMaskFunc';
+  TExpressionParser = TFIBExpressionParser deprecated 'Use TFIBExpressionParser';
 
 implementation
 
 uses
   StrUtil, StdFuncs;
 
-{ TExpressionParser }
+{ TFIBExpressionParser }
 
-constructor TExpressionParser.Create(DataSet: TDataSet; const Text: string;
+constructor TFIBExpressionParser.Create(DataSet: TDataSet; const Text: string;
   Options: TFilterOptions; ParserOptions: TParserOptions;
   const FieldName: string; DepFields: TBits; FieldMap: TFieldMap;
-  aStrToDateFmt: TStrToDateFmt = nil; aMatchesMask: TMatchesMask = nil);
+  aStrToDateFmt: TFIBStrToDateFunc = nil; aMatchesMask: TFIBMatchesMaskFunc = nil);
 begin
   try
     inherited Create(DataSet, Text, Options, ParserOptions, FieldName, DepFields, FieldMap);
@@ -85,13 +91,13 @@ begin
     end; // with
 end;
 
-destructor TExpressionParser.Destroy;
+destructor TFIBExpressionParser.Destroy;
 begin
   FFilteredFields.Free;
   inherited;
 end;
 
-function TExpressionParser.FieldByName(const FieldName: string): TField;
+function TFIBExpressionParser.FieldByName(const FieldName: string): TField;
 var
   i: Integer;
 begin
@@ -104,7 +110,7 @@ begin
     end;
 end;
 
-function TExpressionParser.VarResult: Boolean;
+function TFIBExpressionParser.VarResult: Boolean;
 var
   iLiteralStart: Word;
 
@@ -119,6 +125,17 @@ var
           DatabaseError(SExprIncorrect);
         Inc(Result, CANHDRSIZE);
       end;
+  end;
+
+  function IsNullValue(const V: Variant): Boolean;
+  begin
+    Result := VarIsNull(V) or VarIsEmpty(V);
+  end;
+
+  // a NULL boolean operand counts as False: NOT stays two-valued, as in TClientDataSet
+  function AsBoolean(const V: Variant): Boolean;
+  begin
+    Result := not IsNullValue(V) and WordBool(V);
   end;
 
   function HasNull(const V: Variant): Boolean;
@@ -204,7 +221,8 @@ var
                 ftWideString:
                   begin
                     SetLength(us, PWord(pArg1)^ div 2);
-                    Move(pArg1[2], us[1], PWord(pArg1)^);
+                    if us <> '' then
+                      Move(pArg1[2], us[1], PWord(pArg1)^);
                     Result := us
                   end;
                 ftDate:
@@ -250,10 +268,19 @@ var
                 if iOperator = coNOTBLANK then
                   Result := not Result;
               end;
-            coNOT: Result := not WordBool(ParseNode(pfdStart, pArg1));
+            coNOT: Result := not AsBoolean(ParseNode(pfdStart, pArg1));
+            // UPPER and LOWER of NULL are NULL
             coMINUS: Result := -ParseNode(pfdStart, pArg1);
-            coUPPER: Result := AnsiUpperCase(VarToStr(ParseNode(pfdStart, pArg1)));
-            coLOWER: Result := AnsiLowerCase(VarToStr(ParseNode(pfdStart, pArg1)));
+            coUPPER, coLOWER:
+              begin
+                Arg1 := ParseNode(pfdStart, pArg1);
+                if IsNullValue(Arg1) then
+                  Result := Null
+                else if iOperator = coUPPER then
+                  Result := AnsiUpperCase(VarToStr(Arg1))
+                else
+                  Result := AnsiLowerCase(VarToStr(Arg1));
+              end;
           end;
         end;
       nodeBINARY:
@@ -268,7 +295,7 @@ var
               begin
                 Arg1 := ParseNode(pfdStart, pArg1);
                 Arg2 := ParseNode(pfdStart, pArg2);
-                // as in SQL and TClientDataSet, a comparison with NULL does not match
+                // as in SQL and TClientDataSet, a comparison with NULL does not match; NOT stays two-valued
                 if VarIsNull(Arg1) or VarIsNull(Arg2) then
                   Result := False
                 else
@@ -282,8 +309,8 @@ var
                     Result := Arg1 <= Arg2;
                   end;
               end;
-            coOR: Result := WordBool(ParseNode(pfdStart, pArg1)) or WordBool(ParseNode(pfdStart, pArg2));
-            coAND: Result := WordBool(ParseNode(pfdStart, pArg1)) and WordBool(ParseNode(pfdStart, pArg2));
+            coOR: Result := AsBoolean(ParseNode(pfdStart, pArg1)) or AsBoolean(ParseNode(pfdStart, pArg2));
+            coAND: Result := AsBoolean(ParseNode(pfdStart, pArg1)) and AsBoolean(ParseNode(pfdStart, pArg2));
             coADD: Result := ParseNode(pfdStart, pArg1) + ParseNode(pfdStart, pArg2);
             coSUB: Result := ParseNode(pfdStart, pArg1) - ParseNode(pfdStart, pArg2);
             coMUL: Result := ParseNode(pfdStart, pArg1) * ParseNode(pfdStart, pArg2);
@@ -303,9 +330,11 @@ var
                       begin
                         if VarIsEmpty(Arg2[i]) then
                           break;
-                        Result := not VarIsNull(Arg2[i]) and (Arg1 = Arg2[i]);
-                        if Result then
-                          break;
+                        if not VarIsNull(Arg2[i]) and (Arg1 = Arg2[i]) then
+                          begin
+                            Result := True;
+                            break;
+                          end;
                       end;
                   end
                 else
@@ -491,23 +520,22 @@ var
 
 var
   pfdStart, pfd: PAnsiChar;
+  V: Variant;
 begin
   pfdStart := Addr(FilterData[0]);
   pfd := pfdStart;
   iLiteralStart := PWord(@pfd[8])^;
   Inc(pfd, 10);
-  Result := ParseNode(pfdStart, pfd);
+  V := ParseNode(pfdStart, pfd);
+  Result := AsBoolean(V);
 end;
 
-function TExpressionParser.BooleanResult: Boolean;
-var
-  V: Variant;
+function TFIBExpressionParser.BooleanResult: Boolean;
 begin
-  V := VarResult;
-  Result := WordBool(V)
+  Result := VarResult;
 end;
 
-procedure TExpressionParser.ResetFields;
+procedure TFIBExpressionParser.ResetFields;
 begin
   FFilteredFields.Clear
 end;

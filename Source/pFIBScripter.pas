@@ -8,25 +8,25 @@ uses
 type
   TpFIBScripter = TFIBScripter deprecated 'Use TFIBScripter';
   TpFIBScriptParser = TFIBScriptParser deprecated 'Use TFIBScriptParser';
-  TStmtType = FIBScripter.TStmtType;
-  TObjectType = FIBScripter.TObjectType;
-  TStmtCoord = FIBScripter.TStmtCoord;
-  PStmtCoord = FIBScripter.PStmtCoord;
-  TStatementDesc = FIBScripter.TStatementDesc;
-  PStatementDesc = FIBScripter.PStatementDesc;
-  TScriptMap = FIBScripter.TScriptMap;
-  TOnParseStmt = FIBScripter.TOnParseStmt;
-  TDirectiveState = FIBScripter.TDirectiveState;
-  TDirectiveDesc = FIBScripter.TDirectiveDesc;
-  PDirectiveDesc = FIBScripter.PDirectiveDesc;
-  TDirectivesMap = FIBScripter.TDirectivesMap;
-  PDirectivesMap = FIBScripter.PDirectivesMap;
-  TParseDisposition = FIBScripter.TParseDisposition;
-  TParserState = FIBScripter.TParserState;
-  TScriptKeyword = FIBScripter.TScriptKeyword;
-  TOnStatementExecute = FIBScripter.TOnStatementExecute;
-  TOnSQLScriptExecError = FIBScripter.TOnSQLScriptExecError;
-  TDynStringArray = FIBScripter.TDynStringArray;
+  TStmtType = FIBScripter.TFIBStatementType;
+  TObjectType = FIBScripter.TFIBScriptObjectType;
+  TStmtCoord = FIBScripter.TFIBStatementCoord;
+  PStmtCoord = FIBScripter.PFIBStatementCoord;
+  TStatementDesc = FIBScripter.TFIBStatementDesc;
+  PStatementDesc = FIBScripter.PFIBStatementDesc;
+  TScriptMap = FIBScripter.TFIBScriptMap;
+  TOnParseStmt = FIBScripter.TFIBParseStatementEvent;
+  TDirectiveState = FIBScripter.TFIBDirectiveState;
+  TDirectiveDesc = FIBScripter.TFIBDirectiveDesc;
+  PDirectiveDesc = FIBScripter.PFIBDirectiveDesc;
+  TDirectivesMap = FIBScripter.TFIBDirectivesMap;
+  PDirectivesMap = FIBScripter.PFIBDirectivesMap;
+  TParseDisposition = FIBScripter.TFIBParseDisposition;
+  TParserState = FIBScripter.TFIBScriptParserState;
+  TScriptKeyword = FIBScripter.TFIBScriptKeyword;
+  TOnStatementExecute = FIBScripter.TFIBStatementExecuteEvent;
+  TOnSQLScriptExecError = FIBScripter.TFIBScriptExecErrorEvent;
+  TDynStringArray = FIBScripter.TFIBAnsiStringArray;
 
 const
   sUnknown = FIBScripter.sUnknown;

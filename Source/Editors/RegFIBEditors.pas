@@ -12,18 +12,18 @@ uses
   StdCtrls, Forms, ExtCtrls, Dialogs,
 {$ENDIF}
   SysUtils, FIBInterfaces, TypInfo, FIBDatabase,
-  DesignEditors, DesignIntf, Variants // ,Types
+  DesignEditors, DesignIntf, Variants
 
   ;
 
 type
 
-  TiBeforeProposalCall = procedure(const ProposalName: string) of object;
+  TFIBBeforeProposalEvent = procedure(const ProposalName: string) of object;
 
   IFIBSQLTextEditor = interface
     ['{59B98703-4324-43AA-A656-5842806E35B2}']
-    function GetReadOnly: boolean;
-    procedure SetReadOnly(Value: boolean);
+    function GetReadOnly: Boolean;
+    procedure SetReadOnly(Value: Boolean);
     function GetLines: TStrings;
     procedure SetLines(Value: TStrings);
     function GetSelStart: Integer;
@@ -41,20 +41,20 @@ type
     procedure AddToCurrentProposal(ts, ts1: TStrings);
     procedure AddProposal(const aName: string);
     procedure ClearProposal;
-    function GetBeforePropCall: TiBeforeProposalCall;
-    procedure SetBeforePropCall(Event: TiBeforeProposalCall);
+    function GetBeforePropCall: TFIBBeforeProposalEvent;
+    procedure SetBeforePropCall(Event: TFIBBeforeProposalEvent);
     function GetPosInText: Integer;
     procedure SelectAll;
-    function GetModified: boolean;
-    procedure SetModified(Value: boolean);
+    function GetModified: Boolean;
+    procedure SetModified(Value: Boolean);
     procedure SetFocus;
     property SelLength: Integer read GetSelLength write SetSelLength;
     property SelStart: Integer read GetSelStart write SetSelStart;
-    property ReadOnly: boolean read GetReadOnly write SetReadOnly;
+    property ReadOnly: Boolean read GetReadOnly write SetReadOnly;
     property Lines: TStrings read GetLines write SetLines;
     property CaretX: Integer read GetCaretX;
     property CaretY: Integer read GetCaretY;
-    property DoBeforeProposalCall: TiBeforeProposalCall read GetBeforePropCall write SetBeforePropCall;
+    property DoBeforeProposalCall: TFIBBeforeProposalEvent read GetBeforePropCall write SetBeforePropCall;
     property PosInText: Integer read GetPosInText;
   end;
 
@@ -69,18 +69,18 @@ uses
   FIBComponentEditors, ToolsAPI, RegSynEditAlt;
 
 var
-  vSQLTextEditorClass: TClass;
+  SQLTextEditorClass: TClass;
 
 type
   TFIBSQLMemo = class(TMemo, IFIBSQLTextEditor)
   private
-    function GetReadOnly: boolean;
-    procedure SetReadOnly(Value: boolean);
+    function GetReadOnly: Boolean;
+    procedure SetReadOnly(Value: Boolean);
     function GetLines: TStrings;
     function GetCaretX: Integer;
     function GetCaretY: Integer;
-    function GetModified: boolean;
-    procedure SetModified(Value: boolean);
+    function GetModified: Boolean;
+    procedure SetModified(Value: Boolean);
     procedure iSetCaretPos(X, Y: Integer);
     procedure ISetProposalItems(ts1, ts2: TStrings);
     procedure SaveProposals(const aName: string);
@@ -88,8 +88,8 @@ type
     procedure AddToCurrentProposal(ts, ts1: TStrings);
     procedure AddProposal(const aName: string);
     procedure ClearProposal;
-    function GetBeforePropCall: TiBeforeProposalCall;
-    procedure SetBeforePropCall(Event: TiBeforeProposalCall);
+    function GetBeforePropCall: TFIBBeforeProposalEvent;
+    procedure SetBeforePropCall(Event: TFIBBeforeProposalEvent);
     function GetPosInText: Integer;
     procedure ScreenPosToTextPos(const ScrX, ScrY: Integer; var DestX, DestY: Integer); // for drag and drop
   public
@@ -99,15 +99,15 @@ type
 procedure RegisterFIBSQLTextEditor(Editor: TClass);
 begin
   if Assigned(Editor) then
-    vSQLTextEditorClass := Editor
+    SQLTextEditorClass := Editor
   else
-    vSQLTextEditorClass := TFIBSQLMemo
+    SQLTextEditorClass := TFIBSQLMemo
 end;
 
 function GetSQLTextEditor: TClass;
 begin
-  if Assigned(vSQLTextEditorClass) then
-    Result := vSQLTextEditorClass
+  if Assigned(SQLTextEditorClass) then
+    Result := SQLTextEditorClass
   else
     Result := TFIBSQLMemo
 end;
@@ -123,87 +123,79 @@ procedure Register;
     pi: PPropInfo;
     auClass: TClass;
   begin
-    try
-      // database  Properties
-      DatabaseClass := expDatabaseClass;
-      TransactionClass := expTransactionClass;
-      QueryClass := expQueryClass;
-      DatasetClass := expDatasetClass;
-      DeltaReceiver := expDeltaReceiverClass;
-      RegisterPropertyEditor(TypeInfo(string), DatabaseClass, 'AliasName', TFIBAliasEdit);
-      RegisterPropertyEditor(TypeInfo(string), DatabaseClass, 'DBName', TFileNameProperty);
-      RegisterPropertyEditor(TypeInfo(string), DatabaseClass, 'LibraryName', TFileNameProperty);
-      RegisterPropertyEditor(TypeInfo(TNotifyEvent), DatabaseClass, 'OnConnect', nil);
-      pi := GetPropInfo(DatabaseClass, 'OnLogin');
-      if pi <> nil then
-        RegisterPropertyEditor(pi.PropType^, DatabaseClass, 'OnLogin', nil);
+    // database  Properties
+    DatabaseClass := expDatabaseClass;
+    TransactionClass := expTransactionClass;
+    QueryClass := expQueryClass;
+    DatasetClass := expDatasetClass;
+    DeltaReceiver := expDeltaReceiverClass;
+    RegisterPropertyEditor(TypeInfo(string), DatabaseClass, 'AliasName', TFIBAliasEdit);
+    RegisterPropertyEditor(TypeInfo(string), DatabaseClass, 'DBName', TFIBFileNameProperty);
+    RegisterPropertyEditor(TypeInfo(string), DatabaseClass, 'LibraryName', TFIBFileNameProperty);
+    RegisterPropertyEditor(TypeInfo(TNotifyEvent), DatabaseClass, 'OnConnect', nil);
+    pi := GetPropInfo(DatabaseClass, 'OnLogin');
+    if pi <> nil then
+      RegisterPropertyEditor(pi.PropType^, DatabaseClass, 'OnLogin', nil);
 
-      RegisterComponentEditor(TComponentClass(DatabaseClass), TFIBDatabaseEditor);
-      RegisterComponentEditor(TComponentClass(TransactionClass), TFIBTransactionEditor);
-      RegisterComponentEditor(TComponentClass(QueryClass), TFIBQueryEditor);
-      RegisterComponentEditor(TComponentClass(DatasetClass), TFIBGenSQlEd);
+    RegisterComponentEditor(TComponentClass(DatabaseClass), TFIBDatabaseEditor);
+    RegisterComponentEditor(TComponentClass(TransactionClass), TFIBTransactionEditor);
+    RegisterComponentEditor(TComponentClass(QueryClass), TFIBQueryEditor);
+    RegisterComponentEditor(TComponentClass(DatasetClass), TFIBDataSetEditor);
 
-      pi := GetPropInfo(QueryClass, 'Conditions');
-      RegisterPropertyEditor(pi.PropType^, nil, 'Conditions', TFIBConditionsEditor);
+    pi := GetPropInfo(QueryClass, 'Conditions');
+    RegisterPropertyEditor(pi.PropType^, nil, 'Conditions', TFIBConditionsEditor);
 
-      pi := GetPropInfo(DatasetClass, 'Options');
-      RegisterPropertyEditor(pi.PropType^, nil, 'Options', TFIBDataSetOptionsEditor);
-      pi := GetPropInfo(DatasetClass, 'PrepareOptions');
-      RegisterPropertyEditor(pi.PropType^, nil, 'PrepareOptions', TFIBDataSetOptionsEditor);
-      pi := GetPropInfo(DatasetClass, 'AutoUpdateOptions');
-      RegisterPropertyEditor(pi.PropType^, DatasetClass, 'AutoUpdateOptions', TFIBAutoUpdateOptionsEditor);
+    pi := GetPropInfo(DatasetClass, 'Options');
+    RegisterPropertyEditor(pi.PropType^, nil, 'Options', TFIBDataSetOptionsEditor);
+    pi := GetPropInfo(DatasetClass, 'PrepareOptions');
+    RegisterPropertyEditor(pi.PropType^, nil, 'PrepareOptions', TFIBDataSetOptionsEditor);
+    pi := GetPropInfo(DatasetClass, 'AutoUpdateOptions');
+    RegisterPropertyEditor(pi.PropType^, DatasetClass, 'AutoUpdateOptions', TFIBAutoUpdateOptionsEditor);
 
-      auClass := GetTypeData(pi^.PropType^).ClassType;
-      RegisterPropertyEditor(TypeInfo(TStrings), auClass, 'ParamsToFieldsLinks', TEdParamToFields);
-      RegisterPropertyEditor(TypeInfo(string), auClass, 'GeneratorName', TGeneratorNameEdit);
+    auClass := GetTypeData(pi^.PropType^).ClassType;
+    RegisterPropertyEditor(TypeInfo(TStrings), auClass, 'ParamsToFieldsLinks', TFIBParamsToFieldsProperty);
+    RegisterPropertyEditor(TypeInfo(string), auClass, 'GeneratorName', TFIBGeneratorNameProperty);
 
-      RegisterPropertyEditor(TypeInfo(string), auClass, 'KeyFields', TKeyFieldNameEdit);
+    RegisterPropertyEditor(TypeInfo(string), auClass, 'KeyFields', TFIBKeyFieldsProperty);
 
-      RegisterPropertyEditor(TypeInfo(string), auClass, 'UpdateTableName', TTableNameEdit);
+    RegisterPropertyEditor(TypeInfo(string), auClass, 'UpdateTableName', TFIBUpdateTableNameProperty);
 
-      RegisterPropertyEditor(TypeInfo(Integer), DatasetClass, 'DataSet_ID', TDataSet_ID_Edit);
+    RegisterPropertyEditor(TypeInfo(Integer), DatasetClass, 'DataSet_ID', TFIBDataSetIDProperty);
 
-      RegisterPropertyEditor(TypeInfo(TStrings), DatasetClass, 'SelectSQL', nil);
-      RegisterPropertyEditor(TypeInfo(TStrings), DatasetClass, 'InsertSQL', nil);
-      RegisterPropertyEditor(TypeInfo(TStrings), DatasetClass, 'UpdateSQL', nil);
-      RegisterPropertyEditor(TypeInfo(TStrings), DatasetClass, 'DeleteSQL', nil);
-      RegisterPropertyEditor(TypeInfo(TStrings), DatasetClass, 'RefreshSQL', nil);
-      RegisterPropertyEditor(TypeInfo(boolean), DatasetClass, 'WaitEndMasterScroll', nil);
+    RegisterPropertyEditor(TypeInfo(TStrings), DatasetClass, 'SelectSQL', nil);
+    RegisterPropertyEditor(TypeInfo(TStrings), DatasetClass, 'InsertSQL', nil);
+    RegisterPropertyEditor(TypeInfo(TStrings), DatasetClass, 'UpdateSQL', nil);
+    RegisterPropertyEditor(TypeInfo(TStrings), DatasetClass, 'DeleteSQL', nil);
+    RegisterPropertyEditor(TypeInfo(TStrings), DatasetClass, 'RefreshSQL', nil);
+    RegisterPropertyEditor(TypeInfo(Boolean), DatasetClass, 'WaitEndMasterScroll', nil);
 
-      pi := GetPropInfo(DatasetClass, 'SQLs');
-      RegisterPropertyEditor(TypeInfo(TStrings), GetTypeData(pi^.PropType^).ClassType, '', TFIBSQLsProperty);
+    pi := GetPropInfo(DatasetClass, 'SQLs');
+    RegisterPropertyEditor(TypeInfo(TStrings), GetTypeData(pi^.PropType^).ClassType, '', TFIBSQLsProperty);
 
-      RegisterPropertyEditor(pi.PropType^, DatasetClass, '', TFIBSQLsProperties);
+    RegisterPropertyEditor(pi.PropType^, DatasetClass, '', TFIBSQLsProperties);
 
-      RegisterPropertyEditor(TypeInfo(string), QueryClass, 'StoredProcName', TFIBStoredProcProperty);
+    RegisterPropertyEditor(TypeInfo(string), QueryClass, 'StoredProcName', TFIBStoredProcProperty);
 
-      RegisterPropertyEditor(TypeInfo(TStrings), QueryClass, 'SQL', TFIBSQLPropEdit);
+    RegisterPropertyEditor(TypeInfo(TStrings), QueryClass, 'SQL', TFIBSQLPropEdit);
 
-      RegisterPropertyEditor(TypeInfo(string), TransactionClass, 'UserKindTransaction', TFIBTrKindEdit);
+    RegisterPropertyEditor(TypeInfo(string), TransactionClass, 'UserKindTransaction', TFIBTrKindEdit);
 
-      pi := GetPropInfo(DatabaseClass, 'GeneratorsCache');
-      auClass := GetTypeData(pi^.PropType^).ClassType;
-      RegisterPropertyEditor(TypeInfo(TOwnedCollection), auClass, 'GeneratorList', TFIBGeneratorsProperty);
+    pi := GetPropInfo(DatabaseClass, 'GeneratorsCache');
+    auClass := GetTypeData(pi^.PropType^).ClassType;
+    RegisterPropertyEditor(TypeInfo(TOwnedCollection), auClass, 'GeneratorList', TFIBGeneratorsProperty);
 
-      RegisterPropertyEditor(TypeInfo(string), auClass, 'CacheFileName', TFileNameProperty);
+    RegisterPropertyEditor(TypeInfo(string), auClass, 'CacheFileName', TFIBFileNameProperty);
 
-      { RegisterPropertyEditor(TypeInfo(TOwnedCollection),TGeneratorsCache,
-        'Generators',   TFIBGeneratorsProperty
-        );
-        {  RegisterPropertyEditor(TypeInfo(TCollection), TCustomDBGridEh, 'Columns', TDBGridEhColumnsProperty);
-      }
-      RegisterPropertyEditor(TypeInfo(TStrings), TransactionClass, 'TRParams', TFIBTRParamsEditor);
+    RegisterPropertyEditor(TypeInfo(TStrings), TransactionClass, 'TRParams', TFIBTransactionParamsEditor);
 
-      if Assigned(expServicesClass) then
-        RegisterPropertyEditor(TypeInfo(string), expServicesClass, 'LibraryName', TFileNameProperty);
+    if Assigned(expServicesClass) then
+      RegisterPropertyEditor(TypeInfo(string), expServicesClass, 'LibraryName', TFIBFileNameProperty);
 
-      RegisterPropertyEditor(TypeInfo(string), DeltaReceiver, 'TableName', TTableNameEditDR);
+    RegisterPropertyEditor(TypeInfo(string), DeltaReceiver, 'TableName', TFIBDeltaReceiverTableNameProperty);
 
-      RegisterComponentEditor(TComponentClass(DeltaReceiver), TFIBDeltaReceiverEditor);
+    RegisterComponentEditor(TComponentClass(DeltaReceiver), TFIBDeltaReceiverEditor);
 
-      RegisterPropertiesInCategory('Transactions', ['*Transaction*']);
-    except
-    end;
+    RegisterPropertiesInCategory('Transactions', ['*Transaction*']);
   end;
 
 begin
@@ -233,12 +225,12 @@ begin
   Result := Lines
 end;
 
-function TFIBSQLMemo.GetModified: boolean;
+function TFIBSQLMemo.GetModified: Boolean;
 begin
   Result := Modified
 end;
 
-function TFIBSQLMemo.GetReadOnly: boolean;
+function TFIBSQLMemo.GetReadOnly: Boolean;
 begin
   Result := ReadOnly
 end;
@@ -253,12 +245,12 @@ begin
 
 end;
 
-procedure TFIBSQLMemo.SetModified(Value: boolean);
+procedure TFIBSQLMemo.SetModified(Value: Boolean);
 begin
   Modified := Value
 end;
 
-procedure TFIBSQLMemo.SetReadOnly(Value: boolean);
+procedure TFIBSQLMemo.SetReadOnly(Value: Boolean);
 begin
   inherited ReadOnly := Value
 end;
@@ -293,12 +285,12 @@ begin
 
 end;
 
-function TFIBSQLMemo.GetBeforePropCall: TiBeforeProposalCall;
+function TFIBSQLMemo.GetBeforePropCall: TFIBBeforeProposalEvent;
 begin
   Result := nil
 end;
 
-procedure TFIBSQLMemo.SetBeforePropCall(Event: TiBeforeProposalCall);
+procedure TFIBSQLMemo.SetBeforePropCall(Event: TFIBBeforeProposalEvent);
 begin
 
 end;
@@ -307,8 +299,5 @@ function TFIBSQLMemo.GetPosInText: Integer;
 begin
   Result := SelStart;
 end;
-
-// RegisterFIBSQLTextEditor(TFIBSQLMemo)
-// AppHandleException:=Application.HandleException;
 
 end.

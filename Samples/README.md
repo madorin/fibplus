@@ -1,6 +1,6 @@
 # FIBPlus samples
 
-Small VCL applications, one per feature. The project group `src\pgFIBPlusExamples.groupproj` contains all of them except `GUID_UDF`, which is a server library.
+Small VCL applications, one per feature. The project group `src\FIBSamples.groupproj` contains all of them except `GUID_UDF`, which is a server library.
 
 ## Before you run them
 
@@ -46,7 +46,7 @@ The database is the Firebird `employee` database with extra tables for the sampl
 | Sample | Shows |
 |--------|-------|
 | `PotectedEditing` | `poProtectedEdit` with `poUseSelectForLock`, which locks the record when editing starts (pessimistic locking). The same `EMPLOYEE` table is open in two connections; edit a record in one of them, then try to edit the same record in the other. |
-| `OfflineWork` | Cached updates while disconnected. In offline mode `AutoReconnect` is on and the connection closes after 300 ms of inactivity; edit the grid and apply the updates, and the dataset reconnects to write them with `ApplyUpdToBase` and `CommitUpdToCach`. |
+| `OfflineWork` | Cached updates while disconnected. In offline mode `AutoReconnect` is on and the connection closes after 300 ms of inactivity; edit the grid and apply the updates, and the dataset reconnects to write them with `ApplyUpdatesToDatabase` and `CommitUpdatesToCache`. |
 | `ConnectionLost` | Handling a lost connection with `TFIBErrorHandler`, `OnLostConnect` and cached updates. Stop the server or break the connection, choose what to do in the combo box (close the connection, close the application, or wait for the connection to come back), and apply the cached updates when it is restored. |
 
 ## Repositories

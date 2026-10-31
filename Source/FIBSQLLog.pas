@@ -38,20 +38,20 @@ type
 
   TFIBSQLLogger = class;
 
-  TSQLLogEvent = procedure(const ObjectName, Operation, EventText: String;
-    DataType: TLogFlag; cApplication: String; EventTime: TDateTime;
+  TFIBSQLLogEvent = procedure(const ObjectName, Operation, EventText: String;
+    DataType: TFIBLogFlag; cApplication: String; EventTime: TDateTime;
     var WriteToLog: Boolean) of object;
 
-  TFIBSQLLogger = class(TComponent, ISQLLogger, ISQLStatMaker)
+  TFIBSQLLogger = class(TComponent, IFIBSQLLogger, IFIBSQLStatisticsMaker)
   private
     tr: TFIBTransaction;
-    FAppStatInfo: TTestInfo;
+    FAppStatInfo: TFIBStatistics;
     FApplicationID: string;
     FDatabase: TFIBDatabase;
     FStatisticsParams: TFIBStatisticsParams;
     FExistStatTable: TFIBExistObject;
-    FOnLogEvent: TSQLLogEvent;
-    FLogFlags: TLogFlags;
+    FOnLogEvent: TFIBSQLLogEvent;
+    FLogFlags: TFIBLogFlags;
     FLogList: TStrings;
     FLogFileName: string;
     FForceSaveToFile: Boolean;
@@ -70,15 +70,15 @@ type
     procedure OnDisconnect(Sender: TObject);
     function GetFS: Boolean;
     procedure SetFS(const Value: Boolean);
-    function GetLogFlags: TLogFlags;
-    procedure SetLogFlags(Value: TLogFlags);
+    function GetLogFlags: TFIBLogFlags;
+    procedure SetLogFlags(Value: TFIBLogFlags);
     function GetLogFileName: string;
-    function GetStatMaker: ISQLStatMaker;
-    function GetLogger: ISQLLogger;
+    function GetStatMaker: IFIBSQLStatisticsMaker;
+    function GetLogger: IFIBSQLLogger;
   protected
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
-    // ISQLLogger
-    procedure WriteData(const ObjectName, OperationName, EventText: String; DataType: TLogFlag);
+    // IFIBSQLLogger
+    procedure WriteData(const ObjectName, OperationName, EventText: String; DataType: TFIBLogFlag);
 
   public
     constructor Create(AOwner: TComponent); override;
@@ -89,11 +89,11 @@ type
     procedure SortStatisticsForPrint(const VarName: string; Ascending: Boolean);
     function ExistStatisticsTable: Boolean;
     procedure CreateStatisticsTable;
-    procedure SaveStatisticsToDB(ForMaxExecTime: integer = 0);
+    procedure SaveStatisticsToDB(ForMaxExecTime: Integer = 0);
     procedure SaveLog;
     property Database: TFIBDatabase read FDatabase;
-    property StatisticsMaker: ISQLStatMaker read GetStatMaker implements ISQLStatMaker;
-    property Logger: ISQLLogger read GetLogger;
+    property StatisticsMaker: IFIBSQLStatisticsMaker read GetStatMaker implements IFIBSQLStatisticsMaker;
+    property Logger: IFIBSQLLogger read GetLogger;
   published
     property ActiveStatistics: Boolean read GetActiveStatistics write SetActiveStatistics default False;
     property LogFileName: string read GetLogFileName write SetLogFileName;
@@ -102,11 +102,15 @@ type
       write SetStatParams default [fspExecuteCount, fspSumTimeExecute,
       fspAvgTimeExecute, fspMaxTimeExecute, fspLastTimeExecute,
       fspPrepareCount];
-    property LogFlags: TLogFlags read GetLogFlags write SetLogFlags default [lfQPrepare, lfQExecute, lfConnect, lfTransact];
+    property LogFlags: TFIBLogFlags read GetLogFlags write SetLogFlags default [lfQPrepare, lfQExecute, lfConnect, lfTransact];
     property ForceSaveLog: Boolean read GetFS write SetFS;
     property ActiveLogging: Boolean read GetActiveLogging write SetActiveLogging default False;
-    property OnLogEvent: TSQLLogEvent read FOnLogEvent write FOnLogEvent;
+    property OnLogEvent: TFIBSQLLogEvent read FOnLogEvent write FOnLogEvent;
   end;
+
+type
+  // Deprecated names of the types renamed in 8.0.0
+  TSQLLogEvent = TFIBSQLLogEvent deprecated 'Use TFIBSQLLogEvent';
 
 implementation
 
@@ -131,7 +135,7 @@ end;
 constructor TFIBSQLLogger.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
-  FAppStatInfo := TTestInfo.Create;
+  FAppStatInfo := TFIBStatistics.Create;
   FStatisticsParams := [fspExecuteCount, fspPrepareCount, fspSumTimeExecute,
     fspAvgTimeExecute, fspMaxTimeExecute, fspLastTimeExecute];
   FLogList := TStringList.Create;
@@ -142,6 +146,12 @@ end;
 
 destructor TFIBSQLLogger.Destroy;
 begin
+  // the rows not saved yet
+  if Assigned(FLogList) and (FLogList.Count > 0) and (FLogFileName <> '') then
+    try
+      SaveLog;
+    except
+    end;
   if Assigned(FDatabase) then
   begin
     SetDatabase(nil);
@@ -214,9 +224,9 @@ begin
   end;
 end;
 
-procedure TFIBSQLLogger.SaveStatisticsToDB(ForMaxExecTime: integer = 0);
+procedure TFIBSQLLogger.SaveStatisticsToDB(ForMaxExecTime: Integer = 0);
 var
-  i: integer;
+  i: Integer;
   q: TFIBQuery;
   s: string;
 
@@ -373,12 +383,12 @@ begin
   FForceSaveToFile := Value
 end;
 
-function TFIBSQLLogger.GetLogFlags: TLogFlags;
+function TFIBSQLLogger.GetLogFlags: TFIBLogFlags;
 begin
   Result := FLogFlags
 end;
 
-procedure TFIBSQLLogger.SetLogFlags(Value: TLogFlags);
+procedure TFIBSQLLogger.SetLogFlags(Value: TFIBLogFlags);
 begin
   FLogFlags := Value
 end;
@@ -399,6 +409,10 @@ begin
 end;
 
 procedure TFIBSQLLogger.SaveLog;
+const
+  UTF8BOM: array [0 .. 2] of Byte = ($EF, $BB, $BF);
+var
+  Text: UTF8String;
 begin
   if (csDesigning in ComponentState) then
     Exit;
@@ -411,7 +425,12 @@ begin
   end;
   try
     FStream.Seek(0, soFromEnd);
-    FLogList.SaveToStream(FStream);
+    // UTF-8, the BOM only at the start of a new file
+    Text := UTF8Encode(FLogList.Text);
+    if FStream.Position = 0 then
+      FStream.WriteBuffer(UTF8BOM, SizeOf(UTF8BOM));
+    if Text <> '' then
+      FStream.WriteBuffer(Text[1], Length(Text));
     FLogList.Clear;
   finally
     FStream.Free;
@@ -419,12 +438,12 @@ begin
   end
 end;
 
-function TFIBSQLLogger.GetStatMaker: ISQLStatMaker;
+function TFIBSQLLogger.GetStatMaker: IFIBSQLStatisticsMaker;
 begin
   Result := FAppStatInfo
 end;
 
-procedure TFIBSQLLogger.WriteData(const ObjectName, OperationName, EventText: String; DataType: TLogFlag);
+procedure TFIBSQLLogger.WriteData(const ObjectName, OperationName, EventText: String; DataType: TFIBLogFlag);
 var
   Rows: string;
   EventDateTime: TDateTime;
@@ -445,8 +464,12 @@ begin
     if WriteToLog then
     begin
       FLogList.Add(Rows);
+      // a log file error must not fail the logged operation, the rows stay for the next save
       if FForceSaveToFile then
-        SaveLog;
+        try
+          SaveLog;
+        except
+        end;
     end;
   end;
 end;
@@ -456,7 +479,7 @@ begin
   Result := Self
 end;
 
-function TFIBSQLLogger.GetLogger: ISQLLogger;
+function TFIBSQLLogger.GetLogger: IFIBSQLLogger;
 begin
   Result := Self
 end;

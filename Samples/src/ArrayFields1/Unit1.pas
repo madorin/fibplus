@@ -70,17 +70,17 @@ end;
 
 procedure TForm1.dtAfterScroll(DataSet: TDataSet);
 var
-  v: Variant;
+  LanguageReq: Variant;
 begin
   with dt do
     try
       FInShowArrays := True;
-      v := ArrayFieldValue(FieldByName('LANGUAGE_REQ'));
-      Edit1.Text := VarToStr(v[1]);
-      Edit2.Text := VarToStr(v[2]);
-      Edit3.Text := VarToStr(v[3]);
-      Edit4.Text := VarToStr(v[4]);
-      Edit5.Text := VarToStr(v[5]);
+      LanguageReq := ArrayFieldValue(FieldByName('LANGUAGE_REQ'));
+      Edit1.Text := VarToStr(LanguageReq[1]);
+      Edit2.Text := VarToStr(LanguageReq[2]);
+      Edit3.Text := VarToStr(LanguageReq[3]);
+      Edit4.Text := VarToStr(LanguageReq[4]);
+      Edit5.Text := VarToStr(LanguageReq[5]);
     finally
       FInShowArrays := False;
     end;

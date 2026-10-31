@@ -8,7 +8,7 @@ uses
 type
   TpFIBQuery = TFIBQuery deprecated 'Use TFIBQuery';
   TpFIBUpdateObject = TFIBUpdateObject deprecated 'Use TFIBUpdateObject';
-  TFIBOrderExecUO = FIBDataSet.TFIBOrderExecUO;
+  TFIBOrderExecUO = FIBDataSet.TFIBUpdateObjectExecuteOrder;
   TFIBQueryErrorEvent = FIBQuery.TFIBQueryErrorEvent;
 
 const

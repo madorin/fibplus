@@ -24,7 +24,6 @@
 // {$DEFINE CSMonitor}
 // {$DEFINE UNICODE_TO_STRING_FIELDS}
 // {$DEFINE OBSOLETE_PROPS}           // load old dfms
-// {$DEFINE USE_DEPRECATE_METHODS1}
 
 // The locale of the error messages and of the login dialog is set in FIBLocale.inc
 

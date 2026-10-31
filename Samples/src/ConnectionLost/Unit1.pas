@@ -41,9 +41,9 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure dbAfterRestoreConnect(Database: TFIBDatabase);
-    procedure dbErrorRestoreConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TOnLostConnectActions);
-    procedure dbLostConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TOnLostConnectActions);
-    procedure FIBErrorHandler1FIBErrorEvent(Sender: TObject; ErrorValue: EFIBError; KindIBError: TKindIBError; var DoRaise: Boolean);
+    procedure dbErrorRestoreConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TFIBLostConnectAction);
+    procedure dbLostConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TFIBLostConnectAction);
+    procedure FIBErrorHandler1FIBErrorEvent(Sender: TObject; ErrorValue: EFIBError; KindIBError: TFIBErrorKind; var DoRaise: Boolean);
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
   private
@@ -85,14 +85,14 @@ begin
   Label3.Visible := false;
 end;
 
-procedure TForm1.dbErrorRestoreConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TOnLostConnectActions);
+procedure TForm1.dbErrorRestoreConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TFIBLostConnectAction);
 begin
   Inc(AttemptRest);
   Label4.Caption := IntToStr(AttemptRest);
   Label4.Refresh
 end;
 
-procedure TForm1.dbLostConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TOnLostConnectActions);
+procedure TForm1.dbLostConnect(Database: TFIBDatabase; E: EFIBError; var Actions: TFIBLostConnectAction);
 begin
   case cmbKindOnLost.ItemIndex of
     0:
@@ -109,7 +109,7 @@ begin
   end;
 end;
 
-procedure TForm1.FIBErrorHandler1FIBErrorEvent(Sender: TObject; ErrorValue: EFIBError; KindIBError: TKindIBError; var DoRaise: Boolean);
+procedure TForm1.FIBErrorHandler1FIBErrorEvent(Sender: TObject; ErrorValue: EFIBError; KindIBError: TFIBErrorKind; var DoRaise: Boolean);
 begin
   Label4.Visible := True;
   Label3.Visible := True;
@@ -135,9 +135,9 @@ begin
       end;
       if not tr.Active then
         tr.StartTransaction;
-      ApplyUpdToBase;
+      ApplyUpdatesToDatabase;
       tr.CommitRetaining;
-      CommitUpdToCach
+      CommitUpdatesToCache
     except
       if tr.Active then
         tr.RollBack
