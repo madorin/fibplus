@@ -8,8 +8,17 @@ Find the version you use now, then read every section above it, from the one jus
 
 | Version | Status | Notes |
 |---------|--------|-------|
+| [7.9.2](#792) | 2026-11-01 | `EFIBError.ErrorArgument` for the string arguments of the status vector, the Delphi XE, XE6 and XE8 packages renamed, and many bug fixes. |
 | [7.9.1](#791) | 2026-10-09 | Text in the code page of each column's character set, *Firebird 4+* statement and idle timeouts and read consistency, *Firebird 5+* parallel workers, an FMX login dialog package, and many bug fixes. |
 | [7.9.0](#790) | 2026-10-01 | First release of the community maintained FIBPlus. Based on the FIBPlus 7 sources of build 632 (2014-02-17). |
+
+## 7.9.2
+
+### Build
+
+| Change | What to do |
+|--------|------------|
+| The Delphi XE, XE6 and XE8 packages are named like those of XE2 to XE7: `FIBPlus_XE`, `FIBPlus_XE6` and `FIBPlus_XE8` (before: `FIBPlus2011`, `FIBPlus_D20` and `FIBPlus_D22`), with the editors `FIBPlusEditors_XE`, `FIBPlusEditors_XE6` and `FIBPlusEditors_XE8`. The duplicate `FIBPlus_D21` and `FIBPlusEditors_D21` of the XE7 packages are removed. | Install the packages under the new names. A package that requires an old name must require the new one. |
 
 ## 7.9.1
 
