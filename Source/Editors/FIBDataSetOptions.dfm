@@ -220,7 +220,7 @@ object FPDataSetOptionsForm: TFIBDataSetOptionsForm
         TabOrder = 4
         OnClick = ch_poTrimCharFieldsClick
       end
-      object ch_psApplyRepository: TCheckBox
+      object ch_psApplyRepositary: TCheckBox
         Tag = 5
         Left = 16
         Top = 96

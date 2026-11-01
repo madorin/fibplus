@@ -1376,8 +1376,9 @@ begin
                 OwnerToken := Token;
               end;
               Token := FParser.NextTokenPos(Token, Stmt.smdEnd);
-              // system tables are read only in Firebird 3+, COMMENT ON exists since Firebird 2
-              UseComment := Assigned(FDatabase) and FDatabase.Connected and FDatabase.IsFirebirdConnect;
+              // system tables are read only in Firebird 3+; 2.x has no COMMENT ON FUNCTION, 1.5 no COMMENT ON
+              UseComment := Assigned(FDatabase) and FDatabase.Connected and FDatabase.IsFirebirdConnect and
+                (FDatabase.ServerMajorVersion >= 3);
               if UseComment then
               begin
                 tmpStr := DescribeName(NameToken, True);

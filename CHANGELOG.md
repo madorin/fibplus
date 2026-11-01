@@ -154,14 +154,13 @@ The full list of old and new names is in
   messages are `SFIBEvent...`) and the design-time editors and forms are
   renamed.
 - `TTestInfo` in `FIBTestInfo` is `TFIBStatistics`; `TestExecProc`,
-  `TestExecProcObj` and `TestExecFuncStr` are `RepeatProc`, `RepeatMethod` and
-  `RepeatStringFunc`.
+  `TestExecProcObj` and `TestExecFuncStr` are removed.
 - The repository routines of `FIBDataInfo` (`CreateFRepositaryTable`,
   `Update1RepositaryTable` ...) are `CreateFieldsRepositoryTable`,
   `UpgradeFieldsRepositoryTable` ..., and `ListTableInfo`, `ListDataSetInfo`,
   `ListSPInfo` and `ListErrorMessages` are `TableInfoCache`,
   `DataSetInfoCache`, `StoredProcInfoCache` and `ErrorMessageCache`.
-  `ApplyUpdToBase` and `CommitUpdToCach` of `FIBDatabase` are
+  `ApplyUpdToBase` and `CommitUpdToCach` of `TFIBCustomDataSet` are
   `ApplyUpdatesToDatabase` and `CommitUpdatesToCache`.
 - Typos are fixed in the names: `Equel` is `Equal` (`EquelStrings`,
   `IsEquelSQLNames`), `Deffered` is `Deferred`, `Repositary` is `Repository`,
@@ -1141,7 +1140,8 @@ The full list of old and new names is in
   directive was false; `DISCONNECT` without a database raised an access
   violation; directive errors reported the line before the directive.
 - `DESCRIBE` failed on Firebird 3+ and matched no object for an unquoted name;
-  it runs `COMMENT ON`. A UTF-8 script file without a BOM is read as UTF-8.
+  it runs `COMMENT ON` there. A UTF-8 script file without a BOM is read as
+  UTF-8.
 
 #### SQL monitor
 
@@ -1215,6 +1215,9 @@ The full list of old and new names is in
 - Transaction editor: loading the transaction kinds from a file turned only the first `#` of the
   parameters into a line break.
 - Dataset editor, **AutoUpdateOptions**: the generator step accepted a `.`.
+- Dataset options editor: **OK** cleared the options that have no checkbox
+  (`poUseSelectForLock`, `poRefreshAfterDelete`,
+  `poDontCloseAfterEndTransaction`, `psUseGuidField`).
 - SQL editor: the characters U+0080 to U+00FF were measured as the character of the same byte in
   the system code page (all of them on a Central European or Cyrillic Windows), so the text after
   them was drawn at a wrong offset.

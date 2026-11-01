@@ -81,6 +81,7 @@ These have no old name, so the code that uses them must change:
 | Design-time units `pFIBComponentEditors`, `pFIBAutoUpdEditor`, `pFIBConditionsEdit`, `pFIBDBEdit`, `pFIBDataSetOptions`, `pFIBEditorsConsts`, `pFIBPreferences`, `pFIBRepositoryOperations`, `pFIBSyntaxMemo`, `pFIBTrEdit`; `RegFIBPlus`, `RegFIBPlusEditors` | The same names without `p`; `RegFIB`, `RegFIBEditors` | Change the `uses` clause of design-time code. `FIBPreferences` is in the `dclFIBTools` package (Delphi 10.4 and later). |
 | Editors `TpFIBDataSetOptionsEditor`, `TpFIBDatabaseEditor`, `TpFIBTransactionEditor`, `TpFIBTRParamsEditor`, `TpFIBSQLPropEdit`, `TpFIBAutoUpdateOptionsEditor`, `TpFIBGeneratorsProperty`, `TpFIBDeltaReceiverEditor` | The same names with `TFIB` | Rename in design-time code that registers them. |
 | IDE preferences in the registry keys `pFIBDataSet`, `pFIBQuery`, `pFIBDataBase`, `pFIBTransaction` | Keys `FIBDataSet`, `FIBQuery`, `FIBDatabase`, `FIBTransaction` | The saved design-time defaults for new components are not read from the old keys. Set them again once in the FIBPlus preferences (**Tools > FIBPlus > Preferences...**). They are read only by `dclFIBTools` (Delphi 10.4 and later): without it installed, they are not applied. |
+| Window size and position of the design-time editors, saved under registry keys named after the editor classes (`TfrmSQLEdit`, `TFPDataSetOptionsForm` ...) | Keys with the new class names (`TFIBSQLEditForm`, `TFIBDataSetOptionsForm` ...) | Each editor opens once at its default size and position. The old keys can be deleted. |
 
 ### Changed types and signatures
 
@@ -190,7 +191,7 @@ These names are **not** renamed, because `.dfm` and `.fmx` files or the registry
 | `TPosition` | `TFIBPosition` | `StdFuncs`, `StrUtil` |
 | `TCharSet` | `TFIBAnsiCharSet` | `StdFuncs`, `StrUtil` |
 | `TrimCLRF` | `TrimCRLF` | `StdFuncs`, `StrUtil` |
-| `FindInDiapazon` | `FindInRange` | `StdFuncs`, `StrUtil` |
+| `FindInDiapazon` | `FindInRange` | `StrUtil` |
 | `TStrToDateFmt` | `TFIBStrToDateFunc` | `DBParsers` |
 | `TMatchesMask` | `TFIBMatchesMaskFunc` | `DBParsers` |
 | `TExpressionParser` | `TFIBExpressionParser` | `DBParsers` |
@@ -313,7 +314,6 @@ These names are **not** renamed, because `.dfm` and `.fmx` files or the registry
 | `IsDefferedLongString` | `IsDeferredLongString` | `FIBQuery` |
 | `Get_Numeric_Info` | `GetNumericInfo` | `FIBQuery` |
 | `Get_String_Info` | `GetStringInfo` | `FIBQuery` |
-| `Get_Short_Info` | `GetShortInfo` | `FIBQuery` |
 
 #### Error handler and statistics
 
@@ -431,7 +431,6 @@ These names are **not** renamed, because `.dfm` and `.fmx` files or the registry
 | `TfSQLEdit` | `TFIBSQLEditFrame` | Design-time units |
 | `TfrmScript` | `TFIBScriptForm` | Design-time units |
 | `TfrmScript1` | `TFIBNestedScriptForm` | Design-time units |
-| `PForm` | `PFIBScriptForm` | Design-time units |
 | `TfrmFontEditor` | `TFIBFontEditorForm` | Design-time units |
 | `TStringsModuleCreator` | `TFIBStringsModuleCreator` | Design-time units |
 | `TOTAFile` | `TFIBOTAFile` | Design-time units |
@@ -480,8 +479,8 @@ These names are **not** renamed, because `.dfm` and `.fmx` files or the registry
 | `FIB.FIBErrorEx`, `FIB.StatusVectorAsText`, `FIBDatabase.GetConnectedDataBase`, `FIBDatabase.CloseAllDatabases` | Unused by the library; read `EFIBError` properties, and loop over `DatabaseList` yourself. |
 | `ibase.add_spb_length`, `ibase.add_spb_numeric`, `Tisc_dsql_fetch2`, `Tisc_dsql_fetch2_m`, `Tisc_embed_dsql_fetch2`; `IB_Externals.TM`, `PTM`, `TISC_VARYING`, `TBlob`, `PBlob`, `UInt`, `Void`, `UISC_STATUS`, `PPChar`, the day and month constants and `InitializeTCTimeStructure`; `SIBAPI.SIB_PPChar`, `SIB_PStatus`, `SIB_PPStatus`, `SIB_PPStatusVector` | Unused declarations of the client API headers. |
 | `FIBDataSet`: `TFIBFilterType` (`ftByField`, `ftCopy`), `PFIBFieldData`, `ufsRefresh` of `TFIBUpdateFieldStreams`; protected `CheckUpdateTransaction`, `CopyRecordBuffer`, `IsValidBuffer` of `TFIBCustomDataSet` and `GetBytesValue` of `TFIBWideStringField` | Unused by the library. |
-| `SqlTxtRtns`: `FieldUsedInClause`, `PrepareConstraint`, `FieldNameFromSelect`, `GetFieldByAlias`, `TFIBSQLParser.PlanCount`; `FIBDataInfo.GetOtherFieldInfo`; `FIBMiscellaneous`: `BlobInitialized`; `FIBCacheManage.TFIBRecordsCache`: `MemoryPrepared`, `ShiftMapValues`, `WriteField`, `Capacity`, `RecordSize`, `RecordCount`; `FIBLists` and `FIBTestInfo`: `IndexOf`, `Delete`, `Tag`, `Insert`, `Exchange`, `RepeatProc`, `RepeatMethod`, `RepeatStringFunc`, `SetNull`, `AddToStrings`, `ClearStrings`; `IFIBSQLParser.SectionInArray` | Unused by the library. |
-| Design time: `RegUtils.SaveRegKey` and `LoadRegKey`, `RTTIRoutines.GetSubPropObject` and `GetMaxValueSet`, `ShowDSSQLsEdit` and the two-argument `ShowDSSQLEdit`, `TFIBCanUseFieldsEvent` and `OnCanUseFields` of the SQL frame | Use `DefReadFromRegistry` and `DefWriteToRegistry` of `RegUtils`. |
+| `SqlTxtRtns`: `FieldUsedInClause`, `PrepareConstraint`, `FieldNameFromSelect`, `GetFieldByAlias`, `TFIBSQLParser.PlanCount`; `FIBDataInfo.GetOtherFieldInfo`; `FIBMiscellaneous`: `BlobInitialized`; `FIBCacheManage.TFIBRecordsCache`: `MemoryPrepared`, `ShiftMapValues`, `WriteField`, `Capacity`, `RecordSize`, `RecordCount`; `FIBLists` and `FIBTestInfo`: `IndexOf`, `Delete`, `Tag`, `Insert`, `Exchange`, `TestExecProc`, `TestExecProcObj`, `TestExecFuncStr`, `SetNull`, `AddToStrings`, `ClearStrings`; `IFIBSQLParser.SectionInArray` | Unused by the library. |
+| Design time: `RegUtils.SaveRegKey` and `LoadRegKey`, `RTTIRoutines.GetSubPropObject` and `GetMaxValueSet`, `ShowDSSQLsEdit` and the two-argument `ShowDSSQLEdit`, `TFIBCanUseFieldsEvent` and `OnCanUseFields` of the SQL frame, `PForm` (`uFIBScriptForm`) | Use `DefReadFromRegistry` and `DefWriteToRegistry` of `RegUtils`. |
 
 ### Changed behavior
 

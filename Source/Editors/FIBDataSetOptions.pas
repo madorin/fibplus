@@ -50,7 +50,7 @@ type
     ch_pfImportDefaultValues: TCheckBox;
     ch_psUseBooleanField: TCheckBox;
     ch_psSQLINT64ToBCD: TCheckBox;
-    ch_psApplyRepository: TCheckBox;
+    ch_psApplyRepositary: TCheckBox; // GetOptionBox finds the boxes by the enum names
     ch_psGetOrderInfo: TCheckBox;
     ch_psAskRecordCount: TCheckBox;
     ch_poVisibleRecno: TCheckBox;
@@ -131,14 +131,15 @@ begin
         MaxOption := GetMaxOption('Options');
         for K := Low(aDataSets) to High(aDataSets) do
         begin
-          Options := 0;
-
+          Options := GetPropValue(aDataSets[K], 'Options', False);
           for Option := 0 to MaxOption do
           begin
             chBox := GetOptionBox(Option, 'Options');
             if Assigned(chBox) then
               if chBox.Checked then
-                Include(TIntegerSet(Options), Option);
+                Include(TIntegerSet(Options), Option)
+              else
+                Exclude(TIntegerSet(Options), Option);
           end;
           SetPropValue(aDataSets[K], 'Options', Options)
         end;
@@ -146,13 +147,15 @@ begin
         MaxOption := GetMaxOption('PrepareOptions');
         for K := Low(aDataSets) to High(aDataSets) do
         begin
-          Options := 0;
+          Options := GetPropValue(aDataSets[K], 'PrepareOptions', False);
           for Option := 0 to MaxOption do
           begin
             chBox := GetOptionBox(Option, 'PrepareOptions');
             if Assigned(chBox) then
               if chBox.Checked then
-                Include(TIntegerSet(Options), Option);
+                Include(TIntegerSet(Options), Option)
+              else
+                Exclude(TIntegerSet(Options), Option);
           end;
           SetPropValue(aDataSets[K], 'PrepareOptions', Options)
         end;
@@ -247,7 +250,7 @@ begin
   ch_pfImportDefaultValues.Caption := FPOptionsSetDefault;
   ch_psUseBooleanField.Caption := FPOptionsEmulateBoolean;
   ch_psSQLINT64ToBCD.Caption := FPOptionsCreateBCD;
-  ch_psApplyRepository.Caption := FPOptionsApplyRepository;
+  ch_psApplyRepositary.Caption := FPOptionsApplyRepository;
   ch_psGetOrderInfo.Caption := FPOptionsSortFields;
   ch_psAskRecordCount.Caption := FPOptionsRecordCount;
   ch_poVisibleRecno.Caption := FPVisibleRecno;
