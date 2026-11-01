@@ -8,7 +8,7 @@ Find the version you use now, then read every section above it, from the one jus
 
 | Version | Status | Notes |
 |---------|--------|-------|
-| [8.0.0](#800) | Unreleased | Delphi 2009 or later. Classes and units renamed from `TpFIB...` and `pFIB...` to `TFIB...` and `FIB...` (the old names stay as deprecated aliases), many other types, interfaces and routines renamed with the `FIB` prefix (the old type names stay as deprecated aliases), the `TpFIB...` components merged into the `TFIB...` ones, packages renamed, `TRParams` filled by `TPBMode`, translated error messages. |
+| [8.0.0](#800) | 2026-11-01 | Delphi 2009 or later. Classes and units renamed from `TpFIB...` and `pFIB...` to `TFIB...` and `FIB...` (the old names stay as deprecated aliases), many other types, interfaces and routines renamed with the `FIB` prefix (the old type names stay as deprecated aliases), the `TpFIB...` components merged into the `TFIB...` ones, packages renamed, `TRParams` filled by `TPBMode`, translated error messages, and many bug fixes. |
 | [7.9.1](#791) | 2026-10-09 | Text in the code page of each column's character set, *Firebird 4+* statement and idle timeouts and read consistency, *Firebird 5+* parallel workers, an FMX login dialog package, and many bug fixes. |
 | [7.9.0](#790) | 2026-10-01 | First release of the community maintained FIBPlus. Based on the FIBPlus 7 sources of build 632 (2014-02-17). |
 

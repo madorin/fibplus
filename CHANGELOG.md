@@ -1,6 +1,6 @@
 # Changelog
 
-## [8.0.0] - Unreleased
+## [8.0.0] - 2026-11-01
 
 ### Added
 
@@ -1812,5 +1812,6 @@ made since the repository was created in November 2016.
   [#81](https://github.com/madorin/fibplus/pull/81)).
 - Compiler warnings and hints ([#15](https://github.com/madorin/fibplus/pull/15)).
 
+[8.0.0]: https://github.com/madorin/fibplus/releases/tag/v8.0.0
 [7.9.1]: https://github.com/madorin/fibplus/releases/tag/v7.9.1
 [7.9.0]: https://github.com/madorin/fibplus/releases/tag/v7.9.0
