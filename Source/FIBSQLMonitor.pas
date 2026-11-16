@@ -56,6 +56,7 @@ type
     FOnSQLEvent: TFIBSQLEvent;
     FTraceFlags: TFIBTraceFlags;
     FActive: Boolean;
+    procedure DestroyMonitorWindow();
     procedure MonitorWndProc(var Message: TMessage);
     procedure SetActive(const Value: Boolean);
     procedure SetTraceFlags(aTraceFlags: TFIBTraceFlags);
@@ -283,14 +284,30 @@ begin
   TraceFlags := [tfQPrepare .. tfTransact];
 end;
 
+//------------------------------------------------------------------------------
+// 2026-11-15: Ertan
+// Reader kaydı kaldırıldıktan veya finalization reader'ı durdurduktan sonra
+// bekleyen payload'lar callback çağrılmadan serbest bırakılır.
+procedure TFIBCustomSQLMonitor.DestroyMonitorWindow();
+var
+  LMessage: TMsg;
+begin
+  if FHWnd = 0 then
+    Exit();
+  while PeekMessage(LMessage, FHWnd, WM_FIBSQL_SQL_EVENT, WM_FIBSQL_SQL_EVENT, PM_REMOVE) do
+    TFIBTraceObject(LMessage.lParam).Free();
+  DeallocateHWnd(FHWnd);
+  FHWnd := 0;
+end;
+
+//------------------------------------------------------------------------------
 destructor TFIBCustomSQLMonitor.Destroy;
 begin
   // freed after the unit finalization (a form freed by Vcl.Forms) or without shared memory
   if not(csDesigning in ComponentState) and
     (bDone or (_MonitorHook = nil) or not _MonitorHook.FEventsCreated) then
   begin
-    if FHWnd <> 0 then
-      DeallocateHwnd(FHWnd);
+    DestroyMonitorWindow();
   end
   else if not(csDesigning in ComponentState) then
   begin
@@ -308,7 +325,7 @@ begin
 
     if FActive then
       MonitorHook.UnregisterMonitor(self);
-    DeallocateHwnd(FHWnd);
+    DestroyMonitorWindow();
   end;
   inherited Destroy;
 end;
@@ -321,9 +338,14 @@ begin
     WM_FIBSQL_SQL_EVENT:
       begin
         st := TFIBTraceObject(Message.LParam);
-        if (Assigned(FOnSQLEvent)) and (st.FDataType in FTraceFlags) then
-          FOnSQLEvent(st.FMsg, st.FTimeStamp);
-        st.Free;
+        // 2026-11-15: Ertan
+        // Callback hata verse de teslim alınan payload tek kez bırakılır.
+        try
+          if (Assigned(FOnSQLEvent)) and (st.FDataType in FTraceFlags) then
+            FOnSQLEvent(st.FMsg, st.FTimeStamp);
+        finally
+          st.Free();
+        end;
       end;
     CM_RELEASE: Free;
   else
