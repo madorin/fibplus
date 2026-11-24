@@ -77,6 +77,7 @@ type
   end;
 
   EFIBInterBaseError = class(EFIBError);
+  EFIBInterBaseWarning = class(EFIBError);
   EFIBClientError = class(EFIBError);
 
   TFIBErrorMessageOption = (
@@ -84,7 +85,8 @@ type
     ShowIBMessage,
     ShowSQLMessage,
     ShowSQLState,
-    ShowRaiserName
+    ShowRaiserName,
+    ShowIBWarning
   );
   TFIBErrorMessageOptions = set of TFIBErrorMessageOption;
 
@@ -367,6 +369,7 @@ function FIBVersionString: string;
 procedure FIBError(ErrMess: TFIBClientError; const Args: array of const);
 
 procedure IBError(ClientLibrary: IFIBClientLibrary; Sender: TObject);
+procedure IBWarning(ClientLibrary: IFIBClientLibrary; Sender: TObject);
 
 procedure RegisterErrorHandler(AErrorHandler: TComponent);
 // With a handler, only that handler is unregistered
@@ -672,6 +675,78 @@ begin
     raise InterBaseError
   else
     InterBaseError.Free;
+end;
+
+procedure IBWarning(ClientLibrary: IFIBClientLibrary; Sender: TObject);
+var
+  local_buffer: array [0 .. FIBHugeLocalBufferLength - 1] of AnsiChar;
+  vIBMessage: string;
+  status_vector: PISC_STATUS;
+  IBErrorMessages: TFIBErrorMessageOptions;
+
+  vEFIBInterBaseError: EFIBInterBaseWarning;
+  vRaiseExcept: Boolean;
+  tmpStr: string;
+  L: integer;
+  CodePage: Word;
+const
+  isc_arg_warning = 18;
+begin
+  status_vector := StatusVector;
+  if (PFIBStatusVector(status_vector)^[0] <> 1) or
+    (PFIBStatusVector(status_vector)^[1] <> 0) or
+    (PFIBStatusVector(status_vector)^[2] <> isc_arg_warning) then
+    Exit;
+
+  CodePage := StatusVectorCodePage(Sender);
+  vIBMessage := '';
+  IBErrorMessages := GetIBErrorMessages;
+  (*
+    * Maybe show the interbase warnings
+  *)
+  if (ShowIBWarning in IBErrorMessages) then
+  begin
+    L := ClientLibrary.fb_Interpret(local_buffer, FIBHugeLocalBufferLength,
+      @status_vector);
+    while (L > 0) do
+    begin
+	  tmpStr := DecodeString(local_buffer, L, CodePage);
+
+      if Length(tmpStr) > 0 then
+      begin
+        if (tmpStr[1] >= 'a') and (tmpStr[1] <= 'z') then
+          Dec(tmpStr[1], 32);
+        vIBMessage := vIBMessage + tmpStr;
+        if (vIBMessage[Length(vIBMessage)] <> '.') then
+          vIBMessage := vIBMessage + '.';
+        vIBMessage := vIBMessage + CRLF;
+      end;
+      L := ClientLibrary.fb_Interpret(local_buffer, FIBHugeLocalBufferLength,
+        @status_vector);
+    end;
+  end;
+
+  (*
+    * Finally raise the exception
+  *)
+  if vIBMessage <> '' then
+  begin
+    vRaiseExcept := true;
+    vEFIBInterBaseError := EFIBInterBaseWarning.CreateEx(0, vIBMessage,
+      '', '', Sender);
+    vEFIBInterBaseError.FSQLState := '0000';
+    try
+      if ErrorHandlerRegistered then
+        IBErrorHandler.DoOnErrorEvent(Sender, vEFIBInterBaseError, vRaiseExcept);
+    except
+      vEFIBInterBaseError.Free;
+      raise;
+    end;
+    if vRaiseExcept then
+      raise vEFIBInterBaseError
+    else
+      vEFIBInterBaseError.Free;
+  end;
 end;
 
 // Return the status vector for the current thread

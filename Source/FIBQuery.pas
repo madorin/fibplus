@@ -3867,7 +3867,9 @@ begin
   if Transaction <> nil then
     Result := Transaction.Call(ErrCode, False);
   if (ErrCode > 0) and RaiseError then
-    IBError(Database.ClientLibrary, Self);
+    IBError(Database.ClientLibrary, Self)
+  else if (ErrCode = 0) and RaiseError then
+    IBWarning(Database.ClientLibrary, Self);
 end;
 
 function TFIBQuery.Current: TFIBXSQLDA;
