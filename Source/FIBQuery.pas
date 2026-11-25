@@ -2034,8 +2034,13 @@ begin
         FreeMem(sqldata);
         sqldata := nil;
       end;
-      if (not IsNullable) then
-        IsNullable := True;
+      if xvar.IsParam then
+      begin
+        if (not IsNullable) then
+          IsNullable := True
+      end else
+        FIBAlloc(sqlind, 0, SizeOf(Short));
+
       sqlind^ := -1;
     end
     else if IsNullable then
